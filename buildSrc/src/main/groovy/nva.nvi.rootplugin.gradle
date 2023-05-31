@@ -1,0 +1,8 @@
+plugins{
+    id 'nva.nvi.java-conventions'
+}
+
+allprojects {
+    //workaround for jacoco-merge to work
+    apply plugin: 'nva.nvi.java-conventions'
+}

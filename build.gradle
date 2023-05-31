@@ -1,0 +1,10 @@
+plugins {
+    id 'nva.nvi.rootplugin'
+}
+
+dependencies {
+}
+
+test {
+    environment("ALLOWED_ORIGIN", "*")
+}

@@ -1,0 +1,55 @@
+[versions]
+junit = { strictly = '5.8.2' }
+nva-commons = {strictly = '1.28.0'}
+jackson = { strictly = '2.13.3' }
+mockito = { strictly = '4.5.1' }
+hamcrest = { strictly = '2.2' }
+zalando = { strictly = '0.27.1' }
+awsLambdaJavaCore = { strictly = '1.2.1' }
+log4j = { strictly = '2.17.1' }
+slf4j = { strictly = '1.8.0-beta4' }
+awslog4j2 = { strictly = '1.5.1' }
+wiremock = { strictly = '2.33.2' }
+commons-validator-version = { strictly = '1.7'}
+
+[libraries]
+junit-jupiter-api = { group = 'org.junit.jupiter', name = 'junit-jupiter-api', version.ref = 'junit' }
+junit-jupiter-params = { group = 'org.junit.jupiter', name = 'junit-jupiter-params', version.ref = 'junit' }
+junit-jupiter-engine = { group = 'org.junit.jupiter', name = 'junit-jupiter-engine', version.ref = 'junit' }
+mockito-core = { group = 'org.mockito', name = 'mockito-core', version.ref = 'mockito' }
+hamcrest = { group = 'org.hamcrest', name = 'hamcrest', version.ref = 'hamcrest' }
+nva-testutils = { group = 'com.github.bibsysdev', name = 'nvatestutils', version.ref = 'nva-commons' }
+nva-logutils = { group = 'com.github.bibsysdev', name = 'logutils', version.ref = 'nva-commons' }
+nva-json = { group = 'com.github.bibsysdev', name = 'json', version.ref = 'nva-commons' }
+nva-core = { group = 'com.github.bibsysdev', name = 'core', version.ref = 'nva-commons' }
+zalando = { group = 'org.zalando', name = 'problem', version.ref = 'zalando' }
+
+nva-commons-core = { group = 'com.github.bibsysdev', name = 'core', version.ref = 'nva-commons' }
+nva-commons-apigateway = { group = 'com.github.bibsysdev', name = 'apigateway', version.ref = 'nva-commons' }
+nva-commons-pagination = { group = 'com.github.bibsysdev', name = 'pagination', version.ref = 'nva-commons'}
+nva-commons-secrets = { group = 'com.github.bibsysdev', name = 'secrets', version.ref = 'nva-commons'}
+
+jackson-core = { group = 'com.fasterxml.jackson.core', name = 'jackson-core', version.ref = 'jackson' }
+jackson-databind = { group = 'com.fasterxml.jackson.core', name = 'jackson-databind', version.ref = 'jackson' }
+jackson-annotations = { group = 'com.fasterxml.jackson.core', name = 'jackson-annotations', version.ref = 'jackson' }
+jackson-datatype-jdk8 = { group = 'com.fasterxml.jackson.datatype', name = 'jackson-datatype-jdk8', version.ref = 'jackson' }
+jackson-datatype-jsr310 = { group = 'com.fasterxml.jackson.datatype', name = 'jackson-datatype-jsr310', version.ref = 'jackson' }
+
+aws-lambda-java-core = { group = 'com.amazonaws', name = 'aws-lambda-java-core', version.ref = 'awsLambdaJavaCore' }
+aws-lambda-log4j2 = { group = 'com.amazonaws', name = 'aws-lambda-java-log4j2', version.ref = 'awslog4j2'}
+
+log4j-core = { group = 'org.apache.logging.log4j', name = 'log4j-core', version.ref = 'log4j' }
+log4j-api = { group = 'org.apache.logging.log4j', name = 'log4j-api', version.ref = 'log4j' }
+log4j-slf4j18-impl = { group = 'org.apache.logging.log4j', name = 'log4j-slf4j18-impl', version.ref = 'log4j' }
+slf4j-api = { group = 'org.slf4j', name = 'slf4j-api', version.ref = 'slf4j' }
+
+wiremock = { group = 'com.github.tomakehurst', name = 'wiremock-jre8', version.ref = 'wiremock' }
+
+commons-validator = { group = 'commons-validator', name = 'commons-validator', version.ref = 'commons-validator-version'}
+
+[bundles]
+nva = ['nva-commons-core', 'nva-commons-apigateway', 'nva-json', 'nva-commons-pagination', 'nva-commons-secrets']
+logging = ['log4j-core', 'log4j-api', 'log4j-slf4j18-impl', 'slf4j-api', 'aws-lambda-log4j2']
+testing = ['junit-jupiter-api', 'junit-jupiter-params', 'junit-jupiter-engine', 'mockito-core', 'hamcrest', 'nva-testutils', 'nva-logutils', 'zalando', 'wiremock']
+jackson = ['jackson-core', 'jackson-databind', 'jackson-annotations', 'jackson-datatype-jdk8', 'jackson-datatype-jsr310']
+others = ['slf4j-api', 'log4j-api', 'aws-lambda-java-core']
