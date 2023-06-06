@@ -1,0 +1,11 @@
+plugins {
+    id 'nva.nvi.java-conventions'
+    id 'nva.nvi.dynamo-db'
+}
+dependencies {
+    implementation libs.aws.lambda.java.core
+    implementation libs.bundles.nva
+    implementation libs.bundles.logging
+    implementation libs.bundles.jackson
+    implementation libs.commons.validator
+}

@@ -2,21 +2,15 @@ plugins {
     id 'java'
     id 'checkstyle'
     id 'pmd'
-    id 'jacoco'
-    id 'base'
-    id 'test-report-aggregation'
+    id 'jacoco-report-aggregation'
+//    id 'test-report-aggregation'
 }
+
 
 group = 'com.github.bibsysdev'
 
 dependencies {
     testImplementation libs.bundles.testing
-
-    implementation libs.aws.lambda.java.core
-    implementation libs.bundles.nva
-    implementation libs.bundles.logging
-    implementation libs.bundles.jackson
-    implementation libs.commons.validator
 }
 
 sourceCompatibility = JavaVersion.VERSION_11  // source-code version and must be <= targetCompatibility
@@ -35,13 +29,6 @@ tasks.named('test') {
     }
 }
 
-tasks.named('check') {
-    dependsOn tasks.named('testAggregateTestReport', TestReport)
-}
-
-test {
-}
-
 pmd {
     toolVersion = '6.20.0'
     ruleSetConfig = rootProject.resources.text.fromFile('config/pmd/ruleset.xml')
@@ -49,12 +36,12 @@ pmd {
     ignoreFailures = false
 }
 
-/*checkstyle {
+checkstyle {
     configFile = rootProject.resources.text.fromFile('config/checkstyle/checkstyle.xml').asFile()
     showViolations = true
-}*/
+}
 
-tasks.withType(Checkstyle) {
+tasks.withType(Checkstyle) .configureEach{
     reports {
         xml.required
         html.required
