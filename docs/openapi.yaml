@@ -1,8 +1,12 @@
 openapi: 3.0.3
 info:
   title: NVA NVI API
-  description: Optional multiline or single-line description in [CommonMark](http://commonmark.org/help/) or HTML.
-  version: 0.2.0
+  version: 0.0.1
 
 paths:
-  
+  /:
+    get:
+      summary: Get all nvi candidates for an affiliation
+      responses:
+        '200':
+          description: All the candidates
