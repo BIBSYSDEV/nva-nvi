@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  AWS
+  
+  SAM Template for NVA NVI API
+
+Parameters:
+  Suffix:
+    Type: String
+    Default: ''
+    Description: Suffix used for naming resources for feature branches to avoid conflicts.
+
+Resources:
+  #=============================== SQSs ============================================================
+  NewCandidateQueue:
+    Type: AWS::SQS::Queue
+  NewCandidateDLQ:
+    Type: AWS::SQS::Queue
+
+
+  #============================= Permissions =======================================================
+
+
+  #============================= Handlers ==========================================================
+  EvaluateNVICandidateHandler:
+    DependsOn: EventsLambdaPermissions
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: evaluate-nvi-candidate
+      Handler: no.sikt.nva.nvi.evaluator.EvaluateNviCandidateHandler::handleRequest
+      Runtime: java17
+      Role: !GetAtt LambdaRole.Arn
+#      Environment:
+#        Variables:
+
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref BucketName
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: resources/
+      EventInvokeConfig:
+        DestinationConfig:
+          OnSuccess:
+            Type: SQS
+            Destination: !GetAtt NewCandidateQueue.Arn
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt NewCandidateDLQ.Arn
