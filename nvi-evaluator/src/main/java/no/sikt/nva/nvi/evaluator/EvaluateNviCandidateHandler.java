@@ -84,7 +84,9 @@ public class EvaluateNviCandidateHandler
         var key = expectingSinglRecord.getS3().getObject().getKey();
         var s3Driver = new S3Driver(s3Client, name);
 
-        var s3bucketPath = UriWrapper.fromUri(URI.create(String.format("s3://%s/%s", name, key))).toS3bucketPath();
+        var s3bucketPath = UriWrapper.fromUri(
+                URI.create(String.format("s3://%s/%s", name, key)))
+                               .toS3bucketPath();
         var content = s3Driver.getFile(s3bucketPath);
         var body = attempt(() -> dtoObjectMapper.readTree(content))
                        .map(json -> json.at("/body"))
