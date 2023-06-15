@@ -188,62 +188,25 @@
       }
     },
     "id" : "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
-    "associatedArtifacts" : [ {
-      "type" : "PublishedFile",
-      "administrativeAgreement" : false,
-      "identifier" : "4e11e32b-5d1f-4374-af4a-baf2eecf1f51",
-      "license" : {
-        "type" : "License",
-        "identifier" : "RightsReserved",
-        "labels" : {
-          "nb" : "RightsReserved"
-        }
-      },
-      "mimeType" : "text/plain",
-      "name" : "testfile.txt",
-      "publishedDate" : "2023-06-05T10:47:02.431908Z",
-      "publisherAuthority" : false,
-      "size" : 9,
-      "visibleForNonOwner" : true
-    } ],
-    "createdDate" : "2023-06-05T10:44:10.665103Z",
     "entityDescription" : {
       "type" : "EntityDescription",
-      "alternativeAbstracts" : { },
       "contributors" : [ {
         "type" : "Contributor",
         "affiliations" : [ {
           "id" : "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
-          "type" : "Organization",
-          "labels" : {
-            "nb" : "Sikt – Kunnskapssektorens tjenesteleverandør",
-            "en" : "Sikt - Norwegian Agency for Shared Services in Education and Research"
-          },
-          "name" : [ {
-            "@language" : "en",
-            "@value" : "Sikt - Norwegian Agency for Shared Services in Education and Research"
-          }, {
-            "@language" : "nb",
-            "@value" : "Sikt – Kunnskapssektorens tjenesteleverandør"
-          } ]
+          "type" : "Organization"
         } ],
-        "correspondingAuthor" : false,
         "identity" : {
           "id" : "https://api.dev.nva.aws.unit.no/cristin/person/997998",
           "type" : "Identity",
-          "verificationStatus": "Verified",
-          "name" : "Mona Ullah"
+          "verificationStatus": "Verified"
         },
         "role" : {
           "type" : "Creator"
-        },
-        "sequence" : 1
+        }
       } ],
-      "mainTitle" : "Demo nvi candidate",
       "publicationDate" : {
         "type" : "PublicationDate",
-        "day" : "4",
-        "month" : "6",
         "year" : "2024"
       },
       "reference" : {
@@ -251,163 +214,15 @@
         "publicationContext" : {
           "id" : "https://api.dev.nva.aws.unit.no/publication-channels/journal/490845/2023",
           "type" : "Journal",
-          "active" : true,
-          "identifier" : "490845",
-          "language" : "http://lexvo.org/id/iso639-3/eng",
-          "level" : "1",
-          "name" : "Antennae: The Journal of Nature in Visual Culture",
-          "npiDomain" : "Kunsthistorie",
-          "onlineIssn" : "1756-9575",
-          "website" : {
-            "id" : "http://www.antennae.org.uk"
-          }
+          "level" : "1"
         },
         "publicationInstance" : {
-          "type" : "AcademicArticle",
-          "pages" : {
-            "type" : "Range"
-          }
+          "type" : "AcademicArticle"
         }
       }
     },
-    "identifier" : "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
-    "modelVersion" : "0.20.24",
-    "modifiedDate" : "2023-06-05T10:47:02.627823Z",
-    "nviType" : "NviCandidate",
-    "publishedDate" : "2023-06-05T10:47:02.619027Z",
-    "publisher" : {
-      "id" : "https://api.dev.nva.aws.unit.no/customer/bb3d0c0c-5065-4623-9b98-5810983c2478",
-      "type" : "Organization"
-    },
-    "resourceOwner" : {
-      "owner" : "997998@20754.0.0.0",
-      "ownerAffiliation" : "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"
-    },
-    "status" : "PUBLISHED",
-    "topLevelOrganization" : {
-      "id" : "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
-      "type" : "Organization",
-      "hasPart" : [ {
-        "id" : "https://api.dev.nva.aws.unit.no/cristin/organization/20754.4.0.0",
-        "type" : "Organization",
-        "labels" : {
-          "nn" : "Avdeling for organisasjonsutvikling",
-          "nb" : "Avdeling for organisasjonsutvikling",
-          "en" : "The Organisational Development Department"
-        },
-        "name" : [ {
-          "@language" : "nn",
-          "@value" : "Avdeling for organisasjonsutvikling"
-        }, {
-          "@language" : "nb",
-          "@value" : "Avdeling for organisasjonsutvikling"
-        }, {
-          "@language" : "en",
-          "@value" : "The Organisational Development Department"
-        } ]
-      }, {
-        "id" : "https://api.dev.nva.aws.unit.no/cristin/organization/20754.2.0.0",
-        "type" : "Organization",
-        "labels" : {
-          "nn" : "Divisjon for forskings- og kunnskapsressursar",
-          "nb" : "Divisjon forsknings- og kunnskapsressurser",
-          "en" : "The Research and Education Resources Division"
-        },
-        "name" : [ {
-          "@language" : "nn",
-          "@value" : "Divisjon for forskings- og kunnskapsressursar"
-        }, {
-          "@language" : "nb",
-          "@value" : "Divisjon forsknings- og kunnskapsressurser"
-        }, {
-          "@language" : "en",
-          "@value" : "The Research and Education Resources Division"
-        } ]
-      }, {
-        "id" : "https://api.dev.nva.aws.unit.no/cristin/organization/20754.6.0.0",
-        "type" : "Organization",
-        "labels" : {
-          "nn" : "Avdeling for kunde og kommunikasjon",
-          "nb" : "Avdeling for kunde og kommunikasjon",
-          "en" : "The Customer and Communication Department"
-        },
-        "name" : [ {
-          "@language" : "nn",
-          "@value" : "Avdeling for kunde og kommunikasjon"
-        }, {
-          "@language" : "nb",
-          "@value" : "Avdeling for kunde og kommunikasjon"
-        }, {
-          "@language" : "en",
-          "@value" : "The Customer and Communication Department"
-        } ]
-      }, {
-        "id" : "https://api.dev.nva.aws.unit.no/cristin/organization/20754.5.0.0",
-        "type" : "Organization",
-        "labels" : {
-          "nn" : "Avdeling for verksemdstyring",
-          "nb" : "Avdeling for virksomhetsstyring",
-          "en" : "The Corporate Governance Department"
-        },
-        "name" : [ {
-          "@language" : "nn",
-          "@value" : "Avdeling for verksemdstyring"
-        }, {
-          "@language" : "nb",
-          "@value" : "Avdeling for virksomhetsstyring"
-        }, {
-          "@language" : "en",
-          "@value" : "The Corporate Governance Department"
-        } ]
-      }, {
-        "id" : "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.0.0",
-        "type" : "Organization",
-        "labels" : {
-          "nn" : "Divisjon for utdanning og administrasjon",
-          "nb" : "Divisjon utdanning og administrasjon",
-          "en" : "The Education and Administration Division"
-        },
-        "name" : [ {
-          "@language" : "nn",
-          "@value" : "Divisjon for utdanning og administrasjon"
-        }, {
-          "@language" : "nb",
-          "@value" : "Divisjon utdanning og administrasjon"
-        }, {
-          "@language" : "en",
-          "@value" : "The Education and Administration Division"
-        } ]
-      }, {
-        "id" : "https://api.dev.nva.aws.unit.no/cristin/organization/20754.3.0.0",
-        "type" : "Organization",
-        "labels" : {
-          "nn" : "Divisjon for data og infrastruktur",
-          "nb" : "Divisjon data og infrastruktur",
-          "en" : "The Organisational Development Department"
-        },
-        "name" : [ {
-          "@language" : "nn",
-          "@value" : "Divisjon for data og infrastruktur"
-        }, {
-          "@language" : "nb",
-          "@value" : "Divisjon data og infrastruktur"
-        }, {
-          "@language" : "en",
-          "@value" : "The Organisational Development Department"
-        } ]
-      } ],
-      "labels" : {
-        "nb" : "Sikt – Kunnskapssektorens tjenesteleverandør",
-        "en" : "Sikt - Norwegian Agency for Shared Services in Education and Research"
-      },
-      "name" : [ {
-        "@language" : "en",
-        "@value" : "Sikt - Norwegian Agency for Shared Services in Education and Research"
-      }, {
-        "@language" : "nb",
-        "@value" : "Sikt – Kunnskapssektorens tjenesteleverandør"
-      } ]
-    }
+    "status": "PUBLISHED",
+    "identifier" : "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d"
   },
   "consumptionAttributes" : {
     "index" : "resources",

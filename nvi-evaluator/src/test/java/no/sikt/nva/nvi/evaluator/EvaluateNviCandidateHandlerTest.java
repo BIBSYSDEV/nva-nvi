@@ -104,6 +104,57 @@ public class EvaluateNviCandidateHandlerTest {
     }
 
     @Test
+    void shouldCreateNewCandidateEventOnValidAcademicMonograph() throws IOException {
+        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        var path = "candidate_academicMonograph.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path),
+                                          content);
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, context);
+        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        assertThat(sentMessages, hasSize(1));
+        SendMessageRequest message = sentMessages.get(0);
+        var validNviCandidateInentifier = "0188bee5a7f1-17acf7d5-5658-4a5a-89b2-b2ea73032661";
+        assertThat(message.messageBody(),
+                   containsString(validNviCandidateInentifier));
+    }
+
+    @Test
+    void shouldCreateNewCandidateEventOnValidAcademicLiteratureReview() throws IOException {
+        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        var path = "candidate_academicLiteratureReview.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path),
+                                          content);
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, context);
+        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        assertThat(sentMessages, hasSize(1));
+        SendMessageRequest message = sentMessages.get(0);
+        var validNviCandidateInentifier = "0188bee8530e-bb78f9a0-d167-4c53-8e70-cedf9994f055";
+        assertThat(message.messageBody(),
+                   containsString(validNviCandidateInentifier));
+    }
+
+    @Test
+    void shouldCreateNewCandidateEventOnValidAcademicArticle() throws IOException {
+        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        var path = "candidate_academicArticle.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path),
+                                          content);
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, context);
+        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        assertThat(sentMessages, hasSize(1));
+        SendMessageRequest message = sentMessages.get(0);
+        var validNviCandidateInentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
+        assertThat(message.messageBody(),
+                   containsString(validNviCandidateInentifier));
+    }
+
+    @Test
     void shouldNotCreateNewCandidateEventWhenIdentityIsNotVerified() throws IOException {
         handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
         var path = "noncandidate_nonVerified.json";
