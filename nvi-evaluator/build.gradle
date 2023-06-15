@@ -19,6 +19,7 @@ dependencies {
     implementation libs.aws.sdk2.urlconnection
 
     implementation libs.bundles.jackson
+    implementation libs.bundles.jena
 
     testImplementation libs.nva.testutils
 }

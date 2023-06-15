@@ -231,6 +231,7 @@
         "identity" : {
           "id" : "https://api.dev.nva.aws.unit.no/cristin/person/997998",
           "type" : "Identity",
+          "verificationStatus": "Verified",
           "name" : "Mona Ullah"
         },
         "role" : {

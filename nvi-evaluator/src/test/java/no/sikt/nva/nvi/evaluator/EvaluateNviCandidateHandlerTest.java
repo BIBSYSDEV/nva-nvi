@@ -3,7 +3,9 @@ package no.sikt.nva.nvi.evaluator;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
@@ -16,7 +18,6 @@ import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotificatio
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.UserIdentityEntity;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -54,7 +55,7 @@ public class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldCreateNewCandidateEventOnValidCandidate() throws IOException {
         handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
-        var path = "candidate.gz";
+        var path = "candidate.json.gz";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
@@ -63,12 +64,22 @@ public class EvaluateNviCandidateHandlerTest {
         List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         SendMessageRequest message = sentMessages.get(0);
+        var validNviAffiliaction = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
         assertThat(message.messageBody(),
-                   containsString("01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d"));
+                   containsString(validNviAffiliaction));
     }
 
     @Test
-    void shouldNotCreateNewCandidateEventOnInvalidCandidate() {
+    void shouldNotCreateNewCandidateEventWhenIdentityIsNotVerified() throws IOException {
+        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        var path = "noncandidate_nonVerified.json.gz";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path),
+                                          content);
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, context);
+        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        assertThat(sentMessages, is(empty()));
 
     }
 
