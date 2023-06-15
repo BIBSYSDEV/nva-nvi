@@ -70,6 +70,23 @@ public class EvaluateNviCandidateHandlerTest {
     }
 
     @Test
+    void shouldCreateNewCandidateEventOnValidAcademicChapter() throws IOException {
+        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        var path = "candidate_academicChapter.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path),
+                                          content);
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, context);
+        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        assertThat(sentMessages, hasSize(1));
+        SendMessageRequest message = sentMessages.get(0);
+        var validNviCandidateInentifier = "0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4";
+        assertThat(message.messageBody(),
+                   containsString(validNviCandidateInentifier));
+    }
+
+    @Test
     void shouldNotCreateNewCandidateEventWhenIdentityIsNotVerified() throws IOException {
         handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
         var path = "noncandidate_nonVerified.json.gz";

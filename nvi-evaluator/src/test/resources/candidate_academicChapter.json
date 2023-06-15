@@ -1,0 +1,410 @@
+{
+  "body": {
+    "type": "Publication",
+    "publicationContextUris": [],
+    "@context": {
+      "@vocab": "https://nva.sikt.no/ontology/publication#",
+      "hasPart": "https://bibsysdev.github.io/src/organization-ontology.ttl#hasPart",
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "DIRHEALTH": "https://nva.sikt.no/ontology/approvals-body#DIRHEALTH",
+      "NMA": "https://nva.sikt.no/ontology/approvals-body#NMA",
+      "NARA": "https://nva.sikt.no/ontology/approvals-body#NARA",
+      "REK": "https://nva.sikt.no/ontology/approvals-body#REK",
+      "ShortFilm": "https://nva.sikt.no/ontology/publication#ShortFilm",
+      "SerialFilmProduction": "https://nva.sikt.no/ontology/publication#SerialFilmProduction",
+      "Film": "https://nva.sikt.no/ontology/publication#Film",
+      "InteractiveFilm": "https://nva.sikt.no/ontology/publication#InteractiveFilm",
+      "AugmentedVirtualRealityFilm": "https://nva.sikt.no/ontology/publication#AugmentedVirtualRealityFilm",
+      "approvedBy": {
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/approvals-body#"
+        },
+        "@type": "@vocab"
+      },
+      "activeFrom": {
+        "@type": "xsd:dateTime"
+      },
+      "activeTo": {
+        "@type": "xsd:dateTime"
+      },
+      "additionalIdentifiers": {
+        "@container": "@set",
+        "@id": "additionalIdentifier"
+      },
+      "affiliations": {
+        "@container": "@set",
+        "@id": "affiliation"
+      },
+      "alternativeTitles": {
+        "@container": "@language",
+        "@id": "alternativeTitle"
+      },
+      "approvals": {
+        "@container": "@set",
+        "@id": "approval"
+      },
+      "approvalStatus": {
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/publication#"
+        },
+        "@type": "@vocab"
+      },
+      "architectureOutput": {
+        "@container": "@set",
+        "@id": "architectureOutput"
+      },
+      "associatedArtifacts": {
+        "@container": "@set",
+        "@id": "associatedArtifact"
+      },
+      "compliesWith": {
+        "@container": "@set",
+        "@id": "compliesWith"
+      },
+      "concertProgramme": {
+        "@container": "@set",
+        "@id": "concertProgramme"
+      },
+      "contributors": {
+        "@container": "@set",
+        "@id": "contributor"
+      },
+      "createdDate": {
+        "@type": "xsd:dateTime"
+      },
+      "doi": {
+        "@type": "@id"
+      },
+      "embargoDate": {
+        "@type": "xsd:dateTime"
+      },
+      "from": {
+        "@type": "xsd:dateTime"
+      },
+      "fundings": {
+        "@container": "@set",
+        "@id": "funding"
+      },
+      "handle": {
+        "@type": "@id"
+      },
+      "id": "@id",
+      "indexedDate": {
+        "@type": "xsd:dateTime"
+      },
+      "isbnList": {
+        "@container": "@set",
+        "@id": "isbn"
+      },
+      "labels": {
+        "@container": "@language",
+        "@id": "label"
+      },
+      "language": {
+        "@type": "@id"
+      },
+      "link": {
+        "@type": "@id"
+      },
+      "manifestations": {
+        "@container": "@set",
+        "@id": "manifestation"
+      },
+      "metadataSource": {
+        "@type": "@id"
+      },
+      "modifiedDate": {
+        "@type": "xsd:dateTime"
+      },
+      "musicalWorks": {
+        "@container": "@set",
+        "@id": "musicalWork"
+      },
+      "nameType": {
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/publication#"
+        },
+        "@type": "@vocab"
+      },
+      "outputs": {
+        "@container": "@set",
+        "@id": "output"
+      },
+      "ownerAffiliation": {
+        "@type": "@id"
+      },
+      "projects": {
+        "@container": "@set",
+        "@id": "project"
+      },
+      "publishedDate": {
+        "@type": "xsd:dateTime"
+      },
+      "referencedBy": {
+        "@container": "@set",
+        "@id": "referencedBy"
+      },
+      "related": {
+        "@container": "@set",
+        "@id": "related"
+      },
+      "status": {
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/publication#"
+        },
+        "@type": "@vocab"
+      },
+      "subjects": {
+        "@container": "@set",
+        "@id": "subject",
+        "@type": "@id"
+      },
+      "tags": {
+        "@container": "@set",
+        "@id": "tag"
+      },
+      "to": {
+        "@type": "xsd:dateTime"
+      },
+      "trackList": {
+        "@container": "@set",
+        "@id": "trackList"
+      },
+      "type": "@type",
+      "venues": {
+        "@container": "@set",
+        "@id": "venue"
+      },
+      "nviType": {
+        "@type": "@vocab",
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/publication#"
+        }
+      },
+      "NviCandidate": "https://nva.sikt.no/ontology/publication#NviCandidate",
+      "NonNviCandidate": "https://nva.sikt.no/ontology/publication#NonNviCandidate",
+      "publicationContextUris": {
+        "@container": "@set"
+      }
+    },
+    "id": "https://api.dev.nva.aws.unit.no/publication/0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4",
+    "additionalIdentifiers": [
+      {
+        "type": "AdditionalIdentifier",
+        "source": "VoeSHOld1RuN6MNIVP",
+        "value": "vcMOLdOt089LQnoV"
+      }
+    ],
+    "associatedArtifacts": [
+      {
+        "type": "PublishedFile",
+        "administrativeAgreement": false,
+        "identifier": "601a8cb7-4946-451a-af47-c222cef43ad4",
+        "license": "https://www.example.com/p3xvplnuyxx",
+        "mimeType": "GRBxrj0gu7XUWPrj1z",
+        "name": "l6RryihU3xP0TZW1vE",
+        "publishedDate": "2014-03-29T17:27:34.691Z",
+        "publisherAuthority": true,
+        "size": 705163822,
+        "visibleForNonOwner": true
+      },
+      {
+        "id": "https://www.example.com/DEXcKRkUugvzd",
+        "type": "AssociatedLink",
+        "description": "H4tn3fvNMQNeGf",
+        "name": "666J2TFhKsGFkUPf3s"
+      }
+    ],
+    "createdDate": "1991-11-29T19:25:51.681Z",
+    "entityDescription": {
+      "type": "EntityDescription",
+      "alternativeAbstracts": {},
+      "contributors": [
+        {
+          "type": "Contributor",
+          "affiliations": [
+            {
+              "id": "https://www.example.org/9e3de71b-0ecb-4464-b9f1-2f92b974839c",
+              "type": "Organization",
+              "labels": {
+                "sv": "VGq0SrqSShq7UZS0Bew"
+              }
+            }
+          ],
+          "correspondingAuthor": false,
+          "identity": {
+            "type": "Identity",
+            "name": "w226id6aGpekljXKjM",
+            "verificationStatus": "Verified"
+          },
+          "role": {
+            "type": "RoleOther"
+          }
+        },
+        {
+          "type": "Contributor",
+          "affiliations": [
+            {
+              "id": "https://www.example.org/39a728f4-88f5-46a9-a476-ff0c2b4c635b",
+              "type": "Organization",
+              "labels": {
+                "fi": "plcouKMCA4bkP"
+              }
+            }
+          ],
+          "correspondingAuthor": false,
+          "identity": {
+            "type": "Identity",
+            "name": "pCN66fpgk56RbkgI5H3",
+            "verificationStatus": "Verified"
+          },
+          "role": {
+            "type": "Creator"
+          }
+        }
+      ],
+      "publicationDate": {
+        "type": "PublicationDate",
+        "year": "2023"
+      },
+      "reference": {
+        "type": "Reference",
+        "publicationContext": {
+          "id": "https://www.example.org/publication/0188beb8f331-da429b9c-ed21-4741-9127-2c32b2cb6232",
+          "type": "Anthology",
+          "entityDescription": {
+            "type": "EntityDescription",
+            "contributors": [
+              {
+                "type": "Contributor",
+                "identity": {
+                  "type": "Identity",
+                  "name": "aJeLFk7JUx"
+                }
+              },
+              {
+                "type": "Contributor",
+                "identity": {
+                  "type": "Identity",
+                  "name": "u7GaTOPFFHDHlRrn0"
+                }
+              }
+            ],
+            "reference": {
+              "type": "Reference",
+              "publicationContext": {
+                "type": "Book",
+                "publisher": {
+                  "id": "https://api.dev.nva.aws.unit.no/publication-channels/3bbb6017-ca4a-496a-8ca7-d3ac78f65abf",
+                  "type": "Publisher",
+                  "level": "1",
+                  "name": "nb7p57fCW5Xsa"
+                },
+                "series": {
+                  "id": "https://api.dev.nva.aws.unit.no/publication-channels/583d74c4-ba08-485f-9e79-c640f5d223ba",
+                  "type": "Series",
+                  "level": "1",
+                  "name": "H1Xs0nptbDEiZWz"
+                }
+              }
+            }
+          }
+        },
+        "publicationInstance": {
+          "type": "AcademicChapter"
+        }
+      }
+    },
+    "fundings": [
+      {
+        "type": "UnconfirmedFunding",
+        "activeFrom": "1974-03-06T18:54:24.021Z",
+        "activeTo": "1979-10-11T10:56:02.757Z",
+        "fundingAmount": {
+          "amount": 1053553578,
+          "currency": "NOK"
+        },
+        "identifier": "cL1I5R75o4uau5",
+        "labels": {
+          "af": "XMkbvQyRk5"
+        },
+        "source": "https://www.example.org/4fce7cf8-8236-4076-bed7-7a61e5687812"
+      },
+      {
+        "id": "https://www.example.org/6001a5cd-4372-4fa9-b3d7-be37ce0ae594",
+        "type": "ConfirmedFunding",
+        "activeFrom": "1979-12-11T10:34:44.673Z",
+        "activeTo": "2002-09-13T14:05:16.238Z",
+        "fundingAmount": {
+          "amount": 955015963,
+          "currency": "NOK"
+        },
+        "identifier": "wOYKhwPLkQw",
+        "labels": {
+          "en": "chShe3b1eIl03VlZ"
+        },
+        "source": "https://www.example.org/2d2d990b-1d22-40ff-9e62-982acf415a45"
+      }
+    ],
+    "handle": "https://www.example.com/fJ6B8h9VGei",
+    "identifier": "0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4",
+    "indexedDate": "2017-04-22T20:13:31.787Z",
+    "link": "https://www.example.com/VhkH0wqJukrmaPauAOL",
+    "modelVersion": "0.20.25",
+    "modifiedDate": "2013-03-20T01:35:41.327Z",
+    "nviType": "NviCandidate",
+    "projects": [
+      {
+        "id": "https://www.example.org/6055b494-f907-402f-adf6-017cd6a0d766",
+        "type": "ResearchProject",
+        "approvals": [
+          {
+            "type": "Approval",
+            "applicationCode": "0Zbxr1ev1EoK",
+            "approvalDate": "1996-01-16T02:00:14.912Z",
+            "approvalStatus": "REJECTION",
+            "approvedBy": "DIRHEALTH"
+          }
+        ],
+        "name": "IAg49AVpQVe"
+      }
+    ],
+    "publishedDate": "1988-01-16T07:41:41.333Z",
+    "publisher": {
+      "id": "https://www.example.org/f462d088-a807-4dbf-b957-12a99be0fff0",
+      "type": "Organization",
+      "labels": {
+        "el": "VQkkTSj6x9wuHJpnZb"
+      }
+    },
+    "resourceOwner": {
+      "owner": "Cup05VFt2tLG",
+      "ownerAffiliation": "https://www.example.com/nMXMYtnsYTVzRmOYVFY"
+    },
+    "rightsHolder": "xT1yppvhkuun",
+    "status": "PUBLISHED",
+    "subjects": [
+      "https://www.example.com/flGDAupL7Cz6pW"
+    ],
+    "topLevelOrganization": [
+      {
+        "id": "https://www.example.org/39a728f4-88f5-46a9-a476-ff0c2b4c635b",
+        "type": "Organization",
+        "labels": {
+          "fi": "plcouKMCA4bkP"
+        }
+      },
+      {
+        "id": "https://www.example.org/9e3de71b-0ecb-4464-b9f1-2f92b974839c",
+        "type": "Organization",
+        "labels": {
+          "sv": "VGq0SrqSShq7UZS0Bew"
+        }
+      }
+    ]
+  },
+  "consumptionAttributes": {
+    "index": "resources",
+    "documentIdentifier": "0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4"
+  }
+}

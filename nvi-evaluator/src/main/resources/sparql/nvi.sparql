@@ -9,27 +9,54 @@ ASK
 WHERE {
 
   ?publication a nva:Publication .
-    ?publication nva:status ?publicationStatus .
-    ?publication nva:entityDescription/nva:reference/nva:publicationInstance/rdf:type ?instanceType .
+      ?publication nva:status ?publicationStatus .
+      ?publication nva:entityDescription/nva:reference/nva:publicationInstance/rdf:type ?instanceType .
 
-    OPTIONAL { ?publication nva:entityDescription/nva:publicationDate/nva:year ?publicationYear . }
+      OPTIONAL {
+        SELECT distinct ?publicationYear WHERE {
+          ?publicationDate rdf:type ?type .
+          ?publicationDate nva:year ?publicationYear
+          FILTER(?type = <https://nva.sikt.no/ontology/publication#PublicationDate>)
+        }
+      }
 
-    OPTIONAL { ?publication nva:entityDescription/nva:reference/nva:publicationContext/nva:publisher/nva:level ?publisherLevel . }
-    OPTIONAL { ?publication nva:entityDescription/nva:reference/nva:publicationContext/nva:series/nva:level ?seriesLevel . }
-    OPTIONAL { ?publication nva:entityDescription/nva:reference/nva:publicationContext/nva:level ?journalLevel .  }
+      OPTIONAL {
+        SELECT distinct ?publisherLevel WHERE {
+          ?publisher rdf:type ?type .
+          ?publisher nva:level ?publisherLevel
+          FILTER(?type = <https://nva.sikt.no/ontology/publication#Publisher>)
+        }
+      }
 
-    BIND(IF (BOUND(?seriesLevel), ?seriesLevel, ?publisherLevel) AS ?seriesOrPublisherLevel)
-    BIND(IF (BOUND(?journalLevel), ?journalLevel, ?seriesOrPublisherLevel) AS ?optionalLevel)
-    BIND(IF (BOUND(?optionalLevel), ?optionalLevel, "0") AS ?level)
+      OPTIONAL {
+        SELECT distinct ?seriesLevel WHERE {
+          ?publisher rdf:type ?type .
+          ?publisher nva:level ?seriesLevel
+          FILTER(?type = <https://nva.sikt.no/ontology/publication#Series>)
+        }
+      }
 
-    BIND(IF (?instanceType = nva:AcademicMonograph
-             || ?instanceType = nva:AcademicChapter
-             || ?instanceType = nva:AcademicArticle
-             || ?instanceType = nva:AcademicLiteratureReview, "true"^^xsd:boolean, "false"^^xsd:boolean) AS ?isNviInstance)
+      OPTIONAL {
+        SELECT distinct ?journalLevel WHERE {
+              ?publisher rdf:type ?type .
+              ?publisher nva:level ?journalLevel
+              FILTER(?type = <https://nva.sikt.no/ontology/publication#Journal>)
+        }
+      }
 
-    BIND(IF (?publicationStatus = nva:PUBLISHED
-      && ?isNviInstance = "true"^^xsd:boolean
-      && ?publicationYear = "2023"
-      && (?level = "1" || ?level = "2"), nva:NviCandidate, nva:NonNviCandidate)  AS ?nviCandidate)
+      BIND(IF (BOUND(?seriesLevel), ?seriesLevel, ?publisherLevel) AS ?seriesOrPublisherLevel)
+      BIND(IF (BOUND(?journalLevel), ?journalLevel, ?seriesOrPublisherLevel) AS ?optionalLevel)
+      BIND(IF (BOUND(?optionalLevel), ?optionalLevel, "0") AS ?level)
+
+      BIND(IF (?instanceType = nva:AcademicMonograph
+               || ?instanceType = nva:AcademicChapter
+               || ?instanceType = nva:AcademicArticle
+               || ?instanceType = nva:AcademicLiteratureReview, "true"^^xsd:boolean, "false"^^xsd:boolean) AS ?isNviInstance)
+
+      BIND(IF (?publicationStatus = nva:PUBLISHED
+        && ?isNviInstance = "true"^^xsd:boolean
+        && ?publicationYear = "__NVI_YEAR__"
+        && (?level = "1" || ?level = "2"), nva:NviCandidate, nva:NonNviCandidate)  AS ?nviCandidate)
+
   FILTER(?nviCandidate = nva:NviCandidate)
 }
