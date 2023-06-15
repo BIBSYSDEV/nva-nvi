@@ -40,14 +40,16 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 public class EvaluateNviCandidateHandler
     implements RequestHandler<S3Event, Void> {
 
-    public static final Environment ENVIRONMENT = new Environment();
-    public static final String AWS_REGION_ENV_VARIABLE = "AWS_REGION";
-    public static final int MAX_CONNECTIONS = 10_000;
-    public static final int IDLE_TIME = 30;
-    public static final int TIMEOUT_TIME = 30;
-    public static final String AFFILIATION_SPARQL =
+    private static final Environment ENVIRONMENT = new Environment();
+    private static final String AWS_REGION_ENV_VARIABLE = "AWS_REGION";
+    private static final int MAX_CONNECTIONS = 10_000;
+    private static final int IDLE_TIME = 30;
+    private static final int TIMEOUT_TIME = 30;
+    private static final String AFFILIATION_SPARQL =
         IoUtils.stringFromResources(Path.of("sparql/affiliation.sparql"));
-    public static final String NVI_YEAR = "2023";
+    //TODO to be configured somehow
+    private static final String NVI_YEAR = "2023";
+    private static final String ID_JSON_PATH = "/body/id";
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateNviCandidateHandler.class);
     private static final String NVI_YEAR_REPLACE_STRING = "__NVI_YEAR__";
     private static final String NVI_CANDIDATE =
@@ -104,7 +106,7 @@ public class EvaluateNviCandidateHandler
             return null;
         }
         //TODO ADD Check of Affiliations NVI affinity
-        var nviAffiliations = new ArrayList<>(affiliationUris);
+        var nviAffiliationsForApproval = new ArrayList<>(affiliationUris);
 
         //TODO NviMonaCalc
         var nviCandidate =
@@ -116,10 +118,11 @@ public class EvaluateNviCandidateHandler
             return null;
         }
 
-        var resourceUri = URI.create(json.at("/body/id").asText());
+        var resourceUri = URI.create(json.at(ID_JSON_PATH).asText());
         var response = CandidateResponse.builder()
                            .resourceUri(resourceUri)
-                           .approvalAffiliations(affiliationUris.stream().map(URI::create).toList())
+                           .approvalAffiliations(
+                               nviAffiliationsForApproval.stream().map(URI::create).toList())
                            .build();
         attempt(() -> sqsClient.sendMessage(
             SendMessageRequest
@@ -152,7 +155,11 @@ public class EvaluateNviCandidateHandler
     }
 
     @JacocoGenerated
-    private static void loadDataIntoModel(Model model, InputStream inputStream) {
+    private static void logInvalidJsonLdInput(Exception exception) {
+        LOGGER.warn("Invalid JSON LD input encountered: ", exception);
+    }
+
+    private void loadDataIntoModel(Model model, InputStream inputStream) {
         if (isNull(inputStream)) {
             return;
         }
@@ -161,10 +168,5 @@ public class EvaluateNviCandidateHandler
         } catch (RiotException e) {
             logInvalidJsonLdInput(e);
         }
-    }
-
-    @JacocoGenerated
-    private static void logInvalidJsonLdInput(Exception exception) {
-        LOGGER.warn("Invalid JSON LD input encountered: ", exception);
     }
 }

@@ -97,6 +97,20 @@ public class EvaluateNviCandidateHandlerTest {
     }
 
     @Test
+    void shouldNotCreateCandidateIfSeriesInMonographHasNviLevelZero() throws IOException {
+        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        var path = "noncandidate_notValidMonographArticle.json.gz";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path),
+                                          content);
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, context);
+        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        assertThat(sentMessages, is(empty()));
+
+    }
+
+    @Test
     void shouldNotCreateNewCandidateEventWithNotApprovalAffiliations() {
 
     }
