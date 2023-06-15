@@ -55,7 +55,24 @@ public class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldCreateNewCandidateEventOnValidCandidate() throws IOException {
         handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
-        var path = "candidate.json.gz";
+        var path = "candidate.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path),
+                                          content);
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, context);
+        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        assertThat(sentMessages, hasSize(1));
+        SendMessageRequest message = sentMessages.get(0);
+        var validNviCandidateInentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
+        assertThat(message.messageBody(),
+                   containsString(validNviCandidateInentifier));
+    }
+
+    @Test
+    void shouldEvaluateStrippedCandidate() throws IOException {
+        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        var path = "candidate_stripped.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
@@ -143,7 +160,7 @@ public class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldNotCreateCandidateIfSeriesInMonographHasNviLevelZero() throws IOException {
         handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
-        var path = "noncandidate_notValidMonographArticle.json.gz";
+        var path = "noncandidate_notValidMonographArticle.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
