@@ -130,6 +130,19 @@ public class EvaluateNviCandidateHandlerTest {
     }
 
     @Test
+    void shouldNotCreateCandidateForMusicalArts() throws IOException {
+        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        var path = "noncandidate_musicalArts.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path),
+                                          content);
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, context);
+        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        assertThat(sentMessages, is(empty()));
+    }
+
+    @Test
     void shouldNotCreateNewCandidateEventWhenPublicationIsPublishedBeforeCurrentYear()
         throws IOException {
         handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);

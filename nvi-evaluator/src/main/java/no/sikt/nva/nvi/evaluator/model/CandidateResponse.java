@@ -17,6 +17,10 @@ public class CandidateResponse {
         this.approvalAffiliations = approvalAffiliations;
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public URI getResourceUri() {
         return resourceUri;
     }
@@ -25,14 +29,10 @@ public class CandidateResponse {
         return approvalAffiliations;
     }
 
-    public static Builder builder() {
-        return new Builder();
-    }
-
     public static class Builder {
 
         private URI resourceUri;
-        private Set<URI> approvalAffiliations = new HashSet<>();
+        private final Set<URI> approvalAffiliations = new HashSet<>();
 
         public Builder resourceUri(URI resourceUri) {
             this.resourceUri = resourceUri;
