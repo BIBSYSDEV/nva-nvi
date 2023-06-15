@@ -33,6 +33,8 @@ public class StubSqsClient implements SqsClient {
     public SendMessageResponse sendMessage(SendMessageRequest sendMessageRequest)
         throws AwsServiceException, SdkClientException {
         sentMessages.add(sendMessageRequest);
-        return SqsClient.super.sendMessage(sendMessageRequest);
+        return SendMessageResponse.builder()
+                   .messageId(sendMessageRequest.messageDeduplicationId())
+                   .build();
     }
 }

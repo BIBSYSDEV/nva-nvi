@@ -1,10 +1,11 @@
 package no.sikt.nva.nvi.evaluator;
 
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
+import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
@@ -34,7 +35,8 @@ public class EvaluateNviCandidateHandler
 
     @JacocoGenerated
     protected EvaluateNviCandidateHandler() {
-        this(S3Driver.defaultS3Client().build(), defaultSqsClient());
+        //        this(S3Driver.defaultS3Client().build(), defaultSqsClient());
+        this(defaultS3Client(), defaultSqsClient());
     }
 
     public EvaluateNviCandidateHandler(S3Client s3Client, SqsClient sqsClient) {
@@ -45,7 +47,8 @@ public class EvaluateNviCandidateHandler
 
     @JacocoGenerated
     public static S3Client defaultS3Client() {
-        var awsRegion = ENVIRONMENT.readEnvOpt(AWS_REGION_ENV_VARIABLE).orElse(Region.EU_WEST_1.toString());
+        var awsRegion = ENVIRONMENT.readEnvOpt(AWS_REGION_ENV_VARIABLE)
+                            .orElse(Region.EU_WEST_1.toString());
         return S3Client.builder()
                    .region(Region.of(awsRegion))
                    .httpClient(UrlConnectionHttpClient.builder().build())
@@ -54,22 +57,21 @@ public class EvaluateNviCandidateHandler
 
     @Override
     public Void handleRequest(S3Event input, Context context) {
-        if (input.getRecords().isEmpty()) {
-            //TODO Log?
-            return null;
-        }
         var expectingSinglRecord = input.getRecords().get(0);
         var name = expectingSinglRecord.getS3().getBucket().getName();
         var key = expectingSinglRecord.getS3().getObject().getKey();
         var s3Driver = new S3Driver(s3Client, name);
         var fileUri = URI.create(String.format("s3://%s/%s", name, key));
 
-        var contents = s3Driver.getFile(UriWrapper.fromUri(fileUri).toS3bucketPath());
+        var s3bucketPath = UriWrapper.fromUri(fileUri).toS3bucketPath();
+        var contents = s3Driver.getFile(s3bucketPath);
 
         //TODO eval(candidate)
         //TODO eval(affiliations)
 
-        var resourceUri = URI.create("");
+        JsonNode json = attempt(() -> dtoObjectMapper.readTree(contents)).orElseThrow();
+
+        var resourceUri = URI.create(json.at("/body/id").asText());
         var approvalCandidate1Uri = URI.create("");
         var approvalCandidate2Uri = URI.create("");
         var response = CandidateResponse.builder()
@@ -77,15 +79,11 @@ public class EvaluateNviCandidateHandler
                            .approvalCandidates(List.of(approvalCandidate1Uri,
                                                        approvalCandidate2Uri))
                            .build();
-        try {
-            sqsClient.sendMessage(
-                SendMessageRequest
-                    .builder()
-                    .messageBody(dtoObjectMapper.writeValueAsString(response))
-                    .build());
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        attempt(() -> sqsClient.sendMessage(
+            SendMessageRequest
+                .builder()
+                .messageBody(dtoObjectMapper.writeValueAsString(response))
+                .build())).orElseThrow();
         return null;
     }
 

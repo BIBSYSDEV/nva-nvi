@@ -3,9 +3,7 @@ package no.sikt.nva.nvi.evaluator;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
@@ -18,6 +16,7 @@ import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotificatio
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.UserIdentityEntity;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -28,7 +27,6 @@ import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
 public class EvaluateNviCandidateHandlerTest {
@@ -56,17 +54,17 @@ public class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldCreateNewCandidateEventOnValidCandidate() throws IOException {
         handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
-        var fileUri = s3Driver.insertFile(randomPath(), IoUtils.inputStreamFromResources("candidate.gz"));
+        var path = "candidate.gz";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path),
+                                          content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
         List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         SendMessageRequest message = sentMessages.get(0);
-        assertThat(message.messageBody(), containsString("01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d"));
-    }
-
-    private S3Event createInputEventForFile(URI fileUri) {
-        return null;
+        assertThat(message.messageBody(),
+                   containsString("01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d"));
     }
 
     @Test
@@ -80,23 +78,27 @@ public class EvaluateNviCandidateHandlerTest {
     }
 
     @Test
-    void shouldCreateDLQWhenFailingToGetCandidateInfo() {
+    void shouldCreateDWhenFailingToGetCandidateInfo() {
 
     }
 
     @Test
-    void shouldCreateDLQWhenUnableToConnectToResources() {
+    void shouldCreateDlqWhenUnableToConnectToResources() {
 
     }
 
     @Test
-    void shouldCreateDLQWhenUnableToCreateNewCandidateEvent() {
+    void shouldCreateDlqWhenUnableToCreateNewCandidateEvent() {
 
     }
 
     @Test
-    void shouldReadDLQAndRetryAfterGivenTime() {
+    void shouldReadDlqAndRetryAfterGivenTime() {
 
+    }
+
+    private S3Event createInputEventForFile(URI fileUri) {
+        return null;
     }
 
     private S3Event createS3Event(URI uri) {
@@ -119,7 +121,8 @@ public class EvaluateNviCandidateHandlerTest {
 
     private S3Entity createS3Entity(String val) {
         var bucket = new S3BucketEntity(randomString(), EMPTY_USER_IDENTITY, randomString());
-        var object = new S3ObjectEntity(val, SOME_FILE_SIZE, randomString(), randomString(), randomString());
+        var object = new S3ObjectEntity(
+            val, SOME_FILE_SIZE, randomString(), randomString(), randomString());
         var schemaVersion = randomString();
         return new S3Entity(randomString(), bucket, object, schemaVersion);
     }

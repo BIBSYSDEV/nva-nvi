@@ -7,9 +7,11 @@ dependencies {
     implementation libs.nva.core
     implementation libs.nva.s3
     implementation libs.nva.json
-    implementation libs.nva.eventhandlers
 
+    implementation libs.aws.lambda.java.core
     implementation libs.aws.lambda.events
+    implementation libs.aws.java.sdk.core
+
     implementation libs.aws.sdk2.s3
     implementation libs.aws.sdk2.sqs
     implementation libs.aws.sdk2.core
@@ -23,6 +25,20 @@ dependencies {
 test {
     useJUnitPlatform()
     environment "DOMAIN_NAME", "test.nva.aws.unit.no"
-    environment "PROFILE_FILE_SUPPLIER", ""
 
+    environment "EVENTS_BUCKET", "theEventsBucket"
+    environment "EVENT_BUS_NAME", "eventBus"
+    environment "HANDLER_EVENTS_FOLDER", "reource-updates-events"
+    environment "IDENTITY_SERVICE_SECRET_NAME", "someSecretName"
+    environment "IDENTITY_SERVICE_SECRET_KEY", "someSecretKey"
+    environment "PERSISTED_ENTRIES_BUCKET", "persistedEntries"
+    environment "AWS_REGION", "AWS_REGION"
+    environment "TABLE_NAME", "ResourcesTable"
+    environment "AWS_REGION", "eu-west-1"
+    environment "ID_NAMESPACE", "https://www.example.org/publication"
+    environment "BACKEND_CLIENT_AUTH_URL", "localhost"
+    environment "BACKEND_CLIENT_SECRET_NAME", "secret"
+    environment "DOMAIN_NAME", "api.test.nva.aws.unit.no"
+    environment "OUTPUT_EVENT_TOPIC", "someEvent"
+    environment "API_HOST", "api.dev.nva.aws.unit.no"
 }
