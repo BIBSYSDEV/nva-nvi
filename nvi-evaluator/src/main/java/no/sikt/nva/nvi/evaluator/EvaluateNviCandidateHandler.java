@@ -19,6 +19,7 @@ import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
+import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.Model;
@@ -44,7 +45,12 @@ public class EvaluateNviCandidateHandler
     public static final int MAX_CONNECTIONS = 10_000;
     public static final int IDLE_TIME = 30;
     public static final int TIMEOUT_TIME = 30;
+    public static final String AFFILIATION_SPARQL = IoUtils.stringFromResources(Path.of("sparql/affiliation.sparql"));
+    public static final String NVI_YEAR = "2023";
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateNviCandidateHandler.class);
+    private static final String NVI_YEAR_REPLACE_STRING = "__NVI_YEAR__";
+    private static final String NVI_CANDIDATE =
+        IoUtils.stringFromResources(Path.of("sparql/nvi.sparql")).replace(NVI_YEAR_REPLACE_STRING, NVI_YEAR);
     private final S3Client s3Client;
     private final SqsClient sqsClient;
 
@@ -85,8 +91,7 @@ public class EvaluateNviCandidateHandler
         Model model = ModelFactory.createDefaultModel();
         loadDataIntoModel(model, stringToStream(theBody));
         var affiliationUris = new ArrayList<String>();
-        try (var exec = QueryExecutionFactory.create(IoUtils.stringFromResources(Path.of("sparql/affiliation.sparql"))
-            , model)) {
+        try (var exec = QueryExecutionFactory.create(AFFILIATION_SPARQL, model)) {
             ResultSet resultSet = exec.execSelect();
             while (resultSet.hasNext()) {
                 var affiliationUri = resultSet.next().getResource("affiliation").getURI();
@@ -96,13 +101,23 @@ public class EvaluateNviCandidateHandler
         if (affiliationUris.isEmpty()) {
             return null;
         }
-        //TODO eval(candidate)
-        //TODO eval(affiliations)
+        //TODO ADD Check of Affiliations NVI affinity
+        var nviAffiliations = new ArrayList<>(affiliationUris);
+
+        //TODO NviMonaCalc
+        var nviCandidate =
+            attempt(() -> QueryExecutionFactory.create(NVI_CANDIDATE, model))
+                .map(QueryExecution::execAsk)
+                .orElseThrow();
+
+        if (!nviCandidate) {
+            return null;
+        }
 
         var resourceUri = URI.create(json.at("/body/id").asText());
         var response = CandidateResponse.builder()
                            .resourceUri(resourceUri)
-                           .approvalCandidates(affiliationUris.stream().map(URI::create).toList())
+                           .approvalAffiliations(affiliationUris.stream().map(URI::create).toList())
                            .build();
         attempt(() -> sqsClient.sendMessage(
             SendMessageRequest

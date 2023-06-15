@@ -10,19 +10,19 @@ import java.util.Set;
 public class CandidateResponse {
 
     private final URI resourceUri;
-    private final List<URI> approvalCandidates;
+    private final List<URI> approvalAffiliations;
 
-    public CandidateResponse(URI resourceUri, List<URI> approvalCandidates) {
+    public CandidateResponse(URI resourceUri, List<URI> approvalAffiliations) {
         this.resourceUri = resourceUri;
-        this.approvalCandidates = approvalCandidates;
+        this.approvalAffiliations = approvalAffiliations;
     }
 
     public URI getResourceUri() {
         return resourceUri;
     }
 
-    public Collection<URI> getApprovalCandidates() {
-        return approvalCandidates;
+    public Collection<URI> getApprovalAffiliations() {
+        return approvalAffiliations;
     }
 
     public static Builder builder() {
@@ -32,20 +32,20 @@ public class CandidateResponse {
     public static class Builder {
 
         private URI resourceUri;
-        private Set<URI> approvalCandidates = new HashSet<>();
+        private Set<URI> approvalAffiliations = new HashSet<>();
 
         public Builder resourceUri(URI resourceUri) {
             this.resourceUri = resourceUri;
             return this;
         }
 
-        public Builder approvalCandidates(Collection<URI> approvalCandidateUris) {
-            this.approvalCandidates.addAll(approvalCandidateUris);
+        public Builder approvalAffiliations(Collection<URI> approvalAffiliationUris) {
+            this.approvalAffiliations.addAll(approvalAffiliationUris);
             return this;
         }
 
         public CandidateResponse build() {
-            return new CandidateResponse(resourceUri, new ArrayList<>(approvalCandidates));
+            return new CandidateResponse(resourceUri, new ArrayList<>(approvalAffiliations));
         }
     }
 }
