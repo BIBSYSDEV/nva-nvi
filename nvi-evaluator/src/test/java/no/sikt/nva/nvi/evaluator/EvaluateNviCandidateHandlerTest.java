@@ -64,9 +64,9 @@ public class EvaluateNviCandidateHandlerTest {
         List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         SendMessageRequest message = sentMessages.get(0);
-        var validNviAffiliaction = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
+        var validNviCandidateInentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
         assertThat(message.messageBody(),
-                   containsString(validNviAffiliaction));
+                   containsString(validNviCandidateInentifier));
     }
 
     @Test
@@ -81,6 +81,19 @@ public class EvaluateNviCandidateHandlerTest {
         List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
 
+    }
+
+    @Test
+    void shouldNotCreateNewCandidateEventWhenPublicationIsNotPublished() throws IOException {
+        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        var path = "noncandidate_notPublished.json.gz";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path),
+                                          content);
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, context);
+        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        assertThat(sentMessages, is(empty()));
     }
 
     @Test
