@@ -7,7 +7,6 @@ import static nva.commons.core.ioutils.IoUtils.stringToStream;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
-import com.fasterxml.jackson.databind.JsonNode;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
@@ -21,7 +20,6 @@ import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QueryExecutionFactory;
-import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.riot.Lang;
@@ -85,21 +83,20 @@ public class EvaluateNviCandidateHandler
         var name = expectingSinglRecord.getS3().getBucket().getName();
         var key = expectingSinglRecord.getS3().getObject().getKey();
         var s3Driver = new S3Driver(s3Client, name);
-        var fileUri = URI.create(String.format("s3://%s/%s", name, key));
 
-        var s3bucketPath = UriWrapper.fromUri(fileUri).toS3bucketPath();
+        var s3bucketPath = UriWrapper.fromUri(URI.create(String.format("s3://%s/%s", name, key))).toS3bucketPath();
         var content = s3Driver.getFile(s3bucketPath);
-        JsonNode json = attempt(() -> dtoObjectMapper.readTree(content)).orElseThrow();
-        String theBody = json.at("/body").toString();
+        var json = attempt(() -> dtoObjectMapper.readTree(content)).orElseThrow();
+        var theBody = json.at("/body").toString();
 
-        Model model = ModelFactory.createDefaultModel();
+        var model = ModelFactory.createDefaultModel();
         loadDataIntoModel(model, stringToStream(theBody));
         var affiliationUris = new ArrayList<String>();
         try (var exec = QueryExecutionFactory.create(AFFILIATION_SPARQL, model)) {
-            ResultSet resultSet = exec.execSelect();
+            var resultSet = exec.execSelect();
             while (resultSet.hasNext()) {
-                var affiliationUri = resultSet.next().getResource("affiliation").getURI();
-                affiliationUris.add(affiliationUri);
+                affiliationUris.add(
+                    resultSet.next().getResource("affiliation").getURI());
             }
         }
         if (affiliationUris.isEmpty()) {
@@ -124,11 +121,10 @@ public class EvaluateNviCandidateHandler
                            .approvalAffiliations(
                                nviAffiliationsForApproval.stream().map(URI::create).toList())
                            .build();
-        attempt(() -> sqsClient.sendMessage(
-            SendMessageRequest
-                .builder()
-                .messageBody(dtoObjectMapper.writeValueAsString(response))
-                .build())).orElseThrow();
+        attempt(() ->
+                    dtoObjectMapper.writeValueAsString(response))
+            .map(this::createCandidate)
+            .map(sqsClient::sendMessage).orElseThrow();
         return null;
     }
 
@@ -157,6 +153,12 @@ public class EvaluateNviCandidateHandler
     @JacocoGenerated
     private static void logInvalidJsonLdInput(Exception exception) {
         LOGGER.warn("Invalid JSON LD input encountered: ", exception);
+    }
+
+    private SendMessageRequest createCandidate(String body) {
+        return SendMessageRequest.builder()
+                   .messageBody(body)
+                   .build();
     }
 
     private void loadDataIntoModel(Model model, InputStream inputStream) {

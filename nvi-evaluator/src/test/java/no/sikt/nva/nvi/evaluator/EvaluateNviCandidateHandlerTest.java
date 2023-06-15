@@ -89,7 +89,7 @@ public class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldNotCreateNewCandidateEventWhenIdentityIsNotVerified() throws IOException {
         handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
-        var path = "noncandidate_nonVerified.json.gz";
+        var path = "noncandidate_nonVerified.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
@@ -103,7 +103,7 @@ public class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldNotCreateNewCandidateEventWhenPublicationIsNotPublished() throws IOException {
         handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
-        var path = "noncandidate_notPublished.json.gz";
+        var path = "noncandidate_notPublished.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
