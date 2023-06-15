@@ -47,7 +47,7 @@ public class EvaluateNviCandidateHandler
         IoUtils.stringFromResources(Path.of("sparql/affiliation.sparql"));
     //TODO to be configured somehow
     private static final String NVI_YEAR = "2023";
-    private static final String ID_JSON_PATH = "/body/id";
+    private static final String ID_JSON_PATH = "/id";
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateNviCandidateHandler.class);
     private static final String NVI_YEAR_REPLACE_STRING = "__NVI_YEAR__";
     private static final String NVI_CANDIDATE =
@@ -86,19 +86,13 @@ public class EvaluateNviCandidateHandler
 
         var s3bucketPath = UriWrapper.fromUri(URI.create(String.format("s3://%s/%s", name, key))).toS3bucketPath();
         var content = s3Driver.getFile(s3bucketPath);
-        var json = attempt(() -> dtoObjectMapper.readTree(content)).orElseThrow();
-        var theBody = json.at("/body").toString();
+        var body = attempt(() -> dtoObjectMapper.readTree(content))
+                       .map(json -> json.at("/body"))
+                       .orElseThrow();
 
         var model = ModelFactory.createDefaultModel();
-        loadDataIntoModel(model, stringToStream(theBody));
-        var affiliationUris = new ArrayList<String>();
-        try (var exec = QueryExecutionFactory.create(AFFILIATION_SPARQL, model)) {
-            var resultSet = exec.execSelect();
-            while (resultSet.hasNext()) {
-                affiliationUris.add(
-                    resultSet.next().getResource("affiliation").getURI());
-            }
-        }
+        loadDataIntoModel(model, stringToStream(body.toString()));
+        var affiliationUris = fetchAffiliationUris(model);
         if (affiliationUris.isEmpty()) {
             return null;
         }
@@ -115,7 +109,7 @@ public class EvaluateNviCandidateHandler
             return null;
         }
 
-        var resourceUri = URI.create(json.at(ID_JSON_PATH).asText());
+        var resourceUri = URI.create(body.at(ID_JSON_PATH).asText());
         var response = CandidateResponse.builder()
                            .resourceUri(resourceUri)
                            .approvalAffiliations(
@@ -126,6 +120,18 @@ public class EvaluateNviCandidateHandler
             .map(this::createCandidate)
             .map(sqsClient::sendMessage).orElseThrow();
         return null;
+    }
+
+    private static ArrayList<String> fetchAffiliationUris(Model model) {
+        var affiliationUris = new ArrayList<String>();
+        try (var exec = QueryExecutionFactory.create(AFFILIATION_SPARQL, model)) {
+            var resultSet = exec.execSelect();
+            while (resultSet.hasNext()) {
+                affiliationUris.add(
+                    resultSet.next().getResource("affiliation").getURI());
+            }
+        }
+        return affiliationUris;
     }
 
     @JacocoGenerated

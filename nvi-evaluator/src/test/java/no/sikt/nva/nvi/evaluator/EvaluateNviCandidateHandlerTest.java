@@ -97,7 +97,6 @@ public class EvaluateNviCandidateHandlerTest {
         handler.handleRequest(event, context);
         List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
-
     }
 
     @Test
@@ -114,7 +113,8 @@ public class EvaluateNviCandidateHandlerTest {
     }
 
     @Test
-    void shouldNotCreateNewCandidateEventWhenPublicationIsPublishedBeforeCurrentYear() throws IOException {
+    void shouldNotCreateNewCandidateEventWhenPublicationIsPublishedBeforeCurrentYear()
+        throws IOException {
         handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
         var path = "noncandidate_publishedBeforeCurrentNviYear.json";
         var content = IoUtils.inputStreamFromResources(path);
@@ -127,7 +127,8 @@ public class EvaluateNviCandidateHandlerTest {
     }
 
     @Test
-    void shouldNotCreateNewCandidateEventWhenPublicationIsPublishedAfterCurrentYear() throws IOException {
+    void shouldNotCreateNewCandidateEventWhenPublicationIsPublishedAfterCurrentYear()
+        throws IOException {
         handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
         var path = "noncandidate_publishedAfterCurrentNviYear.json";
         var content = IoUtils.inputStreamFromResources(path);
@@ -150,7 +151,6 @@ public class EvaluateNviCandidateHandlerTest {
         handler.handleRequest(event, context);
         List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
-
     }
 
     @Test
