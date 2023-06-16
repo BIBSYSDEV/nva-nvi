@@ -9,6 +9,7 @@ import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.fasterxml.jackson.databind.JsonNode;
 import no.sikt.nva.nvi.evaluator.aws.S3StorageReader;
 import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
+import no.sikt.nva.nvi.evaluator.calculator.NviCandidate;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
@@ -33,13 +34,17 @@ public class EvaluateNviCandidateHandler implements RequestHandler<S3Event, Void
     public Void handleRequest(S3Event input, Context context) {
         var body = extractBodyFromContent(storageReader.read(input));
 
-        var response = calculateCandidate(body);
-        if (response.getKey()) {
-            attempt(() -> dtoObjectMapper.writeValueAsString(response.getValue()))
-                .map(queueClient::sendMessage)
-                .orElseThrow();
+        var response = calculateNvi(body);
+        if(response instanceof NviCandidate nviCandidate){
+            sendMessage(nviCandidate);
         }
         return null;
+    }
+
+    private SendMessageResponse sendMessage(NviCandidate c) {
+        return attempt(() -> dtoObjectMapper.writeValueAsString(c.response()))
+                   .map(queueClient::sendMessage)
+                   .orElseThrow();
     }
 
     private static JsonNode extractBodyFromContent(String content) {

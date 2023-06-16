@@ -28,7 +28,7 @@ import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class EvaluateNviCandidateHandlerTest {
+class EvaluateNviNviCandidateHandlerTest {
 
     public static final String BUCKET_NAME = "ignoredBucket";
     private static final RequestParametersEntity EMPTY_REQUEST_PARAMETERS = null;

@@ -7,7 +7,7 @@ import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
-public class StubQueueClient implements QueueClient<SendMessageResponse> {
+class StubQueueClient implements QueueClient<SendMessageResponse> {
 
     private final List<SendMessageRequest> sentMessages = new ArrayList<>();
 

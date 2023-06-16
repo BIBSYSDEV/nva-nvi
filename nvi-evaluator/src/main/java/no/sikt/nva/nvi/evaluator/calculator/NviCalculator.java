@@ -12,7 +12,6 @@ import java.util.List;
 import no.sikt.nva.nvi.evaluator.model.CandidateResponse;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.ioutils.IoUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.rdf.model.Model;
@@ -38,8 +37,9 @@ public class NviCalculator {
             .replace(NVI_YEAR_REPLACE_STRING, NVI_YEAR);
     private static final String ID = "id";
     private static final String AFFILIATION = "affiliation";
+    public static final NonNviCandidate NON_CANDIDATE = new NonNviCandidate();
 
-    public static Pair<Boolean, CandidateResponse> calculateCandidate(JsonNode body) {
+    public static CandidateType calculateNvi(JsonNode body) {
         var model = createModel(body);
         var affiliationUris = fetchResourceUris(model, AFFILIATION_SPARQL, AFFILIATION);
         if (affiliationUris.isEmpty()) {
@@ -54,9 +54,9 @@ public class NviCalculator {
         return createCandidateResponse(nviAffiliationsForApproval, publicationId);
     }
 
-    private static Pair<Boolean, CandidateResponse> createCandidateResponse(List<String> affiliationIds,
-                                                                            URI publicationId) {
-        return Pair.of(true, CandidateResponse.builder()
+    private static CandidateType createCandidateResponse(List<String> affiliationIds,
+                                                        URI publicationId) {
+        return new NviCandidate(CandidateResponse.builder()
                                          .withPublicationId(publicationId)
                                          .withApprovalAffiliations(
                                              affiliationIds.stream().map(URI::create).toList())

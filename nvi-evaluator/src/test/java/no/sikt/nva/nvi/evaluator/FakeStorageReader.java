@@ -4,7 +4,7 @@ import com.amazonaws.services.lambda.runtime.events.S3Event;
 import no.sikt.nva.nvi.evaluator.aws.S3StorageReader;
 import software.amazon.awssdk.services.s3.S3Client;
 
-public class FakeStorageReader implements StorageReader<S3Event> {
+class FakeStorageReader implements StorageReader<S3Event> {
 
     private final StorageReader<S3Event> reader;
 
