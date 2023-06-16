@@ -8,11 +8,11 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import no.sikt.nva.nvi.evaluator.EvaluateNviCandidateHandler;
-import no.sikt.nva.nvi.evaluator.exceptions.NotACandidateException;
+import java.util.List;
 import no.sikt.nva.nvi.evaluator.model.CandidateResponse;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.ioutils.IoUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.rdf.model.Model;
@@ -29,45 +29,30 @@ public class NviCalculator {
     private static final Pair<Boolean, CandidateResponse> NON_CANDIDATE = Pair.of(false, null);
     private static final String AFFILIATION_SPARQL =
         IoUtils.stringFromResources(Path.of("sparql/affiliation.sparql"));
+    private static final String ID_SPARQL =
+        IoUtils.stringFromResources(Path.of("sparql/id.sparql"));
     //TODO to be configured somehow
     private static final String NVI_YEAR = "2023";
     private static final String ID_JSON_PATH = "/id";
-    private static final Logger LOGGER = LoggerFactory.getLogger(NviCalculator.class);
     private static final String NVI_YEAR_REPLACE_STRING = "__NVI_YEAR__";
     private static final String NVI_CANDIDATE =
         IoUtils.stringFromResources(Path.of("sparql/nvi.sparql"))
             .replace(NVI_YEAR_REPLACE_STRING, NVI_YEAR);
 
-    private static ArrayList<String> fetchAffiliationUris(Model model) {
-        var affiliationUris = new ArrayList<String>();
-        try (var exec = QueryExecutionFactory.create(AFFILIATION_SPARQL, model)) {
-            var resultSet = exec.execSelect();
-            while (resultSet.hasNext()) {
-                affiliationUris.add(
-                    resultSet.next().getResource("affiliation").getURI());
-            }
-        }
-        return affiliationUris;
-    }
-
-    @JacocoGenerated
-    private static void logInvalidJsonLdInput(Exception exception) {
-        LOGGER.warn("Invalid JSON LD input encountered: ", exception);
-    }
-
-    public static CandidateResponse calculateCandidate(JsonNode body) {
-        var model = buildModel(body);
-        var affiliationUris = fetchAffiliationUris(model);
+    public static Pair<Boolean, CandidateResponse> calculateCandidate(JsonNode body) {
+        var model = createModel(body);
+        var affiliationUris = fetchResourceUris(model, AFFILIATION_SPARQL, "affiliation");
         if (affiliationUris.isEmpty()) {
-            throw new NotACandidateException();
+            return NON_CANDIDATE;
         }
         var nviCandidate =
             attempt(() -> QueryExecutionFactory.create(NVI_CANDIDATE, model))
                 .map(QueryExecution::execAsk)
+                .map(Boolean::booleanValue)
                 .orElseThrow();
 
         if (!nviCandidate) {
-            throw new NotACandidateException();
+            return NON_CANDIDATE;
         }
         //TODO ADD Check of Affiliations NVI affinity
         var nviAffiliationsForApproval = new ArrayList<>(affiliationUris);
@@ -80,7 +65,24 @@ public class NviCalculator {
                                          .build());
     }
 
-    private static Model buildModel(JsonNode body) {
+    private static List<String> fetchResourceUris(Model model, String sparqlQuery, String varName) {
+        var resourceUris = new ArrayList<String>();
+        try (var exec = QueryExecutionFactory.create(sparqlQuery, model)) {
+            var resultSet = exec.execSelect();
+            while (resultSet.hasNext()) {
+                resourceUris.add(
+                    resultSet.next().getResource(varName).getURI());
+            }
+        }
+        return resourceUris;
+    }
+
+    @JacocoGenerated
+    private static void logInvalidJsonLdInput(Exception exception) {
+        LOGGER.warn("Invalid JSON LD input encountered: ", exception);
+    }
+
+    private static Model createModel(JsonNode body) {
         var model = ModelFactory.createDefaultModel();
         loadDataIntoModel(model, stringToStream(body.toString()));
         return model;

@@ -9,11 +9,11 @@ import java.util.Set;
 
 public class CandidateResponse {
 
-    private final URI resourceUri;
+    private final URI publicationId;
     private final List<URI> approvalAffiliations;
 
-    public CandidateResponse(URI resourceUri, List<URI> approvalAffiliations) {
-        this.resourceUri = resourceUri;
+    public CandidateResponse(URI publicationId, List<URI> approvalAffiliations) {
+        this.publicationId = publicationId;
         this.approvalAffiliations = approvalAffiliations;
     }
 
@@ -21,8 +21,8 @@ public class CandidateResponse {
         return new Builder();
     }
 
-    public URI getResourceUri() {
-        return resourceUri;
+    public URI getPublicationId() {
+        return publicationId;
     }
 
     public Collection<URI> getApprovalAffiliations() {
@@ -31,21 +31,21 @@ public class CandidateResponse {
 
     public static class Builder {
 
-        private URI resourceUri;
+        private URI publicationId;
         private final Set<URI> approvalAffiliations = new HashSet<>();
 
-        public Builder resourceUri(URI resourceUri) {
-            this.resourceUri = resourceUri;
+        public Builder withPublicationId(URI publicationId) {
+            this.publicationId = publicationId;
             return this;
         }
 
-        public Builder approvalAffiliations(Collection<URI> approvalAffiliationUris) {
+        public Builder withApprovalAffiliations(Collection<URI> approvalAffiliationUris) {
             this.approvalAffiliations.addAll(approvalAffiliationUris);
             return this;
         }
 
         public CandidateResponse build() {
-            return new CandidateResponse(resourceUri, new ArrayList<>(approvalAffiliations));
+            return new CandidateResponse(publicationId, new ArrayList<>(approvalAffiliations));
         }
     }
 }

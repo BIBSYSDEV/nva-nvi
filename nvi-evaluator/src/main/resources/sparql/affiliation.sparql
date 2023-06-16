@@ -1,19 +1,13 @@
-#Constructs nviType as either NviCandidate or NonNviCandidate based on the publication status,
-#publicationDate, publicationInstance and publicationContext levels.
-
 PREFIX  nva: <https://nva.sikt.no/ontology/publication#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
 SELECT  ?affiliation
 WHERE {
-    ?publication a nva:Publication .
-    ?publication nva:entityDescription/nva:contributor ?contributor .
+    ?publication a nva:Publication ;
+                 (<>|!<>)+ ?contributor .
 
-    ?contributor nva:role/rdf:type ?roleType .
-    ?contributor nva:identity/nva:verificationStatus ?verified .
-
-    FILTER(?roleType = nva:Creator && ?verified = "Verified")
-    ?contributor nva:affiliation ?affiliation .
-
+    ?contributor (<>|!<>)+ nva:Creator ;
+                 nva:identity/nva:verificationStatus "Verified" ;
+                 nva:affiliation ?affiliation .
 }
