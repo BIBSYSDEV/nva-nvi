@@ -105,7 +105,7 @@ class EvaluateNviNviCandidateHandlerTest {
     }
 
     @Test
-    void shouldCreateNewCandidateEventOnValidAcademicChapterWithoutSeriesLevelAndWithPublisherLevel()
+    void shouldCreateNewCandidateEventOnValidAcademicChapterWithoutSeriesLevelWithPublisherLevel()
         throws IOException {
         handler = new EvaluateNviCandidateHandler(storageReader, queueClient);
         var path = "candidate_academicChapter_seriesLevelEmptyPublisherLevelOne.json";

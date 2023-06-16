@@ -37,16 +37,18 @@ public final class NviCalculator {
             .replace(NVI_YEAR_REPLACE_STRING, NVI_YEAR);
     private static final String ID = "id";
     private static final String AFFILIATION = "affiliation";
-    public static final NonNviCandidate NON_CANDIDATE = new NonNviCandidate();
+
+    private NviCalculator() {
+    }
 
     public static CandidateType calculateNvi(JsonNode body) {
         var model = createModel(body);
         var affiliationUris = fetchResourceUris(model, AFFILIATION_SPARQL, AFFILIATION);
         if (affiliationUris.isEmpty()) {
-            return NON_CANDIDATE;
+            return new NonNviCandidate();
         }
         if (!isNviCandidate(model)) {
-            return NON_CANDIDATE;
+            return new NonNviCandidate();
         }
         //TODO ADD Check if affiliations are nviInstitutes
         var nviAffiliationsForApproval = new ArrayList<>(affiliationUris);
@@ -88,15 +90,22 @@ public final class NviCalculator {
         return resourceUris;
     }
 
-    @JacocoGenerated
-    private static void logInvalidJsonLdInput(Exception exception) {
-        LOGGER.warn("Invalid JSON LD input encountered: ", exception);
-    }
-
     private static Model createModel(JsonNode body) {
         var model = ModelFactory.createDefaultModel();
         loadDataIntoModel(model, stringToStream(body.toString()));
         return model;
+    }
+
+    @JacocoGenerated
+    private static void loadDataIntoModel(Model model, InputStream inputStream) {
+        if (isNull(inputStream)) {
+            return;
+        }
+        try {
+            RDFDataMgr.read(model, inputStream, Lang.JSONLD);
+        } catch (RiotException e) {
+            logInvalidJsonLdInput(e);
+        }
     }
 
     @JacocoGenerated
