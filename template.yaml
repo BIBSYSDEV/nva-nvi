@@ -6,10 +6,9 @@ Description: >
   SAM Template for NVA NVI API
 
 Parameters:
-  Suffix:
-    Type: String
-    Default: ''
-    Description: Suffix used for naming resources for feature branches to avoid conflicts.
+  PersistedResourceBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: '/NVA/Events/PersistedEntriesBucketName'
 
 Resources:
   #=============================== SQSs ============================================================
@@ -17,7 +16,6 @@ Resources:
     Type: AWS::SQS::Queue
   NewCandidateDLQ:
     Type: AWS::SQS::Queue
-
 
   #============================= Permissions =======================================================
   NvaNviRole:
@@ -40,7 +38,7 @@ Resources:
                   - s3:Get*
                   - s3:List*
                   - events:*
-                Resource: '*'
+                Resource: !Ref PersistedResourceBucketName
         - PolicyName: writeLog
           PolicyDocument:
             Version: 2012-10-17
@@ -51,26 +49,15 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*'
-        - PolicyName: readSearchInfrastructureSecret
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - secretsmanager:GetSecretValue
-                Resource: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:SearchInfrastructureCredentials*'
-
-
 
   #============================= Handlers ==========================================================
   EvaluateNVICandidateHandler:
-    DependsOn: EventsLambdaPermissions
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: evaluate-nvi-candidate
       Handler: no.sikt.nva.nvi.evaluator.EvaluateNviCandidateHandler::handleRequest
       Runtime: java17
-      Role: !GetAtt LambdaRole.Arn
+      Role: !GetAtt NvaNviRole.Arn
 #      Environment:
 #        Variables:
 
@@ -78,7 +65,7 @@ Resources:
         S3Event:
           Type: S3
           Properties:
-            Bucket: !Ref BucketName
+            Bucket: !Ref PersistedResourceBucketName
             Events: s3:ObjectCreated:*
             Filter:
               S3Key:
