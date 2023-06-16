@@ -27,7 +27,6 @@ import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
 public class EvaluateNviCandidateHandlerTest {
 
