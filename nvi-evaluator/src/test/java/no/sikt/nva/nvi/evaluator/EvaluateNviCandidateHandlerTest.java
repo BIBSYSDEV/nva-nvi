@@ -37,7 +37,6 @@ public class EvaluateNviCandidateHandlerTest {
     private static final UserIdentityEntity EMPTY_USER_IDENTITY = null;
     private static final long SOME_FILE_SIZE = 100L;
     private final Context context = mock(Context.class);
-    private FakeS3Client s3Client;
     private StubQueueClient queueClient;
     private S3Driver s3Driver;
     private FakeStorageReader storageReader;
@@ -45,7 +44,7 @@ public class EvaluateNviCandidateHandlerTest {
 
     @BeforeEach
     void setUp() {
-        s3Client = new FakeS3Client();
+        var s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, BUCKET_NAME);
         storageReader = new FakeStorageReader(s3Client);
         queueClient = new StubQueueClient();
@@ -61,9 +60,9 @@ public class EvaluateNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
+        var sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
-        SendMessageRequest message = sentMessages.get(0);
+        var message = sentMessages.get(0);
         var validNviCandidateIdentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
         assertThat(message.messageBody(),
                    containsString(validNviCandidateIdentifier));
@@ -78,9 +77,9 @@ public class EvaluateNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
+        var sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
-        SendMessageRequest message = sentMessages.get(0);
+        var message = sentMessages.get(0);
         var validNviCandidateIdentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
         assertThat(message.messageBody(),
                    containsString(validNviCandidateIdentifier));
@@ -95,9 +94,9 @@ public class EvaluateNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
+        var sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
-        SendMessageRequest message = sentMessages.get(0);
+        var message = sentMessages.get(0);
         var validNviCandidateIdentifier = "0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4";
         assertThat(message.messageBody(),
                    containsString(validNviCandidateIdentifier));
@@ -113,9 +112,9 @@ public class EvaluateNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
+        var sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
-        SendMessageRequest message = sentMessages.get(0);
+        var message = sentMessages.get(0);
         var validNviCandidateIdentifier = "0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4";
         assertThat(message.messageBody(),
                    containsString(validNviCandidateIdentifier));
@@ -130,9 +129,9 @@ public class EvaluateNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
+        var sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
-        SendMessageRequest message = sentMessages.get(0);
+        var message = sentMessages.get(0);
         var validNviCandidateIdentifier = "0188bee5a7f1-17acf7d5-5658-4a5a-89b2-b2ea73032661";
         assertThat(message.messageBody(),
                    containsString(validNviCandidateIdentifier));
@@ -147,9 +146,9 @@ public class EvaluateNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
+        var sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
-        SendMessageRequest message = sentMessages.get(0);
+        var message = sentMessages.get(0);
         var validNviCandidateIdentifier = "0188bee8530e-bb78f9a0-d167-4c53-8e70-cedf9994f055";
         assertThat(message.messageBody(),
                    containsString(validNviCandidateIdentifier));
@@ -164,9 +163,9 @@ public class EvaluateNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
+        var sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
-        SendMessageRequest message = sentMessages.get(0);
+        var message = sentMessages.get(0);
         var validNviCandidateIdentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
         assertThat(message.messageBody(),
                    containsString(validNviCandidateIdentifier));
@@ -181,7 +180,7 @@ public class EvaluateNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
+        var sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
@@ -194,7 +193,7 @@ public class EvaluateNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
+        var sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
@@ -207,7 +206,7 @@ public class EvaluateNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
+        var sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
@@ -220,7 +219,7 @@ public class EvaluateNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
+        var sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
@@ -234,7 +233,7 @@ public class EvaluateNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
+        var sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
@@ -248,7 +247,7 @@ public class EvaluateNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
+        var sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
@@ -261,7 +260,7 @@ public class EvaluateNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
+        var sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 

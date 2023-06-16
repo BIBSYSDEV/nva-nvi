@@ -33,36 +33,48 @@ public class NviCalculator {
         IoUtils.stringFromResources(Path.of("sparql/id.sparql"));
     //TODO to be configured somehow
     private static final String NVI_YEAR = "2023";
-    private static final String ID_JSON_PATH = "/id";
     private static final String NVI_YEAR_REPLACE_STRING = "__NVI_YEAR__";
-    private static final String NVI_CANDIDATE =
+    private static final String NVI_SPARQL =
         IoUtils.stringFromResources(Path.of("sparql/nvi.sparql"))
             .replace(NVI_YEAR_REPLACE_STRING, NVI_YEAR);
+    private static final String ID = "id";
+    private static final String AFFILIATION = "affiliation";
 
     public static Pair<Boolean, CandidateResponse> calculateCandidate(JsonNode body) {
         var model = createModel(body);
-        var affiliationUris = fetchResourceUris(model, AFFILIATION_SPARQL, "affiliation");
+        var affiliationUris = fetchResourceUris(model, AFFILIATION_SPARQL, AFFILIATION);
         if (affiliationUris.isEmpty()) {
             return NON_CANDIDATE;
         }
-        var nviCandidate =
-            attempt(() -> QueryExecutionFactory.create(NVI_CANDIDATE, model))
-                .map(QueryExecution::execAsk)
-                .map(Boolean::booleanValue)
-                .orElseThrow();
-
-        if (!nviCandidate) {
+        if (!isNviCandidate(model)) {
             return NON_CANDIDATE;
         }
-        //TODO ADD Check of Affiliations NVI affinity
+        //TODO ADD Check if affiliations are nviInstitutes
         var nviAffiliationsForApproval = new ArrayList<>(affiliationUris);
-        var publicationIdentifier =
-            URI.create(fetchResourceUris(model, ID_SPARQL, "id").stream().findFirst().orElseThrow());
-        return Pair.of(Boolean.TRUE, CandidateResponse.builder()
-                                         .withPublicationId(publicationIdentifier)
+        var publicationId = selectPublicationId(model);
+        return createCandidateResponse(nviAffiliationsForApproval, publicationId);
+    }
+
+    private static Pair<Boolean, CandidateResponse> createCandidateResponse(List<String> affiliationIds,
+                                                                            URI publicationId) {
+        return Pair.of(true, CandidateResponse.builder()
+                                         .withPublicationId(publicationId)
                                          .withApprovalAffiliations(
-                                             nviAffiliationsForApproval.stream().map(URI::create).toList())
+                                             affiliationIds.stream().map(URI::create).toList())
                                          .build());
+    }
+
+    private static boolean isNviCandidate(Model model) {
+        return attempt(() -> QueryExecutionFactory.create(NVI_SPARQL, model))
+                   .map(QueryExecution::execAsk)
+                   .map(Boolean::booleanValue)
+                   .orElseThrow();
+    }
+
+    private static URI selectPublicationId(Model model) {
+        return URI.create(fetchResourceUris(model, ID_SPARQL, ID).stream()
+                              .findFirst()
+                              .orElseThrow());
     }
 
     private static List<String> fetchResourceUris(Model model, String sparqlQuery, String varName) {
