@@ -47,7 +47,7 @@ public class S3StorageReader implements StorageReader<S3Event> {
                    .toS3bucketPath();
     }
 
-    private String read(String bucket, String fileName) {
+    private String getFileFromBucket(String bucket, String fileName) {
         var s3Driver = new S3Driver(client, bucket);
         return s3Driver.getFile(formatS3Uri(bucket, fileName));
     }
@@ -55,6 +55,6 @@ public class S3StorageReader implements StorageReader<S3Event> {
     private String fetchDataFromBucket(S3EventNotification.S3Entity s3Entity) {
         var bucketName = s3Entity.getBucket().getName();
         var key = s3Entity.getObject().getKey();
-        return read(bucketName, key);
+        return getFileFromBucket(bucketName, key);
     }
 }

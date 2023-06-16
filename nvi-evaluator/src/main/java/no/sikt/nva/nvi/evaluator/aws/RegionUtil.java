@@ -4,7 +4,7 @@ import static no.unit.nva.s3.S3Driver.AWS_REGION_ENV_VARIABLE;
 import nva.commons.core.Environment;
 import software.amazon.awssdk.regions.Region;
 
-public class RegionUtil {
+public final class RegionUtil {
 
     private static final Environment ENVIRONMENT = new Environment();
 

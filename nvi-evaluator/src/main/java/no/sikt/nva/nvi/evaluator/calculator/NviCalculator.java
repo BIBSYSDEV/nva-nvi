@@ -58,11 +58,10 @@ public final class NviCalculator {
 
     private static CandidateType createCandidateResponse(List<String> affiliationIds,
                                                          URI publicationId) {
-        return new NviCandidate(CandidateResponse.builder()
-                                    .withPublicationId(publicationId)
-                                    .withApprovalAffiliations(
-                                        affiliationIds.stream().map(URI::create).toList())
-                                    .build());
+        return new NviCandidate(
+            new CandidateResponse(
+                publicationId,
+                affiliationIds.stream().map(URI::create).toList()));
     }
 
     private static boolean isNviCandidate(Model model) {
