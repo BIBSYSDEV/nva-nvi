@@ -64,9 +64,9 @@ public class EvaluateNviCandidateHandlerTest {
         List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         SendMessageRequest message = sentMessages.get(0);
-        var validNviCandidateInentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
+        var validNviCandidateIdentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
         assertThat(message.messageBody(),
-                   containsString(validNviCandidateInentifier));
+                   containsString(validNviCandidateIdentifier));
     }
 
     @Test
@@ -81,9 +81,9 @@ public class EvaluateNviCandidateHandlerTest {
         List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         SendMessageRequest message = sentMessages.get(0);
-        var validNviCandidateInentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
+        var validNviCandidateIdentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
         assertThat(message.messageBody(),
-                   containsString(validNviCandidateInentifier));
+                   containsString(validNviCandidateIdentifier));
     }
 
     @Test
@@ -98,9 +98,26 @@ public class EvaluateNviCandidateHandlerTest {
         List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         SendMessageRequest message = sentMessages.get(0);
-        var validNviCandidateInentifier = "0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4";
+        var validNviCandidateIdentifier = "0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4";
         assertThat(message.messageBody(),
-                   containsString(validNviCandidateInentifier));
+                   containsString(validNviCandidateIdentifier));
+    }
+
+    @Test
+    void shouldCreateNewCandidateEventOnValidAcademicChapterWithoutSeriesLevelAndWithPublisherLevel() throws IOException {
+        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        var path = "candidate_academicChapter_seriesLevelEmptyPublisherLevelOne.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path),
+                                          content);
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, context);
+        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        assertThat(sentMessages, hasSize(1));
+        SendMessageRequest message = sentMessages.get(0);
+        var validNviCandidateIdentifier = "0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4";
+        assertThat(message.messageBody(),
+                   containsString(validNviCandidateIdentifier));
     }
 
     @Test
@@ -115,9 +132,9 @@ public class EvaluateNviCandidateHandlerTest {
         List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         SendMessageRequest message = sentMessages.get(0);
-        var validNviCandidateInentifier = "0188bee5a7f1-17acf7d5-5658-4a5a-89b2-b2ea73032661";
+        var validNviCandidateIdentifier = "0188bee5a7f1-17acf7d5-5658-4a5a-89b2-b2ea73032661";
         assertThat(message.messageBody(),
-                   containsString(validNviCandidateInentifier));
+                   containsString(validNviCandidateIdentifier));
     }
 
     @Test
@@ -132,9 +149,9 @@ public class EvaluateNviCandidateHandlerTest {
         List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         SendMessageRequest message = sentMessages.get(0);
-        var validNviCandidateInentifier = "0188bee8530e-bb78f9a0-d167-4c53-8e70-cedf9994f055";
+        var validNviCandidateIdentifier = "0188bee8530e-bb78f9a0-d167-4c53-8e70-cedf9994f055";
         assertThat(message.messageBody(),
-                   containsString(validNviCandidateInentifier));
+                   containsString(validNviCandidateIdentifier));
     }
 
     @Test
@@ -149,15 +166,28 @@ public class EvaluateNviCandidateHandlerTest {
         List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         SendMessageRequest message = sentMessages.get(0);
-        var validNviCandidateInentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
+        var validNviCandidateIdentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
         assertThat(message.messageBody(),
-                   containsString(validNviCandidateInentifier));
+                   containsString(validNviCandidateIdentifier));
+    }
+
+    @Test
+    void shouldNotCreateNewCandidateEventOnAcademicChapterWithSeriesLevelZero() throws IOException {
+        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        var path = "nonCandidate_academicChapter_seriesLevelZero.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path),
+                                          content);
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, context);
+        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        assertThat(sentMessages, is(empty()));
     }
 
     @Test
     void shouldNotCreateNewCandidateEventWhenIdentityIsNotVerified() throws IOException {
         handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
-        var path = "noncandidate_nonVerified.json";
+        var path = "nonCandidate_nonVerified.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
@@ -170,7 +200,7 @@ public class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldNotCreateNewCandidateEventWhenPublicationIsNotPublished() throws IOException {
         handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
-        var path = "noncandidate_notPublished.json";
+        var path = "nonCandidate_notPublished.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
@@ -183,7 +213,7 @@ public class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldNotCreateCandidateForMusicalArts() throws IOException {
         handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
-        var path = "noncandidate_musicalArts.json";
+        var path = "nonCandidate_musicalArts.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
@@ -197,7 +227,7 @@ public class EvaluateNviCandidateHandlerTest {
     void shouldNotCreateNewCandidateEventWhenPublicationIsPublishedBeforeCurrentYear()
         throws IOException {
         handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
-        var path = "noncandidate_publishedBeforeCurrentNviYear.json";
+        var path = "nonCandidate_publishedBeforeCurrentNviYear.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
@@ -211,7 +241,7 @@ public class EvaluateNviCandidateHandlerTest {
     void shouldNotCreateNewCandidateEventWhenPublicationIsPublishedAfterCurrentYear()
         throws IOException {
         handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
-        var path = "noncandidate_publishedAfterCurrentNviYear.json";
+        var path = "nonCandidate_publishedAfterCurrentNviYear.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
@@ -224,7 +254,7 @@ public class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldNotCreateCandidateIfSeriesInMonographHasNviLevelZero() throws IOException {
         handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
-        var path = "noncandidate_notValidMonographArticle.json";
+        var path = "nonCandidate_notValidMonographArticle.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);

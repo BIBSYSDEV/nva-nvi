@@ -30,7 +30,7 @@ public class NviCalculator {
     //TODO to be configured somehow
     private static final String NVI_YEAR = "2023";
     private static final String ID_JSON_PATH = "/id";
-    private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateNviCandidateHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(NviCalculator.class);
     private static final String NVI_YEAR_REPLACE_STRING = "__NVI_YEAR__";
     private static final String NVI_CANDIDATE =
         IoUtils.stringFromResources(Path.of("sparql/nvi.sparql"))
