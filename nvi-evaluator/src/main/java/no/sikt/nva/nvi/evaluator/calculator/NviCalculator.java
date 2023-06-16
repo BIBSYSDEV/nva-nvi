@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 public class NviCalculator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NviCalculator.class);
-    private static final Pair<Boolean, CandidateResponse> NON_CANDIDATE = Pair.of(false, null);
     private static final String AFFILIATION_SPARQL =
         IoUtils.stringFromResources(Path.of("sparql/affiliation.sparql"));
     private static final String ID_SPARQL =

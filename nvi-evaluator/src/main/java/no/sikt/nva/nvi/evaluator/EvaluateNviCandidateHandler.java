@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.evaluator;
 
-import static no.sikt.nva.nvi.evaluator.calculator.NviCalculator.calculateCandidate;
+import static no.sikt.nva.nvi.evaluator.calculator.NviCalculator.calculateNvi;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
