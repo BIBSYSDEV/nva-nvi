@@ -13,34 +13,17 @@ ASK WHERE {
   ?publicationDate a nva:PublicationDate ;
                    nva:year "__NVI_YEAR__" .
 
-  OPTIONAL {
-   SELECT distinct ?publisherLevel WHERE {
-     ?publisher rdf:type ?type ;
-                nva:level ?publisherLevel .
-     FILTER(?type = nva:Publisher)
-   }
-  }
-
-  OPTIONAL {
-   SELECT distinct ?seriesLevel WHERE {
-     ?publisher rdf:type ?type ;
-                nva:level ?seriesLevel .
-     FILTER(?type = nva:Series)
-   }
-  }
-
-  OPTIONAL {
-   SELECT distinct ?journalLevel WHERE {
-         ?publisher rdf:type ?type ;
-                    nva:level ?journalLevel .
-         FILTER(?type = nva:Journal)
-   }
-  }
-
-  BIND(IF (BOUND(?seriesLevel), ?seriesLevel, ?publisherLevel) AS ?seriesOrPublisherLevel)
-  BIND(IF (BOUND(?journalLevel), ?journalLevel, ?seriesOrPublisherLevel) AS ?optionalLevel)
-  BIND(IF (BOUND(?optionalLevel), ?optionalLevel, "0") AS ?level)
-
-  VALUES ?channelType { nva:Publisher  nva:Series   nva:Journal }
-  VALUES ?level {"1" "2"}
+  {
+      SELECT ?level WHERE {
+        VALUES ?channelType { nva:Publisher  nva:Series   nva:Journal }
+        VALUES ?rawLevel {"0" "1" "2"}
+        ?a a ?channelType ;
+           nva:level ?rawLevel .
+        OPTIONAL { ?b a nva:Series ;
+                      nva:level ?seriesLevel . }
+        BIND(IF(BOUND(?seriesLevel), ?seriesLevel, ?rawLevel) AS ?level)
+      }
+    }
+  VALUES ?validLevel {"1" "2"}
+  FILTER(?level = ?validLevel)
 }
