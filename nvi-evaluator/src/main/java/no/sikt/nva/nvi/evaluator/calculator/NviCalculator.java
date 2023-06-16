@@ -22,7 +22,7 @@ import org.apache.jena.riot.RiotException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NviCalculator {
+public final class NviCalculator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NviCalculator.class);
     private static final String AFFILIATION_SPARQL =
@@ -55,12 +55,12 @@ public class NviCalculator {
     }
 
     private static CandidateType createCandidateResponse(List<String> affiliationIds,
-                                                        URI publicationId) {
+                                                         URI publicationId) {
         return new NviCandidate(CandidateResponse.builder()
-                                         .withPublicationId(publicationId)
-                                         .withApprovalAffiliations(
-                                             affiliationIds.stream().map(URI::create).toList())
-                                         .build());
+                                    .withPublicationId(publicationId)
+                                    .withApprovalAffiliations(
+                                        affiliationIds.stream().map(URI::create).toList())
+                                    .build());
     }
 
     private static boolean isNviCandidate(Model model) {
@@ -99,14 +99,8 @@ public class NviCalculator {
         return model;
     }
 
-    private static void loadDataIntoModel(Model model, InputStream inputStream) {
-        if (isNull(inputStream)) {
-            return;
-        }
-        try {
-            RDFDataMgr.read(model, inputStream, Lang.JSONLD);
-        } catch (RiotException e) {
-            logInvalidJsonLdInput(e);
-        }
+    @JacocoGenerated
+    private static void logInvalidJsonLdInput(Exception exception) {
+        LOGGER.warn("Invalid JSON LD input encountered: ", exception);
     }
 }

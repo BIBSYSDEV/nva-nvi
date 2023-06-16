@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.ioutils.IoUtils;
@@ -36,17 +37,19 @@ class EvaluateNviNviCandidateHandlerTest {
     private static final UserIdentityEntity EMPTY_USER_IDENTITY = null;
     private static final long SOME_FILE_SIZE = 100L;
     private final Context context = mock(Context.class);
-    private StubQueueClient queueClient;
+    private SqsMessageClient queueClient;
     private S3Driver s3Driver;
     private FakeStorageReader storageReader;
     private EvaluateNviCandidateHandler handler;
+    private FakeSqsClient sqsClient;
 
     @BeforeEach
     void setUp() {
         var s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, BUCKET_NAME);
         storageReader = new FakeStorageReader(s3Client);
-        queueClient = new StubQueueClient();
+        sqsClient = new FakeSqsClient();
+        queueClient = new SqsMessageClient(sqsClient);
         handler = new EvaluateNviCandidateHandler();
     }
 
@@ -59,7 +62,7 @@ class EvaluateNviNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        var sentMessages = queueClient.getSentMessages();
+        var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
         var validNviCandidateIdentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
@@ -76,7 +79,7 @@ class EvaluateNviNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        var sentMessages = queueClient.getSentMessages();
+        var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
         var validNviCandidateIdentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
@@ -93,7 +96,7 @@ class EvaluateNviNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        var sentMessages = queueClient.getSentMessages();
+        var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
         var validNviCandidateIdentifier = "0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4";
@@ -111,7 +114,7 @@ class EvaluateNviNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        var sentMessages = queueClient.getSentMessages();
+        var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
         var validNviCandidateIdentifier = "0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4";
@@ -128,7 +131,7 @@ class EvaluateNviNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        var sentMessages = queueClient.getSentMessages();
+        var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
         var validNviCandidateIdentifier = "0188bee5a7f1-17acf7d5-5658-4a5a-89b2-b2ea73032661";
@@ -145,7 +148,7 @@ class EvaluateNviNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        var sentMessages = queueClient.getSentMessages();
+        var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
         var validNviCandidateIdentifier = "0188bee8530e-bb78f9a0-d167-4c53-8e70-cedf9994f055";
@@ -162,7 +165,7 @@ class EvaluateNviNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        var sentMessages = queueClient.getSentMessages();
+        var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
         var validNviCandidateIdentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
@@ -179,7 +182,7 @@ class EvaluateNviNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        var sentMessages = queueClient.getSentMessages();
+        var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
@@ -192,7 +195,7 @@ class EvaluateNviNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        var sentMessages = queueClient.getSentMessages();
+        var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
@@ -205,7 +208,7 @@ class EvaluateNviNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        var sentMessages = queueClient.getSentMessages();
+        var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
@@ -218,7 +221,7 @@ class EvaluateNviNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        var sentMessages = queueClient.getSentMessages();
+        var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
@@ -232,7 +235,7 @@ class EvaluateNviNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        var sentMessages = queueClient.getSentMessages();
+        var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
@@ -246,7 +249,7 @@ class EvaluateNviNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        var sentMessages = queueClient.getSentMessages();
+        var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
@@ -259,7 +262,7 @@ class EvaluateNviNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        var sentMessages = queueClient.getSentMessages();
+        var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 

@@ -35,21 +35,21 @@ public class EvaluateNviCandidateHandler implements RequestHandler<S3Event, Void
         var body = extractBodyFromContent(storageReader.read(input));
 
         var response = calculateNvi(body);
-        if(response instanceof NviCandidate nviCandidate){
+        if (response instanceof NviCandidate nviCandidate) {
             sendMessage(nviCandidate);
         }
         return null;
     }
 
-    private SendMessageResponse sendMessage(NviCandidate c) {
-        return attempt(() -> dtoObjectMapper.writeValueAsString(c.response()))
-                   .map(queueClient::sendMessage)
-                   .orElseThrow();
-    }
-
     private static JsonNode extractBodyFromContent(String content) {
         return attempt(() -> dtoObjectMapper.readTree(content))
                    .map(json -> json.at("/body"))
+                   .orElseThrow();
+    }
+
+    private SendMessageResponse sendMessage(NviCandidate c) {
+        return attempt(() -> dtoObjectMapper.writeValueAsString(c.response()))
+                   .map(queueClient::sendMessage)
                    .orElseThrow();
     }
 }
