@@ -1,0 +1,28 @@
+plugins {
+    id 'nva.nvi.java-conventions'
+}
+dependencies {
+    implementation project(':nvi-commons')
+    implementation libs.nva.commons.core
+    implementation libs.nva.core
+    implementation libs.nva.s3
+    implementation libs.nva.json
+
+    implementation libs.aws.lambda.java.core
+    implementation libs.aws.lambda.events
+    implementation libs.aws.java.sdk.core
+
+    implementation libs.aws.sdk2.s3
+    implementation libs.aws.sdk2.sqs
+    implementation libs.aws.sdk2.core
+    implementation libs.aws.sdk2.apache.client
+    implementation libs.aws.sdk2.urlconnection
+
+    implementation libs.bundles.jackson
+    implementation libs.bundles.jena
+
+    testImplementation libs.nva.testutils
+}
+test {
+    useJUnitPlatform()
+}

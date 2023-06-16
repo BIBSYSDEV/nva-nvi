@@ -1,0 +1,29 @@
+PREFIX  nva: <https://nva.sikt.no/ontology/publication#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+ASK WHERE {
+  VALUES ?approvedType { nva:AcademicMonograph nva:AcademicChapter nva:AcademicArticle nva:AcademicLiteratureReview }
+
+  ?publication a nva:Publication ;
+               nva:status nva:PUBLISHED ;
+               (<>|!<>)+/nva:publicationInstance/rdf:type ?approvedType .
+
+
+  ?publicationDate a nva:PublicationDate ;
+                   nva:year "__NVI_YEAR__" .
+
+  {
+      SELECT ?level WHERE {
+        VALUES ?channelType { nva:Publisher  nva:Series   nva:Journal }
+        VALUES ?rawLevel {"0" "1" "2"}
+        ?a a ?channelType ;
+           nva:level ?rawLevel .
+        OPTIONAL { ?b a nva:Series ;
+                      nva:level ?seriesLevel . }
+        BIND(IF(BOUND(?seriesLevel), ?seriesLevel, ?rawLevel) AS ?level)
+      }
+    }
+  VALUES ?validLevel {"1" "2"}
+  FILTER(?level = ?validLevel)
+}

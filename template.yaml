@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  AWS
+  
+  SAM Template for NVA NVI API
+
+Parameters:
+  PersistedResourceBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: '/NVA/Events/PersistedEntriesBucketName'
+
+Resources:
+  #=============================== SQSs ============================================================
+  NewCandidateQueue:
+    Type: AWS::SQS::Queue
+  NewCandidateDLQ:
+    Type: AWS::SQS::Queue
+
+  #============================= Permissions =======================================================
+  NvaNviRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ lambda.amazonaws.com ]
+            Action: [ 'sts:AssumeRole' ]
+      Policies:
+        - PolicyName: readFromS3
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:Get*
+                  - s3:List*
+                  - events:*
+                Resource: !Ref PersistedResourceBucketName
+        - PolicyName: writeLog
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*'
+
+  #============================= Handlers ==========================================================
+  EvaluateNVICandidateHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: evaluate-nvi-candidate
+      Handler: no.sikt.nva.nvi.evaluator.EvaluateNviCandidateHandler::handleRequest
+      Runtime: java17
+      Role: !GetAtt NvaNviRole.Arn
+#      Environment:
+#        Variables:
+
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref PersistedResourceBucketName
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: resources/
+      EventInvokeConfig:
+        DestinationConfig:
+          OnSuccess:
+            Type: SQS
+            Destination: !GetAtt NewCandidateQueue.Arn
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt NewCandidateDLQ.Arn
