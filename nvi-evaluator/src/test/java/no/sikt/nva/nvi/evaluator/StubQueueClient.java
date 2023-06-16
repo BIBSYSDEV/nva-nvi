@@ -4,11 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.exception.SdkClientException;
-import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
-public class StubSqsClient implements SqsClient {
+public class StubQueueClient implements QueueClient<SendMessageResponse> {
 
     private final List<SendMessageRequest> sentMessages = new ArrayList<>();
 
@@ -16,22 +15,17 @@ public class StubSqsClient implements SqsClient {
         return sentMessages;
     }
 
-    @Override
-    public String serviceName() {
-        return null;
-    }
 
     @Override
-    public void close() {
-
-    }
-
-    @Override
-    public SendMessageResponse sendMessage(SendMessageRequest sendMessageRequest)
+    public SendMessageResponse sendMessage(String body)
         throws AwsServiceException, SdkClientException {
-        sentMessages.add(sendMessageRequest);
+        SendMessageRequest candidate = createCandidate(body);
+        sentMessages.add(candidate);
         return SendMessageResponse.builder()
-                   .messageId(sendMessageRequest.messageDeduplicationId())
+                   .messageId(candidate.messageDeduplicationId())
                    .build();
+    }
+    private SendMessageRequest createCandidate(String body) {
+        return SendMessageRequest.builder().messageBody(body).build();
     }
 }

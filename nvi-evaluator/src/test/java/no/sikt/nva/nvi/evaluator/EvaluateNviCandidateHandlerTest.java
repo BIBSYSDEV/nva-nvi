@@ -16,7 +16,6 @@ import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotificatio
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.S3EventNotificationRecord;
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.S3ObjectEntity;
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.UserIdentityEntity;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
@@ -32,36 +31,37 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
 public class EvaluateNviCandidateHandlerTest {
 
+    public static final String BUCKET_NAME = "ignoredBucket";
     private static final RequestParametersEntity EMPTY_REQUEST_PARAMETERS = null;
     private static final ResponseElementsEntity EMPTY_RESPONSE_ELEMENTS = null;
     private static final UserIdentityEntity EMPTY_USER_IDENTITY = null;
     private static final long SOME_FILE_SIZE = 100L;
     private final Context context = mock(Context.class);
-    private ByteArrayOutputStream outputStream;
     private FakeS3Client s3Client;
-    private StubSqsClient sqsClient;
+    private StubQueueClient queueClient;
     private S3Driver s3Driver;
+    private FakeStorageReader storageReader;
     private EvaluateNviCandidateHandler handler;
 
     @BeforeEach
     void setUp() {
-        outputStream = new ByteArrayOutputStream();
         s3Client = new FakeS3Client();
-        s3Driver = new S3Driver(s3Client, "ingoredBucket");
-        sqsClient = new StubSqsClient();
+        s3Driver = new S3Driver(s3Client, BUCKET_NAME);
+        storageReader = new FakeStorageReader(s3Client);
+        queueClient = new StubQueueClient();
         handler = new EvaluateNviCandidateHandler();
     }
 
     @Test
     void shouldCreateNewCandidateEventOnValidCandidate() throws IOException {
-        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        handler = new EvaluateNviCandidateHandler(storageReader, queueClient);
         var path = "candidate.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         SendMessageRequest message = sentMessages.get(0);
         var validNviCandidateIdentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
@@ -71,14 +71,14 @@ public class EvaluateNviCandidateHandlerTest {
 
     @Test
     void shouldEvaluateStrippedCandidate() throws IOException {
-        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        handler = new EvaluateNviCandidateHandler(storageReader, queueClient);
         var path = "candidate_stripped.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         SendMessageRequest message = sentMessages.get(0);
         var validNviCandidateIdentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
@@ -88,14 +88,14 @@ public class EvaluateNviCandidateHandlerTest {
 
     @Test
     void shouldCreateNewCandidateEventOnValidAcademicChapter() throws IOException {
-        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        handler = new EvaluateNviCandidateHandler(storageReader, queueClient);
         var path = "candidate_academicChapter.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         SendMessageRequest message = sentMessages.get(0);
         var validNviCandidateIdentifier = "0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4";
@@ -104,15 +104,16 @@ public class EvaluateNviCandidateHandlerTest {
     }
 
     @Test
-    void shouldCreateNewCandidateEventOnValidAcademicChapterWithoutSeriesLevelAndWithPublisherLevel() throws IOException {
-        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+    void shouldCreateNewCandidateEventOnValidAcademicChapterWithoutSeriesLevelAndWithPublisherLevel()
+        throws IOException {
+        handler = new EvaluateNviCandidateHandler(storageReader, queueClient);
         var path = "candidate_academicChapter_seriesLevelEmptyPublisherLevelOne.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         SendMessageRequest message = sentMessages.get(0);
         var validNviCandidateIdentifier = "0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4";
@@ -122,14 +123,14 @@ public class EvaluateNviCandidateHandlerTest {
 
     @Test
     void shouldCreateNewCandidateEventOnValidAcademicMonograph() throws IOException {
-        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        handler = new EvaluateNviCandidateHandler(storageReader, queueClient);
         var path = "candidate_academicMonograph.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         SendMessageRequest message = sentMessages.get(0);
         var validNviCandidateIdentifier = "0188bee5a7f1-17acf7d5-5658-4a5a-89b2-b2ea73032661";
@@ -139,14 +140,14 @@ public class EvaluateNviCandidateHandlerTest {
 
     @Test
     void shouldCreateNewCandidateEventOnValidAcademicLiteratureReview() throws IOException {
-        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        handler = new EvaluateNviCandidateHandler(storageReader, queueClient);
         var path = "candidate_academicLiteratureReview.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         SendMessageRequest message = sentMessages.get(0);
         var validNviCandidateIdentifier = "0188bee8530e-bb78f9a0-d167-4c53-8e70-cedf9994f055";
@@ -156,14 +157,14 @@ public class EvaluateNviCandidateHandlerTest {
 
     @Test
     void shouldCreateNewCandidateEventOnValidAcademicArticle() throws IOException {
-        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        handler = new EvaluateNviCandidateHandler(storageReader, queueClient);
         var path = "candidate_academicArticle.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         SendMessageRequest message = sentMessages.get(0);
         var validNviCandidateIdentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
@@ -173,94 +174,94 @@ public class EvaluateNviCandidateHandlerTest {
 
     @Test
     void shouldNotCreateNewCandidateEventOnAcademicChapterWithSeriesLevelZero() throws IOException {
-        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        handler = new EvaluateNviCandidateHandler(storageReader, queueClient);
         var path = "nonCandidate_academicChapter_seriesLevelZero.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
     @Test
     void shouldNotCreateNewCandidateEventWhenIdentityIsNotVerified() throws IOException {
-        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        handler = new EvaluateNviCandidateHandler(storageReader, queueClient);
         var path = "nonCandidate_nonVerified.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
     @Test
     void shouldNotCreateNewCandidateEventWhenPublicationIsNotPublished() throws IOException {
-        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        handler = new EvaluateNviCandidateHandler(storageReader, queueClient);
         var path = "nonCandidate_notPublished.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
     @Test
     void shouldNotCreateCandidateForMusicalArts() throws IOException {
-        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        handler = new EvaluateNviCandidateHandler(storageReader, queueClient);
         var path = "nonCandidate_musicalArts.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
     @Test
     void shouldNotCreateNewCandidateEventWhenPublicationIsPublishedBeforeCurrentYear()
         throws IOException {
-        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        handler = new EvaluateNviCandidateHandler(storageReader, queueClient);
         var path = "nonCandidate_publishedBeforeCurrentNviYear.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
     @Test
     void shouldNotCreateNewCandidateEventWhenPublicationIsPublishedAfterCurrentYear()
         throws IOException {
-        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        handler = new EvaluateNviCandidateHandler(storageReader, queueClient);
         var path = "nonCandidate_publishedAfterCurrentNviYear.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
     @Test
     void shouldNotCreateCandidateIfSeriesInMonographHasNviLevelZero() throws IOException {
-        handler = new EvaluateNviCandidateHandler(s3Client, sqsClient);
+        handler = new EvaluateNviCandidateHandler(storageReader, queueClient);
         var path = "nonCandidate_notValidMonographArticle.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, context);
-        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        List<SendMessageRequest> sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
 
@@ -289,10 +290,6 @@ public class EvaluateNviCandidateHandlerTest {
 
     }
 
-    private S3Event createInputEventForFile(URI fileUri) {
-        return null;
-    }
-
     private S3Event createS3Event(URI uri) {
         return createS3Event(UriWrapper.fromUri(uri).toS3bucketPath().toString());
     }
@@ -312,7 +309,7 @@ public class EvaluateNviCandidateHandlerTest {
     }
 
     private S3Entity createS3Entity(String val) {
-        var bucket = new S3BucketEntity(randomString(), EMPTY_USER_IDENTITY, randomString());
+        var bucket = new S3BucketEntity(BUCKET_NAME, EMPTY_USER_IDENTITY, randomString());
         var object = new S3ObjectEntity(
             val, SOME_FILE_SIZE, randomString(), randomString(), randomString());
         var schemaVersion = randomString();
@@ -321,9 +318,5 @@ public class EvaluateNviCandidateHandlerTest {
 
     private String randomDate() {
         return Instant.now().toString();
-    }
-
-    private UnixPath randomPath() {
-        return UnixPath.of(randomString(), randomString());
     }
 }

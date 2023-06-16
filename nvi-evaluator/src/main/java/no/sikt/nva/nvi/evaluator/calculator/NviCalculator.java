@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
 
 public class NviCalculator {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(NviCalculator.class);
+    private static final Pair<Boolean, CandidateResponse> NON_CANDIDATE = Pair.of(false, null);
     private static final String AFFILIATION_SPARQL =
         IoUtils.stringFromResources(Path.of("sparql/affiliation.sparql"));
     //TODO to be configured somehow
@@ -59,9 +61,6 @@ public class NviCalculator {
         if (affiliationUris.isEmpty()) {
             throw new NotACandidateException();
         }
-        //TODO ADD Check of Affiliations NVI affinity
-        var nviAffiliationsForApproval = new ArrayList<>(affiliationUris);
-
         var nviCandidate =
             attempt(() -> QueryExecutionFactory.create(NVI_CANDIDATE, model))
                 .map(QueryExecution::execAsk)
@@ -70,13 +69,15 @@ public class NviCalculator {
         if (!nviCandidate) {
             throw new NotACandidateException();
         }
-
-        var resourceUri = URI.create(body.at(ID_JSON_PATH).asText());
-        return CandidateResponse.builder()
-                           .resourceUri(resourceUri)
-                           .approvalAffiliations(
-                               nviAffiliationsForApproval.stream().map(URI::create).toList())
-                           .build();
+        //TODO ADD Check of Affiliations NVI affinity
+        var nviAffiliationsForApproval = new ArrayList<>(affiliationUris);
+        var publicationIdentifier =
+            URI.create(fetchResourceUris(model, ID_SPARQL, "id").stream().findFirst().orElseThrow());
+        return Pair.of(Boolean.TRUE, CandidateResponse.builder()
+                                         .withPublicationId(publicationIdentifier)
+                                         .withApprovalAffiliations(
+                                             nviAffiliationsForApproval.stream().map(URI::create).toList())
+                                         .build());
     }
 
     private static Model buildModel(JsonNode body) {
