@@ -1,0 +1,15 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto17
+    commands:
+      - pip3 install aws-sam-cli -U
+  build:
+    commands:
+      - sam build
+      - sam package --s3-bucket $S3_BUCKET --output-template-file packaged.yaml
+artifacts:
+  files:
+    - packaged.yaml
