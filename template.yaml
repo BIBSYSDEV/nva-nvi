@@ -9,6 +9,9 @@ Parameters:
   EventBusName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/EventsBusName
+  EventBusArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /NVA/Events/EventsBusArn
   ResourcesBucket:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/PersistedEntriesBucketName
@@ -42,6 +45,18 @@ Resources:
                   - s3:List*
                   - events:*
                 Resource: '*'
+        - PolicyName: Events
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - events:*
+                  - sqs:SendMessage
+                Resource:
+                  - !Ref EventBusArn
+                  - !GetAtt NewCandidateQueue.Arn
+                  - !GetAtt NewCandidateDLQ.Arn
         - PolicyName: writeLog
           PolicyDocument:
             Version: 2012-10-17
