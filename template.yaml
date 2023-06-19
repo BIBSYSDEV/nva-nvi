@@ -41,7 +41,7 @@ Resources:
                   - s3:Get*
                   - s3:List*
                   - events:*
-                Resource: !Ref PersistedResourceBucketName
+                Resource: '*'
         - PolicyName: writeLog
           PolicyDocument:
             Version: 2012-10-17
