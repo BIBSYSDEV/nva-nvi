@@ -6,9 +6,12 @@ Description: >
   SAM Template for NVA NVI API
 
 Parameters:
-  PersistedResourceBucketName:
+  EventBusName:
     Type: AWS::SSM::Parameter::Value<String>
-    Default: '/NVA/Events/PersistedEntriesBucketName'
+    Default: /NVA/Events/EventsBusName
+  ResourcesBucket:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /NVA/Events/PersistedEntriesBucketName
 
 Resources:
   #=============================== SQSs ============================================================
@@ -58,20 +61,20 @@ Resources:
       Handler: no.sikt.nva.nvi.evaluator.EvaluateNviCandidateHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
-#      Environment:
-#        Variables:
-
+      Environment:
+        Variables:
+          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
       Events:
-        S3Event:
-          Type: S3
+        EventBridgeEvent:
+          Type: EventBridgeRule
           Properties:
-            Bucket: !Ref PersistedResourceBucketName
-            Events: s3:ObjectCreated:*
-            Filter:
-              S3Key:
-                Rules:
-                  - Name: prefix
-                    Value: resources/
+            EventBusName: !Ref EventBusName
+            Pattern:
+              detail-type:
+                - Lambda Function Invocation Result - Success
+              detail:
+                responsePayload:
+                  topic: [ "PublicationService.ExpandedEntry.Persisted" ]
       EventInvokeConfig:
         DestinationConfig:
           OnSuccess:

@@ -7,6 +7,7 @@ dependencies {
     implementation libs.nva.core
     implementation libs.nva.s3
     implementation libs.nva.json
+    implementation libs.nva.eventhandlers
 
     implementation libs.aws.lambda.java.core
     implementation libs.aws.lambda.events
@@ -25,4 +26,5 @@ dependencies {
 }
 test {
     useJUnitPlatform()
+    environment "EXPANDED_RESOURCES_BUCKET", "My Bucketses"
 }
