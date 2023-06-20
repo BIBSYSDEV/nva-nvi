@@ -8,6 +8,6 @@ WHERE {
                  (<>|!<>)+ ?contributor .
 
     ?contributor (<>|!<>)+ nva:Creator ;
-                 nva:identity/nva:verificationStatus "Verified" ;
+#                 nva:identity/nva:verificationStatus "Verified" ;
                  nva:affiliation ?affiliation .
 }
