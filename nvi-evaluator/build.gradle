@@ -21,6 +21,7 @@ dependencies {
 
     implementation libs.bundles.jackson
     implementation libs.bundles.jena
+    implementation libs.bundles.logging
 
     testImplementation libs.nva.testutils
 }

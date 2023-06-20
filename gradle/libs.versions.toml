@@ -7,7 +7,7 @@ hamcrest = { strictly = '2.2' }
 zalando = { strictly = '0.27.1' }
 awsLambdaJavaCore = { strictly = '1.2.2' }
 awsLambdaEvents = { strictly = '3.11.1' }
-log4j = { strictly = '2.17.1' }
+log4j = { strictly = '2.17.2' }
 slf4j = { strictly = '1.8.0-beta4' }
 awslog4j2 = { strictly = '1.5.1' }
 wiremock = { strictly = '2.33.2' }
