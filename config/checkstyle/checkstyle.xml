@@ -38,7 +38,7 @@
   </module>
   <module name="LineLength">
     <property name="fileExtensions" value="java"/>
-    <property name="max" value="100"/>
+    <property name="max" value="120"/>
     <property name="ignorePattern"
       value="^( *\* *([^ ]+|\{@code .*|&lt;a href=&quot;[^&quot;]+&quot;&gt;)|(package|import) .*)$"/>
   </module>

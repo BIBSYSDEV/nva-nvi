@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.evaluator;
 
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
@@ -7,9 +8,14 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
+import no.unit.nva.events.models.AwsEventBridgeDetail;
+import no.unit.nva.events.models.AwsEventBridgeEvent;
 import no.unit.nva.events.models.EventReference;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
@@ -27,6 +33,7 @@ class EvaluateNviNviCandidateHandlerTest {
     private FakeStorageReader storageReader;
     private EvaluateNviCandidateHandler handler;
     private FakeSqsClient sqsClient;
+    private ByteArrayOutputStream output;
 
     @BeforeEach
     void setUp() {
@@ -36,6 +43,7 @@ class EvaluateNviNviCandidateHandlerTest {
         sqsClient = new FakeSqsClient();
         queueClient = new SqsMessageClient(sqsClient);
         handler = new EvaluateNviCandidateHandler();
+        output = new ByteArrayOutputStream();
     }
 
     @Test
@@ -46,7 +54,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
-        handler.handleRequest(event, context);
+        handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
@@ -63,7 +71,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
-        handler.handleRequest(event, context);
+        handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
@@ -80,7 +88,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
-        handler.handleRequest(event, context);
+        handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
@@ -98,7 +106,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
-        handler.handleRequest(event, context);
+        handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
@@ -115,7 +123,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
-        handler.handleRequest(event, context);
+        handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
@@ -132,7 +140,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
-        handler.handleRequest(event, context);
+        handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
@@ -149,7 +157,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
-        handler.handleRequest(event, context);
+        handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
@@ -166,7 +174,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
-        handler.handleRequest(event, context);
+        handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
@@ -179,7 +187,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
-        handler.handleRequest(event, context);
+        handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
@@ -192,7 +200,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
-        handler.handleRequest(event, context);
+        handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
@@ -205,7 +213,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
-        handler.handleRequest(event, context);
+        handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
@@ -219,7 +227,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
-        handler.handleRequest(event, context);
+        handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
@@ -233,7 +241,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
-        handler.handleRequest(event, context);
+        handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
@@ -246,7 +254,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
-        handler.handleRequest(event, context);
+        handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
     }
@@ -276,7 +284,15 @@ class EvaluateNviNviCandidateHandlerTest {
 
     }
 
-    private EventReference createS3Event(URI uri) {
-        return new EventReference("", uri);
+    private InputStream createEventInputStream(EventReference eventReference) throws IOException {
+        var detail = new AwsEventBridgeDetail<EventReference>();
+        detail.setResponsePayload(eventReference);
+        var event = new AwsEventBridgeEvent<AwsEventBridgeDetail<EventReference>>();
+        event.setDetail(detail);
+        return new ByteArrayInputStream(dtoObjectMapper.writeValueAsBytes(event));
+    }
+
+    private InputStream createS3Event(URI uri) throws IOException {
+        return createEventInputStream(new EventReference("", uri));
     }
 }
