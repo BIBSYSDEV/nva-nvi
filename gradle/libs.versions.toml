@@ -72,7 +72,7 @@ jena-arq = { group = 'org.apache.jena', name = 'jena-arq', version.ref = 'jena' 
 
 [bundles]
 nva = ['nva-commons-core', 'nva-commons-apigateway', 'nva-json', 'nva-commons-pagination', 'nva-commons-secrets']
-logging = ['log4j-core', 'log4j-api', 'log4j-slf4j18-impl', 'slf4j-api', 'aws-lambda-log4j2']
+logging = ['log4j-core', 'log4j-api', 'log4j-slf4j18-impl', 'slf4j-api', 'nva-logutils']
 testing = ['junit-jupiter-api', 'junit-jupiter-params', 'junit-jupiter-engine', 'mockito-core', 'hamcrest', 'nva-testutils', 'nva-logutils', 'zalando', 'wiremock']
 jackson = ['jackson-core', 'jackson-databind', 'jackson-annotations', 'jackson-datatype-jdk8', 'jackson-datatype-jsr310']
 others = ['slf4j-api', 'log4j-api', 'aws-lambda-java-core']
