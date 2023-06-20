@@ -21,6 +21,7 @@ import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
+import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -256,6 +257,15 @@ class EvaluateNviNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path),
                                           content);
         var event = createS3Event(fileUri);
+        handler.handleRequest(event, output, context);
+        var sentMessages = sqsClient.getSentMessages();
+        assertThat(sentMessages, is(empty()));
+    }
+
+    @Test
+    void shouldThrowExceptionIfFileDoesntExist() throws IOException {
+        handler = new EvaluateNviCandidateHandler(storageReader, queueClient);
+        var event = createS3Event(UriWrapper.fromUri("s3://dummy").getUri());
         handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));

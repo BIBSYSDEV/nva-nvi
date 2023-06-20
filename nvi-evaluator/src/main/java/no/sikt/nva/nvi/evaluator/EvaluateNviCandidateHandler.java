@@ -7,15 +7,20 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.databind.JsonNode;
 import no.sikt.nva.nvi.evaluator.aws.S3StorageReader;
 import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
+import no.sikt.nva.nvi.evaluator.calculator.CandidateType;
 import no.sikt.nva.nvi.evaluator.calculator.NviCandidate;
 import no.unit.nva.events.handlers.DestinationsEventBridgeEventHandler;
 import no.unit.nva.events.models.AwsEventBridgeDetail;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
 import no.unit.nva.events.models.EventReference;
 import nva.commons.core.JacocoGenerated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHandler<EventReference, Void> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateNviCandidateHandler.class);
 
     private final StorageReader<EventReference> storageReader;
     private final QueueClient<SendMessageResponse> queueClient;
@@ -36,24 +41,33 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
     protected Void processInputPayload(EventReference input,
                                        AwsEventBridgeEvent<AwsEventBridgeDetail<EventReference>> event,
                                        Context context) {
-        var body = extractBodyFromContent(storageReader.read(input));
-
-        var response = calculateNvi(body);
-        if (response instanceof NviCandidate nviCandidate) {
-            sendMessage(nviCandidate);
+        try {
+            var read = storageReader.read(input);
+            var jsonNode = extractBodyFromContent(read);
+            var candidateType = calculateNvi(jsonNode);
+            handleCandidateType(candidateType);
+        } catch (Exception e) {
+            LOGGER.error("Failure while calculating NVI Candidate: %s".formatted(input.getUri()),
+                         e);
         }
         return null;
     }
 
-    private static JsonNode extractBodyFromContent(String content) {
+    private void handleCandidateType(CandidateType candidateType) {
+        if (candidateType instanceof NviCandidate nviCandidate) {
+            sendMessage(nviCandidate);
+        }
+    }
+
+    private JsonNode extractBodyFromContent(String content) {
         return attempt(() -> dtoObjectMapper.readTree(content))
                    .map(json -> json.at("/body"))
                    .orElseThrow();
     }
 
-    private SendMessageResponse sendMessage(NviCandidate c) {
-        return attempt(() -> dtoObjectMapper.writeValueAsString(c.response()))
-                   .map(queueClient::sendMessage)
-                   .orElseThrow();
+    private void sendMessage(NviCandidate c) {
+        attempt(() -> dtoObjectMapper.writeValueAsString(c.response()))
+            .map(queueClient::sendMessage)
+            .orElseThrow();
     }
 }
