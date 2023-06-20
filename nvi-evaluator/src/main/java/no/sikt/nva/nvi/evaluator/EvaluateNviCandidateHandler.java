@@ -21,7 +21,7 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
     private final QueueClient<SendMessageResponse> queueClient;
 
     @JacocoGenerated
-    protected EvaluateNviCandidateHandler() {
+    public EvaluateNviCandidateHandler() {
         this(new S3StorageReader(), new SqsMessageClient());
     }
 
