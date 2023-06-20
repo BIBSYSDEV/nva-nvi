@@ -42,9 +42,12 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
                                        AwsEventBridgeEvent<AwsEventBridgeDetail<EventReference>> event,
                                        Context context) {
         try {
-            var read = storageReader.read(input);
-            var jsonNode = extractBodyFromContent(read);
+            var readInput = storageReader.read(input);
+            LOGGER.info("ReadInput: {}", readInput);
+            var jsonNode = extractBodyFromContent(readInput);
+            LOGGER.info("ExtractedBody");
             var candidateType = calculateNvi(jsonNode);
+            LOGGER.info("CalculatedNVI");
             handleCandidateType(candidateType);
         } catch (Exception e) {
             LOGGER.error("Failure while calculating NVI Candidate: %s".formatted(input.getUri()),
@@ -56,6 +59,7 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
     private void handleCandidateType(CandidateType candidateType) {
         if (candidateType instanceof NviCandidate nviCandidate) {
             sendMessage(nviCandidate);
+            LOGGER.info("SentMessage");
         }
     }
 
