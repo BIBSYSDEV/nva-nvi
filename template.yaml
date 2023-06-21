@@ -24,15 +24,15 @@ Parameters:
 
 Resources:
   #=============================== SQSs ============================================================
-  NewCandidateQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Ref NewCandidateQueueName
-  NewCandidateDLQ:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Ref NewCandidateDLQName
-      MessageRetentionPeriod: 43200
+#  NewCandidateQueue:
+#    Type: AWS::SQS::Queue
+#    Properties:
+#      QueueName: !Ref NewCandidateQueueName
+#  NewCandidateDLQ:
+#    Type: AWS::SQS::Queue
+#    Properties:
+#      QueueName: !Ref NewCandidateDLQName
+#      MessageRetentionPeriod: 43200
 
   #============================= Permissions =======================================================
   NvaNviRole:
@@ -66,8 +66,8 @@ Resources:
                   - sqs:SendMessage
                 Resource:
                   - !Ref EventBusArn
-                  - !GetAtt NewCandidateQueue.Arn
-                  - !GetAtt NewCandidateDLQ.Arn
+#                  - !GetAtt NewCandidateQueue.Arn
+#                  - !GetAtt NewCandidateDLQ.Arn
         - PolicyName: writeLog
           PolicyDocument:
             Version: 2012-10-17
@@ -87,7 +87,8 @@ Resources:
       Handler: no.sikt.nva.nvi.evaluator.EvaluateNviCandidateHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
-      Timeout: 9000
+      Timeout: 3
+      MemorySize: 1536
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
@@ -103,11 +104,11 @@ Resources:
               detail:
                 responsePayload:
                   topic: [ "PublicationService.ExpandedEntry.Persisted" ]
-      EventInvokeConfig:
-        DestinationConfig:
-          OnSuccess:
-            Type: SQS
-            Destination: !GetAtt NewCandidateQueue.Arn
-          OnFailure:
-            Type: SQS
-            Destination: !GetAtt NewCandidateDLQ.Arn
+#      EventInvokeConfig:
+#        DestinationConfig:
+#          OnSuccess:
+#            Type: SQS
+#            Destination: !GetAtt NewCandidateQueue.Arn
+#          OnFailure:
+#            Type: SQS
+#            Destination: !GetAtt NewCandidateDLQ.Arn
