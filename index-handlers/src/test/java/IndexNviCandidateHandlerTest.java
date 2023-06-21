@@ -11,9 +11,14 @@ import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.index.IndexNviCandidateHandler;
+import no.unit.nva.s3.S3Driver;
+import no.unit.nva.stubs.FakeS3Client;
+import nva.commons.core.ioutils.IoUtils;
+import nva.commons.core.paths.UnixPath;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,15 +33,29 @@ class IndexNviCandidateHandlerTest {
     public static final String AFFILIATION_APPROVALS_FIELD = "affiliationApprovals";
     private IndexNviCandidateHandler handler;
 
+    private S3Driver s3Driver;
+
     @BeforeEach
     void setup() {
         handler = new IndexNviCandidateHandler();
+        var fakeS3Client = new FakeS3Client();
+        s3Driver = new S3Driver(fakeS3Client, "ignored");
+    }
+
+    @Test
+    void shouldAddDocumentToIndexWhenNviCandidateExistsInResourcesStorage() {
+        var nviCandidateS3Id = prepareNviCandidateFile();
+        var sqsEvent = createEventWithBodyWithS3Uri(nviCandidateS3Id);
+
+        handler.handleRequest(sqsEvent, CONTEXT);
+
+        //TODO: Assertion
     }
 
     @Test
     void shouldNotLogErrorWhenMessageBodyValid() {
         var appender = LogUtils.getTestingAppenderForRootLogger();
-        SQSEvent sqsEvent = createEventWithValidBody();
+        var sqsEvent = createEventWithValidBody();
 
         handler.handleRequest(sqsEvent, CONTEXT);
 
@@ -56,7 +75,7 @@ class IndexNviCandidateHandlerTest {
     @Test
     void shouldLogErrorWhenMessageBodyWithoutS3Uri() {
         var appender = LogUtils.getTestingAppenderForRootLogger();
-        SQSEvent sqsEvent = createEventWithBodyWithoutS3Uri();
+        var sqsEvent = createEventWithBodyWithoutS3Uri();
 
         handler.handleRequest(sqsEvent, CONTEXT);
 
@@ -77,6 +96,15 @@ class IndexNviCandidateHandlerTest {
         var invalidSqsMessage = new SQSMessage();
         invalidSqsMessage.setBody(
             constructBody(randomUri().toString(), List.of(randomUri().toString())));
+        sqsEvent.setRecords(List.of(invalidSqsMessage));
+        return sqsEvent;
+    }
+
+    private static SQSEvent createEventWithBodyWithS3Uri(URI s3Uri) {
+        var sqsEvent = new SQSEvent();
+        var invalidSqsMessage = new SQSMessage();
+        invalidSqsMessage.setBody(
+            constructBody(randomUri().toString(), s3Uri.toString(), List.of(randomUri().toString())));
         sqsEvent.setRecords(List.of(invalidSqsMessage));
         return sqsEvent;
     }
@@ -110,5 +138,11 @@ class IndexNviCandidateHandlerTest {
                     entry(AFFILIATION_APPROVALS_FIELD,
                           attempt(() -> objectMapper.writeValueAsString(
                               affiliationApprovals)).orElseThrow())))).orElseThrow();
+    }
+
+    private URI prepareNviCandidateFile() {
+        var path = "candidate.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        return attempt(() -> s3Driver.insertFile(UnixPath.of(path), content)).orElseThrow();
     }
 }
