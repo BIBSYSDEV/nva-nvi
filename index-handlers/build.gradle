@@ -1,0 +1,12 @@
+plugins {
+    id 'nva.nvi.java-conventions'
+}
+dependencies {
+    implementation libs.nva.json
+    implementation libs.nva.core
+    implementation libs.aws.lambda.java.core
+    implementation libs.aws.lambda.events
+    implementation libs.aws.java.sdk.core
+    implementation libs.aws.sdk2.sqs
+    implementation libs.bundles.logging
+}
