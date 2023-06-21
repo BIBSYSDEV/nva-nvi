@@ -44,7 +44,7 @@ class EvaluateNviNviCandidateHandlerTest {
         storageReader = new FakeStorageReader(s3Client);
         sqsClient = new FakeSqsClient();
         queueClient = new SqsMessageClient(sqsClient);
-        handler = new EvaluateNviCandidateHandler();
+        handler = new EvaluateNviCandidateHandler(storageReader, queueClient);
         output = new ByteArrayOutputStream();
     }
 
@@ -269,6 +269,16 @@ class EvaluateNviNviCandidateHandlerTest {
         handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, is(empty()));
+    }
+
+    @Test
+    @Disabled
+    void shouldLogSomething() throws IOException {
+        //        var logger = LogUtils.getTestingAppenderForRootLogger();
+        handler = new EvaluateNviCandidateHandler(storageReader, queueClient);
+        var event = createS3Event(UriWrapper.fromUri("s3://dummy").getUri());
+        handler.handleRequest(event, output, context);
+        //        System.out.println(logger.getMessages());
     }
 
     @Test
