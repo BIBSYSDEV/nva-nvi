@@ -16,10 +16,10 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/PersistedEntriesBucketName
   NewCandidateQueueName:
-    Type: AWS::SSM::Parameter::Value<String>
+    Type: String
     Default: NewCandidateQueue
   NewCandidateDLQName:
-    Type: AWS::SSM::Parameter::Value<String>
+    Type: String
     Default: NewCandidateQueue
 
 Resources:
