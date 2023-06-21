@@ -42,13 +42,9 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
                                        AwsEventBridgeEvent<AwsEventBridgeDetail<EventReference>> event,
                                        Context context) {
         try {
-            LOGGER.info("Inializing EvaluateNviCandidateHandler");
             var readInput = storageReader.read(input);
-            LOGGER.info("ReadInput: {}", readInput);
             var jsonNode = extractBodyFromContent(readInput);
-            LOGGER.info("ExtractedBody");
             var candidateType = calculateNvi(jsonNode);
-            LOGGER.info("CalculatedNVI");
             handleCandidateType(candidateType);
         } catch (Exception e) {
             LOGGER.error("Failure while calculating NVI Candidate: %s".formatted(input.getUri()),

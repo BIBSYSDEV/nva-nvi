@@ -28,4 +28,5 @@ dependencies {
 test {
     useJUnitPlatform()
     environment "EXPANDED_RESOURCES_BUCKET", "My Bucketses"
+    environment "CANDIDATE_QUEUE_NAME", "My Queueses"
 }

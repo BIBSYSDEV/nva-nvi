@@ -15,13 +15,24 @@ Parameters:
   ResourcesBucket:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/PersistedEntriesBucketName
+  NewCandidateQueueName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: NewCandidateQueue
+  NewCandidateDLQName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: NewCandidateQueue
 
 Resources:
   #=============================== SQSs ============================================================
   NewCandidateQueue:
     Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref NewCandidateQueueName
   NewCandidateDLQ:
     Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref NewCandidateDLQName
+      MessageRetentionPeriod: 43200
 
   #============================= Permissions =======================================================
   NvaNviRole:
@@ -76,9 +87,11 @@ Resources:
       Handler: no.sikt.nva.nvi.evaluator.EvaluateNviCandidateHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
+      Timeout: 9000
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+          CANDIDATE_QUEUE_NAME: !Ref NewCandidateQueueName
       Events:
         EventBridgeEvent:
           Type: EventBridgeRule
