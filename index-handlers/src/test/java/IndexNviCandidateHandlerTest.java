@@ -22,6 +22,7 @@ class IndexNviCandidateHandlerTest {
 
     public static final Context CONTEXT = mock(Context.class);
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
+
     public static final String PUBLICATION_ID_FIELD = "publicationId";
     public static final String S3_URI_FIELD = "s3Uri";
     public static final String AFFILIATION_APPROVALS_FIELD = "affiliationApprovals";
@@ -52,11 +53,30 @@ class IndexNviCandidateHandlerTest {
         assertThat(appender.getMessages(), containsString(ERROR_MESSAGE_BODY_INVALID));
     }
 
+    @Test
+    void shouldLogErrorWhenMessageBodyWithoutS3Uri() {
+        var appender = LogUtils.getTestingAppenderForRootLogger();
+        SQSEvent sqsEvent = createEventWithBodyWithoutS3Uri();
+
+        handler.handleRequest(sqsEvent, CONTEXT);
+
+        assertThat(appender.getMessages(), containsString(ERROR_MESSAGE_BODY_INVALID));
+    }
+
     private static SQSEvent createEventWithValidBody() {
         var sqsEvent = new SQSEvent();
         var invalidSqsMessage = new SQSMessage();
         invalidSqsMessage.setBody(
             constructBody(randomUri().toString(), randomUri().toString(), List.of(randomUri().toString())));
+        sqsEvent.setRecords(List.of(invalidSqsMessage));
+        return sqsEvent;
+    }
+
+    private static SQSEvent createEventWithBodyWithoutS3Uri() {
+        var sqsEvent = new SQSEvent();
+        var invalidSqsMessage = new SQSMessage();
+        invalidSqsMessage.setBody(
+            constructBody(randomUri().toString(), List.of(randomUri().toString())));
         sqsEvent.setRecords(List.of(invalidSqsMessage));
         return sqsEvent;
     }
@@ -73,15 +93,22 @@ class IndexNviCandidateHandlerTest {
                                         List<String> affiliationApprovals) {
         return attempt(
             () -> objectMapper.writeValueAsString(
-                getBodyMap(publicationId, s3Uri, affiliationApprovals))).orElseThrow();
+                Map.ofEntries(
+                    entry(PUBLICATION_ID_FIELD, publicationId),
+                    entry(AFFILIATION_APPROVALS_FIELD,
+                          attempt(() -> objectMapper.writeValueAsString(affiliationApprovals)).orElseThrow()),
+                    entry(S3_URI_FIELD, s3Uri)
+                ))).orElseThrow();
     }
 
-    private static Map<String, String> getBodyMap(String publicationId, String s3Uri,
-                                                  List<String> affiliationApprovals) {
-        return Map.ofEntries(
-            entry(PUBLICATION_ID_FIELD, publicationId),
-            entry(S3_URI_FIELD, s3Uri),
-            entry(AFFILIATION_APPROVALS_FIELD,
-                  attempt(() -> objectMapper.writeValueAsString(affiliationApprovals)).orElseThrow()));
+    private static String constructBody(String publicationId,
+                                        List<String> affiliationApprovals) {
+        return attempt(
+            () -> objectMapper.writeValueAsString(
+                Map.ofEntries(
+                    entry(PUBLICATION_ID_FIELD, publicationId),
+                    entry(AFFILIATION_APPROVALS_FIELD,
+                          attempt(() -> objectMapper.writeValueAsString(
+                              affiliationApprovals)).orElseThrow())))).orElseThrow();
     }
 }

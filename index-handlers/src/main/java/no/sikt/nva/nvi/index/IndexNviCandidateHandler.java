@@ -1,11 +1,14 @@
 package no.sikt.nva.nvi.index;
 
+import static java.util.Objects.isNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
-import no.sikt.nva.nvi.index.model.NviCandidateMessage;
+import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import java.util.Objects;
+import no.sikt.nva.nvi.index.model.NviCandidate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,15 +19,22 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
 
     @Override
     public Void handleRequest(SQSEvent input, Context context) {
-        input.getRecords().forEach(sqsMessage -> {
-            var body = sqsMessage.getBody();
-            var message = extractMessage(body);
-        });
+        input.getRecords().stream()
+            .map(SQSMessage::getBody)
+            .map(this::parseBody)
+            .filter(Objects::nonNull)
+            .forEach(this::validateCandidate);
         return null;
     }
 
-    private NviCandidateMessage extractMessage(String body) {
-        return attempt(() -> dtoObjectMapper.readValue(body, NviCandidateMessage.class))
+    private void validateCandidate(NviCandidate candidate) {
+        if (isNull(candidate.s3Uri())) {
+            logInvalidMessageBody(candidate.toJsonString());
+        }
+    }
+
+    private NviCandidate parseBody(String body) {
+        return attempt(() -> dtoObjectMapper.readValue(body, NviCandidate.class))
                    .orElse(failure -> {
                        logInvalidMessageBody(body);
                        return null;
