@@ -20,19 +20,19 @@ Parameters:
     Default: NewCandidateQueue
   NewCandidateDLQName:
     Type: String
-    Default: NewCandidateQueue
+    Default: NewCandidateDLQ
 
 Resources:
   #=============================== SQSs ============================================================
-#  NewCandidateQueue:
-#    Type: AWS::SQS::Queue
-#    Properties:
-#      QueueName: !Ref NewCandidateQueueName
-#  NewCandidateDLQ:
-#    Type: AWS::SQS::Queue
-#    Properties:
-#      QueueName: !Ref NewCandidateDLQName
-#      MessageRetentionPeriod: 43200
+  NewCandidateQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref NewCandidateQueueName
+  NewCandidateDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref NewCandidateDLQName
+      MessageRetentionPeriod: 43200
 
   #============================= Permissions =======================================================
   NvaNviRole:
@@ -66,8 +66,8 @@ Resources:
                   - sqs:SendMessage
                 Resource:
                   - !Ref EventBusArn
-#                  - !GetAtt NewCandidateQueue.Arn
-#                  - !GetAtt NewCandidateDLQ.Arn
+                  - !GetAtt NewCandidateQueue.Arn
+                  - !GetAtt NewCandidateDLQ.Arn
         - PolicyName: writeLog
           PolicyDocument:
             Version: 2012-10-17
@@ -93,6 +93,7 @@ Resources:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
           CANDIDATE_QUEUE_NAME: !Ref NewCandidateQueueName
+          CANDIDATE_DLQ_NAME: !Ref NewCandidateDLQName
       Events:
         EventBridgeEvent:
           Type: EventBridgeRule
