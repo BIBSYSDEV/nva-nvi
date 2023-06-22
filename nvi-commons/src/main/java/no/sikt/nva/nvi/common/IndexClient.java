@@ -1,9 +1,8 @@
 package no.sikt.nva.nvi.common;
 
 import java.util.Set;
-import no.sikt.nva.nvi.common.model.IndexDocument;
 
-public interface IndexClient {
+public interface IndexClient<T> {
 
-    Set<IndexDocument> listAllDocuments(String indexName);
+    Set<T> listAllDocuments(String indexName);
 }

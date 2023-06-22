@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.IndexClient;
 import no.sikt.nva.nvi.common.StorageReader;
-import no.sikt.nva.nvi.common.model.IndexDocument;
+import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.NviCandidate;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
@@ -89,9 +89,9 @@ class IndexNviCandidateHandlerTest {
         assertThat(appender.getMessages(), containsString(ERROR_MESSAGE_BODY_INVALID));
     }
 
-    private static IndexDocument getExpectedIndexDocument() {
+    private static NviCandidateIndexDocument getExpectedIndexDocument() {
         var content = IoUtils.stringFromResources(Path.of("indexDocumentSample.json"));
-        return attempt(() -> objectMapper.readValue(content, IndexDocument.class)).orElseThrow();
+        return attempt(() -> objectMapper.readValue(content, NviCandidateIndexDocument.class)).orElseThrow();
     }
 
     private static SQSEvent createEventWithValidBody() {
