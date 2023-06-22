@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import no.sikt.nva.nvi.common.IndexClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 
-public class FakeIndexClient implements IndexClient {
+public class FakeIndexClient implements IndexClient<NviCandidateIndexDocument> {
 
     private final Map<String, Map<String, NviCandidateIndexDocument>> indexContents;
 

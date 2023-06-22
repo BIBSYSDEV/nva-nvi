@@ -43,7 +43,7 @@ class IndexNviCandidateHandlerTest {
 
     private S3Driver s3Driver;
 
-    private IndexClient indexClient;
+    private IndexClient<NviCandidateIndexDocument> indexClient;
 
     @BeforeEach
     void setup() {
