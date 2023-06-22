@@ -64,6 +64,7 @@ Resources:
                 Action:
                   - events:*
                   - sqs:SendMessage
+                  - sqs:GetQueueUrl
                 Resource:
                   - !Ref EventBusArn
                   - !GetAtt NewCandidateQueue.Arn
