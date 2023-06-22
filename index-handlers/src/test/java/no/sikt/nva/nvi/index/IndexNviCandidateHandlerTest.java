@@ -36,7 +36,6 @@ class IndexNviCandidateHandlerTest {
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
 
     public static final String PUBLICATION_ID_FIELD = "publicationId";
-    public static final String S3_URI_FIELD = "s3Uri";
     public static final String AFFILIATION_APPROVALS_FIELD = "affiliationApprovals";
     public static final String INDEX_NVI_CANDIDATES = "nviCandidates";
     private IndexNviCandidateHandler handler;
@@ -95,7 +94,7 @@ class IndexNviCandidateHandlerTest {
         var sqsEvent = new SQSEvent();
         var invalidSqsMessage = new SQSMessage();
         invalidSqsMessage.setBody(
-            constructBody(randomUri().toString(), randomUri().toString(), List.of(randomUri().toString())));
+            constructBody(randomUri().toString(), List.of(randomUri().toString())));
         sqsEvent.setRecords(List.of(invalidSqsMessage));
         return sqsEvent;
     }
@@ -104,7 +103,7 @@ class IndexNviCandidateHandlerTest {
         var sqsEvent = new SQSEvent();
         var invalidSqsMessage = new SQSMessage();
         invalidSqsMessage.setBody(
-            constructBody(randomUri().toString(), s3Uri.toString(), List.of(randomUri().toString())));
+            constructBody(randomUri().toString(), List.of(randomUri().toString())));
         sqsEvent.setRecords(List.of(invalidSqsMessage));
         return sqsEvent;
     }
@@ -117,15 +116,14 @@ class IndexNviCandidateHandlerTest {
         return sqsEvent;
     }
 
-    private static String constructBody(String publicationId, String s3Uri,
+    private static String constructBody(String publicationId,
                                         List<String> affiliationApprovals) {
         return attempt(
             () -> objectMapper.writeValueAsString(
                 Map.ofEntries(
                     entry(PUBLICATION_ID_FIELD, publicationId),
                     entry(AFFILIATION_APPROVALS_FIELD,
-                          attempt(() -> objectMapper.writeValueAsString(affiliationApprovals)).orElseThrow()),
-                    entry(S3_URI_FIELD, s3Uri)
+                          attempt(() -> objectMapper.writeValueAsString(affiliationApprovals)).orElseThrow())
                 ))).orElseThrow();
     }
 
