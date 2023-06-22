@@ -1,6 +1,6 @@
 [versions]
 junit = { strictly = '5.8.2' }
-nva = {strictly = '1.28.4'}
+nva = { strictly = '1.28.4' }
 jackson = { strictly = '2.14.1' }
 mockito = { strictly = '4.5.1' }
 hamcrest = { strictly = '2.2' }
@@ -11,10 +11,12 @@ log4j = { strictly = '2.17.2' }
 slf4j = { strictly = '1.8.0-beta4' }
 awslog4j2 = { strictly = '1.5.1' }
 wiremock = { strictly = '2.33.2' }
-commons-validator-version = { strictly = '1.7'}
+commons-validator-version = { strictly = '1.7' }
 awsSdk = { strictly = '1.12.462' }
 awsSdk2 = { strictly = '2.20.60' }
-jena = { strictly = '4.7.0'}
+jena = { strictly = '4.7.0' }
+openSearchRestClient = { strictly = '2.8.0' }
+openSearchJava = { strictly = '2.4.0' }
 
 [libraries]
 junit-jupiter-api = { group = 'org.junit.jupiter', name = 'junit-jupiter-api', version.ref = 'junit' }
@@ -31,8 +33,8 @@ zalando = { group = 'org.zalando', name = 'problem', version.ref = 'zalando' }
 
 nva-commons-core = { group = 'com.github.bibsysdev', name = 'core', version.ref = 'nva' }
 nva-commons-apigateway = { group = 'com.github.bibsysdev', name = 'apigateway', version.ref = 'nva' }
-nva-commons-pagination = { group = 'com.github.bibsysdev', name = 'pagination', version.ref = 'nva'}
-nva-commons-secrets = { group = 'com.github.bibsysdev', name = 'secrets', version.ref = 'nva'}
+nva-commons-pagination = { group = 'com.github.bibsysdev', name = 'pagination', version.ref = 'nva' }
+nva-commons-secrets = { group = 'com.github.bibsysdev', name = 'secrets', version.ref = 'nva' }
 nva-eventhandlers = { group = 'com.github.bibsysdev', name = 'eventhandlers', version.ref = 'nva' }
 
 aws-sdk2-eventbridge = { group = 'software.amazon.awssdk', name = 'eventbridge', version.ref = 'awsSdk2' }
@@ -56,7 +58,10 @@ jackson-datatype-jsr310 = { group = 'com.fasterxml.jackson.datatype', name = 'ja
 aws-java-sdk-core = { group = 'com.amazonaws', name = 'aws-java-sdk-core', version.ref = 'awsSdk' }
 aws-lambda-java-core = { group = 'com.amazonaws', name = 'aws-lambda-java-core', version.ref = 'awsLambdaJavaCore' }
 aws-lambda-events = { group = 'com.amazonaws', name = 'aws-lambda-java-events', version.ref = 'awsLambdaEvents' }
-aws-lambda-log4j2 = { group = 'com.amazonaws', name = 'aws-lambda-java-log4j2', version.ref = 'awslog4j2'}
+aws-lambda-log4j2 = { group = 'com.amazonaws', name = 'aws-lambda-java-log4j2', version.ref = 'awslog4j2' }
+
+opensearch-rest-client = { group = 'org.opensearch.client', name = 'opensearch-rest-client', version.ref = 'openSearchRestClient' }
+opensearch-java = { group = 'org.opensearch.client', name = 'opensearch-java', version.ref = 'openSearchJava' }
 
 log4j-core = { group = 'org.apache.logging.log4j', name = 'log4j-core', version.ref = 'log4j' }
 log4j-api = { group = 'org.apache.logging.log4j', name = 'log4j-api', version.ref = 'log4j' }
@@ -65,9 +70,9 @@ slf4j-api = { group = 'org.slf4j', name = 'slf4j-api', version.ref = 'slf4j' }
 
 wiremock = { group = 'com.github.tomakehurst', name = 'wiremock-jre8', version.ref = 'wiremock' }
 
-commons-validator = { group = 'commons-validator', name = 'commons-validator', version.ref = 'commons-validator-version'}
+commons-validator = { group = 'commons-validator', name = 'commons-validator', version.ref = 'commons-validator-version' }
 
-jena-core = { group=  'org.apache.jena', name = 'jena-core', version.ref = 'jena' }
+jena-core = { group = 'org.apache.jena', name = 'jena-core', version.ref = 'jena' }
 jena-arq = { group = 'org.apache.jena', name = 'jena-arq', version.ref = 'jena' }
 
 [bundles]

@@ -2,6 +2,7 @@ plugins {
     id 'nva.nvi.java-conventions'
 }
 dependencies {
+    implementation project(':nvi-commons')
     implementation libs.nva.json
     implementation libs.nva.core
     implementation libs.nva.s3
@@ -11,4 +12,8 @@ dependencies {
     implementation libs.aws.sdk2.s3
     implementation libs.aws.sdk2.sqs
     implementation libs.bundles.logging
+    implementation libs.opensearch.java
+    implementation libs.opensearch.rest.client
+    implementation libs.jackson.core
+    implementation libs.jackson.databind
 }

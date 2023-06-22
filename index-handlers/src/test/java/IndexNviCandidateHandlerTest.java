@@ -4,6 +4,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.StringContains.containsString;
@@ -12,13 +13,17 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import no.sikt.nva.nvi.common.IndexClient;
+import no.sikt.nva.nvi.common.model.IndexDocument;
 import no.sikt.nva.nvi.index.IndexNviCandidateHandler;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
+import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,25 +36,31 @@ class IndexNviCandidateHandlerTest {
     public static final String PUBLICATION_ID_FIELD = "publicationId";
     public static final String S3_URI_FIELD = "s3Uri";
     public static final String AFFILIATION_APPROVALS_FIELD = "affiliationApprovals";
+    public static final String INDEX_NVI_CANDIDATES = "nviCandidates";
     private IndexNviCandidateHandler handler;
 
     private S3Driver s3Driver;
 
+    private IndexClient fakeIndexClient;
+
     @BeforeEach
     void setup() {
-        handler = new IndexNviCandidateHandler();
         var fakeS3Client = new FakeS3Client();
+        fakeIndexClient = new FakeIndexClient();
         s3Driver = new S3Driver(fakeS3Client, "ignored");
+        handler = new IndexNviCandidateHandler(fakeIndexClient);
     }
 
     @Test
     void shouldAddDocumentToIndexWhenNviCandidateExistsInResourcesStorage() {
-        var nviCandidateS3Id = prepareNviCandidateFile();
-        var sqsEvent = createEventWithBodyWithS3Uri(nviCandidateS3Id);
+        var nviCandidateS3Uri = prepareNviCandidateFile();
+        var sqsEvent = createEventWithBodyWithS3Uri(nviCandidateS3Uri);
 
         handler.handleRequest(sqsEvent, CONTEXT);
+        var allIndexDocuments = fakeIndexClient.listAllDocuments(INDEX_NVI_CANDIDATES);
 
-        //TODO: Assertion
+        var expectedIndexDocument = getExpectedIndexDocument();
+        assertThat(allIndexDocuments, containsInAnyOrder(expectedIndexDocument));
     }
 
     @Test
@@ -80,6 +91,11 @@ class IndexNviCandidateHandlerTest {
         handler.handleRequest(sqsEvent, CONTEXT);
 
         assertThat(appender.getMessages(), containsString(ERROR_MESSAGE_BODY_INVALID));
+    }
+
+    private static IndexDocument getExpectedIndexDocument() {
+        var content = IoUtils.stringFromResources(Path.of("indexDocumentSample.json"));
+        return attempt(() -> objectMapper.readValue(content, IndexDocument.class)).orElseThrow();
     }
 
     private static SQSEvent createEventWithValidBody() {
@@ -140,8 +156,12 @@ class IndexNviCandidateHandlerTest {
                               affiliationApprovals)).orElseThrow())))).orElseThrow();
     }
 
+    private String extractIdentifier(URI publicationId) {
+        return UriWrapper.fromUri(publicationId).getLastPathElement();
+    }
+
     private URI prepareNviCandidateFile() {
-        var path = "candidate.json";
+        var path = "s3resourceSample.json";
         var content = IoUtils.inputStreamFromResources(path);
         return attempt(() -> s3Driver.insertFile(UnixPath.of(path), content)).orElseThrow();
     }

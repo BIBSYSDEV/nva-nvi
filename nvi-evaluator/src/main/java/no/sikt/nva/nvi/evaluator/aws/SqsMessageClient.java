@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.evaluator.aws;
 
 import static no.sikt.nva.nvi.evaluator.aws.RegionUtil.acquireAwsRegion;
 import java.time.Duration;
-import no.sikt.nva.nvi.evaluator.QueueClient;
+import no.sikt.nva.nvi.common.QueueClient;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;

@@ -8,6 +8,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Objects;
+import no.sikt.nva.nvi.common.IndexClient;
 import no.sikt.nva.nvi.index.model.NviCandidate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +17,12 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
 
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexNviCandidateHandler.class);
+
+    private final IndexClient indexClient;
+
+    public IndexNviCandidateHandler(IndexClient indexClient) {
+        this.indexClient = indexClient;
+    }
 
     @Override
     public Void handleRequest(SQSEvent input, Context context) {

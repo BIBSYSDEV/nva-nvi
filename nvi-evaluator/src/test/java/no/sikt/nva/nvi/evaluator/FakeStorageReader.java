@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.evaluator;
 
-import com.amazonaws.services.lambda.runtime.events.S3Event;
+import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.evaluator.aws.S3StorageReader;
 import no.unit.nva.events.models.EventReference;
 import software.amazon.awssdk.services.s3.S3Client;

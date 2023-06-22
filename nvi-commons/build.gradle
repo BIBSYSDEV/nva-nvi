@@ -3,5 +3,6 @@ plugins {
     id 'nva.nvi.dynamo-db'
 }
 dependencies {
-
+    implementation libs.jackson.databind
+    implementation libs.nva.json
 }
