@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.index;
 
-import static java.util.Objects.isNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -8,6 +7,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.IndexClient;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.index.model.NviCandidate;
@@ -33,15 +33,8 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
         input.getRecords().stream()
             .map(SQSMessage::getBody)
             .map(this::parseBody)
-            .filter(Objects::nonNull)
-            .forEach(this::validateCandidate);
+            .collect(Collectors.toList());
         return null;
-    }
-
-    private void validateCandidate(NviCandidate candidate) {
-        if (isNull(candidate.s3Uri())) {
-            logInvalidMessageBody(candidate.toJsonString());
-        }
     }
 
     private NviCandidate parseBody(String body) {

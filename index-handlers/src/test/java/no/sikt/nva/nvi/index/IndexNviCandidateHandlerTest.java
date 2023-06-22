@@ -21,11 +21,11 @@ import java.util.Map;
 import no.sikt.nva.nvi.common.IndexClient;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.model.IndexDocument;
+import no.sikt.nva.nvi.index.model.NviCandidate;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
-import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,8 +43,6 @@ class IndexNviCandidateHandlerTest {
 
     private S3Driver s3Driver;
 
-    private StorageReader storageReader;
-
     private IndexClient indexClient;
 
     @BeforeEach
@@ -52,7 +50,7 @@ class IndexNviCandidateHandlerTest {
         var s3Client = new FakeS3Client();
         indexClient = new FakeIndexClient();
         s3Driver = new S3Driver(s3Client, "bucketName");
-        storageReader = new FakeStorageReader(s3Client);
+        StorageReader<NviCandidate> storageReader = new FakeStorageReader(s3Client);
         handler = new IndexNviCandidateHandler(storageReader, indexClient);
     }
 
@@ -88,16 +86,6 @@ class IndexNviCandidateHandlerTest {
         assertThat(appender.getMessages(), containsString(ERROR_MESSAGE_BODY_INVALID));
     }
 
-    @Test
-    void shouldLogErrorWhenMessageBodyWithoutS3Uri() {
-        var appender = LogUtils.getTestingAppenderForRootLogger();
-        var sqsEvent = createEventWithBodyWithoutS3Uri();
-
-        handler.handleRequest(sqsEvent, CONTEXT);
-
-        assertThat(appender.getMessages(), containsString(ERROR_MESSAGE_BODY_INVALID));
-    }
-
     private static IndexDocument getExpectedIndexDocument() {
         var content = IoUtils.stringFromResources(Path.of("indexDocumentSample.json"));
         return attempt(() -> objectMapper.readValue(content, IndexDocument.class)).orElseThrow();
@@ -108,15 +96,6 @@ class IndexNviCandidateHandlerTest {
         var invalidSqsMessage = new SQSMessage();
         invalidSqsMessage.setBody(
             constructBody(randomUri().toString(), randomUri().toString(), List.of(randomUri().toString())));
-        sqsEvent.setRecords(List.of(invalidSqsMessage));
-        return sqsEvent;
-    }
-
-    private static SQSEvent createEventWithBodyWithoutS3Uri() {
-        var sqsEvent = new SQSEvent();
-        var invalidSqsMessage = new SQSMessage();
-        invalidSqsMessage.setBody(
-            constructBody(randomUri().toString(), List.of(randomUri().toString())));
         sqsEvent.setRecords(List.of(invalidSqsMessage));
         return sqsEvent;
     }
@@ -148,21 +127,6 @@ class IndexNviCandidateHandlerTest {
                           attempt(() -> objectMapper.writeValueAsString(affiliationApprovals)).orElseThrow()),
                     entry(S3_URI_FIELD, s3Uri)
                 ))).orElseThrow();
-    }
-
-    private static String constructBody(String publicationId,
-                                        List<String> affiliationApprovals) {
-        return attempt(
-            () -> objectMapper.writeValueAsString(
-                Map.ofEntries(
-                    entry(PUBLICATION_ID_FIELD, publicationId),
-                    entry(AFFILIATION_APPROVALS_FIELD,
-                          attempt(() -> objectMapper.writeValueAsString(
-                              affiliationApprovals)).orElseThrow())))).orElseThrow();
-    }
-
-    private String extractIdentifier(URI publicationId) {
-        return UriWrapper.fromUri(publicationId).getLastPathElement();
     }
 
     private URI prepareNviCandidateFile() {
