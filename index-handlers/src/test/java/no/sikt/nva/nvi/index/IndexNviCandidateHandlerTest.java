@@ -26,6 +26,7 @@ import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
+import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,7 +57,10 @@ class IndexNviCandidateHandlerTest {
     @Test
     void shouldAddDocumentToIndexWhenNviCandidateExistsInResourcesStorage() {
         var nviCandidateS3Uri = prepareNviCandidateFile();
-        var sqsEvent = createEventWithBodyWithS3Uri(nviCandidateS3Uri);
+        var publicationIdentifier = UriWrapper.fromUri(nviCandidateS3Uri).getLastPathElement();
+        var publicationId = UriWrapper.fromHost("https://localHost").addChild(publicationIdentifier).getUri();
+
+        var sqsEvent = createEventWithBodyWithPublicationId(publicationId);
 
         handler.handleRequest(sqsEvent, CONTEXT);
         var allIndexDocuments = indexClient.listAllDocuments(INDEX_NVI_CANDIDATES);
@@ -99,11 +103,11 @@ class IndexNviCandidateHandlerTest {
         return sqsEvent;
     }
 
-    private static SQSEvent createEventWithBodyWithS3Uri(URI s3Uri) {
+    private static SQSEvent createEventWithBodyWithPublicationId(URI publicationId) {
         var sqsEvent = new SQSEvent();
         var invalidSqsMessage = new SQSMessage();
         invalidSqsMessage.setBody(
-            constructBody(randomUri().toString(), List.of(randomUri().toString())));
+            constructBody(publicationId.toString(), List.of(randomUri().toString())));
         sqsEvent.setRecords(List.of(invalidSqsMessage));
         return sqsEvent;
     }
