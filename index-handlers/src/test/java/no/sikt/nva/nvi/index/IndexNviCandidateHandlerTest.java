@@ -1,3 +1,5 @@
+package no.sikt.nva.nvi.index;
+
 import static java.util.Map.entry;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -17,8 +19,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.IndexClient;
+import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.model.IndexDocument;
-import no.sikt.nva.nvi.index.IndexNviCandidateHandler;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.ioutils.IoUtils;
@@ -41,14 +43,17 @@ class IndexNviCandidateHandlerTest {
 
     private S3Driver s3Driver;
 
-    private IndexClient fakeIndexClient;
+    private StorageReader storageReader;
+
+    private IndexClient indexClient;
 
     @BeforeEach
     void setup() {
-        var fakeS3Client = new FakeS3Client();
-        fakeIndexClient = new FakeIndexClient();
-        s3Driver = new S3Driver(fakeS3Client, "ignored");
-        handler = new IndexNviCandidateHandler(fakeIndexClient);
+        var s3Client = new FakeS3Client();
+        indexClient = new FakeIndexClient();
+        s3Driver = new S3Driver(s3Client, "bucketName");
+        storageReader = new FakeStorageReader(s3Client);
+        handler = new IndexNviCandidateHandler(storageReader, indexClient);
     }
 
     @Test
@@ -57,7 +62,7 @@ class IndexNviCandidateHandlerTest {
         var sqsEvent = createEventWithBodyWithS3Uri(nviCandidateS3Uri);
 
         handler.handleRequest(sqsEvent, CONTEXT);
-        var allIndexDocuments = fakeIndexClient.listAllDocuments(INDEX_NVI_CANDIDATES);
+        var allIndexDocuments = indexClient.listAllDocuments(INDEX_NVI_CANDIDATES);
 
         var expectedIndexDocument = getExpectedIndexDocument();
         assertThat(allIndexDocuments, containsInAnyOrder(expectedIndexDocument));

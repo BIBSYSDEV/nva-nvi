@@ -17,3 +17,8 @@ dependencies {
     implementation libs.jackson.core
     implementation libs.jackson.databind
 }
+
+test {
+    useJUnitPlatform()
+    environment "EXPANDED_RESOURCES_BUCKET", "My Bucketses"
+}

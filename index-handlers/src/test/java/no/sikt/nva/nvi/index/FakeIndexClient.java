@@ -1,3 +1,5 @@
+package no.sikt.nva.nvi.index;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;

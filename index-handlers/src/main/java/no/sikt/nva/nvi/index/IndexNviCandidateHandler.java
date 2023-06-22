@@ -9,6 +9,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Objects;
 import no.sikt.nva.nvi.common.IndexClient;
+import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.index.model.NviCandidate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +21,10 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
 
     private final IndexClient indexClient;
 
-    public IndexNviCandidateHandler(IndexClient indexClient) {
+    private final StorageReader<NviCandidate> storageReader;
+
+    public IndexNviCandidateHandler(StorageReader<NviCandidate> storageReader, IndexClient indexClient) {
+        this.storageReader = storageReader;
         this.indexClient = indexClient;
     }
 
