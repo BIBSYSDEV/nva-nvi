@@ -20,7 +20,7 @@ public class FakeIndexClient implements IndexClient<NviCandidateIndexDocument> {
         indexContents.put(indexDocument.identifier(), indexDocument);
     }
 
-    public Set<NviCandidateIndexDocument> listAllDocuments(String indexName) {
+    public Set<NviCandidateIndexDocument> listAllDocuments() {
         return new HashSet<>(this.indexContents.values());
     }
 }

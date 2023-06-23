@@ -34,7 +34,6 @@ class IndexNviCandidateHandlerTest {
 
     public static final String PUBLICATION_ID_FIELD = "publicationId";
     public static final String AFFILIATION_APPROVALS_FIELD = "affiliationApprovals";
-    public static final String INDEX_NVI_CANDIDATES = "nviCandidates";
     public static final String HOST = "https://localhost";
     public static final String RESOURCE_SAMPLE_JSON = "resourceSample.json";
     public static final String INDEX_DOCUMENT_SAMPLE_JSON = "indexDocumentSample.json";
@@ -62,7 +61,7 @@ class IndexNviCandidateHandlerTest {
         var sqsEvent = createEventWithBodyWithPublicationId(publicationId, List.of(affiliationUri));
 
         handler.handleRequest(sqsEvent, CONTEXT);
-        var allIndexDocuments = indexClient.listAllDocuments(INDEX_NVI_CANDIDATES);
+        var allIndexDocuments = indexClient.listAllDocuments();
 
         var expectedIndexDocument = getExpectedIndexDocument();
         assertThat(allIndexDocuments, containsInAnyOrder(expectedIndexDocument));
