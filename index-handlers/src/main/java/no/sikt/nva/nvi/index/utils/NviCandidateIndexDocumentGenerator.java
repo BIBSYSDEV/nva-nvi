@@ -23,12 +23,14 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.index.ApprovalStatus;
+import no.sikt.nva.nvi.index.Contexts;
 import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidate;
@@ -51,24 +53,42 @@ public final class NviCandidateIndexDocumentGenerator {
                                                       resource)).orElseThrow());
     }
 
+    private static NviCandidateIndexDocument constructNviCandidateIndexDocument(NviCandidate candidate,
+                                                                                JsonNode resource) {
+        return new NviCandidateIndexDocument(URI.create(Contexts.NVI_CONTEXT),
+                                             extractPublicationIdentifier(resource),
+                                             extractYear(resource),
+                                             TYPE_NVI_CANDIDATE,
+                                             extractPublication(resource),
+                                             constructAffiliations(
+                                                 resource, candidate));
+    }
+
     private static List<Affiliation> constructAffiliations(JsonNode resource, NviCandidate candidate) {
         return candidate.affiliationApprovals().stream()
-                   .map(id -> getAffiliation(resource, id))
+                   .map(id -> expandAffiliation(resource, id))
                    .toList();
     }
 
-    private static Affiliation getAffiliation(JsonNode resource, String id) {
+    private static Affiliation expandAffiliation(JsonNode resource, String id) {
         return getJsonNodeStream(resource, JSON_PTR_CONTRIBUTOR)
                    .flatMap(contributor -> getJsonNodeStream(contributor, JSON_PTR_AFFILIATIONS))
                    .filter(affiliation -> Objects.nonNull(affiliation.get(FIELD_ID)))
                    .filter(affiliation -> affiliation.get(FIELD_ID).textValue().equals(id))
                    .findFirst()
-                   .map(affiliation -> new Affiliation(affiliation.get(FIELD_ID).textValue(),
-                                                       dtoObjectMapper.convertValue(affiliation.get(FIELD_LABELS),
-                                                                                    new TypeReference<>() {
-                                                                                    }),
-                                                       ApprovalStatus.PENDING.getValue()))
+                   .map(NviCandidateIndexDocumentGenerator::createAffiliation)
                    .orElse(null);
+    }
+
+    private static Affiliation createAffiliation(JsonNode affiliation) {
+        return new Affiliation(affiliation.get(FIELD_ID).textValue(),
+                               convertToMap(affiliation.get(FIELD_LABELS)),
+                               ApprovalStatus.PENDING.getValue());
+    }
+
+    private static Map<String, String> convertToMap(JsonNode node) {
+        return dtoObjectMapper.convertValue(node, new TypeReference<>() {
+        });
     }
 
     private static String extractPublicationId(JsonNode resource) {
@@ -77,16 +97,6 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static Stream<JsonNode> getJsonNodeStream(JsonNode jsonNode, String jsonPtr) {
         return StreamSupport.stream(jsonNode.at(jsonPtr).spliterator(), false);
-    }
-
-    private static NviCandidateIndexDocument constructNviCandidateIndexDocument(NviCandidate candidate,
-                                                                                JsonNode resource) {
-        return new NviCandidateIndexDocument(extractPublicationIdentifier(resource),
-                                             extractYear(resource),
-                                             TYPE_NVI_CANDIDATE,
-                                             extractPublication(resource),
-                                             constructAffiliations(
-                                                 resource, candidate));
     }
 
     private static String extractPublicationIdentifier(JsonNode resource) {
@@ -102,10 +112,14 @@ public final class NviCandidateIndexDocumentGenerator {
     private static List<Contributor> extractContributors(JsonNode resource) {
         return getJsonNodeStream(resource, JSON_PTR_CONTRIBUTOR)
                    .map(contributor -> contributor.get(FIELD_IDENTITY))
-                   .map(identity -> new Contributor(identity.get(FIELD_ID).textValue(),
-                                                    identity.get(FIELD_NAME).textValue(),
-                                                    identity.get(FIELD_ORCID).textValue()))
+                   .map(NviCandidateIndexDocumentGenerator::createContributor)
                    .toList();
+    }
+
+    private static Contributor createContributor(JsonNode identity) {
+        return new Contributor(identity.get(FIELD_ID).textValue(),
+                               identity.get(FIELD_NAME).textValue(),
+                               identity.get(FIELD_ORCID).textValue());
     }
 
     private static PublicationChannel extractPublicationChannel(JsonNode resource) {

@@ -37,6 +37,7 @@ class IndexNviCandidateHandlerTest {
     public static final String PUBLICATION_ID_FIELD = "publicationId";
     public static final String AFFILIATION_APPROVALS_FIELD = "affiliationApprovals";
     public static final String INDEX_NVI_CANDIDATES = "nviCandidates";
+    public static final String HOST = "https://localhost";
     private IndexNviCandidateHandler handler;
 
     private S3Driver s3Driver;
@@ -56,7 +57,7 @@ class IndexNviCandidateHandlerTest {
     void shouldAddDocumentToIndexWhenNviCandidateExistsInResourcesStorage() {
         var nviCandidateS3Uri = prepareNviCandidateFile();
         var publicationIdentifier = UriWrapper.fromUri(nviCandidateS3Uri).getLastPathElement();
-        var publicationId = UriWrapper.fromHost("https://localhost").addChild(publicationIdentifier).getUri();
+        var publicationId = UriWrapper.fromHost(HOST).addChild(publicationIdentifier).getUri();
 
         var sqsEvent = createEventWithBodyWithPublicationId(publicationId, List.of(
             "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"));
