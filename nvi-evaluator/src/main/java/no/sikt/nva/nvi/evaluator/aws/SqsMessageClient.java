@@ -28,8 +28,7 @@ public class SqsMessageClient implements QueueClient<SendMessageResponse> {
 
     @Override
     public SendMessageResponse sendMessage(String message) {
-        SendMessageResponse sendMessageResponse = sqsClient.sendMessage(createCandidate(message));
-        return sendMessageResponse;
+        return sqsClient.sendMessage(createCandidate(message));
     }
 
     @JacocoGenerated

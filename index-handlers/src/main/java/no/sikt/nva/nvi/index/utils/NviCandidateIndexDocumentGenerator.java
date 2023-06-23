@@ -65,8 +65,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .findFirst()
                    .map(affiliation -> new Affiliation(affiliation.get(FIELD_ID).textValue(),
                                                        dtoObjectMapper.convertValue(affiliation.get(FIELD_LABELS),
-                                                                                    new TypeReference<Map<String,
-                                                                                                             String>>() {
+                                                                                    new TypeReference<>() {
                                                                                     }),
                                                        ApprovalStatus.PENDING.getValue()))
                    .orElse(null);
