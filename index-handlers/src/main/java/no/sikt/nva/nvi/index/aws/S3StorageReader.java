@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index;
+package no.sikt.nva.nvi.index.aws;
 
 import java.net.URI;
 import no.sikt.nva.nvi.common.StorageReader;

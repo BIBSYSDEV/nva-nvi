@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index;
 
 import no.sikt.nva.nvi.common.StorageReader;
+import no.sikt.nva.nvi.index.aws.S3StorageReader;
 import no.sikt.nva.nvi.index.model.NviCandidate;
 import software.amazon.awssdk.services.s3.S3Client;
 

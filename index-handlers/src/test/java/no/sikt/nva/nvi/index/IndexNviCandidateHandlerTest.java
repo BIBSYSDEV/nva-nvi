@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.index;
 import static java.util.Map.entry;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -38,6 +37,8 @@ class IndexNviCandidateHandlerTest {
     public static final String AFFILIATION_APPROVALS_FIELD = "affiliationApprovals";
     public static final String INDEX_NVI_CANDIDATES = "nviCandidates";
     public static final String HOST = "https://localhost";
+    public static final String RESOURCE_SAMPLE_JSON = "resourceSample.json";
+    public static final String INDEX_DOCUMENT_SAMPLE_JSON = "indexDocumentSample.json";
     private IndexNviCandidateHandler handler;
 
     private S3Driver s3Driver;
@@ -58,9 +59,8 @@ class IndexNviCandidateHandlerTest {
         var nviCandidateS3Uri = prepareNviCandidateFile();
         var publicationIdentifier = UriWrapper.fromUri(nviCandidateS3Uri).getLastPathElement();
         var publicationId = UriWrapper.fromHost(HOST).addChild(publicationIdentifier).getUri();
-
-        var sqsEvent = createEventWithBodyWithPublicationId(publicationId, List.of(
-            "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"));
+        var affiliationUri = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0";
+        var sqsEvent = createEventWithBodyWithPublicationId(publicationId, List.of(affiliationUri));
 
         handler.handleRequest(sqsEvent, CONTEXT);
         var allIndexDocuments = indexClient.listAllDocuments(INDEX_NVI_CANDIDATES);
@@ -80,12 +80,8 @@ class IndexNviCandidateHandlerTest {
     }
 
     private static NviCandidateIndexDocument getExpectedIndexDocument() {
-        var content = IoUtils.stringFromResources(Path.of("indexDocumentSample.json"));
+        var content = IoUtils.stringFromResources(Path.of(INDEX_DOCUMENT_SAMPLE_JSON));
         return attempt(() -> objectMapper.readValue(content, NviCandidateIndexDocument.class)).orElseThrow();
-    }
-
-    private static SQSEvent createEventWithValidBody() {
-        return createEventWithBodyWithPublicationId(randomUri(), List.of(randomUri().toString()));
     }
 
     private static SQSEvent createEventWithBodyWithPublicationId(URI publicationId, List<String> affiliationApprovals) {
@@ -117,7 +113,7 @@ class IndexNviCandidateHandlerTest {
     }
 
     private URI prepareNviCandidateFile() {
-        var path = "s3resourceSample.json";
+        var path = RESOURCE_SAMPLE_JSON;
         var content = IoUtils.inputStreamFromResources(path);
         return attempt(() -> s3Driver.insertFile(UnixPath.of(path), content)).orElseThrow();
     }
