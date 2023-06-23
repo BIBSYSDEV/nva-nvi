@@ -16,7 +16,6 @@ public final class ResourceJsonConstants {
     public static final String JSON_PTR_MAIN_TITLE = "/entityDescription/mainTitle";
     public static final String JSON_PTR_INSTANCE_TYPE = "/entityDescription/reference/publicationInstance/type";
     public static final String JSON_PTR_PUBLICATION_DATE_YEAR = "/entityDescription/publicationDate/year";
-
     public static final String FIELD_PUBLICATION_DATE_YEAR = "year";
     public static final String FIELD_PUBLICATION_DATE_MONTH = "month";
     public static final String FIELD_PUBLICATION_DATE_DAY = "day";
@@ -26,4 +25,6 @@ public final class ResourceJsonConstants {
     public static final String FIELD_NAME = "name";
     public static final String FIELD_ORCID = "orcid";
 
+    private ResourceJsonConstants() {
+    }
 }

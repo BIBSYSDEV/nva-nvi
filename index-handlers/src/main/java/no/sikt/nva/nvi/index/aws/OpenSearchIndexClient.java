@@ -4,6 +4,7 @@ import static no.sikt.nva.nvi.common.ApplicationConstants.OPENSEARCH_ENDPOINT;
 import static nva.commons.core.attempt.Try.attempt;
 import no.sikt.nva.nvi.common.IndexClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
@@ -11,6 +12,8 @@ import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 
+@JacocoGenerated
+//TODO: Handle test coverage
 public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocument> {
 
     public static final String INDEX = "nviCandidates";
