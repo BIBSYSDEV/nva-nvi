@@ -16,7 +16,7 @@ dependencies {
     implementation libs.opensearch.rest.client
     implementation libs.jackson.core
     implementation libs.jackson.databind
-    implementation libs.apache.client
+    implementation libs.aws.sdk2.apache.client
 }
 
 test {
