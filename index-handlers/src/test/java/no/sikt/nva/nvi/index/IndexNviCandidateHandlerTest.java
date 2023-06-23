@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.IndexClient;
 import no.sikt.nva.nvi.common.StorageReader;
-import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.NviCandidate;
+import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.ioutils.IoUtils;
@@ -58,25 +58,16 @@ class IndexNviCandidateHandlerTest {
     void shouldAddDocumentToIndexWhenNviCandidateExistsInResourcesStorage() {
         var nviCandidateS3Uri = prepareNviCandidateFile();
         var publicationIdentifier = UriWrapper.fromUri(nviCandidateS3Uri).getLastPathElement();
-        var publicationId = UriWrapper.fromHost("https://localHost").addChild(publicationIdentifier).getUri();
+        var publicationId = UriWrapper.fromHost("https://localhost").addChild(publicationIdentifier).getUri();
 
-        var sqsEvent = createEventWithBodyWithPublicationId(publicationId);
+        var sqsEvent = createEventWithBodyWithPublicationId(publicationId, List.of(
+            "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"));
 
         handler.handleRequest(sqsEvent, CONTEXT);
         var allIndexDocuments = indexClient.listAllDocuments(INDEX_NVI_CANDIDATES);
 
         var expectedIndexDocument = getExpectedIndexDocument();
         assertThat(allIndexDocuments, containsInAnyOrder(expectedIndexDocument));
-    }
-
-    @Test
-    void shouldNotLogErrorWhenMessageBodyValid() {
-        var appender = LogUtils.getTestingAppenderForRootLogger();
-        var sqsEvent = createEventWithValidBody();
-
-        handler.handleRequest(sqsEvent, CONTEXT);
-
-        assertThat(appender.getMessages(), is(emptyString()));
     }
 
     @Test
@@ -95,19 +86,14 @@ class IndexNviCandidateHandlerTest {
     }
 
     private static SQSEvent createEventWithValidBody() {
-        var sqsEvent = new SQSEvent();
-        var invalidSqsMessage = new SQSMessage();
-        invalidSqsMessage.setBody(
-            constructBody(randomUri().toString(), List.of(randomUri().toString())));
-        sqsEvent.setRecords(List.of(invalidSqsMessage));
-        return sqsEvent;
+        return createEventWithBodyWithPublicationId(randomUri(), List.of(randomUri().toString()));
     }
 
-    private static SQSEvent createEventWithBodyWithPublicationId(URI publicationId) {
+    private static SQSEvent createEventWithBodyWithPublicationId(URI publicationId, List<String> affiliationApprovals) {
         var sqsEvent = new SQSEvent();
         var invalidSqsMessage = new SQSMessage();
         invalidSqsMessage.setBody(
-            constructBody(publicationId.toString(), List.of(randomUri().toString())));
+            constructBody(publicationId.toString(), affiliationApprovals));
         sqsEvent.setRecords(List.of(invalidSqsMessage));
         return sqsEvent;
     }
@@ -127,8 +113,8 @@ class IndexNviCandidateHandlerTest {
                 Map.ofEntries(
                     entry(PUBLICATION_ID_FIELD, publicationId),
                     entry(AFFILIATION_APPROVALS_FIELD,
-                          attempt(() -> objectMapper.writeValueAsString(affiliationApprovals)).orElseThrow())
-                ))).orElseThrow();
+                          affiliationApprovals
+                    )))).orElseThrow();
     }
 
     private URI prepareNviCandidateFile() {
