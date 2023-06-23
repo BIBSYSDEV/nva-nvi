@@ -8,6 +8,6 @@ public record NviCandidate(@JsonProperty(PUBLICATION_ID) String publicationId,
                            @JsonProperty(APPROVAL_AFFILIATIONS) List<String> affiliationApprovals) implements
                                                                                                    JsonSerializable {
 
-    public static final String PUBLICATION_ID = "publicationId";
-    public static final String APPROVAL_AFFILIATIONS = "affiliationApprovals";
+    private static final String PUBLICATION_ID = "publicationId";
+    private static final String APPROVAL_AFFILIATIONS = "affiliationApprovals";
 }

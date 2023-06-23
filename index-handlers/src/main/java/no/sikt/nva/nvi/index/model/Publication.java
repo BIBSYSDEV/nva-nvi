@@ -10,10 +10,10 @@ public record Publication(@JsonProperty(ID) String id,
                           @JsonProperty(PUBLICATION_CHANNEL) PublicationChannel publicationChannel,
                           @JsonProperty(CONTRIBUTORS) List<Contributor> contributors) {
 
-    public static final String ID = "id";
-    public static final String TYPE = "type";
-    public static final String TITLE = "title";
-    public static final String PUBLICATION_DATE = "publicationDate";
-    public static final String PUBLICATION_CHANNEL = "publicationChannel";
-    public static final String CONTRIBUTORS = "contributors";
+    private static final String ID = "id";
+    private static final String TYPE = "type";
+    private static final String TITLE = "title";
+    private static final String PUBLICATION_DATE = "publicationDate";
+    private static final String PUBLICATION_CHANNEL = "publicationChannel";
+    private static final String CONTRIBUTORS = "contributors";
 }

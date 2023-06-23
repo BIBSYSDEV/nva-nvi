@@ -6,7 +6,7 @@ public record Contributor(@JsonProperty(ID) String id,
                           @JsonProperty(NAME) String name,
                           @JsonProperty(ORCID) String orcId) {
 
-    public static final String ID = "id";
-    public static final String NAME = "name";
-    public static final String ORCID = "orcid";
+    private static final String ID = "id";
+    private static final String NAME = "name";
+    private static final String ORCID = "orcid";
 }

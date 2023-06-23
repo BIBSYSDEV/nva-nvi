@@ -7,8 +7,8 @@ public record PublicationChannel(@JsonProperty(ID) String id,
                                  @JsonProperty(LEVEL) String level,
                                  @JsonProperty(TYPE) String type) {
 
-    public static final String ID = "id";
-    public static final String NAME = "name";
-    public static final String LEVEL = "level";
-    public static final String TYPE = "type";
+    private static final String ID = "id";
+    private static final String NAME = "name";
+    private static final String LEVEL = "level";
+    private static final String TYPE = "type";
 }

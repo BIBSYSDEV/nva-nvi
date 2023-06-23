@@ -12,10 +12,10 @@ public record NviCandidateIndexDocument(
     @JsonProperty(PUBLICATION) Publication publication,
     @JsonProperty(AFFILIATIONS) List<Affiliation> affiliations) {
 
-    public static final String IDENTIFIER = "identifier";
-    public static final String YEAR = "year";
-    public static final String TYPE = "type";
-    public static final String PUBLICATION = "publication";
-    public static final String AFFILIATIONS = "affiliations";
-    public static final String CONTEXT = "context";
+    private static final String IDENTIFIER = "identifier";
+    private static final String YEAR = "year";
+    private static final String TYPE = "type";
+    private static final String PUBLICATION = "publication";
+    private static final String AFFILIATIONS = "affiliations";
+    private static final String CONTEXT = "context";
 }
