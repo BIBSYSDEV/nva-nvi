@@ -10,8 +10,11 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Objects;
 import no.sikt.nva.nvi.common.IndexClient;
 import no.sikt.nva.nvi.common.StorageReader;
+import no.sikt.nva.nvi.index.aws.OpenSearchIndexClient;
+import no.sikt.nva.nvi.index.aws.S3StorageReader;
 import no.sikt.nva.nvi.index.model.NviCandidate;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +25,12 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
     private final IndexClient<NviCandidateIndexDocument> indexClient;
 
     private final StorageReader<NviCandidate> storageReader;
+
+    @JacocoGenerated
+    public IndexNviCandidateHandler() {
+        this.storageReader = new S3StorageReader();
+        this.indexClient = new OpenSearchIndexClient();
+    }
 
     public IndexNviCandidateHandler(StorageReader<NviCandidate> storageReader,
                                     IndexClient<NviCandidateIndexDocument> indexClient) {

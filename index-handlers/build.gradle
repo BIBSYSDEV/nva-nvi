@@ -16,9 +16,11 @@ dependencies {
     implementation libs.opensearch.rest.client
     implementation libs.jackson.core
     implementation libs.jackson.databind
+    implementation libs.apache.client
 }
 
 test {
     useJUnitPlatform()
     environment "EXPANDED_RESOURCES_BUCKET", "My Bucketses"
+    environment("OPENSEARCH_ENDPOINT", "search-...us-west-2.es.amazonaws.com")
 }

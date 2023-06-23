@@ -15,7 +15,6 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import no.sikt.nva.nvi.common.IndexClient;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.index.model.NviCandidate;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
@@ -43,7 +42,7 @@ class IndexNviCandidateHandlerTest {
 
     private S3Driver s3Driver;
 
-    private IndexClient<NviCandidateIndexDocument> indexClient;
+    private FakeIndexClient indexClient;
 
     @BeforeEach
     void setup() {
