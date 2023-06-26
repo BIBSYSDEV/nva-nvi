@@ -25,13 +25,11 @@ public final class Affiliation {
         this.approvalStatus = approvalStatus;
     }
 
-    @JsonProperty(ID)
-    public String id() {
+    public String getId() {
         return id;
     }
 
-    @JsonProperty(LABELS)
-    public Map<String, String> labels() {
+    public Map<String, String> getLabels() {
         return labels;
     }
 

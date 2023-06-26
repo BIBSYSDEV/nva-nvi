@@ -35,23 +35,19 @@ public final class Publication {
         this.contributors = contributors;
     }
 
-    @JsonProperty(TYPE)
-    public String type() {
+    public String getType() {
         return type;
     }
 
-    @JsonProperty(TITLE)
-    public String title() {
+    public String getTitle() {
         return title;
     }
 
-    @JsonProperty(PUBLICATION_DATE)
-    public String publicationDate() {
+    public String getPublicationDate() {
         return publicationDate;
     }
 
-    @JsonProperty(CONTRIBUTORS)
-    public List<Contributor> contributors() {
+    public List<Contributor> getContributors() {
         return contributors;
     }
 

@@ -42,18 +42,15 @@ public final class NviCandidateIndexDocument {
         this.affiliations = affiliations;
     }
 
-    @JsonProperty(IDENTIFIER)
-    public String identifier() {
+    public String getIdentifier() {
         return identifier;
     }
 
-    @JsonProperty(PUBLICATION)
-    public Publication publication() {
+    public Publication getPublication() {
         return publication;
     }
 
-    @JsonProperty(AFFILIATIONS)
-    public List<Affiliation> affiliations() {
+    public List<Affiliation> getAffiliations() {
         return affiliations;
     }
 

@@ -14,7 +14,7 @@ public class ExpandedResourceGenerator {
     public static String createExpandedResource(NviCandidateIndexDocument document, String host) {
         var root = objectMapper.createObjectNode();
 
-        root.put("id", UriWrapper.fromUri(host).addChild(document.identifier()).toString());
+        root.put("id", UriWrapper.fromUri(host).addChild(document.getIdentifier()).toString());
 
         var entityDescription = objectMapper.createObjectNode();
 
@@ -22,7 +22,7 @@ public class ExpandedResourceGenerator {
 
         entityDescription.set("contributors", contributors);
 
-        entityDescription.put("mainTitle", document.publication().title());
+        entityDescription.put("mainTitle", document.getPublication().getTitle());
 
         var publicationDate = createAndPopulatePublicationDate(document);
 
@@ -31,7 +31,7 @@ public class ExpandedResourceGenerator {
         var reference = objectMapper.createObjectNode();
 
         var publicationInstance = objectMapper.createObjectNode();
-        publicationInstance.put("type", document.publication().type());
+        publicationInstance.put("type", document.getPublication().getType());
 
         reference.set("publicationInstance", publicationInstance);
 
@@ -39,7 +39,7 @@ public class ExpandedResourceGenerator {
 
         root.set("entityDescription", entityDescription);
 
-        root.put("identifier", document.identifier());
+        root.put("identifier", document.getIdentifier());
 
         return attempt(() -> objectMapper.writeValueAsString(root)).orElseThrow();
     }
@@ -62,16 +62,16 @@ public class ExpandedResourceGenerator {
     private static ObjectNode createAndPopulatePublicationDate(NviCandidateIndexDocument document) {
         var publicationDate = objectMapper.createObjectNode();
         publicationDate.put("type", "PublicationDate");
-        publicationDate.put("day", extractDay(document.publication().publicationDate()));
-        publicationDate.put("month", extractMonth(document.publication().publicationDate()));
-        publicationDate.put("year", extractYear(document.publication().publicationDate()));
+        publicationDate.put("day", extractDay(document.getPublication().getPublicationDate()));
+        publicationDate.put("month", extractMonth(document.getPublication().getPublicationDate()));
+        publicationDate.put("year", extractYear(document.getPublication().getPublicationDate()));
         return publicationDate;
     }
 
     private static ArrayNode populateAndCreateContributors(NviCandidateIndexDocument document) {
 
         var contributors = objectMapper.createArrayNode();
-        document.publication().contributors().forEach(contributor -> {
+        document.getPublication().getContributors().forEach(contributor -> {
 
             var contributorNode = objectMapper.createObjectNode();
 
@@ -97,14 +97,14 @@ public class ExpandedResourceGenerator {
     private static ArrayNode createAndPopulateAffiliationsNode(NviCandidateIndexDocument document) {
         var affiliations = objectMapper.createArrayNode();
 
-        document.affiliations().forEach(affiliation -> {
+        document.getAffiliations().forEach(affiliation -> {
             var affiliationNode = objectMapper.createObjectNode();
-            affiliationNode.put("id", affiliation.id());
+            affiliationNode.put("id", affiliation.getId());
             affiliationNode.put("type", "Organization");
             var labels = objectMapper.createObjectNode();
 
-            labels.put("nb", affiliation.labels().get("nb"));
-            labels.put("en", affiliation.labels().get("en"));
+            labels.put("nb", affiliation.getLabels().get("nb"));
+            labels.put("en", affiliation.getLabels().get("en"));
 
             affiliationNode.set("labels", labels);
 

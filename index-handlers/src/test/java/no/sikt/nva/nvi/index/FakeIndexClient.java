@@ -17,7 +17,7 @@ public class FakeIndexClient implements IndexClient<NviCandidateIndexDocument> {
 
     @Override
     public void addDocumentToIndex(NviCandidateIndexDocument indexDocument) {
-        indexContents.put(indexDocument.identifier(), indexDocument);
+        indexContents.put(indexDocument.getIdentifier(), indexDocument);
     }
 
     public Set<NviCandidateIndexDocument> listAllDocuments() {

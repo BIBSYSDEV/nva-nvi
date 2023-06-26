@@ -160,7 +160,7 @@ class IndexNviCandidateHandlerTest {
                                                                                                 publicationDate),
                                                                               affiliations);
         var expandedResource = createExpandedResource(expectedNviCandidateIndexDocument, HOST);
-        attempt(() -> s3Driver.insertFile(UnixPath.of(expectedNviCandidateIndexDocument.identifier()),
+        attempt(() -> s3Driver.insertFile(UnixPath.of(expectedNviCandidateIndexDocument.getIdentifier()),
                                           stringToStream(expandedResource))).orElseThrow();
 
         return expectedNviCandidateIndexDocument;
