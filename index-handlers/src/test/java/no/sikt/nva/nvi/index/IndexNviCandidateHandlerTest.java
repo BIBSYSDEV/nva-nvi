@@ -23,7 +23,6 @@ import no.sikt.nva.nvi.index.model.Contexts;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.Publication;
-import no.sikt.nva.nvi.index.model.PublicationChannel;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
@@ -122,16 +121,11 @@ class IndexNviCandidateHandlerTest {
                     )))).orElseThrow();
     }
 
-    private static Publication createPublication(URI publicationId, String instanceType, String publicationDate,
-                                                 String level, String publicationChannelType) {
+    private static Publication createPublication(URI publicationId, String instanceType, String publicationDate) {
         return new Publication(publicationId.toString(),
                                instanceType,
                                randomString(),
                                publicationDate,
-                               new PublicationChannel(
-                                   randomUri().toString(),
-                                   randomString(), level,
-                                   publicationChannelType),
                                List.of(new Contributor(
                                    randomUri().toString(),
                                    randomString(),
@@ -145,20 +139,17 @@ class IndexNviCandidateHandlerTest {
         var documentType = "NviCandidate";
         var instanceType = "AcademicArticle";
         var publicationDate = "2023-01-01";
-        var level = "1";
-        var publicationChannelType = "Journal";
         var affiliation = new Affiliation(
             affiliationUri.toString(),
             Map.of("nb", randomString(), "en",
                    randomString()), "Pending");
         return prepareNviCandidateFile(identifier, publicationId, year, documentType, instanceType, publicationDate,
-                                       level, publicationChannelType, List.of(affiliation));
+                                       List.of(affiliation));
     }
 
     private NviCandidateIndexDocument prepareNviCandidateFile(UUID identifier, URI publicationId, String year,
                                                               String documentType, String instanceType,
-                                                              String publicationDate, String level,
-                                                              String publicationChannelType,
+                                                              String publicationDate,
                                                               List<Affiliation> affiliations) {
         var expectedNviCandidateIndexDocument = new NviCandidateIndexDocument(URI.create(Contexts.NVI_CONTEXT),
                                                                               identifier.toString(),
@@ -166,8 +157,7 @@ class IndexNviCandidateHandlerTest {
                                                                               documentType,
                                                                               createPublication(publicationId,
                                                                                                 instanceType,
-                                                                                                publicationDate, level,
-                                                                                                publicationChannelType),
+                                                                                                publicationDate),
                                                                               affiliations);
         var expandedResource = createExpandedResource(expectedNviCandidateIndexDocument, HOST);
         attempt(() -> s3Driver.insertFile(UnixPath.of(expectedNviCandidateIndexDocument.identifier()),

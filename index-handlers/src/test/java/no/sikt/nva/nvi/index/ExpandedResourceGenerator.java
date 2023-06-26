@@ -30,10 +30,6 @@ public class ExpandedResourceGenerator {
 
         var reference = objectMapper.createObjectNode();
 
-        var publicationContext = createAndPopulatePublicationContext(document);
-
-        reference.set("publicationContext", publicationContext);
-
         var publicationInstance = objectMapper.createObjectNode();
         publicationInstance.put("type", document.publication().type());
 
@@ -70,15 +66,6 @@ public class ExpandedResourceGenerator {
         publicationDate.put("month", extractMonth(document.publication().publicationDate()));
         publicationDate.put("year", extractYear(document.publication().publicationDate()));
         return publicationDate;
-    }
-
-    private static ObjectNode createAndPopulatePublicationContext(NviCandidateIndexDocument document) {
-        ObjectNode publicationContext = objectMapper.createObjectNode();
-        publicationContext.put("id", document.publication().publicationChannel().id());
-        publicationContext.put("type", document.publication().publicationChannel().type());
-        publicationContext.put("level", document.publication().publicationChannel().level());
-        publicationContext.put("name", document.publication().publicationChannel().name());
-        return publicationContext;
     }
 
     private static ArrayNode populateAndCreateContributors(NviCandidateIndexDocument document) {

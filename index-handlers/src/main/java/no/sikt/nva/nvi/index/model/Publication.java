@@ -7,13 +7,11 @@ public record Publication(@JsonProperty(ID) String id,
                           @JsonProperty(TYPE) String type,
                           @JsonProperty(TITLE) String title,
                           @JsonProperty(PUBLICATION_DATE) String publicationDate,
-                          @JsonProperty(PUBLICATION_CHANNEL) PublicationChannel publicationChannel,
                           @JsonProperty(CONTRIBUTORS) List<Contributor> contributors) {
 
     private static final String ID = "id";
     private static final String TYPE = "type";
     private static final String TITLE = "title";
     private static final String PUBLICATION_DATE = "publicationDate";
-    private static final String PUBLICATION_CHANNEL = "publicationChannel";
     private static final String CONTRIBUTORS = "contributors";
 }

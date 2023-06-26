@@ -13,10 +13,6 @@ import static no.sikt.nva.nvi.index.utils.ResourceJsonConstants.JSON_PTR_CONTRIB
 import static no.sikt.nva.nvi.index.utils.ResourceJsonConstants.JSON_PTR_ID;
 import static no.sikt.nva.nvi.index.utils.ResourceJsonConstants.JSON_PTR_INSTANCE_TYPE;
 import static no.sikt.nva.nvi.index.utils.ResourceJsonConstants.JSON_PTR_MAIN_TITLE;
-import static no.sikt.nva.nvi.index.utils.ResourceJsonConstants.JSON_PTR_PUBLICATION_CHANNEL_ID;
-import static no.sikt.nva.nvi.index.utils.ResourceJsonConstants.JSON_PTR_PUBLICATION_CHANNEL_LEVEL;
-import static no.sikt.nva.nvi.index.utils.ResourceJsonConstants.JSON_PTR_PUBLICATION_CHANNEL_NAME;
-import static no.sikt.nva.nvi.index.utils.ResourceJsonConstants.JSON_PTR_PUBLICATION_CHANNEL_TYPE;
 import static no.sikt.nva.nvi.index.utils.ResourceJsonConstants.JSON_PTR_PUBLICATION_DATE;
 import static no.sikt.nva.nvi.index.utils.ResourceJsonConstants.JSON_PTR_PUBLICATION_DATE_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -36,7 +32,6 @@ import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidate;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.Publication;
-import no.sikt.nva.nvi.index.model.PublicationChannel;
 import nva.commons.core.paths.UriWrapper;
 
 public final class NviCandidateIndexDocumentGenerator {
@@ -105,8 +100,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static Publication extractPublication(JsonNode resource) {
         return new Publication(extractPublicationId(resource), extractInstanceType(resource),
-                               extractMainTitle(resource), extractPublicationDate(resource),
-                               extractPublicationChannel(resource), extractContributors(resource));
+                               extractMainTitle(resource), extractPublicationDate(resource), extractContributors(resource));
     }
 
     private static List<Contributor> extractContributors(JsonNode resource) {
@@ -121,29 +115,6 @@ public final class NviCandidateIndexDocumentGenerator {
                                identity.get(FIELD_NAME).textValue(),
                                identity.get(FIELD_ORCID).textValue());
     }
-
-    private static PublicationChannel extractPublicationChannel(JsonNode resource) {
-        return new PublicationChannel(extractPublicationChannelId(resource), extractPublicationChannelName(resource),
-                                      extractPublicationChannelLevel(resource),
-                                      extractPublicationChannelType(resource));
-    }
-
-    private static String extractPublicationChannelType(JsonNode resource) {
-        return resource.at(JSON_PTR_PUBLICATION_CHANNEL_TYPE).textValue();
-    }
-
-    private static String extractPublicationChannelLevel(JsonNode resource) {
-        return resource.at(JSON_PTR_PUBLICATION_CHANNEL_LEVEL).textValue();
-    }
-
-    private static String extractPublicationChannelName(JsonNode resource) {
-        return resource.at(JSON_PTR_PUBLICATION_CHANNEL_NAME).textValue();
-    }
-
-    private static String extractPublicationChannelId(JsonNode resource) {
-        return resource.at(JSON_PTR_PUBLICATION_CHANNEL_ID).textValue();
-    }
-
     private static String extractPublicationDate(JsonNode resource) {
         var publicationDate = resource.at(JSON_PTR_PUBLICATION_DATE);
         return formatPublicationDate(publicationDate);
