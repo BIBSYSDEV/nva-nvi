@@ -15,8 +15,9 @@ Parameters:
   ResourcesBucket:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/PersistedEntriesBucketName
-  OpenSearchEndpoint:
+  SearchInfrastructureApiUri:
     Type: String
+    Description: URI to external search infrastructure API (SWS).
     Default: 'https://api.sws.aws.sikt.no'
 
 Resources:
@@ -112,7 +113,7 @@ Resources:
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-          OPENSEARCH_ENDPOINT: !Ref OpenSearchEndpoint
+          OPENSEARCH_ENDPOINT: !Ref SearchInfrastructureApiUri
       Events:
         SqsEvent:
           Type: SQS
