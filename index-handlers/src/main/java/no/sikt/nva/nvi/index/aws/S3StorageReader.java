@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
 
+@JacocoGenerated
 //TODO: Handle test coverage
 public class S3StorageReader implements StorageReader<NviCandidate> {
 
@@ -20,7 +21,6 @@ public class S3StorageReader implements StorageReader<NviCandidate> {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3StorageReader.class);
     private final S3Driver s3Driver;
 
-    @JacocoGenerated
     public S3StorageReader() {
         this(S3Driver.defaultS3Client().build());
     }
@@ -29,7 +29,6 @@ public class S3StorageReader implements StorageReader<NviCandidate> {
         this.s3Driver = new S3Driver(client, EXPANDED_RESOURCES_BUCKET);
     }
 
-    @JacocoGenerated
     @Override
     public String read(NviCandidate candidate) {
         var uri = URI.create(candidate.publicationId());
