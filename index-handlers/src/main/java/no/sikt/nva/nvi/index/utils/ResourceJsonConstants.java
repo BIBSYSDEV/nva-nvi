@@ -5,13 +5,6 @@ public final class ResourceJsonConstants {
     public static final String JSON_PTR_CONTRIBUTOR = "/entityDescription/contributors";
     public static final String JSON_PTR_AFFILIATIONS = "/affiliations";
     public static final String JSON_PTR_ID = "/id";
-    public static final String JSON_PTR_PUBLICATION_CHANNEL_TYPE = "/entityDescription/reference/publicationContext"
-                                                                   + "/type";
-    public static final String JSON_PTR_PUBLICATION_CHANNEL_LEVEL = "/entityDescription/reference/publicationContext"
-                                                                    + "/level";
-    public static final String JSON_PTR_PUBLICATION_CHANNEL_NAME = "/entityDescription/reference/publicationContext"
-                                                                   + "/name";
-    public static final String JSON_PTR_PUBLICATION_CHANNEL_ID = "/entityDescription/reference/publicationContext/id";
     public static final String JSON_PTR_PUBLICATION_DATE = "/entityDescription/publicationDate";
     public static final String JSON_PTR_MAIN_TITLE = "/entityDescription/mainTitle";
     public static final String JSON_PTR_INSTANCE_TYPE = "/entityDescription/reference/publicationInstance/type";
