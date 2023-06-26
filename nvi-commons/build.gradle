@@ -6,4 +6,6 @@ dependencies {
     implementation libs.jackson.databind
     implementation libs.nva.core
     implementation libs.nva.json
+    implementation libs.nva.s3
+    implementation libs.aws.sdk2.s3
 }

@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.aws;
 
 import static no.sikt.nva.nvi.common.ApplicationConstants.OPENSEARCH_ENDPOINT;
+import static no.sikt.nva.nvi.common.ApplicationConstants.REGION;
 import static nva.commons.core.attempt.Try.attempt;
 import no.sikt.nva.nvi.common.IndexClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
@@ -17,9 +18,6 @@ import software.amazon.awssdk.regions.Region;
 public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocument> {
 
     public static final String INDEX = "nviCandidates";
-
-    //TODO: replace with region from nvi-commons
-    private static final Region OPENSERCH_REGION = Region.US_WEST_2;
     private final OpenSearchClient openSearchClient;
 
     public OpenSearchIndexClient() {
@@ -27,7 +25,7 @@ public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocum
             new AwsSdk2Transport(
                 ApacheHttpClient.builder().build(),
                 OPENSEARCH_ENDPOINT,
-                OPENSERCH_REGION,
+                REGION,
                 AwsSdk2TransportOptions.builder().build()
             )
         );
