@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.index;
 
+import static no.sikt.nva.nvi.common.ApplicationConstants.OPENSEARCH_ENDPOINT;
+import static no.sikt.nva.nvi.common.ApplicationConstants.REGION;
 import static no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator.generateNviCandidateIndexDocument;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
@@ -14,22 +16,24 @@ import no.sikt.nva.nvi.index.aws.OpenSearchIndexClient;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;
 import no.sikt.nva.nvi.index.model.NviCandidate;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> {
 
-    public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexNviCandidateHandler.class);
+    private static final String EXPANDED_RESOURCES_BUCKET = new Environment().readEnv(
+        "EXPANDED_RESOURCES_BUCKET");
+    private static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid: {}";
     private final IndexClient<NviCandidateIndexDocument> indexClient;
-
     private final StorageReader<NviCandidate> storageReader;
 
     @JacocoGenerated
     public IndexNviCandidateHandler() {
-        this.storageReader = new S3StorageReader();
-        this.indexClient = new OpenSearchIndexClient();
+        this.storageReader = new S3StorageReader(EXPANDED_RESOURCES_BUCKET);
+        this.indexClient = new OpenSearchIndexClient(OPENSEARCH_ENDPOINT, REGION);
     }
 
     public IndexNviCandidateHandler(StorageReader<NviCandidate> storageReader,

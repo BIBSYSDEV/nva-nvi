@@ -1,7 +1,5 @@
 package no.sikt.nva.nvi.index.aws;
 
-import static no.sikt.nva.nvi.common.ApplicationConstants.OPENSEARCH_ENDPOINT;
-import static no.sikt.nva.nvi.common.ApplicationConstants.REGION;
 import static nva.commons.core.attempt.Try.attempt;
 import no.sikt.nva.nvi.common.IndexClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
@@ -11,6 +9,7 @@ import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.regions.Region;
 
 @JacocoGenerated
 //TODO: Handle test coverage
@@ -19,12 +18,12 @@ public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocum
     public static final String INDEX = "nviCandidates";
     private final OpenSearchClient openSearchClient;
 
-    public OpenSearchIndexClient() {
+    public OpenSearchIndexClient(String openSearchEndpoint, Region region) {
         this.openSearchClient = new OpenSearchClient(
             new AwsSdk2Transport(
                 ApacheHttpClient.builder().build(),
-                OPENSEARCH_ENDPOINT,
-                REGION,
+                openSearchEndpoint,
+                region,
                 AwsSdk2TransportOptions.builder().build()
             )
         );
