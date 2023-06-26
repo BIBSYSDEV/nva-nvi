@@ -1,9 +1,12 @@
 package no.sikt.nva.nvi.index;
 
 import static java.util.Map.entry;
+import static no.sikt.nva.nvi.index.ExpandedResourceGenerator.createExpandedResource;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
+import static nva.commons.core.ioutils.IoUtils.stringToStream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.StringContains.containsString;
@@ -12,15 +15,18 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import no.sikt.nva.nvi.common.StorageReader;
-import no.sikt.nva.nvi.index.model.NviCandidate;
+import java.util.UUID;
+import no.sikt.nva.nvi.index.model.Affiliation;
+import no.sikt.nva.nvi.index.model.Contexts;
+import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.Publication;
+import no.sikt.nva.nvi.index.model.PublicationChannel;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
-import nva.commons.core.ioutils.IoUtils;
+import nva.commons.core.Environment;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
@@ -35,8 +41,9 @@ class IndexNviCandidateHandlerTest {
     public static final String PUBLICATION_ID_FIELD = "publicationId";
     public static final String AFFILIATION_APPROVALS_FIELD = "affiliationApprovals";
     public static final String HOST = "https://localhost";
-    public static final String RESOURCE_SAMPLE_JSON = "resourceSample.json";
-    public static final String INDEX_DOCUMENT_SAMPLE_JSON = "indexDocumentSample.json";
+
+    private static final String EXPANDED_RESOURCES_BUCKET = new Environment().readEnv(
+        "EXPANDED_RESOURCES_BUCKET");
     private IndexNviCandidateHandler handler;
 
     private S3Driver s3Driver;
@@ -47,23 +54,24 @@ class IndexNviCandidateHandlerTest {
     void setup() {
         var s3Client = new FakeS3Client();
         indexClient = new FakeIndexClient();
-        s3Driver = new S3Driver(s3Client, "bucketName");
-        StorageReader<NviCandidate> storageReader = new FakeStorageReader(s3Client);
+        s3Driver = new S3Driver(s3Client, EXPANDED_RESOURCES_BUCKET);
+        var storageReader = new FakeStorageReader(s3Client);
         handler = new IndexNviCandidateHandler(storageReader, indexClient);
     }
 
     @Test
     void shouldAddDocumentToIndexWhenNviCandidateExistsInResourcesStorage() {
-        var nviCandidateS3Uri = prepareNviCandidateFile();
-        var publicationIdentifier = UriWrapper.fromUri(nviCandidateS3Uri).getLastPathElement();
-        var publicationId = UriWrapper.fromHost(HOST).addChild(publicationIdentifier).getUri();
-        var affiliationUri = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0";
-        var sqsEvent = createEventWithBodyWithPublicationId(publicationId, List.of(affiliationUri));
+        var identifier = UUID.randomUUID();
+        var publicationId = constructPublicationId(identifier);
+        var affiliationUri = randomUri();
+        var expectedIndexDocument = constructExpectedIndexDocumentAndPrepareStoredResource(identifier,
+                                                                                           publicationId,
+                                                                                           affiliationUri);
+        var sqsEvent = createEventWithBodyWithPublicationId(publicationId, List.of(affiliationUri.toString()));
 
         handler.handleRequest(sqsEvent, CONTEXT);
         var allIndexDocuments = indexClient.listAllDocuments();
 
-        var expectedIndexDocument = getExpectedIndexDocument();
         assertThat(allIndexDocuments, containsInAnyOrder(expectedIndexDocument));
     }
 
@@ -77,14 +85,8 @@ class IndexNviCandidateHandlerTest {
         assertThat(appender.getMessages(), containsString(ERROR_MESSAGE_BODY_INVALID));
     }
 
-    //TODO: TEST Should log info/error if NviCandidateMessage has no approvalAffiliations
-    //TODO: TEST Should log error if NviCandidateMessage has no publicationId
-    //TODO: TEST Should add document to index with contributor without cristin id, name or orcid?
-    //TODO: TEST Should log error if unexpected error occurs
-
-    private static NviCandidateIndexDocument getExpectedIndexDocument() {
-        var content = IoUtils.stringFromResources(Path.of(INDEX_DOCUMENT_SAMPLE_JSON));
-        return attempt(() -> objectMapper.readValue(content, NviCandidateIndexDocument.class)).orElseThrow();
+    private static URI constructPublicationId(UUID identifier) {
+        return UriWrapper.fromUri(HOST).addChild(identifier.toString()).getUri();
     }
 
     private static SQSEvent createEventWithBodyWithPublicationId(URI publicationId, List<String> affiliationApprovals) {
@@ -95,6 +97,11 @@ class IndexNviCandidateHandlerTest {
         sqsEvent.setRecords(List.of(invalidSqsMessage));
         return sqsEvent;
     }
+
+    //TODO: TEST Should log info/error if NviCandidateMessage has no approvalAffiliations
+    //TODO: TEST Should log error if NviCandidateMessage has no publicationId
+    //TODO: TEST Should add document to index with contributor without cristin id, name or orcid?
+    //TODO: TEST Should log error if unexpected error occurs
 
     private static SQSEvent createEventWithInvalidBody() {
         var sqsEvent = new SQSEvent();
@@ -115,9 +122,57 @@ class IndexNviCandidateHandlerTest {
                     )))).orElseThrow();
     }
 
-    private URI prepareNviCandidateFile() {
-        var path = RESOURCE_SAMPLE_JSON;
-        var content = IoUtils.inputStreamFromResources(path);
-        return attempt(() -> s3Driver.insertFile(UnixPath.of(path), content)).orElseThrow();
+    private static Publication createPublication(URI publicationId, String instanceType, String publicationDate,
+                                                 String level, String publicationChannelType) {
+        return new Publication(publicationId.toString(),
+                               instanceType,
+                               randomString(),
+                               publicationDate,
+                               new PublicationChannel(
+                                   randomUri().toString(),
+                                   randomString(), level,
+                                   publicationChannelType),
+                               List.of(new Contributor(
+                                   randomUri().toString(),
+                                   randomString(),
+                                   randomUri().toString())));
+    }
+
+    private NviCandidateIndexDocument constructExpectedIndexDocumentAndPrepareStoredResource(UUID identifier,
+                                                                                             URI publicationId,
+                                                                                             URI affiliationUri) {
+        var year = "2023";
+        var documentType = "NviCandidate";
+        var instanceType = "AcademicArticle";
+        var publicationDate = "2023-01-01";
+        var level = "1";
+        var publicationChannelType = "Journal";
+        var affiliation = new Affiliation(
+            affiliationUri.toString(),
+            Map.of("nb", randomString(), "en",
+                   randomString()), "Pending");
+        return prepareNviCandidateFile(identifier, publicationId, year, documentType, instanceType, publicationDate,
+                                       level, publicationChannelType, List.of(affiliation));
+    }
+
+    private NviCandidateIndexDocument prepareNviCandidateFile(UUID identifier, URI publicationId, String year,
+                                                              String documentType, String instanceType,
+                                                              String publicationDate, String level,
+                                                              String publicationChannelType,
+                                                              List<Affiliation> affiliations) {
+        var expectedNviCandidateIndexDocument = new NviCandidateIndexDocument(URI.create(Contexts.NVI_CONTEXT),
+                                                                              identifier.toString(),
+                                                                              year,
+                                                                              documentType,
+                                                                              createPublication(publicationId,
+                                                                                                instanceType,
+                                                                                                publicationDate, level,
+                                                                                                publicationChannelType),
+                                                                              affiliations);
+        var expandedResource = createExpandedResource(expectedNviCandidateIndexDocument, HOST);
+        attempt(() -> s3Driver.insertFile(UnixPath.of(expectedNviCandidateIndexDocument.identifier()),
+                                          stringToStream(expandedResource))).orElseThrow();
+
+        return expectedNviCandidateIndexDocument;
     }
 }

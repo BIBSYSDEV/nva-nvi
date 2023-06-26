@@ -21,6 +21,6 @@ dependencies {
 
 test {
     useJUnitPlatform()
-    environment "EXPANDED_RESOURCES_BUCKET", "My Bucketses"
+    environment "EXPANDED_RESOURCES_BUCKET", "ignoredBucket"
     environment("OPENSEARCH_ENDPOINT", "search-...us-west-2.es.amazonaws.com")
 }

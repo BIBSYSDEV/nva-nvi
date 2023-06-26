@@ -52,7 +52,8 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
 
     private void addNviCandidateToIndex(NviCandidate candidate) {
         var indexedResource = storageReader.read(candidate);
-        indexClient.addDocumentToIndex(generateNviCandidateIndexDocument(indexedResource, candidate));
+        var indexDocument = generateNviCandidateIndexDocument(indexedResource, candidate);
+        indexClient.addDocumentToIndex(indexDocument);
     }
 
     private NviCandidate parseBody(String body) {
