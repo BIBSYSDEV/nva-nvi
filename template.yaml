@@ -15,6 +15,9 @@ Parameters:
   ResourcesBucket:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/PersistedEntriesBucketName
+  OpenSearchEndpoint:
+    Type: String
+    Default: 'https://api.sws.aws.sikt.no'
 
 Resources:
   #=============================== SQSs ============================================================
@@ -109,6 +112,7 @@ Resources:
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+          OPENSEARCH_ENDPOINT: !Ref OpenSearchEndpoint
       Events:
         SqsEvent:
           Type: SQS

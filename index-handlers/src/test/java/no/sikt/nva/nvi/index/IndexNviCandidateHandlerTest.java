@@ -84,6 +84,11 @@ class IndexNviCandidateHandlerTest {
         assertThat(appender.getMessages(), containsString(ERROR_MESSAGE_BODY_INVALID));
     }
 
+    //TODO: TEST Should log info/error if NviCandidateMessage has no approvalAffiliations
+    //TODO: TEST Should log error if NviCandidateMessage has no publicationId
+    //TODO: TEST Should add document to index with contributor without cristin id, name or orcid?
+    //TODO: TEST Should log error if unexpected error occurs
+
     private static URI constructPublicationId(UUID identifier) {
         return UriWrapper.fromUri(HOST).addChild(identifier.toString()).getUri();
     }
@@ -96,11 +101,6 @@ class IndexNviCandidateHandlerTest {
         sqsEvent.setRecords(List.of(invalidSqsMessage));
         return sqsEvent;
     }
-
-    //TODO: TEST Should log info/error if NviCandidateMessage has no approvalAffiliations
-    //TODO: TEST Should log error if NviCandidateMessage has no publicationId
-    //TODO: TEST Should add document to index with contributor without cristin id, name or orcid?
-    //TODO: TEST Should log error if unexpected error occurs
 
     private static SQSEvent createEventWithInvalidBody() {
         var sqsEvent = new SQSEvent();

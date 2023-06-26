@@ -100,7 +100,8 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static Publication extractPublication(JsonNode resource) {
         return new Publication(extractPublicationId(resource), extractInstanceType(resource),
-                               extractMainTitle(resource), extractPublicationDate(resource), extractContributors(resource));
+                               extractMainTitle(resource), extractPublicationDate(resource),
+                               extractContributors(resource));
     }
 
     private static List<Contributor> extractContributors(JsonNode resource) {
@@ -115,6 +116,7 @@ public final class NviCandidateIndexDocumentGenerator {
                                identity.get(FIELD_NAME).textValue(),
                                identity.get(FIELD_ORCID).textValue());
     }
+
     private static String extractPublicationDate(JsonNode resource) {
         var publicationDate = resource.at(JSON_PTR_PUBLICATION_DATE);
         return formatPublicationDate(publicationDate);
