@@ -11,7 +11,6 @@ import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
-import software.amazon.awssdk.regions.Region;
 
 @JacocoGenerated
 //TODO: Handle test coverage
