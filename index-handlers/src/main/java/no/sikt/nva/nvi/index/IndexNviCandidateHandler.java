@@ -49,6 +49,7 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
             .stream()
             .map(SQSMessage::getBody)
             .map(this::parseBody)
+            .filter(Objects::nonNull)
             .map(this::validate)
             .filter(Objects::nonNull)
             .forEach(this::addNviCandidateToIndex);
