@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index;
 
 import static java.util.Map.entry;
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.index.ExpandedResourceGenerator.createExpandedResource;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -15,6 +16,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -66,7 +68,7 @@ class IndexNviCandidateHandlerTest {
         var expectedIndexDocument = constructExpectedIndexDocumentAndPrepareStoredResource(identifier,
                                                                                            publicationId,
                                                                                            affiliationUri);
-        var sqsEvent = createEventWithBodyWithPublicationId(publicationId, List.of(affiliationUri.toString()));
+        var sqsEvent = createEventWithMessageBody(publicationId, List.of(affiliationUri.toString()));
 
         handler.handleRequest(sqsEvent, CONTEXT);
         var allIndexDocuments = indexClient.listAllDocuments();
@@ -84,7 +86,16 @@ class IndexNviCandidateHandlerTest {
         assertThat(appender.getMessages(), containsString(ERROR_MESSAGE_BODY_INVALID));
     }
 
-    //TODO: TEST Should log info/error if NviCandidateMessage has no approvalAffiliations
+    @Test
+    void shouldLogErrorWhenMessageBodyPublicationIdNull() {
+        var appender = LogUtils.getTestingAppenderForRootLogger();
+        var sqsEvent = createEventWithMessageBody(null, Collections.emptyList());
+
+        handler.handleRequest(sqsEvent, CONTEXT);
+
+        assertThat(appender.getMessages(), containsString(ERROR_MESSAGE_BODY_INVALID));
+    }
+
     //TODO: TEST Should log error if NviCandidateMessage has no publicationId
     //TODO: TEST Should add document to index with contributor without cristin id, name or orcid?
     //TODO: TEST Should log error if unexpected error occurs
@@ -93,12 +104,14 @@ class IndexNviCandidateHandlerTest {
         return UriWrapper.fromUri(HOST).addChild(identifier.toString()).getUri();
     }
 
-    private static SQSEvent createEventWithBodyWithPublicationId(URI publicationId, List<String> affiliationApprovals) {
+    private static SQSEvent createEventWithMessageBody(URI publicationId, List<String> affiliationApprovals) {
         var sqsEvent = new SQSEvent();
-        var invalidSqsMessage = new SQSMessage();
-        invalidSqsMessage.setBody(
-            constructBody(publicationId.toString(), affiliationApprovals));
-        sqsEvent.setRecords(List.of(invalidSqsMessage));
+        var message = new SQSMessage();
+        var body = nonNull(publicationId)
+                       ? constructBody(publicationId.toString(), affiliationApprovals)
+                       : constructBody(affiliationApprovals);
+        message.setBody(body);
+        sqsEvent.setRecords(List.of(message));
         return sqsEvent;
     }
 
@@ -116,6 +129,15 @@ class IndexNviCandidateHandlerTest {
             () -> objectMapper.writeValueAsString(
                 Map.ofEntries(
                     entry(PUBLICATION_ID_FIELD, publicationId),
+                    entry(AFFILIATION_APPROVALS_FIELD,
+                          affiliationApprovals
+                    )))).orElseThrow();
+    }
+
+    private static String constructBody(List<String> affiliationApprovals) {
+        return attempt(
+            () -> objectMapper.writeValueAsString(
+                Map.ofEntries(
                     entry(AFFILIATION_APPROVALS_FIELD,
                           affiliationApprovals
                     )))).orElseThrow();

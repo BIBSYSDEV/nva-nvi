@@ -9,6 +9,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import java.io.IOException;
 import java.util.Objects;
 import no.sikt.nva.nvi.common.IndexClient;
 import no.sikt.nva.nvi.common.StorageReader;
@@ -31,7 +32,7 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
     private final StorageReader<NviCandidate> storageReader;
 
     @JacocoGenerated
-    public IndexNviCandidateHandler() {
+    public IndexNviCandidateHandler() throws IOException {
         this.storageReader = new S3StorageReader(EXPANDED_RESOURCES_BUCKET);
         this.indexClient = new OpenSearchIndexClient(OPENSEARCH_ENDPOINT, REGION);
     }
@@ -48,6 +49,7 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
             .stream()
             .map(SQSMessage::getBody)
             .map(this::parseBody)
+            .map(this::validate)
             .filter(Objects::nonNull)
             .forEach(this::addNviCandidateToIndex);
 
@@ -58,6 +60,14 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
         var indexedResource = storageReader.read(candidate);
         var indexDocument = generateNviCandidateIndexDocument(indexedResource, candidate);
         indexClient.addDocumentToIndex(indexDocument);
+    }
+
+    private NviCandidate validate(NviCandidate nviCandidate) {
+        if(Objects.isNull(nviCandidate.publicationId())){
+            logInvalidMessageBody(nviCandidate.toJsonString());
+            return null;
+        }
+        return nviCandidate;
     }
 
     private NviCandidate parseBody(String body) {
