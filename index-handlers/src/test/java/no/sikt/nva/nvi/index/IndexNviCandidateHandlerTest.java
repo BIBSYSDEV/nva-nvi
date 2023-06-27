@@ -33,6 +33,8 @@ import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class IndexNviCandidateHandlerTest {
 
@@ -60,14 +62,36 @@ class IndexNviCandidateHandlerTest {
         handler = new IndexNviCandidateHandler(storageReader, indexClient);
     }
 
-    @Test
-    void shouldAddDocumentToIndexWhenNviCandidateExistsInResourcesStorage() {
+    @ParameterizedTest
+    @ValueSource(strings = {"AcademicArticle", "AcademicChapter", "AcademicMonograph", "AcademicLiteratureReview"})
+    void shouldAddDocumentToIndexWhenNviCandidateExistsInResourcesStorage(String instanceType) {
         var identifier = UUID.randomUUID();
         var publicationId = constructPublicationId(identifier);
         var affiliationUri = randomUri();
         var expectedIndexDocument = constructExpectedDocumentAndPrepareStoredResource(identifier,
                                                                                       publicationId,
-                                                                                      affiliationUri);
+                                                                                      affiliationUri,
+                                                                                      instanceType,
+                                                                                      "2023-01-01");
+        var sqsEvent = createEventWithMessageBody(publicationId, List.of(affiliationUri.toString()));
+
+        handler.handleRequest(sqsEvent, CONTEXT);
+        var allIndexDocuments = indexClient.listAllDocuments();
+
+        assertThat(allIndexDocuments, containsInAnyOrder(expectedIndexDocument));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"2023-01-01", "2023"})
+    void shouldAddDocumentToIndexWhenNviCandidateExistsInResourcesStorageWithDifferentDateFormats(String date) {
+        var identifier = UUID.randomUUID();
+        var publicationId = constructPublicationId(identifier);
+        var affiliationUri = randomUri();
+        var expectedIndexDocument = constructExpectedDocumentAndPrepareStoredResource(identifier,
+                                                                                      publicationId,
+                                                                                      affiliationUri,
+                                                                                      "AcademicArticle",
+                                                                                      date);
         var sqsEvent = createEventWithMessageBody(publicationId, List.of(affiliationUri.toString()));
 
         handler.handleRequest(sqsEvent, CONTEXT);
@@ -114,7 +138,6 @@ class IndexNviCandidateHandlerTest {
         assertThat(appender.getMessages(), containsString(ERROR_MESSAGE_BODY_INVALID));
     }
 
-    //TODO: TEST Should add document to index with contributor without cristin id, name or orcid?
     //TODO: TEST Should log error if unexpected error occurs
 
     private static URI constructPublicationId(UUID identifier) {
@@ -171,11 +194,11 @@ class IndexNviCandidateHandlerTest {
 
     private NviCandidateIndexDocument constructExpectedDocumentAndPrepareStoredResource(UUID identifier,
                                                                                         URI publicationId,
-                                                                                        URI affiliationUri) {
+                                                                                        URI affiliationUri,
+                                                                                        String instanceType,
+                                                                                        String publicationDate) {
         var year = "2023";
         var documentType = "NviCandidate";
-        var instanceType = "AcademicArticle";
-        var publicationDate = "2023-01-01";
         var affiliation = new Affiliation(
             affiliationUri.toString(),
             Map.of("nb", randomString(), "en",

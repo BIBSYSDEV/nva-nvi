@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.index.utils.ResourceJsonConstants.FIELD_ID;
 import static no.sikt.nva.nvi.index.utils.ResourceJsonConstants.FIELD_IDENTITY;
 import static no.sikt.nva.nvi.index.utils.ResourceJsonConstants.FIELD_LABELS;
@@ -20,6 +21,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -135,13 +137,14 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private static String formatPublicationDate(JsonNode publicationDateNode) {
-        var year = publicationDateNode.get(FIELD_PUBLICATION_DATE_YEAR).asInt();
-        var month = publicationDateNode.get(FIELD_PUBLICATION_DATE_MONTH).asInt();
-        var day = publicationDateNode.get(FIELD_PUBLICATION_DATE_DAY).asInt();
+        var year = publicationDateNode.get(FIELD_PUBLICATION_DATE_YEAR);
+        var month = publicationDateNode.get(FIELD_PUBLICATION_DATE_MONTH);
+        var day = publicationDateNode.get(FIELD_PUBLICATION_DATE_DAY);
 
-        var formattedMonth = String.format(DATE_FORMAT, month);
-        var formattedDay = String.format(DATE_FORMAT, day);
+        if (isNull(month) || isNull(day)) {
+            return year.textValue();
+        }
 
-        return year + "-" + formattedMonth + "-" + formattedDay;
+        return LocalDate.of(year.asInt(), month.asInt(), day.asInt()).toString();
     }
 }

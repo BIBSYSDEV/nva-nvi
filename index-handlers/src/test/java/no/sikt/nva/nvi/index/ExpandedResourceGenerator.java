@@ -62,9 +62,13 @@ public class ExpandedResourceGenerator {
     private static ObjectNode createAndPopulatePublicationDate(NviCandidateIndexDocument document) {
         var publicationDate = objectMapper.createObjectNode();
         publicationDate.put("type", "PublicationDate");
-        publicationDate.put("day", extractDay(document.getPublication().getPublicationDate()));
-        publicationDate.put("month", extractMonth(document.getPublication().getPublicationDate()));
-        publicationDate.put("year", extractYear(document.getPublication().getPublicationDate()));
+        if (document.getPublication().getPublicationDate().length() == 4) {
+            publicationDate.put("year", document.getPublication().getPublicationDate());
+        } else if (document.getPublication().getPublicationDate().length() > 4) {
+            publicationDate.put("day", extractDay(document.getPublication().getPublicationDate()));
+            publicationDate.put("month", extractMonth(document.getPublication().getPublicationDate()));
+            publicationDate.put("year", extractYear(document.getPublication().getPublicationDate()));
+        }
         return publicationDate;
     }
 
