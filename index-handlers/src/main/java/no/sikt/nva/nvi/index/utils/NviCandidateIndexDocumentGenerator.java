@@ -39,7 +39,6 @@ import nva.commons.core.paths.UriWrapper;
 public final class NviCandidateIndexDocumentGenerator {
 
     private static final String TYPE_NVI_CANDIDATE = "NviCandidate";
-    private static final String DATE_FORMAT = "%02d";
 
     private NviCandidateIndexDocumentGenerator() {
     }

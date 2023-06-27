@@ -4,6 +4,7 @@ import static java.util.Map.entry;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.index.ExpandedResourceGenerator.createExpandedResource;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
@@ -16,6 +17,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.net.URI;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -62,17 +64,15 @@ class IndexNviCandidateHandlerTest {
         handler = new IndexNviCandidateHandler(storageReader, indexClient);
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"AcademicArticle", "AcademicChapter", "AcademicMonograph", "AcademicLiteratureReview"})
-    void shouldAddDocumentToIndexWhenNviCandidateExistsInResourcesStorage(String instanceType) {
+    @Test
+    void shouldAddDocumentToIndexWhenNviCandidateExistsInResourcesStorage() {
         var identifier = UUID.randomUUID();
         var publicationId = constructPublicationId(identifier);
         var affiliationUri = randomUri();
         var expectedIndexDocument = constructExpectedDocumentAndPrepareStoredResource(identifier,
                                                                                       publicationId,
                                                                                       affiliationUri,
-                                                                                      instanceType,
-                                                                                      "2023-01-01");
+                                                                                      randomLocalDate().toString());
         var sqsEvent = createEventWithMessageBody(publicationId, List.of(affiliationUri.toString()));
 
         handler.handleRequest(sqsEvent, CONTEXT);
@@ -90,7 +90,6 @@ class IndexNviCandidateHandlerTest {
         var expectedIndexDocument = constructExpectedDocumentAndPrepareStoredResource(identifier,
                                                                                       publicationId,
                                                                                       affiliationUri,
-                                                                                      "AcademicArticle",
                                                                                       date);
         var sqsEvent = createEventWithMessageBody(publicationId, List.of(affiliationUri.toString()));
 
@@ -195,15 +194,17 @@ class IndexNviCandidateHandlerTest {
     private NviCandidateIndexDocument constructExpectedDocumentAndPrepareStoredResource(UUID identifier,
                                                                                         URI publicationId,
                                                                                         URI affiliationUri,
-                                                                                        String instanceType,
                                                                                         String publicationDate) {
-        var year = "2023";
+
         var documentType = "NviCandidate";
         var affiliation = new Affiliation(
             affiliationUri.toString(),
             Map.of("nb", randomString(), "en",
                    randomString()), "Pending");
-        return prepareNviCandidateFile(identifier, publicationId, year, documentType, instanceType, publicationDate,
+        var year = publicationDate.length() > 4
+                       ? String.valueOf(LocalDate.parse(publicationDate).getYear())
+                       : publicationDate;
+        return prepareNviCandidateFile(identifier, publicationId, year, documentType, randomString(), publicationDate,
                                        List.of(affiliation), List.of(new Contributor(
                 randomUri().toString(),
                 randomString(),
