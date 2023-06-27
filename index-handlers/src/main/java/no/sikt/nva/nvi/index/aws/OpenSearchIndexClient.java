@@ -1,9 +1,11 @@
 package no.sikt.nva.nvi.index.aws;
 
+import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
 import static nva.commons.core.attempt.Try.attempt;
 import java.io.IOException;
 import no.sikt.nva.nvi.common.IndexClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.unit.nva.auth.CachedJwtProvider;
 import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -25,13 +27,14 @@ public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocum
     private static final String INDEX = "nviCandidates";
     private final OpenSearchClient openSearchClient;
 
-    public OpenSearchIndexClient(String openSearchEndpoint, Region region) throws IOException {
+    public OpenSearchIndexClient(String openSearchEndpoint, CachedJwtProvider cachedJwtProvider, Region region)
+        throws IOException {
         this.openSearchClient = new OpenSearchClient(
             new AwsSdk2Transport(
                 ApacheHttpClient.builder().build(),
                 openSearchEndpoint,
                 region,
-                AwsSdk2TransportOptions.builder().build()
+                transportOptionWithToken("Bearer " + cachedJwtProvider.getValue().getToken())
             )
         );
         if (!indexExists()) {
@@ -50,6 +53,10 @@ public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocum
                    .id(indexDocument.getIdentifier())
                    .document(indexDocument)
                    .build();
+    }
+
+    private static AwsSdk2TransportOptions transportOptionWithToken(String token) {
+        return AwsSdk2TransportOptions.builder().addHeader(AUTHORIZATION, token).build();
     }
 
     private boolean indexExists() throws IOException {
