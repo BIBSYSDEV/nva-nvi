@@ -65,9 +65,27 @@ class IndexNviCandidateHandlerTest {
         var identifier = UUID.randomUUID();
         var publicationId = constructPublicationId(identifier);
         var affiliationUri = randomUri();
-        var expectedIndexDocument = constructExpectedIndexDocumentAndPrepareStoredResource(identifier,
-                                                                                           publicationId,
-                                                                                           affiliationUri);
+        var expectedIndexDocument = constructExpectedDocumentAndPrepareStoredResource(identifier,
+                                                                                      publicationId,
+                                                                                      affiliationUri);
+        var sqsEvent = createEventWithMessageBody(publicationId, List.of(affiliationUri.toString()));
+
+        handler.handleRequest(sqsEvent, CONTEXT);
+        var allIndexDocuments = indexClient.listAllDocuments();
+
+        assertThat(allIndexDocuments, containsInAnyOrder(expectedIndexDocument));
+    }
+
+    @Test
+    void shouldAddDocumentToIndexWhenResourceContainsContributorWithNullValues() {
+        var identifier = UUID.randomUUID();
+        var publicationId = constructPublicationId(identifier);
+        var affiliationUri = randomUri();
+        var expectedIndexDocument =
+            constructExpectedDocumentAndPrepareStoredResourceWithContributorWithNullValues(
+                identifier,
+                publicationId,
+                affiliationUri);
         var sqsEvent = createEventWithMessageBody(publicationId, List.of(affiliationUri.toString()));
 
         handler.handleRequest(sqsEvent, CONTEXT);
@@ -96,7 +114,6 @@ class IndexNviCandidateHandlerTest {
         assertThat(appender.getMessages(), containsString(ERROR_MESSAGE_BODY_INVALID));
     }
 
-    //TODO: TEST Should log error if NviCandidateMessage has no publicationId
     //TODO: TEST Should add document to index with contributor without cristin id, name or orcid?
     //TODO: TEST Should log error if unexpected error occurs
 
@@ -143,20 +160,18 @@ class IndexNviCandidateHandlerTest {
                     )))).orElseThrow();
     }
 
-    private static Publication createPublication(URI publicationId, String instanceType, String publicationDate) {
+    private static Publication createPublication(URI publicationId, String instanceType, String publicationDate,
+                                                 List<Contributor> contributors, String title) {
         return new Publication(publicationId.toString(),
                                instanceType,
-                               randomString(),
+                               title,
                                publicationDate,
-                               List.of(new Contributor(
-                                   randomUri().toString(),
-                                   randomString(),
-                                   randomUri().toString())));
+                               contributors);
     }
 
-    private NviCandidateIndexDocument constructExpectedIndexDocumentAndPrepareStoredResource(UUID identifier,
-                                                                                             URI publicationId,
-                                                                                             URI affiliationUri) {
+    private NviCandidateIndexDocument constructExpectedDocumentAndPrepareStoredResource(UUID identifier,
+                                                                                        URI publicationId,
+                                                                                        URI affiliationUri) {
         var year = "2023";
         var documentType = "NviCandidate";
         var instanceType = "AcademicArticle";
@@ -166,20 +181,44 @@ class IndexNviCandidateHandlerTest {
             Map.of("nb", randomString(), "en",
                    randomString()), "Pending");
         return prepareNviCandidateFile(identifier, publicationId, year, documentType, instanceType, publicationDate,
-                                       List.of(affiliation));
+                                       List.of(affiliation), List.of(new Contributor(
+                randomUri().toString(),
+                randomString(),
+                randomUri().toString())));
+    }
+
+    private NviCandidateIndexDocument constructExpectedDocumentAndPrepareStoredResourceWithContributorWithNullValues(
+        UUID identifier,
+        URI publicationId,
+        URI affiliationUri) {
+        var year = "2023";
+        var documentType = "NviCandidate";
+        var instanceType = "AcademicArticle";
+        var publicationDate = "2023-01-01";
+        var affiliation = new Affiliation(
+            affiliationUri.toString(),
+            Map.of("nb", randomString(), "en",
+                   randomString()), "Pending");
+        return prepareNviCandidateFile(identifier, publicationId, year, documentType, instanceType, publicationDate,
+                                       List.of(affiliation), List.of(new Contributor(null,
+                                                                                     randomString(),
+                                                                                     null)));
     }
 
     private NviCandidateIndexDocument prepareNviCandidateFile(UUID identifier, URI publicationId, String year,
                                                               String documentType, String instanceType,
                                                               String publicationDate,
-                                                              List<Affiliation> affiliations) {
+                                                              List<Affiliation> affiliations,
+                                                              List<Contributor> contributors) {
         var expectedNviCandidateIndexDocument = new NviCandidateIndexDocument(URI.create(Contexts.NVI_CONTEXT),
                                                                               identifier.toString(),
                                                                               year,
                                                                               documentType,
                                                                               createPublication(publicationId,
                                                                                                 instanceType,
-                                                                                                publicationDate),
+                                                                                                publicationDate,
+                                                                                                contributors,
+                                                                                                randomString()),
                                                                               affiliations);
         var expandedResource = createExpandedResource(expectedNviCandidateIndexDocument, HOST);
         attempt(() -> s3Driver.insertFile(UnixPath.of(expectedNviCandidateIndexDocument.getIdentifier()),
