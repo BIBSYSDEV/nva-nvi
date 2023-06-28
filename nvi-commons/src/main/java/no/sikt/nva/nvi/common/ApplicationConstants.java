@@ -2,17 +2,20 @@ package no.sikt.nva.nvi.common;
 
 import static no.unit.nva.s3.S3Driver.AWS_REGION_ENV_VARIABLE;
 import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.regions.Region;
 
-public class ApplicationConstants {
+@JacocoGenerated
+public final class ApplicationConstants {
 
     public static final Environment ENVIRONMENT = new Environment();
-
     public static final String SEARCH_INFRASTRUCTURE_API_URI = readSearchInfrastructureApiUri();
-
     public static final String SEARCH_INFRASTRUCTURE_AUTH_URI = readSearchInfrastructureAuthUri();
-
     public static final Region REGION = acquireAwsRegion();
+
+    private ApplicationConstants() {
+
+    }
 
     private static String readSearchInfrastructureApiUri() {
         return ENVIRONMENT.readEnv("SEARCH_INFRASTRUCTURE_API_URI");
