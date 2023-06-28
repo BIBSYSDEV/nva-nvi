@@ -45,23 +45,21 @@ public final class NviCandidateIndexDocumentGenerator {
 
     public static NviCandidateIndexDocument generateNviCandidateIndexDocument(String resource,
                                                                               NviCandidateMessageBody candidate) {
-        return constructNviCandidateIndexDocument(candidate,
-                                                  attempt(() -> dtoObjectMapper.readTree(
-                                                      resource)).orElseThrow());
+        return createNviCandidateIndexDocument(candidate,
+                                               attempt(() -> dtoObjectMapper.readTree(resource)).orElseThrow());
     }
 
-    private static NviCandidateIndexDocument constructNviCandidateIndexDocument(NviCandidateMessageBody candidate,
-                                                                                JsonNode resource) {
+    private static NviCandidateIndexDocument createNviCandidateIndexDocument(NviCandidateMessageBody candidate,
+                                                                             JsonNode resource) {
         return new NviCandidateIndexDocument(URI.create(Contexts.NVI_CONTEXT),
                                              extractPublicationIdentifier(resource),
                                              extractYear(resource),
                                              TYPE_NVI_CANDIDATE,
                                              extractPublication(resource),
-                                             constructAffiliations(
-                                                 resource, candidate));
+                                             createAffiliations(resource, candidate));
     }
 
-    private static List<Affiliation> constructAffiliations(JsonNode resource, NviCandidateMessageBody candidate) {
+    private static List<Affiliation> createAffiliations(JsonNode resource, NviCandidateMessageBody candidate) {
         return candidate.affiliationApprovals().stream()
                    .map(id -> expandAffiliation(resource, id))
                    .toList();

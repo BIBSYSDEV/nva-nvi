@@ -44,17 +44,17 @@ public class ExpandedResourceGenerator {
         return attempt(() -> objectMapper.writeValueAsString(root)).orElseThrow();
     }
 
-    public static String extractMonth(String dateString) {
+    private static String extractMonth(String dateString) {
         var formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         return String.valueOf(LocalDate.parse(dateString, formatter).getMonthValue());
     }
 
-    public static String extractDay(String dateString) {
+    private static String extractDay(String dateString) {
         var formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         return String.valueOf(LocalDate.parse(dateString, formatter).getDayOfMonth());
     }
 
-    public static String extractYear(String dateString) {
+    private static String extractYear(String dateString) {
         var formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         return String.valueOf(LocalDate.parse(dateString, formatter).getYear());
     }
