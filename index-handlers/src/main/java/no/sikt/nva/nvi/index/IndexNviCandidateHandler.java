@@ -10,7 +10,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Clock;
@@ -20,8 +19,8 @@ import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
 import no.sikt.nva.nvi.index.aws.OpenSearchIndexClient;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;
-import no.sikt.nva.nvi.index.model.NviCandidateMessageBody;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.NviCandidateMessageBody;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
 import no.unit.nva.auth.CognitoCredentials;
@@ -43,7 +42,7 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
     private final StorageReader<NviCandidateMessageBody> storageReader;
 
     @JacocoGenerated
-    public IndexNviCandidateHandler() throws IOException {
+    public IndexNviCandidateHandler() {
         this.storageReader = new S3StorageReader(EXPANDED_RESOURCES_BUCKET);
         var cognitoAuthenticator = new CognitoAuthenticator(HttpClient.newHttpClient(),
                                                             createCognitoCredentials(new SecretsReader()));
