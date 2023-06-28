@@ -34,7 +34,6 @@ import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 class EvaluateNviNviCandidateHandlerTest {
@@ -45,7 +44,6 @@ class EvaluateNviNviCandidateHandlerTest {
                                                         + "}";
     public static final String ACADEMIC_ARTICLE_PATH = "candidate_academicArticle.json";
     public static final String EMPTY_BODY = "[]";
-    private final InputStream ACADEMIC_ARTICLE_CONTENT = IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH);
     private final Context context = mock(Context.class);
     private SqsMessageClient queueClient;
     private S3Driver s3Driver;
@@ -272,7 +270,8 @@ class EvaluateNviNviCandidateHandlerTest {
     @Test
     void shouldNotCreateNewCandidateEventWhenNoNviInstitutions() throws IOException {
         when(uriRetriever.getRawContent(any(), any())).thenReturn(Optional.of(EMPTY_BODY));
-        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE_CONTENT);
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
+                                          IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         assertThat(sqsClient.getSentMessages(), hasSize(0));
@@ -281,7 +280,8 @@ class EvaluateNviNviCandidateHandlerTest {
     @Test
     void shouldThrowExceptionWhenProblemsFetchingAffiliation() throws IOException {
         when(uriRetriever.getRawContent(any(), any())).thenReturn(Optional.of(randomString()));
-        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE_CONTENT);
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
+                                          IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
         var event = createS3Event(fileUri);
         var appender = LogUtils.getTestingAppenderForRootLogger();
         handler.handleRequest(event, output, context);
@@ -289,10 +289,11 @@ class EvaluateNviNviCandidateHandlerTest {
         assertThat(appender.getMessages(), containsString(COULD_NOT_FETCH_AFFILIATION_MESSAGE));
     }
 
-    @RepeatedTest(100)
+    @Test
     void shouldCreateNewCandidateEventWhenAffiliationAreNviInstitutions() throws IOException {
         when(uriRetriever.getRawContent(any(), any())).thenReturn(Optional.of(CUSTOMER_JSON_RESPONSE));
-        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE_CONTENT);
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
+                                          IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         assertThat(sqsClient.getSentMessages(), hasSize(1));
