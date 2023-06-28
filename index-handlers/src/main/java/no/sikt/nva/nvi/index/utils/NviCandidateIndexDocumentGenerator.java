@@ -31,8 +31,8 @@ import no.sikt.nva.nvi.index.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.Contexts;
 import no.sikt.nva.nvi.index.model.Contributor;
-import no.sikt.nva.nvi.index.model.NviCandidateMessageBody;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.NviCandidateMessageBody;
 import no.sikt.nva.nvi.index.model.Publication;
 import nva.commons.core.paths.UriWrapper;
 
@@ -43,7 +43,8 @@ public final class NviCandidateIndexDocumentGenerator {
     private NviCandidateIndexDocumentGenerator() {
     }
 
-    public static NviCandidateIndexDocument generateNviCandidateIndexDocument(String resource, NviCandidateMessageBody candidate) {
+    public static NviCandidateIndexDocument generateNviCandidateIndexDocument(String resource,
+                                                                              NviCandidateMessageBody candidate) {
         return constructNviCandidateIndexDocument(candidate,
                                                   attempt(() -> dtoObjectMapper.readTree(
                                                       resource)).orElseThrow());
