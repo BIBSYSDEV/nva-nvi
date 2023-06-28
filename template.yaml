@@ -15,6 +15,12 @@ Parameters:
   ResourcesBucket:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/PersistedEntriesBucketName
+  NewCandidateQueueName:
+    Type: String
+    Default: NewCandidateQueue
+  NewCandidateDLQName:
+    Type: String
+    Default: NewCandidateDLQ
   SearchInfrastructureApiUri:
     Type: String
     Description: URI to external search infrastructure API (SWS).
@@ -28,8 +34,13 @@ Resources:
   #=============================== SQSs ============================================================
   NewCandidateQueue:
     Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref NewCandidateQueueName
   NewCandidateDLQ:
     Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref NewCandidateDLQName
+      MessageRetentionPeriod: 43200
 
   #============================= Permissions =======================================================
   NvaNviRole:
@@ -61,6 +72,7 @@ Resources:
                 Action:
                   - events:*
                   - sqs:SendMessage
+                  - sqs:GetQueueUrl
                 Resource:
                   - !Ref EventBusArn
                   - !GetAtt NewCandidateQueue.Arn
@@ -92,9 +104,13 @@ Resources:
       Handler: no.sikt.nva.nvi.evaluator.EvaluateNviCandidateHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
+      Timeout: 3
+      MemorySize: 1536
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+          CANDIDATE_QUEUE_NAME: !Ref NewCandidateQueueName
+          CANDIDATE_DLQ_NAME: !Ref NewCandidateDLQName
       Events:
         EventBridgeEvent:
           Type: EventBridgeRule
@@ -106,14 +122,14 @@ Resources:
               detail:
                 responsePayload:
                   topic: [ "PublicationService.ExpandedEntry.Persisted" ]
-      EventInvokeConfig:
-        DestinationConfig:
-          OnSuccess:
-            Type: SQS
-            Destination: !GetAtt NewCandidateQueue.Arn
-          OnFailure:
-            Type: SQS
-            Destination: !GetAtt NewCandidateDLQ.Arn
+#      EventInvokeConfig:
+#        DestinationConfig:
+#          OnSuccess:
+#            Type: SQS
+#            Destination: !GetAtt NewCandidateQueue.Arn
+#          OnFailure:
+#            Type: SQS
+#            Destination: !GetAtt NewCandidateDLQ.Arn
 
   IndexNviCandidateHandler:
     Type: AWS::Serverless::Function

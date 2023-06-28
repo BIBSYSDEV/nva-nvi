@@ -3,18 +3,26 @@ package no.sikt.nva.nvi.evaluator.aws;
 import static no.sikt.nva.nvi.evaluator.aws.RegionUtil.acquireAwsRegion;
 import java.time.Duration;
 import no.sikt.nva.nvi.common.QueueClient;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 public class SqsMessageClient implements QueueClient<SendMessageResponse> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqsMessageClient.class);
+    private static final String QUEUE_NAME = new Environment().readEnv("CANDIDATE_QUEUE_NAME");
     private static final int MAX_CONNECTIONS = 10_000;
     private static final int IDLE_TIME = 30;
     private static final int TIMEOUT_TIME = 30;
     private final SqsClient sqsClient;
+    private final String queueUrl;
 
     @JacocoGenerated
     public SqsMessageClient() {
@@ -23,12 +31,14 @@ public class SqsMessageClient implements QueueClient<SendMessageResponse> {
 
     public SqsMessageClient(SqsClient sqsClient) {
         this.sqsClient = sqsClient;
+        this.queueUrl = sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(QUEUE_NAME).build()).queueUrl();
     }
-
 
     @Override
     public SendMessageResponse sendMessage(String message) {
-        return sqsClient.sendMessage(createCandidate(message));
+        var candidate = createCandidate(message);
+        LOGGER.info("Candidate Message: {}", candidate.messageBody());
+        return sqsClient.sendMessage(candidate);
     }
 
     @JacocoGenerated
@@ -50,6 +60,8 @@ public class SqsMessageClient implements QueueClient<SendMessageResponse> {
     }
 
     private SendMessageRequest createCandidate(String body) {
-        return SendMessageRequest.builder().messageBody(body).build();
+        return SendMessageRequest.builder()
+                   .queueUrl(queueUrl)
+                   .messageBody(body).build();
     }
 }
