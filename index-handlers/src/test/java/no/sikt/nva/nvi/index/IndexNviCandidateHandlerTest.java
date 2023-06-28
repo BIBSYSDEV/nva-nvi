@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.index;
 
 import static java.util.Map.entry;
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.index.ExpandedResourceGenerator.createExpandedResource;
+import static no.sikt.nva.nvi.index.utils.ExpandedResourceGenerator.createExpandedResource;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;

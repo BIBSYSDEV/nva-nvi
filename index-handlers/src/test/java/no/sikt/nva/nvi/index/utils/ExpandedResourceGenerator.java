@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index;
+package no.sikt.nva.nvi.index.utils;
 
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
