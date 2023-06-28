@@ -31,7 +31,7 @@ import no.sikt.nva.nvi.index.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.Contexts;
 import no.sikt.nva.nvi.index.model.Contributor;
-import no.sikt.nva.nvi.index.model.NviCandidate;
+import no.sikt.nva.nvi.index.model.NviCandidateMessageBody;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.Publication;
 import nva.commons.core.paths.UriWrapper;
@@ -43,13 +43,13 @@ public final class NviCandidateIndexDocumentGenerator {
     private NviCandidateIndexDocumentGenerator() {
     }
 
-    public static NviCandidateIndexDocument generateNviCandidateIndexDocument(String resource, NviCandidate candidate) {
+    public static NviCandidateIndexDocument generateNviCandidateIndexDocument(String resource, NviCandidateMessageBody candidate) {
         return constructNviCandidateIndexDocument(candidate,
                                                   attempt(() -> dtoObjectMapper.readTree(
                                                       resource)).orElseThrow());
     }
 
-    private static NviCandidateIndexDocument constructNviCandidateIndexDocument(NviCandidate candidate,
+    private static NviCandidateIndexDocument constructNviCandidateIndexDocument(NviCandidateMessageBody candidate,
                                                                                 JsonNode resource) {
         return new NviCandidateIndexDocument(URI.create(Contexts.NVI_CONTEXT),
                                              extractPublicationIdentifier(resource),
@@ -60,7 +60,7 @@ public final class NviCandidateIndexDocumentGenerator {
                                                  resource, candidate));
     }
 
-    private static List<Affiliation> constructAffiliations(JsonNode resource, NviCandidate candidate) {
+    private static List<Affiliation> constructAffiliations(JsonNode resource, NviCandidateMessageBody candidate) {
         return candidate.affiliationApprovals().stream()
                    .map(id -> expandAffiliation(resource, id))
                    .toList();

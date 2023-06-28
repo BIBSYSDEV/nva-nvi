@@ -20,7 +20,7 @@ import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
 import no.sikt.nva.nvi.index.aws.OpenSearchIndexClient;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;
-import no.sikt.nva.nvi.index.model.NviCandidate;
+import no.sikt.nva.nvi.index.model.NviCandidateMessageBody;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
@@ -40,7 +40,7 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
         "EXPANDED_RESOURCES_BUCKET");
     private static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid: {}";
     private final IndexClient<NviCandidateIndexDocument> indexClient;
-    private final StorageReader<NviCandidate> storageReader;
+    private final StorageReader<NviCandidateMessageBody> storageReader;
 
     @JacocoGenerated
     public IndexNviCandidateHandler() throws IOException {
@@ -51,7 +51,7 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
         this.indexClient = new OpenSearchIndexClient(SEARCH_INFRASTRUCTURE_API_URI, cachedJwtProvider, REGION);
     }
 
-    public IndexNviCandidateHandler(StorageReader<NviCandidate> storageReader,
+    public IndexNviCandidateHandler(StorageReader<NviCandidateMessageBody> storageReader,
                                     IndexClient<NviCandidateIndexDocument> indexClient) {
         this.storageReader = storageReader;
         this.indexClient = indexClient;
@@ -79,13 +79,13 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
                                       URI.create(SEARCH_INFRASTRUCTURE_AUTH_URI));
     }
 
-    private void addNviCandidateToIndex(NviCandidate candidate) {
+    private void addNviCandidateToIndex(NviCandidateMessageBody candidate) {
         var indexedResource = storageReader.read(candidate);
         var indexDocument = generateNviCandidateIndexDocument(indexedResource, candidate);
         indexClient.addDocumentToIndex(indexDocument);
     }
 
-    private NviCandidate validate(NviCandidate nviCandidate) {
+    private NviCandidateMessageBody validate(NviCandidateMessageBody nviCandidate) {
         if (Objects.isNull(nviCandidate.publicationId())) {
             logInvalidMessageBody(nviCandidate.toJsonString());
             return null;
@@ -93,8 +93,8 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
         return nviCandidate;
     }
 
-    private NviCandidate parseBody(String body) {
-        return attempt(() -> dtoObjectMapper.readValue(body, NviCandidate.class))
+    private NviCandidateMessageBody parseBody(String body) {
+        return attempt(() -> dtoObjectMapper.readValue(body, NviCandidateMessageBody.class))
                    .orElse(failure -> {
                        logInvalidMessageBody(body);
                        return null;

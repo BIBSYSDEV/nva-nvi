@@ -1,13 +1,13 @@
 package no.sikt.nva.nvi.index;
 
 import no.sikt.nva.nvi.common.StorageReader;
-import no.sikt.nva.nvi.index.model.NviCandidate;
+import no.sikt.nva.nvi.index.model.NviCandidateMessageBody;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import software.amazon.awssdk.services.s3.S3Client;
 
-class FakeStorageReader implements StorageReader<NviCandidate> {
+class FakeStorageReader implements StorageReader<NviCandidateMessageBody> {
 
     private static final String EXPANDED_RESOURCES_BUCKET = new Environment().readEnv(
         "EXPANDED_RESOURCES_BUCKET");
@@ -19,7 +19,7 @@ class FakeStorageReader implements StorageReader<NviCandidate> {
     }
 
     @Override
-    public String read(NviCandidate blob) {
+    public String read(NviCandidateMessageBody blob) {
         var uri = blob.publicationId();
         var resourceRelativePath = UriWrapper.fromUri(uri).toS3bucketPath();
         return s3Driver.getFile(resourceRelativePath);

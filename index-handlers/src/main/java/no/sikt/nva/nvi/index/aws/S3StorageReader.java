@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.index.aws;
 
 import java.net.URI;
 import no.sikt.nva.nvi.common.StorageReader;
-import no.sikt.nva.nvi.index.model.NviCandidate;
+import no.sikt.nva.nvi.index.model.NviCandidateMessageBody;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
@@ -12,7 +12,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 @JacocoGenerated
 //TODO: Handle test coverage
-public class S3StorageReader implements StorageReader<NviCandidate> {
+public class S3StorageReader implements StorageReader<NviCandidateMessageBody> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(S3StorageReader.class);
     private final S3Driver s3Driver;
@@ -26,7 +26,7 @@ public class S3StorageReader implements StorageReader<NviCandidate> {
     }
 
     @Override
-    public String read(NviCandidate candidate) {
+    public String read(NviCandidateMessageBody candidate) {
         var uri = URI.create(candidate.publicationId());
         var resourceRelativePath = UriWrapper.fromUri(uri).toS3bucketPath();
         LOGGER.info("Getting s3 path for file {}", resourceRelativePath.toString());
