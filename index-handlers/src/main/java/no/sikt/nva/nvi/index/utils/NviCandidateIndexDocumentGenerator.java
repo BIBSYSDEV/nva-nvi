@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.index.utils;
 
-import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.index.utils.ResourceJsonConstants.FIELD_ID;
 import static no.sikt.nva.nvi.index.utils.ResourceJsonConstants.FIELD_IDENTITY;
 import static no.sikt.nva.nvi.index.utils.ResourceJsonConstants.FIELD_LABELS;
@@ -139,10 +138,7 @@ public final class NviCandidateIndexDocumentGenerator {
         var month = publicationDateNode.get(FIELD_PUBLICATION_DATE_MONTH);
         var day = publicationDateNode.get(FIELD_PUBLICATION_DATE_DAY);
 
-        if (isNull(month) || isNull(day)) {
-            return year.textValue();
-        }
-
-        return LocalDate.of(year.asInt(), month.asInt(), day.asInt()).toString();
+        return attempt(() -> LocalDate.of(year.asInt(), month.asInt(), day.asInt()).toString()).orElse(
+            failure -> year.textValue());
     }
 }
