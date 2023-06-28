@@ -4,10 +4,12 @@ plugins {
 dependencies {
     implementation project(':nvi-commons')
     implementation libs.nva.commons.core
+    implementation libs.nva.commons.auth
     implementation libs.nva.core
     implementation libs.nva.s3
     implementation libs.nva.json
     implementation libs.nva.eventhandlers
+    implementation libs.nva.secrets
 
     implementation libs.aws.lambda.java.core
     implementation libs.aws.lambda.events
@@ -18,8 +20,8 @@ dependencies {
     implementation libs.aws.sdk2.core
     implementation libs.aws.sdk2.apache.client
     implementation libs.aws.sdk2.urlconnection
+    implementation libs.aws.sdk2.secrets
 
-    implementation libs.bundles.jackson
     implementation libs.bundles.jena
     implementation libs.bundles.logging
 
@@ -29,4 +31,6 @@ test {
     useJUnitPlatform()
     environment "EXPANDED_RESOURCES_BUCKET", "My Bucketses"
     environment "CANDIDATE_QUEUE_NAME", "My Queueses"
+    environment "BACKEND_CLIENT_AUTH_URL", "My url"
+    environment "BACKEND_CLIENT_SECRET_NAME", "My secret name"
 }
