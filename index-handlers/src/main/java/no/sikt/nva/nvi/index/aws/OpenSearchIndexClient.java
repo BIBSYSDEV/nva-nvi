@@ -24,7 +24,7 @@ import software.amazon.awssdk.regions.Region;
 public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocument> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchIndexClient.class);
-    private static final String INDEX = "nviCandidates";
+    private static final String INDEX = "nvi-candidates";
     private final OpenSearchClient openSearchClient;
 
     public OpenSearchIndexClient(String openSearchEndpoint, CachedJwtProvider cachedJwtProvider, Region region)
