@@ -33,7 +33,7 @@ import no.sikt.nva.nvi.index.model.Contexts;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.NviCandidateMessageBody;
-import no.sikt.nva.nvi.index.model.Publication;
+import no.sikt.nva.nvi.index.model.PublicationDetails;
 import nva.commons.core.paths.UriWrapper;
 
 public final class NviCandidateIndexDocumentGenerator {
@@ -98,10 +98,10 @@ public final class NviCandidateIndexDocumentGenerator {
         return UriWrapper.fromUri(extractPublicationId(resource)).getPath().getLastPathElement();
     }
 
-    private static Publication extractPublication(JsonNode resource) {
-        return new Publication(extractPublicationId(resource), extractInstanceType(resource),
-                               extractMainTitle(resource), extractPublicationDate(resource),
-                               extractContributors(resource));
+    private static PublicationDetails extractPublication(JsonNode resource) {
+        return new PublicationDetails(extractPublicationId(resource), extractInstanceType(resource),
+                                      extractMainTitle(resource), extractPublicationDate(resource),
+                                      extractContributors(resource));
     }
 
     private static List<Contributor> extractContributors(JsonNode resource) {

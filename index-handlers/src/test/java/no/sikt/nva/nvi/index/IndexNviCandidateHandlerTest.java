@@ -26,7 +26,7 @@ import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.Contexts;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.index.model.Publication;
+import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
@@ -182,13 +182,13 @@ class IndexNviCandidateHandlerTest {
                     )))).orElseThrow();
     }
 
-    private static Publication createPublication(URI publicationId, String instanceType, String publicationDate,
-                                                 List<Contributor> contributors, String title) {
-        return new Publication(publicationId.toString(),
-                               instanceType,
-                               title,
-                               publicationDate,
-                               contributors);
+    private static PublicationDetails createPublication(URI publicationId, String instanceType, String publicationDate,
+                                                        List<Contributor> contributors, String title) {
+        return new PublicationDetails(publicationId.toString(),
+                                      instanceType,
+                                      title,
+                                      publicationDate,
+                                      contributors);
     }
 
     private NviCandidateIndexDocument constructExpectedDocumentAndPrepareStoredResource(UUID identifier,

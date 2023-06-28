@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import nva.commons.core.JacocoGenerated;
 
-public final class Publication {
+public final class PublicationDetails {
 
     private static final String ID = "id";
     private static final String TYPE = "type";
@@ -23,11 +23,11 @@ public final class Publication {
     @JsonProperty(CONTRIBUTORS)
     private final List<Contributor> contributors;
 
-    public Publication(@JsonProperty(ID) String id,
-                       @JsonProperty(TYPE) String type,
-                       @JsonProperty(TITLE) String title,
-                       @JsonProperty(PUBLICATION_DATE) String publicationDate,
-                       @JsonProperty(CONTRIBUTORS) List<Contributor> contributors) {
+    public PublicationDetails(@JsonProperty(ID) String id,
+                              @JsonProperty(TYPE) String type,
+                              @JsonProperty(TITLE) String title,
+                              @JsonProperty(PUBLICATION_DATE) String publicationDate,
+                              @JsonProperty(CONTRIBUTORS) List<Contributor> contributors) {
         this.id = id;
         this.type = type;
         this.title = title;
@@ -66,7 +66,7 @@ public final class Publication {
         if (obj == null || obj.getClass() != this.getClass()) {
             return false;
         }
-        var that = (Publication) obj;
+        var that = (PublicationDetails) obj;
         return Objects.equals(this.id, that.id)
                && Objects.equals(this.type, that.type)
                && Objects.equals(this.title, that.title)
