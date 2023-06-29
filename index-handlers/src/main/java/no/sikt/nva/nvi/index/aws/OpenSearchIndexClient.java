@@ -21,6 +21,8 @@ import software.amazon.awssdk.regions.Region;
 //TODO: Handle test coverage
 public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocument> {
 
+    public static final String ERROR_MSG_INDEX_EXISTS = "Error while checking if index exists: {}";
+    public static final String ERROR_MSG_CREATE_INDEX = "Error while creating index: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchIndexClient.class);
     private static final String INDEX = "nvi-candidates";
     private final OpenSearchClient openSearchClient;
@@ -57,15 +59,13 @@ public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocum
     }
 
     private boolean indexExists() {
-        return attempt(
-            () -> openSearchClient.indices().exists(ExistsRequest.of(s -> s.index(INDEX))).value()).orElseThrow(
-            failure -> handleFailure("Error while checking if index exists: {}", failure.getException()));
+        return attempt(() -> openSearchClient.indices().exists(ExistsRequest.of(s -> s.index(INDEX))).value())
+                   .orElseThrow(failure -> handleFailure(ERROR_MSG_INDEX_EXISTS, failure.getException()));
     }
 
     private void createIndex() {
-        attempt(() -> openSearchClient.indices()
-                          .create(new CreateIndexRequest.Builder().index(INDEX).build())).orElseThrow(
-            failure -> handleFailure("Error while creating index: {}", failure.getException()));
+        attempt(() -> openSearchClient.indices().create(new CreateIndexRequest.Builder().index(INDEX).build()))
+            .orElseThrow(failure -> handleFailure(ERROR_MSG_CREATE_INDEX, failure.getException()));
     }
 
     private RuntimeException handleFailure(String msg, Exception exception) {
