@@ -1,22 +1,12 @@
 package no.sikt.nva.nvi.common.model;
 
-public class Note {
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    private final Username user;
-    private final String text;
-
-    public Note(Builder builder) {
-        this.user = builder.user;
-        this.text = builder.text;
-    }
-
-    public Username getUser() {
-        return user;
-    }
-
-    public String getText() {
-        return text;
-    }
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+@JsonSerialize
+public record Note(Username user,
+                   String text) {
 
     public static class Builder {
 
@@ -37,7 +27,7 @@ public class Note {
         }
 
         public Note build() {
-            return new Note(this);
+            return new Note(user, text);
         }
     }
 }

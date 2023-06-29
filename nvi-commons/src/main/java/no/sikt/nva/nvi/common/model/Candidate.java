@@ -1,73 +1,25 @@
 package no.sikt.nva.nvi.common.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.List;
-import java.util.Objects;
-import nva.commons.core.JacocoGenerated;
 
-public class Candidate {
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+@JsonSerialize
+public record Candidate(URI publicationId,
+                        NviPeriod period,
+                        Foundation foundation,
+                        List<InstitutionStatus> institutionStatuses,
+                        List<Note> notes) {
 
-    @JsonProperty("publicationId")
-    private final URI publicationId;
-    @JsonProperty("period")
-    private final NviPeriod period;
-    @JsonProperty("foundation")
-    private final Foundation foundation;
-    @JsonProperty("institutionStatuses")
-    private final List<InstitutionStatus> institutionStatuses;
-    @JsonProperty("notes")
-    private final List<Note> notes;
-
-    public Candidate(Builder builder) {
-        this.publicationId = builder.publicationId;
-        this.period = builder.period;
-        this.foundation = builder.foundation;
-        this.institutionStatuses = builder.institutionStatuses;
-        this.notes = builder.notes;
-    }
-
-    @JacocoGenerated
-    @Override
-    public int hashCode() {
-        return Objects.hash(getPublicationId(), getPeriod(), getFoundation(), getInstitutionStatuses(), getNotes());
-    }
-
-    @JacocoGenerated
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Candidate candidate = (Candidate) o;
-        return Objects.equals(getPublicationId(), candidate.getPublicationId())
-               && Objects.equals(getPeriod(), candidate.getPeriod())
-               && Objects.equals(getFoundation(), candidate.getFoundation())
-               && Objects.equals(getInstitutionStatuses(), candidate.getInstitutionStatuses())
-               && Objects.equals(getNotes(), candidate.getNotes());
-    }
-
-    public URI getPublicationId() {
-        return publicationId;
-    }
-
-    public NviPeriod getPeriod() {
-        return period;
-    }
-
-    public Foundation getFoundation() {
-        return foundation;
-    }
-
-    public List<InstitutionStatus> getInstitutionStatuses() {
-        return institutionStatuses;
-    }
-
-    public List<Note> getNotes() {
-        return notes;
+    public Builder copy() {
+        return new Builder()
+                   .withPublicationId(this.publicationId)
+                   .withPeriod(this.period)
+                   .withFoundation(this.foundation)
+                   .withInstitutionStatuses(this.institutionStatuses)
+                   .withNotes(this.notes);
     }
 
     public static class Builder {
@@ -107,7 +59,7 @@ public class Candidate {
         }
 
         public Candidate build() {
-            return new Candidate(this);
+            return new Candidate(publicationId, period, foundation, institutionStatuses, notes);
         }
     }
 }

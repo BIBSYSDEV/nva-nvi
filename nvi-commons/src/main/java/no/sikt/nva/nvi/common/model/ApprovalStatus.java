@@ -1,38 +1,21 @@
 package no.sikt.nva.nvi.common.model;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
-import java.util.Objects;
-import nva.commons.core.JacocoGenerated;
+import java.time.Instant;
 
-public class ApprovalStatus {
-
-    private final Status status;
-    private final URI approvedBy;
-    private final URI approvalDate;
-
-    public ApprovalStatus(Builder builder) {
-        this.status = builder.status;
-        this.approvedBy = builder.approvedBy;
-        this.approvalDate = builder.approvalDate;
-    }
-
-    public Status getStatus() {
-        return status;
-    }
-
-    public URI getApprovedBy() {
-        return approvedBy;
-    }
-
-    public URI getApprovalDate() {
-        return approvalDate;
-    }
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+@JsonSerialize
+public record ApprovalStatus(Status status,
+                             URI approvedBy,
+                             Instant approvalDate) {
 
     public static class Builder {
 
         private Status status;
         private URI approvedBy;
-        private URI approvalDate;
+        private Instant approvalDate;
 
         public Builder withStatus(Status status) {
             this.status = status;
@@ -44,34 +27,13 @@ public class ApprovalStatus {
             return this;
         }
 
-        public Builder withApprovalDate(URI approvalDate) {
+        public Builder withApprovalDate(Instant approvalDate) {
             this.approvalDate = approvalDate;
             return this;
         }
 
         public ApprovalStatus build() {
-            return new ApprovalStatus(this);
-        }
-
-        @JacocoGenerated
-        @Override
-        public int hashCode() {
-            return Objects.hash(status, approvedBy, approvalDate);
-        }
-
-        @JacocoGenerated
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            Builder builder = (Builder) o;
-            return status == builder.status
-                   && Objects.equals(approvedBy, builder.approvedBy)
-                   && Objects.equals(approvalDate, builder.approvalDate);
+            return new ApprovalStatus(status, approvedBy, approvalDate);
         }
     }
 }

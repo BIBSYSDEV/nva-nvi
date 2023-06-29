@@ -1,46 +1,13 @@
 package no.sikt.nva.nvi.common.model;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
-import java.util.Objects;
-import nva.commons.core.JacocoGenerated;
 
-public class InstitutionStatus {
-
-    private final URI institutionId;
-    private final ApprovalStatus approvalStatus;
-
-    public InstitutionStatus(Builder builder) {
-        this.institutionId = builder.institutionId;
-        this.approvalStatus = builder.approvalStatus;
-    }
-
-    @JacocoGenerated
-    @Override
-    public int hashCode() {
-        return Objects.hash(getInstitutionId(), getApprovalStatus());
-    }
-
-    @JacocoGenerated
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        InstitutionStatus that = (InstitutionStatus) o;
-        return Objects.equals(getInstitutionId(), that.getInstitutionId())
-               && getApprovalStatus() == that.getApprovalStatus();
-    }
-
-    public URI getInstitutionId() {
-        return institutionId;
-    }
-
-    public ApprovalStatus getApprovalStatus() {
-        return approvalStatus;
-    }
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+@JsonSerialize
+public record InstitutionStatus(URI institutionId,
+                                ApprovalStatus approvalStatus) {
 
     public static class Builder {
 
@@ -58,7 +25,7 @@ public class InstitutionStatus {
         }
 
         public InstitutionStatus build() {
-            return new InstitutionStatus(this);
+            return new InstitutionStatus(institutionId, approvalStatus);
         }
     }
 }

@@ -1,53 +1,14 @@
 package no.sikt.nva.nvi.common.model;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
-import java.util.Objects;
-import nva.commons.core.JacocoGenerated;
 
-public class NviPeriod {
-
-    private final Instant start;
-    private final Instant end;
-    private final int year;
-
-    public NviPeriod(Builder builder) {
-        this.start = builder.start;
-        this.end = builder.end;
-        this.year = builder.year;
-    }
-
-    public Instant getStart() {
-        return start;
-    }
-
-    public Instant getEnd() {
-        return end;
-    }
-
-    @JacocoGenerated
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        NviPeriod nviPeriod = (NviPeriod) o;
-        return getYear() == nviPeriod.getYear()
-               && Objects.equals(getStart(), nviPeriod.getStart())
-               && Objects.equals(getEnd(), nviPeriod.getEnd());
-    }
-
-    @JacocoGenerated
-    @Override
-    public int hashCode() {
-        return Objects.hash(getStart(), getEnd(), getYear());
-    }
-
-    public int getYear() {
-        return year;
-    }
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+@JsonSerialize
+public record NviPeriod(Instant start,
+                        Instant end,
+                        int year) {
 
     public static class Builder {
 
@@ -74,7 +35,7 @@ public class NviPeriod {
         }
 
         public NviPeriod build() {
-            return new NviPeriod(this);
+            return new NviPeriod(start, end, year);
         }
     }
 }

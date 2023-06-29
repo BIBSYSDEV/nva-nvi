@@ -1,67 +1,16 @@
 package no.sikt.nva.nvi.common.model;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
-import java.util.Objects;
-import nva.commons.core.JacocoGenerated;
 
-public class Foundation {
-
-    private final String instanceType;
-    private final Level level;
-    private final List<Creator> creators;
-    private final boolean international;
-    private final int totalCreators;
-
-    public Foundation(Builder builder) {
-        this.instanceType = builder.instanceType;
-        this.level = builder.level;
-        this.creators = builder.creators;
-        this.international = builder.international;
-        this.totalCreators = builder.totalCreators;
-    }
-
-    @JacocoGenerated
-    @Override
-    public int hashCode() {
-        return Objects.hash(getInstanceType(), getLevel(), getCreators(), isInternational(), getTotalCreators());
-    }
-
-    @JacocoGenerated
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Foundation that = (Foundation) o;
-        return isInternational() == that.isInternational()
-               && getTotalCreators() == that.getTotalCreators()
-               && Objects.equals(getInstanceType(), that.getInstanceType())
-               && getLevel() == that.getLevel()
-               && Objects.equals(getCreators(), that.getCreators());
-    }
-
-    public String getInstanceType() {
-        return instanceType;
-    }
-
-    public Level getLevel() {
-        return level;
-    }
-
-    public List<Creator> getCreators() {
-        return creators;
-    }
-
-    public boolean isInternational() {
-        return international;
-    }
-
-    public int getTotalCreators() {
-        return totalCreators;
-    }
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+@JsonSerialize
+public record Foundation(String instanceType,
+                         Level level,
+                         List<Creator> creators,
+                         boolean international,
+                         int totalCreators) {
 
     public static class Builder {
 
@@ -100,7 +49,7 @@ public class Foundation {
         }
 
         public Foundation build() {
-            return new Foundation(this);
+            return new Foundation(instanceType, level, creators, international, totalCreators);
         }
     }
 }

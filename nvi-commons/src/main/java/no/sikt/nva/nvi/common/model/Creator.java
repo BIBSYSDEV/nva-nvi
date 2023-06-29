@@ -1,5 +1,10 @@
 package no.sikt.nva.nvi.common.model;
 
-public class Creator {
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+@JsonSerialize
+public record Creator(Username value) {
 
 }
