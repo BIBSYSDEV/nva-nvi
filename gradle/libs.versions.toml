@@ -1,13 +1,13 @@
 [versions]
 junit = { strictly = '5.8.2' }
-nva = { strictly = '1.28.4' }
-nvaAuth = { strictly = "1.30.2"}
+nva = {strictly = '1.30.3'}
+nvaDatamodel = { strictly = '0.20.33' }
 jackson = { strictly = '2.14.1' }
 mockito = { strictly = '4.5.1' }
 hamcrest = { strictly = '2.2' }
 zalando = { strictly = '0.27.1' }
 awsLambdaJavaCore = { strictly = '1.2.2' }
-awsLambdaEvents = { strictly = '3.11.1' }
+awsLambdaEvents = { strictly = '3.11.2' }
 log4j = { strictly = '2.17.2' }
 slf4j = { strictly = '1.8.0-beta4' }
 awslog4j2 = { strictly = '1.5.1' }
@@ -35,11 +35,11 @@ nva-s3 = { group = 'com.github.bibsysdev', name = 's3', version.ref = 'nva' }
 zalando = { group = 'org.zalando', name = 'problem', version.ref = 'zalando' }
 
 nva-commons-core = { group = 'com.github.bibsysdev', name = 'core', version.ref = 'nva' }
+nva-commons-auth = { group = 'com.github.bibsysdev', name = 'auth', version.ref = 'nva' }
 nva-commons-apigateway = { group = 'com.github.bibsysdev', name = 'apigateway', version.ref = 'nva' }
 nva-commons-pagination = { group = 'com.github.bibsysdev', name = 'pagination', version.ref = 'nva' }
 nva-commons-secrets = { group = 'com.github.bibsysdev', name = 'secrets', version.ref = 'nva' }
 nva-eventhandlers = { group = 'com.github.bibsysdev', name = 'eventhandlers', version.ref = 'nva' }
-nva-commons-auth = { group = 'com.github.bibsysdev', name = 'auth', version.ref = 'nvaAuth' }
 
 aws-sdk2-eventbridge = { group = 'software.amazon.awssdk', name = 'eventbridge', version.ref = 'awsSdk2' }
 aws-sdk2-s3 = { group = 'software.amazon.awssdk', name = 's3', version.ref = 'awsSdk2' }
