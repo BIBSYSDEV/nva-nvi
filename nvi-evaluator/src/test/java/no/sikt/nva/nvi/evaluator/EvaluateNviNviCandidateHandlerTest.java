@@ -64,7 +64,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var credentials = new BackendClientCredentials("id", "secret");
         secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
         uriRetriever = mock(AuthorizedBackendUriRetriever.class);
-        NviCalculator calculator = new NviCalculator(uriRetriever);
+        var calculator = new NviCalculator(uriRetriever);
         handler = new EvaluateNviCandidateHandler(storageReader, queueClient, calculator);
         output = new ByteArrayOutputStream();
     }
