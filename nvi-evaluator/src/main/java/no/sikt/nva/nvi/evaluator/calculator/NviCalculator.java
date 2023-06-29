@@ -64,16 +64,12 @@ public class NviCalculator {
     public CandidateType calculateNvi(JsonNode body) {
         var model = createModel(body);
         var affiliationUris = fetchResourceUris(model, AFFILIATION_SPARQL, AFFILIATION);
-        if (affiliationUris.isEmpty()) {
-            return new NonNviCandidate();
-        }
-        if (!isNviCandidate(model)) {
-            return new NonNviCandidate();
-        }
-        //TODO ADD Check if affiliations are nviInstitutes
         var nviAffiliationsForApproval = fetchNviInstitutions(affiliationUris);
         var publicationId = selectPublicationId(model);
-        return createCandidateResponse(nviAffiliationsForApproval, publicationId);
+
+        return doesNotMeetRequirements(model, nviAffiliationsForApproval)
+                   ? new NonNviCandidate()
+                   : createCandidateResponse(nviAffiliationsForApproval, publicationId);
     }
 
     private static boolean isNviCandidate(Model model) {
@@ -134,6 +130,10 @@ public class NviCalculator {
                    .addChild(CRISTIN_ID)
                    .addChild(URLEncoder.encode(affiliation, StandardCharsets.UTF_8))
                    .getUri();
+    }
+
+    private boolean doesNotMeetRequirements(Model model, List<String> nviAffiliationsForApproval) {
+        return !isNviCandidate(model) || nviAffiliationsForApproval.isEmpty();
     }
 
     private List<String> fetchNviInstitutions(List<String> affiliationUris) {
