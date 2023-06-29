@@ -13,7 +13,7 @@ public final class NviCandidateIndexDocument {
     private static final String TYPE = "type";
     private static final String PUBLICATION = "publication";
     private static final String AFFILIATIONS = "affiliations";
-    private static final String CONTEXT = "context";
+    private static final String CONTEXT = "@context";
     @JsonProperty(CONTEXT)
     private final URI context;
     @JsonProperty(IDENTIFIER)

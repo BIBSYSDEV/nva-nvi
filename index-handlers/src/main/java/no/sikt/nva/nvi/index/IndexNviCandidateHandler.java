@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index;
 
+import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.ApplicationConstants.REGION;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_API_URI;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
@@ -85,7 +86,7 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
     }
 
     private NviCandidateMessageBody validate(NviCandidateMessageBody nviCandidate) {
-        if (Objects.isNull(nviCandidate.publicationId())) {
+        if (isNull(nviCandidate.publicationId())) {
             logInvalidMessageBody(nviCandidate.toJsonString());
             return null;
         }
