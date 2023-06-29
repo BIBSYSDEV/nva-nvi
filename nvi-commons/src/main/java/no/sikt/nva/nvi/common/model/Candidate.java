@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common;
+package no.sikt.nva.nvi.common.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.net.URI;

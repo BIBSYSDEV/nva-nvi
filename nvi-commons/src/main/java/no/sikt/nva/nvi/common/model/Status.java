@@ -1,2 +1,4 @@
-package no.sikt.nva.nvi.common.model;public enum Status {
+package no.sikt.nva.nvi.common.model;
+
+public enum Status {
 }

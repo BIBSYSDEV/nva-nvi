@@ -1,6 +1,8 @@
-package no.sikt.nva.nvi.common;
+package no.sikt.nva.nvi.common.model;
 
 import java.util.List;
+import java.util.Objects;
+import nva.commons.core.JacocoGenerated;
 
 public class Foundation {
 
@@ -8,14 +10,57 @@ public class Foundation {
     private final Level level;
     private final List<Creator> creators;
     private final boolean international;
-    private final int creators;
+    private final int totalCreators;
 
-    public Foundation(String instanceType, Level level, List<Creator> creators, boolean international, int creators1) {
-        this.instanceType = instanceType;
-        this.level = level;
-        this.creators = creators;
-        this.international = international;
-        this.creators = creators1;
+    public Foundation(Builder builder) {
+        this.instanceType = builder.instanceType;
+        this.level = builder.level;
+        this.creators = builder.creators;
+        this.international = builder.international;
+        this.totalCreators = builder.totalCreators;
+    }
+
+    @JacocoGenerated
+    @Override
+    public int hashCode() {
+        return Objects.hash(getInstanceType(), getLevel(), getCreators(), isInternational(), getTotalCreators());
+    }
+
+    @JacocoGenerated
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Foundation that = (Foundation) o;
+        return isInternational() == that.isInternational()
+               && getTotalCreators() == that.getTotalCreators()
+               && Objects.equals(getInstanceType(), that.getInstanceType())
+               && getLevel() == that.getLevel()
+               && Objects.equals(getCreators(), that.getCreators());
+    }
+
+    public String getInstanceType() {
+        return instanceType;
+    }
+
+    public Level getLevel() {
+        return level;
+    }
+
+    public List<Creator> getCreators() {
+        return creators;
+    }
+
+    public boolean isInternational() {
+        return international;
+    }
+
+    public int getTotalCreators() {
+        return totalCreators;
     }
 
     public static class Builder {
@@ -24,30 +69,33 @@ public class Foundation {
         private Level level;
         private List<Creator> creators;
         private boolean international;
-        private int creators1;
+        private int totalCreators;
 
-        public Builder setInstanceType(String instanceType) {
+        public Builder() {
+        }
+
+        public Builder withInstanceType(String instanceType) {
             this.instanceType = instanceType;
             return this;
         }
 
-        public Builder setLevel(Level level) {
+        public Builder withLevel(Level level) {
             this.level = level;
             return this;
         }
 
-        public Builder setCreators(List<Creator> creators) {
+        public Builder withCreators(List<Creator> creators) {
             this.creators = creators;
             return this;
         }
 
-        public Builder setInternational(boolean international) {
+        public Builder withInternational(boolean international) {
             this.international = international;
             return this;
         }
 
-        public Builder setCreators1(int creators1) {
-            this.creators1 = creators1;
+        public Builder withTotalCreator(int totalCreators) {
+            this.totalCreators = totalCreators;
             return this;
         }
 
