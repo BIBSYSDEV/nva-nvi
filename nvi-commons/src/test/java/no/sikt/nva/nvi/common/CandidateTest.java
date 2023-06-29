@@ -73,7 +73,7 @@ public class CandidateTest {
     private InstitutionStatus randomInstitutionStatus() {
         return new InstitutionStatus.Builder()
                    .withApprovalStatus(randomApprovalStatus())
-                   .withInstitutionId(randomUri())
+                   .withInstitutionId(randomUsername())
                    .build();
     }
 

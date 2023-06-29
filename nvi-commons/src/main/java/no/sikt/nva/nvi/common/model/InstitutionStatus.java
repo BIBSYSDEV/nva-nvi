@@ -6,15 +6,15 @@ import java.net.URI;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record InstitutionStatus(URI institutionId,
+public record InstitutionStatus(Username institutionId,
                                 ApprovalStatus approvalStatus) {
 
     public static class Builder {
 
-        private URI institutionId;
+        private Username institutionId;
         private ApprovalStatus approvalStatus;
 
-        public Builder withInstitutionId(URI institutionId) {
+        public Builder withInstitutionId(Username institutionId) {
             this.institutionId = institutionId;
             return this;
         }
