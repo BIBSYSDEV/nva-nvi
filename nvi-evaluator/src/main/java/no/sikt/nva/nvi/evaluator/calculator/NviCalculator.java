@@ -8,6 +8,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,8 +18,10 @@ import java.util.stream.Collectors;
 import no.sikt.nva.nvi.evaluator.model.CandidateResponse;
 import no.sikt.nva.nvi.evaluator.model.CustomerResponse;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.ioutils.IoUtils;
+import nva.commons.core.paths.UriWrapper;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.rdf.model.Model;
@@ -32,6 +36,8 @@ public class NviCalculator {
 
     public static final String CONTENT_TYPE = "application/json";
     public static final String COULD_NOT_FETCH_AFFILIATION_MESSAGE = "Could not fetch affiliation for: ";
+    public static final String CUSTOMER = "customer";
+    public static final String CRISTIN_ID = "cristinId";
     private static final Logger LOGGER = LoggerFactory.getLogger(NviCalculator.class);
     private static final String AFFILIATION_SPARQL =
         IoUtils.stringFromResources(Path.of("sparql/affiliation.sparql"));
@@ -45,6 +51,7 @@ public class NviCalculator {
             .replace(NVI_YEAR_REPLACE_STRING, NVI_YEAR);
     private static final String ID = "id";
     private static final String AFFILIATION = "affiliation";
+    private static final String API_HOST = new Environment().readEnv("API_HOST");
     private AuthorizedBackendUriRetriever uriRetriever;
 
     public NviCalculator(AuthorizedBackendUriRetriever uriRetriever) {
@@ -121,6 +128,14 @@ public class NviCalculator {
         return dtoObjectMapper.readValue(responseBody, CustomerResponse.class);
     }
 
+    private static URI createUri(String affiliation) {
+        return UriWrapper.fromHost(API_HOST)
+                   .addChild(CUSTOMER)
+                   .addChild(CRISTIN_ID)
+                   .addChild(URLEncoder.encode(affiliation, StandardCharsets.UTF_8))
+                   .getUri();
+    }
+
     private List<String> fetchNviInstitutions(List<String> affiliationUris) {
         return affiliationUris.stream()
                    .filter(this::isNviInstitution)
@@ -128,7 +143,7 @@ public class NviCalculator {
     }
 
     private boolean isNviInstitution(String affiliation) {
-        return attempt(() -> uriRetriever.getRawContent(URI.create(affiliation), CONTENT_TYPE))
+        return attempt(() -> uriRetriever.getRawContent(createUri(affiliation), CONTENT_TYPE))
                    .map(Optional::get)
                    .map(NviCalculator::toCustomer)
                    .map(CustomerResponse::nviInstitution)

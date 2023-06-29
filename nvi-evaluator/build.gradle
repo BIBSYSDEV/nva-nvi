@@ -33,4 +33,5 @@ test {
     environment "CANDIDATE_QUEUE_NAME", "My Queueses"
     environment "BACKEND_CLIENT_AUTH_URL", "My url"
     environment "BACKEND_CLIENT_SECRET_NAME", "My secret name"
+    environment "API_HOST", "host.com"
 }
