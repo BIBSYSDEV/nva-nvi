@@ -6,6 +6,13 @@ Description: >
   SAM Template for NVA NVI API
 
 Parameters:
+  CognitoAuthorizationUri:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: '/NVA/CognitoUri'
+  ApiDomain:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Description: The Api domain
+    Default: /NVA/ApiDomain
   EventBusName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/EventsBusName
@@ -92,6 +99,9 @@ Resources:
       MemorySize: 1536
       Environment:
         Variables:
+          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
+          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
+          API_HOST: !Ref ApiDomain
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
           CANDIDATE_QUEUE_NAME: !Ref NewCandidateQueueName
           CANDIDATE_DLQ_NAME: !Ref NewCandidateDLQName
