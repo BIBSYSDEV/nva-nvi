@@ -62,6 +62,7 @@ Resources:
                   - s3:Get*
                   - s3:List*
                   - events:*
+                  - secretsmanager:*
                 Resource: '*'
         - PolicyName: Events
           PolicyDocument:
