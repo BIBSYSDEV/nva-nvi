@@ -1,5 +1,5 @@
 package no.sikt.nva.nvi.common;
 
-public class NviPeriod {
+public class Level {
 
 }
