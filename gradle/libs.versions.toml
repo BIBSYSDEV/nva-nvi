@@ -1,8 +1,7 @@
 [versions]
 junit = { strictly = '5.8.2' }
 nva = {strictly = '1.30.3'}
-nvaDatamodel = { strictly = '0.20.33' }
-jackson = { strictly = '2.14.1' }
+jackson = { strictly = '2.15.2' }
 mockito = { strictly = '4.5.1' }
 hamcrest = { strictly = '2.2' }
 zalando = { strictly = '0.27.1' }
