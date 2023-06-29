@@ -12,6 +12,8 @@ import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 
@@ -19,6 +21,7 @@ import software.amazon.awssdk.regions.Region;
 //TODO: Handle test coverage
 public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocument> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchIndexClient.class);
     private static final String INDEX = "nvi-candidates";
     private final OpenSearchClient openSearchClient;
 
@@ -55,11 +58,18 @@ public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocum
 
     private boolean indexExists() {
         return attempt(
-            () -> openSearchClient.indices().exists(ExistsRequest.of(s -> s.index(INDEX))).value()).orElseThrow();
+            () -> openSearchClient.indices().exists(ExistsRequest.of(s -> s.index(INDEX))).value()).orElseThrow(
+            failure -> handleFailure("Error while checking if index exists: {}", failure.getException()));
     }
 
     private void createIndex() {
         attempt(() -> openSearchClient.indices()
-                          .create(new CreateIndexRequest.Builder().index(INDEX).build())).orElseThrow();
+                          .create(new CreateIndexRequest.Builder().index(INDEX).build())).orElseThrow(
+            failure -> handleFailure("Error while creating index: {}", failure.getException()));
+    }
+
+    private RuntimeException handleFailure(String msg, Exception exception) {
+        LOGGER.error(msg, exception);
+        return new RuntimeException(exception.getMessage());
     }
 }
