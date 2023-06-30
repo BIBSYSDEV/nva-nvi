@@ -28,6 +28,14 @@ Parameters:
   NewCandidateDLQName:
     Type: String
     Default: NewCandidateDLQ
+  SearchInfrastructureApiUri:
+    Type: String
+    Description: URI to external search infrastructure API (SWS).
+    Default: 'https://api.sws.aws.sikt.no'
+  SearchInfrastructureAuthUri:
+    Type: String
+    Description: URI to auth for external search infrastructure API (SWS).
+    Default: 'https://sws-auth.auth.eu-west-1.amazoncognito.com'
 
 Resources:
   #=============================== SQSs ============================================================
@@ -87,6 +95,14 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*'
+        - PolicyName: readSearchInfrastructureSecret
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:SearchInfrastructureCredentials*'
 
   #============================= Handlers ==========================================================
   EvaluateNVICandidateHandler:
@@ -125,3 +141,21 @@ Resources:
 #          OnFailure:
 #            Type: SQS
 #            Destination: !GetAtt NewCandidateDLQ.Arn
+
+  IndexNviCandidateHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index-handlers.IndexNviCandidateHandler::handleRequest
+      Runtime: java17
+      Role: !GetAtt NvaNviRole.Arn
+      Environment:
+        Variables:
+          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+          SEARCH_INFRASTRUCTURE_API_URI: !Ref SearchInfrastructureApiUri,
+          SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
+      Events:
+        SqsEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt NewCandidateQueue.Arn
