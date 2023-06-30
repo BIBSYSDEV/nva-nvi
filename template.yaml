@@ -111,6 +111,7 @@ Resources:
                 Action:
                   - events:*
                   - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
                 Resource: !GetAtt NewCandidateQueue.Arn
 
   #============================= Handlers ==========================================================
