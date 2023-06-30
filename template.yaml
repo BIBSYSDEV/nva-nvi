@@ -103,6 +103,15 @@ Resources:
                 Action:
                   - secretsmanager:GetSecretValue
                 Resource: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:SearchInfrastructureCredentials*'
+        - PolicyName: readSqs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - events:*
+                  - sqs:ReceiveMessage
+                Resource: !GetAtt NewCandidateQueue.Arn
 
   #============================= Handlers ==========================================================
   EvaluateNVICandidateHandler:
