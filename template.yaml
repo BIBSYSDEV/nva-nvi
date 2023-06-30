@@ -5,6 +5,13 @@ Description: >
   
   SAM Template for NVA NVI API
 
+Globals:
+  Function:
+    Environment:
+      Variables:
+        SEARCH_INFRASTRUCTURE_API_URI: !Ref SearchInfrastructureApiUri
+        SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
+
 Parameters:
   CognitoAuthorizationUri:
     Type: 'AWS::SSM::Parameter::Value<String>'
@@ -165,8 +172,6 @@ Resources:
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-          SEARCH_INFRASTRUCTURE_API_URI: !Ref SearchInfrastructureApiUri
-          SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
       Events:
         SqsEvent:
           Type: SQS
