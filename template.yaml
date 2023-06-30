@@ -109,13 +109,12 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  Action:
-                    - events:*
-                    - sqs:SendMessage
-                    - sqs:ReceiveMessage
-                    - sqs:DeleteMessage
-                    - sqs:GetQueueAttributes
-                    - sqs:ChangeMessageVisibility
+                  - events:*
+                  - sqs:SendMessage
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:ChangeMessageVisibility
                 Resource: !GetAtt NewCandidateQueue.Arn
 
   #============================= Handlers ==========================================================
