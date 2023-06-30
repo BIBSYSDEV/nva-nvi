@@ -4,6 +4,8 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.databind.JsonNode;
+import no.sikt.nva.nvi.common.QueueClient;
+import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.evaluator.aws.S3StorageReader;
 import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateType;

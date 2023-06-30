@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.evaluator.aws;
 
 import static no.sikt.nva.nvi.evaluator.aws.RegionUtil.acquireAwsRegion;
 import java.time.Duration;
-import no.sikt.nva.nvi.evaluator.QueueClient;
+import no.sikt.nva.nvi.common.QueueClient;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;

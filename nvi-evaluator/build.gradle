@@ -9,7 +9,7 @@ dependencies {
     implementation libs.nva.s3
     implementation libs.nva.json
     implementation libs.nva.eventhandlers
-    implementation libs.nva.secrets
+    implementation libs.nva.commons.secrets
 
     implementation libs.aws.lambda.java.core
     implementation libs.aws.lambda.events

@@ -10,3 +10,5 @@ rootProject.name = 'nva-nvi'
 include 'nvi-rest'
 include 'nvi-commons'
 include 'nvi-evaluator'
+include 'index-handlers'
+

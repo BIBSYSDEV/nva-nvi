@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.evaluator;
+package no.sikt.nva.nvi.common;
 
 public interface QueueClient<T> {
 
