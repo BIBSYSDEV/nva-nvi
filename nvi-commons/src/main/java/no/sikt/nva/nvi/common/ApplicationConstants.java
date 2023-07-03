@@ -9,7 +9,7 @@ import software.amazon.awssdk.regions.Region;
 public final class ApplicationConstants {
 
     public static final Environment ENVIRONMENT = new Environment();
-    public static final String SEARCH_INFRASTRUCTURE_API_URI = readSearchInfrastructureApiUri();
+    public static final String SEARCH_INFRASTRUCTURE_API_HOST = readSearchInfrastructureApiHost();
     public static final String SEARCH_INFRASTRUCTURE_AUTH_URI = readSearchInfrastructureAuthUri();
     public static final Region REGION = acquireAwsRegion();
 
@@ -17,8 +17,8 @@ public final class ApplicationConstants {
 
     }
 
-    private static String readSearchInfrastructureApiUri() {
-        return ENVIRONMENT.readEnv("SEARCH_INFRASTRUCTURE_API_URI");
+    private static String readSearchInfrastructureApiHost() {
+        return ENVIRONMENT.readEnv("SEARCH_INFRASTRUCTURE_API_HOST");
     }
 
     private static String readSearchInfrastructureAuthUri() {

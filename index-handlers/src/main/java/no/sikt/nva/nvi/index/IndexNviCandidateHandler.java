@@ -2,6 +2,8 @@ package no.sikt.nva.nvi.index;
 
 import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.ApplicationConstants.REGION;
+import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_API_HOST;
+import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
 import static no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator.generateNviCandidateIndexDocument;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
@@ -33,8 +35,6 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexNviCandidateHandler.class);
     private static final Environment ENVIRONMENT = new Environment();
-    private static final String SEARCH_INFRASTRUCTURE_API_URI = ENVIRONMENT.readEnv("SEARCH_INFRASTRUCTURE_API_URI");
-    private static final String SEARCH_INFRASTRUCTURE_AUTH_URI = ENVIRONMENT.readEnv("SEARCH_INFRASTRUCTURE_AUTH_URI");
     private static final String EXPANDED_RESOURCES_BUCKET = ENVIRONMENT.readEnv(
         "EXPANDED_RESOURCES_BUCKET");
     private static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
@@ -48,9 +48,7 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
         var cognitoAuthenticator = new CognitoAuthenticator(HttpClient.newHttpClient(),
                                                             createCognitoCredentials(new SecretsReader()));
         var cachedJwtProvider = new CachedJwtProvider(cognitoAuthenticator, Clock.systemDefaultZone());
-        LOGGER.info("SEARCH_INFRASTRUCTURE_API_URI: " + SEARCH_INFRASTRUCTURE_API_URI);
-        LOGGER.info("SEARCH_INFRASTRUCTURE_AUTH_URI: " + SEARCH_INFRASTRUCTURE_AUTH_URI);
-        this.indexClient = new OpenSearchIndexClient(SEARCH_INFRASTRUCTURE_API_URI, cachedJwtProvider, REGION);
+        this.indexClient = new OpenSearchIndexClient(SEARCH_INFRASTRUCTURE_API_HOST, cachedJwtProvider, REGION);
     }
 
     public IndexNviCandidateHandler(StorageReader<NviCandidateMessageBody> storageReader,
