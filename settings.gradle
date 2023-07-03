@@ -11,4 +11,6 @@ include 'nvi-rest'
 include 'nvi-commons'
 include 'nvi-evaluator'
 include 'index-handlers'
+include 'search-nvi-candidate-api'
+include 'search-nvi-candidates-api'
 

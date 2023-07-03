@@ -1,0 +1,25 @@
+plugins {
+    id 'nva.nvi.java-conventions'
+}
+
+dependencies {
+    implementation project(':index-handlers')
+    implementation libs.nva.commons.apigateway
+    implementation libs.nva.core
+    implementation libs.nva.json
+    implementation libs.nva.commons.auth
+
+    implementation libs.jackson.databind
+
+    implementation libs.aws.sdk2.apache.client
+    implementation libs.aws.java.sdk.core
+
+    implementation libs.com.auth0.jwt
+
+    implementation libs.opensearch.java
+    implementation libs.opensearch.rest.highlevel.client
+}
+
+test {
+    useJUnitPlatform()
+}
