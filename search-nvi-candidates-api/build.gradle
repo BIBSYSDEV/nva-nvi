@@ -3,16 +3,18 @@ plugins {
 }
 
 dependencies {
-    implementation project(':index-handlers')
+    implementation project(':nvi-commons')
     implementation libs.nva.commons.apigateway
     implementation libs.nva.core
     implementation libs.nva.json
     implementation libs.nva.commons.auth
+    implementation libs.nva.commons.secrets
 
     implementation libs.jackson.databind
 
+    implementation libs.aws.sdk2.regions
     implementation libs.aws.sdk2.apache.client
-    implementation libs.aws.java.sdk.core
+
 
     implementation libs.com.auth0.jwt
 
@@ -22,4 +24,7 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    environment("SEARCH_INFRASTRUCTURE_API_URI", "example.com")
+    environment("SEARCH_INFRASTRUCTURE_AUTH_URI", "example.com")
+    environment("ALLOWED_ORIGIN", "*")
 }

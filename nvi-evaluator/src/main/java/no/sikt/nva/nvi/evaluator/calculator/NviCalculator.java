@@ -140,7 +140,7 @@ public class NviCalculator {
     private List<String> fetchNviInstitutions(List<String> affiliationUris) {
         return affiliationUris.stream()
                    .filter(this::isNviInstitution)
-                   .collect(Collectors.toList());
+                      .collect(Collectors.toList());
     }
 
     private boolean isNviInstitution(String affiliation) {
