@@ -9,6 +9,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -17,6 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
 import no.sikt.nva.nvi.evaluator.calculator.NviCalculator;
@@ -35,6 +37,7 @@ import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
 class EvaluateNviNviCandidateHandlerTest {
 
@@ -42,6 +45,7 @@ class EvaluateNviNviCandidateHandlerTest {
     public static final String CUSTOMER_JSON_RESPONSE = "{"
                                                         + "\"nviInstitution\" : \"true\""
                                                         + "}";
+    public static final String NON_NVI_AFF_JSON = "{\"nviInstitution\" : \"true\"}";
     public static final String ACADEMIC_ARTICLE_PATH = "candidate_academicArticle.json";
     public static final String EMPTY_BODY = "[]";
     private final Context context = mock(Context.class);
@@ -264,17 +268,18 @@ class EvaluateNviNviCandidateHandlerTest {
         var event = createS3Event(UriWrapper.fromUri("s3://dummy").getUri());
         handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
-        assertThat(sentMessages, is(empty()));
+        dlqAssertions(sentMessages);
     }
 
     @Test
     void shouldNotCreateNewCandidateEventWhenNoNviInstitutions() throws IOException {
-        when(uriRetriever.getRawContent(any(), any())).thenReturn(Optional.of(EMPTY_BODY));
+        String affUri = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0";
+        when(uriRetriever.getRawContent(eq(URI.create(affUri)), any())).thenReturn(Optional.of(NON_NVI_AFF_JSON));
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
                                           IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
-        assertThat(sqsClient.getSentMessages(), hasSize(0));
+        dlqAssertions(sqsClient.getSentMessages());
     }
 
     @Test
@@ -285,7 +290,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         var appender = LogUtils.getTestingAppenderForRootLogger();
         handler.handleRequest(event, output, context);
-        assertThat(sqsClient.getSentMessages(), hasSize(0));
+        dlqAssertions(sqsClient.getSentMessages());
         assertThat(appender.getMessages(), containsString(COULD_NOT_FETCH_AFFILIATION_MESSAGE));
     }
 
@@ -300,8 +305,20 @@ class EvaluateNviNviCandidateHandlerTest {
     }
 
     @Test
-    void shouldCreateDWhenFailingToGetCandidateInfo() {
+    void shouldCreateDlqWhenFailingToGetCandidateInfo() throws IOException {
+        when(uriRetriever.getRawContent(any(), any())).thenThrow(RuntimeException.class);
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
+                                          IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, output, context);
+        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
+        dlqAssertions(sentMessages);
+    }
 
+    private static void dlqAssertions(List<SendMessageRequest> sentMessages) {
+        assertThat(sentMessages, hasSize(1));
+        assertThat(sentMessages.get(0).messageBody(),
+                   containsString("Exception"));
     }
 
     @Test
