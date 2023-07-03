@@ -21,10 +21,10 @@ import software.amazon.awssdk.regions.Region;
 //TODO: Handle test coverage
 public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocument> {
 
-    public static final String ERROR_MSG_INDEX_EXISTS = "Error while checking if index exists: {}";
-    public static final String ERROR_MSG_CREATE_INDEX = "Error while creating index: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchIndexClient.class);
     private static final String INDEX = "nvi-candidates";
+    private static final String ERROR_MSG_CREATE_INDEX = "Error while creating index: " + INDEX;
+    private static final String ERROR_MSG_INDEX_EXISTS = "Error while checking if index exists: " + INDEX;
     private final OpenSearchClient openSearchClient;
 
     public OpenSearchIndexClient(String openSearchEndpoint, CachedJwtProvider cachedJwtProvider, Region region) {
