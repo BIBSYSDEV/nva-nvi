@@ -18,7 +18,7 @@ public class SqsMessageClient implements QueueClient<SendMessageResponse> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SqsMessageClient.class);
     private static final String QUEUE_NAME = new Environment().readEnv("CANDIDATE_QUEUE_NAME");
-    private static final String DLQ_QUEUE_NAME = new Environment().readEnv("CANDIDATE_QUEUE_NAME");
+    private static final String DLQ_QUEUE_NAME = new Environment().readEnv("CANDIDATE_DLQ_NAME");
     private static final int MAX_CONNECTIONS = 10_000;
     private static final int IDLE_TIME = 30;
     private static final int TIMEOUT_TIME = 30;
