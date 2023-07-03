@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.aws;
 
 import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
 import static nva.commons.core.attempt.Try.attempt;
+import java.io.IOException;
 import no.sikt.nva.nvi.common.IndexClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.auth.CachedJwtProvider;
@@ -59,8 +60,14 @@ public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocum
     }
 
     private boolean indexExists() {
-        return attempt(() -> openSearchClient.indices().exists(ExistsRequest.of(s -> s.index(INDEX))).value())
+        return attempt(() -> indexExists(INDEX))
                    .orElseThrow(failure -> handleFailure(ERROR_MSG_INDEX_EXISTS, failure.getException()));
+    }
+
+    private boolean indexExists(String indexName) throws IOException {
+        var res = openSearchClient.indices().exists(ExistsRequest.of(s -> s.index(indexName)));
+        LOGGER.info("Index exists response: {}", res.toString());
+        return res.value();
     }
 
     private void createIndex() {
