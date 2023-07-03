@@ -48,6 +48,8 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
         var cognitoAuthenticator = new CognitoAuthenticator(HttpClient.newHttpClient(),
                                                             createCognitoCredentials(new SecretsReader()));
         var cachedJwtProvider = new CachedJwtProvider(cognitoAuthenticator, Clock.systemDefaultZone());
+        LOGGER.info("SEARCH_INFRASTRUCTURE_API_URI: " + SEARCH_INFRASTRUCTURE_API_URI);
+        LOGGER.info("SEARCH_INFRASTRUCTURE_AUTH_URI: " + SEARCH_INFRASTRUCTURE_AUTH_URI);
         this.indexClient = new OpenSearchIndexClient(SEARCH_INFRASTRUCTURE_API_URI, cachedJwtProvider, REGION);
     }
 
