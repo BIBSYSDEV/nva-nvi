@@ -268,7 +268,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var event = createS3Event(UriWrapper.fromUri("s3://dummy").getUri());
         handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
-        dlqAssertions(sentMessages);
+        assertThatMessageIsInDlq(sentMessages);
     }
 
     @Test
@@ -279,7 +279,7 @@ class EvaluateNviNviCandidateHandlerTest {
                                           IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
-        dlqAssertions(sqsClient.getSentMessages());
+        assertThatMessageIsInDlq(sqsClient.getSentMessages());
     }
 
     @Test
@@ -290,7 +290,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         var appender = LogUtils.getTestingAppenderForRootLogger();
         handler.handleRequest(event, output, context);
-        dlqAssertions(sqsClient.getSentMessages());
+        assertThatMessageIsInDlq(sqsClient.getSentMessages());
         assertThat(appender.getMessages(), containsString(COULD_NOT_FETCH_AFFILIATION_MESSAGE));
     }
 
@@ -311,11 +311,11 @@ class EvaluateNviNviCandidateHandlerTest {
                                           IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
-        List<SendMessageRequest> sentMessages = sqsClient.getSentMessages();
-        dlqAssertions(sentMessages);
+        var sentMessages = sqsClient.getSentMessages();
+        assertThatMessageIsInDlq(sentMessages);
     }
 
-    private static void dlqAssertions(List<SendMessageRequest> sentMessages) {
+    private static void assertThatMessageIsInDlq(List<SendMessageRequest> sentMessages) {
         assertThat(sentMessages, hasSize(1));
         assertThat(sentMessages.get(0).messageBody(),
                    containsString("Exception"));

@@ -56,7 +56,7 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
             var candidateType = calculator.calculateNvi(jsonNode);
             handleCandidateType(candidateType);
         } catch (Exception e) {
-            String msg = "Failure while calculating NVI Candidate: %s, ex: %s, msg: %s"
+            var msg = "Failure while calculating NVI Candidate: %s, ex: %s, msg: %s"
                              .formatted(input.getUri(), e.getClass(), e.getMessage());
             LOGGER.error(msg, e);
             queueClient.sendDlq(msg);
