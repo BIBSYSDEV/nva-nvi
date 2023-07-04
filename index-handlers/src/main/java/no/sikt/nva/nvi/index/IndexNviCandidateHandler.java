@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.index;
 
 import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.ApplicationConstants.REGION;
-import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_API_URI;
+import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_API_HOST;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
 import static no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator.generateNviCandidateIndexDocument;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -34,10 +34,10 @@ import org.slf4j.LoggerFactory;
 public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexNviCandidateHandler.class);
-
-    private static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
-    private static final String EXPANDED_RESOURCES_BUCKET = new Environment().readEnv(
+    private static final Environment ENVIRONMENT = new Environment();
+    private static final String EXPANDED_RESOURCES_BUCKET = ENVIRONMENT.readEnv(
         "EXPANDED_RESOURCES_BUCKET");
+    private static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
     private static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid: {}";
     private final IndexClient<NviCandidateIndexDocument> indexClient;
     private final StorageReader<NviCandidateMessageBody> storageReader;
@@ -48,7 +48,7 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
         var cognitoAuthenticator = new CognitoAuthenticator(HttpClient.newHttpClient(),
                                                             createCognitoCredentials(new SecretsReader()));
         var cachedJwtProvider = new CachedJwtProvider(cognitoAuthenticator, Clock.systemDefaultZone());
-        this.indexClient = new OpenSearchIndexClient(SEARCH_INFRASTRUCTURE_API_URI, cachedJwtProvider, REGION);
+        this.indexClient = new OpenSearchIndexClient(SEARCH_INFRASTRUCTURE_API_HOST, cachedJwtProvider, REGION);
     }
 
     public IndexNviCandidateHandler(StorageReader<NviCandidateMessageBody> storageReader,

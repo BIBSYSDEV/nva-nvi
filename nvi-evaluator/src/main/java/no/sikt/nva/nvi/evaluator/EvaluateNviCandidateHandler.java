@@ -56,8 +56,10 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
             var candidateType = calculator.calculateNvi(jsonNode);
             handleCandidateType(candidateType);
         } catch (Exception e) {
-            LOGGER.error("Failure while calculating NVI Candidate: %s".formatted(input.getUri()),
-                         e);
+            var msg = "Failure while calculating NVI Candidate: %s, ex: %s, msg: %s"
+                             .formatted(input.getUri(), e.getClass(), e.getMessage());
+            LOGGER.error(msg, e);
+            queueClient.sendDlq(msg);
         }
         return null;
     }

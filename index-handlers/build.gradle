@@ -34,7 +34,7 @@ dependencies {
 test {
     useJUnitPlatform()
     environment "EXPANDED_RESOURCES_BUCKET", "ignoredBucket"
-    environment("SEARCH_INFRASTRUCTURE_API_URI", "localhost")
+    environment("SEARCH_INFRASTRUCTURE_API_HOST", "localhost")
     environment("SEARCH_INFRASTRUCTURE_AUTH_URI", "localhost")
     environment("ALLOWED_ORIGIN", "*")
 }
