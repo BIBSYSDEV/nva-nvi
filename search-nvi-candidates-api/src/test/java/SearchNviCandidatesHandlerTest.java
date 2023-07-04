@@ -50,7 +50,7 @@ public class SearchNviCandidatesHandlerTest {
 
     @Test
     void shouldReturnSomething() throws IOException {
-        when(searchClient.search(any())).thenReturn(generateSearchResponse());
+        when(searchClient.search(any())).thenReturn(generateSearchResponse().hits());
         handler.handleRequest(request("*"), output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, Void.class);
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CREATED)));
@@ -65,9 +65,10 @@ public class SearchNviCandidatesHandlerTest {
                    .build();
     }
 
-    private static HitsMetadata<NviCandidateIndexDocument> singleHit() throws JsonProcessingException {
+    private static HitsMetadata<NviCandidateIndexDocument> singleHit() {
         return new HitsMetadata.Builder<NviCandidateIndexDocument>()
-                   .hits(new Hit.Builder<NviCandidateIndexDocument>().index("nvi-candidates")
+                   .hits(new Hit.Builder<NviCandidateIndexDocument>()
+                             .index("nvi-candidates")
                              .id(randomString())
                              .fields(Map.of("key", JsonData.of(singleNviCandidateIndexDocument())))
                              .build())
@@ -79,10 +80,9 @@ public class SearchNviCandidatesHandlerTest {
         return new ShardStatistics.Builder().failed(0).successful(1).total(1).build();
     }
 
-    private static Object singleNviCandidateIndexDocument() throws JsonProcessingException {
-        var value = new NviCandidateIndexDocument(randomUri(), randomString(), randomString(), randomString(),
-                                                  randomPublicationDetails(), List.of());
-        return value;
+    private static Object singleNviCandidateIndexDocument() {
+        return new NviCandidateIndexDocument(randomUri(), randomString(), randomString(), randomString(),
+                                             randomPublicationDetails(), List.of());
     }
 
     private static PublicationDetails randomPublicationDetails() {

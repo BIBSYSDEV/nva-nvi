@@ -14,6 +14,8 @@ import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
 import no.unit.nva.auth.CognitoCredentials;
+import no.unit.nva.commons.json.JsonUtils;
+import no.unit.nva.nvi.search.model.SearchResponseDto;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.core.JacocoGenerated;
@@ -21,8 +23,9 @@ import nva.commons.secrets.SecretsReader;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.TermsSetQuery;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.HitsMetadata;
 
-public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchResponse<NviCandidateIndexDocument>> {
+public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, HitsMetadata<NviCandidateIndexDocument>> {
 
     private static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
     private static final String SEARCH_TERM_KEY = "query";
@@ -44,14 +47,17 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
     }
 
     @Override
-    protected SearchResponse<NviCandidateIndexDocument> processInput(Void input, RequestInfo requestInfo,
-                                                                     Context context) {
+    protected HitsMetadata<NviCandidateIndexDocument> processInput(Void input, RequestInfo requestInfo,
+                                                                   Context context) {
         var query = contructQuery(requestInfo);
-        return attempt(() -> openSearchSearchClient.search(query)).orElseThrow();
+        var result = attempt(() -> openSearchSearchClient.search(query)).orElseThrow();
+        var searchResponse = SearchResponseDto.fromSearchResponse(result)
+        var string = attempt(() -> JsonUtils.dtoObjectMapper.writeValueAsString(result.hits())).orElseThrow();
+        return result;
     }
 
     @Override
-    protected Integer getSuccessStatusCode(Void input, SearchResponse<NviCandidateIndexDocument> output) {
+    protected Integer getSuccessStatusCode(Void input, HitsMetadata<NviCandidateIndexDocument> output) {
         return HttpURLConnection.HTTP_OK;
     }
 

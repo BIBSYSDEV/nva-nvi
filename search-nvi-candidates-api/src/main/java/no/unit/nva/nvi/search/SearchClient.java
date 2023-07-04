@@ -8,7 +8,7 @@ import no.unit.nva.auth.CachedJwtProvider;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
-import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
@@ -30,8 +30,8 @@ public class SearchClient implements Client {
         );
     }
 
-    public SearchResponse<NviCandidateIndexDocument> search(Query query) throws IOException {
-        return openSearchClient.search(constructSearchRequest(query), NviCandidateIndexDocument.class);
+    public HitsMetadata<NviCandidateIndexDocument> search(Query query) throws IOException {
+        return openSearchClient.search(constructSearchRequest(query), NviCandidateIndexDocument.class).hits();
     }
 
     private static AwsSdk2TransportOptions transportOptionWithToken(String token) {
