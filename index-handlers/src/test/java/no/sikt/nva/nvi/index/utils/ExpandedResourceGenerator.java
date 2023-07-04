@@ -41,7 +41,10 @@ public class ExpandedResourceGenerator {
 
         root.put("identifier", document.getIdentifier());
 
-        return attempt(() -> objectMapper.writeValueAsString(root)).orElseThrow();
+        var body = objectMapper.createObjectNode();
+        body.set("body", root);
+
+        return attempt(() -> objectMapper.writeValueAsString(body)).orElseThrow();
     }
 
     private static String extractMonth(String dateString) {

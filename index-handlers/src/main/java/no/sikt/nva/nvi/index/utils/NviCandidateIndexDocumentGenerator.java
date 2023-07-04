@@ -44,22 +44,23 @@ public final class NviCandidateIndexDocumentGenerator {
 
     public static NviCandidateIndexDocument generateNviCandidateIndexDocument(String resource,
                                                                               NviCandidateMessageBody candidate) {
-        return createNviCandidateIndexDocument(candidate,
-                                               attempt(() -> dtoObjectMapper.readTree(resource)).orElseThrow());
+        return createNviCandidateIndexDocument(
+            attempt(() -> dtoObjectMapper.readTree(resource)).map(root -> root.at("/body")).orElseThrow(),
+            candidate.affiliationApprovals());
     }
 
-    private static NviCandidateIndexDocument createNviCandidateIndexDocument(NviCandidateMessageBody candidate,
-                                                                             JsonNode resource) {
+    private static NviCandidateIndexDocument createNviCandidateIndexDocument(JsonNode resource,
+                                                                             List<String> approvalAffiliations) {
         return new NviCandidateIndexDocument(URI.create(Contexts.NVI_CONTEXT),
                                              extractPublicationIdentifier(resource),
                                              extractYear(resource),
                                              TYPE_NVI_CANDIDATE,
                                              extractPublication(resource),
-                                             createAffiliations(resource, candidate));
+                                             createAffiliations(resource, approvalAffiliations));
     }
 
-    private static List<Affiliation> createAffiliations(JsonNode resource, NviCandidateMessageBody candidate) {
-        return candidate.affiliationApprovals().stream()
+    private static List<Affiliation> createAffiliations(JsonNode resource, List<String> approvalAffiliations) {
+        return approvalAffiliations.stream()
                    .map(id -> expandAffiliation(resource, id))
                    .toList();
     }
