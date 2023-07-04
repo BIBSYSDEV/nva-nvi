@@ -40,7 +40,6 @@ public class NviCalculator {
     public static final String COULD_NOT_FETCH_AFFILIATION_MESSAGE = "Could not fetch affiliation for: ";
     public static final String CUSTOMER = "customer";
     public static final String CRISTIN_ID = "cristinId";
-    private static final Logger LOGGER = LoggerFactory.getLogger(NviCalculator.class);
     private static final String AFFILIATION_SPARQL =
         IoUtils.stringFromResources(Path.of("sparql/affiliation.sparql"));
     private static final String ID_SPARQL =
