@@ -6,6 +6,10 @@ Description: >
   SAM Template for NVA NVI API
 
 Parameters:
+  CognitoAuthorizerArn:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Description: Reference to Cognito UserPool for the stage
+    Default: CognitoAuthorizerArn
   CognitoAuthorizationUri:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Default: '/NVA/CognitoUri'
@@ -36,6 +40,10 @@ Parameters:
     Type: String
     Description: URI to auth for external search infrastructure API (SWS).
     Default: 'https://sws-auth.auth.eu-west-1.amazoncognito.com'
+  CustomDomainBasePath:
+    Type: String
+    Description: Base path mapping in CustomDomain
+    Default: scientific-index
 
 Resources:
   #=============================== SQSs ============================================================
@@ -117,6 +125,98 @@ Resources:
                   - sqs:ChangeMessageVisibility
                 Resource: !GetAtt NewCandidateQueue.Arn
 
+  #============================= Roles ==========================================================
+  ScientificIndexApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      AccessLogSetting:
+        DestinationArn: !GetAtt ApiAccessLogGroup.Arn
+        Format: '{ "apiId": "$context.apiId", "requestId": "$context.requestId", "requestTime": "$context.requestTime", "requestTimeEpoch": "$context.requestTimeEpoch", "httpMethod": "$context.httpMethod", "path": "$context.path", "status": "$context.status",  "error.message": "$context.error.message" }'
+      StageName: Prod
+      EndpointConfiguration: REGIONAL
+      DefinitionBody:
+        'Fn::Transform':
+          Name: AWS::Include
+          Parameters:
+            Location: ./docs/openapi.yaml
+
+  #===========================BasePathMappings========================================================
+
+  NviBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      BasePath: !Ref CustomDomainBasePath
+      DomainName: !Ref ApiDomain
+      RestApiId: !Ref ScientificIndexApi
+      Stage: !Ref ScientificIndexApi.Stage
+
+  #============================ Deploy API ============================================================================#
+  # This solves the problem described here:
+  # https://stackoverflow.com/questions/Ba1423439/cloudformation-doesnt-deploy-to-api-gateway-stages-on-update
+  #====================================================================================================================#
+  ApiGatewayCreateDeploymentLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: ApiGatewayAdmin
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - apigateway:POST
+                Resource: !Sub 'arn:aws:apigateway:${AWS::Region}::/restapis/${ScientificIndexApi}/deployments'
+
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html
+  ApiGatewayCreateDeploymentLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Timeout: 30
+      Role: !GetAtt ApiGatewayCreateDeploymentLambdaRole.Arn
+      Runtime: python3.8
+      Code:
+        ZipFile: |
+          import json, boto3
+          import cfnresponse
+          client = boto3.client('apigateway')
+
+          def lambda_handler(event, context):
+            responseData = {}
+            responseStatus = cfnresponse.SUCCESS
+            if event['RequestType'] == 'Update':
+              try:
+                properties = event['ResourceProperties']
+                response = client.create_deployment(
+                  restApiId=properties['RestApiId'],
+                  stageName=properties['StageName'],
+                  description='Deployed from Custom Resource'
+                )
+              except:
+                responseStatus = cfnresponse.FAILED
+
+            cfnresponse.send(event, context, responseStatus, responseData)
+
+  ApiGatewayCreateDeploymentCustomResource:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt ApiGatewayCreateDeploymentLambda.Arn
+      RestApiId: !Ref ScientificIndexApi
+      StageName: !Ref ScientificIndexApi.Stage
+      Timestamp: '${BUILD_TIMESTAMP}'
+      AuthorizerArn: !Ref CognitoAuthorizerArn
+
+
   #============================= Handlers ==========================================================
   EvaluateNVICandidateHandler:
     Type: AWS::Serverless::Function
@@ -172,3 +272,23 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt NewCandidateQueue.Arn
+
+  SearchNviCandidatesHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.SearchNviCandidatesHandler::handleRequest
+      Runtime: java17
+      Role: !GetAtt NvaNviRole.Arn
+      Environment:
+        Variables:
+          SEARCH_INFRASTRUCTURE_API_URI: !Ref SearchInfrastructureApiUri
+          SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
+          ALLOWED_ORIGIN: '*'
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /candidates
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
