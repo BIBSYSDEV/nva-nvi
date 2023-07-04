@@ -1,8 +1,0 @@
-{
-  "body": {
-    "nviInstitution": false,
-    "@context": "https://bibsysdev.github.io/src/customer-context.json",
-    "type": "Customer"
-  },
-  "status": 200
-}

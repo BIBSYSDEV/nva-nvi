@@ -138,16 +138,23 @@ public class NviCalculator {
                    .getUri();
     }
 
-    private static boolean get(HttpResponse<String> response) {
-        return response.statusCode() == HttpURLConnection.HTTP_OK;
-    }
-
     private static boolean isHttpOk(HttpResponse<String> response) {
         return response.statusCode() == HttpURLConnection.HTTP_OK;
     }
 
-    private static boolean isNotFound(Optional<HttpResponse<String>> response) {
-        return response.get().statusCode() == HttpURLConnection.HTTP_NOT_FOUND;
+    private static boolean isNotFound(HttpResponse<String> response) {
+        return response.statusCode() == HttpURLConnection.HTTP_NOT_FOUND;
+    }
+
+    private static boolean isSuccessOrNotFound(HttpResponse<String> response) {
+        return isHttpOk(response) || isNotFound(response);
+    }
+
+    private static Boolean getNviValue(HttpResponse<String> response) {
+        return Optional.ofNullable(response.body())
+                   .map(NviCalculator::toCustomer)
+                   .map(CustomerResponse::nviInstitution)
+                   .orElse(false);
     }
 
     private List<String> fetchNviInstitutions(List<String> affiliationUris) {
@@ -156,13 +163,10 @@ public class NviCalculator {
                    .collect(Collectors.toList());
     }
 
-    private boolean isNviInstitution(String affiliation) {
+    private Boolean isNviInstitution(String affiliation) {
         var response = uriRetriever.fetchResponse(createUri(affiliation), CONTENT_TYPE);
-        if (response.isPresent() && isHttpOk(response.get()) || isNotFound(response)) {
-            return response.map(HttpResponse::body)
-                       .map(NviCalculator::toCustomer)
-                       .map(CustomerResponse::nviInstitution)
-                       .orElse(false);
+        if (response.isPresent() && isSuccessOrNotFound(response.get())) {
+            return getNviValue(response.get());
         } else {
             throw new RuntimeException(COULD_NOT_FETCH_AFFILIATION_MESSAGE + affiliation);
         }
