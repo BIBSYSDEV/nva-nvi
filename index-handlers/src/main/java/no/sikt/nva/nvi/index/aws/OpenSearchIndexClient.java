@@ -7,15 +7,19 @@ import no.sikt.nva.nvi.common.IndexClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.auth.CachedJwtProvider;
 import nva.commons.core.JacocoGenerated;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpHost;
+import org.opensearch.client.RestClient;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
-import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
+import org.opensearch.client.transport.rest_client.RestClientOptions;
+import org.opensearch.client.transport.rest_client.RestClientTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 
 @JacocoGenerated
@@ -29,14 +33,19 @@ public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocum
     private final OpenSearchClient openSearchClient;
 
     public OpenSearchIndexClient(String openSearchEndpoint, CachedJwtProvider cachedJwtProvider, Region region) {
-        this.openSearchClient = new OpenSearchClient(
-            new AwsSdk2Transport(
-                ApacheHttpClient.builder().build(),
-                openSearchEndpoint,
-                region,
-                transportOptionWithToken("Bearer " + cachedJwtProvider.getValue().getToken())
-            )
-        );
+        //        var transport = new AwsSdk2Transport(
+        //            ApacheHttpClient.builder().build(),
+        //            openSearchEndpoint,
+        //            region,
+        //            transportOptionWithToken("Bearer " + cachedJwtProvider.getValue().getToken())
+        //        );
+        var httpHost = HttpHost.create(openSearchEndpoint);
+        var restClient = RestClient.builder(httpHost).build();
+        var options = RestClientOptions.builder()
+                          .addHeader(HttpHeaders.AUTHORIZATION, cachedJwtProvider.getValue().getToken())
+                          .build();
+        var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(), options);
+        this.openSearchClient = new OpenSearchClient(transport);
         if (!indexExists()) {
             createIndex();
         }
@@ -66,7 +75,7 @@ public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocum
 
     private boolean indexExists(String indexName) throws IOException {
         var res = openSearchClient.indices().exists(ExistsRequest.of(s -> s.index(indexName)));
-        LOGGER.info("Index exists response: {}", res.toString());
+        LOGGER.info("Index exists response: {}", res.value());
         return res.value();
     }
 
