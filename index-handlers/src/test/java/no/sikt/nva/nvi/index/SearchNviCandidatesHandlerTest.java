@@ -34,7 +34,7 @@ import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 public class SearchNviCandidatesHandlerTest {
 
     public static final String QUERY = "query";
-    private final static Context CONTEXT = mock(Context.class);
+    private final Context context = mock(Context.class);
     private ByteArrayOutputStream output;
     private SearchClient searchClient;
     private SearchNviCandidatesHandler handler;
@@ -50,7 +50,7 @@ public class SearchNviCandidatesHandlerTest {
     void shouldReturnDocumentFromIndex() throws IOException {
         var documentFromIndex = singleNviCandidateIndexDocument();
         when(searchClient.search(any())).thenReturn(generateSearchResponse(documentFromIndex));
-        handler.handleRequest(request(), output, CONTEXT);
+        handler.handleRequest(request(), output, context);
         var response = GatewayResponse.fromOutputStream(output, SearchResponseDto.class);
         var hits = response.getBodyObject(SearchResponseDto.class).hits();
         assertThat(hits, hasSize(1));

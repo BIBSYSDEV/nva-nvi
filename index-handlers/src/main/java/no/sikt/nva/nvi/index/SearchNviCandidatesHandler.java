@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.common.ApplicationConstants.REGION;
-import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_API_URI;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -18,6 +17,7 @@ import no.unit.nva.auth.CognitoAuthenticator;
 import no.unit.nva.auth.CognitoCredentials;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.secrets.SecretsReader;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -28,6 +28,8 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
     private static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
     private static final String SEARCH_TERM_KEY = "query";
     private static final String SEARCH_ALL_PUBLICATIONS_DEFAULT_QUERY = "*";
+    private static final String SEARCH_INFRASTRUCTURE_API_URI = new Environment().readEnv(
+        "SEARCH_INFRASTRUCTURE_API_URI");
     private final SearchClient openSearchSearchSearchClient;
 
     @JacocoGenerated
@@ -36,7 +38,8 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
         var cognitoAuthenticator = new CognitoAuthenticator(HttpClient.newHttpClient(),
                                                             createCognitoCredentials(new SecretsReader()));
         var cachedJwtProvider = new CachedJwtProvider(cognitoAuthenticator, Clock.systemDefaultZone());
-        this.openSearchSearchSearchClient = new OpenSearchClient(SEARCH_INFRASTRUCTURE_API_URI, cachedJwtProvider, REGION);
+        this.openSearchSearchSearchClient = new OpenSearchClient(SEARCH_INFRASTRUCTURE_API_URI, cachedJwtProvider,
+                                                                 REGION);
     }
 
     public SearchNviCandidatesHandler(SearchClient openSearchSearchSearchClient) {
@@ -47,9 +50,10 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
     @Override
     protected SearchResponseDto processInput(Void input, RequestInfo requestInfo,
                                              Context context) {
-        var query = contructQuery(requestInfo);
-        var result = attempt(() -> openSearchSearchSearchClient.search(query)).orElseThrow();
-        return SearchResponseDto.fromSearchResponse(result);
+        return attempt(() -> contructQuery(requestInfo))
+                   .map(openSearchSearchSearchClient::search)
+                   .map(SearchResponseDto::fromSearchResponse)
+                   .orElseThrow();
     }
 
     @Override
