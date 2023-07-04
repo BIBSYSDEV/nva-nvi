@@ -132,7 +132,7 @@ Resources:
       Handler: no.sikt.nva.nvi.evaluator.EvaluateNviCandidateHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
-      Timeout: 3
+      Timeout: 30
       MemorySize: 1536
       Environment:
         Variables:
@@ -168,6 +168,8 @@ Resources:
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.IndexNviCandidateHandler::handleRequest
       Runtime: java17
+      Timeout: 30
+      MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
       Environment:
         Variables:

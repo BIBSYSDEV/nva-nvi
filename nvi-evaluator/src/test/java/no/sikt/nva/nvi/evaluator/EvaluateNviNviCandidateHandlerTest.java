@@ -85,9 +85,8 @@ class EvaluateNviNviCandidateHandlerTest {
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
-        var validNviCandidateIdentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
         assertThat(message.messageBody(),
-                   containsString(validNviCandidateIdentifier));
+                   containsString(fileUri.toString()));
     }
 
     @Test
@@ -102,9 +101,8 @@ class EvaluateNviNviCandidateHandlerTest {
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
-        var validNviCandidateIdentifier = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
         assertThat(message.messageBody(),
-                   containsString(validNviCandidateIdentifier));
+                   containsString(fileUri.toString()));
     }
 
     @Test
@@ -119,9 +117,8 @@ class EvaluateNviNviCandidateHandlerTest {
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
-        var validNviCandidateIdentifier = "0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4";
         assertThat(message.messageBody(),
-                   containsString(validNviCandidateIdentifier));
+                   containsString(fileUri.toString()));
     }
 
     @Test
@@ -137,9 +134,8 @@ class EvaluateNviNviCandidateHandlerTest {
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
-        var validNviCandidateIdentifier = "0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4";
         assertThat(message.messageBody(),
-                   containsString(validNviCandidateIdentifier));
+                   containsString(fileUri.toString()));
     }
 
     @Test
@@ -154,9 +150,8 @@ class EvaluateNviNviCandidateHandlerTest {
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
-        var validNviCandidateIdentifier = "0188bee5a7f1-17acf7d5-5658-4a5a-89b2-b2ea73032661";
         assertThat(message.messageBody(),
-                   containsString(validNviCandidateIdentifier));
+                   containsString(fileUri.toString()));
     }
 
     @Test
@@ -171,9 +166,8 @@ class EvaluateNviNviCandidateHandlerTest {
         var sentMessages = sqsClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
-        var validNviCandidateIdentifier = "0188bee8530e-bb78f9a0-d167-4c53-8e70-cedf9994f055";
         assertThat(message.messageBody(),
-                   containsString(validNviCandidateIdentifier));
+                   containsString(fileUri.toString()));
     }
 
     @Test
