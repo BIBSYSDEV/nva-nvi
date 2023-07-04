@@ -43,7 +43,7 @@ class IndexNviCandidateHandlerTest {
     public static final Context CONTEXT = mock(Context.class);
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
 
-    public static final String PUBLICATION_ID_FIELD = "publicationId";
+    public static final String PUBLICATION_ID_FIELD = "publicationBucketUri";
     public static final String AFFILIATION_APPROVALS_FIELD = "affiliationApprovals";
     public static final String HOST = "https://localhost";
 
@@ -143,11 +143,11 @@ class IndexNviCandidateHandlerTest {
         return UriWrapper.fromUri(HOST).addChild(identifier.toString()).getUri();
     }
 
-    private static SQSEvent createEventWithMessageBody(URI publicationId, List<String> affiliationApprovals) {
+    private static SQSEvent createEventWithMessageBody(URI publicationBucketUri, List<String> affiliationApprovals) {
         var sqsEvent = new SQSEvent();
         var message = new SQSMessage();
-        var body = nonNull(publicationId)
-                       ? constructBody(publicationId.toString(), affiliationApprovals)
+        var body = nonNull(publicationBucketUri)
+                       ? constructBody(publicationBucketUri.toString(), affiliationApprovals)
                        : constructBody(affiliationApprovals);
         message.setBody(body);
         sqsEvent.setRecords(List.of(message));

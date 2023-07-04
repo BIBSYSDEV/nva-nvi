@@ -86,8 +86,8 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
     }
 
     private NviCandidateMessageBody validate(NviCandidateMessageBody nviCandidate) {
-        if (isNull(nviCandidate.publicationId())) {
-            logInvalidMessageBody(nviCandidate.toJsonString());
+        if (isNull(nviCandidate.publicationBucketUri())) {
+            logInvalidMessageBody(nviCandidate.toString());
             return null;
         }
         return nviCandidate;

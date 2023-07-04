@@ -64,11 +64,11 @@ public final class NviCandidateIndexDocumentGenerator {
                    .toList();
     }
 
-    private static Affiliation expandAffiliation(JsonNode resource, String id) {
+    private static Affiliation expandAffiliation(JsonNode resource, URI id) {
         return getJsonNodeStream(resource, JSON_PTR_CONTRIBUTOR)
                    .flatMap(contributor -> getJsonNodeStream(contributor, JSON_PTR_AFFILIATIONS))
                    .filter(affiliation -> nonNull(affiliation.at(JSON_PTR_ID)))
-                   .filter(affiliation -> extractId(affiliation).equals(id))
+                   .filter(affiliation -> extractId(affiliation).equals(id.toString()))
                    .findFirst()
                    .map(NviCandidateIndexDocumentGenerator::createAffiliation)
                    .orElse(null);
@@ -131,7 +131,7 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private static boolean isNotMissingNode(JsonNode node) {
-        return !node.isMissingNode();
+        return !node.isMissingNode() && !node.isNull() && node.isValueNode();
     }
 
     private static Stream<JsonNode> getJsonNodeStream(JsonNode jsonNode, String jsonPtr) {
