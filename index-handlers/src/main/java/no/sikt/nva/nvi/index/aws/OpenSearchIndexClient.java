@@ -12,9 +12,11 @@ import org.apache.http.HttpHost;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
+import org.opensearch.client.opensearch.indices.GetIndexRequest;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.rest_client.RestClientOptions;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
@@ -29,16 +31,9 @@ public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocum
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchIndexClient.class);
     private static final String INDEX = "nvi-candidates";
     private static final String ERROR_MSG_CREATE_INDEX = "Error while creating index: " + INDEX;
-    private static final String ERROR_MSG_INDEX_EXISTS = "Error while checking if index exists: " + INDEX;
     private final OpenSearchClient openSearchClient;
 
     public OpenSearchIndexClient(String openSearchEndpoint, CachedJwtProvider cachedJwtProvider, Region region) {
-        //        var transport = new AwsSdk2Transport(
-        //            ApacheHttpClient.builder().build(),
-        //            openSearchEndpoint,
-        //            region,
-        //            transportOptionWithToken("Bearer " + cachedJwtProvider.getValue().getToken())
-        //        );
         var httpHost = HttpHost.create(openSearchEndpoint);
         var restClient = RestClient.builder(httpHost).build();
         var options = RestClientOptions.builder()
@@ -64,19 +59,21 @@ public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocum
                    .build();
     }
 
-    private static AwsSdk2TransportOptions transportOptionWithToken(String token) {
-        return AwsSdk2TransportOptions.builder().addHeader(AUTHORIZATION, token).build();
-    }
-
+    //TODO change with .exists() when sws indexhandler is cleaned up.
     private boolean indexExists() {
-        return attempt(() -> indexExists(INDEX))
-                   .orElseThrow(failure -> handleFailure(ERROR_MSG_INDEX_EXISTS, failure.getException()));
-    }
-
-    private boolean indexExists(String indexName) throws IOException {
-        var res = openSearchClient.indices().exists(ExistsRequest.of(s -> s.index(indexName)));
-        LOGGER.info("Index exists response: {}", res.value());
-        return res.value();
+        try {
+            openSearchClient.indices().get(GetIndexRequest.of(r -> r.index(INDEX)));
+        } catch (IOException io) {
+            throw new RuntimeException(io);
+        } catch (OpenSearchException osex) {
+            if (osex.status() == 404
+                && osex.error().type().equals("index_not_found_exception")
+            ) {
+                return false;
+            }
+            throw osex;
+        }
+        return true;
     }
 
     private void createIndex() {

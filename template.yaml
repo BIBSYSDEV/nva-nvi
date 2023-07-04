@@ -38,7 +38,7 @@ Parameters:
   SearchInfrastructureApiHost:
     Type: String
     Description: Host of external search infrastructure API (SWS).
-    Default: 'api.sws.aws.sikt.no'
+    Default: 'https://api.sws.aws.sikt.no'
   SearchInfrastructureAuthUri:
     Type: String
     Description: URI to auth for external search infrastructure API (SWS).
