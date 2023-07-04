@@ -35,11 +35,12 @@ import org.slf4j.LoggerFactory;
 
 public class NviCalculator {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(NviCalculator.class);
     public static final String CONTENT_TYPE = "application/json";
     public static final String COULD_NOT_FETCH_AFFILIATION_MESSAGE = "Could not fetch affiliation for: ";
     public static final String CUSTOMER = "customer";
     public static final String CRISTIN_ID = "cristinId";
+    public static final String AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE = "Affiliation fetched successfully {}";
+    private static final Logger LOGGER = LoggerFactory.getLogger(NviCalculator.class);
     private static final String AFFILIATION_SPARQL =
         IoUtils.stringFromResources(Path.of("sparql/affiliation.sparql"));
     private static final String ID_SPARQL =
@@ -53,7 +54,6 @@ public class NviCalculator {
     private static final String ID = "id";
     private static final String AFFILIATION = "affiliation";
     private static final String API_HOST = new Environment().readEnv("API_HOST");
-    public static final String AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE = "Affiliation fetched successfully {}";
     private AuthorizedBackendUriRetriever uriRetriever;
 
     public NviCalculator(AuthorizedBackendUriRetriever uriRetriever) {
@@ -151,8 +151,8 @@ public class NviCalculator {
         return isHttpOk(response) || isNotFound(response);
     }
 
-    private static Boolean getNviValue(HttpResponse<String> response) {
-        return Optional.ofNullable(response.body())
+    private static boolean getNviValue(HttpResponse<String> response) {
+        return Optional.of(response.body())
                    .map(NviCalculator::toCustomer)
                    .map(CustomerResponse::nviInstitution)
                    .orElse(false);
@@ -164,14 +164,22 @@ public class NviCalculator {
                    .collect(Collectors.toList());
     }
 
-    private Boolean isNviInstitution(String affiliation) {
-        var response = uriRetriever.fetchResponse(createUri(affiliation), CONTENT_TYPE);
-        if (response.isPresent() && isSuccessOrNotFound(response.get())) {
-            LOGGER.info(AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE, response.get().statusCode());
-            return getNviValue(response.get());
-        } else {
-            throw new RuntimeException(COULD_NOT_FETCH_AFFILIATION_MESSAGE + affiliation);
+    private boolean isNviInstitution(String affiliation) {
+        var response = getResponse(affiliation);
+        if (isSuccessOrNotFound(response)) {
+            LOGGER.info(AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE, response.statusCode());
+            return getNviValue(response);
         }
+        throw new RuntimeException(COULD_NOT_FETCH_AFFILIATION_MESSAGE + affiliation);
+    }
+
+    private HttpResponse<String> getResponse(String affiliation) {
+        return Optional.ofNullable(uriRetriever.fetchResponse(createUri(affiliation), CONTENT_TYPE))
+                   .stream()
+                   .filter(Optional::isPresent)
+                   .map(Optional::get)
+                   .findAny()
+                   .orElseThrow();
     }
 
     private CandidateType createCandidateResponse(List<String> affiliationIds,
