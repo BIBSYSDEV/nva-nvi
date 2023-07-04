@@ -13,27 +13,34 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.apicatalog.jsonld.http.DefaultHttpClient.HttpResponseImpl;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.http.HttpRequest;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
 import no.sikt.nva.nvi.evaluator.calculator.NviCalculator;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
+import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.events.models.AwsEventBridgeDetail;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
 import no.unit.nva.events.models.EventReference;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import no.unit.nva.stubs.FakeSecretsManagerClient;
+import no.unit.nva.testutils.HttpRequestUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
+import org.apache.hc.core5.http.message.HttpResponseWrapper;
+import org.eclipse.jetty.client.HttpResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -45,9 +52,8 @@ class EvaluateNviNviCandidateHandlerTest {
     public static final String CUSTOMER_JSON_RESPONSE = "{"
                                                         + "\"nviInstitution\" : \"true\""
                                                         + "}";
-    public static final String NON_NVI_AFF_JSON = "{\"nviInstitution\" : \"true\"}";
+    public static final String NON_NVI_AFF_JSON = IoUtils.stringFromResources(Path.of("nvi_institution_response.json"));
     public static final String ACADEMIC_ARTICLE_PATH = "candidate_academicArticle.json";
-    public static final String EMPTY_BODY = "[]";
     private final Context context = mock(Context.class);
     private SqsMessageClient queueClient;
     private S3Driver s3Driver;
@@ -274,7 +280,7 @@ class EvaluateNviNviCandidateHandlerTest {
     @Test
     void shouldNotCreateNewCandidateEventWhenNoNviInstitutions() throws IOException {
         String affUri = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0";
-        when(uriRetriever.getRawContent(eq(URI.create(affUri)), any())).thenReturn(Optional.of(NON_NVI_AFF_JSON));
+        when(uriRetriever.fetchResponse(eq(URI.create(affUri)), any())).thenReturn(Optional.of(NON_NVI_AFF_JSON));
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
                                           IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
         var event = createS3Event(fileUri);
