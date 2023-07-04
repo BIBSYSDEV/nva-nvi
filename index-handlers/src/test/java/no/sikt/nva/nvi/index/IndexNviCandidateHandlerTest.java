@@ -44,7 +44,7 @@ class IndexNviCandidateHandlerTest {
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
 
     public static final String PUBLICATION_ID_FIELD = "publicationBucketUri";
-    public static final String AFFILIATION_APPROVALS_FIELD = "affiliationApprovals";
+    public static final String AFFILIATION_APPROVALS_FIELD = "approvalAffiliations";
     public static final String HOST = "https://localhost";
 
     private static final String EXPANDED_RESOURCES_BUCKET = new Environment().readEnv(

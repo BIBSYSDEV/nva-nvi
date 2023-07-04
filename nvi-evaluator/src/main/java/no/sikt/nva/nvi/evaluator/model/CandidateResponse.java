@@ -14,5 +14,5 @@ public record CandidateResponse(
     @JsonProperty(APPROVAL_AFFILIATIONS) List<URI> approvalAffiliations) {
 
     private static final String PUBLICATION_BUCKET_URI = "publicationBucketUri";
-    private static final String APPROVAL_AFFILIATIONS = "approvalAffiliation";
+    private static final String APPROVAL_AFFILIATIONS = "approvalAffiliations";
 }

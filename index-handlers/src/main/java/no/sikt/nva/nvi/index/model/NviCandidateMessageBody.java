@@ -13,5 +13,5 @@ public record NviCandidateMessageBody(@JsonProperty(PUBLICATION_BUCKET_URI) Stri
                                       @JsonProperty(APPROVAL_AFFILIATIONS) List<String> affiliationApprovals) {
 
     private static final String PUBLICATION_BUCKET_URI = "publicationBucketUri";
-    private static final String APPROVAL_AFFILIATIONS = "affiliationApprovals";
+    private static final String APPROVAL_AFFILIATIONS = "approvalAffiliations";
 }
