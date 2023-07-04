@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 public class NviCalculator {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(NviCalculator.class);
     public static final String CONTENT_TYPE = "application/json";
     public static final String COULD_NOT_FETCH_AFFILIATION_MESSAGE = "Could not fetch affiliation for: ";
     public static final String CUSTOMER = "customer";
@@ -53,6 +54,7 @@ public class NviCalculator {
     private static final String ID = "id";
     private static final String AFFILIATION = "affiliation";
     private static final String API_HOST = new Environment().readEnv("API_HOST");
+    public static final String AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE = "Affiliation fetched successfully {}";
     private AuthorizedBackendUriRetriever uriRetriever;
 
     public NviCalculator(AuthorizedBackendUriRetriever uriRetriever) {
@@ -166,6 +168,7 @@ public class NviCalculator {
     private Boolean isNviInstitution(String affiliation) {
         var response = uriRetriever.fetchResponse(createUri(affiliation), CONTENT_TYPE);
         if (response.isPresent() && isSuccessOrNotFound(response.get())) {
+            LOGGER.info(AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE, response.get().statusCode());
             return getNviValue(response.get());
         } else {
             throw new RuntimeException(COULD_NOT_FETCH_AFFILIATION_MESSAGE + affiliation);
