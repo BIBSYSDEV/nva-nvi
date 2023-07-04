@@ -64,11 +64,11 @@ public final class NviCandidateIndexDocumentGenerator {
                    .toList();
     }
 
-    private static Affiliation expandAffiliation(JsonNode resource, URI id) {
+    private static Affiliation expandAffiliation(JsonNode resource, String id) {
         return getJsonNodeStream(resource, JSON_PTR_CONTRIBUTOR)
                    .flatMap(contributor -> getJsonNodeStream(contributor, JSON_PTR_AFFILIATIONS))
                    .filter(affiliation -> nonNull(affiliation.at(JSON_PTR_ID)))
-                   .filter(affiliation -> extractId(affiliation).equals(id.toString()))
+                   .filter(affiliation -> extractId(affiliation).equals(id))
                    .findFirst()
                    .map(NviCandidateIndexDocumentGenerator::createAffiliation)
                    .orElse(null);

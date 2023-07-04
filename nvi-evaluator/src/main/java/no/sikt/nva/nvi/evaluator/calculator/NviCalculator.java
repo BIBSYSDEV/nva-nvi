@@ -48,6 +48,7 @@ public class NviCalculator {
             .replace(NVI_YEAR_REPLACE_STRING, NVI_YEAR);
     private static final String AFFILIATION = "affiliation";
     private static final String API_HOST = new Environment().readEnv("API_HOST");
+    private static final NonNviCandidate NON_NVI_CANDIDATE = new NonNviCandidate();
     private AuthorizedBackendUriRetriever uriRetriever;
 
     public NviCalculator(AuthorizedBackendUriRetriever uriRetriever) {
@@ -61,14 +62,14 @@ public class NviCalculator {
         var model = createModel(body);
 
         if (!isNviCandidate(model)) {
-            return new NonNviCandidate();
+            return NON_NVI_CANDIDATE;
         }
 
         var affiliationUris = fetchResourceUris(model, AFFILIATION_SPARQL, AFFILIATION);
         var nviAffiliationsForApproval = fetchNviInstitutions(affiliationUris);
 
         return nviAffiliationsForApproval.isEmpty()
-                   ? new NonNviCandidate()
+                   ? NON_NVI_CANDIDATE
                    : createCandidateResponse(nviAffiliationsForApproval);
     }
 
