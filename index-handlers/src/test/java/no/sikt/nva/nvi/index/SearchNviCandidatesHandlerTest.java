@@ -89,7 +89,7 @@ public class SearchNviCandidatesHandlerTest {
 
     private void insertDocument(NviCandidateIndexDocument document) throws InterruptedException {
         indexClient.addDocumentToIndex(document);
-        Thread.sleep(1000);
+        Thread.sleep(2000);
     }
 
     private InputStream request(String searchTerm) throws JsonProcessingException {
