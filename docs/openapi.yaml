@@ -109,4 +109,3 @@ components:
         type: cognito_user_pools
         providerARNs:
           - Ref: CognitoAuthorizerArn
-          - Ref: ExternalCognitoAuthorizerArn
