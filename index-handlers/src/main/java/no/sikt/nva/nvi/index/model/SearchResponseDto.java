@@ -7,7 +7,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.List;
 import no.unit.nva.commons.json.JsonUtils;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.paths.UriWrapper;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 
@@ -20,7 +22,9 @@ public record SearchResponseDto(@JsonProperty("@context") URI context,
                                 List<JsonNode> hits,
                                 JsonNode aggregations) {
 
-    public static final URI DEFAULT_SEARCH_CONTEXT = URI.create("https://api.nva.unit.no/nvi-candidates/search");
+    public static final String NVI_CANDIDATES = "nvi-candidates";
+    public static final String SEARCH = "search";
+    public static final String API_HOST = "API_HOST";
 
     public static SearchResponseDto fromSearchResponse(SearchResponse<NviCandidateIndexDocument> searchResponse) {
         List<JsonNode> sourcesList = extractSourcesList(searchResponse);
@@ -28,11 +32,18 @@ public record SearchResponseDto(@JsonProperty("@context") URI context,
         long took = searchResponse.took();
 
         return new Builder()
-                   .withContext(DEFAULT_SEARCH_CONTEXT)
+                   .withContext(constructContextUri())
                    .withHits(sourcesList)
                    .withSize(total)
                    .withProcessingTime(took)
                    .build();
+    }
+
+    private static URI constructContextUri() {
+        return UriWrapper.fromHost(new Environment().readEnv(API_HOST))
+                   .addChild(NVI_CANDIDATES)
+                   .addChild(SEARCH)
+                   .getUri();
     }
 
     private static List<JsonNode> extractSourcesList(SearchResponse<NviCandidateIndexDocument> searchResponse) {
