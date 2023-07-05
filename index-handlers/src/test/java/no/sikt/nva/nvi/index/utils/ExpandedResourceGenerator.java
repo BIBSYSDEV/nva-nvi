@@ -88,7 +88,7 @@ public class ExpandedResourceGenerator {
             var identity = objectMapper.createObjectNode();
             identity.put("id", contributor.id());
             identity.put("name", contributor.name());
-            identity.put("orcid", contributor.orcId());
+            identity.put("orcid", contributor.orcid());
 
             contributorNode.set("identity", identity);
 
