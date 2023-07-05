@@ -14,6 +14,7 @@ import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
+import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.rest_client.RestClientOptions;
@@ -54,6 +55,12 @@ public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocum
     @Override
     public void addDocumentToIndex(NviCandidateIndexDocument indexDocument) {
         attempt(() -> openSearchClient.index(constructIndexRequest(indexDocument))).orElseThrow();
+    }
+
+    @Override
+    public void deleteIndex() {
+        attempt(() -> openSearchClient.indices()
+                          .delete(new DeleteIndexRequest.Builder().index(INDEX).build())).orElseThrow();
     }
 
     private static IndexRequest<NviCandidateIndexDocument> constructIndexRequest(
