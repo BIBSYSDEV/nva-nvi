@@ -11,6 +11,7 @@ import java.net.http.HttpClient;
 import java.time.Clock;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.aws.OpenSearchIndexClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.SearchResponseDto;
 import no.unit.nva.auth.CachedJwtProvider;
@@ -23,9 +24,12 @@ import nva.commons.core.JacocoGenerated;
 import nva.commons.secrets.SecretsReader;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchResponseDto> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
     private static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
     private static final String SEARCH_TERM_KEY = "query";
     private static final String SEARCH_ALL_PUBLICATIONS_DEFAULT_QUERY = "*";
@@ -80,6 +84,7 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
     }
 
     private Query contructQuery(RequestInfo requestInfo) {
+        LOGGER.info("Constructing query");
         return new Query.Builder()
                    .queryString(constructQuery(requestInfo))
                    .build();
