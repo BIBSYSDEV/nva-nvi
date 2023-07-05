@@ -1,14 +1,18 @@
 package no.sikt.nva.nvi.index.model;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.List;
-import java.util.stream.Collectors;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.JacocoGenerated;
+import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+@JsonSerialize
 public record SearchResponseDto(@JsonProperty("@context") URI context,
                                 URI id,
                                 long processingTime,
@@ -18,8 +22,7 @@ public record SearchResponseDto(@JsonProperty("@context") URI context,
 
     public static final URI DEFAULT_SEARCH_CONTEXT = URI.create("https://api.nva.unit.no/nvi-candidates/search");
 
-    public static SearchResponseDto fromSearchResponse(
-        org.opensearch.client.opensearch.core.SearchResponse<NviCandidateIndexDocument> searchResponse) {
+    public static SearchResponseDto fromSearchResponse(SearchResponse<NviCandidateIndexDocument> searchResponse) {
         List<JsonNode> sourcesList = extractSourcesList(searchResponse);
         long total = searchResponse.hits().total().value();
         long took = searchResponse.took();
@@ -32,12 +35,11 @@ public record SearchResponseDto(@JsonProperty("@context") URI context,
                    .build();
     }
 
-    private static List<JsonNode> extractSourcesList(
-        org.opensearch.client.opensearch.core.SearchResponse<NviCandidateIndexDocument> searchResponse) {
+    private static List<JsonNode> extractSourcesList(SearchResponse<NviCandidateIndexDocument> searchResponse) {
         return searchResponse.hits().hits().stream()
                    .map(Hit::source)
                    .map(source -> JsonUtils.dtoObjectMapper.convertValue(source, JsonNode.class))
-                   .collect(Collectors.toList());
+                   .toList();
     }
 
     @JacocoGenerated

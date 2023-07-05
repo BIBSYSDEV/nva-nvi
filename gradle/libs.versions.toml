@@ -70,7 +70,6 @@ aws-lambda-log4j2 = { group = 'com.amazonaws', name = 'aws-lambda-java-log4j2', 
 com-auth0-jwt = { group = 'com.auth0', name =  'java-jwt', version.ref = 'com-auth0-jwt' }
 
 opensearch-rest-client = { group = 'org.opensearch.client', name = 'opensearch-rest-client', version.ref = 'openSearchRestClient' }
-opensearch-rest-highlevel-client = { group = 'org.opensearch.client', name = 'opensearch-rest-high-level-client', version.ref = 'openSearchJava'}
 opensearch-java = { group = 'org.opensearch.client', name = 'opensearch-java', version.ref = 'openSearchJava' }
 
 log4j-core = { group = 'org.apache.logging.log4j', name = 'log4j-core', version.ref = 'log4j' }

@@ -1,12 +1,12 @@
 package no.sikt.nva.nvi.index.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-public record Contributor(@JsonProperty(ID) String id,
-                          @JsonProperty(NAME) String name,
-                          @JsonProperty(ORCID) String orcId) {
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+@JsonSerialize
+public record Contributor(String id,
+                          String name,
+                          String orcId) {
 
-    private static final String ID = "id";
-    private static final String NAME = "name";
-    private static final String ORCID = "orcid";
 }

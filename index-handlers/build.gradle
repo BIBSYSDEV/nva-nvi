@@ -21,7 +21,6 @@ dependencies {
 
     implementation libs.opensearch.java
     implementation libs.opensearch.rest.client
-    implementation libs.opensearch.rest.highlevel.client
     implementation libs.jackson.core
     implementation libs.jackson.databind
     implementation libs.com.auth0.jwt

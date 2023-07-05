@@ -14,7 +14,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import no.sikt.nva.nvi.evaluator.model.CandidateResponse;
 import no.sikt.nva.nvi.evaluator.model.CustomerResponse;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
@@ -140,7 +139,7 @@ public class NviCalculator {
     private List<String> fetchNviInstitutions(List<String> affiliationUris) {
         return affiliationUris.stream()
                    .filter(this::isNviInstitution)
-                      .collect(Collectors.toList());
+                   .toList();
     }
 
     private boolean isNviInstitution(String affiliation) {

@@ -72,7 +72,7 @@ public class SearchNviCandidatesHandlerTest {
         insertDocument(singleNviCandidateIndexDocument());
         var secondDocumentFromIndex = singleNviCandidateIndexDocument();
         insertDocument(secondDocumentFromIndex);
-        handler.handleRequest(request(secondDocumentFromIndex.getIdentifier()), output, context);
+        handler.handleRequest(request(secondDocumentFromIndex.identifier()), output, context);
         var response = GatewayResponse.fromOutputStream(output, SearchResponseDto.class);
         var hits = response.getBodyObject(SearchResponseDto.class).hits();
         assertThat(hits, hasSize(1));

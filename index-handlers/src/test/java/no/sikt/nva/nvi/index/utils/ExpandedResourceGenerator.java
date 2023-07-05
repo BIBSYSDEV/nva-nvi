@@ -14,7 +14,7 @@ public class ExpandedResourceGenerator {
     public static String createExpandedResource(NviCandidateIndexDocument document, String host) {
         var root = objectMapper.createObjectNode();
 
-        root.put("id", UriWrapper.fromUri(host).addChild(document.getIdentifier()).toString());
+        root.put("id", UriWrapper.fromUri(host).addChild(document.identifier()).toString());
 
         var entityDescription = objectMapper.createObjectNode();
 
@@ -22,7 +22,7 @@ public class ExpandedResourceGenerator {
 
         entityDescription.set("contributors", contributors);
 
-        entityDescription.put("mainTitle", document.getPublication().getTitle());
+        entityDescription.put("mainTitle", document.publicationDetails().type());
 
         var publicationDate = createAndPopulatePublicationDate(document);
 
@@ -31,7 +31,7 @@ public class ExpandedResourceGenerator {
         var reference = objectMapper.createObjectNode();
 
         var publicationInstance = objectMapper.createObjectNode();
-        publicationInstance.put("type", document.getPublication().getType());
+        publicationInstance.put("type", document.publicationDetails().type());
 
         reference.set("publicationInstance", publicationInstance);
 
@@ -39,7 +39,7 @@ public class ExpandedResourceGenerator {
 
         root.set("entityDescription", entityDescription);
 
-        root.put("identifier", document.getIdentifier());
+        root.put("identifier", document.identifier());
 
         return attempt(() -> objectMapper.writeValueAsString(root)).orElseThrow();
     }
@@ -62,12 +62,12 @@ public class ExpandedResourceGenerator {
     private static ObjectNode createAndPopulatePublicationDate(NviCandidateIndexDocument document) {
         var publicationDate = objectMapper.createObjectNode();
         publicationDate.put("type", "PublicationDate");
-        if (document.getPublication().getPublicationDate().length() == 4) {
-            publicationDate.put("year", document.getPublication().getPublicationDate());
-        } else if (document.getPublication().getPublicationDate().length() > 4) {
-            publicationDate.put("day", extractDay(document.getPublication().getPublicationDate()));
-            publicationDate.put("month", extractMonth(document.getPublication().getPublicationDate()));
-            publicationDate.put("year", extractYear(document.getPublication().getPublicationDate()));
+        if (document.publicationDetails().publicationDate().length() == 4) {
+            publicationDate.put("year", document.publicationDetails().publicationDate());
+        } else if (document.publicationDetails().publicationDate().length() > 4) {
+            publicationDate.put("day", extractDay(document.publicationDetails().publicationDate()));
+            publicationDate.put("month", extractMonth(document.publicationDetails().publicationDate()));
+            publicationDate.put("year", extractYear(document.publicationDetails().publicationDate()));
         }
         return publicationDate;
     }
@@ -75,7 +75,7 @@ public class ExpandedResourceGenerator {
     private static ArrayNode populateAndCreateContributors(NviCandidateIndexDocument document) {
 
         var contributors = objectMapper.createArrayNode();
-        document.getPublication().getContributors().forEach(contributor -> {
+        document.publicationDetails().contributors().forEach(contributor -> {
 
             var contributorNode = objectMapper.createObjectNode();
 
@@ -101,14 +101,14 @@ public class ExpandedResourceGenerator {
     private static ArrayNode createAndPopulateAffiliationsNode(NviCandidateIndexDocument document) {
         var affiliations = objectMapper.createArrayNode();
 
-        document.getAffiliations().forEach(affiliation -> {
+        document.affiliations().forEach(affiliation -> {
             var affiliationNode = objectMapper.createObjectNode();
-            affiliationNode.put("id", affiliation.getId());
+            affiliationNode.put("id", affiliation.id());
             affiliationNode.put("type", "Organization");
             var labels = objectMapper.createObjectNode();
 
-            labels.put("nb", affiliation.getLabels().get("nb"));
-            labels.put("en", affiliation.getLabels().get("en"));
+            labels.put("nb", affiliation.labels().get("nb"));
+            labels.put("en", affiliation.labels().get("en"));
 
             affiliationNode.set("labels", labels);
 
