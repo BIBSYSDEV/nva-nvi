@@ -1,0 +1,7 @@
+{
+  "Environment": {
+    "API_HOST": "api.dev.nva.aws.unit.no\n",
+    "SEARCH_INFRASTRUCTURE_API_HOST": "api.sws.aws.sikt.no",
+    "SEARCH_INFRASTRUCTURE_AUTH_URI": "https://sws-auth.auth.eu-west-1.amazoncognito.com"
+  }
+}

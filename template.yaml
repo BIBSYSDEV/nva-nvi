@@ -51,6 +51,13 @@ Parameters:
     Type: String
     Description: Base path mapping in CustomDomain
     Default: scientific-index
+  Suffix:
+    Type: String
+    Default: ''
+    Description: Suffix used for naming resources for feature branches to avoid conflicts.
+
+Conditions:
+  WithSuffix: !Not [ !Equals [ !Ref Suffix, '' ] ]
 
 Resources:
   ApiAccessLogGroup:
@@ -134,6 +141,15 @@ Resources:
                 Action:
                   - secretsmanager:GetSecretValue
                 Resource: '*'
+        - PolicyName: invokeFunction
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Principal:
+                  Service:
+                    - lambda.amazonaws.com
+                Action: sts:AssumeRole
 
   #============================= Roles ==========================================================
   ScientificIndexApi:
@@ -154,7 +170,10 @@ Resources:
   NviBasePathMapping:
     Type: AWS::ApiGateway::BasePathMapping
     Properties:
-      BasePath: !Ref CustomDomainBasePath
+      BasePath: !If
+        - WithSuffix
+        - !Sub ${CustomDomainBasePath}-${Suffix}
+        - !Sub ${CustomDomainBasePath}
       DomainName: !Ref ApiDomain
       RestApiId: !Ref ScientificIndexApi
       Stage: !Ref ScientificIndexApi.Stage
