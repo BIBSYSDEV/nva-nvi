@@ -3,19 +3,13 @@ package no.sikt.nva.nvi.index;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
@@ -65,9 +59,8 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
-    void shouldReturnDocumentFromIndex() throws IOException {
-        var documentFromIndex = singleNviCandidateIndexDocument();
-        indexClient.addDocumentToIndex(documentFromIndex);
+    void shouldReturnDocumentFromIndex() throws IOException, InterruptedException {
+        insertDocument(singleNviCandidateIndexDocument());
         handler.handleRequest(request("*"), output, context);
         var response = GatewayResponse.fromOutputStream(output, SearchResponseDto.class);
         var hits = response.getBodyObject(SearchResponseDto.class).hits();
@@ -75,11 +68,10 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
-    void shouldReturnDocumentFromIndexContainingSingleHitWhenUsingTerms() throws IOException {
-        var firstDocumentFromIndex = singleNviCandidateIndexDocument();
+    void shouldReturnDocumentFromIndexContainingSingleHitWhenUsingTerms() throws IOException, InterruptedException {
+        insertDocument(singleNviCandidateIndexDocument());
         var secondDocumentFromIndex = singleNviCandidateIndexDocument();
-        indexClient.addDocumentToIndex(firstDocumentFromIndex);
-        indexClient.addDocumentToIndex(secondDocumentFromIndex);
+        insertDocument(secondDocumentFromIndex);
         handler.handleRequest(request(secondDocumentFromIndex.getIdentifier()), output, context);
         var response = GatewayResponse.fromOutputStream(output, SearchResponseDto.class);
         var hits = response.getBodyObject(SearchResponseDto.class).hits();
@@ -93,6 +85,11 @@ public class SearchNviCandidatesHandlerTest {
 
     private static PublicationDetails randomPublicationDetails() {
         return new PublicationDetails(randomString(), randomString(), randomString(), randomString(), List.of());
+    }
+
+    private void insertDocument(NviCandidateIndexDocument document) throws InterruptedException {
+        indexClient.addDocumentToIndex(document);
+        Thread.sleep(1000);
     }
 
     private InputStream request(String searchTerm) throws JsonProcessingException {

@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.index.aws;
 import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
 import static nva.commons.core.attempt.Try.attempt;
 import java.io.IOException;
-import no.sikt.nva.nvi.common.IndexClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.auth.CachedJwtProvider;
 import nva.commons.core.JacocoGenerated;
