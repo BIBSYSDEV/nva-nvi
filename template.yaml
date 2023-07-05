@@ -13,10 +13,6 @@ Globals:
         SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
 
 Parameters:
-  CognitoAuthorizerArn:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    Description: Reference to Cognito UserPool for the stage
-    Default: CognitoAuthorizerArn
   CognitoAuthorizationUri:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Default: '/NVA/CognitoUri'
@@ -53,6 +49,9 @@ Parameters:
     Default: scientific-index
 
 Resources:
+  ApiAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+
   #=============================== SQSs ============================================================
   NewCandidateQueue:
     Type: AWS::SQS::Queue
@@ -221,7 +220,7 @@ Resources:
       Role: !GetAtt NvaNviRole.Arn
       Environment:
         Variables:
-          SEARCH_INFRASTRUCTURE_API_URI: !Ref SearchInfrastructureApiUri
+          SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
           SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
           ALLOWED_ORIGIN: '*'
       Events:

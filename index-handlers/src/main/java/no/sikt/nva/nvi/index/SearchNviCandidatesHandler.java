@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.common.ApplicationConstants.REGION;
+import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_API_HOST;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -28,8 +29,6 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
     private static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
     private static final String SEARCH_TERM_KEY = "query";
     private static final String SEARCH_ALL_PUBLICATIONS_DEFAULT_QUERY = "*";
-    private static final String SEARCH_INFRASTRUCTURE_API_URI = new Environment().readEnv(
-        "SEARCH_INFRASTRUCTURE_API_URI");
     private final SearchClient openSearchSearchSearchClient;
 
     @JacocoGenerated
@@ -38,7 +37,7 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
         var cognitoAuthenticator = new CognitoAuthenticator(HttpClient.newHttpClient(),
                                                             createCognitoCredentials(new SecretsReader()));
         var cachedJwtProvider = new CachedJwtProvider(cognitoAuthenticator, Clock.systemDefaultZone());
-        this.openSearchSearchSearchClient = new OpenSearchClient(SEARCH_INFRASTRUCTURE_API_URI, cachedJwtProvider,
+        this.openSearchSearchSearchClient = new OpenSearchClient(SEARCH_INFRASTRUCTURE_API_HOST, cachedJwtProvider,
                                                                  REGION);
     }
 
