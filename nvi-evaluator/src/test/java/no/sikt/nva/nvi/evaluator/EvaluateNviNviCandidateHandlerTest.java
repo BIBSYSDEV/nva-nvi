@@ -63,7 +63,6 @@ class EvaluateNviNviCandidateHandlerTest {
         okResponse = createResponse(200, CUSTOMER_NVI_RESPONSE);
         var s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, BUCKET_NAME);
-        FakeStorageReader storageReader = new FakeStorageReader(s3Client);
         sqsClient = new FakeSqsClient();
         SqsMessageClient queueClient = new SqsMessageClient(sqsClient);
         var secretsManagerClient = new FakeSecretsManagerClient();
@@ -71,6 +70,7 @@ class EvaluateNviNviCandidateHandlerTest {
         secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
         uriRetriever = mock(AuthorizedBackendUriRetriever.class);
         var calculator = new NviCalculator(uriRetriever);
+        FakeStorageReader storageReader = new FakeStorageReader(s3Client);
         handler = new EvaluateNviCandidateHandler(storageReader, queueClient, calculator);
         output = new ByteArrayOutputStream();
     }
