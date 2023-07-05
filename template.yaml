@@ -141,19 +141,14 @@ Resources:
                 Action:
                   - secretsmanager:GetSecretValue
                 Resource: '*'
-
-  LambdaRole:
-    Type: AWS::IAM::Role
-    Properties:
-      Path: /
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action: sts:AssumeRole
+        - PolicyName: invokeFunction
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: '*'
 
   #============================= Roles ==========================================================
   ScientificIndexApi:
@@ -308,7 +303,7 @@ Resources:
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.SearchNviCandidatesHandler::handleRequest
       Runtime: java17
-      Role: !GetAtt LambdaRole.Arn
+      Role: !GetAtt NvaNviRole.Arn
       Environment:
         Variables:
           SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
