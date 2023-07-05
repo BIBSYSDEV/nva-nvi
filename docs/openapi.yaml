@@ -1,15 +1,9 @@
 openapi: 3.0.3
 info:
   title: NVA Scientific Index API
-  version: 0.0.1
+  version: 1.0.0
   description: Public API for scientific index candidates in NVA.
 paths:
-  /:
-    get:
-      summary: Get all nvi candidates for an affiliation
-      responses:
-        '200':
-          description: All the candidates
   /candidates:
     get:
       description: 'Search for scientific index candidates'
@@ -20,6 +14,13 @@ paths:
           required: false
           schema:
             type: string
+      security:
+        - CognitoUserPool: [
+          'https://api.nva.unit.no/scopes/backend',
+          'https://api.nva.unit.no/scopes/frontend',
+          'aws.cognito.signin.user.admin',
+          'https://api.nva.unit.no/scopes/third-party/publication-upsert'
+        ]
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchNviCandidatesHandler.Arn}:live/invocations
