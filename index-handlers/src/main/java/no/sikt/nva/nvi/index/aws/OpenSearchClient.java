@@ -5,6 +5,8 @@ import java.io.IOException;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.auth.CachedJwtProvider;
 import nva.commons.core.JacocoGenerated;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpHost;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -12,6 +14,7 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
+import org.opensearch.client.transport.rest_client.RestClientOptions;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
@@ -23,14 +26,13 @@ public class OpenSearchClient implements SearchClient {
     private final org.opensearch.client.opensearch.OpenSearchClient client;
 
     public OpenSearchClient(String openSearchEndpoint, CachedJwtProvider cachedJwtProvider, Region region) {
-        this.client = new org.opensearch.client.opensearch.OpenSearchClient(
-            new AwsSdk2Transport(
-                ApacheHttpClient.builder().build(),
-                openSearchEndpoint,
-                region,
-                transportOptionWithToken("Bearer " + cachedJwtProvider.getValue().getToken())
-            )
-        );
+        var httpHost = HttpHost.create(openSearchEndpoint);
+        var restClient = RestClient.builder(httpHost).build();
+        var options = RestClientOptions.builder()
+                          .addHeader(HttpHeaders.AUTHORIZATION, cachedJwtProvider.getValue().getToken())
+                          .build();
+        var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(), options);
+        this.client = new org.opensearch.client.opensearch.OpenSearchClient(transport);
     }
 
     public OpenSearchClient(RestClient restClient) {

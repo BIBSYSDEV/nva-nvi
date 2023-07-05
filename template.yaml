@@ -310,7 +310,7 @@ Resources:
           SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
           ALLOWED_ORIGIN: '*'
       Events:
-        GetEvent:
+        GetResources:
           Type: Api
           Properties:
             Path: /candidates
