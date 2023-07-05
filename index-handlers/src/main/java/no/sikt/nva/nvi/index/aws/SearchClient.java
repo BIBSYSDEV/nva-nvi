@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.index.aws;
 
 import java.io.IOException;
-import no.sikt.nva.nvi.common.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchResponse;
 

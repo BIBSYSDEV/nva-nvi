@@ -9,8 +9,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Clock;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
-import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.SearchResponseDto;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
@@ -21,7 +21,7 @@ import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.secrets.SecretsReader;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch._types.query_dsl.TermsSetQuery;
+import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
 
 public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchResponseDto> {
 
@@ -61,14 +61,7 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
         return HttpURLConnection.HTTP_OK;
     }
 
-    private static TermsSetQuery getTerms(RequestInfo requestInfo) {
-        return new TermsSetQuery.Builder()
-                   .field(getField(requestInfo))
-                   .terms("*")
-                   .build();
-    }
-
-    private static String getField(RequestInfo requestInfo) {
+    private static String getSearchTerm(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
                    .getOrDefault(SEARCH_TERM_KEY, SEARCH_ALL_PUBLICATIONS_DEFAULT_QUERY);
     }
@@ -81,9 +74,15 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
                                       URI.create(SEARCH_INFRASTRUCTURE_AUTH_URI));
     }
 
+    private static QueryStringQuery constructQuery(RequestInfo requestInfo) {
+        return new QueryStringQuery.Builder()
+                   .query(getSearchTerm(requestInfo))
+                   .build();
+    }
+
     private Query contructQuery(RequestInfo requestInfo) {
         return new Query.Builder()
-                   .termsSet(getTerms(requestInfo))
+                   .queryString(constructQuery(requestInfo))
                    .build();
     }
 }

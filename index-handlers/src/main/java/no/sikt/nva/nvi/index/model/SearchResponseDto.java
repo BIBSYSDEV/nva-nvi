@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
-import no.sikt.nva.nvi.common.model.NviCandidateIndexDocument;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch.core.search.Hit;

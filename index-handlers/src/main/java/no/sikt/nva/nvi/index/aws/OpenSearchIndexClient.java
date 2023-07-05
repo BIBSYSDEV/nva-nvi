@@ -51,6 +51,11 @@ public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocum
         }
     }
 
+    public OpenSearchIndexClient(RestClient restClient) {
+        this.openSearchClient = new org.opensearch.client.opensearch.OpenSearchClient(
+            new RestClientTransport(restClient, new JacksonJsonpMapper()));
+    }
+
     @Override
     public void addDocumentToIndex(NviCandidateIndexDocument indexDocument) {
         attempt(() -> openSearchClient.index(constructIndexRequest(indexDocument))).orElseThrow();
