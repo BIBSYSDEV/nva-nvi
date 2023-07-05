@@ -157,15 +157,6 @@ Resources:
       RestApiId: !Ref ScientificIndexApi
       Stage: !Ref ScientificIndexApi.Stage
 
-  ApiGatewayCreateDeploymentCustomResource:
-    Type: AWS::CloudFormation::CustomResource
-    Properties:
-      ServiceToken: !GetAtt ApiGatewayCreateDeploymentLambda.Arn
-      RestApiId: !Ref ScientificIndexApi
-      StageName: !Ref ScientificIndexApi.Stage
-      Timestamp: '${BUILD_TIMESTAMP}'
-      AuthorizerArn: !Ref CognitoAuthorizerArn
-
 
   #============================= Handlers ==========================================================
   EvaluateNVICandidateHandler:
