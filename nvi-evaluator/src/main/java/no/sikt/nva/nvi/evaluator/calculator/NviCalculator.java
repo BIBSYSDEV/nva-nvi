@@ -4,11 +4,12 @@ import static java.util.Objects.isNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.stringToStream;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ public class NviCalculator {
     public static final String COULD_NOT_FETCH_AFFILIATION_MESSAGE = "Could not fetch affiliation for: ";
     public static final String CUSTOMER = "customer";
     public static final String CRISTIN_ID = "cristinId";
+    public static final String AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE = "Affiliation fetched successfully {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(NviCalculator.class);
     private static final String AFFILIATION_SPARQL =
         IoUtils.stringFromResources(Path.of("sparql/affiliation.sparql"));
@@ -124,8 +126,8 @@ public class NviCalculator {
         LOGGER.warn("Invalid JSON LD input encountered: ", exception);
     }
 
-    private static CustomerResponse toCustomer(String responseBody) throws JsonProcessingException {
-        return dtoObjectMapper.readValue(responseBody, CustomerResponse.class);
+    private static CustomerResponse toCustomer(String responseBody) {
+        return attempt(() -> dtoObjectMapper.readValue(responseBody, CustomerResponse.class)).orElseThrow();
     }
 
     private static URI createUri(String affiliation) {
@@ -136,6 +138,25 @@ public class NviCalculator {
                    .getUri();
     }
 
+    private static boolean isHttpOk(HttpResponse<String> response) {
+        return response.statusCode() == HttpURLConnection.HTTP_OK;
+    }
+
+    private static boolean isNotFound(HttpResponse<String> response) {
+        return response.statusCode() == HttpURLConnection.HTTP_NOT_FOUND;
+    }
+
+    private static boolean isSuccessOrNotFound(HttpResponse<String> response) {
+        return isHttpOk(response) || isNotFound(response);
+    }
+
+    private static boolean getNviValue(HttpResponse<String> response) {
+        return Optional.of(response.body())
+                   .map(NviCalculator::toCustomer)
+                   .map(CustomerResponse::nviInstitution)
+                   .orElse(false);
+    }
+
     private List<String> fetchNviInstitutions(List<String> affiliationUris) {
         return affiliationUris.stream()
                    .filter(this::isNviInstitution)
@@ -143,11 +164,21 @@ public class NviCalculator {
     }
 
     private boolean isNviInstitution(String affiliation) {
-        return attempt(() -> uriRetriever.getRawContent(createUri(affiliation), CONTENT_TYPE))
+        var response = getResponse(affiliation);
+        if (isSuccessOrNotFound(response)) {
+            LOGGER.info(AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE, response.statusCode());
+            return getNviValue(response);
+        }
+        throw new RuntimeException(COULD_NOT_FETCH_AFFILIATION_MESSAGE + affiliation);
+    }
+
+    private HttpResponse<String> getResponse(String affiliation) {
+        return Optional.ofNullable(uriRetriever.fetchResponse(createUri(affiliation), CONTENT_TYPE))
+                   .stream()
+                   .filter(Optional::isPresent)
                    .map(Optional::get)
-                   .map(NviCalculator::toCustomer)
-                   .map(CustomerResponse::nviInstitution)
-                   .orElseThrow(new RuntimeException(COULD_NOT_FETCH_AFFILIATION_MESSAGE + affiliation));
+                   .findAny()
+                   .orElseThrow();
     }
 
     private CandidateType createCandidateResponse(List<String> affiliationIds,
