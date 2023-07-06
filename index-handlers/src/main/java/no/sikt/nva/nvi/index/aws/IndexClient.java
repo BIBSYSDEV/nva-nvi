@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common;
+package no.sikt.nva.nvi.index.aws;
 
 public interface IndexClient<T> {
 

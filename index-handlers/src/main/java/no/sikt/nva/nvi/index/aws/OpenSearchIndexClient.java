@@ -1,9 +1,7 @@
 package no.sikt.nva.nvi.index.aws;
 
-import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
 import static nva.commons.core.attempt.Try.attempt;
 import java.io.IOException;
-import no.sikt.nva.nvi.common.IndexClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.auth.CachedJwtProvider;
 import nva.commons.core.JacocoGenerated;
@@ -15,7 +13,6 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
-import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.rest_client.RestClientOptions;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
 import org.slf4j.Logger;
@@ -51,6 +48,10 @@ public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocum
         }
     }
 
+    public OpenSearchIndexClient(RestClient restClient) {
+        this.openSearchClient = new OpenSearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper()));
+    }
+
     @Override
     public void addDocumentToIndex(NviCandidateIndexDocument indexDocument) {
         attempt(() -> openSearchClient.index(constructIndexRequest(indexDocument))).orElseThrow();
@@ -59,13 +60,9 @@ public class OpenSearchIndexClient implements IndexClient<NviCandidateIndexDocum
     private static IndexRequest<NviCandidateIndexDocument> constructIndexRequest(
         NviCandidateIndexDocument indexDocument) {
         return new IndexRequest.Builder<NviCandidateIndexDocument>().index(INDEX)
-                   .id(indexDocument.getIdentifier())
+                   .id(indexDocument.identifier())
                    .document(indexDocument)
                    .build();
-    }
-
-    private static AwsSdk2TransportOptions transportOptionWithToken(String token) {
-        return AwsSdk2TransportOptions.builder().addHeader(AUTHORIZATION, token).build();
     }
 
     private boolean indexExists() {

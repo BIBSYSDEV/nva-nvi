@@ -10,6 +10,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.stringToStream;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.mockito.Mockito.mock;
@@ -242,10 +243,10 @@ class IndexNviCandidateHandlerTest {
                                                                                                 instanceType,
                                                                                                 publicationDate,
                                                                                                 contributors,
-                                                                                                randomString()),
+                                                                                                instanceType),
                                                                               affiliations);
         var expandedResource = createExpandedResource(expectedNviCandidateIndexDocument, HOST);
-        attempt(() -> s3Driver.insertFile(UnixPath.of(expectedNviCandidateIndexDocument.getIdentifier()),
+        attempt(() -> s3Driver.insertFile(UnixPath.of(expectedNviCandidateIndexDocument.identifier()),
                                           stringToStream(expandedResource))).orElseThrow();
 
         return expectedNviCandidateIndexDocument;

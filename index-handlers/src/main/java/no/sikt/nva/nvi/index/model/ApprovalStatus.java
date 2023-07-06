@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index;
+package no.sikt.nva.nvi.index.model;
 
 public enum ApprovalStatus {
     PENDING("Pending");
