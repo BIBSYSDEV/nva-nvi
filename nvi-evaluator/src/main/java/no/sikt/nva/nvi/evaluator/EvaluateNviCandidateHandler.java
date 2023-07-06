@@ -4,6 +4,7 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.net.URI;
 import no.sikt.nva.nvi.common.QueueClient;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.evaluator.aws.S3StorageReader;
@@ -11,6 +12,7 @@ import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateType;
 import no.sikt.nva.nvi.evaluator.calculator.NviCalculator;
 import no.sikt.nva.nvi.evaluator.calculator.NviCandidate;
+import no.sikt.nva.nvi.evaluator.model.CandidateResponse;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.events.handlers.DestinationsEventBridgeEventHandler;
 import no.unit.nva.events.models.AwsEventBridgeDetail;
@@ -54,19 +56,19 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
             var readInput = storageReader.read(input);
             var jsonNode = extractBodyFromContent(readInput);
             var candidateType = calculator.calculateNvi(jsonNode);
-            handleCandidateType(candidateType);
+            handleCandidateType(input.getUri(), candidateType);
         } catch (Exception e) {
             var msg = "Failure while calculating NVI Candidate: %s, ex: %s, msg: %s"
-                             .formatted(input.getUri(), e.getClass(), e.getMessage());
+                          .formatted(input.getUri(), e.getClass(), e.getMessage());
             LOGGER.error(msg, e);
             queueClient.sendDlq(msg);
         }
         return null;
     }
 
-    private void handleCandidateType(CandidateType candidateType) {
+    private void handleCandidateType(URI publicationBucketUri, CandidateType candidateType) {
         if (candidateType instanceof NviCandidate nviCandidate) {
-            sendMessage(nviCandidate);
+            sendMessage(new CandidateResponse(publicationBucketUri, nviCandidate.approvalAffiliations()));
             LOGGER.info("SentMessage");
         }
     }
@@ -77,8 +79,8 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
                    .orElseThrow();
     }
 
-    private void sendMessage(NviCandidate c) {
-        attempt(() -> dtoObjectMapper.writeValueAsString(c.response()))
+    private void sendMessage(CandidateResponse c) {
+        attempt(() -> dtoObjectMapper.writeValueAsString(c))
             .map(queueClient::sendMessage)
             .orElseThrow();
     }

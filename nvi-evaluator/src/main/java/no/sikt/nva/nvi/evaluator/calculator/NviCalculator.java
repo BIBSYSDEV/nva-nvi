@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.evaluator.model.CandidateResponse;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.evaluator.model.CustomerResponse;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import nva.commons.core.Environment;
@@ -42,17 +43,15 @@ public class NviCalculator {
     private static final Logger LOGGER = LoggerFactory.getLogger(NviCalculator.class);
     private static final String AFFILIATION_SPARQL =
         IoUtils.stringFromResources(Path.of("sparql/affiliation.sparql"));
-    private static final String ID_SPARQL =
-        IoUtils.stringFromResources(Path.of("sparql/id.sparql"));
     //TODO to be configured somehow
     private static final String NVI_YEAR = "2023";
     private static final String NVI_YEAR_REPLACE_STRING = "__NVI_YEAR__";
     private static final String NVI_SPARQL =
         IoUtils.stringFromResources(Path.of("sparql/nvi.sparql"))
             .replace(NVI_YEAR_REPLACE_STRING, NVI_YEAR);
-    private static final String ID = "id";
     private static final String AFFILIATION = "affiliation";
     private static final String API_HOST = new Environment().readEnv("API_HOST");
+    private static final NonNviCandidate NON_NVI_CANDIDATE = new NonNviCandidate();
     private AuthorizedBackendUriRetriever uriRetriever;
 
     public NviCalculator(AuthorizedBackendUriRetriever uriRetriever) {
@@ -66,16 +65,15 @@ public class NviCalculator {
         var model = createModel(body);
 
         if (!isNviCandidate(model)) {
-            return new NonNviCandidate();
+            return NON_NVI_CANDIDATE;
         }
 
         var affiliationUris = fetchResourceUris(model, AFFILIATION_SPARQL, AFFILIATION);
         var nviAffiliationsForApproval = fetchNviInstitutions(affiliationUris);
-        var publicationId = selectPublicationId(model);
 
         return nviAffiliationsForApproval.isEmpty()
-                   ? new NonNviCandidate()
-                   : createCandidateResponse(nviAffiliationsForApproval, publicationId);
+                   ? NON_NVI_CANDIDATE
+                   : createCandidateResponse(nviAffiliationsForApproval);
     }
 
     private static boolean isNviCandidate(Model model) {
@@ -83,12 +81,6 @@ public class NviCalculator {
                    .map(QueryExecution::execAsk)
                    .map(Boolean::booleanValue)
                    .orElseThrow();
-    }
-
-    private static URI selectPublicationId(Model model) {
-        return URI.create(fetchResourceUris(model, ID_SPARQL, ID).stream()
-                              .findFirst()
-                              .orElseThrow());
     }
 
     private static List<String> fetchResourceUris(Model model, String sparqlQuery, String varName) {
@@ -181,11 +173,7 @@ public class NviCalculator {
                    .orElseThrow();
     }
 
-    private CandidateType createCandidateResponse(List<String> affiliationIds,
-                                                  URI publicationId) {
-        return new NviCandidate(
-            new CandidateResponse(
-                publicationId,
-                affiliationIds.stream().map(URI::create).toList()));
+    private CandidateType createCandidateResponse(List<String> affiliationIds) {
+        return new NviCandidate(affiliationIds.stream().map(URI::create).toList());
     }
 }

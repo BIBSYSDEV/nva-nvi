@@ -13,7 +13,6 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
-import no.sikt.nva.nvi.index.aws.OpenSearchIndexClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.index.model.SearchResponseDto;
@@ -34,7 +33,7 @@ public class SearchNviCandidatesHandlerTest {
     public static final String QUERY = "query";
     public static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:2.0.0";
     private static final OpensearchContainer container = new OpensearchContainer(OPEN_SEARCH_IMAGE);
-    private static OpenSearchIndexClient indexClient;
+    private static OpenSearchClient openSearchClient;
     private static RestClient restClient;
     private static SearchNviCandidatesHandler handler;
     private static ByteArrayOutputStream output;
@@ -49,7 +48,7 @@ public class SearchNviCandidatesHandlerTest {
     static void init() {
         setUpTestContainer();
         output = new ByteArrayOutputStream();
-        indexClient = new OpenSearchIndexClient(restClient);
+        openSearchClient = new OpenSearchClient(restClient);
         handler = new SearchNviCandidatesHandler(new OpenSearchClient(restClient));
     }
 
@@ -88,7 +87,7 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     private void insertDocument(NviCandidateIndexDocument document) throws InterruptedException {
-        indexClient.addDocumentToIndex(document);
+        openSearchClient.addDocumentToIndex(document);
         Thread.sleep(2000);
     }
 

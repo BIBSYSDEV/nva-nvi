@@ -1,19 +1,15 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_API_HOST;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
+import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.time.Clock;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
-import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
+import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.SearchResponseDto;
-import no.unit.nva.auth.CachedJwtProvider;
-import no.unit.nva.auth.CognitoAuthenticator;
 import no.unit.nva.auth.CognitoCredentials;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -30,19 +26,15 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
     private static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
     private static final String SEARCH_TERM_KEY = "query";
     private static final String SEARCH_ALL_PUBLICATIONS_DEFAULT_QUERY = "*";
-    private final SearchClient openSearchSearchSearchClient;
+    private final SearchClient<NviCandidateIndexDocument> openSearchSearchSearchClient;
 
     @JacocoGenerated
     public SearchNviCandidatesHandler() {
         super(Void.class);
-        var cognitoAuthenticator = new CognitoAuthenticator(HttpClient.newHttpClient(),
-                                                            createCognitoCredentials(new SecretsReader()));
-        var cachedJwtProvider = new CachedJwtProvider(cognitoAuthenticator, Clock.systemDefaultZone());
-        this.openSearchSearchSearchClient = new OpenSearchClient(SEARCH_INFRASTRUCTURE_API_HOST,
-                                                                 cachedJwtProvider);
+        this.openSearchSearchSearchClient = defaultOpenSearchClient();
     }
 
-    public SearchNviCandidatesHandler(SearchClient openSearchSearchSearchClient) {
+    public SearchNviCandidatesHandler(SearchClient<NviCandidateIndexDocument> openSearchSearchSearchClient) {
         super(Void.class);
         this.openSearchSearchSearchClient = openSearchSearchSearchClient;
     }
