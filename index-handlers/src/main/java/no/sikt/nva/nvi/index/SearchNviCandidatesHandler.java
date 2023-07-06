@@ -18,6 +18,7 @@ import no.unit.nva.auth.CognitoCredentials;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.paths.UriWrapper;
 import nva.commons.secrets.SecretsReader;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
@@ -38,7 +39,8 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
         var cognitoAuthenticator = new CognitoAuthenticator(HttpClient.newHttpClient(),
                                                             createCognitoCredentials(new SecretsReader()));
         var cachedJwtProvider = new CachedJwtProvider(cognitoAuthenticator, Clock.systemDefaultZone());
-        this.openSearchSearchSearchClient = new OpenSearchClient(SEARCH_INFRASTRUCTURE_API_HOST, cachedJwtProvider);
+        this.openSearchSearchSearchClient = new OpenSearchClient(SEARCH_INFRASTRUCTURE_API_HOST,
+                                                                 cachedJwtProvider);
     }
 
     public SearchNviCandidatesHandler(SearchClient openSearchSearchSearchClient) {
