@@ -19,7 +19,6 @@ paths:
           'https://api.nva.unit.no/scopes/backend',
           'https://api.nva.unit.no/scopes/frontend',
           'aws.cognito.signin.user.admin',
-          'https://api.nva.unit.no/scopes/third-party/publication-upsert'
         ]
       x-amazon-apigateway-integration:
         uri:
