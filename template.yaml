@@ -7,10 +7,17 @@ Description: >
 
 Globals:
   Function:
+    Timeout: 20
+    MemorySize: 1536
     Environment:
       Variables:
         SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
         SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
+  Api:
+    Cors:
+      AllowMethods: "'PUT, GET,OPTIONS,DELETE,POST'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Location'"
+      AllowOrigin: "'*'"
 
 Parameters:
   CognitoAuthorizerArn:
@@ -315,7 +322,7 @@ Resources:
           ALLOWED_ORIGIN: '*'
           API_HOST: !Ref ApiDomain
       Events:
-        GetResources:
+        GetEvent:
           Type: Api
           Properties:
             Path: /candidates
