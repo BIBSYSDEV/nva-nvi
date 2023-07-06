@@ -2,8 +2,8 @@ package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_API_HOST;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
-import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -21,9 +21,12 @@ import nva.commons.core.JacocoGenerated;
 import nva.commons.secrets.SecretsReader;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchResponseDto> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
     private static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
     private static final String SEARCH_TERM_KEY = "query";
     private static final String SEARCH_ALL_PUBLICATIONS_DEFAULT_QUERY = "*";
@@ -46,10 +49,14 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
     @Override
     protected SearchResponseDto processInput(Void input, RequestInfo requestInfo,
                                              Context context) {
-        return attempt(() -> contructQuery(requestInfo))
-                   .map(openSearchSearchSearchClient::search)
-                   .map(SearchResponseDto::fromSearchResponse)
-                   .orElseThrow();
+        var query = contructQuery(requestInfo);
+        try {
+            var openSearchResponse = openSearchSearchSearchClient.search(query);
+            LOGGER.info("Response {}", openSearchResponse.toString());
+            return SearchResponseDto.fromSearchResponse(openSearchResponse);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

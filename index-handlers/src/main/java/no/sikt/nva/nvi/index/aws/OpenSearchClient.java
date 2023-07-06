@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.index.aws;
 
 import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
 import java.io.IOException;
-import no.sikt.nva.nvi.index.SearchNviCandidatesHandler;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.auth.CachedJwtProvider;
 import nva.commons.core.JacocoGenerated;
@@ -14,18 +13,14 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.transport.rest_client.RestClientOptions;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @JacocoGenerated
 public class OpenSearchClient implements SearchClient {
 
     public static final String NVI_CANDIDATES_INDEX = "nvi-candidates";
-    private static final Logger LOGGER = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
     private final org.opensearch.client.opensearch.OpenSearchClient client;
 
     public OpenSearchClient(String openSearchEndpoint, CachedJwtProvider cachedJwtProvider) {
-        LOGGER.info("Initiating client");
         var httpHost = HttpHost.create(openSearchEndpoint);
         var restClient = RestClient.builder(httpHost).build();
         var options = RestClientOptions.builder()
@@ -41,7 +36,6 @@ public class OpenSearchClient implements SearchClient {
     }
 
     public SearchResponse<NviCandidateIndexDocument> search(Query query) throws IOException {
-        LOGGER.info("Performing search");
         return client.search(constructSearchRequest(query), NviCandidateIndexDocument.class);
     }
 

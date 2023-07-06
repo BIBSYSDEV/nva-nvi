@@ -304,6 +304,7 @@ Resources:
       Handler: no.sikt.nva.nvi.index.SearchNviCandidatesHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
       Environment:
         Variables:
           SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
