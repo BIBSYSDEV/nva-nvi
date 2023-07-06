@@ -1,12 +1,111 @@
 openapi: 3.0.3
 info:
-  title: NVA NVI API
-  version: 0.0.1
-
+  title: NVA Scientific Index API
+  version: 1.0.0
+  description: Public API for scientific index candidates in NVA.
 paths:
-  /:
+  /candidates:
     get:
-      summary: Get all nvi candidates for an affiliation
+      description: 'Search for scientific index candidates'
+      parameters:
+        - in: query
+          name: query
+          description: 'Term to search for in candidates'
+          required: false
+          schema:
+            type: string
+      security:
+        - CognitoUserPool: [
+          'https://api.nva.unit.no/scopes/backend',
+          'https://api.nva.unit.no/scopes/frontend',
+          'aws.cognito.signin.user.admin',
+          'https://api.nva.unit.no/scopes/third-party/publication-upsert'
+        ]
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchNviCandidatesHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
       responses:
         '200':
-          description: All the candidates
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateSearchResponse"
+        '500':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+components:
+  schemas:
+    CandidateSearchResponse:
+      type: object
+      description: Search meta information, with results
+      properties:
+        '@context':
+          $ref: '#/components/schemas/Context'
+        id:
+          $ref: '#/components/schemas/Id'
+        processingTime:
+          type: integer
+          description: time consumed on server in ms.
+        size:
+          type: integer
+          description: Number of results returned from query
+        aggregations:
+          type: object
+          description: entity containing the different facets hit by the search.
+        total:
+          type: integer
+          description: Total number of results from query
+        took:
+          type: integer
+          description: time consumed on server in ms.
+    Context:
+      type: string
+      pattern: 'https:\/\/.*$'
+      description: The JSON-LD context object for the data, which describes the object in the data and allows machine processing of the data at a semantic level
+    Id:
+      type: string
+      pattern: 'https:\/\/.*$'
+      description: The URI of the object ID
+    Problem:
+      type: object
+      description: NVA error reporting object
+      required:
+        - title
+        - detail
+        - status
+      properties:
+        title:
+          type: string
+          description: Human-readable description of the error status
+        detail:
+          type: string
+          description: A more detailed error message describing the error and potential mitigations
+        status:
+          type: integer
+          description: The HTTP status code associated with the problem
+        requestId:
+          type: string
+          description: Identifier of the request causing the problem
+        instance:
+          type: string
+          description: The requested path associated with the error
+        type:
+          type: string
+          description: A URI describing the error and mitigations, in generic cases, this is about:blank
+  securitySchemes:
+    CognitoUserPool:
+      type: apiKey
+      name: Authorization
+      in: header
+      x-amazon-apigateway-authtype: cognito_user_pools
+      x-amazon-apigateway-authorizer:
+        type: cognito_user_pools
+        providerARNs:
+          - Ref: CognitoAuthorizerArn
