@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.evaluator.calculator;
 
 import static java.util.Objects.isNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
+import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.stringToStream;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -39,7 +40,8 @@ public class NviCalculator {
     public static final String COULD_NOT_FETCH_AFFILIATION_MESSAGE = "Could not fetch affiliation for: ";
     public static final String CUSTOMER = "customer";
     public static final String CRISTIN_ID = "cristinId";
-    public static final String AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE = "Affiliation fetched successfully {}";
+    public static final String AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE = "Affiliation fetched successfully with "
+                                                                          + "status {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(NviCalculator.class);
     private static final String AFFILIATION_SPARQL =
         IoUtils.stringFromResources(Path.of("sparql/affiliation.sparql"));
@@ -123,11 +125,14 @@ public class NviCalculator {
     }
 
     private static URI createUri(String affiliation) {
-        return UriWrapper.fromHost(API_HOST)
+        LOGGER.info("Affiliation uri: {}", affiliation);
+        var uri = UriWrapper.fromHost(API_HOST)
                    .addChild(CUSTOMER)
                    .addChild(CRISTIN_ID)
                    .addChild(URLEncoder.encode(affiliation, StandardCharsets.UTF_8))
                    .getUri();
+        LOGGER.info("URI to fetch: {}", uri);
+        return uri;
     }
 
     private static boolean isHttpOk(HttpResponse<String> response) {

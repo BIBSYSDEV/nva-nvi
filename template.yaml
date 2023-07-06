@@ -307,6 +307,7 @@ Resources:
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
+      MemorySize: 1536
       Environment:
         Variables:
           SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
