@@ -15,6 +15,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.evaluator.model.CustomerResponse;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import nva.commons.core.Environment;
@@ -148,10 +150,10 @@ public class NviCalculator {
                    .orElse(false);
     }
 
-    private List<String> fetchNviInstitutions(List<String> affiliationUris) {
+    private Set<String> fetchNviInstitutions(List<String> affiliationUris) {
         return affiliationUris.stream()
                    .filter(this::isNviInstitution)
-                   .toList();
+                   .collect(Collectors.toSet());
     }
 
     private boolean isNviInstitution(String affiliation) {
@@ -172,7 +174,7 @@ public class NviCalculator {
                    .orElseThrow();
     }
 
-    private CandidateType createCandidateResponse(List<String> affiliationIds) {
-        return new NviCandidate(affiliationIds.stream().map(URI::create).toList());
+    private CandidateType createCandidateResponse(Set<String> affiliationIds) {
+        return new NviCandidate(affiliationIds.stream().map(URI::create).collect(Collectors.toSet()));
     }
 }

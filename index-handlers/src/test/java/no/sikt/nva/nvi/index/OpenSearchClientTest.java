@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
@@ -60,20 +61,17 @@ public class OpenSearchClientTest {
     @Test
     void shouldReturnUniqueDocumentFromIndexWhenSearchingByDocumentIdentifier()
         throws InterruptedException, IOException {
-        openSearchClient.addDocumentToIndex(singleNviCandidateIndexDocument());
-        openSearchClient.addDocumentToIndex(singleNviCandidateIndexDocument());
         var indexDocument = singleNviCandidateIndexDocument();
-        openSearchClient.addDocumentToIndex(indexDocument);
-        Thread.sleep(2000);
+        addDocumentsToIndex(singleNviCandidateIndexDocument(), singleNviCandidateIndexDocument(), indexDocument);
         var searchResponse = openSearchClient.search(searchTermToQuery(indexDocument.identifier()));
         var nviCandidateIndexDocument = searchResponseToIndexDocumentList(searchResponse);
         assertThat(nviCandidateIndexDocument, hasSize(1));
     }
 
     @Test
-    void shouldDeleteIndexAndThrowExceptionWhenSearchingInNonExistentIndex() throws IOException {
+    void shouldDeleteIndexAndThrowExceptionWhenSearchingInNonExistentIndex() throws IOException, InterruptedException {
         var indexDocument = singleNviCandidateIndexDocument();
-        openSearchClient.addDocumentToIndex(indexDocument);
+        addDocumentsToIndex(indexDocument);
         openSearchClient.deleteIndex();
         assertThrows(OpenSearchException.class,
                      () -> openSearchClient.search(searchTermToQuery(indexDocument.identifier())));
@@ -104,5 +102,10 @@ public class OpenSearchClientTest {
 
     private static PublicationDetails randomPublicationDetails() {
         return new PublicationDetails(randomString(), randomString(), randomString(), randomString(), List.of());
+    }
+
+    private void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {
+        Arrays.stream(documents).forEach(document -> openSearchClient.addDocumentToIndex(document));
+        Thread.sleep(2000);
     }
 }
