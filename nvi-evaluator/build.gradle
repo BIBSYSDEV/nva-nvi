@@ -34,5 +34,5 @@ test {
     environment "CANDIDATE_DLQ_NAME", "My Deadeses"
     environment "BACKEND_CLIENT_AUTH_URL", "My url"
     environment "BACKEND_CLIENT_SECRET_NAME", "My secret name"
-    environment "API_HOST", "host.com"
+    environment "API_HOST", "api.dev.nva.aws.unit.no"
 }

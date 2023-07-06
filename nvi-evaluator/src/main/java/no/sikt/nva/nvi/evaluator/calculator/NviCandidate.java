@@ -1,7 +1,9 @@
 package no.sikt.nva.nvi.evaluator.calculator;
 
-import no.sikt.nva.nvi.evaluator.model.CandidateResponse;
+import java.net.URI;
+import java.util.List;
+import java.util.Set;
 
-public record NviCandidate(CandidateResponse response) implements CandidateType {
+public record NviCandidate(Set<URI> approvalAffiliations) implements CandidateType {
 
 }

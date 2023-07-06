@@ -44,8 +44,8 @@ class IndexNviCandidateHandlerTest {
     public static final Context CONTEXT = mock(Context.class);
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
 
-    public static final String PUBLICATION_ID_FIELD = "publicationId";
-    public static final String AFFILIATION_APPROVALS_FIELD = "affiliationApprovals";
+    public static final String PUBLICATION_ID_FIELD = "publicationBucketUri";
+    public static final String AFFILIATION_APPROVALS_FIELD = "approvalAffiliations";
     public static final String HOST = "https://localhost";
 
     private static final String EXPANDED_RESOURCES_BUCKET = new Environment().readEnv(
@@ -54,12 +54,12 @@ class IndexNviCandidateHandlerTest {
 
     private S3Driver s3Driver;
 
-    private FakeIndexClient indexClient;
+    private FakeSearchClient indexClient;
 
     @BeforeEach
     void setup() {
         var s3Client = new FakeS3Client();
-        indexClient = new FakeIndexClient();
+        indexClient = new FakeSearchClient();
         s3Driver = new S3Driver(s3Client, EXPANDED_RESOURCES_BUCKET);
         var storageReader = new FakeStorageReader(s3Client);
         handler = new IndexNviCandidateHandler(storageReader, indexClient);
@@ -144,11 +144,11 @@ class IndexNviCandidateHandlerTest {
         return UriWrapper.fromUri(HOST).addChild(identifier.toString()).getUri();
     }
 
-    private static SQSEvent createEventWithMessageBody(URI publicationId, List<String> affiliationApprovals) {
+    private static SQSEvent createEventWithMessageBody(URI publicationBucketUri, List<String> affiliationApprovals) {
         var sqsEvent = new SQSEvent();
         var message = new SQSMessage();
-        var body = nonNull(publicationId)
-                       ? constructBody(publicationId.toString(), affiliationApprovals)
+        var body = nonNull(publicationBucketUri)
+                       ? constructBody(publicationBucketUri.toString(), affiliationApprovals)
                        : constructBody(affiliationApprovals);
         message.setBody(body);
         sqsEvent.setRecords(List.of(message));

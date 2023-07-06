@@ -20,8 +20,7 @@ class FakeStorageReader implements StorageReader<NviCandidateMessageBody> {
 
     @Override
     public String read(NviCandidateMessageBody blob) {
-        var uri = blob.publicationId();
-        var resourceRelativePath = UriWrapper.fromUri(uri).toS3bucketPath();
+        var resourceRelativePath = UriWrapper.fromUri(blob.publicationBucketUri()).toS3bucketPath();
         return s3Driver.getFile(resourceRelativePath);
     }
 }
