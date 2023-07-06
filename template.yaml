@@ -241,6 +241,7 @@ Resources:
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
       MemorySize: 1536
+      AutoPublishAlias: live
       Environment:
         Variables:
           SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
