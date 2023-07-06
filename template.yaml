@@ -329,3 +329,9 @@ Resources:
       Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
+      Environment:
+        Variables:
+          SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
+          SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
+          ALLOWED_ORIGIN: '*'
+          API_HOST: !Ref ApiDomain
