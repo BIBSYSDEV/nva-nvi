@@ -325,7 +325,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Description: Lambda that deletes scientific index. Needs to be run manually from Test
-      CodeUri: indexing-handlers
+      CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
