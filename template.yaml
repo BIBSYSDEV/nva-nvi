@@ -272,14 +272,14 @@ Resources:
               detail:
                 responsePayload:
                   topic: [ "PublicationService.ExpandedEntry.Persisted" ]
-#      EventInvokeConfig:
-#        DestinationConfig:
-#          OnSuccess:
-#            Type: SQS
-#            Destination: !GetAtt NewCandidateQueue.Arn
-#          OnFailure:
-#            Type: SQS
-#            Destination: !GetAtt NewCandidateDLQ.Arn
+  #      EventInvokeConfig:
+  #        DestinationConfig:
+  #          OnSuccess:
+  #            Type: SQS
+  #            Destination: !GetAtt NewCandidateQueue.Arn
+  #          OnFailure:
+  #            Type: SQS
+  #            Destination: !GetAtt NewCandidateDLQ.Arn
 
   IndexNviCandidateHandler:
     Type: AWS::Serverless::Function
@@ -320,3 +320,12 @@ Resources:
             Path: /candidates
             Method: get
             RestApiId: !Ref ScientificIndexApi
+
+  DeleteImportCandidateIndexHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Lambda that deletes scientific index. Needs to be run manually from Test
+      CodeUri: indexing-handlers
+      Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
+      Runtime: java17
+      Role: !GetAtt NvaNviRole.Arn
