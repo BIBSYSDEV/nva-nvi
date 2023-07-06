@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.common.ApplicationConstants.REGION;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_API_HOST;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
 import static nva.commons.core.attempt.Try.attempt;
@@ -11,7 +10,6 @@ import java.net.http.HttpClient;
 import java.time.Clock;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
-import no.sikt.nva.nvi.index.aws.OpenSearchIndexClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.SearchResponseDto;
 import no.unit.nva.auth.CachedJwtProvider;
@@ -19,17 +17,13 @@ import no.unit.nva.auth.CognitoAuthenticator;
 import no.unit.nva.auth.CognitoCredentials;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
-import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.secrets.SecretsReader;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchResponseDto> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
     private static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
     private static final String SEARCH_TERM_KEY = "query";
     private static final String SEARCH_ALL_PUBLICATIONS_DEFAULT_QUERY = "*";
@@ -41,8 +35,7 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
         var cognitoAuthenticator = new CognitoAuthenticator(HttpClient.newHttpClient(),
                                                             createCognitoCredentials(new SecretsReader()));
         var cachedJwtProvider = new CachedJwtProvider(cognitoAuthenticator, Clock.systemDefaultZone());
-        this.openSearchSearchSearchClient = new OpenSearchClient(SEARCH_INFRASTRUCTURE_API_HOST, cachedJwtProvider,
-                                                                 REGION);
+        this.openSearchSearchSearchClient = new OpenSearchClient(SEARCH_INFRASTRUCTURE_API_HOST, cachedJwtProvider);
     }
 
     public SearchNviCandidatesHandler(SearchClient openSearchSearchSearchClient) {
@@ -84,7 +77,6 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
     }
 
     private Query contructQuery(RequestInfo requestInfo) {
-        LOGGER.info("Constructing query");
         return new Query.Builder()
                    .queryString(constructQuery(requestInfo))
                    .build();
