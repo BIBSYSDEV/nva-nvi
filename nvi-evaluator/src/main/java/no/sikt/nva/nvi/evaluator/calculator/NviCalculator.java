@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.evaluator.calculator;
 
 import static java.util.Objects.isNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
-import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.stringToStream;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -16,8 +15,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import no.sikt.nva.nvi.evaluator.model.CandidateResponse;
-import java.util.stream.Collectors;
 import no.sikt.nva.nvi.evaluator.model.CustomerResponse;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import nva.commons.core.Environment;
@@ -125,14 +122,11 @@ public class NviCalculator {
     }
 
     private static URI createUri(String affiliation) {
-        LOGGER.info("Affiliation uri: {}", affiliation);
-        var uri = UriWrapper.fromHost(API_HOST)
-                   .addChild(CUSTOMER)
-                   .addChild(CRISTIN_ID)
-                   .addChild(URLEncoder.encode(affiliation, StandardCharsets.UTF_8))
-                   .getUri();
-        LOGGER.info("URI to fetch: {}", uri);
-        return uri;
+        var getCustomerEndpoint = UriWrapper.fromHost(API_HOST)
+                                      .addChild(CUSTOMER)
+                                      .addChild(CRISTIN_ID)
+                                      .getUri();
+        return URI.create(getCustomerEndpoint + "/" + URLEncoder.encode(affiliation, StandardCharsets.UTF_8));
     }
 
     private static boolean isHttpOk(HttpResponse<String> response) {
