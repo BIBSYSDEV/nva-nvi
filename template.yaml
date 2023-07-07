@@ -21,10 +21,6 @@ Globals:
       AllowOrigin: "'*'"
 
 Parameters:
-  CognitoAuthorizerArn:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    Description: Reference to Cognito UserPool for the stage
-    Default: CognitoAuthorizerArn
   CognitoAuthorizationUri:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Default: '/NVA/CognitoUri'
@@ -227,11 +223,26 @@ Resources:
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+          SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
+          SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
       Events:
         SqsEvent:
           Type: SQS
           Properties:
             Queue: !GetAtt NewCandidateQueue.Arn
+
+  DeleteNviCandidateHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.DeleteNviCandidateHandler::handleRequest
+      Timeout: 30
+      MemorySize: 1536
+      Role: !GetAtt NvaNviRole.Arn
+      Environment:
+        Variables:
+          SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
+          SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
 
   SearchNviCandidatesHandler:
     Type: AWS::Serverless::Function
@@ -256,7 +267,7 @@ Resources:
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
-  DeleteImportCandidateIndexHandler:
+  DeleteNviCandidateIndexHandler:
     Type: AWS::Serverless::Function
     Properties:
       Description: Lambda that deletes scientific index. Needs to be run manually from Test
@@ -267,5 +278,3 @@ Resources:
         Variables:
           SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
           SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
-          ALLOWED_ORIGIN: '*'
-          API_HOST: !Ref ApiDomain

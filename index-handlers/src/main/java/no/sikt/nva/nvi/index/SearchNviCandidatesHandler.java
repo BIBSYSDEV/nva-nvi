@@ -37,7 +37,7 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
         try {
             var openSearchResponse = openSearchSearchSearchClient.search(query);
             return SearchResponseDto.fromSearchResponse(openSearchResponse);
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

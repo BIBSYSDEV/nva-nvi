@@ -21,6 +21,7 @@ import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -70,6 +71,12 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         attempt(() -> client.index(constructIndexRequest(indexDocument))).orElseThrow();
     }
 
+    @Override
+    public void removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) throws IOException {
+        client.delete(contructDeleteRequest(indexDocument));
+    }
+
+    @Override
     public SearchResponse<NviCandidateIndexDocument> search(Query query) throws IOException {
         return client.search(constructSearchRequest(query), NviCandidateIndexDocument.class);
     }
@@ -77,6 +84,13 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     @Override
     public void deleteIndex() throws IOException {
         client.indices().delete(new DeleteIndexRequest.Builder().index(NVI_CANDIDATES_INDEX).build());
+    }
+
+    private static DeleteRequest contructDeleteRequest(NviCandidateIndexDocument indexDocument) {
+        return new DeleteRequest.Builder()
+                   .index(NVI_CANDIDATES_INDEX)
+                   .id(indexDocument.identifier())
+                   .build();
     }
 
     private static IndexRequest<NviCandidateIndexDocument> constructIndexRequest(
@@ -87,7 +101,6 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
                    .build();
     }
 
-    @JacocoGenerated
     private static CognitoCredentials createCognitoCredentials(SecretsReader secretsReader) {
         var credentials = secretsReader.fetchClassSecret(SEARCH_INFRASTRUCTURE_CREDENTIALS,
                                                          UsernamePasswordWrapper.class);

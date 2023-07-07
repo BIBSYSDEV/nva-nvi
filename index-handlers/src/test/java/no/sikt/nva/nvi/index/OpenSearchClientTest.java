@@ -50,31 +50,44 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldCreateIndexAndAddDocumentToIndexWhenIndexDoesNotExist() throws IOException, InterruptedException {
-        var indexDocument = singleNviCandidateIndexDocument();
-        openSearchClient.addDocumentToIndex(indexDocument);
+        var document = singleNviCandidateIndexDocument();
+        openSearchClient.addDocumentToIndex(document);
         Thread.sleep(2000);
-        var searchResponse = openSearchClient.search(searchTermToQuery(indexDocument.identifier()));
+        var searchResponse =
+            openSearchClient.search(searchTermToQuery(document.identifier()));
         var nviCandidateIndexDocument = searchResponseToIndexDocumentList(searchResponse);
-        assertThat(nviCandidateIndexDocument, containsInAnyOrder(indexDocument));
+        assertThat(nviCandidateIndexDocument, containsInAnyOrder(document));
     }
 
     @Test
     void shouldReturnUniqueDocumentFromIndexWhenSearchingByDocumentIdentifier()
         throws InterruptedException, IOException {
-        var indexDocument = singleNviCandidateIndexDocument();
-        addDocumentsToIndex(singleNviCandidateIndexDocument(), singleNviCandidateIndexDocument(), indexDocument);
-        var searchResponse = openSearchClient.search(searchTermToQuery(indexDocument.identifier()));
+        var document = singleNviCandidateIndexDocument();
+        addDocumentsToIndex(singleNviCandidateIndexDocument(), singleNviCandidateIndexDocument(), document);
+        var searchResponse =
+            openSearchClient.search(searchTermToQuery(document.identifier()));
         var nviCandidateIndexDocument = searchResponseToIndexDocumentList(searchResponse);
         assertThat(nviCandidateIndexDocument, hasSize(1));
     }
 
     @Test
     void shouldDeleteIndexAndThrowExceptionWhenSearchingInNonExistentIndex() throws IOException, InterruptedException {
-        var indexDocument = singleNviCandidateIndexDocument();
-        addDocumentsToIndex(indexDocument);
+        var document = singleNviCandidateIndexDocument();
+        addDocumentsToIndex(document);
         openSearchClient.deleteIndex();
         assertThrows(OpenSearchException.class,
-                     () -> openSearchClient.search(searchTermToQuery(indexDocument.identifier())));
+                     () -> openSearchClient.search(searchTermToQuery(document.identifier())));
+    }
+
+    @Test
+    void shouldRemoveDocumentFromIndex() throws InterruptedException, IOException {
+        var document = singleNviCandidateIndexDocument();
+        addDocumentsToIndex(document);
+        openSearchClient.removeDocumentFromIndex(document);
+        Thread.sleep(2000);
+        var searchResponse = openSearchClient.search(searchTermToQuery(document.identifier()));
+        var nviCandidateIndexDocument = searchResponseToIndexDocumentList(searchResponse);
+        assertThat(nviCandidateIndexDocument, hasSize(0));
     }
 
     @NotNull

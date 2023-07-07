@@ -24,6 +24,11 @@ public class FakeSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     @Override
+    public void removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) throws IOException {
+
+    }
+
+    @Override
     public SearchResponse<NviCandidateIndexDocument> search(Query query) throws IOException {
         return null;
     }
