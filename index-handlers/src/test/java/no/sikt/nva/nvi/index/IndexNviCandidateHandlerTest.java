@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.index.model.Affiliation;
+import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contexts;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
@@ -201,7 +202,7 @@ class IndexNviCandidateHandlerTest {
         var affiliation = new Affiliation(
             affiliationUri.toString(),
             Map.of("nb", randomString(), "en",
-                   randomString()), "Pending");
+                   randomString()), ApprovalStatus.PENDING);
         var year = publicationDate.length() > 4
                        ? String.valueOf(LocalDate.parse(publicationDate).getYear())
                        : publicationDate;
@@ -223,7 +224,7 @@ class IndexNviCandidateHandlerTest {
         var affiliation = new Affiliation(
             affiliationUri.toString(),
             Map.of("nb", randomString(), "en",
-                   randomString()), "Pending");
+                   randomString()), ApprovalStatus.PENDING);
         return prepareNviCandidateFile(identifier, publicationId, year, documentType, instanceType, publicationDate,
                                        List.of(affiliation), List.of(new Contributor(null,
                                                                                      randomString(),

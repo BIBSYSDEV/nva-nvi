@@ -1,17 +1,30 @@
 package no.sikt.nva.nvi.index;
 
+import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.stream.IntStream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.model.Affiliation;
+import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
+import no.sikt.nva.nvi.index.model.SearchResponseDto;
+import no.unit.nva.commons.json.JsonUtils;
+import nva.commons.core.ioutils.IoUtils;
 import org.apache.http.HttpHost;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
@@ -77,6 +90,21 @@ public class OpenSearchClientTest {
                      () -> openSearchClient.search(searchTermToQuery(indexDocument.identifier())));
     }
 
+    @Test
+    void shouldReturnAggregationsForApprovalStatus() throws IOException, InterruptedException {
+        addDocumentsToIndex(documentFromString("document_approved.json"),
+                            documentFromString("document_pending.json"),
+                            documentFromString("document_rejected.json"));
+        var searchResponse = openSearchClient.search(searchTermToQuery("*"));
+        var response = SearchResponseDto.fromSearchResponse(searchResponse);
+        assertThat(response.aggregations(), is(notNullValue()));
+    }
+
+    private static NviCandidateIndexDocument documentFromString(String fileName) throws JsonProcessingException {
+        var string = IoUtils.stringFromResources(Path.of(fileName));
+        return JsonUtils.dtoObjectMapper.readValue(string, NviCandidateIndexDocument.class);
+    }
+
     @NotNull
     private static List<NviCandidateIndexDocument> searchResponseToIndexDocumentList(
         SearchResponse<NviCandidateIndexDocument> searchResponse) {
@@ -96,8 +124,24 @@ public class OpenSearchClientTest {
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
-        return new NviCandidateIndexDocument(randomUri(), randomString(), randomString(), randomString(),
-                                             randomPublicationDetails(), List.of());
+        return new NviCandidateIndexDocument(randomUri(), randomString(), randomInteger().toString(),
+                                             randomString(),
+                                             randomPublicationDetails(), randomAffiliationList());
+    }
+
+    private static List<Affiliation> randomAffiliationList() {
+        return IntStream.range(0, 5).boxed().map(i -> randomAffiliation()).toList();
+    }
+
+    private static Affiliation randomAffiliation() {
+        return new Affiliation(randomString(), Map.of(), randomStatus());
+    }
+
+    private static ApprovalStatus randomStatus() {
+        var values = Arrays.stream(ApprovalStatus.values()).toList();
+        var size = values.size();
+        var random = new Random();
+        return values.get(random.nextInt(size));
     }
 
     private static PublicationDetails randomPublicationDetails() {
