@@ -78,7 +78,7 @@ public final class NviCandidateIndexDocumentGenerator {
     private static Affiliation createAffiliation(JsonNode affiliation) {
         return new Affiliation(extractId(affiliation),
                                convertToMap(affiliation.at(JSON_PTR_LABELS)),
-                               ApprovalStatus.PENDING.getValue());
+                               ApprovalStatus.PENDING);
     }
 
     private static String extractPublicationIdentifier(JsonNode resource) {

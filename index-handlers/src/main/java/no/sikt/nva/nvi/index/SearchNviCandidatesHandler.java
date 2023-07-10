@@ -31,8 +31,7 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
     }
 
     @Override
-    protected SearchResponseDto processInput(Void input, RequestInfo requestInfo,
-                                             Context context) {
+    protected SearchResponseDto processInput(Void input, RequestInfo requestInfo, Context context) {
         var query = contructQuery(requestInfo);
         try {
             var openSearchResponse = openSearchSearchSearchClient.search(query);
