@@ -15,7 +15,11 @@ public final class Aggregations {
     private static final String APPROVED = "approved";
     private static final String REJECTED = "rejected";
     private static final CharSequence JSON_PATH_DELIMITER = ".";
-    public static final Map<String, Aggregation> AGGREGATIONS = constructAggregations();
+    public static final Map<String, Aggregation> AGGREGATIONS_MAP = Map.of(
+        jsonPathOf(APPROVAL_STATUS, PENDING), pendingAggregation(),
+        jsonPathOf(APPROVAL_STATUS, APPROVED), approvedAggregation(),
+        jsonPathOf(APPROVAL_STATUS, REJECTED), rejectedAggregation()
+    );
 
     private Aggregations() {
     }
@@ -54,13 +58,5 @@ public final class Aggregations {
                              .query(approvalStatus.toString())
                              .defaultField(jsonPathOf(AFFILIATIONS, APPROVAL_STATUS))
                              .build());
-    }
-
-    private static Map<String, Aggregation> constructAggregations() {
-        return Map.of(
-            jsonPathOf(APPROVAL_STATUS, PENDING), pendingAggregation(),
-            jsonPathOf(APPROVAL_STATUS, APPROVED), approvedAggregation(),
-            jsonPathOf(APPROVAL_STATUS, REJECTED), rejectedAggregation()
-        );
     }
 }

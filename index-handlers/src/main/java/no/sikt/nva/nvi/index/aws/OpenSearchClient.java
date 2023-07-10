@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.index.aws;
 import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_API_HOST;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
-import static no.sikt.nva.nvi.index.Aggregations.AGGREGATIONS;
+import static no.sikt.nva.nvi.index.Aggregations.AGGREGATIONS_MAP;
 import static no.sikt.nva.nvi.index.IndexNviCandidateHandler.SEARCH_INFRASTRUCTURE_CREDENTIALS;
 import static nva.commons.core.attempt.Try.attempt;
 import java.io.IOException;
@@ -135,7 +135,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         return new SearchRequest.Builder()
                    .index(NVI_CANDIDATES_INDEX)
                    .query(query)
-                   .aggregations(AGGREGATIONS)
+                   .aggregations(AGGREGATIONS_MAP)
                    .build();
     }
 }
