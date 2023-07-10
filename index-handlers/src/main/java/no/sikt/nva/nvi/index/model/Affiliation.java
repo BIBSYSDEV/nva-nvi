@@ -10,6 +10,6 @@ import nva.commons.core.JacocoGenerated;
 @JsonSerialize
 public record Affiliation(String id,
                           Map<String, String> labels,
-                          String approvalStatus) {
+                          ApprovalStatus approvalStatus) {
 
 }

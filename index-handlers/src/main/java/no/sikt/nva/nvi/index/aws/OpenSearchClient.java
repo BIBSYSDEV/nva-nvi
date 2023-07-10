@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index.aws;
 import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_API_HOST;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
+import static no.sikt.nva.nvi.index.Aggregations.AGGREGATIONS_MAP;
 import static no.sikt.nva.nvi.index.IndexNviCandidateHandler.SEARCH_INFRASTRUCTURE_CREDENTIALS;
 import static nva.commons.core.attempt.Try.attempt;
 import java.io.IOException;
@@ -37,8 +38,10 @@ import org.slf4j.LoggerFactory;
 public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument> {
 
     public static final String NVI_CANDIDATES_INDEX = "nvi-candidates";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchClient.class);
     private static final String ERROR_MSG_CREATE_INDEX = "Error while creating index: " + NVI_CANDIDATES_INDEX;
+
     private final org.opensearch.client.opensearch.OpenSearchClient client;
 
     public OpenSearchClient(CachedJwtProvider cachedJwtProvider) {
@@ -108,7 +111,13 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
                                       URI.create(SEARCH_INFRASTRUCTURE_AUTH_URI));
     }
 
-    //TODO change with .exists() when sws indexhandler is cleaned up.
+    private static CreateIndexRequest getCreateIndexRequest() {
+        return new CreateIndexRequest.Builder()
+                   .index(NVI_CANDIDATES_INDEX)
+                   .build();
+    }
+
+    //TODO change with .exists() when sws index handler is cleaned up.
     private boolean indexExists() {
         try {
             client.indices().get(GetIndexRequest.of(r -> r.index(NVI_CANDIDATES_INDEX)));
@@ -126,7 +135,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     private void createIndex() {
-        attempt(() -> client.indices().create(new CreateIndexRequest.Builder().index(NVI_CANDIDATES_INDEX).build()))
+        attempt(() -> client.indices().create(getCreateIndexRequest()))
             .orElseThrow(failure -> handleFailure(ERROR_MSG_CREATE_INDEX, failure.getException()));
     }
 
@@ -139,6 +148,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         return new SearchRequest.Builder()
                    .index(NVI_CANDIDATES_INDEX)
                    .query(query)
+                   .aggregations(AGGREGATIONS_MAP)
                    .build();
     }
 }
