@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient;
+import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
-import java.io.IOException;
 import java.net.HttpURLConnection;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
@@ -17,29 +17,26 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
 
     private static final String SEARCH_TERM_KEY = "query";
     private static final String SEARCH_ALL_DOCUMENTS_DEFAULT_QUERY = "*";
-    private final SearchClient<NviCandidateIndexDocument> openSearchSearchSearchClient;
+    private final SearchClient<NviCandidateIndexDocument> openSearchClient;
 
     @JacocoGenerated
     public SearchNviCandidatesHandler() {
         super(Void.class);
-        this.openSearchSearchSearchClient = defaultOpenSearchClient();
+        this.openSearchClient = defaultOpenSearchClient();
     }
 
-    public SearchNviCandidatesHandler(SearchClient<NviCandidateIndexDocument> openSearchSearchSearchClient) {
+    public SearchNviCandidatesHandler(SearchClient<NviCandidateIndexDocument> openSearchClient) {
         super(Void.class);
-        this.openSearchSearchSearchClient = openSearchSearchSearchClient;
+        this.openSearchClient = openSearchClient;
     }
 
     @Override
     protected SearchResponseDto processInput(Void input, RequestInfo requestInfo,
                                              Context context) {
-        var query = contructQuery(requestInfo);
-        try {
-            var openSearchResponse = openSearchSearchSearchClient.search(query);
-            return SearchResponseDto.fromSearchResponse(openSearchResponse);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return attempt(() -> contructQuery(requestInfo))
+                   .map(openSearchClient::search)
+                   .map(SearchResponseDto::fromSearchResponse)
+                   .orElseThrow();
     }
 
     @Override
@@ -52,7 +49,7 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
                    .getOrDefault(SEARCH_TERM_KEY, SEARCH_ALL_DOCUMENTS_DEFAULT_QUERY);
     }
 
-    private static QueryStringQuery constructQuery(RequestInfo requestInfo) {
+    private static QueryStringQuery constructQueryStringQuery(RequestInfo requestInfo) {
         return new QueryStringQuery.Builder()
                    .query(getSearchTerm(requestInfo))
                    .build();
@@ -60,7 +57,7 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
 
     private Query contructQuery(RequestInfo requestInfo) {
         return new Query.Builder()
-                   .queryString(constructQuery(requestInfo))
+                   .queryString(constructQueryStringQuery(requestInfo))
                    .build();
     }
 }
