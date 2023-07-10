@@ -233,6 +233,15 @@ Resources:
           Properties:
             Queue: !GetAtt NewCandidateQueue.Arn
 
+  DeleteNviCandidateHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.DeleteNviCandidateHandler::handleRequest
+      Timeout: 30
+      MemorySize: 1536
+      Role: !GetAtt NvaNviRole.Arn
+
   SearchNviCandidatesHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -244,8 +253,6 @@ Resources:
       AutoPublishAlias: live
       Environment:
         Variables:
-          SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
-          SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
           ALLOWED_ORIGIN: '*'
           API_HOST: !Ref ApiDomain
       Events:
@@ -256,16 +263,10 @@ Resources:
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
-  DeleteImportCandidateIndexHandler:
+  DeleteNviCandidateIndexHandler:
     Type: AWS::Serverless::Function
     Properties:
       Description: Lambda that deletes scientific index. Needs to be run manually from Test
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
-      Environment:
-        Variables:
-          SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
-          SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
-          ALLOWED_ORIGIN: '*'
-          API_HOST: !Ref ApiDomain

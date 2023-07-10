@@ -4,7 +4,9 @@ import static no.sikt.nva.nvi.index.aws.OpenSearchClient.NVI_CANDIDATES_INDEX;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -13,8 +15,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
@@ -33,6 +37,7 @@ import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.opensearch.client.opensearch.core.search.TotalHits;
 import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.zalando.problem.Problem;
 
 @Testcontainers
 public class SearchNviCandidatesHandlerTest {
@@ -67,6 +72,16 @@ public class SearchNviCandidatesHandlerTest {
         var response = GatewayResponse.fromOutputStream(output, SearchResponseDto.class);
         var hits = response.getBodyObject(SearchResponseDto.class).hits();
         assertThat(hits, hasSize(1));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenSearchFails() throws IOException {
+        var document = singleNviCandidateIndexDocument();
+        when(openSearchClient.search(any())).thenThrow(RuntimeException.class);
+        handler.handleRequest(request(document.identifier()), output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+        assertThat(Objects.requireNonNull(response.getBodyObject(Problem.class).getStatus()).getStatusCode(),
+                   is(equalTo(HttpURLConnection.HTTP_INTERNAL_ERROR)));
     }
 
     private static SearchResponse<NviCandidateIndexDocument> createSearchResponse(NviCandidateIndexDocument document) {

@@ -8,6 +8,8 @@ public interface SearchClient<T> {
 
     void addDocumentToIndex(T indexDocument);
 
+    void removeDocumentFromIndex(T indexDocument) throws IOException;
+
     SearchResponse<T> search(Query query) throws IOException;
 
     void deleteIndex() throws IOException;
