@@ -7,33 +7,43 @@ import java.time.Instant;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record ApprovalStatus(Status status,
-                             URI approvedBy,
-                             Instant approvalDate) {
+public record ApprovalStatus(URI institutionId,
+                             Approval approval,
+                             Username finalizedBy,
+                             Instant finalizedDate) {
 
-    public static class Builder {
+    public static final class Builder {
 
-        private Status status;
-        private URI approvedBy;
-        private Instant approvalDate;
+        private URI institutionId;
+        private Approval approval;
+        private Username finalizedBy;
+        private Instant finalizedDate;
 
-        public Builder withStatus(Status status) {
-            this.status = status;
+        public Builder() {
+        }
+
+        public Builder withInstitutionId(URI institutionId) {
+            this.institutionId = institutionId;
             return this;
         }
 
-        public Builder withApprovedBy(URI approvedBy) {
-            this.approvedBy = approvedBy;
+        public Builder withApproval(Approval approval) {
+            this.approval = approval;
             return this;
         }
 
-        public Builder withApprovalDate(Instant approvalDate) {
-            this.approvalDate = approvalDate;
+        public Builder withFinalizedBy(Username finalizedBy) {
+            this.finalizedBy = finalizedBy;
+            return this;
+        }
+
+        public Builder withFinalizedDate(Instant finalizedDate) {
+            this.finalizedDate = finalizedDate;
             return this;
         }
 
         public ApprovalStatus build() {
-            return new ApprovalStatus(status, approvedBy, approvalDate);
+            return new ApprovalStatus(institutionId, approval, finalizedBy, finalizedDate);
         }
     }
 }

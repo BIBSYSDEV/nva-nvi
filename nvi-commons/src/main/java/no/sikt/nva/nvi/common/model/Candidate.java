@@ -9,25 +9,24 @@ import java.util.List;
 @JsonSerialize
 public record Candidate(URI publicationId,
                         NviPeriod period,
-                        Foundation foundation,
-                        List<InstitutionStatus> institutionStatuses,
+                        boolean isDisqualified,
+                        String InstanceType,
+                        Level level,
+                        boolean isInternationalCollaboration,
+                        int creatorCount,
+                        List<ApprovalStatus> approvalStatuses,
                         List<Note> notes) {
 
-    public Builder copy() {
-        return new Builder()
-                   .withPublicationId(this.publicationId)
-                   .withPeriod(this.period)
-                   .withFoundation(this.foundation)
-                   .withInstitutionStatuses(this.institutionStatuses)
-                   .withNotes(this.notes);
-    }
-
-    public static class Builder {
+    public static final class Builder {
 
         private URI publicationId;
         private NviPeriod period;
-        private Foundation foundation;
-        private List<InstitutionStatus> institutionStatuses;
+        private boolean isDisqualified;
+        private String instanceType;
+        private Level level;
+        private boolean isInternationalCollaboration;
+        private int creatorCount;
+        private List<ApprovalStatus> approvalStatuses;
         private List<Note> notes;
 
         public Builder() {
@@ -43,13 +42,33 @@ public record Candidate(URI publicationId,
             return this;
         }
 
-        public Builder withFoundation(Foundation foundation) {
-            this.foundation = foundation;
+        public Builder withIsDisqualified(boolean isDisqualified) {
+            this.isDisqualified = isDisqualified;
             return this;
         }
 
-        public Builder withInstitutionStatuses(List<InstitutionStatus> institutionStatuses) {
-            this.institutionStatuses = institutionStatuses;
+        public Builder withInstanceType(String instanceType) {
+            this.instanceType = instanceType;
+            return this;
+        }
+
+        public Builder withLevel(Level level) {
+            this.level = level;
+            return this;
+        }
+
+        public Builder withIsInternationalCollaboration(boolean isInternationalCollaboration) {
+            this.isInternationalCollaboration = isInternationalCollaboration;
+            return this;
+        }
+
+        public Builder withCreatorCount(int creatorCount) {
+            this.creatorCount = creatorCount;
+            return this;
+        }
+
+        public Builder withApprovalStatuses(List<ApprovalStatus> approvalStatuses) {
+            this.approvalStatuses = approvalStatuses;
             return this;
         }
 
@@ -59,7 +78,8 @@ public record Candidate(URI publicationId,
         }
 
         public Candidate build() {
-            return new Candidate(publicationId, period, foundation, institutionStatuses, notes);
+            return new Candidate(publicationId, period, isDisqualified, instanceType, level,
+                                 isInternationalCollaboration, creatorCount, approvalStatuses, notes);
         }
     }
 }
