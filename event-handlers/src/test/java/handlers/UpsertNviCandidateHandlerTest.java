@@ -11,13 +11,11 @@ import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
-import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import nva.commons.logutils.LogUtils;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class UpsertNviCandidateHandlerTest {
@@ -26,14 +24,7 @@ public class UpsertNviCandidateHandlerTest {
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
     public static final String PUBLICATION_ID_FIELD = "publicationBucketUri";
     public static final String AFFILIATION_APPROVALS_FIELD = "approvalAffiliations";
-    private ByteArrayOutputStream outputStream;
-    private UpsertNviCandidateHandler handler;
-
-    @BeforeEach
-    void setUp() {
-        outputStream = new ByteArrayOutputStream();
-        handler = new UpsertNviCandidateHandler();
-    }
+    private final UpsertNviCandidateHandler handler = new UpsertNviCandidateHandler();
 
     @Test
     void shouldLogErrorWhenMessageBodyInvalid() {
