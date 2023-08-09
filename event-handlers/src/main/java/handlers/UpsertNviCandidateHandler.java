@@ -30,6 +30,8 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         return null;
     }
 
+    //TODO: Remove jacocoGenerated when implemented
+    @JacocoGenerated
     private void upsertNviCandidate(UpsertRequest request) {
         //TODO: implement
         LOGGER.info(request.publicationBucketUri());
