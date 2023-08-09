@@ -4,7 +4,6 @@ import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_API_HOST;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
 import static no.sikt.nva.nvi.index.Aggregations.AGGREGATIONS_MAP;
-import static no.sikt.nva.nvi.index.IndexNviCandidateHandler.SEARCH_INFRASTRUCTURE_CREDENTIALS;
 import static nva.commons.core.attempt.Try.attempt;
 import java.io.IOException;
 import java.net.URI;
@@ -36,6 +35,8 @@ import org.slf4j.LoggerFactory;
 
 @JacocoGenerated
 public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument> {
+
+    private static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
 
     public static final String NVI_CANDIDATES_INDEX = "nvi-candidates";
 
