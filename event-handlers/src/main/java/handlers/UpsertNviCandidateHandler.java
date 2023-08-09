@@ -8,6 +8,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Objects;
+import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +32,7 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
     }
 
     private void upsertNviCandidate(UpsertRequest request) {
+        //TODO: implement
     }
 
     private UpsertRequest parseBody(String body) {
@@ -41,6 +43,8 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
                    });
     }
 
+    //TODO: Remove jacocoGenerated when "happy cases" are implemented
+    @JacocoGenerated
     private UpsertRequest validate(UpsertRequest request) {
         if (isNull(request.publicationBucketUri())) {
             logInvalidMessageBody(request.toString());

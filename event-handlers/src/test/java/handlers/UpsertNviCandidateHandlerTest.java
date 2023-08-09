@@ -54,15 +54,6 @@ public class UpsertNviCandidateHandlerTest {
         assertThat(appender.getMessages(), containsString(ERROR_MESSAGE_BODY_INVALID));
     }
 
-    private static String constructBody(List<String> affiliationApprovals) {
-        return attempt(
-            () -> objectMapper.writeValueAsString(
-                Map.ofEntries(
-                    entry(AFFILIATION_APPROVALS_FIELD,
-                          affiliationApprovals
-                    )))).orElseThrow();
-    }
-
     private static SQSEvent createEventWithMessageBody(URI publicationBucketUri, List<String> affiliationApprovals) {
         var sqsEvent = new SQSEvent();
         var message = new SQSMessage();
@@ -74,8 +65,16 @@ public class UpsertNviCandidateHandlerTest {
         return sqsEvent;
     }
 
-    private static String constructBody(String publicationId,
-                                        List<String> affiliationApprovals) {
+    private static String constructBody(List<String> affiliationApprovals) {
+        return attempt(
+            () -> objectMapper.writeValueAsString(
+                Map.ofEntries(
+                    entry(AFFILIATION_APPROVALS_FIELD,
+                          affiliationApprovals
+                    )))).orElseThrow();
+    }
+
+    private static String constructBody(String publicationId, List<String> affiliationApprovals) {
         return attempt(
             () -> objectMapper.writeValueAsString(
                 Map.ofEntries(
