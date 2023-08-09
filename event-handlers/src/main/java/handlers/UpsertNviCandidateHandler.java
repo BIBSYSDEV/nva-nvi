@@ -16,8 +16,6 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UpsertNviCandidateHandler.class);
 
-    private static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
-
     @Override
     public Void handleRequest(SQSEvent input, Context context) {
         input.getRecords()
@@ -54,6 +52,6 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
     }
 
     private void logInvalidMessageBody(String body) {
-        LOGGER.error(ERROR_MESSAGE_BODY_INVALID, body);
+        LOGGER.error("Message body invalid: {}", body);
     }
 }
