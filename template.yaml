@@ -233,6 +233,20 @@ Resources:
           Properties:
             Queue: !GetAtt NewCandidateQueue.Arn
 
+  UpsertNviCandidateHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.handlers.IndexNviCandidateHandler::handleRequest
+      Timeout: 30
+      MemorySize: 1536
+      Role: !GetAtt NvaNviRole.Arn
+      Events:
+        SqsEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt NewCandidateQueue.Arn
+
   DeleteNviCandidateHandler:
     Type: AWS::Serverless::Function
     Properties:
