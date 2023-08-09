@@ -24,6 +24,7 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
             .map(this::parseBody)
             .filter(Objects::nonNull)
             .map(this::validate)
+            .filter(Objects::nonNull)
             .forEach(this::upsertNviCandidate);
 
         return null;
@@ -31,6 +32,7 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
 
     private void upsertNviCandidate(UpsertRequest request) {
         //TODO: implement
+        LOGGER.info(request.publicationBucketUri());
     }
 
     private UpsertRequest parseBody(String body) {
