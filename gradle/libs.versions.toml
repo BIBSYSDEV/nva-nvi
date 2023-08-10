@@ -1,6 +1,6 @@
 [versions]
 junit = { strictly = '5.8.2' }
-nva = {strictly = '1.30.4'}
+nva = {strictly = '1.31.1'}
 nvaDatamodel = { strictly = '0.20.33' }
 jackson = { strictly = '2.15.2' }
 mockito = { strictly = '4.5.1' }
@@ -14,7 +14,7 @@ awslog4j2 = { strictly = '1.5.1' }
 wiremock = { strictly = '2.33.2' }
 commons-validator-version = { strictly = '1.7' }
 awsSdk = { strictly = '1.12.462' }
-awsSdk2 = { strictly = '2.20.80' }
+awsSdk2 = { strictly = '2.20.102' }
 jena = { strictly = '4.7.0' }
 openSearchRestClient = { strictly = '2.8.0' }
 openSearchJava = { strictly = '2.4.0' }
