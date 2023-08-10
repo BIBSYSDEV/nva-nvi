@@ -6,19 +6,19 @@ import java.time.Instant;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record NviPeriod(Instant end,
-                        int year) {
+public record Period(Instant closed,
+                     int year) {
 
     public static final class Builder {
 
-        private Instant end;
+        private Instant closed;
         private int year;
 
         public Builder() {
         }
 
-        public Builder withEnd(Instant end) {
-            this.end = end;
+        public Builder withClosed(Instant closed) {
+            this.closed = closed;
             return this;
         }
 
@@ -27,8 +27,8 @@ public record NviPeriod(Instant end,
             return this;
         }
 
-        public NviPeriod build() {
-            return new NviPeriod(end, year);
+        public Period build() {
+            return new Period(closed, year);
         }
     }
 }

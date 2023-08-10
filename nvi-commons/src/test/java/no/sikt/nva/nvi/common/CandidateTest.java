@@ -13,12 +13,12 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.common.model.Approval;
+import no.sikt.nva.nvi.common.model.Status;
 import no.sikt.nva.nvi.common.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.Candidate;
 import no.sikt.nva.nvi.common.model.Level;
 import no.sikt.nva.nvi.common.model.Note;
-import no.sikt.nva.nvi.common.model.NviPeriod;
+import no.sikt.nva.nvi.common.model.Period;
 import no.sikt.nva.nvi.common.model.Username;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.Test;
@@ -53,15 +53,15 @@ public class CandidateTest {
 
     private ApprovalStatus randomInstitutionStatus() {
         return new ApprovalStatus.Builder()
-                   .withApproval(Approval.APPROVED)
+                   .withApproval(Status.APPROVED)
                    .withInstitutionId(randomUri())
                    .withFinalizedBy(randomUsername())
                    .withFinalizedDate(Instant.now())
                    .build();
     }
 
-    private NviPeriod randomPeriod() {
-        return new NviPeriod.Builder().withEnd(randomInstant()).withYear(randomLocalDate().getYear()).build();
+    private Period randomPeriod() {
+        return new Period.Builder().withClosed(randomInstant()).withYear(randomLocalDate().getYear()).build();
     }
 
     private List<Note> randomNotes() {

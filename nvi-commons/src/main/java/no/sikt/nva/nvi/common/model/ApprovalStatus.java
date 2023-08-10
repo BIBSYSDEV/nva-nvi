@@ -8,14 +8,14 @@ import java.time.Instant;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 public record ApprovalStatus(URI institutionId,
-                             Approval approval,
+                             Status status,
                              Username finalizedBy,
                              Instant finalizedDate) {
 
     public static final class Builder {
 
         private URI institutionId;
-        private Approval approval;
+        private Status status;
         private Username finalizedBy;
         private Instant finalizedDate;
 
@@ -27,8 +27,8 @@ public record ApprovalStatus(URI institutionId,
             return this;
         }
 
-        public Builder withApproval(Approval approval) {
-            this.approval = approval;
+        public Builder withApproval(Status status) {
+            this.status = status;
             return this;
         }
 
@@ -43,7 +43,7 @@ public record ApprovalStatus(URI institutionId,
         }
 
         public ApprovalStatus build() {
-            return new ApprovalStatus(institutionId, approval, finalizedBy, finalizedDate);
+            return new ApprovalStatus(institutionId, status, finalizedBy, finalizedDate);
         }
     }
 }

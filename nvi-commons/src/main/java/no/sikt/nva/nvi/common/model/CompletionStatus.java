@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
 public enum CompletionStatus {
-    COMPLETED("Completed"), PENDING("Pending");
+    COMPLETED("Completed"), IN_PROGRESS("In progress");
 
     @JsonValue
     private final String value;

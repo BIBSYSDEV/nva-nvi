@@ -4,20 +4,20 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
-public enum Approval {
+public enum Status {
     APPROVED("Approved"), PENDING("Pending"), REJECTED("Rejected");
 
     @JsonValue
     private final String value;
 
-    Approval(String value) {
+    Status(String value) {
         this.value = value;
     }
 
     @JsonCreator
-    public static Approval parse(String value) {
+    public static Status parse(String value) {
         return Arrays
-                   .stream(Approval.values())
+                   .stream(Status.values())
                    .filter(status -> status.getValue().equalsIgnoreCase(value))
                    .findFirst()
                    .orElseThrow();

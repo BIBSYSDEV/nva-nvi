@@ -8,9 +8,9 @@ import java.util.List;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 public record Candidate(URI publicationId,
-                        NviPeriod period,
-                        boolean isDisqualified,
-                        String InstanceType,
+                        Period period,
+                        boolean isApplicable,
+                        String instanceType,
                         Level level,
                         boolean isInternationalCollaboration,
                         int creatorCount,
@@ -20,7 +20,7 @@ public record Candidate(URI publicationId,
     public static final class Builder {
 
         private URI publicationId;
-        private NviPeriod period;
+        private Period period;
         private boolean isDisqualified;
         private String instanceType;
         private Level level;
@@ -37,7 +37,7 @@ public record Candidate(URI publicationId,
             return this;
         }
 
-        public Builder withPeriod(NviPeriod period) {
+        public Builder withPeriod(Period period) {
             this.period = period;
             return this;
         }

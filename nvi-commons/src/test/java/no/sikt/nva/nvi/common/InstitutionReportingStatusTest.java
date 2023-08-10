@@ -7,10 +7,9 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.Instant;
-import no.sikt.nva.nvi.common.model.Candidate;
 import no.sikt.nva.nvi.common.model.CompletionStatus;
 import no.sikt.nva.nvi.common.model.InstitutionReportingStatus;
-import no.sikt.nva.nvi.common.model.NviPeriod;
+import no.sikt.nva.nvi.common.model.Period;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +32,7 @@ public record InstitutionReportingStatusTest() {
                    .build();
     }
 
-    private static NviPeriod randomPeriod() {
-        return new NviPeriod.Builder().withYear(randomInteger()).withEnd(Instant.now()).build();
+    private static Period randomPeriod() {
+        return new Period.Builder().withYear(randomInteger()).withClosed(Instant.now()).build();
     }
 }

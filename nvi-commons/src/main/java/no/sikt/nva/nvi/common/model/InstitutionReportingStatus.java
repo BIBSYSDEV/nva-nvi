@@ -4,14 +4,14 @@ import java.net.URI;
 import java.time.Instant;
 
 public record InstitutionReportingStatus(URI institutionId,
-                                         NviPeriod period,
+                                         Period period,
                                          CompletionStatus status,
                                          Instant updatedDate) {
 
     public static final class Builder {
 
         private URI institutionId;
-        private NviPeriod period;
+        private Period period;
         private CompletionStatus status;
         private Instant updatedDate;
 
@@ -23,7 +23,7 @@ public record InstitutionReportingStatus(URI institutionId,
             return this;
         }
 
-        public Builder withPeriod(NviPeriod period) {
+        public Builder withPeriod(Period period) {
             this.period = period;
             return this;
         }
