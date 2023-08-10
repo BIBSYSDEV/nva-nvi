@@ -1,24 +1,16 @@
 package no.sikt.nva.nvi.evaluator.model;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
-import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
-public class CandidateResponse {
+@JsonAutoDetect(fieldVisibility = Visibility.ANY)
+@JsonSerialize
+public record CandidateResponse(URI publicationBucketUri,
+                                Set<URI> approvalAffiliations) {
 
-    private final URI publicationId;
-    private final List<URI> approvalAffiliations;
-
-    public CandidateResponse(URI publicationId, List<URI> approvalAffiliations) {
-        this.publicationId = publicationId;
-        this.approvalAffiliations = approvalAffiliations;
-    }
-
-    public URI getPublicationId() {
-        return publicationId;
-    }
-
-    public Collection<URI> getApprovalAffiliations() {
-        return approvalAffiliations;
-    }
 }

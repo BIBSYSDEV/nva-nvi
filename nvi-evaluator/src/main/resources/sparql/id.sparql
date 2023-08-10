@@ -1,5 +1,0 @@
-SELECT ?id WHERE {
-  ?id a [] .
-  OPTIONAL { ?c ?b ?id }.
-  FILTER(!BOUND(?c))
-}

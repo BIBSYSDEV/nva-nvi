@@ -4,18 +4,19 @@ import static java.util.Objects.isNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.stringToStream;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
-import no.sikt.nva.nvi.evaluator.model.CandidateResponse;
 import no.sikt.nva.nvi.evaluator.model.CustomerResponse;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import nva.commons.core.Environment;
@@ -38,20 +39,20 @@ public class NviCalculator {
     public static final String COULD_NOT_FETCH_AFFILIATION_MESSAGE = "Could not fetch affiliation for: ";
     public static final String CUSTOMER = "customer";
     public static final String CRISTIN_ID = "cristinId";
+    public static final String AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE = "Affiliation fetched successfully with "
+                                                                          + "status {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(NviCalculator.class);
     private static final String AFFILIATION_SPARQL =
         IoUtils.stringFromResources(Path.of("sparql/affiliation.sparql"));
-    private static final String ID_SPARQL =
-        IoUtils.stringFromResources(Path.of("sparql/id.sparql"));
     //TODO to be configured somehow
     private static final String NVI_YEAR = "2023";
     private static final String NVI_YEAR_REPLACE_STRING = "__NVI_YEAR__";
     private static final String NVI_SPARQL =
         IoUtils.stringFromResources(Path.of("sparql/nvi.sparql"))
             .replace(NVI_YEAR_REPLACE_STRING, NVI_YEAR);
-    private static final String ID = "id";
     private static final String AFFILIATION = "affiliation";
     private static final String API_HOST = new Environment().readEnv("API_HOST");
+    private static final NonNviCandidate NON_NVI_CANDIDATE = new NonNviCandidate();
     private AuthorizedBackendUriRetriever uriRetriever;
 
     public NviCalculator(AuthorizedBackendUriRetriever uriRetriever) {
@@ -65,16 +66,15 @@ public class NviCalculator {
         var model = createModel(body);
 
         if (!isNviCandidate(model)) {
-            return new NonNviCandidate();
+            return NON_NVI_CANDIDATE;
         }
 
         var affiliationUris = fetchResourceUris(model, AFFILIATION_SPARQL, AFFILIATION);
         var nviAffiliationsForApproval = fetchNviInstitutions(affiliationUris);
-        var publicationId = selectPublicationId(model);
 
         return nviAffiliationsForApproval.isEmpty()
-                   ? new NonNviCandidate()
-                   : createCandidateResponse(nviAffiliationsForApproval, publicationId);
+                   ? NON_NVI_CANDIDATE
+                   : createCandidateResponse(nviAffiliationsForApproval);
     }
 
     private static boolean isNviCandidate(Model model) {
@@ -82,12 +82,6 @@ public class NviCalculator {
                    .map(QueryExecution::execAsk)
                    .map(Boolean::booleanValue)
                    .orElseThrow();
-    }
-
-    private static URI selectPublicationId(Model model) {
-        return URI.create(fetchResourceUris(model, ID_SPARQL, ID).stream()
-                              .findFirst()
-                              .orElseThrow());
     }
 
     private static List<String> fetchResourceUris(Model model, String sparqlQuery, String varName) {
@@ -125,37 +119,62 @@ public class NviCalculator {
         LOGGER.warn("Invalid JSON LD input encountered: ", exception);
     }
 
-    private static CustomerResponse toCustomer(String responseBody) throws JsonProcessingException {
-        return dtoObjectMapper.readValue(responseBody, CustomerResponse.class);
+    private static CustomerResponse toCustomer(String responseBody) {
+        return attempt(() -> dtoObjectMapper.readValue(responseBody, CustomerResponse.class)).orElseThrow();
     }
 
     private static URI createUri(String affiliation) {
-        return UriWrapper.fromHost(API_HOST)
-                   .addChild(CUSTOMER)
-                   .addChild(CRISTIN_ID)
-                   .addChild(URLEncoder.encode(affiliation, StandardCharsets.UTF_8))
-                   .getUri();
+        var getCustomerEndpoint = UriWrapper.fromHost(API_HOST)
+                                      .addChild(CUSTOMER)
+                                      .addChild(CRISTIN_ID)
+                                      .getUri();
+        return URI.create(getCustomerEndpoint + "/" + URLEncoder.encode(affiliation, StandardCharsets.UTF_8));
     }
 
-    private List<String> fetchNviInstitutions(List<String> affiliationUris) {
+    private static boolean isHttpOk(HttpResponse<String> response) {
+        return response.statusCode() == HttpURLConnection.HTTP_OK;
+    }
+
+    private static boolean isNotFound(HttpResponse<String> response) {
+        return response.statusCode() == HttpURLConnection.HTTP_NOT_FOUND;
+    }
+
+    private static boolean isSuccessOrNotFound(HttpResponse<String> response) {
+        return isHttpOk(response) || isNotFound(response);
+    }
+
+    private static boolean getNviValue(HttpResponse<String> response) {
+        return Optional.of(response.body())
+                   .map(NviCalculator::toCustomer)
+                   .map(CustomerResponse::nviInstitution)
+                   .orElse(false);
+    }
+
+    private Set<String> fetchNviInstitutions(List<String> affiliationUris) {
         return affiliationUris.stream()
                    .filter(this::isNviInstitution)
-                   .collect(Collectors.toList());
+                   .collect(Collectors.toSet());
     }
 
     private boolean isNviInstitution(String affiliation) {
-        return attempt(() -> uriRetriever.getRawContent(createUri(affiliation), CONTENT_TYPE))
-                   .map(Optional::get)
-                   .map(NviCalculator::toCustomer)
-                   .map(CustomerResponse::nviInstitution)
-                   .orElseThrow(new RuntimeException(COULD_NOT_FETCH_AFFILIATION_MESSAGE + affiliation));
+        var response = getResponse(affiliation);
+        if (isSuccessOrNotFound(response)) {
+            LOGGER.info(AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE, response.statusCode());
+            return getNviValue(response);
+        }
+        throw new RuntimeException(COULD_NOT_FETCH_AFFILIATION_MESSAGE + affiliation);
     }
 
-    private CandidateType createCandidateResponse(List<String> affiliationIds,
-                                                  URI publicationId) {
-        return new NviCandidate(
-            new CandidateResponse(
-                publicationId,
-                affiliationIds.stream().map(URI::create).toList()));
+    private HttpResponse<String> getResponse(String affiliation) {
+        return Optional.ofNullable(uriRetriever.fetchResponse(createUri(affiliation), CONTENT_TYPE))
+                   .stream()
+                   .filter(Optional::isPresent)
+                   .map(Optional::get)
+                   .findAny()
+                   .orElseThrow();
+    }
+
+    private CandidateType createCandidateResponse(Set<String> affiliationIds) {
+        return new NviCandidate(affiliationIds.stream().map(URI::create).collect(Collectors.toSet()));
     }
 }

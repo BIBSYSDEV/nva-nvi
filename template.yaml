@@ -5,7 +5,26 @@ Description: >
   
   SAM Template for NVA NVI API
 
+Globals:
+  Function:
+    Timeout: 20
+    Runtime: java17
+    MemorySize: 1536
+    Environment:
+      Variables:
+        SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
+        SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
+  Api:
+    Cors:
+      AllowMethods: "'PUT, GET,OPTIONS,DELETE,POST'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Location'"
+      AllowOrigin: "'*'"
+
 Parameters:
+  CognitoAuthorizerArn:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Description: Reference to Cognito UserPool for the stage
+    Default: CognitoAuthorizerArn
   CognitoAuthorizationUri:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Default: '/NVA/CognitoUri'
@@ -28,8 +47,31 @@ Parameters:
   NewCandidateDLQName:
     Type: String
     Default: NewCandidateDLQ
+  SearchInfrastructureApiHost:
+    Type: String
+    Description: Host of external search infrastructure API (SWS).
+    Default: 'https://api.sws.aws.sikt.no'
+  SearchInfrastructureAuthUri:
+    Type: String
+    Description: URI to auth for external search infrastructure API (SWS).
+    Default: 'https://sws-auth.auth.eu-west-1.amazoncognito.com'
+  CustomDomainBasePath:
+    Type: String
+    Description: Base path mapping in CustomDomain
+    Default: scientific-index
+  Suffix:
+    Type: String
+    Default: ''
+    Description: Suffix used for naming resources for feature branches to avoid conflicts.
+
+Conditions:
+  WithSuffix: !Not [ !Equals [ !Ref Suffix, '' ] ]
 
 Resources:
+
+  ApiAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+
   #=============================== SQSs ============================================================
   NewCandidateQueue:
     Type: AWS::SQS::Queue
@@ -62,6 +104,7 @@ Resources:
                   - s3:Get*
                   - s3:List*
                   - events:*
+                  - secretsmanager:*
                 Resource: '*'
         - PolicyName: Events
           PolicyDocument:
@@ -86,6 +129,62 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*'
+        - PolicyName: readSqs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - events:*
+                  - sqs:SendMessage
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:ChangeMessageVisibility
+                Resource: !GetAtt NewCandidateQueue.Arn
+        - PolicyName: readSecret
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: '*'
+        - PolicyName: invokeFunction
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: '*'
+
+  #============================= Roles ==========================================================
+  ScientificIndexApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      AccessLogSetting:
+        DestinationArn: !GetAtt ApiAccessLogGroup.Arn
+        Format: '{ "apiId": "$context.apiId", "requestId": "$context.requestId", "requestTime": "$context.requestTime", "requestTimeEpoch": "$context.requestTimeEpoch", "httpMethod": "$context.httpMethod", "path": "$context.path", "status": "$context.status",  "error.message": "$context.error.message" }'
+      StageName: Prod
+      EndpointConfiguration: REGIONAL
+      DefinitionBody:
+        'Fn::Transform':
+          Name: AWS::Include
+          Parameters:
+            Location: ./docs/openapi.yaml
+
+  #===========================BasePathMappings========================================================
+  NviBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      BasePath: !If
+        - WithSuffix
+        - !Sub ${CustomDomainBasePath}-${Suffix}
+        - !Sub ${CustomDomainBasePath}
+      DomainName: !Ref ApiDomain
+      RestApiId: !Ref ScientificIndexApi
+      Stage: !Ref ScientificIndexApi.Stage
 
   #============================= Handlers ==========================================================
   EvaluateNVICandidateHandler:
@@ -95,7 +194,7 @@ Resources:
       Handler: no.sikt.nva.nvi.evaluator.EvaluateNviCandidateHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
-      Timeout: 3
+      Timeout: 30
       MemorySize: 1536
       Environment:
         Variables:
@@ -116,11 +215,58 @@ Resources:
               detail:
                 responsePayload:
                   topic: [ "PublicationService.ExpandedEntry.Persisted" ]
-#      EventInvokeConfig:
-#        DestinationConfig:
-#          OnSuccess:
-#            Type: SQS
-#            Destination: !GetAtt NewCandidateQueue.Arn
-#          OnFailure:
-#            Type: SQS
-#            Destination: !GetAtt NewCandidateDLQ.Arn
+
+  IndexNviCandidateHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.IndexNviCandidateHandler::handleRequest
+      Timeout: 30
+      MemorySize: 1536
+      Role: !GetAtt NvaNviRole.Arn
+      Environment:
+        Variables:
+          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+      Events:
+        SqsEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt NewCandidateQueue.Arn
+
+  DeleteNviCandidateHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.DeleteNviCandidateHandler::handleRequest
+      Timeout: 30
+      MemorySize: 1536
+      Role: !GetAtt NvaNviRole.Arn
+
+  SearchNviCandidatesHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.SearchNviCandidatesHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+          API_HOST: !Ref ApiDomain
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /candidates
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+
+  DeleteNviCandidateIndexHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Lambda that deletes scientific index. Needs to be run manually from Test
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
