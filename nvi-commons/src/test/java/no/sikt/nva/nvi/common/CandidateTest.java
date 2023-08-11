@@ -20,6 +20,7 @@ import no.sikt.nva.nvi.common.model.business.Institution;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.business.Note;
 import no.sikt.nva.nvi.common.model.business.Period;
+import no.sikt.nva.nvi.common.model.business.PublicationDate;
 import no.sikt.nva.nvi.common.model.business.Status;
 import no.sikt.nva.nvi.common.model.business.Username;
 import no.sikt.nva.nvi.common.model.business.VerifiedCreator;
@@ -48,8 +49,14 @@ public class CandidateTest {
                    .withCreators(randomVerifiedCreators())
                    .withNotes(randomNotes())
                    .withPeriod(randomPeriod())
-                   .withPublicationDate(LocalDate.now().toString())
+                   .withPublicationDate(localDateNowAsPublicationDate())
                    .build();
+    }
+
+    private PublicationDate localDateNowAsPublicationDate() {
+        var now = LocalDate.now();
+        return new PublicationDate(String.valueOf(now.getYear()), String.valueOf(now.getMonth()),
+                                   String.valueOf(now.getDayOfMonth()));
     }
 
     private List<VerifiedCreator> randomVerifiedCreators() {

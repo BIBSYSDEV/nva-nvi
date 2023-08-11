@@ -12,7 +12,7 @@ public record Candidate(URI publicationId,
                         boolean isApplicable,
                         String instanceType,
                         Level level,
-                        String publicationDate,
+                        PublicationDate publicationDate,
                         boolean isInternationalCollaboration,
                         int creatorCount,
                         List<VerifiedCreator> creators,
@@ -26,7 +26,7 @@ public record Candidate(URI publicationId,
         private boolean isApplicable;
         private String instanceType;
         private Level level;
-        private String publicationDate;
+        private PublicationDate publicationDate;
         private boolean isInternationalCollaboration;
         private int creatorCount;
         private List<VerifiedCreator> creators;
@@ -61,7 +61,7 @@ public record Candidate(URI publicationId,
             return this;
         }
 
-        public Builder withPublicationDate(String publicationDate) {
+        public Builder withPublicationDate(PublicationDate publicationDate) {
             this.publicationDate = publicationDate;
             return this;
         }
