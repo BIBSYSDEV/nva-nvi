@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.model;
+package no.sikt.nva.nvi.common.model.business;
 
 import java.net.URI;
 

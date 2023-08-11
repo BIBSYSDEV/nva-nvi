@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.model;
+package no.sikt.nva.nvi.common.model.business;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;

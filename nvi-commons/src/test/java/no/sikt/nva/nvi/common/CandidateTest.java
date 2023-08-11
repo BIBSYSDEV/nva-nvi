@@ -10,18 +10,19 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.common.model.ApprovalStatus;
-import no.sikt.nva.nvi.common.model.Candidate;
-import no.sikt.nva.nvi.common.model.Institution;
-import no.sikt.nva.nvi.common.model.Level;
-import no.sikt.nva.nvi.common.model.Note;
-import no.sikt.nva.nvi.common.model.Period;
-import no.sikt.nva.nvi.common.model.Status;
-import no.sikt.nva.nvi.common.model.Username;
-import no.sikt.nva.nvi.common.model.VerifiedCreator;
+import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
+import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.model.business.Institution;
+import no.sikt.nva.nvi.common.model.business.Level;
+import no.sikt.nva.nvi.common.model.business.Note;
+import no.sikt.nva.nvi.common.model.business.Period;
+import no.sikt.nva.nvi.common.model.business.Status;
+import no.sikt.nva.nvi.common.model.business.Username;
+import no.sikt.nva.nvi.common.model.business.VerifiedCreator;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.Test;
 
@@ -47,6 +48,7 @@ public class CandidateTest {
                    .withCreators(randomVerifiedCreators())
                    .withNotes(randomNotes())
                    .withPeriod(randomPeriod())
+                   .withPublicationDate(LocalDate.now().toString())
                    .build();
     }
 

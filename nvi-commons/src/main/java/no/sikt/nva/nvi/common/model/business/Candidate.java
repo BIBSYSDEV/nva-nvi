@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.model;
+package no.sikt.nva.nvi.common.model.business;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -12,6 +12,7 @@ public record Candidate(URI publicationId,
                         boolean isApplicable,
                         String instanceType,
                         Level level,
+                        String publicationDate,
                         boolean isInternationalCollaboration,
                         int creatorCount,
                         List<VerifiedCreator> creators,
@@ -25,6 +26,7 @@ public record Candidate(URI publicationId,
         private boolean isApplicable;
         private String instanceType;
         private Level level;
+        private String publicationDate;
         private boolean isInternationalCollaboration;
         private int creatorCount;
         private List<VerifiedCreator> creators;
@@ -59,6 +61,11 @@ public record Candidate(URI publicationId,
             return this;
         }
 
+        public Builder withPublicationDate(String publicationDate) {
+            this.publicationDate = publicationDate;
+            return this;
+        }
+
         public Builder withIsInternationalCollaboration(boolean isInternationalCollaboration) {
             this.isInternationalCollaboration = isInternationalCollaboration;
             return this;
@@ -85,8 +92,8 @@ public record Candidate(URI publicationId,
         }
 
         public Candidate build() {
-            return new Candidate(publicationId, period, isApplicable, instanceType, level, isInternationalCollaboration,
-                                 creatorCount, creators, approvalStatuses, notes);
+            return new Candidate(publicationId, period, isApplicable, instanceType, level, publicationDate,
+                                 isInternationalCollaboration, creatorCount, creators, approvalStatuses, notes);
         }
     }
 }
