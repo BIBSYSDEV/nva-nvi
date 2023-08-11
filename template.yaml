@@ -227,6 +227,15 @@ Resources:
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+
+  UpsertNviCandidateHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.handlers.IndexNviCandidateHandler::handleRequest
+      Timeout: 30
+      MemorySize: 1536
+      Role: !GetAtt NvaNviRole.Arn
       Events:
         SqsEvent:
           Type: SQS

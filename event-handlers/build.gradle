@@ -1,0 +1,18 @@
+plugins {
+    id 'nva.nvi.java-conventions'
+}
+
+dependencies {
+    implementation project(':nvi-commons')
+    implementation libs.nva.json
+    implementation libs.nva.core
+
+    implementation libs.aws.lambda.java.core
+    implementation libs.aws.lambda.events
+    implementation libs.aws.sdk2.sqs
+
+    implementation libs.jackson.core
+    implementation libs.jackson.databind
+
+    implementation libs.bundles.logging
+}
