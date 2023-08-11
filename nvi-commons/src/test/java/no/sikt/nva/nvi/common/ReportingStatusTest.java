@@ -8,24 +8,25 @@ import static org.hamcrest.Matchers.is;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.Instant;
 import no.sikt.nva.nvi.common.model.CompletionStatus;
-import no.sikt.nva.nvi.common.model.InstitutionReportingStatus;
+import no.sikt.nva.nvi.common.model.Institution;
+import no.sikt.nva.nvi.common.model.ReportingStatus;
 import no.sikt.nva.nvi.common.model.Period;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.Test;
 
-public record InstitutionReportingStatusTest() {
+public record ReportingStatusTest() {
 
     @Test
     void shouldMakeRoundTripWithoutLossOfInformation() throws JsonProcessingException {
         var status = randomReportingStatus();
         var json = JsonUtils.dtoObjectMapper.writeValueAsString(status);
-        var reconstructedStatus = JsonUtils.dtoObjectMapper.readValue(json, InstitutionReportingStatus.class);
+        var reconstructedStatus = JsonUtils.dtoObjectMapper.readValue(json, ReportingStatus.class);
         assertThat(reconstructedStatus, is(equalTo(status)));
     }
 
-    private InstitutionReportingStatus randomReportingStatus() {
-        return new InstitutionReportingStatus.Builder()
-                   .withInstitutionId(randomUri())
+    private ReportingStatus randomReportingStatus() {
+        return new ReportingStatus.Builder()
+                   .withInstitution(new Institution(randomUri()))
                    .withPeriod(randomPeriod())
                    .withStatus(CompletionStatus.COMPLETED)
                    .withUpdatedDate(Instant.now())
