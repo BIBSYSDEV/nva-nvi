@@ -7,10 +7,10 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.Instant;
-import no.sikt.nva.nvi.common.model.CompletionStatus;
-import no.sikt.nva.nvi.common.model.Institution;
-import no.sikt.nva.nvi.common.model.ReportingStatus;
-import no.sikt.nva.nvi.common.model.Period;
+import no.sikt.nva.nvi.common.model.business.CompletionStatus;
+import no.sikt.nva.nvi.common.model.business.Institution;
+import no.sikt.nva.nvi.common.model.business.ReportingStatus;
+import no.sikt.nva.nvi.common.model.business.Period;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.Test;
 
