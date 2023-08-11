@@ -2,19 +2,18 @@ package no.sikt.nva.nvi.common.model;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.net.URI;
 import java.time.Instant;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record ApprovalStatus(URI institutionId,
+public record ApprovalStatus(Institution institution,
                              Status status,
                              Username finalizedBy,
                              Instant finalizedDate) {
 
     public static final class Builder {
 
-        private URI institutionId;
+        private Institution institution;
         private Status status;
         private Username finalizedBy;
         private Instant finalizedDate;
@@ -22,8 +21,8 @@ public record ApprovalStatus(URI institutionId,
         public Builder() {
         }
 
-        public Builder withInstitutionId(URI institutionId) {
-            this.institutionId = institutionId;
+        public Builder withInstitutionId(Institution institution) {
+            this.institution = institution;
             return this;
         }
 
@@ -43,7 +42,7 @@ public record ApprovalStatus(URI institutionId,
         }
 
         public ApprovalStatus build() {
-            return new ApprovalStatus(institutionId, status, finalizedBy, finalizedDate);
+            return new ApprovalStatus(institution, status, finalizedBy, finalizedDate);
         }
     }
 }

@@ -14,6 +14,7 @@ public record Candidate(URI publicationId,
                         Level level,
                         boolean isInternationalCollaboration,
                         int creatorCount,
+                        List<VerifiedCreator> creators,
                         List<ApprovalStatus> approvalStatuses,
                         List<Note> notes) {
 
@@ -21,11 +22,12 @@ public record Candidate(URI publicationId,
 
         private URI publicationId;
         private Period period;
-        private boolean isDisqualified;
+        private boolean isApplicable;
         private String instanceType;
         private Level level;
         private boolean isInternationalCollaboration;
         private int creatorCount;
+        private List<VerifiedCreator> creators;
         private List<ApprovalStatus> approvalStatuses;
         private List<Note> notes;
 
@@ -42,8 +44,8 @@ public record Candidate(URI publicationId,
             return this;
         }
 
-        public Builder withIsDisqualified(boolean isDisqualified) {
-            this.isDisqualified = isDisqualified;
+        public Builder withIsApplicable(boolean isApplicable) {
+            this.isApplicable = isApplicable;
             return this;
         }
 
@@ -67,6 +69,11 @@ public record Candidate(URI publicationId,
             return this;
         }
 
+        public Builder withCreators(List<VerifiedCreator> creators) {
+            this.creators = creators;
+            return this;
+        }
+
         public Builder withApprovalStatuses(List<ApprovalStatus> approvalStatuses) {
             this.approvalStatuses = approvalStatuses;
             return this;
@@ -78,8 +85,8 @@ public record Candidate(URI publicationId,
         }
 
         public Candidate build() {
-            return new Candidate(publicationId, period, isDisqualified, instanceType, level,
-                                 isInternationalCollaboration, creatorCount, approvalStatuses, notes);
+            return new Candidate(publicationId, period, isApplicable, instanceType, level, isInternationalCollaboration,
+                                 creatorCount, creators, approvalStatuses, notes);
         }
     }
 }

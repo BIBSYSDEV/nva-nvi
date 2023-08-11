@@ -13,13 +13,15 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.common.model.Status;
 import no.sikt.nva.nvi.common.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.Candidate;
+import no.sikt.nva.nvi.common.model.Institution;
 import no.sikt.nva.nvi.common.model.Level;
 import no.sikt.nva.nvi.common.model.Note;
 import no.sikt.nva.nvi.common.model.Period;
+import no.sikt.nva.nvi.common.model.Status;
 import no.sikt.nva.nvi.common.model.Username;
+import no.sikt.nva.nvi.common.model.VerifiedCreator;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.Test;
 
@@ -40,11 +42,28 @@ public class CandidateTest {
                    .withCreatorCount(randomInteger())
                    .withInstanceType(randomString())
                    .withLevel(Level.LEVEL_ONE)
-                   .withIsDisqualified(false)
+                   .withIsApplicable(true)
                    .withIsInternationalCollaboration(true)
+                   .withCreators(randomVerifiedCreators())
                    .withNotes(randomNotes())
                    .withPeriod(randomPeriod())
                    .build();
+    }
+
+    private List<VerifiedCreator> randomVerifiedCreators() {
+        return IntStream.range(1, 20).boxed().map(i -> randomVerifiedCreator()).collect(Collectors.toList());
+    }
+
+    private VerifiedCreator randomVerifiedCreator() {
+        return new VerifiedCreator(randomUri(), randomInstitutions());
+    }
+
+    private List<Institution> randomInstitutions() {
+        return IntStream.range(1, 20).boxed().map(i -> randomInstitution()).collect(Collectors.toList());
+    }
+
+    private Institution randomInstitution() {
+        return new Institution(randomUri());
     }
 
     private List<ApprovalStatus> randomApprovalStatuses() {
@@ -54,7 +73,7 @@ public class CandidateTest {
     private ApprovalStatus randomInstitutionStatus() {
         return new ApprovalStatus.Builder()
                    .withApproval(Status.APPROVED)
-                   .withInstitutionId(randomUri())
+                   .withInstitutionId(randomInstitution())
                    .withFinalizedBy(randomUsername())
                    .withFinalizedDate(Instant.now())
                    .build();
