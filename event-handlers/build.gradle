@@ -18,3 +18,8 @@ dependencies {
 
     implementation libs.bundles.logging
 }
+
+test {
+    useJUnitPlatform()
+    environment "EXPANDED_RESOURCES_BUCKET", "ignoredBucket"
+}

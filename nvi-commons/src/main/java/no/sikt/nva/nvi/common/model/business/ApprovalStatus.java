@@ -26,7 +26,7 @@ public record ApprovalStatus(Institution institution,
             return this;
         }
 
-        public Builder withApproval(Status status) {
+        public Builder withStatus(Status status) {
             this.status = status;
             return this;
         }

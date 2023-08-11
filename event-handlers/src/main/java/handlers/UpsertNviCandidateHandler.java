@@ -7,6 +7,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import handlers.model.UpsertRequest;
 import java.util.Objects;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
