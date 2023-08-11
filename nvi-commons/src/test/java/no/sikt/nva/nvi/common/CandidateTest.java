@@ -73,7 +73,7 @@ public class CandidateTest {
     private ApprovalStatus randomInstitutionStatus() {
         return new ApprovalStatus.Builder()
                    .withApproval(Status.APPROVED)
-                   .withInstitutionId(randomInstitution())
+                   .withInstitution(randomInstitution())
                    .withFinalizedBy(randomUsername())
                    .withFinalizedDate(Instant.now())
                    .build();

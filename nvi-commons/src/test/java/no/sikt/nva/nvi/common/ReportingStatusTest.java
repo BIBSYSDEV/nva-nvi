@@ -26,7 +26,7 @@ public record ReportingStatusTest() {
 
     private ReportingStatus randomReportingStatus() {
         return new ReportingStatus.Builder()
-                   .withInstitutionId(new Institution(randomUri()))
+                   .withInstitution(new Institution(randomUri()))
                    .withPeriod(randomPeriod())
                    .withStatus(CompletionStatus.COMPLETED)
                    .withUpdatedDate(Instant.now())

@@ -17,7 +17,7 @@ public record ReportingStatus(Institution institution,
         public Builder() {
         }
 
-        public Builder withInstitutionId(Institution institution) {
+        public Builder withInstitution(Institution institution) {
             this.institution = institution;
             return this;
         }
