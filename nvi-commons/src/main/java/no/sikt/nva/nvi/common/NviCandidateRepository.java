@@ -1,4 +1,4 @@
-package handlers;
+package no.sikt.nva.nvi.common;
 
 import no.sikt.nva.nvi.common.model.business.Candidate;
 

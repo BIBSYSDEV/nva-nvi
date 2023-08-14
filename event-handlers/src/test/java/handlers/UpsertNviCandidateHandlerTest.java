@@ -10,6 +10,8 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.stringToStream;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -21,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.service.NviCandidateService;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
@@ -41,11 +44,15 @@ public class UpsertNviCandidateHandlerTest {
     private UpsertNviCandidateHandler handler;
     private S3Driver s3Driver;
 
+    private NviCandidateService nviCandidateService;
+
     @BeforeEach
     void setup() {
         var s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, EXPANDED_RESOURCES_BUCKET);
         handler = new UpsertNviCandidateHandler();
+        var fakeNviCandidateRepository = new FakeNviCandidateRepository();
+        nviCandidateService = new NviCandidateService(fakeNviCandidateRepository);
     }
 
     @Test
@@ -70,14 +77,15 @@ public class UpsertNviCandidateHandlerTest {
     @Test
     void shouldUpsertNewNviCandidate() {
         var identifier = UUID.randomUUID();
-        var publicationBucketUri = generateS3BucketUri(identifier);
-        var publicationId = generatePublicationId(identifier);
         var institutionApprovals = List.of(randomUri());
-        var sqsEvent = createEventWithMessageBody(publicationBucketUri, institutionApprovals);
+        var sqsEvent = createEventWithMessageBody(generateS3BucketUri(identifier), institutionApprovals);
+        var publicationId = generatePublicationId(identifier);
         var expectedCandidate = generatePendingCandidate(publicationId, institutionApprovals);
         prepareS3File(expectedCandidate);
 
         handler.handleRequest(sqsEvent, CONTEXT);
+
+        assertThat(nviCandidateService.getCandidateByPublicationId(publicationId), is(equalTo(expectedCandidate)));
     }
 
     private static SQSEvent createEventWithMessageBody(URI publicationBucketUri, List<URI> affiliationApprovals) {
