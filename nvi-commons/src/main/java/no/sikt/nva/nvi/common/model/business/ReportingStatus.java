@@ -1,15 +1,16 @@
 package no.sikt.nva.nvi.common.model.business;
 
+import java.net.URI;
 import java.time.Instant;
 
-public record ReportingStatus(Institution institution,
+public record ReportingStatus(URI institutionId,
                               Period period,
                               CompletionStatus status,
                               Instant updatedDate) {
 
     public static final class Builder {
 
-        private Institution institution;
+        private URI institutionId;
         private Period period;
         private CompletionStatus status;
         private Instant updatedDate;
@@ -17,8 +18,8 @@ public record ReportingStatus(Institution institution,
         public Builder() {
         }
 
-        public Builder withInstitution(Institution institution) {
-            this.institution = institution;
+        public Builder withInstitutionId(URI institutionId) {
+            this.institutionId = institutionId;
             return this;
         }
 
@@ -38,7 +39,7 @@ public record ReportingStatus(Institution institution,
         }
 
         public ReportingStatus build() {
-            return new ReportingStatus(institution, period, status, updatedDate);
+            return new ReportingStatus(institutionId, period, status, updatedDate);
         }
     }
 }
