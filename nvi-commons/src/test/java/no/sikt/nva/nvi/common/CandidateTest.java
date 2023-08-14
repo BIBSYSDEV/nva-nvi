@@ -9,6 +9,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -16,7 +17,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
-import no.sikt.nva.nvi.common.model.business.Institution;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.business.Note;
 import no.sikt.nva.nvi.common.model.business.Period;
@@ -64,15 +64,11 @@ public class CandidateTest {
     }
 
     private VerifiedCreator randomVerifiedCreator() {
-        return new VerifiedCreator(randomUri(), randomInstitutions());
+        return new VerifiedCreator(randomUri(), randomAffiliations());
     }
 
-    private List<Institution> randomInstitutions() {
-        return IntStream.range(1, 20).boxed().map(i -> randomInstitution()).collect(Collectors.toList());
-    }
-
-    private Institution randomInstitution() {
-        return new Institution(randomUri());
+    private List<URI> randomAffiliations() {
+        return IntStream.range(1, 20).boxed().map(i -> randomUri()).collect(Collectors.toList());
     }
 
     private List<ApprovalStatus> randomApprovalStatuses() {
@@ -81,8 +77,8 @@ public class CandidateTest {
 
     private ApprovalStatus randomInstitutionStatus() {
         return new ApprovalStatus.Builder()
-                   .withStatus(Status.APPROVED)
-                   .withInstitution(randomInstitution())
+                   .withApproval(Status.APPROVED)
+                   .withInstitutionId(randomUri())
                    .withFinalizedBy(randomUsername())
                    .withFinalizedDate(Instant.now())
                    .build();
