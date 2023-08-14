@@ -8,9 +8,8 @@ import static org.hamcrest.Matchers.is;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.Instant;
 import no.sikt.nva.nvi.common.model.business.CompletionStatus;
-import no.sikt.nva.nvi.common.model.business.Institution;
-import no.sikt.nva.nvi.common.model.business.ReportingStatus;
 import no.sikt.nva.nvi.common.model.business.Period;
+import no.sikt.nva.nvi.common.model.business.ReportingStatus;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.Test;
 
@@ -24,16 +23,16 @@ public record ReportingStatusTest() {
         assertThat(reconstructedStatus, is(equalTo(status)));
     }
 
+    private static Period randomPeriod() {
+        return new Period.Builder().withYear(randomInteger()).withClosed(Instant.now()).build();
+    }
+
     private ReportingStatus randomReportingStatus() {
         return new ReportingStatus.Builder()
-                   .withInstitution(new Institution(randomUri()))
+                   .withInstitutionId(randomUri())
                    .withPeriod(randomPeriod())
                    .withStatus(CompletionStatus.COMPLETED)
                    .withUpdatedDate(Instant.now())
                    .build();
-    }
-
-    private static Period randomPeriod() {
-        return new Period.Builder().withYear(randomInteger()).withClosed(Instant.now()).build();
     }
 }
