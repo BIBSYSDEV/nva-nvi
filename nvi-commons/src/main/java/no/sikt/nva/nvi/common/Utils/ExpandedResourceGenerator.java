@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.Utils;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
+import java.util.Objects;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.paths.UriWrapper;
@@ -19,34 +20,40 @@ public class ExpandedResourceGenerator {
         var entityDescription = objectMapper.createObjectNode();
 
         var contributors = objectMapper.createArrayNode();
-        candidate.creators().forEach(contributor -> {
 
-            var contributorNode = objectMapper.createObjectNode();
+        if (Objects.nonNull(candidate.creators())) {
+            candidate.creators().forEach(contributor -> {
 
-            contributorNode.put("type", "Contributor");
+                var contributorNode = objectMapper.createObjectNode();
 
-            var affiliations = objectMapper.createArrayNode();
+                contributorNode.put("type", "Contributor");
 
-            contributor.affiliations().forEach(affiliation -> {
-                var affiliationNode = objectMapper.createObjectNode();
-                affiliationNode.put("id", affiliation.id().toString());
-                affiliationNode.put("type", "Organization");
+                var affiliations = objectMapper.createArrayNode();
 
-                affiliations.add(affiliationNode);
+                contributor.affiliations().forEach(affiliation -> {
+                    var affiliationNode = objectMapper.createObjectNode();
+                    affiliationNode.put("id", affiliation.toString());
+                    affiliationNode.put("type", "Organization");
+
+                    affiliations.add(affiliationNode);
+                });
+
+                contributorNode.set("affiliations", affiliations);
+
+                contributors.add(contributorNode);
             });
-
-            contributorNode.set("affiliations", affiliations);
-
-            contributors.add(contributorNode);
-        });
+        }
 
         entityDescription.set("contributors", contributors);
 
         var publicationDate = objectMapper.createObjectNode();
-        publicationDate.put("type", "PublicationDate");
-        publicationDate.put("day", candidate.publicationDate().day());
-        publicationDate.put("month", candidate.publicationDate().month());
-        publicationDate.put("year", candidate.publicationDate().year());
+
+        if(Objects.nonNull(candidate.publicationDate())){
+            publicationDate.put("type", "PublicationDate");
+            publicationDate.put("day", candidate.publicationDate().day());
+            publicationDate.put("month", candidate.publicationDate().month());
+            publicationDate.put("year", candidate.publicationDate().year());
+        }
 
         entityDescription.set("publicationDate", publicationDate);
 
@@ -72,5 +79,4 @@ public class ExpandedResourceGenerator {
     private static String extractPublicationIdentifier(URI publicationId) {
         return UriWrapper.fromUri(publicationId).getLastPathElement();
     }
-
 }

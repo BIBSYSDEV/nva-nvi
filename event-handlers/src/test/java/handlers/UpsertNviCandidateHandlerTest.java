@@ -15,7 +15,6 @@ import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
-import handlers.model.InstitutionApprovals;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -36,7 +35,7 @@ public class UpsertNviCandidateHandlerTest {
     public static final Context CONTEXT = mock(Context.class);
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
     public static final String PUBLICATION_BUCKET_URI_FIELD = "publicationBucketUri";
-    public static final String AFFILIATION_APPROVALS_FIELD = "institutionApprovals";
+    public static final String AFFILIATION_APPROVALS_FIELD = "approvalAffiliations";
     private static final String EXPANDED_RESOURCES_BUCKET = new Environment().readEnv(
         "EXPANDED_RESOURCES_BUCKET");
     private UpsertNviCandidateHandler handler;
@@ -70,53 +69,44 @@ public class UpsertNviCandidateHandlerTest {
 
     @Test
     void shouldUpsertNewNviCandidate() {
-        var publicationIdentifier = UUID.randomUUID();
-        var publicationBucketUri = generateS3BucketUri(publicationIdentifier);
-        var institution1 = randomUri();
-        var institution2 = randomUri();
-        var creator1 = randomUri();
-        var creator2 = randomUri();
-        var institutionApprovals = List.of(new InstitutionApprovals(institution1.toString(),
-                                                                    List.of(creator1.toString(),
-                                                                            creator2.toString())),
-                                           new InstitutionApprovals(institution2.toString(),
-                                                                    List.of(creator2.toString())));
+        var identifier = UUID.randomUUID();
+        var publicationBucketUri = generateS3BucketUri(identifier);
+        var publicationId = generatePublicationId(identifier);
+        var institutionApprovals = List.of(randomUri());
         var sqsEvent = createEventWithMessageBody(publicationBucketUri, institutionApprovals);
-        var expectedCandidate = generatePendingCandidate(generatePublicationId(publicationIdentifier),
-                                                         institutionApprovals);
+        var expectedCandidate = generatePendingCandidate(publicationId, institutionApprovals);
         prepareS3File(expectedCandidate);
 
         handler.handleRequest(sqsEvent, CONTEXT);
     }
 
-    private static SQSEvent createEventWithMessageBody(URI publicationBucketUri,
-                                                       List<InstitutionApprovals> institutionApprovals) {
+    private static SQSEvent createEventWithMessageBody(URI publicationBucketUri, List<URI> affiliationApprovals) {
         var sqsEvent = new SQSEvent();
         var message = new SQSMessage();
         var body = nonNull(publicationBucketUri)
-                       ? constructBody(publicationBucketUri.toString(), institutionApprovals)
-                       : constructBody(institutionApprovals);
+                       ? constructBody(publicationBucketUri.toString(), affiliationApprovals)
+                       : constructBody(affiliationApprovals);
         message.setBody(body);
         sqsEvent.setRecords(List.of(message));
         return sqsEvent;
     }
 
-    private static String constructBody(List<InstitutionApprovals> institutionApprovals) {
+    private static String constructBody(List<URI> affiliationApprovals) {
         return attempt(
             () -> objectMapper.writeValueAsString(
                 Map.ofEntries(
                     entry(AFFILIATION_APPROVALS_FIELD,
-                          institutionApprovals
+                          affiliationApprovals
                     )))).orElseThrow();
     }
 
-    private static String constructBody(String publicationId, List<InstitutionApprovals> institutionApprovals) {
+    private static String constructBody(String publicationId, List<URI> affiliationApprovals) {
         return attempt(
             () -> objectMapper.writeValueAsString(
                 Map.ofEntries(
                     entry(PUBLICATION_BUCKET_URI_FIELD, publicationId),
                     entry(AFFILIATION_APPROVALS_FIELD,
-                          institutionApprovals
+                          affiliationApprovals
                     )))).orElseThrow();
     }
 
