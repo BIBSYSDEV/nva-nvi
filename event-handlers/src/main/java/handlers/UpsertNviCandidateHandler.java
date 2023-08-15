@@ -25,7 +25,7 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
     private static final Environment ENVIRONMENT = new Environment();
     private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
 
-    private static final String PUBLICATION_API_PATH = ENVIRONMENT.readEnv("PUBLICATION_API_PATH");
+    private static final String PUBLICATION_API_PATH = "publication";
 
     private final NviService nviService;
 

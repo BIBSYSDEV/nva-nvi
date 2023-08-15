@@ -23,5 +23,4 @@ test {
     useJUnitPlatform()
     environment "EXPANDED_RESOURCES_BUCKET", "ignoredBucket"
     environment "API_HOST", "example.org"
-    environment "PUBLICATION_API_PATH", "publication"
 }
