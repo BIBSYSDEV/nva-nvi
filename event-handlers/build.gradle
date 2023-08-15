@@ -6,12 +6,10 @@ dependencies {
     implementation project(':nvi-commons')
     implementation libs.nva.json
     implementation libs.nva.core
-    implementation libs.nva.s3
 
     implementation libs.aws.lambda.java.core
     implementation libs.aws.lambda.events
     implementation libs.aws.sdk2.sqs
-    implementation libs.aws.sdk2.s3
 
     implementation libs.jackson.core
     implementation libs.jackson.databind
@@ -21,6 +19,5 @@ dependencies {
 
 test {
     useJUnitPlatform()
-    environment "EXPANDED_RESOURCES_BUCKET", "ignoredBucket"
     environment "API_HOST", "example.org"
 }

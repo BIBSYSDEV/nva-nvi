@@ -1,6 +1,5 @@
 package handlers;
 
-import static handlers.ExpandedResourceGenerator.createExpandedResource;
 import static handlers.TestUtils.generatePendingCandidate;
 import static java.util.Map.entry;
 import static java.util.Objects.nonNull;
@@ -8,7 +7,6 @@ import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
-import static nva.commons.core.ioutils.IoUtils.stringToStream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -21,14 +19,9 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.unit.nva.s3.S3Driver;
-import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
-import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,18 +37,13 @@ public class UpsertNviCandidateHandlerTest {
     public static final String PUBLICATION_API_PATH = "publication";
     private static final Environment ENVIRONMENT = new Environment();
     public static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
-    private static final String EXPANDED_RESOURCES_BUCKET = ENVIRONMENT.readEnv(
-        "EXPANDED_RESOURCES_BUCKET");
     private UpsertNviCandidateHandler handler;
-    private S3Driver s3Driver;
 
     private NviService nviService;
 
     @BeforeEach
     void setup() {
-        var s3Client = new FakeS3Client();
-        s3Driver = new S3Driver(s3Client, EXPANDED_RESOURCES_BUCKET);
-        //TODO: Replave fakeNviCandidateRepository with actual repository when implemented
+        //TODO: Replace fakeNviCandidateRepository with actual repository when implemented
         var fakeNviCandidateRepository = new FakeNviCandidateRepository();
         nviService = new NviService(fakeNviCandidateRepository);
         handler = new UpsertNviCandidateHandler(nviService);
@@ -86,7 +74,6 @@ public class UpsertNviCandidateHandlerTest {
         var institutionApprovals = List.of(randomUri());
         var publicationId = generatePublicationId(identifier);
         var expectedCandidate = generatePendingCandidate(publicationId, institutionApprovals);
-        prepareS3File(expectedCandidate);
 
         var sqsEvent = createEventWithMessageBody(generateS3BucketUri(identifier), institutionApprovals);
         handler.handleRequest(sqsEvent, CONTEXT);
@@ -139,12 +126,6 @@ public class UpsertNviCandidateHandlerTest {
         return sqsEvent;
     }
 
-    private String extractPublicationIdentifier(Candidate candidate) {
-        return Objects.nonNull(candidate.publicationId())
-                   ? UriWrapper.fromUri(candidate.publicationId()).getLastPathElement()
-                   : null;
-    }
-
     private URI generatePublicationId(UUID identifier) {
         return UriWrapper.fromHost(API_HOST)
                    .addChild(PUBLICATION_API_PATH)
@@ -154,11 +135,5 @@ public class UpsertNviCandidateHandlerTest {
 
     private URI generateS3BucketUri(UUID identifier) {
         return UriWrapper.fromHost(BUCKET_HOST).addChild(identifier.toString()).getUri();
-    }
-
-    private void prepareS3File(Candidate candidate) {
-        var expandedResource = createExpandedResource(candidate);
-        attempt(() -> s3Driver.insertFile(UnixPath.of(extractPublicationIdentifier(candidate)),
-                                          stringToStream(expandedResource))).orElseThrow();
     }
 }
