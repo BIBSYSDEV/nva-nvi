@@ -1,6 +1,5 @@
 package handlers;
 
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
@@ -14,7 +13,6 @@ public class TestUtils {
         return new Candidate.Builder()
                    .withPublicationId(publicationId)
                    .withApprovalStatuses(createInstitutionApprovalStatuses(approvalAffiliations))
-                   .withInstanceType(randomString())
                    .build();
     }
 

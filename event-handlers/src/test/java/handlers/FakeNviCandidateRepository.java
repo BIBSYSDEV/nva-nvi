@@ -1,6 +1,7 @@
 package handlers;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import no.sikt.nva.nvi.common.NviCandidateRepository;
 import no.sikt.nva.nvi.common.model.business.Candidate;
@@ -19,7 +20,7 @@ public class FakeNviCandidateRepository implements NviCandidateRepository {
     }
 
     @Override
-    public Candidate findByPublicationId(String publicationId) {
-        return candidateMap.get(publicationId);
+    public Optional<Candidate> findByPublicationId(String publicationId) {
+        return Optional.ofNullable(candidateMap.get(publicationId));
     }
 }

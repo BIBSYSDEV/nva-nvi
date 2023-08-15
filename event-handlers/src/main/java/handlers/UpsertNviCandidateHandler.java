@@ -8,14 +8,30 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import handlers.model.UpsertRequest;
+import java.net.URI;
+import java.util.List;
 import java.util.Objects;
+import no.sikt.nva.nvi.common.service.NviCandidateService;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UpsertNviCandidateHandler.class);
+
+    private static final Environment ENVIRONMENT = new Environment();
+    private static final String PUBLICATION_API_HOST = ENVIRONMENT.readEnv("PUBLICATION_API_HOST");
+
+    private static final String PUBLICATION_API_PATH = ENVIRONMENT.readEnv("PUBLICATION_API_PATH");
+
+    private final NviCandidateService nviCandidateService;
+
+    public UpsertNviCandidateHandler(NviCandidateService nviCandidateService) {
+        this.nviCandidateService = nviCandidateService;
+    }
 
     @Override
     public Void handleRequest(SQSEvent input, Context context) {
@@ -31,10 +47,29 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         return null;
     }
 
-    //TODO: Remove jacocoGenerated when implemented
+    private static List<URI> mapToUris(List<String> uriStrings) {
+        return uriStrings.stream()
+                   .map(URI::create)
+                   .toList();
+    }
+
     @JacocoGenerated
+    //TODO: Remove JacocoGenerated when following test is implemented: shouldUpdateCandidateIfExists
     private void upsertNviCandidate(UpsertRequest request) {
-        LOGGER.info(request.publicationBucketUri());
+        var publicationId = toPublicationId(request.publicationBucketUri());
+        if (isNotExistingCandidate(publicationId)) {
+            nviCandidateService.createCandidateWithPendingInstitutionApprovals(publicationId,
+                                                                               mapToUris(request.approvalAffiliations()));
+        }
+    }
+
+    private boolean isNotExistingCandidate(URI publicationId) {
+        return !nviCandidateService.exists(publicationId);
+    }
+
+    private URI toPublicationId(String publicationBucketUri) {
+        var identifier = UriWrapper.fromUri(publicationBucketUri).getLastPathElement();
+        return UriWrapper.fromHost(PUBLICATION_API_HOST).addChild(PUBLICATION_API_PATH).addChild(identifier).getUri();
     }
 
     private UpsertRequest parseBody(String body) {
@@ -45,8 +80,6 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
                    });
     }
 
-    //TODO: Remove jacocoGenerated when "happy cases" are implemented
-    @JacocoGenerated
     private UpsertRequest validate(UpsertRequest request) {
         if (isNull(request.publicationBucketUri())) {
             logInvalidMessageBody(request.toString());

@@ -39,7 +39,11 @@ public class UpsertNviCandidateHandlerTest {
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
     public static final String PUBLICATION_BUCKET_URI_FIELD = "publicationBucketUri";
     public static final String AFFILIATION_APPROVALS_FIELD = "approvalAffiliations";
-    private static final String EXPANDED_RESOURCES_BUCKET = new Environment().readEnv(
+    public static final String PUBLICATION_API_PATH = "publication";
+    public static final String BUCKET_HOST = "example.org";
+    private static final Environment ENVIRONMENT = new Environment();
+    public static final String PUBLICATION_API_HOST = ENVIRONMENT.readEnv("PUBLICATION_API_HOST");
+    private static final String EXPANDED_RESOURCES_BUCKET = ENVIRONMENT.readEnv(
         "EXPANDED_RESOURCES_BUCKET");
     private UpsertNviCandidateHandler handler;
     private S3Driver s3Driver;
@@ -50,9 +54,9 @@ public class UpsertNviCandidateHandlerTest {
     void setup() {
         var s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, EXPANDED_RESOURCES_BUCKET);
-        handler = new UpsertNviCandidateHandler();
         var fakeNviCandidateRepository = new FakeNviCandidateRepository();
         nviCandidateService = new NviCandidateService(fakeNviCandidateRepository);
+        handler = new UpsertNviCandidateHandler(nviCandidateService);
     }
 
     @Test
@@ -75,17 +79,18 @@ public class UpsertNviCandidateHandlerTest {
     }
 
     @Test
-    void shouldUpsertNewNviCandidate() {
+    void shouldSaveNewNviCandidateWithPendingInstitutionApprovalsIfCandidateDoesNotExist() {
         var identifier = UUID.randomUUID();
         var institutionApprovals = List.of(randomUri());
-        var sqsEvent = createEventWithMessageBody(generateS3BucketUri(identifier), institutionApprovals);
         var publicationId = generatePublicationId(identifier);
         var expectedCandidate = generatePendingCandidate(publicationId, institutionApprovals);
         prepareS3File(expectedCandidate);
 
+        var sqsEvent = createEventWithMessageBody(generateS3BucketUri(identifier), institutionApprovals);
         handler.handleRequest(sqsEvent, CONTEXT);
 
-        assertThat(nviCandidateService.getCandidateByPublicationId(publicationId), is(equalTo(expectedCandidate)));
+        assertThat(nviCandidateService.getCandidateByPublicationId(publicationId).get(),
+                   is(equalTo(expectedCandidate)));
     }
 
     private static SQSEvent createEventWithMessageBody(URI publicationBucketUri, List<URI> affiliationApprovals) {
@@ -127,11 +132,14 @@ public class UpsertNviCandidateHandlerTest {
     }
 
     private URI generatePublicationId(UUID identifier) {
-        return UriWrapper.fromHost("example.org").addChild("resource").addChild(identifier.toString()).getUri();
+        return UriWrapper.fromHost(PUBLICATION_API_HOST)
+                   .addChild(PUBLICATION_API_PATH)
+                   .addChild(identifier.toString())
+                   .getUri();
     }
 
     private URI generateS3BucketUri(UUID identifier) {
-        return UriWrapper.fromHost("example.org").addChild(identifier.toString()).getUri();
+        return UriWrapper.fromHost(BUCKET_HOST).addChild(identifier.toString()).getUri();
     }
 
     private void prepareS3File(Candidate candidate) {
