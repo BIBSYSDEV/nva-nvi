@@ -6,8 +6,8 @@ import java.util.List;
 
 @JsonSerialize
 public record UpsertRequest(@JsonProperty(PUBLICATION_BUCKET_URI) String publicationBucketUri,
-                            @JsonProperty(INSTITUTION_APPROVALS) List<String> approvalAffiliations) {
+                            @JsonProperty(APPROVAL_AFFILIATIONS) List<String> approvalAffiliations) {
 
     private static final String PUBLICATION_BUCKET_URI = "publicationBucketUri";
-    private static final String INSTITUTION_APPROVALS = "approvalAffiliations";
+    private static final String APPROVAL_AFFILIATIONS = "approvalAffiliations";
 }
