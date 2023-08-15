@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.Utils;
+package handlers;
 
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,7 +48,7 @@ public class ExpandedResourceGenerator {
 
         var publicationDate = objectMapper.createObjectNode();
 
-        if(Objects.nonNull(candidate.publicationDate())){
+        if (Objects.nonNull(candidate.publicationDate())) {
             publicationDate.put("type", "PublicationDate");
             publicationDate.put("day", candidate.publicationDate().day());
             publicationDate.put("month", candidate.publicationDate().month());

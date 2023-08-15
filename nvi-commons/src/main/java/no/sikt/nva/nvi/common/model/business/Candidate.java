@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.List;
-import java.util.Objects;
-import nva.commons.core.paths.UriWrapper;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -20,12 +18,6 @@ public record Candidate(URI publicationId,
                         List<VerifiedCreator> creators,
                         List<ApprovalStatus> approvalStatuses,
                         List<Note> notes) {
-
-    public String publicationIdentifier() {
-        return Objects.nonNull(this.publicationId)
-            ? UriWrapper.fromUri(this.publicationId).getLastPathElement()
-            : null;
-    }
 
     public static final class Builder {
 

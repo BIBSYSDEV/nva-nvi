@@ -1,9 +1,9 @@
 package handlers;
 
+import static handlers.ExpandedResourceGenerator.createExpandedResource;
 import static handlers.TestUtils.generatePendingCandidate;
 import static java.util.Map.entry;
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.common.Utils.ExpandedResourceGenerator.createExpandedResource;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -21,6 +21,7 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.service.NviCandidateService;
@@ -39,8 +40,8 @@ public class UpsertNviCandidateHandlerTest {
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
     public static final String PUBLICATION_BUCKET_URI_FIELD = "publicationBucketUri";
     public static final String AFFILIATION_APPROVALS_FIELD = "approvalAffiliations";
-    public static final String PUBLICATION_API_PATH = "publication";
     public static final String BUCKET_HOST = "example.org";
+    public static final String PUBLICATION_API_PATH = "publication";
     private static final Environment ENVIRONMENT = new Environment();
     public static final String PUBLICATION_API_HOST = ENVIRONMENT.readEnv("PUBLICATION_API_HOST");
     private static final String EXPANDED_RESOURCES_BUCKET = ENVIRONMENT.readEnv(
@@ -54,6 +55,7 @@ public class UpsertNviCandidateHandlerTest {
     void setup() {
         var s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, EXPANDED_RESOURCES_BUCKET);
+        //TODO: Replave fakeNviCandidateRepository with actual repository when implemented
         var fakeNviCandidateRepository = new FakeNviCandidateRepository();
         nviCandidateService = new NviCandidateService(fakeNviCandidateRepository);
         handler = new UpsertNviCandidateHandler(nviCandidateService);
@@ -89,7 +91,7 @@ public class UpsertNviCandidateHandlerTest {
         var sqsEvent = createEventWithMessageBody(generateS3BucketUri(identifier), institutionApprovals);
         handler.handleRequest(sqsEvent, CONTEXT);
 
-        assertThat(nviCandidateService.getCandidateByPublicationId(publicationId).get(),
+        assertThat(nviCandidateService.getCandidateByPublicationId(publicationId).orElse(null),
                    is(equalTo(expectedCandidate)));
     }
 
@@ -131,6 +133,12 @@ public class UpsertNviCandidateHandlerTest {
         return sqsEvent;
     }
 
+    private String extractPublicationIdentifier(Candidate candidate) {
+        return Objects.nonNull(candidate.publicationId())
+                   ? UriWrapper.fromUri(candidate.publicationId()).getLastPathElement()
+                   : null;
+    }
+
     private URI generatePublicationId(UUID identifier) {
         return UriWrapper.fromHost(PUBLICATION_API_HOST)
                    .addChild(PUBLICATION_API_PATH)
@@ -144,7 +152,7 @@ public class UpsertNviCandidateHandlerTest {
 
     private void prepareS3File(Candidate candidate) {
         var expandedResource = createExpandedResource(candidate);
-        attempt(() -> s3Driver.insertFile(UnixPath.of(candidate.publicationIdentifier()),
+        attempt(() -> s3Driver.insertFile(UnixPath.of(extractPublicationIdentifier(candidate)),
                                           stringToStream(expandedResource))).orElseThrow();
     }
 }

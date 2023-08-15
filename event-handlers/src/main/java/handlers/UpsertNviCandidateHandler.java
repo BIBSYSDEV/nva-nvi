@@ -59,7 +59,8 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         var publicationId = toPublicationId(request.publicationBucketUri());
         if (isNotExistingCandidate(publicationId)) {
             nviCandidateService.createCandidateWithPendingInstitutionApprovals(publicationId,
-                                                                               mapToUris(request.approvalAffiliations()));
+                                                                               mapToUris(
+                                                                                   request.approvalAffiliations()));
         }
     }
 
