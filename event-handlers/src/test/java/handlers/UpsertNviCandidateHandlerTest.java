@@ -95,6 +95,12 @@ public class UpsertNviCandidateHandlerTest {
                    is(equalTo(expectedCandidate)));
     }
 
+    //TODO: shouldSaveNewNviCandidateWithPublicationDetailsFromS3Bucket
+
+    //TODO: shouldUpdateNviCandidateAndDeleteInstitutionApprovalsIfCriticalCandidateDetailsAreChanged
+
+    //TODO: shouldMarkCandidateAsNotApplicableIfExistingCandidateBecomesNonCandate
+
     private static SQSEvent createEventWithMessageBody(URI publicationBucketUri, List<URI> affiliationApprovals) {
         var sqsEvent = new SQSEvent();
         var message = new SQSMessage();
