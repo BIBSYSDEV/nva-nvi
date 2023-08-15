@@ -16,3 +16,8 @@ dependencies {
 
     implementation libs.bundles.logging
 }
+
+test {
+    useJUnitPlatform()
+    environment "API_HOST", "example.org"
+}
