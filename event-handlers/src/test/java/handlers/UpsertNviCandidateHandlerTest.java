@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.business.Candidate;
-import no.sikt.nva.nvi.common.service.NviCandidateService;
+import no.sikt.nva.nvi.common.service.NviService;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
@@ -49,7 +49,7 @@ public class UpsertNviCandidateHandlerTest {
     private UpsertNviCandidateHandler handler;
     private S3Driver s3Driver;
 
-    private NviCandidateService nviCandidateService;
+    private NviService nviService;
 
     @BeforeEach
     void setup() {
@@ -57,8 +57,8 @@ public class UpsertNviCandidateHandlerTest {
         s3Driver = new S3Driver(s3Client, EXPANDED_RESOURCES_BUCKET);
         //TODO: Replave fakeNviCandidateRepository with actual repository when implemented
         var fakeNviCandidateRepository = new FakeNviCandidateRepository();
-        nviCandidateService = new NviCandidateService(fakeNviCandidateRepository);
-        handler = new UpsertNviCandidateHandler(nviCandidateService);
+        nviService = new NviService(fakeNviCandidateRepository);
+        handler = new UpsertNviCandidateHandler(nviService);
     }
 
     @Test
@@ -91,7 +91,7 @@ public class UpsertNviCandidateHandlerTest {
         var sqsEvent = createEventWithMessageBody(generateS3BucketUri(identifier), institutionApprovals);
         handler.handleRequest(sqsEvent, CONTEXT);
 
-        assertThat(nviCandidateService.getCandidateByPublicationId(publicationId).orElse(null),
+        assertThat(nviService.getCandidateByPublicationId(publicationId).orElse(null),
                    is(equalTo(expectedCandidate)));
     }
 

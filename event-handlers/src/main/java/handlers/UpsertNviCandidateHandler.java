@@ -11,7 +11,7 @@ import handlers.model.UpsertRequest;
 import java.net.URI;
 import java.util.List;
 import java.util.Objects;
-import no.sikt.nva.nvi.common.service.NviCandidateService;
+import no.sikt.nva.nvi.common.service.NviService;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
@@ -27,10 +27,10 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
 
     private static final String PUBLICATION_API_PATH = ENVIRONMENT.readEnv("PUBLICATION_API_PATH");
 
-    private final NviCandidateService nviCandidateService;
+    private final NviService nviService;
 
-    public UpsertNviCandidateHandler(NviCandidateService nviCandidateService) {
-        this.nviCandidateService = nviCandidateService;
+    public UpsertNviCandidateHandler(NviService nviService) {
+        this.nviService = nviService;
     }
 
     @Override
@@ -58,14 +58,14 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
     private void upsertNviCandidate(UpsertRequest request) {
         var publicationId = toPublicationId(request.publicationBucketUri());
         if (isNotExistingCandidate(publicationId)) {
-            nviCandidateService.createCandidateWithPendingInstitutionApprovals(publicationId,
-                                                                               mapToUris(
+            nviService.createCandidate(publicationId,
+                                       mapToUris(
                                                                                    request.approvalAffiliations()));
         }
     }
 
     private boolean isNotExistingCandidate(URI publicationId) {
-        return !nviCandidateService.exists(publicationId);
+        return !nviService.exists(publicationId);
     }
 
     private URI toPublicationId(String publicationBucketUri) {

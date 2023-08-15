@@ -8,11 +8,11 @@ import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.model.business.Status;
 
-public class NviCandidateService {
+public class NviService {
 
     private final NviCandidateRepository nviCandidateRepository;
 
-    public NviCandidateService(NviCandidateRepository nviCandidateRepository) {
+    public NviService(NviCandidateRepository nviCandidateRepository) {
         this.nviCandidateRepository = nviCandidateRepository;
     }
 
@@ -24,7 +24,7 @@ public class NviCandidateService {
         return nviCandidateRepository.findByPublicationId(publicationId.toString()).isPresent();
     }
 
-    public void createCandidateWithPendingInstitutionApprovals(URI publicationId, List<URI> institutionUri) {
+    public void createCandidate(URI publicationId, List<URI> institutionUri) {
         var pendingCandidate = new Candidate.Builder()
                                    .withPublicationId(publicationId)
                                    .withApprovalStatuses(generatePendingApprovalStatuses(institutionUri))

@@ -16,13 +16,13 @@ import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class NviCandidateServiceTest {
+public class NviServiceTest {
 
     private static final String PUBLICATION_API_PATH = "publication";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
 
-    private NviCandidateService nviCandidateService;
+    private NviService nviService;
 
     private FakeNviCandidateRepository fakeNviCandidateRepository;
 
@@ -30,7 +30,7 @@ public class NviCandidateServiceTest {
     void setup() {
         //TODO: Replave fakeNviCandidateRepository with actual repository when implemented
         fakeNviCandidateRepository = new FakeNviCandidateRepository();
-        nviCandidateService = new NviCandidateService(fakeNviCandidateRepository);
+        nviService = new NviService(fakeNviCandidateRepository);
     }
 
     @Test
@@ -40,7 +40,7 @@ public class NviCandidateServiceTest {
                                     .withPublicationId(publicationId)
                                     .build();
         fakeNviCandidateRepository.save(expectedCandidate);
-        assertThat(nviCandidateService.getCandidateByPublicationId(publicationId),
+        assertThat(nviService.getCandidateByPublicationId(publicationId),
                    is(equalTo(Optional.of(expectedCandidate))));
     }
 
@@ -51,7 +51,7 @@ public class NviCandidateServiceTest {
                                     .withPublicationId(publicationId)
                                     .build();
         fakeNviCandidateRepository.save(expectedCandidate);
-        assertThat(nviCandidateService.exists(publicationId), is(equalTo(true)));
+        assertThat(nviService.exists(publicationId), is(equalTo(true)));
     }
 
     @Test
@@ -65,7 +65,7 @@ public class NviCandidateServiceTest {
                                             Status.PENDING).build()))
                                     .build();
 
-        nviCandidateService.createCandidateWithPendingInstitutionApprovals(publicationId, List.of(institutionId));
+        nviService.createCandidate(publicationId, List.of(institutionId));
 
         assertThat(fakeNviCandidateRepository.findByPublicationId(publicationId.toString()),
                    is(equalTo(Optional.of(expectedCandidate))));
