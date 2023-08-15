@@ -20,7 +20,7 @@ public class NviCandidateServiceTest {
 
     private static final String PUBLICATION_API_PATH = "publication";
     private static final Environment ENVIRONMENT = new Environment();
-    private static final String PUBLICATION_API_HOST = ENVIRONMENT.readEnv("PUBLICATION_API_HOST");
+    private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
 
     private NviCandidateService nviCandidateService;
 
@@ -72,7 +72,7 @@ public class NviCandidateServiceTest {
     }
 
     private URI generatePublicationId(UUID identifier) {
-        return UriWrapper.fromHost(PUBLICATION_API_HOST)
+        return UriWrapper.fromHost(API_HOST)
                    .addChild(PUBLICATION_API_PATH)
                    .addChild(identifier.toString())
                    .getUri();

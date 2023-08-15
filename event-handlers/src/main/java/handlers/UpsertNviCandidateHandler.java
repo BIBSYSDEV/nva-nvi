@@ -23,7 +23,7 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
     private static final Logger LOGGER = LoggerFactory.getLogger(UpsertNviCandidateHandler.class);
 
     private static final Environment ENVIRONMENT = new Environment();
-    private static final String PUBLICATION_API_HOST = ENVIRONMENT.readEnv("PUBLICATION_API_HOST");
+    private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
 
     private static final String PUBLICATION_API_PATH = ENVIRONMENT.readEnv("PUBLICATION_API_PATH");
 
@@ -70,7 +70,7 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
 
     private URI toPublicationId(String publicationBucketUri) {
         var identifier = UriWrapper.fromUri(publicationBucketUri).getLastPathElement();
-        return UriWrapper.fromHost(PUBLICATION_API_HOST).addChild(PUBLICATION_API_PATH).addChild(identifier).getUri();
+        return UriWrapper.fromHost(API_HOST).addChild(PUBLICATION_API_PATH).addChild(identifier).getUri();
     }
 
     private UpsertRequest parseBody(String body) {

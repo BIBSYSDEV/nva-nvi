@@ -12,6 +12,6 @@ dependencies {
 
 test {
     useJUnitPlatform()
-    environment "PUBLICATION_API_HOST", "example.org"
+    environment "API_HOST", "example.org"
     environment "PUBLICATION_API_PATH", "publication"
 }

@@ -43,7 +43,7 @@ public class UpsertNviCandidateHandlerTest {
     public static final String BUCKET_HOST = "example.org";
     public static final String PUBLICATION_API_PATH = "publication";
     private static final Environment ENVIRONMENT = new Environment();
-    public static final String PUBLICATION_API_HOST = ENVIRONMENT.readEnv("PUBLICATION_API_HOST");
+    public static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
     private static final String EXPANDED_RESOURCES_BUCKET = ENVIRONMENT.readEnv(
         "EXPANDED_RESOURCES_BUCKET");
     private UpsertNviCandidateHandler handler;
@@ -146,7 +146,7 @@ public class UpsertNviCandidateHandlerTest {
     }
 
     private URI generatePublicationId(UUID identifier) {
-        return UriWrapper.fromHost(PUBLICATION_API_HOST)
+        return UriWrapper.fromHost(API_HOST)
                    .addChild(PUBLICATION_API_PATH)
                    .addChild(identifier.toString())
                    .getUri();
