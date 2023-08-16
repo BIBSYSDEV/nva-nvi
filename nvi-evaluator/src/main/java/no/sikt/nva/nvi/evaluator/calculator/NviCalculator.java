@@ -153,7 +153,7 @@ public class NviCalculator {
     }
 
     private static boolean isVerified(Contributor contributor) {
-        return contributor.identity().verificationStatus().equals(VERIFIED);
+        return VERIFIED.equals(contributor.identity().verificationStatus());
     }
 
     private static PublicationDate extractPublicationDate(Publication publication) {

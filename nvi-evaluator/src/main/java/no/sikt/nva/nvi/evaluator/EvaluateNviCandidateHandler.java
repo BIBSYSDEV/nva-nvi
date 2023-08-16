@@ -71,12 +71,12 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
     }
 
     private static CandidateDetails extractCandidateDetails(NonNviCandidate candidateType) {
-        return new CandidateDetails(candidateType.publicationId(), null, null, null, List.of());
+        return new CandidateDetails(candidateType.publicationId(), null, null, null, null);
     }
 
     private void handleCandidateType(URI publicationBucketUri, CandidateType candidateType) {
         if (candidateType instanceof NviCandidate) {
-            sendMessage(constructCandidateResponse(publicationBucketUri, ((NviCandidate) candidateType)));
+            sendMessage(constructCandidateResponse(publicationBucketUri, (NviCandidate) candidateType));
         } else {
             sendMessage(constructNonCandidateResponse(publicationBucketUri, (NonNviCandidate) candidateType));
         }
