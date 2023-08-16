@@ -45,49 +45,20 @@ public class NviServiceTest {
         nviService = new NviService(fakeNviCandidateRepository);
     }
 
-    //    @Test
-    //    void shouldReturnCandidateIfCandidateIfCandidateWithIdExists() {
-    //        var publicationId = generatePublicationId(UUID.randomUUID());
-    //        var expectedCandidate = new Candidate.Builder()
-    //                                    .withPublicationId(publicationId)
-    //                                    .build();
-    //        fakeNviCandidateRepository.save(expectedCandidate);
-    //        assertThat(nviService.getCandidateByPublicationId(publicationId),
-    //                   is(equalTo(Optional.of(expectedCandidate))));
-    //    }
-    //
-    //    @Test
-    //    void shouldReturnTrueIfCandidateIfCandidateWithIdExists() {
-    //        var publicationId = generatePublicationId(UUID.randomUUID());
-    //        var expectedCandidate = new Candidate.Builder()
-    //                                    .withPublicationId(publicationId)
-    //                                    .build();
-    //        fakeNviCandidateRepository.save(expectedCandidate);
-    //        assertThat(nviService.exists(publicationId), is(equalTo(true)));
-    //    }
-
     @Test
     void shouldCreateCandidateWithPendingInstitutionApprovals() {
         var identifier = UUID.randomUUID();
-        var verifiedCreators = List.of(
-            new VerifiedCreatorDto(randomUri(), List.of(randomUri())));
+        var verifiedCreators = List.of(new VerifiedCreatorDto(randomUri(), List.of(randomUri())));
         var instanceType = randomString();
         var randomLevel = randomElement(Level.values());
         var publicationDate = randomPublicationDate();
+        var evaluatedCandidateDto = createEvaluatedCandidateDto(identifier, verifiedCreators, instanceType, randomLevel,
+                                                                publicationDate);
+
+        nviService.upsertCandidate(evaluatedCandidateDto);
+
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType, randomLevel,
                                                         publicationDate);
-
-        var evaluatedCandidate =
-            new EvaluatedCandidateDto(generateS3BucketUri(identifier).toString(),
-                                      CANDIDATE,
-                                      new CandidateDetailsDto(generatePublicationId(identifier),
-                                                              instanceType,
-                                                              randomLevel.getValue(),
-                                                              publicationDate,
-                                                              verifiedCreators));
-
-        nviService.upsertCandidate(evaluatedCandidate);
-
         assertThat(fakeNviCandidateRepository.findByPublicationId(expectedCandidate.publicationId()),
                    is(equalTo(Optional.of(expectedCandidate))));
     }
@@ -122,6 +93,19 @@ public class NviServiceTest {
         return creatorDtos.stream()
                    .map(creator -> new VerifiedCreator(creator.id(), creator.nviInstitutions()))
                    .toList();
+    }
+
+    private EvaluatedCandidateDto createEvaluatedCandidateDto(UUID identifier,
+                                                              List<VerifiedCreatorDto> verifiedCreators,
+                                                              String instanceType, Level randomLevel,
+                                                              PublicationDateDto publicationDate) {
+        return new EvaluatedCandidateDto(generateS3BucketUri(identifier),
+                                         CANDIDATE,
+                                         new CandidateDetailsDto(generatePublicationId(identifier),
+                                                                 instanceType,
+                                                                 randomLevel.getValue(),
+                                                                 publicationDate,
+                                                                 verifiedCreators));
     }
 
     private URI generateS3BucketUri(UUID identifier) {

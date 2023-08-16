@@ -67,7 +67,7 @@ public class UpsertNviCandidateHandlerTest {
     @Test
     void shouldLogErrorWhenMessageBodyPublicationBucketUriNull() {
         var appender = LogUtils.getTestingAppenderForRootLogger();
-        var sqsEvent = createEventWithMessageBody(new EvaluatedCandidateDto(null, null, null));
+        var sqsEvent = createEvent(new EvaluatedCandidateDto(null, null, null));
 
         handler.handleRequest(sqsEvent, CONTEXT);
 
@@ -82,19 +82,12 @@ public class UpsertNviCandidateHandlerTest {
         var instanceType = randomString();
         var randomLevel = randomElement(Level.values());
         var publicationDate = randomPublicationDate();
-        var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType, randomLevel,
-                                                        publicationDate);
 
-        var sqsEvent = createEventWithMessageBody(
-            new EvaluatedCandidateDto(generateS3BucketUri(identifier).toString(),
-                                      CANDIDATE,
-                                      new CandidateDetailsDto(generatePublicationId(identifier),
-                                                              instanceType,
-                                                              randomLevel.getValue(),
-                                                              publicationDate,
-                                                              verifiedCreators)));
+        var sqsEvent = createEvent(identifier, verifiedCreators, instanceType, randomLevel, publicationDate);
         handler.handleRequest(sqsEvent, CONTEXT);
 
+        var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType, randomLevel,
+                                                        publicationDate);
         assertThat(
             fakeNviCandidateRepository.findByPublicationId(expectedCandidate.publicationId()).orElse(null),
             is(equalTo(expectedCandidate)));
@@ -103,7 +96,6 @@ public class UpsertNviCandidateHandlerTest {
     //TODO: shouldUpdateNviCandidateAndDeleteInstitutionApprovalsIfCriticalCandidateDetailsAreChanged
 
     //TODO: shouldMarkCandidateAsNotApplicableIfExistingCandidateBecomesNonCandidate
-
     private static PublicationDateDto randomPublicationDate() {
         var randomDate = randomLocalDate();
         return new PublicationDateDto(String.valueOf(randomDate.getYear()),
@@ -129,7 +121,7 @@ public class UpsertNviCandidateHandlerTest {
                    .toList();
     }
 
-    private static SQSEvent createEventWithMessageBody(EvaluatedCandidateDto evaluatedCandidateDto) {
+    private static SQSEvent createEvent(EvaluatedCandidateDto evaluatedCandidateDto) {
         var sqsEvent = new SQSEvent();
         var message = new SQSMessage();
         var body = attempt(() -> objectMapper.writeValueAsString(evaluatedCandidateDto)).orElseThrow();
@@ -151,6 +143,17 @@ public class UpsertNviCandidateHandlerTest {
                    .withStatus(Status.PENDING)
                    .withInstitutionId(institutionUri)
                    .build();
+    }
+
+    private SQSEvent createEvent(UUID identifier, List<VerifiedCreatorDto> verifiedCreators, String instanceType,
+                                 Level randomLevel, PublicationDateDto publicationDate) {
+        return createEvent(new EvaluatedCandidateDto(generateS3BucketUri(identifier),
+                                                     CANDIDATE,
+                                                     new CandidateDetailsDto(generatePublicationId(identifier),
+                                                                                     instanceType,
+                                                                                     randomLevel.getValue(),
+                                                                                     publicationDate,
+                                                                                     verifiedCreators)));
     }
 
     private Candidate createExpectedCandidate(UUID identifier, List<VerifiedCreatorDto> verifiedCreators,

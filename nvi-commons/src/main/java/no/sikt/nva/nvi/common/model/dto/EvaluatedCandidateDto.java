@@ -2,12 +2,13 @@ package no.sikt.nva.nvi.common.model.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.net.URI;
 import nva.commons.core.JacocoGenerated;
 
 @JsonSerialize
 //TODO: Remove JacocoGenerated when use of publicationBucketUri is implemented
 @JacocoGenerated
-public record EvaluatedCandidateDto(@JsonProperty(PUBLICATION_BUCKET_URI_FIELD) String publicationBucketUri,
+public record EvaluatedCandidateDto(@JsonProperty(PUBLICATION_BUCKET_URI_FIELD) URI publicationBucketUri,
                                     @JsonProperty(TYPE_FIELD) String type,
                                     @JsonProperty(APPROVAL_AFFILIATIONS) CandidateDetailsDto candidateDetailsDto) {
 
