@@ -7,9 +7,9 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.Instant;
-import no.sikt.nva.nvi.common.model.business.CompletionStatus;
-import no.sikt.nva.nvi.common.model.business.Period;
-import no.sikt.nva.nvi.common.model.business.ReportingStatus;
+import no.sikt.nva.nvi.common.model.dao.CompletionStatus;
+import no.sikt.nva.nvi.common.model.dao.Period;
+import no.sikt.nva.nvi.common.model.dao.ReportingStatus;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.Test;
 

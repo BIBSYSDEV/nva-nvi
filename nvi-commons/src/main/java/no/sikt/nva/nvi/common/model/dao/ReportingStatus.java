@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.model.business;
+package no.sikt.nva.nvi.common.model.dao;
 
 import java.net.URI;
 import java.time.Instant;

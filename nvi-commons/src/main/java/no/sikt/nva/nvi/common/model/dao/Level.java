@@ -1,24 +1,25 @@
-package no.sikt.nva.nvi.common.model.business;
+package no.sikt.nva.nvi.common.model.dao;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
-public enum Status {
-    APPROVED("Approved"), PENDING("Pending"), REJECTED("Rejected");
+public enum Level {
+    UNASSIGNED("Unassigned"), LEVEL_ONE("1"), LEVEL_TWO("2");
 
     @JsonValue
     private final String value;
 
-    Status(String value) {
+    Level(String value) {
+
         this.value = value;
     }
 
     @JsonCreator
-    public static Status parse(String value) {
+    public static Level parse(String value) {
         return Arrays
-                   .stream(Status.values())
-                   .filter(status -> status.getValue().equalsIgnoreCase(value))
+                   .stream(Level.values())
+                   .filter(level -> level.getValue().equalsIgnoreCase(value))
                    .findFirst()
                    .orElseThrow();
     }
