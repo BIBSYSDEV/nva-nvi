@@ -48,7 +48,7 @@ public class NviService {
     }
 
     private static boolean isNviCandidate(EvaluatedCandidateDto evaluatedCandidate) {
-        return evaluatedCandidate.type().equals(NVI_CANDIDATE);
+        return NVI_CANDIDATE.equals(evaluatedCandidate.type());
     }
 
     private static PublicationDate mapToPublicationDate(PublicationDateDto publicationDate) {
