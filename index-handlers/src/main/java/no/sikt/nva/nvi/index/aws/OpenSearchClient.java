@@ -48,9 +48,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     public OpenSearchClient(CachedJwtProvider cachedJwtProvider) {
         var httpHost = HttpHost.create(SEARCH_INFRASTRUCTURE_API_HOST);
         var restClient = RestClient.builder(httpHost).build();
-        var options = RestClientOptions.builder()
-                          .addHeader(AUTHORIZATION, cachedJwtProvider.getValue().getToken())
-                          .build();
+        var options = new JwtTransportOptions(cachedJwtProvider, null, null, null, null);
         var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(), options);
         this.client = new org.opensearch.client.opensearch.OpenSearchClient(transport);
     }
