@@ -1,10 +1,11 @@
-package no.sikt.nva.nvi.evaluator.calculator.model;
+package no.sikt.nva.nvi.common.model.events;
 
 import java.net.URI;
 import java.util.List;
 
 public record Publication(URI id,
                           EntityDescription entityDescription) {
+
     public record EntityDescription(List<Contributor> contributors,
                                     Reference reference,
                                     PublicationDate publicationDate) {

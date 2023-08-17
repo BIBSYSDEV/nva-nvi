@@ -7,15 +7,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import no.sikt.nva.nvi.common.QueueClient;
 import no.sikt.nva.nvi.common.StorageReader;
+import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
+import no.sikt.nva.nvi.common.model.events.CandidateStatus;
+import no.sikt.nva.nvi.common.model.events.CandidateType;
+import no.sikt.nva.nvi.common.model.events.NonNviCandidate;
+import no.sikt.nva.nvi.common.model.events.NviCandidate;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.evaluator.aws.S3StorageReader;
 import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
-import no.sikt.nva.nvi.evaluator.calculator.CandidateType;
-import no.sikt.nva.nvi.evaluator.calculator.NonNviCandidate;
 import no.sikt.nva.nvi.evaluator.calculator.NviCalculator;
-import no.sikt.nva.nvi.evaluator.calculator.NviCandidate;
-import no.sikt.nva.nvi.evaluator.calculator.NviCandidate.CandidateDetails;
-import no.sikt.nva.nvi.evaluator.model.CandidateResponse;
-import no.sikt.nva.nvi.evaluator.model.CandidateStatus;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.events.handlers.DestinationsEventBridgeEventHandler;
 import no.unit.nva.events.models.AwsEventBridgeDetail;
@@ -81,26 +81,26 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
         }
     }
 
-    private CandidateResponse constructCandidateResponse(URI publicationBucketUri, NviCandidate candidateType) {
-        return new CandidateResponse.Builder().withStatus(CandidateStatus.CANDIDATE)
-                                              .withPublicationUri(publicationBucketUri)
-                                              .withCandidateDetails(candidateType.candidateDetails())
-                                              .withApprovalInstitutions(candidateType.approvalInstitutions())
-                                              .build();
+    private CandidateEvaluatedMessage constructCandidateResponse(URI publicationBucketUri, NviCandidate candidateType) {
+        return new CandidateEvaluatedMessage.Builder().withStatus(CandidateStatus.CANDIDATE)
+                                                      .withPublicationUri(publicationBucketUri)
+                                                      .withCandidateDetails(candidateType.candidateDetails())
+                                                      .build();
     }
 
-    private CandidateResponse constructNonCandidateResponse(URI publicationBucketUri, NonNviCandidate candidateType) {
-        return new CandidateResponse.Builder().withStatus(CandidateStatus.NON_CANDIDATE)
-                                              .withPublicationUri(publicationBucketUri)
-                                              .withCandidateDetails(extractCandidateDetails(candidateType))
-                                              .build();
+    private CandidateEvaluatedMessage constructNonCandidateResponse(URI publicationBucketUri,
+                                                                    NonNviCandidate candidateType) {
+        return new CandidateEvaluatedMessage.Builder().withStatus(CandidateStatus.NON_CANDIDATE)
+                                                      .withPublicationUri(publicationBucketUri)
+                                                      .withCandidateDetails(extractCandidateDetails(candidateType))
+                                                      .build();
     }
 
     private JsonNode extractBodyFromContent(String content) {
         return attempt(() -> dtoObjectMapper.readTree(content)).map(json -> json.at("/body")).orElseThrow();
     }
 
-    private void sendMessage(CandidateResponse c) {
+    private void sendMessage(CandidateEvaluatedMessage c) {
         attempt(() -> dtoObjectMapper.writeValueAsString(c)).map(queueClient::sendMessage).orElseThrow();
     }
 }

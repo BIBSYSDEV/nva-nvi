@@ -15,13 +15,15 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import no.sikt.nva.nvi.evaluator.calculator.NviCandidate.CandidateDetails;
-import no.sikt.nva.nvi.evaluator.calculator.NviCandidate.CandidateDetails.Creator;
-import no.sikt.nva.nvi.evaluator.calculator.model.Publication;
-import no.sikt.nva.nvi.evaluator.calculator.model.Publication.EntityDescription.Contributor;
-import no.sikt.nva.nvi.evaluator.calculator.model.Publication.EntityDescription.Contributor.Affiliation;
-import no.sikt.nva.nvi.evaluator.calculator.model.Publication.EntityDescription.PublicationDate;
+import no.sikt.nva.nvi.common.model.events.CandidateType;
+import no.sikt.nva.nvi.common.model.events.NonNviCandidate;
+import no.sikt.nva.nvi.common.model.events.NviCandidate;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
+import no.sikt.nva.nvi.common.model.events.Publication;
+import no.sikt.nva.nvi.common.model.events.Publication.EntityDescription.Contributor;
+import no.sikt.nva.nvi.common.model.events.Publication.EntityDescription.Contributor.Affiliation;
+import no.sikt.nva.nvi.common.model.events.Publication.EntityDescription.PublicationDate;
 import no.sikt.nva.nvi.evaluator.model.CustomerResponse;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import nva.commons.core.Environment;
@@ -70,11 +72,15 @@ public class NviCalculator {
         if (!isNviCandidate(model)) {
             return createNonCandidateResponse(publication);
         }
-        var institutions = fetchNviInstitutions(extractInstitutions(publication));
+        var verifiedCreators = extractVerifiedCreator(publication);
 
-        return institutions.isEmpty()
+        return hasNviInstitutions(verifiedCreators)
                    ? createNonCandidateResponse(publication)
-                   : createCandidateResponse(institutions, publication);
+                   : createCandidateResponse(verifiedCreators, publication);
+    }
+
+    private static boolean hasNviInstitutions(List<Creator> verifiedCreators) {
+        return verifiedCreators.stream().map(Creator::institutions).flatMap(List::stream).toList().isEmpty();
     }
 
     private static NonNviCandidate createNonCandidateResponse(Publication publication) {
@@ -160,19 +166,29 @@ public class NviCalculator {
         return publication.entityDescription().publicationDate();
     }
 
-    private List<String> extractInstitutions(Publication publication) {
+    private List<Creator> extractVerifiedCreator(Publication publication) {
         return publication.entityDescription()
                           .contributors()
                           .stream()
-                          .map(Contributor::affiliations)
-                          .flatMap(List::stream)
-                          .map(Affiliation::id)
-                          .map(URI::toString)
+                          .filter(NviCalculator::isVerified)
+                          .map(this::filterInstitutionsToKeepNvaCustomers)
+                          .map(NviCalculator::toCreator)
                           .toList();
     }
 
-    private List<URI> fetchNviInstitutions(List<String> affiliationUris) {
-        return affiliationUris.stream().filter(this::isNviInstitution).map(URI::create).collect(Collectors.toList());
+    private Contributor filterInstitutionsToKeepNvaCustomers(Contributor contributor) {
+        return new Contributor(contributor.identity(), filterNviAffiliations(contributor));
+    }
+
+    private List<Affiliation> filterNviAffiliations(Contributor contributor) {
+        return contributor.affiliations()
+                          .stream()
+                          .map(Affiliation::id)
+                          .map(URI::toString)
+                          .filter(this::isNviInstitution)
+                          .map(URI::create)
+                          .map(Affiliation::new)
+                          .toList();
     }
 
     private boolean isNviInstitution(String affiliation) {
@@ -193,21 +209,12 @@ public class NviCalculator {
                        .orElseThrow();
     }
 
-    private CandidateType createCandidateResponse(List<URI> institutions, Publication publication) {
-        return new NviCandidate(institutions, constructCandidateDetails(publication));
+    private CandidateType createCandidateResponse(List<Creator> verifiedCreators, Publication publication) {
+        return new NviCandidate(constructCandidateDetails(verifiedCreators, publication));
     }
 
-    private CandidateDetails constructCandidateDetails(Publication publication) {
+    private CandidateDetails constructCandidateDetails(List<Creator> verifiedCreators, Publication publication) {
         return new CandidateDetails(publication.id(), extractInstanceType(publication), extractLevel(publication),
-                                    extractPublicationDate(publication), extractVerifiedCreators(publication));
-    }
-
-    private List<Creator> extractVerifiedCreators(Publication publication) {
-        return publication.entityDescription()
-                          .contributors()
-                          .stream()
-                          .filter(NviCalculator::isVerified)
-                          .map(NviCalculator::toCreator)
-                          .toList();
+                                    extractPublicationDate(publication), verifiedCreators);
     }
 }

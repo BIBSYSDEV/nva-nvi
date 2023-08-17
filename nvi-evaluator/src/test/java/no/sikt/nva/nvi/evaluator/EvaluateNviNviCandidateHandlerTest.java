@@ -20,10 +20,10 @@ import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Optional;
+import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
+import no.sikt.nva.nvi.common.model.events.CandidateStatus;
 import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
 import no.sikt.nva.nvi.evaluator.calculator.NviCalculator;
-import no.sikt.nva.nvi.evaluator.model.CandidateResponse;
-import no.sikt.nva.nvi.evaluator.model.CandidateStatus;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.events.models.AwsEventBridgeDetail;
@@ -317,9 +317,9 @@ class EvaluateNviNviCandidateHandlerTest {
 
     }
 
-    private static CandidateResponse getSingleCandidateResponse(List<SendMessageRequest> sentMessages)
+    private static CandidateEvaluatedMessage getSingleCandidateResponse(List<SendMessageRequest> sentMessages)
         throws JsonProcessingException {
-        return dtoObjectMapper.readValue(sentMessages.get(0).messageBody(), CandidateResponse.class);
+        return dtoObjectMapper.readValue(sentMessages.get(0).messageBody(), CandidateEvaluatedMessage.class);
     }
 
     private static void assertThatMessageIsInDlq(List<SendMessageRequest> sentMessages) {

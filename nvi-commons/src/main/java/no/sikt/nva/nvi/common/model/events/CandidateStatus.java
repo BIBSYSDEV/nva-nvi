@@ -1,7 +1,8 @@
-package no.sikt.nva.nvi.evaluator.model;
+package no.sikt.nva.nvi.common.model.events;
 
 import nva.commons.core.JacocoGenerated;
 
+@JacocoGenerated
 public enum CandidateStatus {
 
     CANDIDATE("Candidate"),
