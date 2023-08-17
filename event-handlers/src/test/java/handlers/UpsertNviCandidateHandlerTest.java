@@ -21,6 +21,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.model.dao.Candidate;
 import no.sikt.nva.nvi.common.model.dao.Level;
 import no.sikt.nva.nvi.common.model.dto.CandidateDetailsDto;
@@ -32,6 +33,8 @@ import no.sikt.nva.nvi.test.TestUtils;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class UpsertNviCandidateHandlerTest {
 
@@ -58,10 +61,11 @@ public class UpsertNviCandidateHandlerTest {
         assertThat(appender.getMessages(), containsString(ERROR_MESSAGE_BODY_INVALID));
     }
 
-    @Test
-    void shouldLogErrorWhenMessageBodyPublicationBucketUriNull() {
+    @ParameterizedTest
+    @MethodSource("invalidUpsertCandidateRequests")
+    void shouldLogErrorWhenMessageBodyContainsRequiredFieldNull(EvaluatedCandidateDto evaluatedCandidateDto) {
         var appender = LogUtils.getTestingAppenderForRootLogger();
-        var sqsEvent = createEvent(new EvaluatedCandidateDto(null, null, null));
+        var sqsEvent = createEvent(evaluatedCandidateDto);
 
         handler.handleRequest(sqsEvent, CONTEXT);
 
@@ -87,9 +91,21 @@ public class UpsertNviCandidateHandlerTest {
             is(equalTo(expectedCandidate)));
     }
 
-    //TODO: shouldUpdateNviCandidateAndDeleteInstitutionApprovalsIfCriticalCandidateDetailsAreChanged
-
-    //TODO: shouldMarkCandidateAsNotApplicableIfExistingCandidateBecomesNonCandidate
+    private static Stream<EvaluatedCandidateDto> invalidUpsertCandidateRequests() {
+        return Stream.of(new EvaluatedCandidateDto(null, null, null),
+                         new EvaluatedCandidateDto(randomUri(), randomString(),
+                                                   new CandidateDetailsDto(null, randomString(),
+                                                                           randomElement(Level.values()).getValue(),
+                                                                           randomPublicationDate(),
+                                                                           List.of(randomVerifiedCreator()))),
+                         new EvaluatedCandidateDto(randomUri(), null,
+                                                   new CandidateDetailsDto(randomUri(), randomString(),
+                                                                           randomElement(
+                                                                               Level.values()).getValue(),
+                                                                           randomPublicationDate(),
+                                                                           List.of(
+                                                                               randomVerifiedCreator()))));
+    }
 
     private static SQSEvent createEventWithInvalidBody() {
         var sqsEvent = new SQSEvent();
@@ -97,6 +113,14 @@ public class UpsertNviCandidateHandlerTest {
         invalidSqsMessage.setBody(randomString());
         sqsEvent.setRecords(List.of(invalidSqsMessage));
         return sqsEvent;
+    }
+
+    //TODO: shouldUpdateNviCandidateAndDeleteInstitutionApprovalsIfCriticalCandidateDetailsAreChanged
+
+    //TODO: shouldMarkCandidateAsNotApplicableIfExistingCandidateBecomesNonCandidate
+
+    private static VerifiedCreatorDto randomVerifiedCreator() {
+        return new VerifiedCreatorDto(randomUri(), List.of(randomUri()));
     }
 
     private static SQSEvent createEvent(EvaluatedCandidateDto evaluatedCandidateDto) {

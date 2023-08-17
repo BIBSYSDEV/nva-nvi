@@ -1,6 +1,5 @@
 package handlers;
 
-import static java.util.Objects.isNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -36,6 +35,14 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         return null;
     }
 
+    private static EvaluatedCandidateDto validateRequiredFields(EvaluatedCandidateDto request) {
+        Objects.requireNonNull(request.publicationBucketUri());
+        Objects.requireNonNull(request.type());
+        Objects.requireNonNull(request.candidateDetailsDto());
+        Objects.requireNonNull(request.candidateDetailsDto().publicationId());
+        return request;
+    }
+
     private void upsertNviCandidate(EvaluatedCandidateDto evaluatedCandidate) {
         nviService.upsertCandidate(evaluatedCandidate);
     }
@@ -49,11 +56,10 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
     }
 
     private EvaluatedCandidateDto validate(EvaluatedCandidateDto request) {
-        if (isNull(request.publicationBucketUri())) {
+        return attempt(() -> validateRequiredFields(request)).orElse(failure -> {
             logInvalidMessageBody(request.toString());
             return null;
-        }
-        return request;
+        });
     }
 
     private void logInvalidMessageBody(String body) {
