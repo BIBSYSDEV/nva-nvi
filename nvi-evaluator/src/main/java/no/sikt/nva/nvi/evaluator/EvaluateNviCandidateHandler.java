@@ -69,7 +69,7 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
         return null;
     }
 
-    private static CandidateDetails extractCandidateDetails(NonNviCandidate candidateType) {
+    private static CandidateDetails createCandidateDetails(NonNviCandidate candidateType) {
         return new CandidateDetails(candidateType.publicationId(), null, null, null, null);
     }
 
@@ -92,7 +92,7 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
                                                                     NonNviCandidate candidateType) {
         return new CandidateEvaluatedMessage.Builder().withStatus(CandidateStatus.NON_CANDIDATE)
                                                       .withPublicationUri(publicationBucketUri)
-                                                      .withCandidateDetails(extractCandidateDetails(candidateType))
+                                                      .withCandidateDetails(createCandidateDetails(candidateType))
                                                       .build();
     }
 
