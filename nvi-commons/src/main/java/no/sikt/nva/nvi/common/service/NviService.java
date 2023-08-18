@@ -30,8 +30,8 @@ public class NviService {
         }
     }
 
-    private static List<VerifiedCreator> mapToVerifiedCreators(List<Creator> verifiedCreatorDtos) {
-        return verifiedCreatorDtos.stream()
+    private static List<VerifiedCreator> mapToVerifiedCreators(List<Creator> creators) {
+        return creators.stream()
                    .map(verifiedCreatorDto -> new VerifiedCreator(
                        verifiedCreatorDto.id(), verifiedCreatorDto.nviInstitutions()))
                    .toList();
@@ -67,19 +67,20 @@ public class NviService {
     }
 
     private void createCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-        var candidateDetails = evaluatedCandidate.candidateDetails();
-        var publicationDate = candidateDetails.publicationDate();
-        var pendingCandidate = new Candidate.Builder()
-                                   .withPublicationId(candidateDetails.publicationId())
-                                   .withIsApplicable(true)
-                                   .withCreators(mapToVerifiedCreators(candidateDetails.verifiedCreators()))
-                                   .withLevel(Level.parse(candidateDetails.level()))
-                                   .withInstanceType(candidateDetails.instanceType())
-                                   .withPublicationDate(mapToPublicationDate(publicationDate))
-                                   .withApprovalStatuses(
-                                       generatePendingApprovalStatuses(extractInstitutionIds(candidateDetails)))
-                                   .build();
+        var pendingCandidate = toPendingCandidate(evaluatedCandidate.candidateDetails());
         nviCandidateRepository.save(pendingCandidate);
+    }
+
+    private static Candidate toPendingCandidate(CandidateDetails candidateDetails) {
+        return new Candidate.Builder()
+                   .withPublicationId(candidateDetails.publicationId())
+                   .withIsApplicable(true)
+                   .withCreators(mapToVerifiedCreators(candidateDetails.verifiedCreators()))
+                   .withLevel(Level.parse(candidateDetails.level()))
+                   .withInstanceType(candidateDetails.instanceType())
+                   .withPublicationDate(mapToPublicationDate(candidateDetails.publicationDate()))
+                   .withApprovalStatuses(generatePendingApprovalStatuses(extractInstitutionIds(candidateDetails)))
+                   .build();
     }
 
     //TODO: Remove JacocoGenerated when case for existing candidate is implemented
