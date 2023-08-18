@@ -37,14 +37,15 @@ public class EventModelTest {
     void dumbTestForTestCoverage() {
         var creator = new Creator(randomUri(), List.of());
         creator.id();
-        creator.institutions();
+        creator.nviInstitutions();
 
         var publicationDate = new PublicationDate(randomString(), randomString(), randomString());
         publicationDate.day();
         publicationDate.year();
         publicationDate.month();
 
-        var candidate = new CandidateDetails(randomUri(), randomString(), randomString(), publicationDate, List.of(creator));
+        var candidate = new CandidateDetails(randomUri(), randomString(),
+                                             randomString(), publicationDate, List.of(creator));
         candidate.instanceType();
         candidate.level();
         candidate.publicationDate();
@@ -56,7 +57,7 @@ public class EventModelTest {
         message.candidateDetails();
         message.publicationUri();
         message.status();
-        creator.institutions();
+        creator.nviInstitutions();
 
     }
 
@@ -70,7 +71,7 @@ public class EventModelTest {
 
     private CandidateEvaluatedMessage toEvent(Publication publication) {
         return new CandidateEvaluatedMessage.Builder().withStatus(CandidateStatus.CANDIDATE)
-                                                      .withPublicationUri(randomUri())
+                                                      .withPublicationBucketUri(randomUri())
                                                       .withCandidateDetails(toCandidateDetails(publication))
                                                       .build();
     }

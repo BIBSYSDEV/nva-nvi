@@ -80,7 +80,7 @@ public class NviCalculator {
     }
 
     private static boolean hasNviInstitutions(List<Creator> verifiedCreators) {
-        return verifiedCreators.stream().map(Creator::institutions).flatMap(List::stream).toList().isEmpty();
+        return verifiedCreators.stream().map(Creator::nviInstitutions).flatMap(List::stream).toList().isEmpty();
     }
 
     private static NonNviCandidate createNonCandidateResponse(Publication publication) {

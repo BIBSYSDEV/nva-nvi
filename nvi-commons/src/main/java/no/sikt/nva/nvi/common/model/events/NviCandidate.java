@@ -15,7 +15,7 @@ public record NviCandidate(CandidateDetails candidateDetails) implements Candida
                                    List<Creator> verifiedCreators) {
 
         public record Creator(URI id,
-                              List<URI> institutions) {
+                              List<URI> nviInstitutions) {
 
         }
     }

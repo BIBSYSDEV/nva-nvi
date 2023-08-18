@@ -26,7 +26,7 @@ public record CandidateEvaluatedMessage(CandidateStatus status,
             return this;
         }
 
-        public Builder withPublicationUri(URI publicationUri) {
+        public Builder withPublicationBucketUri(URI publicationUri) {
             this.publicationUri = publicationUri;
             return this;
         }

@@ -83,7 +83,7 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
 
     private CandidateEvaluatedMessage constructCandidateResponse(URI publicationBucketUri, NviCandidate candidateType) {
         return new CandidateEvaluatedMessage.Builder().withStatus(CandidateStatus.CANDIDATE)
-                                                      .withPublicationUri(publicationBucketUri)
+                                                      .withPublicationBucketUri(publicationBucketUri)
                                                       .withCandidateDetails(candidateType.candidateDetails())
                                                       .build();
     }
@@ -91,7 +91,7 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
     private CandidateEvaluatedMessage constructNonCandidateResponse(URI publicationBucketUri,
                                                                     NonNviCandidate candidateType) {
         return new CandidateEvaluatedMessage.Builder().withStatus(CandidateStatus.NON_CANDIDATE)
-                                                      .withPublicationUri(publicationBucketUri)
+                                                      .withPublicationBucketUri(publicationBucketUri)
                                                       .withCandidateDetails(createCandidateDetails(candidateType))
                                                       .build();
     }
