@@ -43,6 +43,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     private static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchClient.class);
     private static final String ERROR_MSG_CREATE_INDEX = "Error while creating index: " + NVI_CANDIDATES_INDEX;
+    public static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";
     private final org.opensearch.client.opensearch.OpenSearchClient client;
     private final CachedValueProvider<DecodedJWT> cachedJwtProvider;
 
@@ -132,7 +133,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         } catch (IOException io) {
             throw new RuntimeException(io);
         } catch (OpenSearchException osex) {
-            if (osex.status() == 404 && "index_not_found_exception".equals(osex.error().type())) {
+            if (osex.status() == 404 && INDEX_NOT_FOUND_EXCEPTION.equals(osex.error().type())) {
                 return false;
             }
             throw osex;
