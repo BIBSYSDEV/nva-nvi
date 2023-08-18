@@ -130,8 +130,9 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldReturnDocumentsWithContributorWhenFilterByContributor() throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_approved.json"), documentFromString("document_pending.json")
-            , documentFromString("document_rejected.json"));
+        addDocumentsToIndex(documentFromString("document_approved.json"),
+                            documentFromString("document_pending.json"),
+                            documentFromString("document_rejected.json"));
         var queryString =
             "publicationDetails.contributors.id:\"https://api.dev.nva.aws.unit" + ".no/cristin/person/1136326\"";
         var searchResponse = openSearchClient.search(searchTermToQuery(queryString));
