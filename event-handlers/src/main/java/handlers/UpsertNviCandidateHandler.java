@@ -1,32 +1,20 @@
 package handlers;
 
-import static java.util.Objects.isNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
-import handlers.model.UpsertRequest;
-import java.net.URI;
-import java.util.List;
 import java.util.Objects;
+import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.common.service.NviService;
-import nva.commons.core.Environment;
-import nva.commons.core.JacocoGenerated;
-import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UpsertNviCandidateHandler.class);
-
-    private static final Environment ENVIRONMENT = new Environment();
-    private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
-
-    private static final String PUBLICATION_API_PATH = "publication";
-
     private final NviService nviService;
 
     public UpsertNviCandidateHandler(NviService nviService) {
@@ -47,46 +35,31 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         return null;
     }
 
-    private static List<URI> mapToUris(List<String> uriStrings) {
-        return uriStrings.stream()
-                   .map(URI::create)
-                   .toList();
+    private static CandidateEvaluatedMessage validateRequiredFields(CandidateEvaluatedMessage request) {
+        Objects.requireNonNull(request.publicationBucketUri());
+        Objects.requireNonNull(request.status());
+        Objects.requireNonNull(request.candidateDetails());
+        Objects.requireNonNull(request.candidateDetails().publicationId());
+        return request;
     }
 
-    @JacocoGenerated
-    //TODO: Remove JacocoGenerated when following test is implemented: shouldUpdateCandidateIfExists
-    private void upsertNviCandidate(UpsertRequest request) {
-        var publicationId = toPublicationId(request.publicationBucketUri());
-        if (isNotExistingCandidate(publicationId)) {
-            nviService.createCandidate(publicationId,
-                                       mapToUris(
-                                                                                   request.approvalAffiliations()));
-        }
+    private void upsertNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
+        nviService.upsertCandidate(evaluatedCandidate);
     }
 
-    private boolean isNotExistingCandidate(URI publicationId) {
-        return !nviService.exists(publicationId);
-    }
-
-    private URI toPublicationId(String publicationBucketUri) {
-        var identifier = UriWrapper.fromUri(publicationBucketUri).getLastPathElement();
-        return UriWrapper.fromHost(API_HOST).addChild(PUBLICATION_API_PATH).addChild(identifier).getUri();
-    }
-
-    private UpsertRequest parseBody(String body) {
-        return attempt(() -> dtoObjectMapper.readValue(body, UpsertRequest.class))
+    private CandidateEvaluatedMessage parseBody(String body) {
+        return attempt(() -> dtoObjectMapper.readValue(body, CandidateEvaluatedMessage.class))
                    .orElse(failure -> {
                        logInvalidMessageBody(body);
                        return null;
                    });
     }
 
-    private UpsertRequest validate(UpsertRequest request) {
-        if (isNull(request.publicationBucketUri())) {
+    private CandidateEvaluatedMessage validate(CandidateEvaluatedMessage request) {
+        return attempt(() -> validateRequiredFields(request)).orElse(failure -> {
             logInvalidMessageBody(request.toString());
             return null;
-        }
-        return request;
+        });
     }
 
     private void logInvalidMessageBody(String body) {

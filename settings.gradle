@@ -12,4 +12,5 @@ include 'nvi-commons'
 include 'nvi-evaluator'
 include 'index-handlers'
 include 'event-handlers'
+include 'nvi-test'
 

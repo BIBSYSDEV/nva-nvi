@@ -20,10 +20,10 @@ import no.sikt.nva.nvi.common.model.events.NonNviCandidate;
 import no.sikt.nva.nvi.common.model.events.NviCandidate;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.common.model.events.Publication;
 import no.sikt.nva.nvi.common.model.events.Publication.EntityDescription.Contributor;
 import no.sikt.nva.nvi.common.model.events.Publication.EntityDescription.Contributor.Affiliation;
-import no.sikt.nva.nvi.common.model.events.Publication.EntityDescription.PublicationDate;
 import no.sikt.nva.nvi.evaluator.model.CustomerResponse;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import nva.commons.core.Environment;
@@ -54,15 +54,12 @@ public class NviCalculator {
     private static final String NVI_YEAR = "2023";
     private static final String NVI_YEAR_REPLACE_STRING = "__NVI_YEAR__";
     private static final String NVI_SPARQL = IoUtils.stringFromResources(Path.of("sparql/nvi.sparql"))
-                                                    .replace(NVI_YEAR_REPLACE_STRING, NVI_YEAR);
+                                                 .replace(NVI_YEAR_REPLACE_STRING, NVI_YEAR);
     private static final String API_HOST = new Environment().readEnv("API_HOST");
-    private AuthorizedBackendUriRetriever uriRetriever;
+    private final AuthorizedBackendUriRetriever uriRetriever;
 
     public NviCalculator(AuthorizedBackendUriRetriever uriRetriever) {
         this.uriRetriever = uriRetriever;
-    }
-
-    private NviCalculator() {
     }
 
     public CandidateType calculateNvi(JsonNode body) throws JsonProcessingException {
@@ -89,8 +86,8 @@ public class NviCalculator {
 
     private static boolean isNviCandidate(Model model) {
         return attempt(() -> QueryExecutionFactory.create(NVI_SPARQL, model)).map(QueryExecution::execAsk)
-                                                                             .map(Boolean::booleanValue)
-                                                                             .orElseThrow();
+                   .map(Boolean::booleanValue)
+                   .orElseThrow();
     }
 
     private static Model createModel(JsonNode body) {
@@ -139,8 +136,8 @@ public class NviCalculator {
 
     private static boolean getNviValue(HttpResponse<String> response) {
         return attempt(response::body).map(NviCalculator::toCustomer)
-                                      .map(CustomerResponse::nviInstitution)
-                                      .orElse(failure -> false);
+                   .map(CustomerResponse::nviInstitution)
+                   .orElse(failure -> false);
     }
 
     private static String extractLevel(Publication publication) {
@@ -153,9 +150,9 @@ public class NviCalculator {
 
     private static Creator toCreator(Contributor contributor) {
         return new Creator(contributor.identity().id(), contributor.affiliations()
-                                                                   .stream()
-                                                                   .map(Affiliation::id)
-                                                                   .toList());
+                                                            .stream()
+                                                            .map(Affiliation::id)
+                                                            .toList());
     }
 
     private static boolean isVerified(Contributor contributor) {
@@ -163,17 +160,18 @@ public class NviCalculator {
     }
 
     private static PublicationDate extractPublicationDate(Publication publication) {
-        return publication.entityDescription().publicationDate();
+        var publicationDate = publication.entityDescription().publicationDate();
+        return new PublicationDate(publicationDate.day(), publicationDate.month(), publicationDate.year());
     }
 
     private List<Creator> extractVerifiedCreator(Publication publication) {
         return publication.entityDescription()
-                          .contributors()
-                          .stream()
-                          .filter(NviCalculator::isVerified)
-                          .map(this::filterInstitutionsToKeepNvaCustomers)
-                          .map(NviCalculator::toCreator)
-                          .toList();
+                   .contributors()
+                   .stream()
+                   .filter(NviCalculator::isVerified)
+                   .map(this::filterInstitutionsToKeepNvaCustomers)
+                   .map(NviCalculator::toCreator)
+                   .toList();
     }
 
     private Contributor filterInstitutionsToKeepNvaCustomers(Contributor contributor) {
@@ -182,13 +180,13 @@ public class NviCalculator {
 
     private List<Affiliation> filterNviAffiliations(Contributor contributor) {
         return contributor.affiliations()
-                          .stream()
-                          .map(Affiliation::id)
-                          .map(URI::toString)
-                          .filter(this::isNviInstitution)
-                          .map(URI::create)
-                          .map(Affiliation::new)
-                          .toList();
+                   .stream()
+                   .map(Affiliation::id)
+                   .map(URI::toString)
+                   .filter(this::isNviInstitution)
+                   .map(URI::create)
+                   .map(Affiliation::new)
+                   .toList();
     }
 
     private boolean isNviInstitution(String affiliation) {
@@ -202,11 +200,11 @@ public class NviCalculator {
 
     private HttpResponse<String> getResponse(String affiliation) {
         return Optional.ofNullable(uriRetriever.fetchResponse(createUri(affiliation), CONTENT_TYPE))
-                       .stream()
-                       .filter(Optional::isPresent)
-                       .map(Optional::get)
-                       .findAny()
-                       .orElseThrow();
+                   .stream()
+                   .filter(Optional::isPresent)
+                   .map(Optional::get)
+                   .findAny()
+                   .orElseThrow();
     }
 
     private CandidateType createCandidateResponse(List<Creator> verifiedCreators, Publication publication) {

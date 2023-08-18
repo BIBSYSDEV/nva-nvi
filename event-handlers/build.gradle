@@ -15,6 +15,7 @@ dependencies {
     implementation libs.jackson.databind
 
     implementation libs.bundles.logging
+    testImplementation project(':nvi-test')
 }
 
 test {
