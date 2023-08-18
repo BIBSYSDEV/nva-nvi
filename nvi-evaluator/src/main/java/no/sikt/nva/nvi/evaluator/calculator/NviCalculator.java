@@ -4,6 +4,7 @@ import static java.util.Objects.isNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.stringToStream;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -12,11 +13,17 @@ import java.net.URLEncoder;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
+import no.sikt.nva.nvi.common.model.events.CandidateType;
+import no.sikt.nva.nvi.common.model.events.NonNviCandidate;
+import no.sikt.nva.nvi.common.model.events.NviCandidate;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
+import no.sikt.nva.nvi.common.model.events.Publication;
+import no.sikt.nva.nvi.common.model.events.Publication.EntityDescription.Contributor;
+import no.sikt.nva.nvi.common.model.events.Publication.EntityDescription.Contributor.Affiliation;
+import no.sikt.nva.nvi.common.model.events.Publication.EntityDescription.PublicationDate;
 import no.sikt.nva.nvi.evaluator.model.CustomerResponse;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import nva.commons.core.Environment;
@@ -39,20 +46,16 @@ public class NviCalculator {
     public static final String COULD_NOT_FETCH_AFFILIATION_MESSAGE = "Could not fetch affiliation for: ";
     public static final String CUSTOMER = "customer";
     public static final String CRISTIN_ID = "cristinId";
-    public static final String AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE = "Affiliation fetched successfully with "
-                                                                          + "status {}";
+    public static final String AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE =
+        "Affiliation fetched successfully with " + "status {}";
+    public static final String VERIFIED = "Verified";
     private static final Logger LOGGER = LoggerFactory.getLogger(NviCalculator.class);
-    private static final String AFFILIATION_SPARQL =
-        IoUtils.stringFromResources(Path.of("sparql/affiliation.sparql"));
     //TODO to be configured somehow
     private static final String NVI_YEAR = "2023";
     private static final String NVI_YEAR_REPLACE_STRING = "__NVI_YEAR__";
-    private static final String NVI_SPARQL =
-        IoUtils.stringFromResources(Path.of("sparql/nvi.sparql"))
-            .replace(NVI_YEAR_REPLACE_STRING, NVI_YEAR);
-    private static final String AFFILIATION = "affiliation";
+    private static final String NVI_SPARQL = IoUtils.stringFromResources(Path.of("sparql/nvi.sparql"))
+                                                    .replace(NVI_YEAR_REPLACE_STRING, NVI_YEAR);
     private static final String API_HOST = new Environment().readEnv("API_HOST");
-    private static final NonNviCandidate NON_NVI_CANDIDATE = new NonNviCandidate();
     private AuthorizedBackendUriRetriever uriRetriever;
 
     public NviCalculator(AuthorizedBackendUriRetriever uriRetriever) {
@@ -62,38 +65,32 @@ public class NviCalculator {
     private NviCalculator() {
     }
 
-    public CandidateType calculateNvi(JsonNode body) {
+    public CandidateType calculateNvi(JsonNode body) throws JsonProcessingException {
         var model = createModel(body);
+        var publication = dtoObjectMapper.readValue(body.toString(), Publication.class);
 
         if (!isNviCandidate(model)) {
-            return NON_NVI_CANDIDATE;
+            return createNonCandidateResponse(publication);
         }
+        var verifiedCreators = extractVerifiedCreator(publication);
 
-        var affiliationUris = fetchResourceUris(model, AFFILIATION_SPARQL, AFFILIATION);
-        var nviAffiliationsForApproval = fetchNviInstitutions(affiliationUris);
+        return hasNviInstitutions(verifiedCreators)
+                   ? createNonCandidateResponse(publication)
+                   : createCandidateResponse(verifiedCreators, publication);
+    }
 
-        return nviAffiliationsForApproval.isEmpty()
-                   ? NON_NVI_CANDIDATE
-                   : createCandidateResponse(nviAffiliationsForApproval);
+    private static boolean hasNviInstitutions(List<Creator> verifiedCreators) {
+        return verifiedCreators.stream().map(Creator::nviInstitutions).flatMap(List::stream).toList().isEmpty();
+    }
+
+    private static NonNviCandidate createNonCandidateResponse(Publication publication) {
+        return new NonNviCandidate.Builder().withPublicationId(publication.id()).build();
     }
 
     private static boolean isNviCandidate(Model model) {
-        return attempt(() -> QueryExecutionFactory.create(NVI_SPARQL, model))
-                   .map(QueryExecution::execAsk)
-                   .map(Boolean::booleanValue)
-                   .orElseThrow();
-    }
-
-    private static List<String> fetchResourceUris(Model model, String sparqlQuery, String varName) {
-        var resourceUris = new ArrayList<String>();
-        try (var exec = QueryExecutionFactory.create(sparqlQuery, model)) {
-            var resultSet = exec.execSelect();
-            while (resultSet.hasNext()) {
-                resourceUris.add(
-                    resultSet.next().getResource(varName).getURI());
-            }
-        }
-        return resourceUris;
+        return attempt(() -> QueryExecutionFactory.create(NVI_SPARQL, model)).map(QueryExecution::execAsk)
+                                                                             .map(Boolean::booleanValue)
+                                                                             .orElseThrow();
     }
 
     private static Model createModel(JsonNode body) {
@@ -124,10 +121,7 @@ public class NviCalculator {
     }
 
     private static URI createUri(String affiliation) {
-        var getCustomerEndpoint = UriWrapper.fromHost(API_HOST)
-                                      .addChild(CUSTOMER)
-                                      .addChild(CRISTIN_ID)
-                                      .getUri();
+        var getCustomerEndpoint = UriWrapper.fromHost(API_HOST).addChild(CUSTOMER).addChild(CRISTIN_ID).getUri();
         return URI.create(getCustomerEndpoint + "/" + URLEncoder.encode(affiliation, StandardCharsets.UTF_8));
     }
 
@@ -144,16 +138,57 @@ public class NviCalculator {
     }
 
     private static boolean getNviValue(HttpResponse<String> response) {
-        return Optional.of(response.body())
-                   .map(NviCalculator::toCustomer)
-                   .map(CustomerResponse::nviInstitution)
-                   .orElse(false);
+        return attempt(response::body).map(NviCalculator::toCustomer)
+                                      .map(CustomerResponse::nviInstitution)
+                                      .orElse(failure -> false);
     }
 
-    private Set<String> fetchNviInstitutions(List<String> affiliationUris) {
-        return affiliationUris.stream()
-                   .filter(this::isNviInstitution)
-                   .collect(Collectors.toSet());
+    private static String extractLevel(Publication publication) {
+        return publication.entityDescription().reference().publicationContext().level();
+    }
+
+    private static String extractInstanceType(Publication publication) {
+        return publication.entityDescription().reference().publicationInstance().type();
+    }
+
+    private static Creator toCreator(Contributor contributor) {
+        return new Creator(contributor.identity().id(), contributor.affiliations()
+                                                                   .stream()
+                                                                   .map(Affiliation::id)
+                                                                   .toList());
+    }
+
+    private static boolean isVerified(Contributor contributor) {
+        return VERIFIED.equals(contributor.identity().verificationStatus());
+    }
+
+    private static PublicationDate extractPublicationDate(Publication publication) {
+        return publication.entityDescription().publicationDate();
+    }
+
+    private List<Creator> extractVerifiedCreator(Publication publication) {
+        return publication.entityDescription()
+                          .contributors()
+                          .stream()
+                          .filter(NviCalculator::isVerified)
+                          .map(this::filterInstitutionsToKeepNvaCustomers)
+                          .map(NviCalculator::toCreator)
+                          .toList();
+    }
+
+    private Contributor filterInstitutionsToKeepNvaCustomers(Contributor contributor) {
+        return new Contributor(contributor.identity(), filterNviAffiliations(contributor));
+    }
+
+    private List<Affiliation> filterNviAffiliations(Contributor contributor) {
+        return contributor.affiliations()
+                          .stream()
+                          .map(Affiliation::id)
+                          .map(URI::toString)
+                          .filter(this::isNviInstitution)
+                          .map(URI::create)
+                          .map(Affiliation::new)
+                          .toList();
     }
 
     private boolean isNviInstitution(String affiliation) {
@@ -167,14 +202,19 @@ public class NviCalculator {
 
     private HttpResponse<String> getResponse(String affiliation) {
         return Optional.ofNullable(uriRetriever.fetchResponse(createUri(affiliation), CONTENT_TYPE))
-                   .stream()
-                   .filter(Optional::isPresent)
-                   .map(Optional::get)
-                   .findAny()
-                   .orElseThrow();
+                       .stream()
+                       .filter(Optional::isPresent)
+                       .map(Optional::get)
+                       .findAny()
+                       .orElseThrow();
     }
 
-    private CandidateType createCandidateResponse(Set<String> affiliationIds) {
-        return new NviCandidate(affiliationIds.stream().map(URI::create).collect(Collectors.toSet()));
+    private CandidateType createCandidateResponse(List<Creator> verifiedCreators, Publication publication) {
+        return new NviCandidate(constructCandidateDetails(verifiedCreators, publication));
+    }
+
+    private CandidateDetails constructCandidateDetails(List<Creator> verifiedCreators, Publication publication) {
+        return new CandidateDetails(publication.id(), extractInstanceType(publication), extractLevel(publication),
+                                    extractPublicationDate(publication), verifiedCreators);
     }
 }
