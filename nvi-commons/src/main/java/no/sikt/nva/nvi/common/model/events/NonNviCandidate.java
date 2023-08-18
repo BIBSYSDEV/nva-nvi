@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.common.model.events;
 
 import java.net.URI;
-import nva.commons.core.JacocoGenerated;
 
 
 public record NonNviCandidate(URI publicationId) implements CandidateType {

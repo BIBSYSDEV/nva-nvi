@@ -22,41 +22,42 @@ import org.junit.jupiter.api.Test;
 public class EventModelTest {
 
     public static final String CANDIDATE = IoUtils.stringFromResources(Path.of("candidate.json"));
-    public static final String NON_CANDIDATE = IoUtils.stringFromResources(Path.of("candidate.json"));
 
     @Test
     void shouldParseIncomingEventAndConstructNviCandidateOutputEvent() {
-        assertDoesNotThrow(() -> attempt(() -> dtoObjectMapper.readTree(CANDIDATE)).map(json -> json.at("/body"))
-                                                                                   .map(body -> dtoObjectMapper.readValue(body.toString(), Publication.class))
-                                                                                   .map(this::toEvent)
-                                                                                   .orElseThrow());
+        assertDoesNotThrow(
+            () -> attempt(() -> dtoObjectMapper.readTree(CANDIDATE))
+                                     .map(json -> json.at("/body"))
+                                     .map(body -> dtoObjectMapper.readValue(body.toString(), Publication.class))
+                                     .map(this::toEvent)
+                                     .orElseThrow());
     }
 
     @Test
     void dumbTestForTestCoverage() {
         var creator = new Creator(randomUri(), List.of());
-
-        var publicationDate = new PublicationDate(randomString(), randomString(), randomString());
-
-        var candidate = new CandidateDetails(randomUri(), randomString(), randomString(), publicationDate,
-                                             List.of(creator));
-        new NonNviCandidate.Builder().withPublicationId(randomUri()).build().publicationId();
-        var message = new CandidateEvaluatedMessage(CandidateStatus.CANDIDATE, randomUri(), candidate);
-
         creator.id();
         creator.institutions();
+
+        var publicationDate = new PublicationDate(randomString(), randomString(), randomString());
         publicationDate.day();
         publicationDate.year();
         publicationDate.month();
-        message.candidateDetails();
-        message.publicationUri();
-        message.status();
-        creator.institutions();
+
+        var candidate = new CandidateDetails(randomUri(), randomString(), randomString(), publicationDate, List.of(creator));
         candidate.instanceType();
         candidate.level();
         candidate.publicationDate();
         candidate.verifiedCreators();
         candidate.publicationId();
+        new NonNviCandidate.Builder().withPublicationId(randomUri()).build().publicationId();
+
+        var message = new CandidateEvaluatedMessage(CandidateStatus.CANDIDATE, randomUri(), candidate);
+        message.candidateDetails();
+        message.publicationUri();
+        message.status();
+        creator.institutions();
+
     }
 
     private static String getType(Publication publication) {
@@ -76,8 +77,7 @@ public class EventModelTest {
 
     private CandidateDetails toCandidateDetails(Publication publication) {
         return new CandidateDetails(publication.id(), getType(publication), getLevel(publication),
-                                    publication.entityDescription()
-                                                                                                              .publicationDate(), getCreators(publication));
+                                    publication.entityDescription().publicationDate(), getCreators(publication));
     }
 
     private List<Creator> getCreators(Publication publication) {
