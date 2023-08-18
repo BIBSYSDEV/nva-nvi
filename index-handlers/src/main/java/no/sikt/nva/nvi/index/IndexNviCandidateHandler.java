@@ -7,25 +7,31 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.amazonaws.services.lambda.runtime.events.SQSEvent;
+import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
+import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue;
+import com.amazonaws.services.lambda.runtime.events.models.dynamodb.Record;
+import com.amazonaws.services.lambda.runtime.events.models.dynamodb.StreamRecord;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.NviCandidateMessageBody;
+import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> {
+public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, Void> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexNviCandidateHandler.class);
     private static final Environment ENVIRONMENT = new Environment();
-    private static final String EXPANDED_RESOURCES_BUCKET = ENVIRONMENT.readEnv(
-        "EXPANDED_RESOURCES_BUCKET");
+    private static final String EXPANDED_RESOURCES_BUCKET = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
     private static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid: {}";
     private final SearchClient<NviCandidateIndexDocument> indexClient;
     private final StorageReader<NviCandidateMessageBody> storageReader;
@@ -41,16 +47,10 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
         this.indexClient = indexClient;
     }
 
-    @Override
-    public Void handleRequest(SQSEvent input, Context context) {
-        input.getRecords()
-            .stream()
-            .map(SQSMessage::getBody)
-            .map(this::parseBody)
-            .filter(Objects::nonNull)
-            .map(this::validate)
-            .filter(Objects::nonNull)
-            .forEach(this::addNviCandidateToIndex);
+    public Void handleRequest(DynamodbEvent event, Context context) {
+        var list =event.getRecords().stream()
+             .map(attempt(JsonUtils.dtoObjectMapper::writeValueAsString))
+            .toList();
 
         return null;
     }
@@ -70,11 +70,10 @@ public class IndexNviCandidateHandler implements RequestHandler<SQSEvent, Void> 
     }
 
     private NviCandidateMessageBody parseBody(String body) {
-        return attempt(() -> dtoObjectMapper.readValue(body, NviCandidateMessageBody.class))
-                   .orElse(failure -> {
-                       logInvalidMessageBody(body);
-                       return null;
-                   });
+        return attempt(() -> dtoObjectMapper.readValue(body, NviCandidateMessageBody.class)).orElse(failure -> {
+            logInvalidMessageBody(body);
+            return null;
+        });
     }
 
     private void logInvalidMessageBody(String body) {

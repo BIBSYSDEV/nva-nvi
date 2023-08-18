@@ -1,9 +1,9 @@
 package no.sikt.nva.nvi.index;
 
 import static java.util.Map.entry;
-import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.index.utils.ExpandedResourceGenerator.createExpandedResource;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -15,8 +15,13 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
+import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue;
+import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType;
+import com.amazonaws.services.lambda.runtime.events.models.dynamodb.StreamRecord;
 import java.net.URI;
 import java.time.LocalDate;
 import java.util.Collections;
@@ -75,9 +80,9 @@ class IndexNviCandidateHandlerTest {
                                                                                       publicationId,
                                                                                       affiliationUri,
                                                                                       randomLocalDate().toString());
-        var sqsEvent = createEventWithMessageBody(publicationId, List.of(affiliationUri.toString()));
+        var dynamoDbEvent = createEvent();
 
-        handler.handleRequest(sqsEvent, CONTEXT);
+        handler.handleRequest(dynamoDbEvent, CONTEXT);
         var allIndexDocuments = indexClient.listAllDocuments();
 
         assertThat(allIndexDocuments, containsInAnyOrder(expectedIndexDocument));
@@ -93,9 +98,7 @@ class IndexNviCandidateHandlerTest {
                                                                                       publicationId,
                                                                                       affiliationUri,
                                                                                       date);
-        var sqsEvent = createEventWithMessageBody(publicationId, List.of(affiliationUri.toString()));
-
-        handler.handleRequest(sqsEvent, CONTEXT);
+        handler.handleRequest(createEvent(), CONTEXT);
         var allIndexDocuments = indexClient.listAllDocuments();
 
         assertThat(allIndexDocuments, containsInAnyOrder(expectedIndexDocument));
@@ -111,9 +114,8 @@ class IndexNviCandidateHandlerTest {
                 identifier,
                 publicationId,
                 affiliationUri);
-        var sqsEvent = createEventWithMessageBody(publicationId, List.of(affiliationUri.toString()));
 
-        handler.handleRequest(sqsEvent, CONTEXT);
+        handler.handleRequest(createEvent(), CONTEXT);
         var allIndexDocuments = indexClient.listAllDocuments();
 
         assertThat(allIndexDocuments, containsInAnyOrder(expectedIndexDocument));
@@ -124,7 +126,7 @@ class IndexNviCandidateHandlerTest {
         var appender = LogUtils.getTestingAppenderForRootLogger();
         var sqsEvent = createEventWithInvalidBody();
 
-        handler.handleRequest(sqsEvent, CONTEXT);
+        handler.handleRequest(createEvent(), CONTEXT);
 
         assertThat(appender.getMessages(), containsString(ERROR_MESSAGE_BODY_INVALID));
     }
@@ -132,9 +134,8 @@ class IndexNviCandidateHandlerTest {
     @Test
     void shouldLogErrorWhenMessageBodyPublicationIdNull() {
         var appender = LogUtils.getTestingAppenderForRootLogger();
-        var sqsEvent = createEventWithMessageBody(null, Collections.emptyList());
 
-        handler.handleRequest(sqsEvent, CONTEXT);
+        handler.handleRequest(createEvent(), CONTEXT);
 
         assertThat(appender.getMessages(), containsString(ERROR_MESSAGE_BODY_INVALID));
     }
@@ -145,15 +146,34 @@ class IndexNviCandidateHandlerTest {
         return UriWrapper.fromUri(HOST).addChild(identifier.toString()).getUri();
     }
 
-    private static SQSEvent createEventWithMessageBody(URI publicationBucketUri, List<String> affiliationApprovals) {
-        var sqsEvent = new SQSEvent();
-        var message = new SQSMessage();
-        var body = nonNull(publicationBucketUri)
-                       ? constructBody(publicationBucketUri.toString(), affiliationApprovals)
-                       : constructBody(affiliationApprovals);
-        message.setBody(body);
-        sqsEvent.setRecords(List.of(message));
-        return sqsEvent;
+    private static DynamodbEvent createEvent() {
+        var event = new DynamodbEvent();
+        var records = List.of(randomDynamoRecord(), randomDynamoRecord(), randomDynamoRecord());
+        event.setRecords(records);
+        return event;
+    }
+
+    private static DynamodbEvent.DynamodbStreamRecord randomDynamoRecord() {
+        var record = new DynamodbStreamRecord();
+        record.setEventName(randomElement(OperationType.values()));
+        record.setEventID(randomString());
+        record.setAwsRegion(randomString());
+        record.setDynamodb(randomPayload());
+        record.setEventSource(randomString());
+        record.setEventVersion(randomString());
+        return record;
+    }
+
+    private static StreamRecord randomPayload() {
+        var record = new StreamRecord();
+        record.setOldImage(randomDynamoPayload());
+        record.setNewImage(randomDynamoPayload());
+        return record;
+    }
+
+    private static Map<String, AttributeValue> randomDynamoPayload() {
+        var value = new AttributeValue(randomString());
+        return Map.of(randomString(), value);
     }
 
     private static SQSEvent createEventWithInvalidBody() {
