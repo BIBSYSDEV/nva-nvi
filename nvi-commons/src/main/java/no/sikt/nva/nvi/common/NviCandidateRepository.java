@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.common;
 
 import java.net.URI;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.model.dao.Candidate;
+import no.sikt.nva.nvi.common.model.business.Candidate;
 
 public interface NviCandidateRepository {
 

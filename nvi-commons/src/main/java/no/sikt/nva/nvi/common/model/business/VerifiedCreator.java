@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.model.dao;
+package no.sikt.nva.nvi.common.model.business;
 
 import java.net.URI;
 import java.util.List;

@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import no.sikt.nva.nvi.common.NviCandidateRepository;
-import no.sikt.nva.nvi.common.model.dao.Candidate;
+import no.sikt.nva.nvi.common.model.business.Candidate;
 
 public class FakeNviCandidateRepository implements NviCandidateRepository {
 

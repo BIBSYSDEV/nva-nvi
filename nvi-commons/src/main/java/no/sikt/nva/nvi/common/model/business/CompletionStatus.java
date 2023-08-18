@@ -1,24 +1,24 @@
-package no.sikt.nva.nvi.common.model.dao;
+package no.sikt.nva.nvi.common.model.business;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
-public enum Status {
-    APPROVED("Approved"), PENDING("Pending"), REJECTED("Rejected");
+public enum CompletionStatus {
+    COMPLETED("Completed"), IN_PROGRESS("In progress");
 
     @JsonValue
     private final String value;
 
-    Status(String value) {
+    CompletionStatus(String value) {
         this.value = value;
     }
 
     @JsonCreator
-    public static Status parse(String value) {
+    public static CompletionStatus parse(String value) {
         return Arrays
-                   .stream(Status.values())
-                   .filter(status -> status.getValue().equalsIgnoreCase(value))
+                   .stream(CompletionStatus.values())
+                   .filter(level -> level.getValue().equalsIgnoreCase(value))
                    .findFirst()
                    .orElseThrow();
     }
