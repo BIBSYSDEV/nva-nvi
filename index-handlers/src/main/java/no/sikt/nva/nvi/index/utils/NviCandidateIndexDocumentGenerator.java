@@ -66,6 +66,11 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private static Affiliation expandAffiliation(JsonNode resource, String id) {
+        var s = getJsonNodeStream(resource, JSON_PTR_CONTRIBUTOR)
+            .flatMap(contributor -> getJsonNodeStream(contributor, JSON_PTR_AFFILIATIONS))
+            .filter(affiliation -> nonNull(affiliation.at(JSON_PTR_ID)))
+            .filter(affiliation -> nonNull(affiliation.at(JSON_PTR_ID)))
+            .toList();
         return getJsonNodeStream(resource, JSON_PTR_CONTRIBUTOR)
                    .flatMap(contributor -> getJsonNodeStream(contributor, JSON_PTR_AFFILIATIONS))
                    .filter(affiliation -> nonNull(affiliation.at(JSON_PTR_ID)))

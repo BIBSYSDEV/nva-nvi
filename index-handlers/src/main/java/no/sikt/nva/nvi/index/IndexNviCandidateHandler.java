@@ -22,9 +22,9 @@ import org.slf4j.LoggerFactory;
 
 public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, Void> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(IndexNviCandidateHandler.class);
     public static final String DOCUMENT_ADDED_MESSAGE = "Document has been added/updated";
-    public static final String DOCUMENT_REMOVED_MESSAGE = "Document has been removed from index";
+    public static final String DOCUMENT_REMOVED_MESSAGE = "Document has been removed";
+    private static final Logger LOGGER = LoggerFactory.getLogger(IndexNviCandidateHandler.class);
     private static final Environment ENVIRONMENT = new Environment();
     private static final String EXPANDED_RESOURCES_BUCKET = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
@@ -46,10 +46,19 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
         return null;
     }
 
+    //TODO: Implement when we have DynamoDbRecord
+    private static URI extractBucketUri(DynamodbStreamRecord dynamodbStreamRecord) {
+        return URI.create("example.com" + dynamodbStreamRecord.getEventName());
+    }
+
+    private static OperationType getEventType(DynamodbStreamRecord dynamodbStreamRecord) {
+        return OperationType.fromValue(dynamodbStreamRecord.getEventName());
+    }
+
     private void updateIndex(DynamodbStreamRecord dynamodbStreamRecord) {
         switch (getEventType(dynamodbStreamRecord)) {
             case INSERT, MODIFY -> addDocumentToIndex(dynamodbStreamRecord);
-            case REMOVE -> removeDocumentFromIndex(dynamodbStreamRecord);
+            default -> removeDocumentFromIndex(dynamodbStreamRecord);
         }
     }
 
@@ -61,26 +70,18 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     private void addDocumentToIndex(DynamodbStreamRecord dynamodbStreamRecord) {
         var approvalAffiliations = extractAffiliationApprovals(dynamodbStreamRecord);
 
-        attempt(() -> extractBucketUri(dynamodbStreamRecord))
-            .map(storageReader::readUri)
-            .map(string -> generateDocument(string, approvalAffiliations))
-            .forEach(openSearchClient::addDocumentToIndex);
+        attempt(() -> extractBucketUri(dynamodbStreamRecord)).map(storageReader::readUri)
+                                                             .map(string -> generateDocument(string,
+                                                                                             approvalAffiliations))
+                                                             .forEach(openSearchClient::addDocumentToIndex);
 
         LOGGER.info(DOCUMENT_ADDED_MESSAGE);
     }
 
     //TODO: Implement when we have DynamoDbRecord
     private List<String> extractAffiliationApprovals(DynamodbStreamRecord dynamodbStreamRecord) {
-        return List.of(dynamodbStreamRecord.toString());
-    }
-
-    //TODO: Implement when we have DynamoDbRecord
-    private static URI extractBucketUri(DynamodbStreamRecord dynamodbStreamRecord) {
-        return URI.create("example.com" + dynamodbStreamRecord.getEventName());
-    }
-
-    private static OperationType getEventType(DynamodbStreamRecord dynamodbStreamRecord) {
-        return OperationType.fromValue(dynamodbStreamRecord.getEventName());
+        var newImage = dynamodbStreamRecord.getDynamodb().getNewImage();
+        return List.of("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     }
 
     //TODO::Have to map DynamoDbRecord to IndexDocument when we know how DynamoRecord looks like

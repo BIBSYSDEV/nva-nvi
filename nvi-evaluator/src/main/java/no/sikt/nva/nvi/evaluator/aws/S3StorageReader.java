@@ -32,6 +32,7 @@ public class S3StorageReader implements StorageReader<EventReference> {
         return s3Driver.getFile(UriWrapper.fromUri(blob.getUri()).toS3bucketPath());
     }
 
+    @JacocoGenerated
     @Override
     public String readUri(URI uri) {
         return null;

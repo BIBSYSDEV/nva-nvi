@@ -82,7 +82,8 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
 
     @Override
     public SearchResponse<NviCandidateIndexDocument> search(Query query)  {
-        return attempt(() -> client.search(constructSearchRequest(query), NviCandidateIndexDocument.class)).orElseThrow();
+        return attempt(() -> client.search(constructSearchRequest(query), NviCandidateIndexDocument.class))
+                   .orElseThrow();
     }
 
     @Override

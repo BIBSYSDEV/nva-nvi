@@ -36,37 +36,43 @@ class IndexNviCandidateHandlerTest {
 
     public static final Context CONTEXT = mock(Context.class);
     public static final String CANDIDATE = IoUtils.stringFromResources(Path.of("candidate.json"));
+    public static final String CANDIDATE_MISSING_FIELDS = IoUtils.stringFromResources(Path.of("candidateV2.json"));
     private IndexNviCandidateHandler handler;
-    private SearchClient<NviCandidateIndexDocument> openSearchClient;
     private TestAppender appender;
+    private StorageReader storageReader;
 
     @BeforeEach
     void setup() {
-        var storageReader = mock(StorageReader.class);
-        openSearchClient = mock(OpenSearchClient.class);
+        storageReader = mock(StorageReader.class);
+        SearchClient<NviCandidateIndexDocument> openSearchClient = mock(OpenSearchClient.class);
         handler = new IndexNviCandidateHandler(storageReader, openSearchClient);
         appender = LogUtils.getTestingAppenderForRootLogger();
+
         doNothing().when(openSearchClient).addDocumentToIndex(any());
-        when(storageReader.readUri(any())).thenReturn(CANDIDATE);
+        doNothing().when(openSearchClient).removeDocumentFromIndex(any());
     }
 
     @Test
-    void shouldAddDocumentToIndexWhenIncomingEventIsINSERT() {
+    void shouldAddDocumentToIndexWhenIncomingEventIsInsert() {
+        when(storageReader.readUri(any())).thenReturn(CANDIDATE_MISSING_FIELDS);
+
         handler.handleRequest(createEvent(INSERT), CONTEXT);
         assertThat(appender.getMessages(), containsString(DOCUMENT_ADDED_MESSAGE));
     }
 
     @Test
-    void shouldUpdateExistingIndexDocumentWhenIncomingEventIsMODIFY() {
-        doNothing().when(openSearchClient).addDocumentToIndex(any());
+    void shouldUpdateExistingIndexDocumentWhenIncomingEventIsModify() {
+        when(storageReader.readUri(any())).thenReturn(CANDIDATE);
+
         handler.handleRequest(createEvent(MODIFY), CONTEXT);
 
         assertThat(appender.getMessages(), containsString(DOCUMENT_ADDED_MESSAGE));
     }
 
     @Test
-    void shouldRemoveDocumentFromIndexWhenIncomingEventIsREMOVE() {
-        doNothing().when(openSearchClient).addDocumentToIndex(any());
+    void shouldRemoveDocumentFromIndexWhenIncomingEventIsRemove() {
+        when(storageReader.readUri(any())).thenReturn(CANDIDATE);
+
         handler.handleRequest(createEvent(REMOVE), CONTEXT);
 
         assertThat(appender.getMessages(), containsString(DOCUMENT_REMOVED_MESSAGE));
@@ -74,31 +80,21 @@ class IndexNviCandidateHandlerTest {
 
     private static DynamodbEvent createEvent(OperationType operationType) {
         var event = new DynamodbEvent();
-        var records = List.of(dynamoRecordWithType(operationType));
-        event.setRecords(records);
+        event.setRecords(List.of(dynamoRecordWithType(operationType)));
         return event;
     }
 
     private static DynamodbEvent.DynamodbStreamRecord dynamoRecordWithType(OperationType operationType) {
-        var record = new DynamodbStreamRecord();
-        record.setEventName(randomElement(operationType));
-        record.setEventID(randomString());
-        record.setAwsRegion(randomString());
-        record.setDynamodb(randomPayload());
-        record.setEventSource(randomString());
-        record.setEventVersion(randomString());
-        return record;
+        return (DynamodbStreamRecord) new DynamodbStreamRecord().withEventName(randomElement(operationType))
+                                                                .withEventID(randomString())
+                                                                .withAwsRegion(randomString())
+                                                                .withDynamodb(randomPayload())
+                                                                .withEventSource(randomString())
+                                                                .withEventVersion(randomString());
     }
 
     private static StreamRecord randomPayload() {
-        var record = new StreamRecord();
-        record.setOldImage(randomDynamoPayload());
-        record.setNewImage(randomDynamoPayload());
-        return record;
-    }
-
-    private static Map<String, AttributeValue> randomDynamoPayload() {
-        var value = new AttributeValue(CANDIDATE);
-        return Map.of(randomString(), value);
+        return new StreamRecord().withOldImage(Map.of(randomString(), new AttributeValue(randomString())))
+                                 .withNewImage(Map.of(randomString(), new AttributeValue(randomString())));
     }
 }
