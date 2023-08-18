@@ -6,20 +6,15 @@ import java.time.Instant;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record Period(Instant closed,
-                     int year) {
+public record Period(int year, Instant start, Instant end) {
 
     public static final class Builder {
 
-        private Instant closed;
         private int year;
+        private Instant start;
+        private Instant end;
 
         public Builder() {
-        }
-
-        public Builder withClosed(Instant closed) {
-            this.closed = closed;
-            return this;
         }
 
         public Builder withYear(int year) {
@@ -27,8 +22,18 @@ public record Period(Instant closed,
             return this;
         }
 
+        public Builder withStart(Instant start) {
+            this.start = start;
+            return this;
+        }
+
+        public Builder withEnd(Instant end) {
+            this.end = end;
+            return this;
+        }
+
         public Period build() {
-            return new Period(closed, year);
+            return new Period(year, start, end);
         }
     }
 }
