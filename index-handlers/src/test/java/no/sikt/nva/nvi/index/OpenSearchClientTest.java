@@ -120,8 +120,9 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldReturnAggregationsForApprovalStatus() throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_approved.json"), documentFromString("document_pending.json")
-            , documentFromString("document_rejected.json"));
+        addDocumentsToIndex(documentFromString("document_approved.json"),
+                            documentFromString("document_pending.json"),
+                            documentFromString("document_rejected.json"));
         var searchResponse = openSearchClient.search(searchTermToQuery("*"));
         var response = SearchResponseDto.fromSearchResponse(searchResponse);
         assertThat(response.aggregations(), is(notNullValue()));
