@@ -15,7 +15,7 @@ public record CandidateEvaluatedMessage(CandidateStatus status,
     public static final class Builder {
 
         private CandidateStatus status;
-        private URI publicationUri;
+        private URI publicationBucketUri;
         private CandidateDetails candidateDetails;
 
         public Builder() {
@@ -26,8 +26,8 @@ public record CandidateEvaluatedMessage(CandidateStatus status,
             return this;
         }
 
-        public Builder withPublicationBucketUri(URI publicationUri) {
-            this.publicationUri = publicationUri;
+        public Builder withPublicationBucketUri(URI publicationBucketUri) {
+            this.publicationBucketUri = publicationBucketUri;
             return this;
         }
 
@@ -37,7 +37,7 @@ public record CandidateEvaluatedMessage(CandidateStatus status,
         }
 
         public CandidateEvaluatedMessage build() {
-            return new CandidateEvaluatedMessage(status, publicationUri, candidateDetails);
+            return new CandidateEvaluatedMessage(status, publicationBucketUri, candidateDetails);
         }
     }
 }
