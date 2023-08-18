@@ -59,8 +59,8 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
 
     public OpenSearchClient(RestClient restClient, CachedValueProvider<DecodedJWT> cachedValueProvider) {
         this.cachedJwtProvider = cachedValueProvider;
-        this.client = new org.opensearch.client.opensearch.OpenSearchClient(new RestClientTransport(restClient,
-                                                                                                    new JacksonJsonpMapper()));
+        this.client = new org.opensearch.client.opensearch.OpenSearchClient(
+            new RestClientTransport(restClient, new JacksonJsonpMapper()));
     }
 
     public static OpenSearchClient defaultOpenSearchClient() {
@@ -132,7 +132,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         } catch (IOException io) {
             throw new RuntimeException(io);
         } catch (OpenSearchException osex) {
-            if (osex.status() == 404 && osex.error().type().equals("index_not_found_exception")) {
+            if (osex.status() == 404 && "index_not_found_exception".equals(osex.error().type())) {
                 return false;
             }
             throw osex;
@@ -143,7 +143,8 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     private void createIndex() {
         attempt(() -> client.withTransportOptions(getOptions())
                             .indices()
-                            .create(getCreateIndexRequest())).orElseThrow(failure -> handleFailure(ERROR_MSG_CREATE_INDEX, failure.getException()));
+                            .create(getCreateIndexRequest()))
+            .orElseThrow(failure -> handleFailure(ERROR_MSG_CREATE_INDEX, failure.getException()));
     }
 
     private RuntimeException handleFailure(String msg, Exception exception) {

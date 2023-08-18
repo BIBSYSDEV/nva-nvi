@@ -112,7 +112,8 @@ public class OpenSearchClientTest {
         addDocumentsToIndex(document);
         openSearchClient.removeDocumentFromIndex(document);
         Thread.sleep(2000);
-        var searchResponse = openSearchClient.search(searchTermToQuery(document.identifier()));
+        var searchResponse =
+            openSearchClient.search(searchTermToQuery(document.identifier()));
         var nviCandidateIndexDocument = searchResponseToIndexDocumentList(searchResponse);
         assertThat(nviCandidateIndexDocument, hasSize(0));
     }
@@ -188,9 +189,11 @@ public class OpenSearchClientTest {
     public final class FakeCachedJwtProvider {
 
         public static String TEST_TOKEN =
-            "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE2Njg1MTE4NTcsImV4cCI6MTcw"
-            + "MDA0Nzg1NywiYXVkIjoid3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpdmVuTmFtZSI6IkpvaG5ueSI"
-            + "sIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjoiTWFuYWdlciIsInNjb3BlIjoiZXhhbX"
+            "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1"
+            + "aWxkZXIiLCJpYXQiOjE2Njg1MTE4NTcsImV4cCI6MTcwMDA0Nzg1NywiYXVkIjoi"
+            + "d3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpd"
+            + "mVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2"
+            + "NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjoiTWFuYWdlciIsInNjb3BlIjoiZXhhbX"
             + "BsZS1zY29wZSJ9.ne8Jb4f2xao1zSJFZxIBRrh4WFNjkaBRV3-Ybp6fHZU";
 
         public static CachedJwtProvider setup() {
