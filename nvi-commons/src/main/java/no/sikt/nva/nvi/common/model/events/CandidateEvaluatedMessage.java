@@ -9,7 +9,7 @@ import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 @JsonAutoDetect(fieldVisibility = Visibility.ANY)
 @JsonSerialize
 public record CandidateEvaluatedMessage(CandidateStatus status,
-                                        URI publicationUri,
+                                        URI publicationBucketUri,
                                         CandidateDetails candidateDetails) {
 
     public static final class Builder {

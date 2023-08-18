@@ -55,7 +55,7 @@ public class EventModelTest {
 
         var message = new CandidateEvaluatedMessage(CandidateStatus.CANDIDATE, randomUri(), candidate);
         message.candidateDetails();
-        message.publicationUri();
+        message.publicationBucketUri();
         message.status();
         creator.nviInstitutions();
 
