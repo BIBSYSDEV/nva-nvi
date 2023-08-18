@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
+import static no.sikt.nva.nvi.common.model.events.CandidateStatus.CANDIDATE;
 import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.NviCandidateRepository;
@@ -9,15 +10,12 @@ import no.sikt.nva.nvi.common.model.dao.Level;
 import no.sikt.nva.nvi.common.model.dao.PublicationDate;
 import no.sikt.nva.nvi.common.model.dao.Status;
 import no.sikt.nva.nvi.common.model.dao.VerifiedCreator;
-import no.sikt.nva.nvi.common.model.dto.CandidateDetailsDto;
-import no.sikt.nva.nvi.common.model.dto.EvaluatedCandidateDto;
-import no.sikt.nva.nvi.common.model.dto.PublicationDateDto;
-import no.sikt.nva.nvi.common.model.dto.VerifiedCreatorDto;
+import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
 import nva.commons.core.JacocoGenerated;
 
 public class NviService {
-
-    public static final String NVI_CANDIDATE = "Candidate";
     private final NviCandidateRepository nviCandidateRepository;
 
     public NviService(NviCandidateRepository nviCandidateRepository) {
@@ -26,32 +24,32 @@ public class NviService {
 
     //TODO: Remove JacocoGenerated when other if/else cases are implemented
     @JacocoGenerated
-    public void upsertCandidate(EvaluatedCandidateDto evaluatedCandidate) {
+    public void upsertCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
         if (isNotExistingCandidate(evaluatedCandidate) && isNviCandidate(evaluatedCandidate)) {
             createCandidate(evaluatedCandidate);
         }
     }
 
-    private static List<VerifiedCreator> mapToVerifiedCreators(List<VerifiedCreatorDto> verifiedCreatorDtos) {
+    private static List<VerifiedCreator> mapToVerifiedCreators(List<Creator> verifiedCreatorDtos) {
         return verifiedCreatorDtos.stream()
                    .map(verifiedCreatorDto -> new VerifiedCreator(
                        verifiedCreatorDto.id(), verifiedCreatorDto.nviInstitutions()))
                    .toList();
     }
 
-    private static List<URI> extractInstitutionIds(CandidateDetailsDto candidateDetails) {
-        return candidateDetails.verifiedCreatorDtos()
+    private static List<URI> extractInstitutionIds(CandidateDetails candidateDetails) {
+        return candidateDetails.verifiedCreators()
                    .stream()
                    .flatMap(creator -> creator.nviInstitutions().stream())
                    .distinct()
                    .toList();
     }
 
-    private static boolean isNviCandidate(EvaluatedCandidateDto evaluatedCandidate) {
-        return NVI_CANDIDATE.equals(evaluatedCandidate.type());
+    private static boolean isNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
+        return CANDIDATE.equals(evaluatedCandidate.status());
     }
 
-    private static PublicationDate mapToPublicationDate(PublicationDateDto publicationDate) {
+    private static PublicationDate mapToPublicationDate(CandidateDetails.PublicationDate publicationDate) {
         return new PublicationDate(publicationDate.year(),
                                    publicationDate.month(),
                                    publicationDate.day());
@@ -68,13 +66,13 @@ public class NviService {
         return nviCandidateRepository.findByPublicationId(publicationId).isPresent();
     }
 
-    private void createCandidate(EvaluatedCandidateDto evaluatedCandidate) {
-        var candidateDetails = evaluatedCandidate.candidateDetailsDto();
-        var publicationDate = candidateDetails.publicationDateDto();
+    private void createCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
+        var candidateDetails = evaluatedCandidate.candidateDetails();
+        var publicationDate = candidateDetails.publicationDate();
         var pendingCandidate = new Candidate.Builder()
                                    .withPublicationId(candidateDetails.publicationId())
                                    .withIsApplicable(true)
-                                   .withCreators(mapToVerifiedCreators(candidateDetails.verifiedCreatorDtos()))
+                                   .withCreators(mapToVerifiedCreators(candidateDetails.verifiedCreators()))
                                    .withLevel(Level.parse(candidateDetails.level()))
                                    .withInstanceType(candidateDetails.instanceType())
                                    .withPublicationDate(mapToPublicationDate(publicationDate))
@@ -86,7 +84,7 @@ public class NviService {
 
     //TODO: Remove JacocoGenerated when case for existing candidate is implemented
     @JacocoGenerated
-    private boolean isNotExistingCandidate(EvaluatedCandidateDto evaluatedCandidate) {
-        return !exists(evaluatedCandidate.candidateDetailsDto().publicationId());
+    private boolean isNotExistingCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
+        return !exists(evaluatedCandidate.candidateDetails().publicationId());
     }
 }

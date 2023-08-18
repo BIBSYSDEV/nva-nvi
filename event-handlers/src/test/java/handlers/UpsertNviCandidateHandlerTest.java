@@ -24,10 +24,11 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.model.dao.Candidate;
 import no.sikt.nva.nvi.common.model.dao.Level;
-import no.sikt.nva.nvi.common.model.dto.CandidateDetailsDto;
-import no.sikt.nva.nvi.common.model.dto.EvaluatedCandidateDto;
-import no.sikt.nva.nvi.common.model.dto.PublicationDateDto;
-import no.sikt.nva.nvi.common.model.dto.VerifiedCreatorDto;
+import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
+import no.sikt.nva.nvi.common.model.events.CandidateStatus;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.test.TestUtils;
 import nva.commons.logutils.LogUtils;
@@ -40,7 +41,6 @@ public class UpsertNviCandidateHandlerTest {
 
     public static final Context CONTEXT = mock(Context.class);
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
-    public static final String CANDIDATE = "Candidate";
     FakeNviCandidateRepository fakeNviCandidateRepository;
     private UpsertNviCandidateHandler handler;
 
@@ -62,10 +62,10 @@ public class UpsertNviCandidateHandlerTest {
     }
 
     @ParameterizedTest
-    @MethodSource("invalidUpsertCandidateRequests")
-    void shouldLogErrorWhenMessageBodyContainsRequiredFieldNull(EvaluatedCandidateDto evaluatedCandidateDto) {
+    @MethodSource("invalidCandidateEvaluatedMessages")
+    void shouldLogErrorWhenMessageBodyContainsRequiredFieldNull(CandidateEvaluatedMessage message) {
         var appender = LogUtils.getTestingAppenderForRootLogger();
-        var sqsEvent = createEvent(evaluatedCandidateDto);
+        var sqsEvent = createEvent(message);
 
         handler.handleRequest(sqsEvent, CONTEXT);
 
@@ -75,13 +75,13 @@ public class UpsertNviCandidateHandlerTest {
     @Test
     void shouldSaveNewNviCandidateWithPendingInstitutionApprovalsIfCandidateDoesNotExist() {
         var identifier = UUID.randomUUID();
-        var verifiedCreators = List.of(
-            new VerifiedCreatorDto(randomUri(), List.of(randomUri())));
+        var verifiedCreators = List.of(randomCreator());
         var instanceType = randomString();
         var randomLevel = randomElement(Level.values());
         var publicationDate = randomPublicationDate();
 
-        var sqsEvent = createEvent(identifier, verifiedCreators, instanceType, randomLevel, publicationDate);
+        var sqsEvent = createEvent(identifier, verifiedCreators, instanceType, randomLevel, publicationDate
+        );
         handler.handleRequest(sqsEvent, CONTEXT);
 
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType, randomLevel,
@@ -91,20 +91,24 @@ public class UpsertNviCandidateHandlerTest {
             is(equalTo(expectedCandidate)));
     }
 
-    private static Stream<EvaluatedCandidateDto> invalidUpsertCandidateRequests() {
-        return Stream.of(new EvaluatedCandidateDto(null, null, null),
-                         new EvaluatedCandidateDto(randomUri(), randomString(),
-                                                   new CandidateDetailsDto(null, randomString(),
-                                                                           randomElement(Level.values()).getValue(),
-                                                                           randomPublicationDate(),
-                                                                           List.of(randomVerifiedCreator()))),
-                         new EvaluatedCandidateDto(randomUri(), null,
-                                                   new CandidateDetailsDto(randomUri(), randomString(),
-                                                                           randomElement(
-                                                                               Level.values()).getValue(),
-                                                                           randomPublicationDate(),
-                                                                           List.of(
-                                                                               randomVerifiedCreator()))));
+    private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
+        return Stream.of(new CandidateEvaluatedMessage(null, null, null),
+                         new CandidateEvaluatedMessage.Builder()
+                             .withStatus(randomElement(CandidateStatus.values()))
+                             .withPublicationBucketUri(randomUri())
+                             .withCandidateDetails(new CandidateDetails(null,
+                                                                        randomString(),
+                                                                        randomElement(Level.values()).getValue(),
+                                                                        randomPublicationDate(),
+                                                                        List.of(randomCreator()))).build(),
+                         new CandidateEvaluatedMessage.Builder()
+                             .withStatus(randomElement(CandidateStatus.values()))
+                             .withPublicationBucketUri(null)
+                             .withCandidateDetails(new CandidateDetails(randomUri(),
+                                                                        randomString(),
+                                                                        randomElement(Level.values()).getValue(),
+                                                                        randomPublicationDate(),
+                                                                        List.of(randomCreator()))).build());
     }
 
     private static SQSEvent createEventWithInvalidBody() {
@@ -119,41 +123,43 @@ public class UpsertNviCandidateHandlerTest {
 
     //TODO: shouldMarkCandidateAsNotApplicableIfExistingCandidateBecomesNonCandidate
 
-    private static VerifiedCreatorDto randomVerifiedCreator() {
-        return new VerifiedCreatorDto(randomUri(), List.of(randomUri()));
+    private static CandidateDetails.Creator randomCreator() {
+        return new CandidateDetails.Creator(randomUri(), List.of(randomUri()));
     }
 
-    private static SQSEvent createEvent(EvaluatedCandidateDto evaluatedCandidateDto) {
+    private static SQSEvent createEvent(CandidateEvaluatedMessage candidateEvaluatedMessage) {
         var sqsEvent = new SQSEvent();
         var message = new SQSMessage();
-        var body = attempt(() -> objectMapper.writeValueAsString(evaluatedCandidateDto)).orElseThrow();
+        var body = attempt(() -> objectMapper.writeValueAsString(candidateEvaluatedMessage)).orElseThrow();
         message.setBody(body);
         sqsEvent.setRecords(List.of(message));
         return sqsEvent;
     }
 
-    private SQSEvent createEvent(UUID identifier, List<VerifiedCreatorDto> verifiedCreators, String instanceType,
-                                 Level randomLevel, PublicationDateDto publicationDate) {
-        return createEvent(new EvaluatedCandidateDto(generateS3BucketUri(identifier),
-                                                     CANDIDATE,
-                                                     new CandidateDetailsDto(generatePublicationId(identifier),
-                                                                             instanceType,
-                                                                             randomLevel.getValue(),
-                                                                             publicationDate,
-                                                                             verifiedCreators)));
+    private SQSEvent createEvent(UUID identifier, List<Creator> verifiedCreators, String instanceType,
+                                 Level randomLevel, PublicationDate publicationDate) {
+        return createEvent(new CandidateEvaluatedMessage.Builder()
+                               .withStatus(CandidateStatus.CANDIDATE)
+                               .withPublicationBucketUri(generateS3BucketUri(identifier))
+                               .withCandidateDetails(new CandidateDetails(generatePublicationId(identifier),
+                                                                          instanceType,
+                                                                          randomLevel.getValue(),
+                                                                          publicationDate,
+                                                                          verifiedCreators))
+                               .build());
     }
 
-    private Candidate createExpectedCandidate(UUID identifier, List<VerifiedCreatorDto> verifiedCreators,
+    private Candidate createExpectedCandidate(UUID identifier, List<Creator> creators,
                                               String instanceType,
-                                              Level level, PublicationDateDto publicationDate) {
+                                              Level level, PublicationDate publicationDate) {
         return new Candidate.Builder()
                    .withPublicationId(generatePublicationId(identifier))
-                   .withCreators(mapToVerifiedCreators(verifiedCreators))
+                   .withCreators(mapToVerifiedCreators(creators))
                    .withInstanceType(instanceType)
                    .withLevel(level)
                    .withIsApplicable(true)
                    .withPublicationDate(toPublicationDate(publicationDate))
-                   .withApprovalStatuses(extractNviInstitutionIds(verifiedCreators)
+                   .withApprovalStatuses(extractNviInstitutionIds(creators)
                                              .map(TestUtils::createPendingApprovalStatus)
                                              .toList())
                    .build();

@@ -17,17 +17,16 @@ import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.dao.Candidate;
 import no.sikt.nva.nvi.common.model.dao.Level;
-import no.sikt.nva.nvi.common.model.dto.CandidateDetailsDto;
-import no.sikt.nva.nvi.common.model.dto.EvaluatedCandidateDto;
-import no.sikt.nva.nvi.common.model.dto.PublicationDateDto;
-import no.sikt.nva.nvi.common.model.dto.VerifiedCreatorDto;
+import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
+import no.sikt.nva.nvi.common.model.events.CandidateStatus;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class NviServiceTest {
-
-    public static final String CANDIDATE = "Candidate";
 
     private NviService nviService;
 
@@ -43,7 +42,7 @@ public class NviServiceTest {
     @Test
     void shouldCreateCandidateWithPendingInstitutionApprovals() {
         var identifier = UUID.randomUUID();
-        var verifiedCreators = List.of(new VerifiedCreatorDto(randomUri(), List.of(randomUri())));
+        var verifiedCreators = List.of(new Creator(randomUri(), List.of(randomUri())));
         var instanceType = randomString();
         var randomLevel = randomElement(Level.values());
         var publicationDate = randomPublicationDate();
@@ -58,30 +57,32 @@ public class NviServiceTest {
                    is(equalTo(Optional.of(expectedCandidate))));
     }
 
-    private EvaluatedCandidateDto createEvaluatedCandidateDto(UUID identifier,
-                                                              List<VerifiedCreatorDto> verifiedCreators,
-                                                              String instanceType, Level randomLevel,
-                                                              PublicationDateDto publicationDate) {
-        return new EvaluatedCandidateDto(generateS3BucketUri(identifier),
-                                         CANDIDATE,
-                                         new CandidateDetailsDto(generatePublicationId(identifier),
-                                                                 instanceType,
-                                                                 randomLevel.getValue(),
-                                                                 publicationDate,
-                                                                 verifiedCreators));
+    private CandidateEvaluatedMessage createEvaluatedCandidateDto(UUID identifier,
+                                                                  List<CandidateDetails.Creator> creators,
+                                                                  String instanceType, Level randomLevel,
+                                                                  PublicationDate publicationDate) {
+        return new CandidateEvaluatedMessage.Builder()
+                   .withStatus(CandidateStatus.CANDIDATE)
+                   .withPublicationBucketUri(generateS3BucketUri(identifier))
+                   .withCandidateDetails(new CandidateDetails(generatePublicationId(identifier),
+                                                              instanceType,
+                                                              randomLevel.getValue(),
+                                                              publicationDate,
+                                                              creators))
+                   .build();
     }
 
-    private Candidate createExpectedCandidate(UUID identifier, List<VerifiedCreatorDto> verifiedCreators,
+    private Candidate createExpectedCandidate(UUID identifier, List<CandidateDetails.Creator> creators,
                                               String instanceType,
-                                              Level level, PublicationDateDto publicationDate) {
+                                              Level level, PublicationDate publicationDate) {
         return new Candidate.Builder()
                    .withPublicationId(generatePublicationId(identifier))
-                   .withCreators(mapToVerifiedCreators(verifiedCreators))
+                   .withCreators(mapToVerifiedCreators(creators))
                    .withInstanceType(instanceType)
                    .withLevel(level)
                    .withIsApplicable(true)
                    .withPublicationDate(toPublicationDate(publicationDate))
-                   .withApprovalStatuses(extractNviInstitutionIds(verifiedCreators)
+                   .withApprovalStatuses(extractNviInstitutionIds(creators)
                                              .map(TestUtils::createPendingApprovalStatus)
                                              .toList())
                    .build();

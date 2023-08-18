@@ -7,7 +7,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Objects;
-import no.sikt.nva.nvi.common.model.dto.EvaluatedCandidateDto;
+import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.common.service.NviService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,27 +35,27 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         return null;
     }
 
-    private static EvaluatedCandidateDto validateRequiredFields(EvaluatedCandidateDto request) {
+    private static CandidateEvaluatedMessage validateRequiredFields(CandidateEvaluatedMessage request) {
         Objects.requireNonNull(request.publicationBucketUri());
-        Objects.requireNonNull(request.type());
-        Objects.requireNonNull(request.candidateDetailsDto());
-        Objects.requireNonNull(request.candidateDetailsDto().publicationId());
+        Objects.requireNonNull(request.status());
+        Objects.requireNonNull(request.candidateDetails());
+        Objects.requireNonNull(request.candidateDetails().publicationId());
         return request;
     }
 
-    private void upsertNviCandidate(EvaluatedCandidateDto evaluatedCandidate) {
+    private void upsertNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
         nviService.upsertCandidate(evaluatedCandidate);
     }
 
-    private EvaluatedCandidateDto parseBody(String body) {
-        return attempt(() -> dtoObjectMapper.readValue(body, EvaluatedCandidateDto.class))
+    private CandidateEvaluatedMessage parseBody(String body) {
+        return attempt(() -> dtoObjectMapper.readValue(body, CandidateEvaluatedMessage.class))
                    .orElse(failure -> {
                        logInvalidMessageBody(body);
                        return null;
                    });
     }
 
-    private EvaluatedCandidateDto validate(EvaluatedCandidateDto request) {
+    private CandidateEvaluatedMessage validate(CandidateEvaluatedMessage request) {
         return attempt(() -> validateRequiredFields(request)).orElse(failure -> {
             logInvalidMessageBody(request.toString());
             return null;

@@ -11,8 +11,8 @@ import no.sikt.nva.nvi.common.model.dao.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.dao.PublicationDate;
 import no.sikt.nva.nvi.common.model.dao.Status;
 import no.sikt.nva.nvi.common.model.dao.VerifiedCreator;
-import no.sikt.nva.nvi.common.model.dto.PublicationDateDto;
-import no.sikt.nva.nvi.common.model.dto.VerifiedCreatorDto;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
 import nva.commons.core.paths.UriWrapper;
 
 public final class TestUtils {
@@ -32,14 +32,14 @@ public final class TestUtils {
                    .build();
     }
 
-    public static PublicationDateDto randomPublicationDate() {
+    public static CandidateDetails.PublicationDate randomPublicationDate() {
         var randomDate = randomLocalDate();
-        return new PublicationDateDto(String.valueOf(randomDate.getYear()),
-                                      String.valueOf(randomDate.getMonthValue()),
-                                      String.valueOf(randomDate.getDayOfMonth()));
+        return new CandidateDetails.PublicationDate(String.valueOf(randomDate.getYear()),
+                                                    String.valueOf(randomDate.getMonthValue()),
+                                                    String.valueOf(randomDate.getDayOfMonth()));
     }
 
-    public static PublicationDate toPublicationDate(PublicationDateDto publicationDate) {
+    public static PublicationDate toPublicationDate(CandidateDetails.PublicationDate publicationDate) {
         return new PublicationDate(publicationDate.year(),
                                    publicationDate.month(),
                                    publicationDate.day());
@@ -56,13 +56,13 @@ public final class TestUtils {
                    .getUri();
     }
 
-    public static List<VerifiedCreator> mapToVerifiedCreators(List<VerifiedCreatorDto> creatorDtos) {
-        return creatorDtos.stream()
+    public static List<VerifiedCreator> mapToVerifiedCreators(List<Creator> creators) {
+        return creators.stream()
                    .map(creator -> new VerifiedCreator(creator.id(), creator.nviInstitutions()))
                    .toList();
     }
 
-    public static Stream<URI> extractNviInstitutionIds(List<VerifiedCreatorDto> creators) {
+    public static Stream<URI> extractNviInstitutionIds(List<Creator> creators) {
         return creators.stream()
                    .flatMap(creatorDto -> creatorDto.nviInstitutions().stream())
                    .distinct();
