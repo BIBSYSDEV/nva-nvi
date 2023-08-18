@@ -236,6 +236,14 @@ Resources:
       Timeout: 30
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
+      Events:
+        FanoutSource:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt NviTable.StreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 10
+            Enabled: true
 
 
   DeleteNviCandidateHandler:

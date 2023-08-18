@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.evaluator;
 
+import java.net.URI;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.evaluator.aws.S3StorageReader;
 import no.unit.nva.events.models.EventReference;
@@ -14,7 +15,12 @@ class FakeStorageReader implements StorageReader<EventReference> {
     }
 
     @Override
-    public String read(EventReference blob) {
-        return reader.read(blob);
+    public String readMessage(EventReference blob) {
+        return reader.readMessage(blob);
+    }
+
+    @Override
+    public String readUri(URI uri) {
+        return null;
     }
 }

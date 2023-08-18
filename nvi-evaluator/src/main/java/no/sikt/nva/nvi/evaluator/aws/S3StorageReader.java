@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.evaluator.aws;
 
+import java.net.URI;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.unit.nva.events.models.EventReference;
 import no.unit.nva.s3.S3Driver;
@@ -27,7 +28,12 @@ public class S3StorageReader implements StorageReader<EventReference> {
     @JacocoGenerated
 
     @Override
-    public String read(EventReference blob) {
+    public String readMessage(EventReference blob) {
         return s3Driver.getFile(UriWrapper.fromUri(blob.getUri()).toS3bucketPath());
+    }
+
+    @Override
+    public String readUri(URI uri) {
+        return null;
     }
 }

@@ -76,13 +76,13 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     @Override
-    public void removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) throws IOException {
-        client.delete(contructDeleteRequest(indexDocument));
+    public void removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) {
+        attempt(() -> client.delete(contructDeleteRequest(indexDocument))).orElseThrow();
     }
 
     @Override
-    public SearchResponse<NviCandidateIndexDocument> search(Query query) throws IOException {
-        return client.search(constructSearchRequest(query), NviCandidateIndexDocument.class);
+    public SearchResponse<NviCandidateIndexDocument> search(Query query)  {
+        return attempt(() -> client.search(constructSearchRequest(query), NviCandidateIndexDocument.class)).orElseThrow();
     }
 
     @Override

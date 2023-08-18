@@ -55,7 +55,7 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
                                        AwsEventBridgeEvent<AwsEventBridgeDetail<EventReference>> event,
                                        Context context) {
         try {
-            var readInput = storageReader.read(input);
+            var readInput = storageReader.readMessage(input);
             var jsonNode = extractBodyFromContent(readInput);
             var candidateType = calculator.calculateNvi(jsonNode);
             handleCandidateType(input.getUri(), candidateType);

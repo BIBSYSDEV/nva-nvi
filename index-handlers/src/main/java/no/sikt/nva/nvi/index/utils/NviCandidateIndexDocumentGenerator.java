@@ -31,8 +31,8 @@ import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.Contexts;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.index.model.NviCandidateMessageBody;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
+import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
 public final class NviCandidateIndexDocumentGenerator {
@@ -42,11 +42,11 @@ public final class NviCandidateIndexDocumentGenerator {
     private NviCandidateIndexDocumentGenerator() {
     }
 
-    public static NviCandidateIndexDocument generateNviCandidateIndexDocument(String resource,
-                                                                              NviCandidateMessageBody candidate) {
+    public static NviCandidateIndexDocument generateDocument(String resource,
+                                                             List<String> affiliationApprovals) {
         return createNviCandidateIndexDocument(
             attempt(() -> dtoObjectMapper.readTree(resource)).map(root -> root.at("/body")).orElseThrow(),
-            candidate.affiliationApprovals());
+            affiliationApprovals);
     }
 
     private static NviCandidateIndexDocument createNviCandidateIndexDocument(JsonNode resource,

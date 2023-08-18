@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.aws;
 
+import java.net.URI;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.index.model.NviCandidateMessageBody;
 import no.unit.nva.s3.S3Driver;
@@ -25,8 +26,14 @@ public class S3StorageReader implements StorageReader<NviCandidateMessageBody> {
     }
 
     @Override
-    public String read(NviCandidateMessageBody candidate) {
+    public String readMessage(NviCandidateMessageBody candidate) {
         var resourceRelativePath = UriWrapper.fromUri(candidate.publicationBucketUri()).toS3bucketPath();
+        LOGGER.info("Getting s3 path for file {}", resourceRelativePath.toString());
+        return s3Driver.getFile(resourceRelativePath);
+    }
+
+    public String readUri(URI uri) {
+        var resourceRelativePath = UriWrapper.fromUri(uri).toS3bucketPath();
         LOGGER.info("Getting s3 path for file {}", resourceRelativePath.toString());
         return s3Driver.getFile(resourceRelativePath);
     }

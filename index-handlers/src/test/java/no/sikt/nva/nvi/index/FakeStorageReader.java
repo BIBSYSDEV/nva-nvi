@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index;
 
+import java.net.URI;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.index.model.NviCandidateMessageBody;
 import no.unit.nva.s3.S3Driver;
@@ -19,8 +20,13 @@ class FakeStorageReader implements StorageReader<NviCandidateMessageBody> {
     }
 
     @Override
-    public String read(NviCandidateMessageBody blob) {
+    public String readMessage(NviCandidateMessageBody blob) {
         var resourceRelativePath = UriWrapper.fromUri(blob.publicationBucketUri()).toS3bucketPath();
         return s3Driver.getFile(resourceRelativePath);
+    }
+
+    @Override
+    public String readUri(URI uri) {
+        return null;
     }
 }
