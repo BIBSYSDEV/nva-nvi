@@ -5,5 +5,7 @@ dependencies {
     implementation project(':nvi-commons')
     implementation libs.nva.commons.apigateway
     implementation libs.nva.commons.core
+    implementation libs.nva.json
+    implementation libs.jackson.databind
     testImplementation libs.nva.testutils
 }
