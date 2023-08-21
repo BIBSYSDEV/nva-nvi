@@ -275,3 +275,26 @@ Resources:
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
+
+  # ======================= API HANDLERS ========================
+
+  FetchNviCandidateHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.unit.nva.nvi.fetch.FetchNviCandidateHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+          API_HOST: !Ref ApiDomain
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /candidates/{publicationIdentifier}
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
