@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common;
 
+import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -24,7 +25,10 @@ public record ReportingStatusTest() {
     }
 
     private static Period randomPeriod() {
-        return new Period.Builder().withYear(randomInteger()).withClosed(Instant.now()).build();
+        return new Period.Builder().withYear(randomInteger())
+                   .withStart(randomInstant())
+                   .withEnd(randomInstant())
+                   .build();
     }
 
     private ReportingStatus randomReportingStatus() {

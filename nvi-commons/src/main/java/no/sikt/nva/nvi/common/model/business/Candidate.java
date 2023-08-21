@@ -4,32 +4,34 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.List;
+import nva.commons.core.JacocoGenerated;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 public record Candidate(URI publicationId,
-                        Period period,
+
+                        URI publicationBucketUri,
                         boolean isApplicable,
                         String instanceType,
                         Level level,
                         PublicationDate publicationDate,
                         boolean isInternationalCollaboration,
                         int creatorCount,
-                        List<VerifiedCreator> creators,
+                        List<Creator> creators,
                         List<ApprovalStatus> approvalStatuses,
                         List<Note> notes) {
 
     public static final class Builder {
 
         private URI publicationId;
-        private Period period;
+        private URI publicationBucketUri;
         private boolean isApplicable;
         private String instanceType;
         private Level level;
         private PublicationDate publicationDate;
         private boolean isInternationalCollaboration;
         private int creatorCount;
-        private List<VerifiedCreator> creators;
+        private List<Creator> creators;
         private List<ApprovalStatus> approvalStatuses;
         private List<Note> notes;
 
@@ -41,8 +43,9 @@ public record Candidate(URI publicationId,
             return this;
         }
 
-        public Builder withPeriod(Period period) {
-            this.period = period;
+        @JacocoGenerated
+        public Builder withPublicationBucketUri(URI publicationBucketUri) {
+            this.publicationBucketUri = publicationBucketUri;
             return this;
         }
 
@@ -76,7 +79,7 @@ public record Candidate(URI publicationId,
             return this;
         }
 
-        public Builder withCreators(List<VerifiedCreator> creators) {
+        public Builder withCreators(List<Creator> creators) {
             this.creators = creators;
             return this;
         }
@@ -92,8 +95,9 @@ public record Candidate(URI publicationId,
         }
 
         public Candidate build() {
-            return new Candidate(publicationId, period, isApplicable, instanceType, level, publicationDate,
-                                 isInternationalCollaboration, creatorCount, creators, approvalStatuses, notes);
+            return new Candidate(publicationId, publicationBucketUri, isApplicable, instanceType, level,
+                                 publicationDate, isInternationalCollaboration, creatorCount, creators,
+                                 approvalStatuses, notes);
         }
     }
 }

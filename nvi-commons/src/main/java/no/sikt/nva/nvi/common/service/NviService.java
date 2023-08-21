@@ -9,10 +9,9 @@ import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.business.PublicationDate;
 import no.sikt.nva.nvi.common.model.business.Status;
-import no.sikt.nva.nvi.common.model.business.VerifiedCreator;
+import no.sikt.nva.nvi.common.model.business.Creator;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
-import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
 import nva.commons.core.JacocoGenerated;
 
 public class NviService {
@@ -30,9 +29,9 @@ public class NviService {
         }
     }
 
-    private static List<VerifiedCreator> mapToVerifiedCreators(List<Creator> creators) {
+    private static List<Creator> mapToVerifiedCreators(List<CandidateDetails.Creator> creators) {
         return creators.stream()
-                   .map(verifiedCreatorDto -> new VerifiedCreator(
+                   .map(verifiedCreatorDto -> new Creator(
                        verifiedCreatorDto.id(), verifiedCreatorDto.nviInstitutions()))
                    .toList();
     }

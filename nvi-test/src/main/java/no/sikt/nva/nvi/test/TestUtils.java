@@ -10,9 +10,8 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.PublicationDate;
 import no.sikt.nva.nvi.common.model.business.Status;
-import no.sikt.nva.nvi.common.model.business.VerifiedCreator;
+import no.sikt.nva.nvi.common.model.business.Creator;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
-import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
 import nva.commons.core.paths.UriWrapper;
 
 public final class TestUtils {
@@ -56,13 +55,13 @@ public final class TestUtils {
                    .getUri();
     }
 
-    public static List<VerifiedCreator> mapToVerifiedCreators(List<Creator> creators) {
+    public static List<Creator> mapToVerifiedCreators(List<CandidateDetails.Creator> creators) {
         return creators.stream()
-                   .map(creator -> new VerifiedCreator(creator.id(), creator.nviInstitutions()))
+                   .map(creator -> new Creator(creator.id(), creator.nviInstitutions()))
                    .toList();
     }
 
-    public static Stream<URI> extractNviInstitutionIds(List<Creator> creators) {
+    public static Stream<URI> extractNviInstitutionIds(List<CandidateDetails.Creator> creators) {
         return creators.stream()
                    .flatMap(creatorDto -> creatorDto.nviInstitutions().stream())
                    .distinct();
