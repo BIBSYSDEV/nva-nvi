@@ -8,6 +8,8 @@ dependencies {
     implementation libs.nva.json
     implementation libs.nva.s3
     implementation libs.aws.sdk2.s3
+    implementation libs.aws.sdk2.dynamodb
+    implementation libs.aws.sdk2.dynamodbenhanced
 
     testImplementation project(':nvi-test')
 }
