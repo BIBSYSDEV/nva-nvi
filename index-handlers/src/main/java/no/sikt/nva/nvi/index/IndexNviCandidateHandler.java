@@ -46,47 +46,59 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
         return null;
     }
 
+    protected OperationType getEventType(DynamodbStreamRecord record) {
+        return OperationType.fromValue(record.getEventName());
+    }
+
     //TODO: Implement when we have DynamoDbRecord
-    private static URI extractBucketUri(DynamodbStreamRecord dynamodbStreamRecord) {
-        return URI.create("example.com" + dynamodbStreamRecord.getEventName());
+    private static URI extractBucketUri(DynamodbStreamRecord record) {
+        return URI.create("example.com" + record.getEventName());
     }
 
-    private static OperationType getEventType(DynamodbStreamRecord dynamodbStreamRecord) {
-        return OperationType.fromValue(dynamodbStreamRecord.getEventName());
-    }
-
-    private void updateIndex(DynamodbStreamRecord dynamodbStreamRecord) {
-        switch (getEventType(dynamodbStreamRecord)) {
-            case INSERT, MODIFY -> addDocumentToIndex(dynamodbStreamRecord);
-            default -> removeDocumentFromIndex(dynamodbStreamRecord);
+    private void updateIndex(DynamodbStreamRecord record) {
+        if (isInsert(record) || isModify(record)) {
+            addDocumentToIndex(record);
+        }
+        if (isRemove(record)) {
+            removeDocumentFromIndex(record);
         }
     }
 
-    private void removeDocumentFromIndex(DynamodbStreamRecord dynamodbStreamRecord) {
-        openSearchClient.removeDocumentFromIndex(toCandidate(dynamodbStreamRecord));
+    private boolean isRemove(DynamodbStreamRecord record) {
+        return getEventType(record).equals(OperationType.REMOVE);
+    }
+
+    private boolean isModify(DynamodbStreamRecord record) {
+        return getEventType(record).equals(OperationType.MODIFY);
+    }
+
+    private boolean isInsert(DynamodbStreamRecord record) {
+        return getEventType(record).equals(OperationType.INSERT);
+    }
+
+    private void removeDocumentFromIndex(DynamodbStreamRecord record) {
+        openSearchClient.removeDocumentFromIndex(toCandidate(record));
         LOGGER.info(DOCUMENT_REMOVED_MESSAGE);
     }
 
-    private void addDocumentToIndex(DynamodbStreamRecord dynamodbStreamRecord) {
-        var approvalAffiliations = extractAffiliationApprovals(dynamodbStreamRecord);
+    private void addDocumentToIndex(DynamodbStreamRecord record) {
+        var approvalAffiliations = extractAffiliationApprovals(record);
 
-        attempt(() -> extractBucketUri(dynamodbStreamRecord)).map(storageReader::readUri)
-                                                             .map(string -> generateDocument(string,
-                                                                                             approvalAffiliations))
-                                                             .forEach(openSearchClient::addDocumentToIndex);
+        attempt(() -> extractBucketUri(record)).map(storageReader::readUri)
+                                               .map(string -> generateDocument(string, approvalAffiliations))
+                                               .forEach(openSearchClient::addDocumentToIndex);
 
         LOGGER.info(DOCUMENT_ADDED_MESSAGE);
     }
 
     //TODO: Implement when we have DynamoDbRecord
-    private List<String> extractAffiliationApprovals(DynamodbStreamRecord dynamodbStreamRecord) {
-        var newImage = dynamodbStreamRecord.getDynamodb().getNewImage();
+    private List<String> extractAffiliationApprovals(DynamodbStreamRecord record) {
         return List.of("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     }
 
     //TODO::Have to map DynamoDbRecord to IndexDocument when we know how DynamoRecord looks like
-    private NviCandidateIndexDocument toCandidate(DynamodbStreamRecord dynamodbStreamRecord) {
-        var image = dynamodbStreamRecord.getDynamodb().getNewImage();
+    private NviCandidateIndexDocument toCandidate(DynamodbStreamRecord record) {
+        var image = record.getDynamodb().getNewImage();
         return new NviCandidateIndexDocument.Builder().withIdentifier(image.toString()).build();
     }
 }
