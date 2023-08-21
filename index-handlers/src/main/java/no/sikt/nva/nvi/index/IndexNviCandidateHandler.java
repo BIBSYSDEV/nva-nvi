@@ -82,7 +82,7 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     }
 
     private void addDocumentToIndex(DynamodbStreamRecord record) {
-        var approvalAffiliations = extractAffiliationApprovals(record);
+        var approvalAffiliations = extractAffiliationApprovals();
 
         attempt(() -> extractBucketUri(record)).map(storageReader::readUri)
                                                .map(string -> generateDocument(string, approvalAffiliations))
@@ -92,7 +92,7 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     }
 
     //TODO: Implement when we have DynamoDbRecord
-    private List<String> extractAffiliationApprovals(DynamodbStreamRecord record) {
+    private List<String> extractAffiliationApprovals() {
         return List.of("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     }
 
