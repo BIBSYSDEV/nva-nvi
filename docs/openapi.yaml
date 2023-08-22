@@ -39,8 +39,55 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /nvi-period:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NviPeriod'
+      description: 'Create nvi period'
+      security:
+        - CognitoUserPool: [
+          'https://api.nva.unit.no/scopes/backend',
+          'https://api.nva.unit.no/scopes/frontend',
+          'aws.cognito.signin.user.admin',
+        ]
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateNviPeriodHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        '201':
+          description: "Period created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NviPeriod"
+        '401':
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '500':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
 components:
   schemas:
+    NviPeriod:
+      type: object
+      properties:
+        publishingYear:
+          type: string
+        reportingDate:
+          type: string
     CandidateSearchResponse:
       type: object
       description: Search meta information, with results

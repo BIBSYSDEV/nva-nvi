@@ -7,16 +7,20 @@ import static no.sikt.nva.nvi.test.TestUtils.mapToVerifiedCreators;
 import static no.sikt.nva.nvi.test.TestUtils.randomPublicationDate;
 import static no.sikt.nva.nvi.test.TestUtils.toPublicationDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.model.business.Level;
+import no.sikt.nva.nvi.common.model.business.NviPeriod;
+import no.sikt.nva.nvi.common.model.business.Username;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.common.model.events.CandidateStatus;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
@@ -55,6 +59,27 @@ public class NviServiceTest {
                                                         publicationDate);
         assertThat(fakeNviCandidateRepository.findByPublicationId(expectedCandidate.publicationId()),
                    is(equalTo(Optional.of(expectedCandidate))));
+    }
+
+    //TODO: Change test when nviService is implemented
+    @Test
+    void shouldCreateNviPeriod() {
+        var period = createPeriod();
+        var persistedPeriod = nviService.createPeriod(period);
+        assertThat(nviService.getPeriod(period.publishingYear()), is(not(equalTo(period))));
+    }
+
+    private static NviPeriod createPeriod() {
+        var start = randomInstant();
+        return new NviPeriod.Builder()
+                   .withReportingDate(start)
+                   .withPublishingYear(randomString())
+                   .withCreatedBy(randomUsername())
+                   .build();
+    }
+
+    private static Username randomUsername() {
+        return new Username(randomString());
     }
 
     private CandidateEvaluatedMessage createEvaluatedCandidateDto(UUID identifier,

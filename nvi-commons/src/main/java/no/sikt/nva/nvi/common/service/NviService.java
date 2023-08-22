@@ -7,6 +7,7 @@ import no.sikt.nva.nvi.common.NviCandidateRepository;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.model.business.Level;
+import no.sikt.nva.nvi.common.model.business.NviPeriod;
 import no.sikt.nva.nvi.common.model.business.PublicationDate;
 import no.sikt.nva.nvi.common.model.business.Status;
 import no.sikt.nva.nvi.common.model.business.Creator;
@@ -27,6 +28,18 @@ public class NviService {
         if (isNotExistingCandidate(evaluatedCandidate) && isNviCandidate(evaluatedCandidate)) {
             createCandidate(evaluatedCandidate);
         }
+    }
+
+    //TODO: Implement persistence
+    public NviPeriod createPeriod(NviPeriod nviPeriod) {
+        return nviPeriod;
+    }
+
+    //TODO: Implement persistence
+    public NviPeriod getPeriod(String publishingYear) {
+        return new NviPeriod.Builder()
+                   .withPublishingYear(publishingYear)
+                   .build();
     }
 
     private static List<Creator> mapToVerifiedCreators(List<CandidateDetails.Creator> creators) {

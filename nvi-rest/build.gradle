@@ -5,5 +5,13 @@ dependencies {
     implementation project(':nvi-commons')
     implementation libs.nva.commons.apigateway
     implementation libs.nva.commons.core
+    implementation libs.nva.json
+    implementation libs.nva.commons.auth
+
     testImplementation libs.nva.testutils
+    testImplementation libs.bundles.testing
+}
+
+test {
+    environment("ALLOWED_ORIGIN", "*")
 }
