@@ -14,7 +14,7 @@ public record FetchCandidateResponse(
     List<Note> notes
 ) {
 
-    public static FetchCandidateResponse of(Candidate candidate) {
+    public static FetchCandidateResponse fromCandidate(Candidate candidate) {
         return new FetchCandidateResponse(
             candidate.publicationId(),
             candidate.approvalStatuses()

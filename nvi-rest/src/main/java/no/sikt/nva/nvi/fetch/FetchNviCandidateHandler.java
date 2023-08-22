@@ -30,7 +30,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, FetchCandi
                 .orElseThrow((failure) ->
                                  new BadRequestException("Missing publicationIdentifier"));
         return service.getCandidate(publicationIdentifier)
-                   .map(FetchCandidateResponse::of)
+                   .map(FetchCandidateResponse::fromCandidate)
                    .orElseThrow(() -> new NotFoundException(
                        "No candidate found for " + publicationIdentifier.toString()));
     }

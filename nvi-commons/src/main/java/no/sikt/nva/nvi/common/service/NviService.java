@@ -7,16 +7,16 @@ import java.util.Optional;
 import no.sikt.nva.nvi.common.NviCandidateRepository;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.model.business.Creator;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.business.PublicationDate;
 import no.sikt.nva.nvi.common.model.business.Status;
-import no.sikt.nva.nvi.common.model.business.Creator;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import nva.commons.core.JacocoGenerated;
-import nva.commons.core.attempt.Try;
 
 public class NviService {
+
     private final NviCandidateRepository nviCandidateRepository;
 
     public NviService(NviCandidateRepository nviCandidateRepository) {
@@ -69,15 +69,6 @@ public class NviService {
                                                       .build()).toList();
     }
 
-    private boolean exists(URI publicationId) {
-        return nviCandidateRepository.findByPublicationId(publicationId).isPresent();
-    }
-
-    private void createCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-        var pendingCandidate = toPendingCandidate(evaluatedCandidate.candidateDetails());
-        nviCandidateRepository.save(pendingCandidate);
-    }
-
     private static Candidate toPendingCandidate(CandidateDetails candidateDetails) {
         return new Candidate.Builder()
                    .withPublicationId(candidateDetails.publicationId())
@@ -88,6 +79,15 @@ public class NviService {
                    .withPublicationDate(mapToPublicationDate(candidateDetails.publicationDate()))
                    .withApprovalStatuses(generatePendingApprovalStatuses(extractInstitutionIds(candidateDetails)))
                    .build();
+    }
+
+    private boolean exists(URI publicationId) {
+        return nviCandidateRepository.findByPublicationId(publicationId).isPresent();
+    }
+
+    private void createCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
+        var pendingCandidate = toPendingCandidate(evaluatedCandidate.candidateDetails());
+        nviCandidateRepository.save(pendingCandidate);
     }
 
     //TODO: Remove JacocoGenerated when case for existing candidate is implemented
