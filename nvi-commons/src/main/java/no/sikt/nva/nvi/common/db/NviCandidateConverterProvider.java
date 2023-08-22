@@ -5,7 +5,7 @@ import software.amazon.awssdk.enhanced.dynamodb.AttributeConverter;
 import software.amazon.awssdk.enhanced.dynamodb.AttributeConverterProvider;
 import software.amazon.awssdk.enhanced.dynamodb.EnhancedType;
 
-public class NviCandidateConverterProvider implements AttributeConverterProvider<Set<CandidateDao>> {
+public class NviCandidateConverterProvider implements AttributeConverterProvider {
 
     @Override
     public <T> AttributeConverter<T> converterFor(EnhancedType<T> enhancedType) {

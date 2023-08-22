@@ -86,8 +86,11 @@ public class UpsertNviCandidateHandlerTest {
 
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType, randomLevel,
                                                         publicationDate);
+        var fetchedCandidate = fakeNviCandidateRepository.findByPublicationId(expectedCandidate.publicationId())
+                                   .orElse(null);
+
         assertThat(
-            fakeNviCandidateRepository.findByPublicationId(expectedCandidate.publicationId()).orElse(null),
+            Candidate.fromDb(fetchedCandidate),
             is(equalTo(expectedCandidate)));
     }
 

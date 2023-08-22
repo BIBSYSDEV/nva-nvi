@@ -53,8 +53,10 @@ public class NviServiceTest {
 
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType, randomLevel,
                                                         publicationDate);
-        assertThat(fakeNviCandidateRepository.findByPublicationId(expectedCandidate.publicationId()),
-                   is(equalTo(Optional.of(expectedCandidate))));
+        var fetchedCandidate = fakeNviCandidateRepository.findByPublicationId(generatePublicationId(identifier));
+
+        assertThat(Candidate.fromDb(fetchedCandidate.get()),
+                   is(equalTo(expectedCandidate)));
     }
 
     private CandidateEvaluatedMessage createEvaluatedCandidateDto(UUID identifier,

@@ -3,7 +3,9 @@ package no.sikt.nva.nvi.common.service;
 import static no.sikt.nva.nvi.common.model.events.CandidateStatus.CANDIDATE;
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.NviCandidateRepository;
+import no.sikt.nva.nvi.common.db.dto.CandidateDb;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.model.business.Level;
@@ -67,7 +69,12 @@ public class NviService {
 
     private void createCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
         var pendingCandidate = toPendingCandidate(evaluatedCandidate.candidateDetails());
-        nviCandidateRepository.save(pendingCandidate);
+        var candidateDb = pendingCandidate.toDb();
+        nviCandidateRepository.save(candidateDb);
+    }
+
+    public Optional<Candidate> findByPublicationId(URI publicationId) {
+        return nviCandidateRepository.findByPublicationId(publicationId).map(Candidate::fromDb);
     }
 
     private static Candidate toPendingCandidate(CandidateDetails candidateDetails) {

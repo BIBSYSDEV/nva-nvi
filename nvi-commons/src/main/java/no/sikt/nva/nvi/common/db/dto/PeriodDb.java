@@ -3,9 +3,9 @@ package no.sikt.nva.nvi.common.db.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
 import no.sikt.nva.nvi.common.db.WithCopy;
-import no.sikt.nva.nvi.common.db.dto.PeriodDbDto.Builder;
+import no.sikt.nva.nvi.common.db.dto.PeriodDb.Builder;
 
-public class PeriodDbDto implements WithCopy<Builder> {
+public class PeriodDb implements WithCopy<Builder> {
 
     public static final String CLOSED_FIELD = "closed";
     public static final String YEAR_FIELD = "year";
@@ -14,7 +14,7 @@ public class PeriodDbDto implements WithCopy<Builder> {
     @JsonProperty(YEAR_FIELD)
     private int year;
 
-    public PeriodDbDto(Instant closed, int year) {
+    public PeriodDb(Instant closed, int year) {
         this.closed = closed;
         this.year = year;
     }
@@ -42,8 +42,8 @@ public class PeriodDbDto implements WithCopy<Builder> {
             return this;
         }
 
-        public PeriodDbDto build() {
-            return new PeriodDbDto(closed, year);
+        public PeriodDb build() {
+            return new PeriodDb(closed, year);
         }
     }
 }

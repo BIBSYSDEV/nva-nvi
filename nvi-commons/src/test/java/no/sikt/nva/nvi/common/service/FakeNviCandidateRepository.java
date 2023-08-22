@@ -5,23 +5,25 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import no.sikt.nva.nvi.common.NviCandidateRepository;
+import no.sikt.nva.nvi.common.db.dto.CandidateDb;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 
 public class FakeNviCandidateRepository implements NviCandidateRepository {
 
-    private final Map<URI, Candidate> candidateMap;
+    private final Map<URI, CandidateDb> candidateMap;
 
     public FakeNviCandidateRepository() {
         this.candidateMap = new ConcurrentHashMap<>();
     }
 
     @Override
-    public void save(Candidate candidate) {
-        candidateMap.put(candidate.publicationId(), candidate);
+    public CandidateDb save(CandidateDb candidate) {
+        candidateMap.put(candidate.getPublicationId(), candidate);
+        return candidate;
     }
 
     @Override
-    public Optional<Candidate> findByPublicationId(URI publicationId) {
+    public Optional<CandidateDb> findByPublicationId(URI publicationId) {
         return Optional.ofNullable(candidateMap.get(publicationId));
     }
 }

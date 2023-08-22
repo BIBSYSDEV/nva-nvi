@@ -2,11 +2,12 @@ package no.sikt.nva.nvi.common;
 
 import java.net.URI;
 import java.util.Optional;
+import no.sikt.nva.nvi.common.db.dto.CandidateDb;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 
 public interface NviCandidateRepository {
 
-    void save(Candidate candidate);
+    CandidateDb save(CandidateDb candidate);
 
-    Optional<Candidate> findByPublicationId(URI publicationId);
+    Optional<CandidateDb> findByPublicationId(URI publicationId);
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.time.Instant;
+import no.sikt.nva.nvi.common.db.dto.ApprovalStatusDb;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -11,6 +12,24 @@ public record ApprovalStatus(URI institutionId,
                              Status status,
                              Username finalizedBy,
                              Instant finalizedDate) {
+
+    public ApprovalStatusDb toDb() {
+        return new ApprovalStatusDb.Builder()
+                   .withInstitutionId(institutionId)
+                   .withStatus(status.toString())
+                   .withFinalizedBy(finalizedBy == null ? null : finalizedBy.toDb())
+                   .withFinalizedDate(finalizedDate)
+                   .build();
+    }
+
+    public static ApprovalStatus fromDb(ApprovalStatusDb db) {
+        return new ApprovalStatus.Builder()
+                   .withInstitutionId(db.getInstitutionId())
+                   .withStatus(Status.valueOf(db.getStatus()))
+                   .withFinalizedBy(db.getFinalizedBy() == null ? null : Username.fromDb(db.getFinalizedBy()))
+                   .withFinalizedDate(db.getFinalizedDate())
+                   .build();
+    }
 
     public static final class Builder {
 

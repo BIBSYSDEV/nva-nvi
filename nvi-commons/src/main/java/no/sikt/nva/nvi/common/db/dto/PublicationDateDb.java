@@ -1,11 +1,10 @@
 package no.sikt.nva.nvi.common.db.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.time.Instant;
 import no.sikt.nva.nvi.common.db.WithCopy;
-import no.sikt.nva.nvi.common.db.dto.PublicationDateDbDto.Builder;
+import no.sikt.nva.nvi.common.db.dto.PublicationDateDb.Builder;
 
-public class PublicationDateDbDto implements WithCopy<Builder> {
+public class PublicationDateDb implements WithCopy<Builder> {
 
     public static final String YEAR_FIELD = "year";
     public static final String MONTH_FIELD = "month";
@@ -18,7 +17,7 @@ public class PublicationDateDbDto implements WithCopy<Builder> {
     @JsonProperty(DAY)
     private String day;
 
-    public PublicationDateDbDto(String year, String month, String day) {
+    public PublicationDateDb(String year, String month, String day) {
         this.year = year;
         this.month = month;
         this.day = day;
@@ -27,6 +26,18 @@ public class PublicationDateDbDto implements WithCopy<Builder> {
     @Override
     public Builder copy() {
         return new Builder().withYear(year).withMonth(month).withDay(day);
+    }
+
+    public String getYear() {
+        return year;
+    }
+
+    public String getMonth() {
+        return month;
+    }
+
+    public String getDay() {
+        return day;
     }
 
     public static final class Builder {
@@ -53,8 +64,8 @@ public class PublicationDateDbDto implements WithCopy<Builder> {
             return this;
         }
 
-        public PublicationDateDbDto build() {
-            return new PublicationDateDbDto(year, month, day);
+        public PublicationDateDb build() {
+            return new PublicationDateDb(year, month, day);
         }
     }
 }

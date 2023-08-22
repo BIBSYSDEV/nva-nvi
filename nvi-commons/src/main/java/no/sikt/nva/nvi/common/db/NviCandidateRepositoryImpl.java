@@ -3,8 +3,10 @@ package no.sikt.nva.nvi.common.db;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.ApplicationConstants.NVI_TABLE_NAME;
 import static nva.commons.core.attempt.Try.attempt;
+import java.net.URI;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.NviCandidateRepository;
+import no.sikt.nva.nvi.common.db.dto.CandidateDb;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -19,20 +21,24 @@ public class NviCandidateRepositoryImpl extends DynamoRepository implements NviC
         this.table = this.client.table(NVI_TABLE_NAME, CandidateDao.TABLE_SCHEMA);
     }
 
-    private CandidateDto attemptToFetchObject(CandidateDto queryObject) {
+    private CandidateDb attemptToFetchObject(CandidateDb queryObject) {
+        throw new UnsupportedOperationException("Not implemented yet");
+        /*
         CandidateDao candidateDao = attempt(() -> CandidateDao.fromCandidateDto(queryObject))
                               .map(this::fetchItem)
                               .orElseThrow(DynamoRepository::handleError);
         return nonNull(candidateDao) ? candidateDao.toCandidateDto() : null;
+
+         */
     }
 
     @Override
-    public void save(Candidate candidate) {
+    public CandidateDb save(CandidateDb candidate) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Optional<Candidate> findByPublicationId(String publicationId) {
-        throw new UnsupportedOperationException("Not implemented yet");
+    public Optional<CandidateDb> findByPublicationId(URI publicationId) {
+        return Optional.empty();
     }
 }
