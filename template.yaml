@@ -204,6 +204,9 @@ Resources:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
           CANDIDATE_QUEUE_NAME: !Ref NewCandidateQueueName
           CANDIDATE_DLQ_NAME: !Ref NewCandidateDLQName
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Events:
         EventBridgeEvent:
           Type: EventBridgeRule
@@ -224,6 +227,9 @@ Resources:
       Timeout: 30
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
@@ -236,7 +242,14 @@ Resources:
       Timeout: 30
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
-
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
+      Events:
+        SqsEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt NewCandidateQueue.Arn
 
   DeleteNviCandidateHandler:
     Type: AWS::Serverless::Function
@@ -246,6 +259,9 @@ Resources:
       Timeout: 30
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
 
   SearchNviCandidatesHandler:
     Type: AWS::Serverless::Function
@@ -256,6 +272,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
