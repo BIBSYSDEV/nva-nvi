@@ -114,12 +114,12 @@ components:
         approvalStatus:
           type: array
           items:
-            $ref: '#/components/schema/ApprovalStatus'
+            $ref: '#/components/schemas/ApprovalStatus'
 
         notes:
           type: array
           items:
-            $ref: '#/components/schema/Note'
+            $ref: '#/components/schemas/Note'
     ApprovalStatus:
       type: object
       properties:
@@ -129,14 +129,14 @@ components:
           type: string
           enum: ['Approved','Pending','Rejected']
         finalizedBy:
-          $ref: '#/components/schema/Username'
+          $ref: '#/components/schemas/Username'
         finalizedDate:
           type: string
     Note:
       type: object
       properties:
         user:
-          $ref: '#/components/schema/Username'
+          $ref: '#/components/schemas/Username'
         text:
           type: string
         createdDate:
