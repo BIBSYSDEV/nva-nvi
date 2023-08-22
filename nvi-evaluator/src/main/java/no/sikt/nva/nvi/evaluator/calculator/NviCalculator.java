@@ -71,12 +71,12 @@ public class NviCalculator {
         }
         var verifiedCreators = extractVerifiedCreator(publication);
 
-        return hasNviInstitutions(verifiedCreators)
+        return doesNotHaveNviInstitutions(verifiedCreators)
                    ? createNonCandidateResponse(publication)
                    : createCandidateResponse(verifiedCreators, publication);
     }
 
-    private static boolean hasNviInstitutions(List<Creator> verifiedCreators) {
+    private static boolean doesNotHaveNviInstitutions(List<Creator> verifiedCreators) {
         return verifiedCreators.stream().map(Creator::nviInstitutions).flatMap(List::stream).toList().isEmpty();
     }
 
@@ -134,7 +134,7 @@ public class NviCalculator {
         return isHttpOk(response) || isNotFound(response);
     }
 
-    private static boolean getNviValue(HttpResponse<String> response) {
+    private static boolean mapToNviInstitutionValue(HttpResponse<String> response) {
         return attempt(response::body).map(NviCalculator::toCustomer)
                    .map(CustomerResponse::nviInstitution)
                    .orElse(failure -> false);
@@ -193,7 +193,7 @@ public class NviCalculator {
         var response = getResponse(affiliation);
         if (isSuccessOrNotFound(response)) {
             LOGGER.info(AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE, response.statusCode());
-            return getNviValue(response);
+            return mapToNviInstitutionValue(response);
         }
         throw new RuntimeException(COULD_NOT_FETCH_AFFILIATION_MESSAGE + affiliation);
     }
