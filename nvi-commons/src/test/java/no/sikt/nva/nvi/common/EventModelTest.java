@@ -22,12 +22,13 @@ import org.junit.jupiter.api.Test;
 public class EventModelTest {
 
     public static final String CANDIDATE = IoUtils.stringFromResources(Path.of("candidate.json"));
+    public static final String JSON_PTR_BODY = "/body";
 
     @Test
     void shouldParseIncomingEventAndConstructNviCandidateOutputEvent() {
         assertDoesNotThrow(
             () -> attempt(() -> dtoObjectMapper.readTree(CANDIDATE))
-                                     .map(json -> json.at("/body"))
+                                     .map(json -> json.at(JSON_PTR_BODY))
                                      .map(body -> dtoObjectMapper.readValue(body.toString(), Publication.class))
                                      .map(this::toEvent)
                                      .orElseThrow());
