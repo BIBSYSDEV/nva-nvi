@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.common.model.events;
 
 import java.net.URI;
 import java.util.List;
-import no.sikt.nva.nvi.common.model.events.Publication.EntityDescription.PublicationDate;
 import nva.commons.core.JacocoGenerated;
 
 @JacocoGenerated
@@ -16,6 +15,12 @@ public record NviCandidate(CandidateDetails candidateDetails) implements Candida
 
         public record Creator(URI id,
                               List<URI> nviInstitutions) {
+
+        }
+
+        public record PublicationDate(String day,
+                                      String month,
+                                      String year) {
 
         }
     }

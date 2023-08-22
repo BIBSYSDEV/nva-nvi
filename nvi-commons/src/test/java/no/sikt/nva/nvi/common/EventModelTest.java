@@ -12,10 +12,10 @@ import no.sikt.nva.nvi.common.model.events.CandidateStatus;
 import no.sikt.nva.nvi.common.model.events.NonNviCandidate;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.common.model.events.Publication;
 import no.sikt.nva.nvi.common.model.events.Publication.EntityDescription.Contributor;
 import no.sikt.nva.nvi.common.model.events.Publication.EntityDescription.Contributor.Affiliation;
-import no.sikt.nva.nvi.common.model.events.Publication.EntityDescription.PublicationDate;
 import nva.commons.core.ioutils.IoUtils;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +31,7 @@ public class EventModelTest {
                                      .map(json -> json.at(JSON_PTR_BODY))
                                      .map(body -> dtoObjectMapper.readValue(body.toString(), Publication.class))
                                      .map(this::toEvent)
-                                     .orElseThrow());
+                                     .orElseThrow());              
     }
 
     @Test
@@ -59,7 +59,6 @@ public class EventModelTest {
         message.publicationBucketUri();
         message.status();
         creator.nviInstitutions();
-
     }
 
     private static String getType(Publication publication) {
@@ -72,14 +71,17 @@ public class EventModelTest {
 
     private CandidateEvaluatedMessage toEvent(Publication publication) {
         return new CandidateEvaluatedMessage.Builder().withStatus(CandidateStatus.CANDIDATE)
-                                                      .withPublicationBucketUri(randomUri())
-                                                      .withCandidateDetails(toCandidateDetails(publication))
-                                                      .build();
+                   .withPublicationBucketUri(randomUri())
+                   .withCandidateDetails(toCandidateDetails(publication))
+                   .build();
     }
 
     private CandidateDetails toCandidateDetails(Publication publication) {
+        var publicationDate = publication.entityDescription().publicationDate();
         return new CandidateDetails(publication.id(), getType(publication), getLevel(publication),
-                                    publication.entityDescription().publicationDate(), getCreators(publication));
+                                    new PublicationDate(publicationDate.day(), publicationDate.month(),
+                                                        publicationDate.year()),
+                                    getCreators(publication));
     }
 
     private List<Creator> getCreators(Publication publication) {
@@ -89,8 +91,8 @@ public class EventModelTest {
     private Creator toCreator(Contributor contributor) {
         contributor.identity().verificationStatus();
         return new Creator(contributor.identity().id(), contributor.affiliations()
-                                                                   .stream()
-                                                                   .map(Affiliation::id)
-                                                                   .toList());
+                                                            .stream()
+                                                            .map(Affiliation::id)
+                                                            .toList());
     }
 }
