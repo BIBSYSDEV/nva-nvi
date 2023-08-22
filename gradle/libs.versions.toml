@@ -20,7 +20,7 @@ openSearchRestClient = { strictly = '2.8.0' }
 openSearchJava = { strictly = '2.4.0' }
 com-auth0-jwt = { strictly = '3.18.3' }
 guava = { strictly = '32.0.0-jre' }
-dynamoDbLocal = { strictly = '1.23.0' }
+dynamoDbLocal = { strictly = '1.19.0' }
 
 [libraries]
 junit-jupiter-api = { group = 'org.junit.jupiter', name = 'junit-jupiter-api', version.ref = 'junit' }

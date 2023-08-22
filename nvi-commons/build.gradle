@@ -1,6 +1,6 @@
 plugins {
     id 'nva.nvi.java-conventions'
-    id 'nva.nvi.dynamo-db'
+    id 'nva.nvi.dynamodblocal'
 }
 dependencies {
     implementation libs.jackson.databind
@@ -11,6 +11,11 @@ dependencies {
     implementation libs.aws.sdk2.dynamodb
     implementation libs.aws.sdk2.dynamodbenhanced
 
+
+    testImplementation(group: 'com.amazonaws', name: 'DynamoDBLocal', version: '1.19.0') {
+        exclude group: 'com.amazonaws', module: 'aws-java-sdk-dynamodb'
+        exclude group: 'com.amazonaws', module: 'aws-java-sdk-core'
+    }
     testImplementation project(':nvi-test')
 }
 

@@ -15,6 +15,8 @@ import static org.hamcrest.Matchers.is;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.NviCandidateRepository;
+import no.sikt.nva.nvi.common.db.NviCandidateRepositoryImpl;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
@@ -25,17 +27,22 @@ import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Publica
 import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
 
 public class NviServiceTest {
 
     private NviService nviService;
 
-    private FakeNviCandidateRepository fakeNviCandidateRepository;
+    private NviCandidateRepository fakeNviCandidateRepository;
+    protected DynamoDbClient localDynamo;
 
     @BeforeEach
     void setup() {
-        //TODO: Replace fakeNviCandidateRepository with actual repository when implemented
-        fakeNviCandidateRepository = new FakeNviCandidateRepository();
+        DynamoDbClient localDynamo = DynamoDBEmbedded.create().dynamoDbClient();
+        DynamoDbEnhancedClient enhancedClient = DynamoDbEnhancedClient.builder().dynamoDbClient(localDynamo).build();
+        fakeNviCandidateRepository = new NviCandidateRepositoryImpl(localDynamo);
         nviService = new NviService(fakeNviCandidateRepository);
     }
 
