@@ -3,19 +3,11 @@ package no.sikt.nva.nvi.evaluator;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.fasterxml.jackson.databind.JsonNode;
-import java.net.URI;
 import no.sikt.nva.nvi.common.QueueClient;
-import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
-import no.sikt.nva.nvi.common.model.events.CandidateStatus;
-import no.sikt.nva.nvi.common.model.events.CandidateType;
-import no.sikt.nva.nvi.common.model.events.NonNviCandidate;
-import no.sikt.nva.nvi.common.model.events.NviCandidate;
-import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.evaluator.aws.S3StorageReader;
 import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
-import no.sikt.nva.nvi.evaluator.calculator.NviCalculator;
+import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.events.handlers.DestinationsEventBridgeEventHandler;
 import no.unit.nva.events.models.AwsEventBridgeDetail;
@@ -32,22 +24,22 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
     public static final String BACKEND_CLIENT_AUTH_URL = new Environment().readEnv("BACKEND_CLIENT_AUTH_URL");
     public static final String BACKEND_CLIENT_SECRET_NAME = new Environment().readEnv("BACKEND_CLIENT_SECRET_NAME");
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateNviCandidateHandler.class);
-    private final StorageReader<EventReference> storageReader;
+    private final EvaluatorService evaluatorService;
     private final QueueClient<SendMessageResponse> queueClient;
-    private final NviCalculator calculator;
 
     @JacocoGenerated
     public EvaluateNviCandidateHandler() {
-        this(new S3StorageReader(), new SqsMessageClient(),
-             new NviCalculator(new AuthorizedBackendUriRetriever(BACKEND_CLIENT_AUTH_URL, BACKEND_CLIENT_SECRET_NAME)));
+        this(new EvaluatorService(new S3StorageReader(), new CandidateCalculator(
+                 new AuthorizedBackendUriRetriever(BACKEND_CLIENT_AUTH_URL, BACKEND_CLIENT_SECRET_NAME))),
+             new SqsMessageClient()
+        );
     }
 
-    public EvaluateNviCandidateHandler(StorageReader<EventReference> storageReader,
-                                       QueueClient<SendMessageResponse> queueClient, NviCalculator calculator) {
+    public EvaluateNviCandidateHandler(EvaluatorService evaluatorService,
+                                       QueueClient<SendMessageResponse> queueClient) {
         super(EventReference.class);
-        this.storageReader = storageReader;
+        this.evaluatorService = evaluatorService;
         this.queueClient = queueClient;
-        this.calculator = calculator;
     }
 
     @Override
@@ -55,10 +47,7 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
                                        AwsEventBridgeEvent<AwsEventBridgeDetail<EventReference>> event,
                                        Context context) {
         try {
-            var readInput = storageReader.read(input);
-            var jsonNode = extractBodyFromContent(readInput);
-            var candidateType = calculator.calculateNvi(jsonNode);
-            handleCandidateType(input.getUri(), candidateType);
+            sendMessage(evaluatorService.getCandidateEvaluatedMessage(input));
         } catch (Exception e) {
             var msg = "Failure while calculating NVI Candidate: %s, ex: %s, msg: %s".formatted(input.getUri(),
                                                                                                e.getClass(),
@@ -67,37 +56,6 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
             queueClient.sendDlq(msg);
         }
         return null;
-    }
-
-    private static CandidateDetails createCandidateDetails(NonNviCandidate candidateType) {
-        return new CandidateDetails(candidateType.publicationId(), null, null, null, null);
-    }
-
-    private void handleCandidateType(URI publicationBucketUri, CandidateType candidateType) {
-        if (candidateType instanceof NviCandidate) {
-            sendMessage(constructCandidateResponse(publicationBucketUri, (NviCandidate) candidateType));
-        } else {
-            sendMessage(constructNonCandidateResponse(publicationBucketUri, (NonNviCandidate) candidateType));
-        }
-    }
-
-    private CandidateEvaluatedMessage constructCandidateResponse(URI publicationBucketUri, NviCandidate candidateType) {
-        return new CandidateEvaluatedMessage.Builder().withStatus(CandidateStatus.CANDIDATE)
-                                                      .withPublicationBucketUri(publicationBucketUri)
-                                                      .withCandidateDetails(candidateType.candidateDetails())
-                                                      .build();
-    }
-
-    private CandidateEvaluatedMessage constructNonCandidateResponse(URI publicationBucketUri,
-                                                                    NonNviCandidate candidateType) {
-        return new CandidateEvaluatedMessage.Builder().withStatus(CandidateStatus.NON_CANDIDATE)
-                                                      .withPublicationBucketUri(publicationBucketUri)
-                                                      .withCandidateDetails(createCandidateDetails(candidateType))
-                                                      .build();
-    }
-
-    private JsonNode extractBodyFromContent(String content) {
-        return attempt(() -> dtoObjectMapper.readTree(content)).map(json -> json.at("/body")).orElseThrow();
     }
 
     private void sendMessage(CandidateEvaluatedMessage c) {

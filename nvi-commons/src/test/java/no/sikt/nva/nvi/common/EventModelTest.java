@@ -53,7 +53,7 @@ public class EventModelTest {
         candidate.publicationId();
         new NonNviCandidate.Builder().withPublicationId(randomUri()).build().publicationId();
 
-        var message = new CandidateEvaluatedMessage(CandidateStatus.CANDIDATE, randomUri(), candidate);
+        var message = new CandidateEvaluatedMessage(CandidateStatus.CANDIDATE, randomUri(), candidate, null);
         message.candidateDetails();
         message.publicationBucketUri();
         message.status();

@@ -40,7 +40,7 @@ import org.apache.jena.riot.RiotException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NviCalculator {
+public class CandidateCalculator {
 
     public static final String CONTENT_TYPE = "application/json";
     public static final String COULD_NOT_FETCH_AFFILIATION_MESSAGE = "Could not fetch affiliation for: ";
@@ -49,7 +49,7 @@ public class NviCalculator {
     public static final String AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE =
         "Affiliation fetched successfully with " + "status {}";
     public static final String VERIFIED = "Verified";
-    private static final Logger LOGGER = LoggerFactory.getLogger(NviCalculator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CandidateCalculator.class);
     //TODO to be configured somehow
     private static final String NVI_YEAR = "2023";
     private static final String NVI_YEAR_REPLACE_STRING = "__NVI_YEAR__";
@@ -58,7 +58,7 @@ public class NviCalculator {
     private static final String API_HOST = new Environment().readEnv("API_HOST");
     private final AuthorizedBackendUriRetriever uriRetriever;
 
-    public NviCalculator(AuthorizedBackendUriRetriever uriRetriever) {
+    public CandidateCalculator(AuthorizedBackendUriRetriever uriRetriever) {
         this.uriRetriever = uriRetriever;
     }
 
@@ -71,12 +71,12 @@ public class NviCalculator {
         }
         var verifiedCreators = extractVerifiedCreator(publication);
 
-        return hasNviInstitutions(verifiedCreators)
+        return doesNotHaveNviInstitutions(verifiedCreators)
                    ? createNonCandidateResponse(publication)
                    : createCandidateResponse(verifiedCreators, publication);
     }
 
-    private static boolean hasNviInstitutions(List<Creator> verifiedCreators) {
+    private static boolean doesNotHaveNviInstitutions(List<Creator> verifiedCreators) {
         return verifiedCreators.stream().map(Creator::nviInstitutions).flatMap(List::stream).toList().isEmpty();
     }
 
@@ -135,7 +135,7 @@ public class NviCalculator {
     }
 
     private static boolean getNviValue(HttpResponse<String> response) {
-        return attempt(response::body).map(NviCalculator::toCustomer)
+        return attempt(response::body).map(CandidateCalculator::toCustomer)
                    .map(CustomerResponse::nviInstitution)
                    .orElse(failure -> false);
     }
@@ -168,9 +168,9 @@ public class NviCalculator {
         return publication.entityDescription()
                    .contributors()
                    .stream()
-                   .filter(NviCalculator::isVerified)
+                   .filter(CandidateCalculator::isVerified)
                    .map(this::filterInstitutionsToKeepNvaCustomers)
-                   .map(NviCalculator::toCreator)
+                   .map(CandidateCalculator::toCreator)
                    .toList();
     }
 

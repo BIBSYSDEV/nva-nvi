@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.utils;
+package no.sikt.nva.nvi.common.utils;
 
 public final class JsonPointers {
 
@@ -8,6 +8,17 @@ public final class JsonPointers {
     public static final String JSON_PTR_PUBLICATION_DATE = "/entityDescription/publicationDate";
     public static final String JSON_PTR_MAIN_TITLE = "/entityDescription/mainTitle";
     public static final String JSON_PTR_INSTANCE_TYPE = "/entityDescription/reference/publicationInstance/type";
+
+    public static final String JSON_PTR_JOURNAL_LEVEL = "/entityDescription/reference/publicationContext/level";
+
+    public static final String JSON_PTR_SERIES_LEVEL = "/entityDescription/reference/publicationContext/series/level";
+    public static final String JSON_PTR_PUBLISHER_LEVEL =
+        "/entityDescription/reference/publicationContext/publisher/level";
+    public static final String JSON_PTR_CHAPTER_PUBLISHER_LEVEL =
+        "/entityDescription/reference/publicationContext/entityDescription/reference/publicationContext"
+        + "/publisher/level";
+    public static final String JSON_PTR_CHAPTER_SERIES_LEVEL =
+        "/entityDescription/reference/publicationContext/entityDescription/reference/publicationContext/series/level";
     public static final String JSON_PTR_PUBLICATION_DATE_YEAR = "/entityDescription/publicationDate/year";
     public static final String JSON_PTR_YEAR = "/year";
     public static final String JSON_PTR_MONTH = "/month";
