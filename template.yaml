@@ -233,11 +233,6 @@ Resources:
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-      Events:
-        SqsEvent:
-          Type: SQS
-          Properties:
-            Queue: !GetAtt NewCandidateQueue.Arn
 
   UpsertNviCandidateHandler:
     Type: AWS::Serverless::Function
