@@ -15,4 +15,10 @@ dependencies {
     implementation libs.jackson.databind
 
     implementation libs.bundles.logging
+    testImplementation project(':nvi-test')
+}
+
+test {
+    useJUnitPlatform()
+    environment "API_HOST", "example.org"
 }

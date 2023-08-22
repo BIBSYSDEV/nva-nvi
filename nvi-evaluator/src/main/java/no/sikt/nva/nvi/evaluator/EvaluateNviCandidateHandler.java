@@ -7,12 +7,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import no.sikt.nva.nvi.common.QueueClient;
 import no.sikt.nva.nvi.common.StorageReader;
+import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
+import no.sikt.nva.nvi.common.model.events.CandidateStatus;
+import no.sikt.nva.nvi.common.model.events.CandidateType;
+import no.sikt.nva.nvi.common.model.events.NonNviCandidate;
+import no.sikt.nva.nvi.common.model.events.NviCandidate;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.evaluator.aws.S3StorageReader;
 import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
-import no.sikt.nva.nvi.evaluator.calculator.CandidateType;
 import no.sikt.nva.nvi.evaluator.calculator.NviCalculator;
-import no.sikt.nva.nvi.evaluator.calculator.NviCandidate;
-import no.sikt.nva.nvi.evaluator.model.CandidateResponse;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.events.handlers.DestinationsEventBridgeEventHandler;
 import no.unit.nva.events.models.AwsEventBridgeDetail;
@@ -40,8 +43,7 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
     }
 
     public EvaluateNviCandidateHandler(StorageReader<EventReference> storageReader,
-                                       QueueClient<SendMessageResponse> queueClient,
-                                       NviCalculator calculator) {
+                                       QueueClient<SendMessageResponse> queueClient, NviCalculator calculator) {
         super(EventReference.class);
         this.storageReader = storageReader;
         this.queueClient = queueClient;
@@ -58,30 +60,47 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
             var candidateType = calculator.calculateNvi(jsonNode);
             handleCandidateType(input.getUri(), candidateType);
         } catch (Exception e) {
-            var msg = "Failure while calculating NVI Candidate: %s, ex: %s, msg: %s"
-                          .formatted(input.getUri(), e.getClass(), e.getMessage());
+            var msg = "Failure while calculating NVI Candidate: %s, ex: %s, msg: %s".formatted(input.getUri(),
+                                                                                               e.getClass(),
+                                                                                               e.getMessage());
             LOGGER.error(msg, e);
             queueClient.sendDlq(msg);
         }
         return null;
     }
 
+    private static CandidateDetails createCandidateDetails(NonNviCandidate candidateType) {
+        return new CandidateDetails(candidateType.publicationId(), null, null, null, null);
+    }
+
     private void handleCandidateType(URI publicationBucketUri, CandidateType candidateType) {
-        if (candidateType instanceof NviCandidate nviCandidate) {
-            sendMessage(new CandidateResponse(publicationBucketUri, nviCandidate.approvalAffiliations()));
-            LOGGER.info("SentMessage");
+        if (candidateType instanceof NviCandidate) {
+            sendMessage(constructCandidateResponse(publicationBucketUri, (NviCandidate) candidateType));
+        } else {
+            sendMessage(constructNonCandidateResponse(publicationBucketUri, (NonNviCandidate) candidateType));
         }
     }
 
-    private JsonNode extractBodyFromContent(String content) {
-        return attempt(() -> dtoObjectMapper.readTree(content))
-                   .map(json -> json.at("/body"))
-                   .orElseThrow();
+    private CandidateEvaluatedMessage constructCandidateResponse(URI publicationBucketUri, NviCandidate candidateType) {
+        return new CandidateEvaluatedMessage.Builder().withStatus(CandidateStatus.CANDIDATE)
+                                                      .withPublicationBucketUri(publicationBucketUri)
+                                                      .withCandidateDetails(candidateType.candidateDetails())
+                                                      .build();
     }
 
-    private void sendMessage(CandidateResponse c) {
-        attempt(() -> dtoObjectMapper.writeValueAsString(c))
-            .map(queueClient::sendMessage)
-            .orElseThrow();
+    private CandidateEvaluatedMessage constructNonCandidateResponse(URI publicationBucketUri,
+                                                                    NonNviCandidate candidateType) {
+        return new CandidateEvaluatedMessage.Builder().withStatus(CandidateStatus.NON_CANDIDATE)
+                                                      .withPublicationBucketUri(publicationBucketUri)
+                                                      .withCandidateDetails(createCandidateDetails(candidateType))
+                                                      .build();
+    }
+
+    private JsonNode extractBodyFromContent(String content) {
+        return attempt(() -> dtoObjectMapper.readTree(content)).map(json -> json.at("/body")).orElseThrow();
+    }
+
+    private void sendMessage(CandidateEvaluatedMessage c) {
+        attempt(() -> dtoObjectMapper.writeValueAsString(c)).map(queueClient::sendMessage).orElseThrow();
     }
 }

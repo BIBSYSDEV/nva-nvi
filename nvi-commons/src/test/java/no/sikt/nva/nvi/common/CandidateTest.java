@@ -1,8 +1,6 @@
 package no.sikt.nva.nvi.common;
 
-import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
-import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -17,13 +15,12 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.model.business.Creator;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.business.Note;
-import no.sikt.nva.nvi.common.model.business.Period;
 import no.sikt.nva.nvi.common.model.business.PublicationDate;
 import no.sikt.nva.nvi.common.model.business.Status;
 import no.sikt.nva.nvi.common.model.business.Username;
-import no.sikt.nva.nvi.common.model.business.VerifiedCreator;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.Test;
 
@@ -48,7 +45,6 @@ public class CandidateTest {
                    .withIsInternationalCollaboration(true)
                    .withCreators(randomVerifiedCreators())
                    .withNotes(randomNotes())
-                   .withPeriod(randomPeriod())
                    .withPublicationDate(localDateNowAsPublicationDate())
                    .build();
     }
@@ -59,12 +55,12 @@ public class CandidateTest {
                                    String.valueOf(now.getDayOfMonth()));
     }
 
-    private List<VerifiedCreator> randomVerifiedCreators() {
+    private List<Creator> randomVerifiedCreators() {
         return IntStream.range(1, 20).boxed().map(i -> randomVerifiedCreator()).collect(Collectors.toList());
     }
 
-    private VerifiedCreator randomVerifiedCreator() {
-        return new VerifiedCreator(randomUri(), randomAffiliations());
+    private Creator randomVerifiedCreator() {
+        return new Creator(randomUri(), randomAffiliations());
     }
 
     private List<URI> randomAffiliations() {
@@ -77,15 +73,11 @@ public class CandidateTest {
 
     private ApprovalStatus randomInstitutionStatus() {
         return new ApprovalStatus.Builder()
-                   .withApproval(Status.APPROVED)
+                   .withStatus(Status.APPROVED)
                    .withInstitutionId(randomUri())
                    .withFinalizedBy(randomUsername())
                    .withFinalizedDate(Instant.now())
                    .build();
-    }
-
-    private Period randomPeriod() {
-        return new Period.Builder().withClosed(randomInstant()).withYear(randomLocalDate().getYear()).build();
     }
 
     private List<Note> randomNotes() {
