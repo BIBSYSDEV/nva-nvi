@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.service;
 import static no.sikt.nva.nvi.common.model.events.CandidateStatus.CANDIDATE;
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.NviCandidateRepository;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
@@ -13,6 +14,7 @@ import no.sikt.nva.nvi.common.model.business.Creator;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.attempt.Try;
 
 public class NviService {
     private final NviCandidateRepository nviCandidateRepository;
@@ -27,6 +29,12 @@ public class NviService {
         if (isNotExistingCandidate(evaluatedCandidate) && isNviCandidate(evaluatedCandidate)) {
             createCandidate(evaluatedCandidate);
         }
+    }
+
+    //TODO: Remove JacocoGenerated when other if/else cases are implemented
+    @JacocoGenerated
+    public Optional<Candidate> getCandidate(URI publicationIdentifier) {
+        return Optional.empty();
     }
 
     private static List<Creator> mapToVerifiedCreators(List<CandidateDetails.Creator> creators) {
