@@ -47,7 +47,7 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
                                        AwsEventBridgeEvent<AwsEventBridgeDetail<EventReference>> event,
                                        Context context) {
         try {
-            sendMessage(evaluatorService.getCandidateEvaluatedMessage(input));
+            sendMessage(evaluatorService.evaluateCandidacy(input));
         } catch (Exception e) {
             var msg = "Failure while calculating NVI Candidate: %s, ex: %s, msg: %s".formatted(input.getUri(),
                                                                                                e.getClass(),

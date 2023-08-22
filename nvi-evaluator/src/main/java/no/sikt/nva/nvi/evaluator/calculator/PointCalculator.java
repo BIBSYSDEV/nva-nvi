@@ -1,9 +1,11 @@
 package no.sikt.nva.nvi.evaluator.calculator;
 
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_VERIFICATION_STATUS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_PUBLISHER_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_INSTANCE_TYPE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_JOURNAL_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_LEVEL;
@@ -24,6 +26,10 @@ import no.sikt.nva.nvi.common.utils.JsonPointers;
 
 public class PointCalculator {
 
+    public static final MathContext MATH_CONTEXT = new MathContext(4, RoundingMode.HALF_UP);
+    public static final String VERIFIED = "Verified";
+    public static final BigDecimal INTERNATIONAL_COLLABORATION_FACTOR = new BigDecimal("1.3");
+    public static final BigDecimal NOT_INTERNATIONAL_COLLABORATION_FACTOR = BigDecimal.ONE;
     private static final String ACADEMIC_MONOGRAPH = "AcademicMonograph";
     private static final String ACADEMIC_CHAPTER = "AcademicChapter";
     private static final String ACADEMIC_ARTICLE = "AcademicArticle";
@@ -37,33 +43,34 @@ public class PointCalculator {
             ACADEMIC_ARTICLE, Map.of("1", BigDecimal.ONE, "2", BigDecimal.valueOf(3)),
             ACADEMIC_LITERATURE_REVIEW, Map.of("1", BigDecimal.ONE, "2", BigDecimal.valueOf(3))
         );
-    public static final MathContext MATH_CONTEXT = new MathContext(4, RoundingMode.HALF_UP);
 
     private PointCalculator() {
     }
 
     public static Map<URI, BigDecimal> calculatePoints(JsonNode jsonNode, Set<URI> approvalInstitutions) {
-        var instanceType = extractJsonNodeTextValue(jsonNode, JSON_PTR_INSTANCE_TYPE);
+        var instanceType = extractInstanceType(jsonNode);
         var instanceTypeAndLevelPoints = calculateInstanceTypeAndLevelPoints(instanceType,
                                                                              getLevel(instanceType, jsonNode));
-        int creatorShareCount = countCreatorShares(jsonNode);
         //TODO: set isInternationalCollaboration when Cristin proxy api has implemented land code
-        boolean isInternationalCollaboration = false;
-        var institutionCreatorShareCount = institutionCreatorShareCount(jsonNode, approvalInstitutions);
+        var isInternationalCollaboration = false;
         return calculatePoints(instanceTypeAndLevelPoints,
-                               creatorShareCount,
+                               countCreatorShares(jsonNode),
                                isInternationalCollaboration,
-                               institutionCreatorShareCount);
+                               countInstitutionCreatorShares(jsonNode, approvalInstitutions));
     }
 
-    private static Map<URI, Long> institutionCreatorShareCount(JsonNode jsonNode, Set<URI> approvalInstitutions) {
+    private static String extractInstanceType(JsonNode jsonNode) {
+        return extractJsonNodeTextValue(jsonNode, JSON_PTR_INSTANCE_TYPE);
+    }
+
+    private static Map<URI, Long> countInstitutionCreatorShares(JsonNode jsonNode, Set<URI> approvalInstitutions) {
         var contributors = jsonNode.at(JSON_PTR_CONTRIBUTOR);
         return StreamSupport.stream(contributors.spliterator(), false)
-                   .filter(contributor -> "Verified".equals(extractJsonNodeTextValue(contributor, "/identity"
-                                                                                                  +
-                                                                                                  "/verificationStatus")))
-                   .flatMap(contributor -> StreamSupport.stream(contributor.at("/affiliations").spliterator(), false))
-                   .map(affiliation -> extractJsonNodeTextValue(affiliation, "/id"))
+                   .filter(contributor -> VERIFIED.equals(extractJsonNodeTextValue(contributor,
+                                                                                   JSON_POINTER_IDENTITY_VERIFICATION_STATUS)))
+                   .flatMap(
+                       contributor -> StreamSupport.stream(contributor.at(JSON_PTR_AFFILIATIONS).spliterator(), false))
+                   .map(affiliation -> extractJsonNodeTextValue(affiliation, JSON_PTR_ID))
                    .map(URI::create)
                    .filter(approvalInstitutions::contains)
                    .collect(Collectors.groupingByConcurrent(Function.identity(), Collectors.counting()));
@@ -72,23 +79,32 @@ public class PointCalculator {
     private static Map<URI, BigDecimal> calculatePoints(BigDecimal instanceTypeAndLevelPoints, int creatorShareCount,
                                                         boolean isInternationalCollaboration,
                                                         Map<URI, Long> institutionCreatorShareCounts) {
-        return institutionCreatorShareCounts.entrySet().stream().collect(Collectors.toMap(Entry::getKey,
-                                                                                          entry -> calculateInstitutionPoints(
-                                                                                              instanceTypeAndLevelPoints,
-                                                                                              isInternationalCollaboration,
-                                                                                              entry.getValue(),
-                                                                                              creatorShareCount)));
+        return institutionCreatorShareCounts.entrySet().stream()
+                   .collect(Collectors.toMap(Entry::getKey, entry -> calculateInstitutionPoints(
+                       instanceTypeAndLevelPoints,
+                       isInternationalCollaboration,
+                       entry.getValue(),
+                       creatorShareCount)));
     }
 
     private static BigDecimal calculateInstitutionPoints(BigDecimal instanceTypeAndLevelPoints,
                                                          boolean isInternationalCollaboration,
                                                          Long institutionCreatorShareCount, int creatorShareCount) {
-        var internationalFactor = isInternationalCollaboration ? new BigDecimal("1.3") : BigDecimal.ONE;
-        var institutionContributorFactor =
-            BigDecimal.valueOf(institutionCreatorShareCount).divide(new BigDecimal(creatorShareCount),
-                                                                    new MathContext(5, RoundingMode.HALF_UP));
+        var internationalFactor = getInternationalCollaborationFactor(isInternationalCollaboration);
+        var institutionContributorFraction = divideInstitutionShareOnTotalShares(institutionCreatorShareCount,
+                                                                                 creatorShareCount);
         return instanceTypeAndLevelPoints.multiply(internationalFactor)
-                   .multiply(institutionContributorFactor.sqrt(MATH_CONTEXT));
+                   .multiply(institutionContributorFraction.sqrt(MATH_CONTEXT));
+    }
+
+    private static BigDecimal divideInstitutionShareOnTotalShares(Long institutionCreatorShareCount,
+                                                                  int creatorShareCount) {
+        return BigDecimal.valueOf(institutionCreatorShareCount).divide(new BigDecimal(creatorShareCount), MATH_CONTEXT);
+    }
+
+    private static BigDecimal getInternationalCollaborationFactor(boolean isInternationalCollaboration) {
+        return isInternationalCollaboration ? INTERNATIONAL_COLLABORATION_FACTOR
+                   : NOT_INTERNATIONAL_COLLABORATION_FACTOR;
     }
 
     private static BigDecimal calculateInstanceTypeAndLevelPoints(String instanceType, String level) {

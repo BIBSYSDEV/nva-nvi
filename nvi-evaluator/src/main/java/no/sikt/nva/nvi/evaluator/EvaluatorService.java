@@ -29,33 +29,29 @@ public class EvaluatorService {
         this.candidateCalculator = candidateCalculator;
     }
 
-    public CandidateEvaluatedMessage getCandidateEvaluatedMessage(EventReference input)
+    public CandidateEvaluatedMessage evaluateCandidacy(EventReference input)
         throws JsonProcessingException {
-        CandidateEvaluatedMessage res;
-        var readInput = storageReader.read(input);
-        var jsonNode = extractBodyFromContent(readInput);
-        var candidateType = candidateCalculator.calculateNvi(jsonNode);
+        var jsonNode = extractBodyFromContent(storageReader.read(input));
+        var candidateType = candidateCalculator.calculateNviType(jsonNode);
         var publicationBucketUri = input.getUri();
         if (candidateType instanceof NviCandidate) {
-            var pointsPerInstitution = calculatePoints(jsonNode,
-                                                       extractApprovalInstitutions((NviCandidate) candidateType));
-            res = constructCandidateResponse(publicationBucketUri,
-                                             (NviCandidate) candidateType,
-                                             pointsPerInstitution);
+            var institutionPoints = calculatePoints(jsonNode,
+                                                    extractApprovalInstitutions((NviCandidate) candidateType));
+            return constructCandidateResponse(publicationBucketUri,
+                                              (NviCandidate) candidateType,
+                                              institutionPoints);
         } else {
-            res = constructNonCandidateResponse(
+            return constructNonCandidateResponse(
                 publicationBucketUri, (NonNviCandidate) candidateType);
         }
-        return res;
     }
 
-    private static Set<URI> extractApprovalInstitutions(NviCandidate candidateType) {
-        return candidateType.candidateDetails()
+    private static Set<URI> extractApprovalInstitutions(NviCandidate candidate) {
+        return candidate.candidateDetails()
                    .verifiedCreators()
                    .stream()
                    .flatMap(creator -> creator.nviInstitutions().stream())
-                   .collect(
-                       Collectors.toSet());
+                   .collect(Collectors.toSet());
     }
 
     private static CandidateDetails createCandidateDetails(NonNviCandidate candidateType) {

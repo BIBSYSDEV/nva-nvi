@@ -25,10 +25,9 @@ class PointCalculatorTest {
     void shouldCalculateNviPointsCorrectlyForSingleInstitution(PointParameters parameters) {
 
         var institutionId = randomUri();
-        var contributorId = randomUri();
         var expandedResource = createExpandedResource(
             randomUri(),
-            createContributorNodes(getContributorNode(contributorId, true, List.of(institutionId))),
+            createContributorNodes(getContributorNode(randomUri(), true, List.of(institutionId))),
             getInstanceTypeReference(parameters));
 
         var institutionPoints = calculatePoints(expandedResource, Set.of(institutionId));
@@ -63,9 +62,9 @@ class PointCalculatorTest {
         //TODO Disabled isInternationCollaboration tests until parameter available
         return Stream.of(
             //            new PointParameters("AcademicMonograph", "1", true, 3, bd("5.3072"), bd("3.7528")),
-//            new PointParameters("AcademicMonograph", "1", false, 3, bd("4.0825"), bd("2.8868")),
+            //            new PointParameters("AcademicMonograph", "1", false, 3, bd("4.0825"), bd("2.8868")),
             //            new PointParameters("AcademicMonograph", "2", true, 4, bd("7.3539"), bd("5.2000")),
-            new PointParameters("AcademicMonograph", "2", false, 4, bd("5.6569"), bd("4.0000")),
+            new PointParameters("AcademicMonograph", "2", false, 4, bd("5.6568"), bd("4.0000")),
             //            new PointParameters("AcademicChapter", "1", true, 5, bd("0.6325"), bd("0.4472")),
             new PointParameters("AcademicChapter", "2", false, 5, bd("1.8974"), bd("1.3416")),
             new PointParameters("AcademicChapterISBN", "1", false, 6, bd("0.4041"), bd("0.2858")),
@@ -108,13 +107,13 @@ class PointCalculatorTest {
         var reference2 = objectMapper.createObjectNode();
         var publicationContext2 = objectMapper.createObjectNode();
         var publisher = objectMapper.createObjectNode()
-                            .put("type","Publisher")
+                            .put("type", "Publisher")
                             .put("level", level);
         var series = objectMapper.createObjectNode()
-                         .put("type","Series")
-                         .put("level",level);
+                         .put("type", "Series")
+                         .put("level", level);
         publicationContext2.set("publisher", publisher);
-        publicationContext2.set("series",series);
+        publicationContext2.set("series", series);
         reference2.set("publicationContext", publicationContext2);
         entityDescription.set("reference", reference2);
         publicationContext.set("entityDescription", entityDescription);

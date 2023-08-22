@@ -7,6 +7,8 @@ public final class JsonPointers {
     public static final String JSON_PTR_ID = "/id";
     public static final String JSON_PTR_PUBLICATION_DATE = "/entityDescription/publicationDate";
     public static final String JSON_PTR_MAIN_TITLE = "/entityDescription/mainTitle";
+
+    public static final String JSON_POINTER_IDENTITY_VERIFICATION_STATUS = "/identity/verificationStatus";
     public static final String JSON_PTR_INSTANCE_TYPE = "/entityDescription/reference/publicationInstance/type";
 
     public static final String JSON_PTR_JOURNAL_LEVEL = "/entityDescription/reference/publicationContext/level";

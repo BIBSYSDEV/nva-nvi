@@ -62,7 +62,7 @@ public class CandidateCalculator {
         this.uriRetriever = uriRetriever;
     }
 
-    public CandidateType calculateNvi(JsonNode body) throws JsonProcessingException {
+    public CandidateType calculateNviType(JsonNode body) throws JsonProcessingException {
         var model = createModel(body);
         var publication = dtoObjectMapper.readValue(body.toString(), Publication.class);
 
