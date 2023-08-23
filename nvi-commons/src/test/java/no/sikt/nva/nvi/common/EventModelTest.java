@@ -6,6 +6,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.common.model.events.CandidateStatus;
@@ -54,11 +55,12 @@ public class EventModelTest {
         candidate.publicationId();
         new NonNviCandidate.Builder().withPublicationId(randomUri()).build().publicationId();
 
-        var message = new CandidateEvaluatedMessage(CandidateStatus.CANDIDATE, randomUri(), candidate);
+        var message = new CandidateEvaluatedMessage(CandidateStatus.CANDIDATE, randomUri(), candidate, null);
         message.candidateDetails();
         message.publicationBucketUri();
         message.status();
         creator.nviInstitutions();
+        message.institutionPoints();
     }
 
     private static String getType(Publication publication) {
@@ -70,9 +72,10 @@ public class EventModelTest {
     }
 
     private CandidateEvaluatedMessage toEvent(Publication publication) {
-        return new CandidateEvaluatedMessage.Builder().withStatus(CandidateStatus.CANDIDATE)
+        return CandidateEvaluatedMessage.builder().withStatus(CandidateStatus.CANDIDATE)
                    .withPublicationBucketUri(randomUri())
                    .withCandidateDetails(toCandidateDetails(publication))
+                   .withInstitutionPoints(new HashMap<>())
                    .build();
     }
 

@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.evaluator;
 
-import java.net.URI;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.evaluator.aws.S3StorageReader;
 import no.unit.nva.events.models.EventReference;

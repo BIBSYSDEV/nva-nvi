@@ -61,7 +61,7 @@ public class NviServiceTest {
                                                                   List<CandidateDetails.Creator> creators,
                                                                   String instanceType, Level randomLevel,
                                                                   PublicationDate publicationDate) {
-        return new CandidateEvaluatedMessage.Builder()
+        return CandidateEvaluatedMessage.builder()
                    .withStatus(CandidateStatus.CANDIDATE)
                    .withPublicationBucketUri(generateS3BucketUri(identifier))
                    .withCandidateDetails(new CandidateDetails(generatePublicationId(identifier),
