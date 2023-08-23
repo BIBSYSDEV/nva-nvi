@@ -24,7 +24,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.utils.JsonPointers;
 
-public class PointCalculator {
+public final class PointCalculator {
 
     private static final int SCALE = 10;
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
