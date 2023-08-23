@@ -21,6 +21,7 @@ import no.unit.nva.events.models.EventReference;
 
 public class EvaluatorService {
 
+    public static final String JSON_PTR_BODY = "/body";
     private final StorageReader<EventReference> storageReader;
     private final CandidateCalculator candidateCalculator;
 
@@ -77,6 +78,6 @@ public class EvaluatorService {
     }
 
     private JsonNode extractBodyFromContent(String content) {
-        return attempt(() -> dtoObjectMapper.readTree(content)).map(json -> json.at("/body")).orElseThrow();
+        return attempt(() -> dtoObjectMapper.readTree(content)).map(json -> json.at(JSON_PTR_BODY)).orElseThrow();
     }
 }

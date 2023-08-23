@@ -47,6 +47,7 @@ public final class PointCalculator {
             ACADEMIC_LITERATURE_REVIEW, Map.of("1", BigDecimal.ONE, "2", BigDecimal.valueOf(3))
         );
     private static final boolean HARDCODED_INTERNATIONAL_COLLABORATION_BOOLEAN_TO_BE_REPLACED = false;
+    public static final String DEFAULT_LEVEL = "0";
 
     private PointCalculator() {
     }
@@ -139,13 +140,12 @@ public final class PointCalculator {
                 extractJsonNodeTextValue(jsonNode, JSON_PTR_JOURNAL_LEVEL);
             case ACADEMIC_MONOGRAPH -> extractAcademicMonographLevel(jsonNode);
             case ACADEMIC_CHAPTER -> extractAcademicChapterLevel(jsonNode);
-            default -> "0";
+            default -> DEFAULT_LEVEL;
         };
     }
 
     private static String extractAcademicMonographLevel(JsonNode jsonNode) {
-        var seriesLevel = extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_LEVEL);
-        return Optional.ofNullable(seriesLevel)
+        return Optional.ofNullable(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_LEVEL))
                    .orElse(extractJsonNodeTextValue(jsonNode, JsonPointers.JSON_PTR_PUBLISHER_LEVEL));
     }
 
