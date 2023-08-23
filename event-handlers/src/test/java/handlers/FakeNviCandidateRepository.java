@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import no.sikt.nva.nvi.common.NviCandidateRepository;
 import no.sikt.nva.nvi.common.db.dto.CandidateDb;
 import no.sikt.nva.nvi.common.model.business.Candidate;
+import nva.commons.core.JacocoGenerated;
 
 public class FakeNviCandidateRepository implements NviCandidateRepository {
 

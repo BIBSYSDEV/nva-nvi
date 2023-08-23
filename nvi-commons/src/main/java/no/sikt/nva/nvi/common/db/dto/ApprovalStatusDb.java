@@ -5,6 +5,7 @@ import java.net.URI;
 import java.time.Instant;
 import no.sikt.nva.nvi.common.db.WithCopy;
 import no.sikt.nva.nvi.common.db.dto.ApprovalStatusDb.Builder;
+
 public class ApprovalStatusDb implements WithCopy<Builder> {
 
     public static final String INSTITUTION_ID_FIELD = "closed";
@@ -32,7 +33,11 @@ public class ApprovalStatusDb implements WithCopy<Builder> {
 
     @Override
     public Builder copy() {
-        return new Builder().withInstitutionId(institutionId).withStatus(status).withFinalizedBy(finalizedBy).withFinalizedDate(finalizedDate);
+        return new Builder()
+                   .withInstitutionId(institutionId)
+                   .withStatus(status)
+                   .withFinalizedBy(finalizedBy.copy().build())
+                   .withFinalizedDate(finalizedDate);
     }
 
     public URI getInstitutionId() {
@@ -70,10 +75,12 @@ public class ApprovalStatusDb implements WithCopy<Builder> {
             this.status = status;
             return this;
         }
+
         public Builder withFinalizedBy(UsernameDb finalizedBy) {
             this.finalizedBy = finalizedBy;
             return this;
         }
+
         public Builder withFinalizedDate(Instant finalizedDate) {
             this.finalizedDate = finalizedDate;
             return this;

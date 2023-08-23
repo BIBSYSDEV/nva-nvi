@@ -5,6 +5,10 @@ dependencies {
     implementation project(':nvi-commons')
     implementation libs.nva.commons.apigateway
     implementation libs.nva.commons.core
-    testImplementation libs.nva.testutils
+    implementation libs.nva.testutils
     implementation libs.jackson.databind
+}
+
+test {
+    useJUnitPlatform()
 }

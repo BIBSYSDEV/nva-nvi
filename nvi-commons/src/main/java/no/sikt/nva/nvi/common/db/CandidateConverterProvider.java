@@ -20,12 +20,7 @@ public class CandidateConverterProvider implements AttributeConverterProvider {
     }
 
     private <T> boolean parametricTypeIsCandidate(EnhancedType<T> enhancedType) {
-        var v1 = EnhancedType.of(CandidateDb.class);
-        var v2= enhancedType.rawClass();
         return EnhancedType.of(CandidateDb.class).equals(enhancedType);
     }
 
-    private <T> boolean isSet(EnhancedType<T> enhancedType) {
-        return Set.class.equals(enhancedType.rawClass());
-    }
 }

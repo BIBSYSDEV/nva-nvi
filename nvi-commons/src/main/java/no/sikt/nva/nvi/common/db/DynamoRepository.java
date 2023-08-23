@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.db;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.NviCandidateRepository;
 import no.sikt.nva.nvi.common.model.business.Candidate;
+import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,7 @@ public class DynamoRepository {
     // PMD complains about the log error format but this call seems legit according to SLF4J
     // see http://slf4j.org/faq.html#exception_message
     @SuppressWarnings("PMD.InvalidLogMessageFormat")
+    @JacocoGenerated
     protected static <T> RuntimeException handleError(Failure<T> fail) {
         logger.error("Error fetching user:", fail.getException());
         if (fail.getException() instanceof RuntimeException) {

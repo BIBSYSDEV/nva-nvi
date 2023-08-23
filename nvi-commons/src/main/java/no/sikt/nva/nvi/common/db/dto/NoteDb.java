@@ -5,6 +5,7 @@ import java.time.Instant;
 import no.sikt.nva.nvi.common.db.WithCopy;
 import no.sikt.nva.nvi.common.db.dto.NoteDb.Builder;
 import no.sikt.nva.nvi.common.model.business.Username;
+import nva.commons.core.JacocoGenerated;
 
 public class NoteDb implements WithCopy<Builder> {
 
@@ -25,12 +26,16 @@ public class NoteDb implements WithCopy<Builder> {
         this.createdDate = createdDate;
     }
 
+    @JacocoGenerated
     public NoteDb() {
     }
 
     @Override
     public Builder copy() {
-        return new Builder().withUser(user).withText(text).withCreatedDate(createdDate);
+        return new Builder()
+                   .withUser(user.copy().build())
+                   .withText(text)
+                   .withCreatedDate(createdDate);
     }
 
     public UsernameDb getUser() {

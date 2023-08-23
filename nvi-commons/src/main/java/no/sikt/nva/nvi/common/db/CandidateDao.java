@@ -5,10 +5,12 @@ import static no.sikt.nva.nvi.common.ApplicationConstants.SORT_KEY;
 import static no.sikt.nva.nvi.common.db.dto.CandidateDb.TYPE;
 import java.net.URI;
 import no.sikt.nva.nvi.common.db.dto.CandidateDb;
+import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.DefaultAttributeConverterProvider;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
@@ -61,6 +63,7 @@ public class CandidateDao implements DynamoEntryWithRangeKey {
     }
 
     @Override
+    @JacocoGenerated
     @DynamoDbAttribute(TYPE_FIELD)
     public String getType() {
         return TYPE;
@@ -70,6 +73,8 @@ public class CandidateDao implements DynamoEntryWithRangeKey {
         return uri.getPath().substring(uri.getPath().lastIndexOf('/') + 1);
     }
 
+    @DynamoDbIgnore
+    @JacocoGenerated
     public String getDocumentIdentifier() {
         return documentIdentifier;
     }
@@ -79,6 +84,7 @@ public class CandidateDao implements DynamoEntryWithRangeKey {
         return candidateDb;
     }
 
+    @JacocoGenerated
     public void setDocumentIdentifier(String documentIdentifier) {
         this.documentIdentifier = documentIdentifier;
     }

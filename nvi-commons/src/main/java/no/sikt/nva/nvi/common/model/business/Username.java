@@ -4,7 +4,9 @@ import no.sikt.nva.nvi.common.db.dto.UsernameDb;
 
 public record Username(String value) {
     public UsernameDb toDb() {
-        return new UsernameDb(value);
+        return new UsernameDb.Builder()
+                   .withValue(value)
+                   .build();
     }
 
     public static Username fromDb(UsernameDb db) {

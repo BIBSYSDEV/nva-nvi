@@ -73,6 +73,7 @@ public class NviService {
         nviCandidateRepository.save(candidateDb);
     }
 
+    @JacocoGenerated //TODO: Remove when its actually used
     public Optional<Candidate> findByPublicationId(URI publicationId) {
         return nviCandidateRepository.findByPublicationId(publicationId).map(Candidate::fromDb);
     }

@@ -65,12 +65,15 @@ public class CandidateDb implements WithCopy<Builder>, Typed {
                    .withIsApplicable(isApplicable)
                    .withInstanceType(instanceType)
                    .withLevel(level)
-                   .withPublicationDate(publicationDate)
+                   .withPublicationDate(publicationDate.copy().build())
                    .withIsInternationalCollaboration(isInternationalCollaboration)
                    .withCreatorCount(creatorCount)
-                   .withCreators(creators)
-                   .withApprovalStatuses(approvalStatuses)
-                   .withNotes(notes);
+                   .withCreators(creators.stream().map(CreatorDb::copy).map(CreatorDb.Builder::build).toList())
+                   .withApprovalStatuses(
+                       approvalStatuses.stream()
+                           .map(ApprovalStatusDb::copy).map(ApprovalStatusDb.Builder::build).toList()
+                   )
+                   .withNotes(notes.stream().map(NoteDb::copy).map(NoteDb.Builder::build).toList());
     }
 
     public void setPublicationId(URI publicationId) {
@@ -173,42 +176,52 @@ public class CandidateDb implements WithCopy<Builder>, Typed {
             this.candidateDb.setPublicationId(publicationId);
             return this;
         }
+
         public Builder withPublicationBucketUri(URI publicationBucketUri) {
             this.candidateDb.setPublicationBucketUri(publicationBucketUri);
             return this;
         }
+
         public Builder withIsApplicable(boolean isApplicable) {
             this.candidateDb.setApplicable(isApplicable);
             return this;
         }
+
         public Builder withInstanceType(String instanceType) {
             this.candidateDb.setInstanceType(instanceType);
             return this;
         }
+
         public Builder withLevel(String level) {
             this.candidateDb.setLevel(level);
             return this;
         }
+
         public Builder withPublicationDate(PublicationDateDb publicationDate) {
             this.candidateDb.setPublicationDate(publicationDate);
             return this;
         }
+
         public Builder withIsInternationalCollaboration(boolean isInternationalCollaboration) {
             this.candidateDb.setInternationalCollaboration(isInternationalCollaboration);
             return this;
         }
+
         public Builder withCreatorCount(int creatorCount) {
             this.candidateDb.setCreatorCount(creatorCount);
             return this;
         }
+
         public Builder withCreators(List<CreatorDb> creators) {
             this.candidateDb.setCreators(creators);
             return this;
         }
+
         public Builder withApprovalStatuses(List<ApprovalStatusDb> approvalStatuses) {
             this.candidateDb.setApprovalStatuses(approvalStatuses);
             return this;
         }
+
         public Builder withNotes(List<NoteDb> notes) {
             this.candidateDb.setNotes(notes);
             return this;
