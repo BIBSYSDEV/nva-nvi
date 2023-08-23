@@ -95,8 +95,8 @@ public class UpsertNviCandidateHandlerTest {
     }
 
     private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
-        return Stream.of(new CandidateEvaluatedMessage(null, null, null),
-                         new CandidateEvaluatedMessage.Builder()
+        return Stream.of(CandidateEvaluatedMessage.builder().build(),
+                         CandidateEvaluatedMessage.builder()
                              .withStatus(randomElement(CandidateStatus.values()))
                              .withPublicationBucketUri(randomUri())
                              .withCandidateDetails(new CandidateDetails(null,
@@ -104,7 +104,7 @@ public class UpsertNviCandidateHandlerTest {
                                                                         randomElement(Level.values()).getValue(),
                                                                         randomPublicationDate(),
                                                                         List.of(randomCreator()))).build(),
-                         new CandidateEvaluatedMessage.Builder()
+                         CandidateEvaluatedMessage.builder()
                              .withStatus(randomElement(CandidateStatus.values()))
                              .withPublicationBucketUri(null)
                              .withCandidateDetails(new CandidateDetails(randomUri(),
@@ -141,7 +141,7 @@ public class UpsertNviCandidateHandlerTest {
 
     private SQSEvent createEvent(UUID identifier, List<Creator> verifiedCreators, String instanceType,
                                  Level randomLevel, PublicationDate publicationDate) {
-        return createEvent(new CandidateEvaluatedMessage.Builder()
+        return createEvent(CandidateEvaluatedMessage.builder()
                                .withStatus(CandidateStatus.CANDIDATE)
                                .withPublicationBucketUri(generateS3BucketUri(identifier))
                                .withCandidateDetails(new CandidateDetails(generatePublicationId(identifier),

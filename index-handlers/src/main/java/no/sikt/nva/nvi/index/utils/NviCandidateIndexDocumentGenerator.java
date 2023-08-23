@@ -1,20 +1,21 @@
 package no.sikt.nva.nvi.index.utils;
 
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.index.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
-import static no.sikt.nva.nvi.index.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
-import static no.sikt.nva.nvi.index.utils.JsonPointers.JSON_PTR_DAY;
-import static no.sikt.nva.nvi.index.utils.JsonPointers.JSON_PTR_ID;
-import static no.sikt.nva.nvi.index.utils.JsonPointers.JSON_PTR_IDENTITY;
-import static no.sikt.nva.nvi.index.utils.JsonPointers.JSON_PTR_INSTANCE_TYPE;
-import static no.sikt.nva.nvi.index.utils.JsonPointers.JSON_PTR_LABELS;
-import static no.sikt.nva.nvi.index.utils.JsonPointers.JSON_PTR_MAIN_TITLE;
-import static no.sikt.nva.nvi.index.utils.JsonPointers.JSON_PTR_MONTH;
-import static no.sikt.nva.nvi.index.utils.JsonPointers.JSON_PTR_NAME;
-import static no.sikt.nva.nvi.index.utils.JsonPointers.JSON_PTR_ORCID;
-import static no.sikt.nva.nvi.index.utils.JsonPointers.JSON_PTR_PUBLICATION_DATE;
-import static no.sikt.nva.nvi.index.utils.JsonPointers.JSON_PTR_PUBLICATION_DATE_YEAR;
-import static no.sikt.nva.nvi.index.utils.JsonPointers.JSON_PTR_YEAR;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_DAY;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_IDENTITY;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_INSTANCE_TYPE;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_LABELS;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MAIN_TITLE;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MONTH;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_NAME;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ORCID;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_DATE;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_DATE_YEAR;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_YEAR;
+import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -23,11 +24,10 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Affiliation;
+import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contexts;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
@@ -122,17 +122,6 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static String extractYear(JsonNode resource) {
         return extractJsonNodeTextValue(resource, JSON_PTR_PUBLICATION_DATE_YEAR);
-    }
-
-    private static String extractJsonNodeTextValue(JsonNode node, String jsonPointer) {
-        return Optional.ofNullable(node.at(jsonPointer))
-                   .filter(NviCandidateIndexDocumentGenerator::isNotMissingNode)
-                   .map(JsonNode::textValue)
-                   .orElse(null);
-    }
-
-    private static boolean isNotMissingNode(JsonNode node) {
-        return !node.isMissingNode() && !node.isNull() && node.isValueNode();
     }
 
     private static Stream<JsonNode> getJsonNodeStream(JsonNode jsonNode, String jsonPtr) {
