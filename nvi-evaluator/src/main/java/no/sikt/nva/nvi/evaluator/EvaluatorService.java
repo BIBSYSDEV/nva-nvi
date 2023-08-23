@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.evaluator;
 
-import static no.sikt.nva.nvi.evaluator.calculator.PointCalculator.calculatePoints;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -17,6 +16,7 @@ import no.sikt.nva.nvi.common.model.events.NonNviCandidate;
 import no.sikt.nva.nvi.common.model.events.NviCandidate;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
+import no.sikt.nva.nvi.evaluator.calculator.PointCalculator;
 import no.unit.nva.events.models.EventReference;
 
 public class EvaluatorService {
@@ -35,15 +35,16 @@ public class EvaluatorService {
         var candidateType = candidateCalculator.calculateNviType(jsonNode);
         var publicationBucketUri = input.getUri();
         if (candidateType instanceof NviCandidate) {
-            var institutionPoints = calculatePoints(jsonNode,
-                                                    extractApprovalInstitutions((NviCandidate) candidateType));
             return constructCandidateResponse(publicationBucketUri,
                                               (NviCandidate) candidateType,
-                                              institutionPoints);
+                                              calculatePoints(jsonNode, (NviCandidate) candidateType));
         } else {
-            return constructNonCandidateResponse(
-                publicationBucketUri, (NonNviCandidate) candidateType);
+            return constructNonCandidateResponse(publicationBucketUri, (NonNviCandidate) candidateType);
         }
+    }
+
+    private static Map<URI, BigDecimal> calculatePoints(JsonNode jsonNode, NviCandidate candidateType) {
+        return PointCalculator.calculatePoints(jsonNode, extractApprovalInstitutions(candidateType));
     }
 
     private static Set<URI> extractApprovalInstitutions(NviCandidate candidate) {

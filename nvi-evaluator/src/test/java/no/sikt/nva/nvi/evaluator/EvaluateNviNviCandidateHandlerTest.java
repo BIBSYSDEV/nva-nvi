@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.List;
@@ -126,7 +127,7 @@ class EvaluateNviNviCandidateHandlerTest {
     }
 
     @Test
-    void shouldCalculatePointsOnValidAcademicChapter() throws IOException {
+    void shouldCalculatePointsOnValidAcademicArticle() throws IOException {
         when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(okResponse));
         var path = "candidate_academicArticle.json";
         var content = IoUtils.inputStreamFromResources(path);
@@ -143,7 +144,7 @@ class EvaluateNviNviCandidateHandlerTest {
         assertThat(body.institutionPoints(), notNullValue());
         assertThat(body.institutionPoints().get(URI.create("https://api.dev.nva.aws.unit"
                                                            + ".no/cristin/organization/20754.0.0.0")),
-                   is(equalTo(BigDecimal.ONE)));
+                   is(equalTo(BigDecimal.ONE.setScale(4, RoundingMode.HALF_UP))));
     }
 
     @Test
