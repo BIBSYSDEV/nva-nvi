@@ -6,29 +6,33 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.time.Period;
 import no.sikt.nva.nvi.common.model.business.NviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
+import nva.commons.apigateway.exceptions.BadMethodException;
+import nva.commons.apigateway.exceptions.ConflictException;
+import nva.commons.apigateway.exceptions.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
-public class CreateNviPeriodHandlerTest {
+public class UpdateNviPeriodHandlerTest {
 
     private Context context;
     private ByteArrayOutputStream output;
-    private CreateNviPeriodHandler handler;
+    private UpdateNviPeriodHandler handler;
     private NviService nviService;
 
     @BeforeEach
@@ -36,45 +40,60 @@ public class CreateNviPeriodHandlerTest {
         output = new ByteArrayOutputStream();
         context = mock(Context.class);
         nviService = mock(NviService.class);
-        handler = new CreateNviPeriodHandler(nviService);
+        handler = new UpdateNviPeriodHandler(nviService);
     }
 
     @Test
-    void shouldThrowExceptionWhenMissingAccessRightsToOpenNviPeriod() throws IOException {
+    void shouldReturnUnauthorizedWhenMissingAccessRights() throws IOException {
         handler.handleRequest(createRequestWithoutAccessRights(), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
     }
 
-    //TODO: Assert persisted period when nviService is implemented
     @Test
-    void shouldCreateNviPeriod() throws IOException {
+    void shouldReturnNotFoundWhenPeriodDoesNotExists()
+        throws IOException, NotFoundException, ConflictException {
+        when(nviService.updatePeriod(any())).thenThrow(NotFoundException.class);
         handler.handleRequest(createRequest(), output, context);
-        var response = GatewayResponse.fromOutputStream(output, Period.class);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CREATED)));
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_NOT_FOUND)));
     }
 
-    private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
-        return new HandlerRequestBuilder<NviPeriod>(JsonUtils.dtoObjectMapper).withBody(randomPeriod()).build();
+    @Test
+    void shouldReturnConflictWhenUpdatingReportingDateNotSupportedDate()
+        throws NotFoundException, IOException, ConflictException {
+        when(nviService.updatePeriod(any())).thenThrow(ConflictException.class);
+        handler.handleRequest(createRequest(), output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
+    }
+
+    @Test
+    void shouldUpdateNviPeriodSuccessfully() throws IOException {
+        handler.handleRequest(createRequest(), output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
     }
 
     private InputStream createRequest() throws JsonProcessingException {
         var customerId = randomUri();
-        return new HandlerRequestBuilder<NviPeriod>(JsonUtils.dtoObjectMapper)
-                   .withBody(randomPeriod())
+        return new HandlerRequestBuilder<NviPeriod>(JsonUtils.dtoObjectMapper).withBody(randomPeriod())
                    .withCurrentCustomer(customerId)
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_PERIODS.name())
                    .withUserName(randomString())
                    .build();
     }
 
+    private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
+        return new HandlerRequestBuilder<NviPeriod>(JsonUtils.dtoObjectMapper).withBody(randomPeriod()).build();
+    }
+
     private NviPeriod randomPeriod() {
         var start = randomInstant();
-        return new NviPeriod.Builder()
-                   .withReportingDate(start)
-                   .withPublishingYear(randomString())
-                   .build();
+        return new NviPeriod.Builder().withReportingDate(start).withPublishingYear(randomString()).build();
     }
 }

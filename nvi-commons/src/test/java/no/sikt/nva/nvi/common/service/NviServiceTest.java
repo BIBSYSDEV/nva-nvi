@@ -14,6 +14,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,6 +28,9 @@ import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.test.TestUtils;
+import nva.commons.apigateway.exceptions.BadMethodException;
+import nva.commons.apigateway.exceptions.ConflictException;
+import nva.commons.apigateway.exceptions.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -67,6 +71,14 @@ public class NviServiceTest {
         var period = createPeriod();
         var persistedPeriod = nviService.createPeriod(period);
         assertThat(nviService.getPeriod(period.publishingYear()), is(not(equalTo(period))));
+    }
+
+    //TODO: Change test when nviService is implemented
+    @Test
+    void shouldUpdateNviPeriod() throws NotFoundException, ConflictException {
+        var period = nviService.createPeriod(createPeriod());
+        var updatedPeriod = nviService.updatePeriod(period.copy().withReportingDate(Instant.now()).build());
+        assertThat(nviService.getPeriod(period.publishingYear()), is(not(equalTo(updatedPeriod))));
     }
 
     private static NviPeriod createPeriod() {

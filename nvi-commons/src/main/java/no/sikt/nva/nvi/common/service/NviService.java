@@ -13,6 +13,10 @@ import no.sikt.nva.nvi.common.model.business.Status;
 import no.sikt.nva.nvi.common.model.business.Creator;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
+import nva.commons.apigateway.exceptions.BadMethodException;
+import nva.commons.apigateway.exceptions.ConflictException;
+import nva.commons.apigateway.exceptions.NotFoundException;
+
 import nva.commons.core.JacocoGenerated;
 
 public class NviService {
@@ -30,8 +34,13 @@ public class NviService {
         }
     }
 
-    //TODO: Implement persistence
+    //TODO: Implement persistence, remember validation rules
     public NviPeriod createPeriod(NviPeriod nviPeriod) {
+        return nviPeriod;
+    }
+
+    //TODO: Implement persistence, remember validation rules for reportingDate
+    public NviPeriod updatePeriod(NviPeriod nviPeriod) throws NotFoundException, ConflictException {
         return nviPeriod;
     }
 
