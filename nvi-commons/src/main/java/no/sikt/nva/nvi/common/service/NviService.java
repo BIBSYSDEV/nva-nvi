@@ -13,9 +13,13 @@ import no.sikt.nva.nvi.common.model.business.Status;
 import no.sikt.nva.nvi.common.model.business.Creator;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
+import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.core.JacocoGenerated;
 
 public class NviService {
+
+    public static final String INVALID_LENGTH_MESSAGE = "Provided period has invalid length!";
+    public static final String PERIOD_NOT_NUMERIC_MESSAGE = "Period is not numeric!";
     private final NviCandidateRepository nviCandidateRepository;
 
     public NviService(NviCandidateRepository nviCandidateRepository) {
@@ -31,8 +35,31 @@ public class NviService {
     }
 
     //TODO: Implement persistence
-    public NviPeriod createPeriod(NviPeriod nviPeriod) {
-        return nviPeriod;
+    public NviPeriod createPeriod(NviPeriod period) throws BadRequestException {
+        validatePeriod(period);
+        return period;
+    }
+
+    private void validatePeriod(NviPeriod period) throws BadRequestException {
+        if (hasInvalidLength(period)) {
+           throw new BadRequestException(INVALID_LENGTH_MESSAGE);
+        }
+        if(!isInteger(period.publishingYear())) {
+            throw new BadRequestException(PERIOD_NOT_NUMERIC_MESSAGE);
+        }
+    }
+
+    public static boolean isInteger(String value) {
+        try{
+            Integer.parseInt(value);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private static boolean hasInvalidLength(NviPeriod period) {
+        return period.publishingYear().length() != 4;
     }
 
     //TODO: Implement persistence

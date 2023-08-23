@@ -255,7 +255,7 @@ Resources:
         GetEvent:
           Type: Api
           Properties:
-            Path: /nvi-period
+            Path: /period
             Method: post
             RestApiId: !Ref ScientificIndexApi
 

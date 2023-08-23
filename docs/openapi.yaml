@@ -39,7 +39,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-  /nvi-period:
+  /period:
     post:
       requestBody:
         required: true

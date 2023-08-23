@@ -1,12 +1,15 @@
 package no.sikt.nva.nvi.rest;
 
+import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.Matchers.is;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
@@ -20,6 +23,7 @@ import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
+import nva.commons.apigateway.exceptions.BadRequestException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
@@ -49,7 +53,8 @@ public class CreateNviPeriodHandlerTest {
 
     //TODO: Assert persisted period when nviService is implemented
     @Test
-    void shouldCreateNviPeriod() throws IOException {
+    void shouldCreateNviPeriod() throws IOException, BadRequestException {
+        when(nviService.createPeriod(any())).thenReturn(randomPeriod());
         handler.handleRequest(createRequest(), output, context);
         var response = GatewayResponse.fromOutputStream(output, Period.class);
 
@@ -76,7 +81,7 @@ public class CreateNviPeriodHandlerTest {
         var start = randomInstant();
         return new NviPeriod.Builder()
                    .withReportingDate(start)
-                   .withPublishingYear(randomString())
+                   .withPublishingYear(String.valueOf(randomInteger(9999)))
                    .build();
     }
 }
