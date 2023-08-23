@@ -69,7 +69,7 @@ public class EventModelTest {
     }
 
     private CandidateEvaluatedMessage toEvent(Publication publication) {
-        return new CandidateEvaluatedMessage.Builder().withStatus(CandidateStatus.CANDIDATE)
+        return CandidateEvaluatedMessage.builder().withStatus(CandidateStatus.CANDIDATE)
                    .withPublicationBucketUri(randomUri())
                    .withCandidateDetails(toCandidateDetails(publication))
                    .build();

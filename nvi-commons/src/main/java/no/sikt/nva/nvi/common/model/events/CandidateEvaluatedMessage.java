@@ -29,11 +29,7 @@ public record CandidateEvaluatedMessage(
         private CandidateDetails candidateDetails;
         private Map<URI, BigDecimal> institutionPoints;
 
-        public Builder() {
-        }
-
-        public static Builder builder() {
-            return new Builder();
+        private Builder() {
         }
 
         public Builder withStatus(CandidateStatus status) {

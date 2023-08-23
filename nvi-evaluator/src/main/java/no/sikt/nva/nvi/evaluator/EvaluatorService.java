@@ -60,7 +60,7 @@ public class EvaluatorService {
 
     private CandidateEvaluatedMessage constructCandidateResponse(URI publicationBucketUri, NviCandidate candidateType,
                                                                  Map<URI, BigDecimal> pointsPerInstitution) {
-        return CandidateEvaluatedMessage.Builder.builder().withStatus(CandidateStatus.CANDIDATE)
+        return CandidateEvaluatedMessage.builder().withStatus(CandidateStatus.CANDIDATE)
                    .withPublicationBucketUri(publicationBucketUri)
                    .withCandidateDetails(candidateType.candidateDetails())
                    .withInstitutionPoints(pointsPerInstitution)
@@ -69,7 +69,7 @@ public class EvaluatorService {
 
     private CandidateEvaluatedMessage constructNonCandidateResponse(URI publicationBucketUri,
                                                                     NonNviCandidate candidateType) {
-        return CandidateEvaluatedMessage.Builder.builder().withStatus(CandidateStatus.NON_CANDIDATE)
+        return CandidateEvaluatedMessage.builder().withStatus(CandidateStatus.NON_CANDIDATE)
                    .withPublicationBucketUri(publicationBucketUri)
                    .withCandidateDetails(createCandidateDetails(candidateType))
                    .build();
