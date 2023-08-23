@@ -19,6 +19,7 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStream
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.StreamRecord;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
@@ -43,7 +44,7 @@ class IndexNviCandidateHandlerTest {
     private StorageReader<URI> storageReader;
 
     @BeforeEach
-    void setup() {
+    void setup() throws IOException {
         storageReader = mock(StorageReader.class);
         SearchClient<NviCandidateIndexDocument> openSearchClient = mock(OpenSearchClient.class);
         handler = new IndexNviCandidateHandler(storageReader, openSearchClient);
