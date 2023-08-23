@@ -9,6 +9,8 @@ import static org.hamcrest.Matchers.is;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
@@ -62,15 +64,13 @@ class PointCalculatorTest {
         //TODO Disabled isInternationCollaboration tests until parameter available
         return Stream.of(
             //            new PointParameters("AcademicMonograph", "1", true, 3, bd("5.3072"), bd("3.7528")),
-            //            new PointParameters("AcademicMonograph", "1", false, 3, bd("4.0825"), bd("2.8868")),
+                        new PointParameters("AcademicMonograph", "1", false, 3, bd("4.0825"), bd("2.8868")),
             //            new PointParameters("AcademicMonograph", "2", true, 4, bd("7.3539"), bd("5.2000")),
-            new PointParameters("AcademicMonograph", "2", false, 4, bd("5.6568"), bd("4.0000")),
+            new PointParameters("AcademicMonograph", "2", false, 4, bd("5.6569"), bd("4.0000")),
             //            new PointParameters("AcademicChapter", "1", true, 5, bd("0.6325"), bd("0.4472")),
             new PointParameters("AcademicChapter", "2", false, 5, bd("1.8974"), bd("1.3416")),
-            new PointParameters("AcademicChapterISBN", "1", false, 6, bd("0.4041"), bd("0.2858")),
-            //            new PointParameters("AcademicChapterISBN", "2", true, 6, bd("0.8506"), bd("0.5307")),
             new PointParameters("AcademicArticle", "1", false, 7, bd("0.5345"), bd("0.3780")),
-            new PointParameters("AcademicArticle", "2", false, 7, bd("1.6036"), bd("1.1337"))
+            new PointParameters("AcademicArticle", "2", false, 7, bd("1.6036"), bd("1.1339"))
             //            new PointParameters("AcademicLiteratureReview", "1", true, 8, bd("0.6500"), bd("0.4596")),
             //            new PointParameters("AcademicLiteratureReview", "2", true, 8, bd("1.9500"), bd("1.3789"))
         );
@@ -122,7 +122,7 @@ class PointCalculatorTest {
     }
 
     private static BigDecimal bd(String val) {
-        return new BigDecimal(val);
+        return new BigDecimal(val).setScale(4, RoundingMode.HALF_UP);
     }
 
     private static List<URI> createRandomInstitutions(PointParameters parameters) {

@@ -21,15 +21,21 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.utils.JsonPointers;
 
 public class PointCalculator {
 
-    public static final MathContext MATH_CONTEXT = new MathContext(4, RoundingMode.HALF_UP);
-    public static final String VERIFIED = "Verified";
-    public static final BigDecimal INTERNATIONAL_COLLABORATION_FACTOR = new BigDecimal("1.3");
-    public static final BigDecimal NOT_INTERNATIONAL_COLLABORATION_FACTOR = BigDecimal.ONE;
+    private static final int SCALE = 10;
+    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
+    private static final MathContext MATH_CONTEXT = new MathContext(SCALE, ROUNDING_MODE);
+    private static final String VERIFIED = "Verified";
+    private static final BigDecimal INTERNATIONAL_COLLABORATION_FACTOR =
+        new BigDecimal("1.3").setScale(SCALE, ROUNDING_MODE);
+    private static final BigDecimal NOT_INTERNATIONAL_COLLABORATION_FACTOR =
+        BigDecimal.ONE.setScale(SCALE, ROUNDING_MODE);
+    private static final int RESULT_SCALE = 4;
     private static final String ACADEMIC_MONOGRAPH = "AcademicMonograph";
     private static final String ACADEMIC_CHAPTER = "AcademicChapter";
     private static final String ACADEMIC_ARTICLE = "AcademicArticle";
@@ -65,26 +71,36 @@ public class PointCalculator {
 
     private static Map<URI, Long> countInstitutionCreatorShares(JsonNode jsonNode, Set<URI> approvalInstitutions) {
         var contributors = jsonNode.at(JSON_PTR_CONTRIBUTOR);
-        return StreamSupport.stream(contributors.spliterator(), false)
-                   .filter(contributor -> VERIFIED.equals(extractJsonNodeTextValue(contributor,
-                                                                                   JSON_POINTER_IDENTITY_VERIFICATION_STATUS)))
-                   .flatMap(
-                       contributor -> StreamSupport.stream(contributor.at(JSON_PTR_AFFILIATIONS).spliterator(), false))
+        return streamNode(contributors)
+                   .filter(PointCalculator::isVerified)
+                   .flatMap(contributor -> streamNode(contributor.at(JSON_PTR_AFFILIATIONS)))
                    .map(affiliation -> extractJsonNodeTextValue(affiliation, JSON_PTR_ID))
                    .map(URI::create)
                    .filter(approvalInstitutions::contains)
                    .collect(Collectors.groupingByConcurrent(Function.identity(), Collectors.counting()));
     }
 
+    private static boolean isVerified(JsonNode contributor) {
+        return VERIFIED.equals(extractJsonNodeTextValue(contributor,
+                                                        JSON_POINTER_IDENTITY_VERIFICATION_STATUS));
+    }
+
+    private static Stream<JsonNode> streamNode(JsonNode contributor) {
+        return StreamSupport.stream(contributor.spliterator(), false);
+    }
+
     private static Map<URI, BigDecimal> calculatePoints(BigDecimal instanceTypeAndLevelPoints, int creatorShareCount,
                                                         boolean isInternationalCollaboration,
                                                         Map<URI, Long> institutionCreatorShareCounts) {
-        return institutionCreatorShareCounts.entrySet().stream()
-                   .collect(Collectors.toMap(Entry::getKey, entry -> calculateInstitutionPoints(
-                       instanceTypeAndLevelPoints,
-                       isInternationalCollaboration,
-                       entry.getValue(),
-                       creatorShareCount)));
+        return institutionCreatorShareCounts.entrySet()
+                   .stream()
+                   .collect(Collectors.toMap(
+                       Entry::getKey,
+                       entry -> calculateInstitutionPoints(
+                           instanceTypeAndLevelPoints,
+                           isInternationalCollaboration,
+                           entry.getValue(),
+                           creatorShareCount)));
     }
 
     private static BigDecimal calculateInstitutionPoints(BigDecimal instanceTypeAndLevelPoints,
@@ -93,17 +109,23 @@ public class PointCalculator {
         var internationalFactor = getInternationalCollaborationFactor(isInternationalCollaboration);
         var institutionContributorFraction = divideInstitutionShareOnTotalShares(institutionCreatorShareCount,
                                                                                  creatorShareCount);
-        return instanceTypeAndLevelPoints.multiply(internationalFactor)
-                   .multiply(institutionContributorFraction.sqrt(MATH_CONTEXT));
+        var creatorFactor = institutionContributorFraction.sqrt(MATH_CONTEXT).setScale(SCALE, ROUNDING_MODE);
+        return instanceTypeAndLevelPoints
+                   .multiply(internationalFactor)
+                   .multiply(creatorFactor)
+                   .setScale(RESULT_SCALE, ROUNDING_MODE);
     }
 
     private static BigDecimal divideInstitutionShareOnTotalShares(Long institutionCreatorShareCount,
                                                                   int creatorShareCount) {
-        return BigDecimal.valueOf(institutionCreatorShareCount).divide(new BigDecimal(creatorShareCount), MATH_CONTEXT);
+        return BigDecimal.valueOf(institutionCreatorShareCount)
+                   .divide(new BigDecimal(creatorShareCount), MATH_CONTEXT)
+                   .setScale(SCALE, ROUNDING_MODE);
     }
 
     private static BigDecimal getInternationalCollaborationFactor(boolean isInternationalCollaboration) {
-        return isInternationalCollaboration ? INTERNATIONAL_COLLABORATION_FACTOR
+        return isInternationalCollaboration
+                   ? INTERNATIONAL_COLLABORATION_FACTOR
                    : NOT_INTERNATIONAL_COLLABORATION_FACTOR;
     }
 
@@ -112,9 +134,9 @@ public class PointCalculator {
     }
 
     private static int countCreatorShares(JsonNode jsonNode) {
-        return StreamSupport.stream(jsonNode.at(JSON_PTR_CONTRIBUTOR).spliterator(), false)
+        return streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR))
                    .flatMap(contributor ->
-                                StreamSupport.stream(contributor.at(JSON_PTR_AFFILIATIONS).spliterator(), false))
+                                streamNode(contributor.at(JSON_PTR_AFFILIATIONS)))
                    .map(node -> 1)
                    .reduce(0, Integer::sum);
     }
@@ -125,7 +147,7 @@ public class PointCalculator {
                 extractJsonNodeTextValue(jsonNode, JSON_PTR_JOURNAL_LEVEL);
             case ACADEMIC_MONOGRAPH -> getAcademicMonographChannelLevel(jsonNode);
             case ACADEMIC_CHAPTER -> extractLevelAcademicChapter(jsonNode);
-            default -> "";
+            default -> "0";
         };
     }
 
