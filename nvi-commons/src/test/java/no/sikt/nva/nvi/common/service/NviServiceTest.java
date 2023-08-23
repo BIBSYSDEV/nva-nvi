@@ -31,17 +31,15 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
 
-public class NviServiceTest {
+public class NviServiceTest extends LocalDynamoTest {
 
     private NviService nviService;
 
     private NviCandidateRepository fakeNviCandidateRepository;
-    protected DynamoDbClient localDynamo;
 
     @BeforeEach
     void setup() {
-        DynamoDbClient localDynamo = DynamoDBEmbedded.create().dynamoDbClient();
-        DynamoDbEnhancedClient enhancedClient = DynamoDbEnhancedClient.builder().dynamoDbClient(localDynamo).build();
+        localDynamo = initializeTestDatabase();
         fakeNviCandidateRepository = new NviCandidateRepositoryImpl(localDynamo);
         nviService = new NviService(fakeNviCandidateRepository);
     }

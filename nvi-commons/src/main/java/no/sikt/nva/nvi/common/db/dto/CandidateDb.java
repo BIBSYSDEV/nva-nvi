@@ -8,7 +8,7 @@ import no.sikt.nva.nvi.common.db.WithCopy;
 import no.sikt.nva.nvi.common.db.dto.CandidateDb.Builder;
 
 public class CandidateDb implements WithCopy<Builder>, Typed {
-    public static final String TYPE = "Candidate";
+    public static final String TYPE = "CANDIDATE";
     public static final String PUBLICATION_ID_FIELD = "publicationId";
     public static final String PUBLICATION_BUCKET_URI_FIELD = "publicationBucketUri";
     public static final String IS_APPLICABLE_FIELD = "isApplicable";

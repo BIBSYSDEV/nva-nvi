@@ -21,24 +21,18 @@ public class NviCandidateRepositoryImpl extends DynamoRepository implements NviC
         this.table = this.client.table(NVI_TABLE_NAME, CandidateDao.TABLE_SCHEMA);
     }
 
-    private CandidateDb attemptToFetchObject(CandidateDb queryObject) {
-        throw new UnsupportedOperationException("Not implemented yet");
-        /*
-        CandidateDao candidateDao = attempt(() -> CandidateDao.fromCandidateDto(queryObject))
-                              .map(this::fetchItem)
-                              .orElseThrow(DynamoRepository::handleError);
-        return nonNull(candidateDao) ? candidateDao.toCandidateDto() : null;
-
-         */
-    }
-
     @Override
     public CandidateDb save(CandidateDb candidate) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        var insert = CandidateDao.fromCandidateDto(candidate);
+        this.table.putItem(insert);
+        var fetched = this.table.getItem(CandidateDao.fromCandidateDto(candidate));
+        return fetched.getCandidateDb();
     }
 
     @Override
     public Optional<CandidateDb> findByPublicationId(URI publicationId) {
-        return Optional.empty();
+        var queryObj = new CandidateDao(CandidateDao.getDocIdFromUri(publicationId), new CandidateDb());
+        var fetched = this.table.getItem(queryObj);
+        return Optional.ofNullable(fetched).map(CandidateDao::getCandidateDb);
     }
 }

@@ -291,8 +291,12 @@ Resources:
         PointInTimeRecoveryEnabled: true
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
-        - AttributeName: identifier
+        - AttributeName: PrimaryKeyHashKey
+          AttributeType: S
+        - AttributeName: PrimaryKeyRangeKey
           AttributeType: S
       KeySchema:
-        - AttributeName: identifier
+        - AttributeName: PrimaryKeyHashKey
           KeyType: HASH
+        - AttributeName: PrimaryKeyRangeKey
+          KeyType: RANGE

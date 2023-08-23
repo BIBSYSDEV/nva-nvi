@@ -11,7 +11,8 @@ public class UsernameDb implements WithCopy<Builder> {
     public static final String VALUE_FIELD = "value";
     @JsonProperty(VALUE_FIELD)
     private String value;
-
+    public UsernameDb() {
+    }
     public UsernameDb(String value) {
         this.value = value;
     }

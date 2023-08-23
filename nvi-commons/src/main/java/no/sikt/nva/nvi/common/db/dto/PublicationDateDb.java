@@ -23,6 +23,9 @@ public class PublicationDateDb implements WithCopy<Builder> {
         this.day = day;
     }
 
+    public PublicationDateDb() {
+    }
+
     @Override
     public Builder copy() {
         return new Builder().withYear(year).withMonth(month).withDay(day);

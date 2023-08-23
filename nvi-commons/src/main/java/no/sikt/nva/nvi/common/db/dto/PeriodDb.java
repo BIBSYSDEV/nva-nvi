@@ -14,6 +14,8 @@ public class PeriodDb implements WithCopy<Builder> {
     @JsonProperty(YEAR_FIELD)
     private int year;
 
+    public PeriodDb() {
+    }
     public PeriodDb(Instant closed, int year) {
         this.closed = closed;
         this.year = year;

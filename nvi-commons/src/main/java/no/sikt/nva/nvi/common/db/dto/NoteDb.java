@@ -25,6 +25,9 @@ public class NoteDb implements WithCopy<Builder> {
         this.createdDate = createdDate;
     }
 
+    public NoteDb() {
+    }
+
     @Override
     public Builder copy() {
         return new Builder().withUser(user).withText(text).withCreatedDate(createdDate);

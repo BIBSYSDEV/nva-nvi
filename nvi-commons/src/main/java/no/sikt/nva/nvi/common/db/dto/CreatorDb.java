@@ -20,6 +20,9 @@ public class CreatorDb implements WithCopy<Builder> {
         this.affiliations = affiliations;
     }
 
+    public CreatorDb() {
+    }
+
     @Override
     public Builder copy() {
         return new Builder().withCreatorId(creatorId).withAffiliations(affiliations);

@@ -27,6 +27,9 @@ public class ApprovalStatusDb implements WithCopy<Builder> {
         this.finalizedDate = finalizedDate;
     }
 
+    public ApprovalStatusDb() {
+    }
+
     @Override
     public Builder copy() {
         return new Builder().withInstitutionId(institutionId).withStatus(status).withFinalizedBy(finalizedBy).withFinalizedDate(finalizedDate);
