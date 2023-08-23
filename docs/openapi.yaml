@@ -39,12 +39,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-  /candidates/{publicationIdentifier}:
+  /candidates/{candidateIdentifier}:
     get:
       description: 'Get scientific index candidate'
       parameters:
         - in: path
-          name: publicationIdentifier
+          name: candidateIdentifier
           description: The identifer of the publication
           required: true
           schema:

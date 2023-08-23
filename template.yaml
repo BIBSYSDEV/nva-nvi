@@ -295,6 +295,6 @@ Resources:
         GetEvent:
           Type: Api
           Properties:
-            Path: /candidates/{publicationIdentifier}
+            Path: /candidates/{candidateIdentifier}
             Method: get
             RestApiId: !Ref ScientificIndexApi

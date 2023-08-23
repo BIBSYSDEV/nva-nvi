@@ -17,14 +17,22 @@ public record FetchCandidateResponse(
     public static FetchCandidateResponse fromCandidate(Candidate candidate) {
         return new FetchCandidateResponse(
             candidate.publicationId(),
-            candidate.approvalStatuses()
-                .stream()
-                .map(as -> new ApprovalStatus(as.institutionId(), as.status(), as.finalizedBy(), as.finalizedDate()))
-                .toList(),
-            candidate.notes()
-                .stream()
-                .map(n -> new Note(n.user(), n.text(), n.createdDate()))
-                .toList()
+            mapToApprovalStatus(candidate),
+            mapToNotes(candidate)
         );
+    }
+
+    private static List<Note> mapToNotes(Candidate candidate) {
+        return candidate.notes()
+                   .stream()
+                   .map(n -> new Note(n.user(), n.text(), n.createdDate()))
+                   .toList();
+    }
+
+    private static List<ApprovalStatus> mapToApprovalStatus(Candidate candidate) {
+        return candidate.approvalStatuses()
+                   .stream()
+                   .map(as -> new ApprovalStatus(as.institutionId(), as.status(), as.finalizedBy(), as.finalizedDate()))
+                   .toList();
     }
 }

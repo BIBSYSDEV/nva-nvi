@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.fetch;
 
+import static no.sikt.nva.nvi.fetch.FetchNviCandidateHandler.PARAM_CANDIDATE_IDENTIFIER;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.ApiGatewayHandler.ALLOWED_ORIGIN_ENV;
@@ -59,19 +60,19 @@ class FetchNviCandidateHandlerTest {
                         .withHeaders(Map.of(HttpHeader.ACCEPT.asString(), ContentType.APPLICATION_JSON.getMimeType()))
                         .build();
         handler.handleRequest(input, output, CONTEXT);
-        GatewayResponse<FetchCandidateResponse> gatewayResponse = getGatewayResponse();
+        var gatewayResponse = getGatewayResponse();
 
-        assertEquals(HttpStatus.SC_BAD_REQUEST, gatewayResponse.getStatusCode());
+        assertEquals(HttpStatus.SC_NOT_FOUND, gatewayResponse.getStatusCode());
     }
 
     @Test
     void shouldReturn404whenNoCandidateFound() throws IOException {
 
-        var publicationIdentifier = randomUri();
-        InputStream input = getInput(publicationIdentifier);
+        var candidateIdentifier = randomUri();
+        InputStream input = getInput(candidateIdentifier);
         when(service.getCandidate(URI.create(""))).thenReturn(Optional.empty());
         handler.handleRequest(input, output, CONTEXT);
-        GatewayResponse<FetchCandidateResponse> gatewayResponse = getGatewayResponse();
+        var gatewayResponse = getGatewayResponse();
 
         assertEquals(HttpStatus.SC_NOT_FOUND, gatewayResponse.getStatusCode());
     }
@@ -82,9 +83,9 @@ class FetchNviCandidateHandlerTest {
         var publicationId = randomUri();
         var candidate = getCandidate(publicationId);
         when(service.getCandidate(publicationId)).thenReturn(Optional.of(candidate));
-        InputStream input = getInput(publicationId);
+        var input = getInput(publicationId);
         handler.handleRequest(input, output, CONTEXT);
-        GatewayResponse<FetchCandidateResponse> gatewayResponse = getGatewayResponse();
+        var gatewayResponse = getGatewayResponse();
 
         assertEquals(HttpStatus.SC_OK, gatewayResponse.getStatusCode());
         var bodyObject = gatewayResponse.getBodyObject(FetchCandidateResponse.class);
@@ -94,7 +95,7 @@ class FetchNviCandidateHandlerTest {
     private static InputStream getInput(URI publicationId) throws JsonProcessingException {
         return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
                    .withHeaders(Map.of(HttpHeader.ACCEPT.asString(), ContentType.APPLICATION_JSON.getMimeType()))
-                   .withPathParameters(Map.of("publicationIdentifier", publicationId.toString()))
+                   .withPathParameters(Map.of(PARAM_CANDIDATE_IDENTIFIER, publicationId.toString()))
                    .build();
     }
 
