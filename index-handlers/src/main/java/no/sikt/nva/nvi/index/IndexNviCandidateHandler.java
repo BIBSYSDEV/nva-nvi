@@ -14,7 +14,6 @@ import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.index.model.NviCandidateMessageBody;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
@@ -28,14 +27,14 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     private static final Environment ENVIRONMENT = new Environment();
     private static final String EXPANDED_RESOURCES_BUCKET = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
-    private final StorageReader<NviCandidateMessageBody> storageReader;
+    private final StorageReader<URI> storageReader;
 
     @JacocoGenerated
     public IndexNviCandidateHandler() {
         this(new S3StorageReader(EXPANDED_RESOURCES_BUCKET), defaultOpenSearchClient());
     }
 
-    public IndexNviCandidateHandler(StorageReader<NviCandidateMessageBody> storageReader,
+    public IndexNviCandidateHandler(StorageReader<URI> storageReader,
                                     SearchClient<NviCandidateIndexDocument> openSearchClient) {
         this.storageReader = storageReader;
         this.openSearchClient = openSearchClient;
@@ -84,7 +83,7 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     private void addDocumentToIndex(DynamodbStreamRecord record) {
         var approvalAffiliations = extractAffiliationApprovals();
 
-        attempt(() -> extractBucketUri(record)).map(storageReader::readUri)
+        attempt(() -> extractBucketUri(record)).map(storageReader::read)
                                                .map(string -> generateDocument(string, approvalAffiliations))
                                                .forEach(openSearchClient::addDocumentToIndex);
 

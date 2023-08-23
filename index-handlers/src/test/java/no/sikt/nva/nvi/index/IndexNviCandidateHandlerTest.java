@@ -19,6 +19,7 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStream
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.StreamRecord;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +40,7 @@ class IndexNviCandidateHandlerTest {
     public static final String CANDIDATE_MISSING_FIELDS = IoUtils.stringFromResources(Path.of("candidateV2.json"));
     private IndexNviCandidateHandler handler;
     private TestAppender appender;
-    private StorageReader storageReader;
+    private StorageReader<URI> storageReader;
 
     @BeforeEach
     void setup() {
@@ -54,7 +55,7 @@ class IndexNviCandidateHandlerTest {
 
     @Test
     void shouldAddDocumentToIndexWhenIncomingEventIsInsert() {
-        when(storageReader.readUri(any())).thenReturn(CANDIDATE_MISSING_FIELDS);
+        when(storageReader.read(any())).thenReturn(CANDIDATE_MISSING_FIELDS);
 
         handler.handleRequest(createEvent(INSERT), CONTEXT);
         assertThat(appender.getMessages(), containsString(DOCUMENT_ADDED_MESSAGE));
@@ -62,7 +63,7 @@ class IndexNviCandidateHandlerTest {
 
     @Test
     void shouldUpdateExistingIndexDocumentWhenIncomingEventIsModify() {
-        when(storageReader.readUri(any())).thenReturn(CANDIDATE);
+        when(storageReader.read(any())).thenReturn(CANDIDATE);
 
         handler.handleRequest(createEvent(MODIFY), CONTEXT);
 
@@ -71,7 +72,7 @@ class IndexNviCandidateHandlerTest {
 
     @Test
     void shouldRemoveDocumentFromIndexWhenIncomingEventIsRemove() {
-        when(storageReader.readUri(any())).thenReturn(CANDIDATE);
+        when(storageReader.read(any())).thenReturn(CANDIDATE);
 
         handler.handleRequest(createEvent(REMOVE), CONTEXT);
 

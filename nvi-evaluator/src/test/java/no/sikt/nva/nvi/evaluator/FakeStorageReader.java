@@ -15,12 +15,7 @@ class FakeStorageReader implements StorageReader<EventReference> {
     }
 
     @Override
-    public String readMessage(EventReference blob) {
-        return reader.readMessage(blob);
-    }
-
-    @Override
-    public String readUri(URI uri) {
-        return null;
+    public String read(EventReference blob) {
+        return reader.read(blob);
     }
 }
