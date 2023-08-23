@@ -63,8 +63,35 @@ public class PointCalculator {
                                countInstitutionCreatorShares(jsonNode, approvalInstitutions));
     }
 
+    private static Map<URI, BigDecimal> calculatePoints(BigDecimal instanceTypeAndLevelPoints, int creatorShareCount,
+                                                        boolean isInternationalCollaboration,
+                                                        Map<URI, Long> institutionCreatorShareCounts) {
+        return institutionCreatorShareCounts.entrySet()
+                   .stream()
+                   .collect(Collectors.toMap(
+                       Entry::getKey,
+                       entry -> calculateInstitutionPoints(
+                           instanceTypeAndLevelPoints,
+                           isInternationalCollaboration,
+                           entry.getValue(),
+                           creatorShareCount)));
+    }
+
     private static String extractInstanceType(JsonNode jsonNode) {
         return extractJsonNodeTextValue(jsonNode, JSON_PTR_INSTANCE_TYPE);
+    }
+
+    private static BigDecimal calculateInstitutionPoints(BigDecimal instanceTypeAndLevelPoints,
+                                                         boolean isInternationalCollaboration,
+                                                         Long institutionCreatorShareCount, int creatorShareCount) {
+        var internationalFactor = getInternationalCollaborationFactor(isInternationalCollaboration);
+        var institutionContributorFraction = divideInstitutionShareOnTotalShares(institutionCreatorShareCount,
+                                                                                 creatorShareCount);
+        var creatorFactor = institutionContributorFraction.sqrt(MATH_CONTEXT).setScale(SCALE, ROUNDING_MODE);
+        return instanceTypeAndLevelPoints
+                   .multiply(internationalFactor)
+                   .multiply(creatorFactor)
+                   .setScale(RESULT_SCALE, ROUNDING_MODE);
     }
 
     private static Map<URI, Long> countInstitutionCreatorShares(JsonNode jsonNode, Set<URI> approvalInstitutions) {
@@ -80,33 +107,6 @@ public class PointCalculator {
 
     private static boolean isVerified(JsonNode contributor) {
         return VERIFIED.equals(extractJsonNodeTextValue(contributor, JSON_POINTER_IDENTITY_VERIFICATION_STATUS));
-    }
-
-    private static Map<URI, BigDecimal> calculatePoints(BigDecimal instanceTypeAndLevelPoints, int creatorShareCount,
-                                                        boolean isInternationalCollaboration,
-                                                        Map<URI, Long> institutionCreatorShareCounts) {
-        return institutionCreatorShareCounts.entrySet()
-                   .stream()
-                   .collect(Collectors.toMap(
-                       Entry::getKey,
-                       entry -> calculateInstitutionPoints(
-                           instanceTypeAndLevelPoints,
-                           isInternationalCollaboration,
-                           entry.getValue(),
-                           creatorShareCount)));
-    }
-
-    private static BigDecimal calculateInstitutionPoints(BigDecimal instanceTypeAndLevelPoints,
-                                                         boolean isInternationalCollaboration,
-                                                         Long institutionCreatorShareCount, int creatorShareCount) {
-        var internationalFactor = getInternationalCollaborationFactor(isInternationalCollaboration);
-        var institutionContributorFraction = divideInstitutionShareOnTotalShares(institutionCreatorShareCount,
-                                                                                 creatorShareCount);
-        var creatorFactor = institutionContributorFraction.sqrt(MATH_CONTEXT).setScale(SCALE, ROUNDING_MODE);
-        return instanceTypeAndLevelPoints
-                   .multiply(internationalFactor)
-                   .multiply(creatorFactor)
-                   .setScale(RESULT_SCALE, ROUNDING_MODE);
     }
 
     private static BigDecimal divideInstitutionShareOnTotalShares(Long institutionCreatorShareCount,

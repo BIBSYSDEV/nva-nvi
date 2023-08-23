@@ -9,7 +9,6 @@ import static org.hamcrest.Matchers.is;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.util.Arrays;
@@ -63,16 +62,16 @@ class PointCalculatorTest {
     private static Stream<PointParameters> pointParametersAndResultProvider() {
         //TODO Disabled isInternationCollaboration tests until parameter available
         return Stream.of(
-            //            new PointParameters("AcademicMonograph", "1", true, 3, bd("5.3072"), bd("3.7528")),
-                        new PointParameters("AcademicMonograph", "1", false, 3, bd("4.0825"), bd("2.8868")),
-            //            new PointParameters("AcademicMonograph", "2", true, 4, bd("7.3539"), bd("5.2000")),
+            //new PointParameters("AcademicMonograph", "1", true, 3, bd("5.3072"), bd("3.7528")),
+            new PointParameters("AcademicMonograph", "1", false, 3, bd("4.0825"), bd("2.8868")),
+            //new PointParameters("AcademicMonograph", "2", true, 4, bd("7.3539"), bd("5.2000")),
             new PointParameters("AcademicMonograph", "2", false, 4, bd("5.6569"), bd("4.0000")),
-            //            new PointParameters("AcademicChapter", "1", true, 5, bd("0.6325"), bd("0.4472")),
+            //new PointParameters("AcademicChapter", "1", true, 5, bd("0.6325"), bd("0.4472")),
             new PointParameters("AcademicChapter", "2", false, 5, bd("1.8974"), bd("1.3416")),
             new PointParameters("AcademicArticle", "1", false, 7, bd("0.5345"), bd("0.3780")),
             new PointParameters("AcademicArticle", "2", false, 7, bd("1.6036"), bd("1.1339"))
-            //            new PointParameters("AcademicLiteratureReview", "1", true, 8, bd("0.6500"), bd("0.4596")),
-            //            new PointParameters("AcademicLiteratureReview", "2", true, 8, bd("1.9500"), bd("1.3789"))
+            //new PointParameters("AcademicLiteratureReview", "1", true, 8, bd("0.6500"), bd("0.4596")),
+            //new PointParameters("AcademicLiteratureReview", "2", true, 8, bd("1.9500"), bd("1.3789"))
         );
     }
 
@@ -102,20 +101,20 @@ class PointCalculatorTest {
     private static JsonNode createChapterReference(String instanceType, String level) {
         var reference = objectMapper.createObjectNode().put("type", "Reference");
         reference.set("publicationInstance", objectMapper.createObjectNode().put("type", instanceType));
-        var publicationContext = objectMapper.createObjectNode();
-        var entityDescription = objectMapper.createObjectNode();
-        var reference2 = objectMapper.createObjectNode();
-        var publicationContext2 = objectMapper.createObjectNode();
         var publisher = objectMapper.createObjectNode()
                             .put("type", "Publisher")
                             .put("level", level);
         var series = objectMapper.createObjectNode()
                          .put("type", "Series")
                          .put("level", level);
+        var publicationContext2 = objectMapper.createObjectNode();
         publicationContext2.set("publisher", publisher);
         publicationContext2.set("series", series);
-        reference2.set("publicationContext", publicationContext2);
-        entityDescription.set("reference", reference2);
+        var anthologyReference = objectMapper.createObjectNode();
+        anthologyReference.set("publicationContext", publicationContext2);
+        var entityDescription = objectMapper.createObjectNode();
+        entityDescription.set("reference", anthologyReference);
+        var publicationContext = objectMapper.createObjectNode();
         publicationContext.set("entityDescription", entityDescription);
         reference.set("publicationContext", publicationContext);
         return reference;
