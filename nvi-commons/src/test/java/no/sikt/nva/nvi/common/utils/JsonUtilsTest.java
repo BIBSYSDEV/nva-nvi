@@ -27,15 +27,6 @@ class JsonUtilsTest {
     }
 
     @Test
-    void shouldExtractJsonNodeAsString() {
-        var fieldName = "fieldName";
-        var fieldValue = randomString();
-        var randomJsonNode = objectMapper.createObjectNode().put(fieldName, fieldValue);
-        assertThat(JsonUtils.extractJsonNodeAsString(randomJsonNode, "/" + fieldName),
-                   is(equalTo("\"" + fieldValue + "\"")));
-    }
-
-    @Test
     void shouldReturnStreamNode() {
         var randomJsonNode = objectMapper.createObjectNode();
         assertThat(JsonUtils.streamNode(randomJsonNode).toList(),

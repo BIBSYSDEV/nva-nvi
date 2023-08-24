@@ -12,7 +12,6 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_JOURNAL;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLISHER;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_LEVEL;
-import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeAsString;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -170,7 +169,7 @@ public final class PointCalculator {
 
     private static ChannelLevel extractChannelLevel(String instanceType, JsonNode jsonNode) {
         var channel = switch (instanceType) {
-            case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW -> extractJsonNodeAsString(jsonNode, JSON_PTR_JOURNAL);
+            case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW -> jsonNode.at(JSON_PTR_JOURNAL).toString();
             case ACADEMIC_MONOGRAPH -> extractAcademicMonographChannel(jsonNode);
             case ACADEMIC_CHAPTER -> extractAcademicChapterChannel(jsonNode);
             default -> {
@@ -183,15 +182,19 @@ public final class PointCalculator {
     }
 
     private static String extractAcademicChapterChannel(JsonNode jsonNode) {
-        return Objects.nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_CHAPTER_SERIES_LEVEL))
-                   ? extractJsonNodeAsString(jsonNode, JSON_PTR_CHAPTER_SERIES)
-                   : extractJsonNodeAsString(jsonNode, JSON_PTR_CHAPTER_PUBLISHER);
+        if (Objects.nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_CHAPTER_SERIES_LEVEL))) {
+            return jsonNode.at(JSON_PTR_CHAPTER_SERIES).toString();
+        } else {
+            return jsonNode.at(JSON_PTR_CHAPTER_PUBLISHER).toString();
+        }
     }
 
     private static String extractAcademicMonographChannel(JsonNode jsonNode) {
-        return Objects.nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_LEVEL))
-                   ? extractJsonNodeAsString(jsonNode, JSON_PTR_SERIES)
-                   : extractJsonNodeAsString(jsonNode, JSON_PTR_PUBLISHER);
+        if (Objects.nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_LEVEL))) {
+            return jsonNode.at(JSON_PTR_SERIES).toString();
+        } else {
+            return jsonNode.at(JSON_PTR_PUBLISHER).toString();
+        }
     }
 
     private record ChannelLevel(String type, String level) {

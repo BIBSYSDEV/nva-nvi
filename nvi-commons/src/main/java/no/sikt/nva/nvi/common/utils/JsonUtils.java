@@ -17,12 +17,6 @@ public final class JsonUtils {
                    .orElse(null);
     }
 
-    public static String extractJsonNodeAsString(JsonNode node, String jsonPointer) {
-        return Optional.ofNullable(node.at(jsonPointer))
-                   .map(JsonNode::toString)
-                   .orElse(null);
-    }
-
     public static Stream<JsonNode> streamNode(JsonNode node) {
         return StreamSupport.stream(node.spliterator(), false);
     }
