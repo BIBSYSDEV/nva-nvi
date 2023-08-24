@@ -167,7 +167,8 @@ Resources:
         DestinationArn: !GetAtt ApiAccessLogGroup.Arn
         Format: '{ "apiId": "$context.apiId", "requestId": "$context.requestId", "requestTime": "$context.requestTime", "requestTimeEpoch": "$context.requestTimeEpoch", "httpMethod": "$context.httpMethod", "path": "$context.path", "status": "$context.status",  "error.message": "$context.error.message" }'
       StageName: Prod
-      EndpointConfiguration: REGIONAL
+      EndpointConfiguration:
+        Type: REGIONAL
       DefinitionBody:
         'Fn::Transform':
           Name: AWS::Include
@@ -245,8 +246,8 @@ Resources:
   UpsertNviCandidateHandler:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.handlers.IndexNviCandidateHandler::handleRequest
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.UpsertNviCandidateHandler::handleRequest
       Timeout: 30
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
