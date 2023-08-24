@@ -31,31 +31,6 @@ import java.util.stream.Collectors;
 
 public final class PointCalculator {
 
-    public static final String DEFAULT_LEVEL = "0";
-    public static final ChannelLevel PUBLISHER_LEVEL_ONE = ChannelLevel.builder()
-                                                               .withLevel("1")
-                                                               .withType("Publisher")
-                                                               .build();
-    public static final ChannelLevel SERIES_LEVEL_ONE = ChannelLevel.builder()
-                                                            .withLevel("1")
-                                                            .withType("Series")
-                                                            .build();
-    public static final ChannelLevel PUBLISHER_LEVEL_TWO = ChannelLevel.builder()
-                                                               .withLevel("2")
-                                                               .withType("Publisher")
-                                                               .build();
-    public static final ChannelLevel SERIES_LEVEL_TWO = ChannelLevel.builder()
-                                                            .withLevel("2")
-                                                            .withType("Series")
-                                                            .build();
-    public static final ChannelLevel JOURNAL_LEVEL_ONE = ChannelLevel.builder()
-                                                             .withLevel("1")
-                                                             .withType("Journal")
-                                                             .build();
-    public static final ChannelLevel JOURNAL_LEVEL_TWO = ChannelLevel.builder()
-                                                             .withLevel("2")
-                                                             .withType("Journal")
-                                                             .build();
     private static final int SCALE = 10;
     private static final int RESULT_SCALE = 4;
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
@@ -65,25 +40,40 @@ public final class PointCalculator {
         new BigDecimal("1.3").setScale(SCALE, ROUNDING_MODE);
     private static final BigDecimal NOT_INTERNATIONAL_COLLABORATION_FACTOR =
         BigDecimal.ONE.setScale(SCALE, ROUNDING_MODE);
+    private static final String DEFAULT_LEVEL = "0";
     private static final String ACADEMIC_MONOGRAPH = "AcademicMonograph";
     private static final String ACADEMIC_CHAPTER = "AcademicChapter";
     private static final String ACADEMIC_ARTICLE = "AcademicArticle";
     private static final String ACADEMIC_LITERATURE_REVIEW = "AcademicLiteratureReview";
-    private static final Map<String, Map<ChannelLevel, BigDecimal>> INSTANCE_TYPE_AND_LEVEL_POINT_MAP =
+    private static final String LEVEL_ONE = "1";
+    private static final String LEVEL_TWO = "2";
+    private static final String SERIES = "Series";
+    private static final String JOURNAL = "Journal";
+    private static final String PUBLISHER = "Publisher";
+    private static final Map<String, Map<String, Map<String, BigDecimal>>> INSTANCE_TYPE_AND_LEVEL_POINT_MAP =
         Map.of(
-            ACADEMIC_MONOGRAPH, Map.of(PUBLISHER_LEVEL_ONE, BigDecimal.valueOf(5),
-                                       SERIES_LEVEL_ONE, BigDecimal.valueOf(5),
-                                       PUBLISHER_LEVEL_TWO, BigDecimal.valueOf(8),
-                                       SERIES_LEVEL_TWO, BigDecimal.valueOf(8)),
-            ACADEMIC_CHAPTER, Map.of(PUBLISHER_LEVEL_ONE, BigDecimal.valueOf(0.7),
-                                     SERIES_LEVEL_ONE, BigDecimal.valueOf(1),
-                                     PUBLISHER_LEVEL_TWO, BigDecimal.ONE,
-                                     SERIES_LEVEL_TWO, BigDecimal.valueOf(3)),
-            ACADEMIC_ARTICLE, Map.of(JOURNAL_LEVEL_ONE, BigDecimal.ONE,
-                                     JOURNAL_LEVEL_TWO, BigDecimal.valueOf(3)),
-            ACADEMIC_LITERATURE_REVIEW, Map.of(JOURNAL_LEVEL_ONE, BigDecimal.ONE,
-                                               JOURNAL_LEVEL_TWO, BigDecimal.valueOf(3))
-        );
+            ACADEMIC_MONOGRAPH, Map.of(
+                PUBLISHER, Map.of(
+                    LEVEL_ONE, BigDecimal.valueOf(5),
+                    LEVEL_TWO, BigDecimal.valueOf(8)),
+                SERIES, Map.of(
+                    LEVEL_ONE, BigDecimal.valueOf(5),
+                    LEVEL_TWO, BigDecimal.valueOf(8))),
+            ACADEMIC_CHAPTER, Map.of(
+                PUBLISHER, Map.of(
+                    LEVEL_ONE, BigDecimal.valueOf(0.7),
+                    LEVEL_TWO, BigDecimal.valueOf(1)),
+                SERIES, Map.of(
+                    LEVEL_ONE, BigDecimal.valueOf(1),
+                    LEVEL_TWO, BigDecimal.valueOf(3))),
+            ACADEMIC_ARTICLE, Map.of(
+                JOURNAL, Map.of(
+                    LEVEL_ONE, BigDecimal.valueOf(1),
+                    LEVEL_TWO, BigDecimal.valueOf(3))),
+            ACADEMIC_LITERATURE_REVIEW, Map.of(
+                JOURNAL, Map.of(
+                    LEVEL_ONE, BigDecimal.valueOf(1),
+                    LEVEL_TWO, BigDecimal.valueOf(3))));
     private static final boolean HARDCODED_INTERNATIONAL_COLLABORATION_BOOLEAN_TO_BE_REPLACED = false;
 
     private PointCalculator() {
@@ -91,8 +81,9 @@ public final class PointCalculator {
 
     public static Map<URI, BigDecimal> calculatePoints(JsonNode jsonNode, Set<URI> approvalInstitutions) {
         var instanceType = extractInstanceType(jsonNode);
-        var channelType = extractChannelLevel(instanceType, jsonNode);
-        var instanceTypeAndLevelPoints = calculateInstanceTypeAndLevelPoints(instanceType, channelType);
+        var channelLevel = extractChannelLevel(instanceType, jsonNode);
+        var instanceTypeAndLevelPoints = calculateInstanceTypeAndLevelPoints(instanceType, channelLevel.type(),
+                                                                             channelLevel.level());
         //TODO: set isInternationalCollaboration when Cristin proxy api has implemented land code
         var isInternationalCollaboration = HARDCODED_INTERNATIONAL_COLLABORATION_BOOLEAN_TO_BE_REPLACED;
         return calculatePoints(instanceTypeAndLevelPoints,
@@ -128,8 +119,9 @@ public final class PointCalculator {
                    .setScale(RESULT_SCALE, ROUNDING_MODE);
     }
 
-    private static String extractInstanceType(JsonNode jsonNode) {
-        return extractJsonNodeTextValue(jsonNode, JSON_PTR_INSTANCE_TYPE);
+    private static BigDecimal calculateInstanceTypeAndLevelPoints(String instanceType,
+                                                                  String channelType, String level) {
+        return INSTANCE_TYPE_AND_LEVEL_POINT_MAP.get(instanceType).get(channelType).get(level);
     }
 
     private static Map<URI, Long> countInstitutionCreatorShares(JsonNode jsonNode, Set<URI> approvalInstitutions) {
@@ -141,10 +133,6 @@ public final class PointCalculator {
                    .map(URI::create)
                    .filter(approvalInstitutions::contains)
                    .collect(Collectors.groupingByConcurrent(Function.identity(), Collectors.counting()));
-    }
-
-    private static boolean isVerified(JsonNode contributor) {
-        return VERIFIED.equals(extractJsonNodeTextValue(contributor, JSON_POINTER_IDENTITY_VERIFICATION_STATUS));
     }
 
     private static BigDecimal divideInstitutionShareOnTotalShares(Long institutionCreatorShareCount,
@@ -160,15 +148,19 @@ public final class PointCalculator {
                    : NOT_INTERNATIONAL_COLLABORATION_FACTOR;
     }
 
-    private static BigDecimal calculateInstanceTypeAndLevelPoints(String instanceType, ChannelLevel channelLevel) {
-        return INSTANCE_TYPE_AND_LEVEL_POINT_MAP.get(instanceType).get(channelLevel);
-    }
-
     private static int countCreatorShares(JsonNode jsonNode) {
         return streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR))
                    .flatMap(contributor -> streamNode(contributor.at(JSON_PTR_AFFILIATIONS)))
                    .map(node -> 1)
                    .reduce(0, Integer::sum);
+    }
+
+    private static String extractInstanceType(JsonNode jsonNode) {
+        return extractJsonNodeTextValue(jsonNode, JSON_PTR_INSTANCE_TYPE);
+    }
+
+    private static boolean isVerified(JsonNode contributor) {
+        return VERIFIED.equals(extractJsonNodeTextValue(contributor, JSON_POINTER_IDENTITY_VERIFICATION_STATUS));
     }
 
     private static ChannelLevel extractChannelLevel(String instanceType, JsonNode jsonNode) {
@@ -191,5 +183,9 @@ public final class PointCalculator {
         return Objects.nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_LEVEL))
                    ? extractJsonNodeAsString(jsonNode, JSON_PTR_SERIES)
                    : extractJsonNodeAsString(jsonNode, JSON_PTR_PUBLISHER);
+    }
+
+    private record ChannelLevel(String type, String level) {
+
     }
 }
