@@ -1,10 +1,13 @@
-package no.sikt.nva.nvi.rest.utils;
+package no.sikt.nva.nvi.common.utils;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import no.sikt.nva.nvi.common.model.business.Username;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
+import nva.commons.core.JacocoGenerated;
 
+@JacocoGenerated
 public final class RequestUtil {
 
     private RequestUtil() {

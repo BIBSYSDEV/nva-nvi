@@ -40,17 +40,13 @@ public class NviService {
         return period;
     }
 
-    private void validatePeriod(NviPeriod period) throws BadRequestException {
-        if (hasInvalidLength(period)) {
-           throw new BadRequestException(INVALID_LENGTH_MESSAGE);
-        }
-        if(!isInteger(period.publishingYear())) {
-            throw new BadRequestException(PERIOD_NOT_NUMERIC_MESSAGE);
-        }
+    //TODO: Implement persistence
+    public NviPeriod getPeriod(String publishingYear) {
+        return new NviPeriod.Builder().withPublishingYear(publishingYear).build();
     }
 
-    public static boolean isInteger(String value) {
-        try{
+    private static boolean isInteger(String value) {
+        try {
             Integer.parseInt(value);
             return true;
         } catch (NumberFormatException e) {
@@ -62,17 +58,10 @@ public class NviService {
         return period.publishingYear().length() != 4;
     }
 
-    //TODO: Implement persistence
-    public NviPeriod getPeriod(String publishingYear) {
-        return new NviPeriod.Builder()
-                   .withPublishingYear(publishingYear)
-                   .build();
-    }
-
     private static List<Creator> mapToVerifiedCreators(List<CandidateDetails.Creator> creators) {
         return creators.stream()
-                   .map(verifiedCreatorDto -> new Creator(
-                       verifiedCreatorDto.id(), verifiedCreatorDto.nviInstitutions()))
+                   .map(
+                       verifiedCreatorDto -> new Creator(verifiedCreatorDto.id(), verifiedCreatorDto.nviInstitutions()))
                    .toList();
     }
 
@@ -89,25 +78,13 @@ public class NviService {
     }
 
     private static PublicationDate mapToPublicationDate(CandidateDetails.PublicationDate publicationDate) {
-        return new PublicationDate(publicationDate.year(),
-                                   publicationDate.month(),
-                                   publicationDate.day());
+        return new PublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
     }
 
     private static List<ApprovalStatus> generatePendingApprovalStatuses(List<URI> institutionUri) {
-        return institutionUri.stream().map(uri -> new ApprovalStatus.Builder()
-                                                      .withStatus(Status.PENDING)
-                                                      .withInstitutionId(uri)
-                                                      .build()).toList();
-    }
-
-    private boolean exists(URI publicationId) {
-        return nviCandidateRepository.findByPublicationId(publicationId).isPresent();
-    }
-
-    private void createCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-        var pendingCandidate = toPendingCandidate(evaluatedCandidate.candidateDetails());
-        nviCandidateRepository.save(pendingCandidate);
+        return institutionUri.stream()
+                   .map(uri -> new ApprovalStatus.Builder().withStatus(Status.PENDING).withInstitutionId(uri).build())
+                   .toList();
     }
 
     private static Candidate toPendingCandidate(CandidateDetails candidateDetails) {
@@ -120,6 +97,24 @@ public class NviService {
                    .withPublicationDate(mapToPublicationDate(candidateDetails.publicationDate()))
                    .withApprovalStatuses(generatePendingApprovalStatuses(extractInstitutionIds(candidateDetails)))
                    .build();
+    }
+
+    private void validatePeriod(NviPeriod period) throws BadRequestException {
+        if (hasInvalidLength(period)) {
+            throw new BadRequestException(INVALID_LENGTH_MESSAGE);
+        }
+        if (!isInteger(period.publishingYear())) {
+            throw new BadRequestException(PERIOD_NOT_NUMERIC_MESSAGE);
+        }
+    }
+
+    private boolean exists(URI publicationId) {
+        return nviCandidateRepository.findByPublicationId(publicationId).isPresent();
+    }
+
+    private void createCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
+        var pendingCandidate = toPendingCandidate(evaluatedCandidate.candidateDetails());
+        nviCandidateRepository.save(pendingCandidate);
     }
 
     //TODO: Remove JacocoGenerated when case for existing candidate is implemented

@@ -44,11 +44,20 @@ public class CreateNviPeriodHandlerTest {
     }
 
     @Test
-    void shouldThrowExceptionWhenMissingAccessRightsToOpenNviPeriod() throws IOException {
+    void shouldReturnUnauthorizedWhenMissingAccessRightsToOpenNviPeriod() throws IOException {
         handler.handleRequest(createRequestWithoutAccessRights(), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenMissingAccessRightsToOpenNviPeriod() throws IOException, BadRequestException {
+        when(nviService.createPeriod(any())).thenThrow(BadRequestException.class);
+        handler.handleRequest(createRequest(), output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
     }
 
     //TODO: Assert persisted period when nviService is implemented
