@@ -26,6 +26,7 @@ dependencies {
     implementation libs.bundles.logging
 
     testImplementation libs.nva.testutils
+    testImplementation project(':nvi-test')
 }
 test {
     useJUnitPlatform()

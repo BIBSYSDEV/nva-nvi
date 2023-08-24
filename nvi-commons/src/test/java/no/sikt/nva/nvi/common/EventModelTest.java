@@ -6,6 +6,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.common.model.events.CandidateStatus;
@@ -22,15 +23,16 @@ import org.junit.jupiter.api.Test;
 public class EventModelTest {
 
     public static final String CANDIDATE = IoUtils.stringFromResources(Path.of("candidate.json"));
+    public static final String JSON_PTR_BODY = "/body";
 
     @Test
     void shouldParseIncomingEventAndConstructNviCandidateOutputEvent() {
         assertDoesNotThrow(
             () -> attempt(() -> dtoObjectMapper.readTree(CANDIDATE))
-                      .map(json -> json.at("/body"))
-                      .map(body -> dtoObjectMapper.readValue(body.toString(), Publication.class))
-                      .map(this::toEvent)
-                      .orElseThrow());
+                                     .map(json -> json.at(JSON_PTR_BODY))
+                                     .map(body -> dtoObjectMapper.readValue(body.toString(), Publication.class))
+                                     .map(this::toEvent)
+                                     .orElseThrow());              
     }
 
     @Test
@@ -53,11 +55,12 @@ public class EventModelTest {
         candidate.publicationId();
         new NonNviCandidate.Builder().withPublicationId(randomUri()).build().publicationId();
 
-        var message = new CandidateEvaluatedMessage(CandidateStatus.CANDIDATE, randomUri(), candidate);
+        var message = new CandidateEvaluatedMessage(CandidateStatus.CANDIDATE, randomUri(), candidate, null);
         message.candidateDetails();
         message.publicationBucketUri();
         message.status();
         creator.nviInstitutions();
+        message.institutionPoints();
     }
 
     private static String getType(Publication publication) {
@@ -69,9 +72,10 @@ public class EventModelTest {
     }
 
     private CandidateEvaluatedMessage toEvent(Publication publication) {
-        return new CandidateEvaluatedMessage.Builder().withStatus(CandidateStatus.CANDIDATE)
+        return CandidateEvaluatedMessage.builder().withStatus(CandidateStatus.CANDIDATE)
                    .withPublicationBucketUri(randomUri())
                    .withCandidateDetails(toCandidateDetails(publication))
+                   .withInstitutionPoints(new HashMap<>())
                    .build();
     }
 
