@@ -1,4 +1,4 @@
-package handlers;
+package events;
 
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
