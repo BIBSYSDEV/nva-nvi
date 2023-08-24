@@ -11,16 +11,14 @@ public final class JsonUtils {
     }
 
     public static String extractJsonNodeTextValue(JsonNode node, String jsonPointer) {
-        JsonNode jsonNode = node.at(jsonPointer);
-        return Optional.ofNullable(jsonNode)
+        return Optional.ofNullable(node.at(jsonPointer))
                    .filter(JsonUtils::isNotMissingNode)
                    .map(JsonNode::textValue)
                    .orElse(null);
     }
 
     public static String extractJsonNodeAsString(JsonNode node, String jsonPointer) {
-        JsonNode jsonNode = node.at(jsonPointer);
-        return Optional.ofNullable(jsonNode)
+        return Optional.ofNullable(node.at(jsonPointer))
                    .map(JsonNode::toString)
                    .orElse(null);
     }
