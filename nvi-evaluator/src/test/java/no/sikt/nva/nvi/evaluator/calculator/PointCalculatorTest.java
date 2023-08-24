@@ -62,33 +62,33 @@ class PointCalculatorTest {
     private static Stream<PointParameters> pointParametersAndResultProvider() {
         //TODO Disabled isInternationCollaboration tests until parameter available
         return Stream.of(
-            //new PointParameters("AcademicMonograph", "series", "1", true, 3, bd("5.3072"), bd("3.7528")),
-            new PointParameters("AcademicMonograph", "series", "1", false, 3, bd("4.0825"), bd("2.8868")),
-            //new PointParameters("AcademicMonograph", "series", "2", true, 4, bd("7.3539"), bd("5.2000")),
-            new PointParameters("AcademicMonograph", "series", "2", false, 4, bd("5.6569"), bd("4.0000")),
-            //new PointParameters("AcademicChapter", "series", "1", true, 5, bd("0.6325"), bd("0.4472")),
-            new PointParameters("AcademicChapter", "series", "2", false, 5, bd("1.8974"), bd("1.3416")),
-            new PointParameters("AcademicArticle", "journal", "1", false, 7, bd("0.5345"), bd("0.3780")),
-            new PointParameters("AcademicArticle", "journal", "2", false, 7, bd("1.6036"), bd("1.1339"))
-            //new PointParameters("AcademicLiteratureReview", "journal", "1", true, 8, bd("0.6500"), bd("0.4596")),
-            //new PointParameters("AcademicLiteratureReview", "journal", "2", true, 8, bd("1.9500"), bd("1.3789"))
+            //new PointParameters("AcademicMonograph", "Series", "1", true, 3, bd("5.3072"), bd("3.7528")),
+            new PointParameters("AcademicMonograph", "Series", "1", false, 3, bd("4.0825"), bd("2.8868")),
+            //new PointParameters("AcademicMonograph", "Series", "2", true, 4, bd("7.3539"), bd("5.2000")),
+            new PointParameters("AcademicMonograph", "Series", "2", false, 4, bd("5.6569"), bd("4.0000")),
+            //new PointParameters("AcademicChapter", "Series", "1", true, 5, bd("0.6325"), bd("0.4472")),
+            new PointParameters("AcademicChapter", "Series", "2", false, 5, bd("1.8974"), bd("1.3416")),
+            new PointParameters("AcademicArticle", "Journal", "1", false, 7, bd("0.5345"), bd("0.3780")),
+            new PointParameters("AcademicArticle", "Journal", "2", false, 7, bd("1.6036"), bd("1.1339"))
+            //new PointParameters("AcademicLiteratureReview", "Journal", "1", true, 8, bd("0.6500"), bd("0.4596")),
+            //new PointParameters("AcademicLiteratureReview", "Journal", "2", true, 8, bd("1.9500"), bd("1.3789"))
         );
     }
 
     private static Stream<PointParameters> singleCreatorSingleInstitutionPointProvider() {
         return Stream.of(
-            new PointParameters("AcademicMonograph", "series", "1", false, 1, bd("5"), null),
-            new PointParameters("AcademicMonograph", "series", "2", false, 1, bd("8"), null),
-            new PointParameters("AcademicMonograph", "publisher", "1", false, 1, bd("5"), null),
-            new PointParameters("AcademicMonograph", "publisher", "2", false, 1, bd("8"), null),
-            new PointParameters("AcademicChapter", "series", "1", false, 1, bd("1"), null),
-            new PointParameters("AcademicChapter", "series", "2", false, 1, bd("3"), null),
-            new PointParameters("AcademicChapter", "publisher", "1", false, 1, bd("0.7"), null),
-            new PointParameters("AcademicChapter", "publisher", "2", false, 1, bd("1"), null),
-            new PointParameters("AcademicArticle", "journal", "1", false, 1, bd("1"), null),
-            new PointParameters("AcademicArticle", "journal", "2", false, 1, bd("3"), null),
-            new PointParameters("AcademicLiteratureReview", "journal", "1", false, 1, bd("1"), null),
-            new PointParameters("AcademicLiteratureReview", "journal", "2", false, 1, bd("3"), null)
+            new PointParameters("AcademicMonograph", "Series", "1", false, 1, bd("5"), null),
+            new PointParameters("AcademicMonograph", "Series", "2", false, 1, bd("8"), null),
+            new PointParameters("AcademicMonograph", "Publisher", "1", false, 1, bd("5"), null),
+            new PointParameters("AcademicMonograph", "Publisher", "2", false, 1, bd("8"), null),
+            new PointParameters("AcademicChapter", "Series", "1", false, 1, bd("1"), null),
+            new PointParameters("AcademicChapter", "Series", "2", false, 1, bd("3"), null),
+            new PointParameters("AcademicChapter", "Publisher", "1", false, 1, bd("0.7"), null),
+            new PointParameters("AcademicChapter", "Publisher", "2", false, 1, bd("1"), null),
+            new PointParameters("AcademicArticle", "Journal", "1", false, 1, bd("1"), null),
+            new PointParameters("AcademicArticle", "Journal", "2", false, 1, bd("3"), null),
+            new PointParameters("AcademicLiteratureReview", "Journal", "1", false, 1, bd("1"), null),
+            new PointParameters("AcademicLiteratureReview", "Journal", "2", false, 1, bd("3"), null)
         );
     }
 
@@ -97,8 +97,7 @@ class PointCalculatorTest {
             case "AcademicArticle", "AcademicLiteratureReview" ->
                 createJournalReference(parameters.instanceType(), parameters.level());
             case "AcademicMonograph" ->
-                createBookReference(parameters.instanceType(), parameters.channelType(), parameters.level()
-                );
+                createReference(parameters.instanceType(), parameters.channelType(), parameters.level());
             case "AcademicChapter" -> createChapterReference(parameters.instanceType(),
                                                              parameters.channelType(), parameters.level());
             default -> objectMapper.createObjectNode();
@@ -108,7 +107,7 @@ class PointCalculatorTest {
     private static JsonNode createChapterReference(String instanceType, String channelType, String level) {
         var reference = objectMapper.createObjectNode().put("type", "Reference");
         reference.set("publicationInstance", objectMapper.createObjectNode().put("type", instanceType));
-        var anthologyReference = createBookReference("Anthology", channelType, level);
+        var anthologyReference = createReference("Anthology", channelType, level);
         var entityDescription = objectMapper.createObjectNode();
         entityDescription.set("reference", anthologyReference);
         var publicationContext = objectMapper.createObjectNode();
@@ -117,19 +116,14 @@ class PointCalculatorTest {
         return reference;
     }
 
-    private static ObjectNode createBookReference(String instanceType, String channelType, String level) {
+    private static ObjectNode createReference(String instanceType, String channelType, String level) {
         var publicationContext = objectMapper.createObjectNode();
         var publicationInstance = objectMapper.createObjectNode();
         publicationInstance.put("type", instanceType);
-        switch (channelType) {
-            case "publisher" -> publicationContext.set("publisher", objectMapper.createObjectNode()
-                                                                        .put("type", "Publisher")
-                                                                        .put("level", level));
-            case "series" -> publicationContext.set("series", objectMapper.createObjectNode()
-                                                                  .put("type", "Series")
-                                                                  .put("level", level));
-            default -> throw new IllegalStateException("Unexpected value: " + channelType);
-        }
+        publicationContext.set(channelType.toLowerCase(), objectMapper.createObjectNode()
+                                                              .put("id", randomUri().toString())
+                                                              .put("type", channelType)
+                                                              .put("level", level));
         var reference = objectMapper.createObjectNode();
         reference.set("publicationContext", publicationContext);
         reference.set("publicationInstance", publicationInstance);
@@ -157,6 +151,7 @@ class PointCalculatorTest {
         reference.set("publicationInstance", publicationInstance);
 
         var publicationContext = objectMapper.createObjectNode();
+        publicationContext.put("id", randomUri().toString());
         publicationContext.put("type", "Journal");
         publicationContext.put("level", level);
         reference.set("publicationContext", publicationContext);
