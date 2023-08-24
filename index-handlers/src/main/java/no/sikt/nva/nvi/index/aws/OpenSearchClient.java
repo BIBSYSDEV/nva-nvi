@@ -76,18 +76,20 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         if (!indexExists()) {
             createIndex();
         }
-        attempt(() -> client.index(constructIndexRequest(indexDocument))).orElseThrow();
+        attempt(() -> client.withTransportOptions(getOptions()).index(constructIndexRequest(indexDocument)))
+            .orElseThrow();
     }
 
     @Override
-    public void removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) throws IOException {
-        client.withTransportOptions(getOptions()).delete(contructDeleteRequest(indexDocument));
+    public void removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) {
+        attempt(() -> client.withTransportOptions(getOptions()).delete(contructDeleteRequest(indexDocument)))
+            .orElseThrow();
     }
 
     @Override
     public SearchResponse<NviCandidateIndexDocument> search(Query query) throws IOException {
         return client.withTransportOptions(getOptions())
-                     .search(constructSearchRequest(query), NviCandidateIndexDocument.class);
+                   .search(constructSearchRequest(query), NviCandidateIndexDocument.class);
     }
 
     @Override
