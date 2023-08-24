@@ -80,13 +80,9 @@ public final class PointCalculator {
     }
 
     public static Map<URI, BigDecimal> calculatePoints(JsonNode jsonNode, Set<URI> approvalInstitutions) {
-        var instanceType = extractInstanceType(jsonNode);
-        var channelLevel = extractChannelLevel(instanceType, jsonNode);
-        var instanceTypeAndLevelPoints = calculateInstanceTypeAndLevelPoints(instanceType, channelLevel.type(),
-                                                                             channelLevel.level());
         //TODO: set isInternationalCollaboration when Cristin proxy api has implemented land code
         var isInternationalCollaboration = HARDCODED_INTERNATIONAL_COLLABORATION_BOOLEAN_TO_BE_REPLACED;
-        return calculatePoints(instanceTypeAndLevelPoints,
+        return calculatePoints(calculateInstanceTypeAndLevelPoints(jsonNode),
                                countCreatorShares(jsonNode),
                                isInternationalCollaboration,
                                countInstitutionCreatorShares(jsonNode, approvalInstitutions));
@@ -119,8 +115,14 @@ public final class PointCalculator {
                    .setScale(RESULT_SCALE, ROUNDING_MODE);
     }
 
-    private static BigDecimal calculateInstanceTypeAndLevelPoints(String instanceType,
-                                                                  String channelType, String level) {
+    private static BigDecimal calculateInstanceTypeAndLevelPoints(JsonNode jsonNode) {
+        var instanceType = extractInstanceType(jsonNode);
+        var channelLevel = extractChannelLevel(instanceType, jsonNode);
+        return getInstanceTypeAndLevelPoints(instanceType, channelLevel.type(), channelLevel.level());
+    }
+
+    private static BigDecimal getInstanceTypeAndLevelPoints(String instanceType,
+                                                            String channelType, String level) {
         return INSTANCE_TYPE_AND_LEVEL_POINT_MAP.get(instanceType).get(channelType).get(level);
     }
 
