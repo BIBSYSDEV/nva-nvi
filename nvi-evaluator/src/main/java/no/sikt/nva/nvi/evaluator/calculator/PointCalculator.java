@@ -28,8 +28,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class PointCalculator {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PointCalculator.class);
 
     private static final int SCALE = 10;
     private static final int RESULT_SCALE = 4;
@@ -40,7 +44,6 @@ public final class PointCalculator {
         new BigDecimal("1.3").setScale(SCALE, ROUNDING_MODE);
     private static final BigDecimal NOT_INTERNATIONAL_COLLABORATION_FACTOR =
         BigDecimal.ONE.setScale(SCALE, ROUNDING_MODE);
-    private static final String DEFAULT_LEVEL = "0";
     private static final String ACADEMIC_MONOGRAPH = "AcademicMonograph";
     private static final String ACADEMIC_CHAPTER = "AcademicChapter";
     private static final String ACADEMIC_ARTICLE = "AcademicArticle";
@@ -170,7 +173,11 @@ public final class PointCalculator {
             case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW -> extractJsonNodeAsString(jsonNode, JSON_PTR_JOURNAL);
             case ACADEMIC_MONOGRAPH -> extractAcademicMonographChannel(jsonNode);
             case ACADEMIC_CHAPTER -> extractAcademicChapterChannel(jsonNode);
-            default -> DEFAULT_LEVEL;
+            default -> {
+                LOGGER.error("Could not extract publication channel for instanceType {}, candidate: {}", instanceType,
+                             jsonNode.toString());
+                throw new IllegalArgumentException();
+            }
         };
         return attempt(() -> dtoObjectMapper.readValue(channel, ChannelLevel.class)).orElseThrow();
     }
