@@ -6,7 +6,6 @@ import static nva.commons.core.attempt.Try.attempt;
 import java.net.URI;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.NviCandidateRepository;
-import no.sikt.nva.nvi.common.db.dto.CandidateDb;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -22,7 +21,7 @@ public class NviCandidateRepositoryImpl extends DynamoRepository implements NviC
     }
 
     @Override
-    public CandidateDb save(CandidateDb candidate) {
+    public Candidate save(Candidate candidate) {
         var insert = CandidateDao.fromCandidateDto(candidate);
         this.table.putItem(insert);
         var fetched = this.table.getItem(CandidateDao.fromCandidateDto(candidate));
@@ -30,8 +29,8 @@ public class NviCandidateRepositoryImpl extends DynamoRepository implements NviC
     }
 
     @Override
-    public Optional<CandidateDb> findByPublicationId(URI publicationId) {
-        var queryObj = new CandidateDao(CandidateDao.getDocIdFromUri(publicationId), new CandidateDb());
+    public Optional<Candidate> findByPublicationId(URI publicationId) {
+        var queryObj = new CandidateDao(CandidateDao.getDocIdFromUri(publicationId), new Candidate.Builder().build());
         var fetched = this.table.getItem(queryObj);
         return Optional.ofNullable(fetched).map(CandidateDao::getCandidateDb);
     }

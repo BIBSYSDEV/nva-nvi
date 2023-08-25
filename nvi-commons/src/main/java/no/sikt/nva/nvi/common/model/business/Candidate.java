@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.List;
-import no.sikt.nva.nvi.common.db.dto.CandidateDb;
 import nva.commons.core.JacocoGenerated;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
@@ -22,43 +21,7 @@ public record Candidate(URI publicationId,
                         List<ApprovalStatus> approvalStatuses,
                         List<Note> notes) {
 
-    public CandidateDb toDb() {
-
-        return new CandidateDb.Builder()
-                   .withPublicationId(publicationId)
-                   .withPublicationBucketUri(publicationBucketUri)
-                   .withIsApplicable(isApplicable)
-                   .withInstanceType(instanceType)
-                   .withLevel(level == null ? null : String.valueOf(level))
-                   .withPublicationDate(publicationDate == null ? null : publicationDate.toDb())
-                   .withIsInternationalCollaboration(isInternationalCollaboration)
-                   .withCreatorCount(creatorCount)
-                   .withCreators(creators == null ? null : creators.stream().map(Creator::toDb).toList())
-                   .withApprovalStatuses(approvalStatuses == null ? null :
-                                                                             approvalStatuses.stream()
-                                                                                 .map(ApprovalStatus::toDb)
-                                                                                 .toList()
-                   )
-                   .withNotes(notes == null ? null : notes.stream().map(Note::toDb).toList())
-                   .build();
-    }
-
-    public static Candidate fromDb(CandidateDb db) {
-        return new Candidate.Builder().withPublicationId(db.getPublicationId())
-                   .withPublicationBucketUri(db.getPublicationBucketUri())
-                   .withIsApplicable(db.isApplicable())
-                   .withInstanceType(db.getInstanceType())
-                   .withLevel(db.getLevel() == null ? null : Level.valueOf(db.getLevel()))
-                   .withPublicationDate(
-                       db.getPublicationDate() == null ? null : PublicationDate.fromDb(db.getPublicationDate()))
-                   .withIsInternationalCollaboration(db.isInternationalCollaboration())
-                   .withCreatorCount(db.getCreatorCount())
-                   .withCreators(
-                       db.getCreators() == null ? null : db.getCreators().stream().map(Creator::fromDb).toList())
-                   .withApprovalStatuses(db.getApprovalStatuses() == null ? null
-                                             : db.getApprovalStatuses().stream().map(ApprovalStatus::fromDb).toList())
-                   .withNotes(db.getNotes() == null ? null : db.getNotes().stream().map(Note::fromDb).toList())
-                   .build();
+    public Candidate {
     }
 
     public static final class Builder {

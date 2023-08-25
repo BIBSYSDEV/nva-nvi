@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.db;
 
 import java.util.Set;
-import no.sikt.nva.nvi.common.db.dto.CandidateDb;
+import no.sikt.nva.nvi.common.model.business.Candidate;
 import software.amazon.awssdk.enhanced.dynamodb.AttributeConverter;
 import software.amazon.awssdk.enhanced.dynamodb.AttributeConverterProvider;
 import software.amazon.awssdk.enhanced.dynamodb.EnhancedType;
@@ -20,7 +20,7 @@ public class CandidateConverterProvider implements AttributeConverterProvider {
     }
 
     private <T> boolean parametricTypeIsCandidate(EnhancedType<T> enhancedType) {
-        return EnhancedType.of(CandidateDb.class).equals(enhancedType);
+        return EnhancedType.of(Candidate.class).equals(enhancedType);
     }
 
 }

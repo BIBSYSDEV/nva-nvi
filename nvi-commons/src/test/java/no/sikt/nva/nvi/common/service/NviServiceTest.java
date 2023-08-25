@@ -60,7 +60,7 @@ public class NviServiceTest extends LocalDynamoTest {
                                                         publicationDate);
         var fetchedCandidate = fakeNviCandidateRepository.findByPublicationId(generatePublicationId(identifier));
 
-        assertThat(Candidate.fromDb(fetchedCandidate.get()),
+        assertThat(fetchedCandidate.get(),
                    is(equalTo(expectedCandidate)));
     }
 

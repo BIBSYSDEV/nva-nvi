@@ -90,7 +90,7 @@ public class UpsertNviCandidateHandlerTest {
                                    .orElse(null);
 
         assertThat(
-            Candidate.fromDb(fetchedCandidate),
+            fetchedCandidate,
             is(equalTo(expectedCandidate)));
     }
 

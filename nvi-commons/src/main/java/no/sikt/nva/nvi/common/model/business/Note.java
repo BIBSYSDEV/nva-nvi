@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.common.model.business;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
-import no.sikt.nva.nvi.common.db.dto.NoteDb;
 import software.amazon.awssdk.services.s3.endpoints.internal.Not;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
@@ -11,21 +10,6 @@ import software.amazon.awssdk.services.s3.endpoints.internal.Not;
 public record Note(Username user,
                    String text,
                    Instant createdDate) {
-    public NoteDb toDb() {
-        return new NoteDb.Builder()
-                   .withUser(user == null ? null : user.toDb())
-                   .withText(text)
-                   .withCreatedDate(createdDate)
-                   .build();
-    }
-
-    public static Note fromDb(NoteDb db) {
-        return new Note.Builder()
-                   .withUser(db.getUser() == null ? null : Username.fromDb(db.getUser()))
-                   .withText(db.getText())
-                   .withCreatedDate(db.getCreatedDate())
-                   .build();
-    }
 
     public static final class Builder {
 

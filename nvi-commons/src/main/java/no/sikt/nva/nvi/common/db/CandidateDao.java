@@ -2,9 +2,8 @@ package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.ApplicationConstants.PRIMARY_KEY;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SORT_KEY;
-import static no.sikt.nva.nvi.common.db.dto.CandidateDb.TYPE;
 import java.net.URI;
-import no.sikt.nva.nvi.common.db.dto.CandidateDb;
+import no.sikt.nva.nvi.common.model.business.Candidate;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.DefaultAttributeConverterProvider;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
@@ -20,21 +19,22 @@ public class CandidateDao implements DynamoEntryWithRangeKey {
 
     public static final TableSchema<CandidateDao> TABLE_SCHEMA = TableSchema.fromClass(CandidateDao.class);
     private static final String DATA_FIELD = "data";
+    public static final String TYPE = "CANDIDATE";
     private String documentIdentifier;
-    private CandidateDb candidateDb;
+    private Candidate candidate;
 
     public CandidateDao() {
         super();
     }
 
-    public CandidateDao(String documentIdentifier, CandidateDb candidateDb) {
+    public CandidateDao(String documentIdentifier, Candidate candidate) {
         super();
         this.documentIdentifier = documentIdentifier;
-        this.candidateDb = candidateDb;
+        this.candidate = candidate;
     }
 
-    public static CandidateDao fromCandidateDto(CandidateDb candidate) {
-        var documentIdentifier = getDocIdFromUri(candidate.getPublicationId());
+    public static CandidateDao fromCandidateDto(Candidate candidate) {
+        var documentIdentifier = getDocIdFromUri(candidate.publicationId());
         return new CandidateDao(documentIdentifier, candidate);
     }
 
@@ -80,8 +80,8 @@ public class CandidateDao implements DynamoEntryWithRangeKey {
     }
 
     @DynamoDbAttribute(DATA_FIELD)
-    public CandidateDb getCandidateDb() {
-        return candidateDb;
+    public Candidate getCandidateDb() {
+        return candidate;
     }
 
     @JacocoGenerated
@@ -89,7 +89,7 @@ public class CandidateDao implements DynamoEntryWithRangeKey {
         this.documentIdentifier = documentIdentifier;
     }
 
-    public void setCandidateDb(CandidateDb candidateDb) {
-        this.candidateDb = candidateDb;
+    public void setCandidateDb(Candidate candidate) {
+        this.candidate = candidate;
     }
 }
