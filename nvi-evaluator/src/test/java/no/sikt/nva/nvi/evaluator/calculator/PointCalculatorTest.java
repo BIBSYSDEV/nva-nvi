@@ -22,6 +22,18 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class PointCalculatorTest {
 
+    private static final String TYPE = "type";
+    private static final String PUBLICATION_INSTANCE = "publicationInstance";
+    private static final String REFERENCE = "reference";
+    private static final String ENTITY_DESCRIPTION = "entityDescription";
+    private static final String PUBLICATION_CONTEXT = "publicationContext";
+    private static final String ID = "id";
+    private static final String LEVEL = "level";
+    private static final String AFFILIATIONS = "affiliations";
+    private static final String IDENTITY = "identity";
+    private static final String VERIFICATION_STATUS = "verificationStatus";
+    private static final String CONTRIBUTORS = "contributors";
+
     @ParameterizedTest(name = "Should calculate points correctly single contributor affiliated with a single "
                               + "institution. No international collaboration.")
     @MethodSource("singleCreatorSingleInstitutionPointProvider")
@@ -139,28 +151,28 @@ class PointCalculatorTest {
     }
 
     private static JsonNode createChapterReference(String instanceType, String channelType, String level) {
-        var reference = objectMapper.createObjectNode().put("type", "Reference");
-        reference.set("publicationInstance", objectMapper.createObjectNode().put("type", instanceType));
+        var reference = objectMapper.createObjectNode().put(TYPE, "Reference");
+        reference.set(PUBLICATION_INSTANCE, objectMapper.createObjectNode().put(TYPE, instanceType));
         var anthologyReference = createReference("Anthology", channelType, level);
         var entityDescription = objectMapper.createObjectNode();
-        entityDescription.set("reference", anthologyReference);
+        entityDescription.set(REFERENCE, anthologyReference);
         var publicationContext = objectMapper.createObjectNode();
-        publicationContext.set("entityDescription", entityDescription);
-        reference.set("publicationContext", publicationContext);
+        publicationContext.set(ENTITY_DESCRIPTION, entityDescription);
+        reference.set(PUBLICATION_CONTEXT, publicationContext);
         return reference;
     }
 
     private static ObjectNode createReference(String instanceType, String channelType, String level) {
         var publicationContext = objectMapper.createObjectNode();
         var publicationInstance = objectMapper.createObjectNode();
-        publicationInstance.put("type", instanceType);
+        publicationInstance.put(TYPE, instanceType);
         publicationContext.set(channelType.toLowerCase(), objectMapper.createObjectNode()
-                                                              .put("id", randomUri().toString())
-                                                              .put("type", channelType)
-                                                              .put("level", level));
+                                                              .put(ID, randomUri().toString())
+                                                              .put(TYPE, channelType)
+                                                              .put(LEVEL, level));
         var reference = objectMapper.createObjectNode();
-        reference.set("publicationContext", publicationContext);
-        reference.set("publicationInstance", publicationInstance);
+        reference.set(PUBLICATION_CONTEXT, publicationContext);
+        reference.set(PUBLICATION_INSTANCE, publicationInstance);
 
         return reference;
     }
@@ -184,14 +196,14 @@ class PointCalculatorTest {
         var reference = objectMapper.createObjectNode();
 
         var publicationInstance = objectMapper.createObjectNode();
-        publicationInstance.put("type", instanceType);
-        reference.set("publicationInstance", publicationInstance);
+        publicationInstance.put(TYPE, instanceType);
+        reference.set(PUBLICATION_INSTANCE, publicationInstance);
 
         var publicationContext = objectMapper.createObjectNode();
-        publicationContext.put("id", randomUri().toString());
-        publicationContext.put("type", "Journal");
-        publicationContext.put("level", level);
-        reference.set("publicationContext", publicationContext);
+        publicationContext.put(ID, randomUri().toString());
+        publicationContext.put(TYPE, "Journal");
+        publicationContext.put(LEVEL, level);
+        reference.set(PUBLICATION_CONTEXT, publicationContext);
 
         return reference;
     }
@@ -199,7 +211,7 @@ class PointCalculatorTest {
     private static ObjectNode getContributorNode(URI contributor, boolean isVerified, List<URI> affiliations) {
         var contributorNode = objectMapper.createObjectNode();
 
-        contributorNode.put("type", "Contributor");
+        contributorNode.put(TYPE, "Contributor");
 
         var affiliationsNode = objectMapper.createArrayNode();
 
@@ -207,38 +219,38 @@ class PointCalculatorTest {
             .map(PointCalculatorTest::createAffiliationNode)
             .forEach(affiliationsNode::add);
 
-        contributorNode.set("affiliations", affiliationsNode);
+        contributorNode.set(AFFILIATIONS, affiliationsNode);
 
-        contributorNode.set("identity", createIdentity(contributor, isVerified));
+        contributorNode.set(IDENTITY, createIdentity(contributor, isVerified));
         return contributorNode;
     }
 
     private static ObjectNode createIdentity(URI contributor, boolean isVerified) {
         return objectMapper.createObjectNode()
-                   .put("id", contributor.toString())
-                   .put("verificationStatus", isVerified ? "Verified" : "NonVerified")
-                   .put("type", "Identity");
+                   .put(ID, contributor.toString())
+                   .put(VERIFICATION_STATUS, isVerified ? "Verified" : "NonVerified")
+                   .put(TYPE, "Identity");
     }
 
     private static ObjectNode createAffiliationNode(URI affiliation) {
         return objectMapper.createObjectNode()
-                   .put("id", affiliation.toString())
-                   .put("type", "Organization");
+                   .put(ID, affiliation.toString())
+                   .put(TYPE, "Organization");
     }
 
     private static JsonNode createExpandedResource(URI publicationId, JsonNode contributors,
                                                    JsonNode reference) {
         var root = objectMapper.createObjectNode();
 
-        root.put("id", publicationId.toString());
+        root.put(ID, publicationId.toString());
 
         var entityDescription = objectMapper.createObjectNode();
 
-        entityDescription.set("contributors", contributors);
+        entityDescription.set(CONTRIBUTORS, contributors);
 
-        entityDescription.set("reference", reference);
+        entityDescription.set(REFERENCE, reference);
 
-        root.set("entityDescription", entityDescription);
+        root.set(ENTITY_DESCRIPTION, entityDescription);
 
         return root;
     }
