@@ -4,7 +4,9 @@ import static no.sikt.nva.nvi.common.model.events.CandidateStatus.CANDIDATE;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import no.sikt.nva.nvi.common.NviCandidateRepository;
+import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.model.business.Level;
@@ -24,10 +26,11 @@ public class NviService {
 
     //TODO: Remove JacocoGenerated when other if/else cases are implemented
     @JacocoGenerated
-    public void upsertCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
+    public Optional<CandidateWithIdentifier> upsertCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
         if (isNotExistingCandidate(evaluatedCandidate) && isNviCandidate(evaluatedCandidate)) {
-            createCandidate(evaluatedCandidate);
+            return Optional.of(createCandidate(evaluatedCandidate));
         }
+        return Optional.empty();
     }
 
     private static List<Creator> mapToVerifiedCreators(List<CandidateDetails.Creator> creators) {
@@ -62,17 +65,27 @@ public class NviService {
                                                       .build()).toList();
     }
 
-    private boolean exists(URI publicationId) {
+    @JacocoGenerated
+    private boolean exists(UUID uuid) {
+        return nviCandidateRepository.findById(uuid).isPresent();
+    }
+
+    private boolean existsByPublicationId(URI publicationId) {
         return nviCandidateRepository.findByPublicationId(publicationId).isPresent();
     }
 
-    private void createCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
+    private CandidateWithIdentifier createCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
         var pendingCandidate = toPendingCandidate(evaluatedCandidate.candidateDetails());
-        nviCandidateRepository.save(pendingCandidate);
+        return nviCandidateRepository.save(pendingCandidate);
     }
 
     @JacocoGenerated //TODO: Remove when its actually used
-    public Optional<Candidate> findByPublicationId(URI publicationId) {
+    public Optional<CandidateWithIdentifier> findById(UUID uuid) {
+        return nviCandidateRepository.findById(uuid);
+    }
+
+    @JacocoGenerated //TODO: Remove when its actually used
+    public Optional<CandidateWithIdentifier> findByPublicationId(URI publicationId) {
         return nviCandidateRepository.findByPublicationId(publicationId);
     }
 
@@ -91,6 +104,6 @@ public class NviService {
     //TODO: Remove JacocoGenerated when case for existing candidate is implemented
     @JacocoGenerated
     private boolean isNotExistingCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-        return !exists(evaluatedCandidate.candidateDetails().publicationId());
+        return !existsByPublicationId(evaluatedCandidate.candidateDetails().publicationId());
     }
 }

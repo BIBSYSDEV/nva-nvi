@@ -3,26 +3,39 @@ package no.sikt.nva.nvi.common.service;
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import no.sikt.nva.nvi.common.NviCandidateRepository;
+import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 
 public class FakeNviCandidateRepository implements NviCandidateRepository {
 
-    private final Map<URI, Candidate> candidateMap;
+    private final Map<UUID, Candidate> candidateMapId;
+    private final Map<URI, CandidateWithIdentifier> candidateMapPublicationId;
 
     public FakeNviCandidateRepository() {
-        this.candidateMap = new ConcurrentHashMap<>();
+
+        this.candidateMapId = new ConcurrentHashMap<>();
+        this.candidateMapPublicationId = new ConcurrentHashMap<>();
     }
 
     @Override
-    public Candidate save(Candidate candidate) {
-        candidateMap.put(candidate.publicationId(), candidate);
-        return candidate;
+    public CandidateWithIdentifier save(Candidate candidate) {
+        var uuid = UUID.randomUUID();
+        var candidateWithIdentifier = new CandidateWithIdentifier(candidate, uuid);
+        candidateMapId.put(uuid, candidate);
+        candidateMapPublicationId.put(candidate.publicationId(), candidateWithIdentifier);
+        return candidateWithIdentifier;
     }
 
     @Override
-    public Optional<Candidate> findByPublicationId(URI publicationId) {
-        return Optional.ofNullable(candidateMap.get(publicationId));
+    public Optional<CandidateWithIdentifier> findById(UUID id) {
+        return Optional.ofNullable(candidateMapId.get(id)).map(candidate -> new CandidateWithIdentifier(candidate, id));
+    }
+
+    @Override
+    public Optional<CandidateWithIdentifier> findByPublicationId(URI publicationId) {
+        return Optional.ofNullable(candidateMapPublicationId.get(publicationId));
     }
 }

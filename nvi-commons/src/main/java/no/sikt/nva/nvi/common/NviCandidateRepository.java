@@ -2,11 +2,15 @@ package no.sikt.nva.nvi.common;
 
 import java.net.URI;
 import java.util.Optional;
+import java.util.UUID;
+import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 
 public interface NviCandidateRepository {
 
-    Candidate save(Candidate candidate);
+    CandidateWithIdentifier save(Candidate candidate);
 
-    Optional<Candidate> findByPublicationId(URI publicationId);
+    Optional<CandidateWithIdentifier> findById(UUID id);
+
+    Optional<CandidateWithIdentifier> findByPublicationId(URI publicationId);
 }

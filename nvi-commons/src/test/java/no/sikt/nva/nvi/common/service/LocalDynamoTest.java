@@ -1,6 +1,9 @@
 package no.sikt.nva.nvi.common.service;
 
-import static no.sikt.nva.nvi.common.ApplicationConstants.PRIMARY_KEY;
+import static no.sikt.nva.nvi.common.ApplicationConstants.HASH_KEY;
+import static no.sikt.nva.nvi.common.ApplicationConstants.SECONDARY_INDEX_1_HASH_KEY;
+import static no.sikt.nva.nvi.common.ApplicationConstants.SECONDARY_INDEX_1_RANGE_KEY;
+import static no.sikt.nva.nvi.common.ApplicationConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SORT_KEY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringContains.containsString;
@@ -13,9 +16,12 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
 import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.CreateTableResponse;
+import software.amazon.awssdk.services.dynamodb.model.GlobalSecondaryIndex;
 import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
 import software.amazon.awssdk.services.dynamodb.model.KeyType;
 import software.amazon.awssdk.services.dynamodb.model.ListTablesResponse;
+import software.amazon.awssdk.services.dynamodb.model.Projection;
+import software.amazon.awssdk.services.dynamodb.model.ProjectionType;
 import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
 import software.amazon.awssdk.services.dynamodb.model.TableDescription;
@@ -56,6 +62,11 @@ public class LocalDynamoTest {
                 .attributeDefinitions(attributeDefinitions)
                 .keySchema(keySchema)
                 .provisionedThroughput(provisionedthroughput)
+                .globalSecondaryIndexes(
+                    newGsi(SECONDARY_INDEX_PUBLICATION_ID,
+                           SECONDARY_INDEX_1_HASH_KEY,
+                           SECONDARY_INDEX_1_RANGE_KEY)
+                )
                 .build();
 
         return client.createTable(request);
@@ -64,7 +75,7 @@ public class LocalDynamoTest {
     private static List<KeySchemaElement> defineKeySchema() {
         List<KeySchemaElement> keySchemaElements = new ArrayList<>();
         keySchemaElements
-            .add(KeySchemaElement.builder().attributeName(PRIMARY_KEY).keyType(KeyType.HASH).build());
+            .add(KeySchemaElement.builder().attributeName(HASH_KEY).keyType(KeyType.HASH).build());
         keySchemaElements.add(
             KeySchemaElement.builder().attributeName(SORT_KEY).keyType(KeyType.RANGE).build());
         return keySchemaElements;
@@ -72,8 +83,10 @@ public class LocalDynamoTest {
 
     private static List<AttributeDefinition> defineKeyAttributes() {
         List<AttributeDefinition> attributeDefinitions = new ArrayList<>();
-        attributeDefinitions.add(createAttributeDefinition(PRIMARY_KEY));
+        attributeDefinitions.add(createAttributeDefinition(HASH_KEY));
         attributeDefinitions.add(createAttributeDefinition(SORT_KEY));
+        attributeDefinitions.add(createAttributeDefinition(SECONDARY_INDEX_1_HASH_KEY));
+        attributeDefinitions.add(createAttributeDefinition(SECONDARY_INDEX_1_RANGE_KEY));
         return attributeDefinitions;
     }
 
@@ -90,8 +103,25 @@ public class LocalDynamoTest {
                    .build();
     }
 
+    private static GlobalSecondaryIndex newGsi(String searchUsersByInstitutionIndexName,
+                                               String secondaryIndex1HashKey,
+                                               String secondaryIndex1RangeKey) {
+        ProvisionedThroughput provisionedthroughput = provisionedThroughputForLocalDatabase();
+
+        return GlobalSecondaryIndex
+                   .builder()
+                   .indexName(searchUsersByInstitutionIndexName)
+                   .keySchema(
+                       KeySchemaElement.builder().attributeName(secondaryIndex1HashKey).keyType(KeyType.HASH).build(),
+                       KeySchemaElement.builder().attributeName(secondaryIndex1RangeKey).keyType(KeyType.RANGE).build()
+                   )
+                   .projection(Projection.builder().projectionType(ProjectionType.ALL).build())
+                   .provisionedThroughput(provisionedthroughput)
+                   .build();
+    }
+
     private void assertThatTableKeySchemaContainsBothKeys(List<KeySchemaElement> tableKeySchema) {
-        assertThat(tableKeySchema.toString(), containsString(PRIMARY_KEY));
+        assertThat(tableKeySchema.toString(), containsString(HASH_KEY));
         assertThat(tableKeySchema.toString(), containsString(SORT_KEY));
     }
 

@@ -22,6 +22,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
@@ -87,10 +88,10 @@ public class UpsertNviCandidateHandlerTest {
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType, randomLevel,
                                                         publicationDate);
         var fetchedCandidate = fakeNviCandidateRepository.findByPublicationId(expectedCandidate.publicationId())
-                                   .orElse(null);
+                                   .map(CandidateWithIdentifier::candidate);
 
         assertThat(
-            fetchedCandidate,
+            fetchedCandidate.get(),
             is(equalTo(expectedCandidate)));
     }
 

@@ -313,8 +313,21 @@ Resources:
           AttributeType: S
         - AttributeName: PrimaryKeyRangeKey
           AttributeType: S
+        - AttributeName: SecondaryIndex1HashKey
+          AttributeType: S
+        - AttributeName: SecondaryIndex1RangeKey
+          AttributeType: S
       KeySchema:
         - AttributeName: PrimaryKeyHashKey
           KeyType: HASH
         - AttributeName: PrimaryKeyRangeKey
           KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: SearchByPublicationId
+          KeySchema:
+            - AttributeName: SecondaryIndex1HashKey
+              KeyType: HASH
+            - AttributeName: SecondaryIndex1RangeKey
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
