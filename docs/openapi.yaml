@@ -3,6 +3,10 @@ info:
   title: NVA Scientific Index API
   version: 1.0.0
   description: Public API for scientific index candidates in NVA.
+x-amazon-apigateway-request-validators:
+  validate_body:
+    validateRequestBody: true
+    validateRequestParameters: false
 paths:
   /candidates:
     get:
@@ -54,6 +58,7 @@ paths:
           'https://api.nva.unit.no/scopes/frontend',
           'aws.cognito.signin.user.admin',
         ]
+      x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateNviPeriodHandler.Arn}:live/invocations
@@ -99,6 +104,7 @@ paths:
           'https://api.nva.unit.no/scopes/frontend',
           'aws.cognito.signin.user.admin',
         ]
+      x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateNviPeriodHandler.Arn}:live/invocations
@@ -145,6 +151,9 @@ components:
           type: string
         reportingDate:
           type: string
+      required:
+        - publishingYear
+        - reportingDate
     CandidateSearchResponse:
       type: object
       description: Search meta information, with results
