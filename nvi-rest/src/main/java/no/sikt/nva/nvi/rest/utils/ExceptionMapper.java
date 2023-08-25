@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.rest.utils;
 
-import no.sikt.nva.nvi.common.model.business.NviPeriod;
+import no.sikt.nva.nvi.rest.model.NviPeriodDto;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.BadMethodException;
 import nva.commons.apigateway.exceptions.ConflictException;
@@ -12,7 +12,7 @@ public final class ExceptionMapper {
     private ExceptionMapper() {
     }
 
-    public static ApiGatewayException map(Failure<NviPeriod> failure) {
+    public static ApiGatewayException map(Failure<NviPeriodDto> failure) {
         var exception = failure.getException();
         if (exception instanceof NotFoundException) {
             return new NotFoundException("Resource not found!");

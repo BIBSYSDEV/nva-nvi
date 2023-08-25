@@ -14,7 +14,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import java.time.Instant;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,7 +28,7 @@ import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.test.TestUtils;
-import nva.commons.apigateway.exceptions.BadMethodException;
+import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.ConflictException;
 import nva.commons.apigateway.exceptions.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,25 +67,38 @@ public class NviServiceTest {
 
     //TODO: Change test when nviService is implemented
     @Test
-    void shouldCreateNviPeriod() {
-        var period = createPeriod();
-        var persistedPeriod = nviService.createPeriod(period);
+    void shouldCreateNviPeriod() throws BadRequestException {
+        var period = createPeriod("2014");
+        nviService.createPeriod(period);
         assertThat(nviService.getPeriod(period.publishingYear()), is(not(equalTo(period))));
     }
 
     //TODO: Change test when nviService is implemented
     @Test
-    void shouldUpdateNviPeriod() throws NotFoundException, ConflictException {
-        var period = nviService.createPeriod(createPeriod());
-        var updatedPeriod = nviService.updatePeriod(period.copy().withReportingDate(Instant.now()).build());
-        assertThat(nviService.getPeriod(period.publishingYear()), is(not(equalTo(updatedPeriod))));
+    void shouldUpdateNviPeriod() throws BadRequestException, ConflictException, NotFoundException {
+        var period = createPeriod("2014");
+        nviService.createPeriod(period);
+        nviService.updatePeriod(period.copy().withReportingDate(randomInstant()).build());
+        assertThat(nviService.getPeriod(period.publishingYear()), is(not(equalTo(period))));
     }
 
-    private static NviPeriod createPeriod() {
+    @Test
+    void shouldReturnBadRequestWhenPublishingYearIsNotAYear() {
+        var period = createPeriod(randomString());
+        assertThrows(BadRequestException.class, () -> nviService.createPeriod(period));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenPublishingYearHasInvalidLength() {
+        var period = createPeriod("22");
+        assertThrows(BadRequestException.class, () -> nviService.createPeriod(period));
+    }
+
+    private static NviPeriod createPeriod(String publishingYear) {
         var start = randomInstant();
         return new NviPeriod.Builder()
                    .withReportingDate(start)
-                   .withPublishingYear(randomString())
+                   .withPublishingYear(publishingYear)
                    .withCreatedBy(randomUsername())
                    .build();
     }
@@ -98,7 +111,7 @@ public class NviServiceTest {
                                                                   List<CandidateDetails.Creator> creators,
                                                                   String instanceType, Level randomLevel,
                                                                   PublicationDate publicationDate) {
-        return new CandidateEvaluatedMessage.Builder()
+        return CandidateEvaluatedMessage.builder()
                    .withStatus(CandidateStatus.CANDIDATE)
                    .withPublicationBucketUri(generateS3BucketUri(identifier))
                    .withCandidateDetails(new CandidateDetails(generatePublicationId(identifier),

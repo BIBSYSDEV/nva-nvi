@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.rest;
 
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -17,11 +18,12 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import no.sikt.nva.nvi.common.model.business.NviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.rest.model.NviPeriodDto;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
-import nva.commons.apigateway.exceptions.BadMethodException;
+import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.ConflictException;
 import nva.commons.apigateway.exceptions.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +55,7 @@ public class UpdateNviPeriodHandlerTest {
 
     @Test
     void shouldReturnNotFoundWhenPeriodDoesNotExists()
-        throws IOException, NotFoundException, ConflictException {
+        throws IOException, NotFoundException, ConflictException, BadRequestException {
         when(nviService.updatePeriod(any())).thenThrow(NotFoundException.class);
         handler.handleRequest(createRequest(), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -63,7 +65,7 @@ public class UpdateNviPeriodHandlerTest {
 
     @Test
     void shouldReturnConflictWhenUpdatingReportingDateNotSupportedDate()
-        throws NotFoundException, IOException, ConflictException {
+        throws NotFoundException, IOException, ConflictException, BadRequestException {
         when(nviService.updatePeriod(any())).thenThrow(ConflictException.class);
         handler.handleRequest(createRequest(), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -72,9 +74,11 @@ public class UpdateNviPeriodHandlerTest {
     }
 
     @Test
-    void shouldUpdateNviPeriodSuccessfully() throws IOException {
+    void shouldUpdateNviPeriodSuccessfully()
+        throws IOException, ConflictException, NotFoundException, BadRequestException {
+        when(nviService.updatePeriod(any())).thenReturn(randomPeriod());
         handler.handleRequest(createRequest(), output, context);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+        var response = GatewayResponse.fromOutputStream(output, NviPeriodDto.class);
 
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
     }
@@ -85,6 +89,7 @@ public class UpdateNviPeriodHandlerTest {
                    .withCurrentCustomer(customerId)
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_PERIODS.name())
                    .withUserName(randomString())
+                   .withBody(randomPeriod())
                    .build();
     }
 
@@ -94,6 +99,9 @@ public class UpdateNviPeriodHandlerTest {
 
     private NviPeriod randomPeriod() {
         var start = randomInstant();
-        return new NviPeriod.Builder().withReportingDate(start).withPublishingYear(randomString()).build();
+        return new NviPeriod.Builder()
+                   .withReportingDate(start)
+                   .withPublishingYear(String.valueOf(randomInteger(9999)))
+                   .build();
     }
 }

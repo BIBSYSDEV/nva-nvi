@@ -39,7 +39,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-  /nvi-period:
+  /period:
     post:
       requestBody:
         required: true
@@ -67,6 +67,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NviPeriod"
+        '400':
+          description: "Bad request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         '401':
           description: "Unauthorized"
           content:

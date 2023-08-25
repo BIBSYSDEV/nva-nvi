@@ -1,12 +1,15 @@
 package no.sikt.nva.nvi.evaluator;
 
-import static no.sikt.nva.nvi.evaluator.calculator.NviCalculator.COULD_NOT_FETCH_AFFILIATION_MESSAGE;
+import static no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator.COULD_NOT_FETCH_AFFILIATION_MESSAGE;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -16,6 +19,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.List;
@@ -23,7 +28,7 @@ import java.util.Optional;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.common.model.events.CandidateStatus;
 import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
-import no.sikt.nva.nvi.evaluator.calculator.NviCalculator;
+import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.events.models.AwsEventBridgeDetail;
@@ -72,9 +77,10 @@ class EvaluateNviNviCandidateHandlerTest {
         var credentials = new BackendClientCredentials("id", "secret");
         secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
         uriRetriever = mock(AuthorizedBackendUriRetriever.class);
-        var calculator = new NviCalculator(uriRetriever);
+        var calculator = new CandidateCalculator(uriRetriever);
         FakeStorageReader storageReader = new FakeStorageReader(s3Client);
-        handler = new EvaluateNviCandidateHandler(storageReader, queueClient, calculator);
+        var evaluatorService = new EvaluatorService(storageReader, calculator);
+        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient);
         output = new ByteArrayOutputStream();
     }
 
@@ -118,6 +124,27 @@ class EvaluateNviNviCandidateHandlerTest {
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
         assertThat(message.messageBody(), containsString(fileUri.toString()));
+    }
+
+    @Test
+    void shouldCalculatePointsOnValidAcademicArticle() throws IOException {
+        when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(okResponse));
+        var path = "candidate_academicArticle.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, output, context);
+        var sentMessages = sqsClient.getSentMessages();
+        assertThat(sentMessages, hasSize(1));
+        var message = sentMessages.get(0);
+        assertThat(message.messageBody(), containsString(fileUri.toString()));
+        var body =
+            attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class))
+                .orElseThrow();
+        assertThat(body.institutionPoints(), notNullValue());
+        assertThat(body.institutionPoints().get(URI.create("https://api.dev.nva.aws.unit"
+                                                           + ".no/cristin/organization/20754.0.0.0")),
+                   is(equalTo(BigDecimal.ONE.setScale(4, RoundingMode.HALF_UP))));
     }
 
     @Test
