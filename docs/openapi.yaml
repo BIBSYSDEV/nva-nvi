@@ -3,6 +3,10 @@ info:
   title: NVA Scientific Index API
   version: 1.0.0
   description: Public API for scientific index candidates in NVA.
+x-amazon-apigateway-request-validators:
+  validate_body:
+    validateRequestBody: true
+    validateRequestParameters: false
 paths:
   /candidates:
     get:
@@ -54,6 +58,7 @@ paths:
           'https://api.nva.unit.no/scopes/frontend',
           'aws.cognito.signin.user.admin',
         ]
+      x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateNviPeriodHandler.Arn}:live/invocations
@@ -85,6 +90,58 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
+    put:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NviPeriod'
+      description: 'Update nvi period'
+      security:
+        - CognitoUserPool: [
+          'https://api.nva.unit.no/scopes/backend',
+          'https://api.nva.unit.no/scopes/frontend',
+          'aws.cognito.signin.user.admin',
+        ]
+      x-amazon-apigateway-request-validator: validate_body
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateNviPeriodHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        '200':
+          description: "Period updated"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NviPeriod"
+        '401':
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '404':
+          description: "Not found - period to update does not exist"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '409':
+          description: "Conflict - new values are not supported values"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '500':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
 components:
   schemas:
     NviPeriod:
@@ -94,6 +151,9 @@ components:
           type: string
         reportingDate:
           type: string
+      required:
+        - publishingYear
+        - reportingDate
     CandidateSearchResponse:
       type: object
       description: Search meta information, with results

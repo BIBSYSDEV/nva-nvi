@@ -8,7 +8,6 @@ import static no.sikt.nva.nvi.test.TestUtils.randomPublicationDate;
 import static no.sikt.nva.nvi.test.TestUtils.toPublicationDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
-import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -30,6 +29,8 @@ import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.test.TestUtils;
 import nva.commons.apigateway.exceptions.BadRequestException;
+import nva.commons.apigateway.exceptions.ConflictException;
+import nva.commons.apigateway.exceptions.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -69,6 +70,15 @@ public class NviServiceTest {
     void shouldCreateNviPeriod() throws BadRequestException {
         var period = createPeriod("2014");
         nviService.createPeriod(period);
+        assertThat(nviService.getPeriod(period.publishingYear()), is(not(equalTo(period))));
+    }
+
+    //TODO: Change test when nviService is implemented
+    @Test
+    void shouldUpdateNviPeriod() throws BadRequestException, ConflictException, NotFoundException {
+        var period = createPeriod("2014");
+        nviService.createPeriod(period);
+        nviService.updatePeriod(period.copy().withReportingDate(randomInstant()).build());
         assertThat(nviService.getPeriod(period.publishingYear()), is(not(equalTo(period))));
     }
 

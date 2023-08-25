@@ -282,6 +282,27 @@ Resources:
             Method: post
             RestApiId: !Ref ScientificIndexApi
 
+  #Add table name to env variables and remove comment when table is implemented
+  UpdateNviPeriodHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.rest.UpdateNviPeriodHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+          API_HOST: !Ref ApiDomain
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /nvi-period
+            Method: put
+            RestApiId: !Ref ScientificIndexApi
 
   DeleteNviCandidateHandler:
     Type: AWS::Serverless::Function
