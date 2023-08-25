@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.evaluator.calculator;
 
 import static no.sikt.nva.nvi.evaluator.calculator.PointCalculator.calculatePoints;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -21,9 +22,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class PointCalculatorTest {
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "Should calculate points correctly single contributor affiliated with a single "
+                              + "institution. No international collaboration.")
     @MethodSource("singleCreatorSingleInstitutionPointProvider")
-    void shouldCalculateNviPointsCorrectlyForSingleInstitution(PointParameters parameters) {
+    void shouldCalculateNviPointsForSingleInstitution(PointParameters parameters) {
 
         var institutionId = randomUri();
         var expandedResource = createExpandedResource(
@@ -36,9 +38,10 @@ class PointCalculatorTest {
         assertThat(institutionPoints.get(institutionId), is(equalTo(parameters.institution1Points())));
     }
 
-    @ParameterizedTest
-    @MethodSource("pointParametersAndResultProvider")
-    void shouldCalculateNviPointsCorrectlyForCoPublishing(PointParameters parameters) {
+    @ParameterizedTest(name = "Should calculate points correctly for co-publishing cases where two creators are "
+                              + "affiliated with one of the two institutions involved.")
+    @MethodSource("twoCreatorsAffiliatedWithOneInstitutionPointProvider")
+    void shouldCalculateNviPointsForCoPublishingTwoCreatorsAffiliatedWithOneInstitution(PointParameters parameters) {
         var nviInstitution1 = randomUri();
         var nviInstitution2 = randomUri();
 
@@ -49,7 +52,7 @@ class PointCalculatorTest {
             createContributorNodes(
                 getContributorNode(creator1, true, List.of(nviInstitution1, nviInstitution2)),
                 getContributorNode(creator2, true, List.of(nviInstitution1)),
-                getContributorNode(randomUri(), false, createRandomInstitutions(parameters))
+                getContributorNode(randomUri(), false, createRandomInstitutions(parameters, 3))
             ),
             getInstanceTypeReference(parameters));
 
@@ -59,7 +62,38 @@ class PointCalculatorTest {
         assertThat(pointsMap.get(nviInstitution2), is(equalTo(parameters.institution2Points())));
     }
 
-    private static Stream<PointParameters> pointParametersAndResultProvider() {
+    @ParameterizedTest(name = "Should calculate points correctly for co-publishing cases where two creators are "
+                              + "affiliated with two different institutions.")
+    @MethodSource("twoCreatorsAffiliatedWithTwoDifferentInstitutionsPointProvider")
+    void shouldCalculateNviPointsForCoPublishingTwoCreatorsTwoInstitutions(PointParameters parameters) {
+        var nviInstitution1 = randomUri();
+        var nviInstitution2 = randomUri();
+
+        var creator1 = randomUri();
+        var creator2 = randomUri();
+        var expandedResource = createExpandedResource(
+            randomUri(),
+            createContributorNodes(
+                getContributorNode(creator1, true, List.of(nviInstitution1)),
+                getContributorNode(creator2, true, List.of(nviInstitution2)),
+                getContributorNode(randomUri(), randomBoolean(), createRandomInstitutions(parameters, 2))
+            ),
+            getInstanceTypeReference(parameters));
+
+        var pointsMap = calculatePoints(expandedResource, Set.of(nviInstitution1, nviInstitution2));
+
+        assertThat(pointsMap.get(nviInstitution1), is(equalTo(parameters.institution1Points())));
+        assertThat(pointsMap.get(nviInstitution2), is(equalTo(parameters.institution2Points())));
+    }
+
+    private static Stream<PointParameters> twoCreatorsAffiliatedWithTwoDifferentInstitutionsPointProvider() {
+        return Stream.of(
+            //example from cristin calculations, publicationYear 2022
+            new PointParameters("AcademicArticle", "Journal", "1", false, 2, bd("0.7071"), bd("0.7071"))
+        );
+    }
+
+    private static Stream<PointParameters> twoCreatorsAffiliatedWithOneInstitutionPointProvider() {
         //TODO Disabled isInternationCollaboration tests until parameter available
         return Stream.of(
             //new PointParameters("AcademicMonograph", "Series", "1", true, 3, bd("5.3072"), bd("3.7528")),
@@ -135,8 +169,11 @@ class PointCalculatorTest {
         return new BigDecimal(val).setScale(4, RoundingMode.HALF_UP);
     }
 
-    private static List<URI> createRandomInstitutions(PointParameters parameters) {
-        return IntStream.range(0, parameters.creatorShareCount() - 3).boxed().map(e -> randomUri()).toList();
+    private static List<URI> createRandomInstitutions(PointParameters parameters, int contributorTestShareCount) {
+        return IntStream.range(0, parameters.creatorShareCount() - contributorTestShareCount)
+                   .boxed()
+                   .map(e -> randomUri())
+                   .toList();
     }
 
     private static JsonNode createContributorNodes(JsonNode... contributorNode) {

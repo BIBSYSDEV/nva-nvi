@@ -8,7 +8,7 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES_
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_INSTANCE_TYPE;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_JOURNAL;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLISHER;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_LEVEL;
@@ -32,8 +32,9 @@ import org.slf4j.LoggerFactory;
 
 public final class PointCalculator {
 
+    public static final String ERROR_MSG_EXTRACT_PUBLICATION_CONTEXT = "Could not extract publication channel for "
+                                                                       + "instanceType {}, candidate: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(PointCalculator.class);
-
     private static final int SCALE = 10;
     private static final int RESULT_SCALE = 4;
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
@@ -169,12 +170,11 @@ public final class PointCalculator {
 
     private static ChannelLevel extractChannelLevel(String instanceType, JsonNode jsonNode) {
         var channel = switch (instanceType) {
-            case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW -> jsonNode.at(JSON_PTR_JOURNAL).toString();
+            case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW -> jsonNode.at(JSON_PTR_PUBLICATION_CONTEXT).toString();
             case ACADEMIC_MONOGRAPH -> extractAcademicMonographChannel(jsonNode);
             case ACADEMIC_CHAPTER -> extractAcademicChapterChannel(jsonNode);
             default -> {
-                LOGGER.error("Could not extract publication channel for instanceType {}, candidate: {}", instanceType,
-                             jsonNode.toString());
+                LOGGER.error(ERROR_MSG_EXTRACT_PUBLICATION_CONTEXT, instanceType, jsonNode.toString());
                 throw new IllegalArgumentException();
             }
         };
