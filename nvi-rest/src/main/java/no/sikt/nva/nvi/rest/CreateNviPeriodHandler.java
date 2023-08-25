@@ -14,10 +14,17 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.core.JacocoGenerated;
 
 public class CreateNviPeriodHandler extends ApiGatewayHandler<NviPeriodDto, NviPeriodDto> {
 
     private final NviService nviService;
+
+    @JacocoGenerated
+    public CreateNviPeriodHandler() {
+        super(NviPeriodDto.class);
+        this.nviService = new NviService(null);
+    }
 
     public CreateNviPeriodHandler(NviService nviService) {
         super(NviPeriodDto.class);
