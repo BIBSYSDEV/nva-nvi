@@ -14,19 +14,27 @@ import no.sikt.nva.nvi.common.model.business.Candidate;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.TransactPutItemEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public class NviCandidateRepositoryImpl extends DynamoRepository implements NviCandidateRepository  {
 
     private final DynamoDbTable<CandidateDao> table;
+    private final DynamoDbTable<CandidateUniquenessEntry> uniqunessTable;
     private final DynamoDbIndex<CandidateDao> publicationIdIndex;
+
+    public static final TableSchema<CandidateUniquenessEntry> UNIQUENESS_TABLE_SCHEMA = TableSchema.fromClass(
+        CandidateUniquenessEntry.class);
 
     public NviCandidateRepositoryImpl(DynamoDbClient client) {
         super(client);
         this.table = this.client.table(NVI_TABLE_NAME, CandidateDao.TABLE_SCHEMA);
+        this.uniqunessTable = this.client.table(NVI_TABLE_NAME, UNIQUENESS_TABLE_SCHEMA);
         this.publicationIdIndex = this.table.index(SECONDARY_INDEX_PUBLICATION_ID);
     }
 
@@ -34,7 +42,22 @@ public class NviCandidateRepositoryImpl extends DynamoRepository implements NviC
     public CandidateWithIdentifier save(Candidate candidate) {
         var uuid = UUID.randomUUID();
         var insert = new CandidateDao(uuid, candidate);
-        this.table.putItem(insert);
+        var uniqueness = new CandidateUniquenessEntry(candidate.publicationId().toString());
+
+        var putRequest = TransactPutItemEnhancedRequest.builder(CandidateDao.class)
+                             .item(insert)
+                             .build();
+
+        var putUniquenessRequest = TransactPutItemEnhancedRequest.builder(CandidateUniquenessEntry.class)
+                             .item(uniqueness)
+                             .build();
+        var request = TransactWriteItemsEnhancedRequest.builder()
+                          .addPutItem(this.table, putRequest)
+                          .addPutItem(this.uniqunessTable, putUniquenessRequest)
+                          .build();
+
+
+        this.client.transactWriteItems(request);
         var fetched = this.table.getItem(insert);
         return new CandidateWithIdentifier(fetched.getCandidate(), fetched.getIdentifier());
     }

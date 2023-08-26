@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
+import static no.sikt.nva.nvi.common.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.test.TestUtils.extractNviInstitutionIds;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 
 public class NviServiceTest extends LocalDynamoTest {
 
@@ -55,7 +57,8 @@ public class NviServiceTest extends LocalDynamoTest {
         var evaluatedCandidateDto = createEvaluatedCandidateDto(identifier, verifiedCreators, instanceType, randomLevel,
                                                                 publicationDate);
 
-        var createdCandidateId = nviService.upsertCandidate(evaluatedCandidateDto).get().identifier();
+        var createdCandidate = nviService.upsertCandidate(evaluatedCandidateDto).get();
+        var createdCandidateId = createdCandidate.identifier();
 
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType, randomLevel,
                                                         publicationDate);
@@ -83,6 +86,24 @@ public class NviServiceTest extends LocalDynamoTest {
 
         assertThat(fetchedCandidate,
                    is(equalTo(expectedCandidate)));
+    }
+
+    @Test
+    void shouldCreateUniquenessIdentifierWhenCreatingCandidate() {
+        var identifier = UUID.randomUUID();
+        var verifiedCreators = List.of(new Creator(randomUri(), List.of(randomUri())));
+        var instanceType = randomString();
+        var randomLevel = randomElement(Level.values());
+        var publicationDate = randomPublicationDate();
+        var evaluatedCandidateDto = createEvaluatedCandidateDto(identifier, verifiedCreators, instanceType, randomLevel,
+                                                                publicationDate);
+        nviService.upsertCandidate(evaluatedCandidateDto).get().identifier();
+
+        var scan = this.localDynamo.scan(ScanRequest.builder().tableName(NVI_TABLE_NAME).build());
+        var items = scan.items().size();
+
+        assertThat(items,
+                   is(equalTo(2)));
     }
 
     @Test

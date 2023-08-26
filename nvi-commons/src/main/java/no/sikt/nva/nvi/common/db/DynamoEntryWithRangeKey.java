@@ -11,7 +11,7 @@ public interface DynamoEntryWithRangeKey extends Typed {
      *
      * @param primaryRangeKey the primary hash key.
      */
-    void setPrimaryKeyHashKey(String primaryRangeKey);
+    void setPrimaryKeyHashKey(String primaryHashKey);
 
     String getPrimaryKeyRangeKey();
 

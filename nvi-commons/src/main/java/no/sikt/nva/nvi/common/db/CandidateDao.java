@@ -15,6 +15,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DefaultAttributeConverterProvide
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondarySortKey;
@@ -48,7 +49,7 @@ public class CandidateDao extends Dao implements DynamoEntryWithRangeKey {
     }
 
     @Override
-    public void setPrimaryKeyHashKey(String primaryRangeKey) {
+    public void setPrimaryKeyHashKey(String primaryHashKey) {
         //DO NOTHING
     }
 
