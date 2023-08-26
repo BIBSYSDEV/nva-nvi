@@ -1,14 +1,28 @@
 plugins {
     id 'nva.nvi.java-conventions'
+    id 'nva.nvi.dynamodblocal'
 }
 dependencies {
     implementation project(':nvi-commons')
+    implementation libs.bundles.testing
     implementation libs.nva.commons.apigateway
     implementation libs.nva.commons.core
     implementation libs.nva.testutils
     implementation libs.jackson.databind
+    implementation libs.aws.sdk2.dynamodb
+    implementation libs.aws.sdk2.dynamodbenhanced
+
+    implementation(group: 'com.amazonaws', name: 'DynamoDBLocal', version: '1.19.0') {
+        exclude group: 'com.amazonaws', module: 'aws-java-sdk-dynamodb'
+        exclude group: 'com.amazonaws', module: 'aws-java-sdk-core'
+    }
 }
 
 test {
     useJUnitPlatform()
+    environment "API_HOST", "example.org"
+    environment("SEARCH_INFRASTRUCTURE_API_HOST", "localhost")
+    environment("SEARCH_INFRASTRUCTURE_AUTH_URI", "localhost")
+    environment("SEARCH_INFRASTRUCTURE_API_URI", "localhost")
+    environment("NVI_TABLE_NAME", "some-table")
 }

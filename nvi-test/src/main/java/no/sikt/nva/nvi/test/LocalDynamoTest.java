@@ -1,17 +1,17 @@
-package no.sikt.nva.nvi.common.service;
+package no.sikt.nva.nvi.test;
 
 import static no.sikt.nva.nvi.common.ApplicationConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SECONDARY_INDEX_1_HASH_KEY;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SECONDARY_INDEX_1_RANGE_KEY;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SORT_KEY;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.StringContains.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
 import java.util.ArrayList;
 import java.util.List;
 import no.sikt.nva.nvi.common.ApplicationConstants;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.StringContains;
+import org.junit.jupiter.api.Assertions;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
 import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
@@ -41,13 +41,13 @@ public class LocalDynamoTest {
         String tableName = ApplicationConstants.NVI_TABLE_NAME;
         CreateTableResponse createTableResult = createTable(localDynamo, tableName);
         TableDescription tableDescription = createTableResult.tableDescription();
-        assertEquals(tableName, tableDescription.tableName());
+        Assertions.assertEquals(tableName, tableDescription.tableName());
         assertThatTableKeySchemaContainsBothKeys(tableDescription.keySchema());
-        assertEquals(TableStatus.ACTIVE, tableDescription.tableStatus());
-        assertThat(tableDescription.tableArn(), containsString(tableName));
+        Assertions.assertEquals(TableStatus.ACTIVE, tableDescription.tableStatus());
+        MatcherAssert.assertThat(tableDescription.tableArn(), StringContains.containsString(tableName));
 
         ListTablesResponse tables = localDynamo.listTables();
-        assertEquals(SINGLE_TABLE_EXPECTED, tables.tableNames().size());
+        Assertions.assertEquals(SINGLE_TABLE_EXPECTED, tables.tableNames().size());
         return localDynamo;
     }
 
@@ -121,8 +121,8 @@ public class LocalDynamoTest {
     }
 
     private void assertThatTableKeySchemaContainsBothKeys(List<KeySchemaElement> tableKeySchema) {
-        assertThat(tableKeySchema.toString(), containsString(HASH_KEY));
-        assertThat(tableKeySchema.toString(), containsString(SORT_KEY));
+        MatcherAssert.assertThat(tableKeySchema.toString(), StringContains.containsString(HASH_KEY));
+        MatcherAssert.assertThat(tableKeySchema.toString(), StringContains.containsString(SORT_KEY));
     }
 
 

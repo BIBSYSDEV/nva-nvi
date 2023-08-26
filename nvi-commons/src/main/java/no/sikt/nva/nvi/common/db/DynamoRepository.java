@@ -1,14 +1,10 @@
 package no.sikt.nva.nvi.common.db;
 
-import java.util.Optional;
-import no.sikt.nva.nvi.common.NviCandidateRepository;
-import no.sikt.nva.nvi.common.model.business.Candidate;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public class DynamoRepository {

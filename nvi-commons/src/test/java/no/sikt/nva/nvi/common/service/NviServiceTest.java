@@ -14,10 +14,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.NviCandidateRepository;
-import no.sikt.nva.nvi.common.db.NviCandidateRepositoryImpl;
+import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.model.business.Level;
@@ -26,12 +24,10 @@ import no.sikt.nva.nvi.common.model.events.CandidateStatus;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.PublicationDate;
+import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 
 public class NviServiceTest extends LocalDynamoTest {
@@ -43,7 +39,7 @@ public class NviServiceTest extends LocalDynamoTest {
     @BeforeEach
     void setup() {
         localDynamo = initializeTestDatabase();
-        fakeNviCandidateRepository = new NviCandidateRepositoryImpl(localDynamo);
+        fakeNviCandidateRepository = new NviCandidateRepository(localDynamo);
         nviService = new NviService(fakeNviCandidateRepository);
     }
 

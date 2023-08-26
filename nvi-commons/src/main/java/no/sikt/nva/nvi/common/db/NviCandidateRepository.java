@@ -8,13 +8,11 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import no.sikt.nva.nvi.common.NviCandidateRepository;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
-import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
@@ -22,23 +20,19 @@ import software.amazon.awssdk.enhanced.dynamodb.model.TransactPutItemEnhancedReq
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-public class NviCandidateRepositoryImpl extends DynamoRepository implements NviCandidateRepository  {
+public class NviCandidateRepository extends DynamoRepository  {
 
     private final DynamoDbTable<CandidateDao> table;
-    private final DynamoDbTable<CandidateUniquenessEntry> uniqunessTable;
+    private final DynamoDbTable<CandidateUniquenessEntry> uniquenessTable;
     private final DynamoDbIndex<CandidateDao> publicationIdIndex;
 
-    public static final TableSchema<CandidateUniquenessEntry> UNIQUENESS_TABLE_SCHEMA = TableSchema.fromClass(
-        CandidateUniquenessEntry.class);
-
-    public NviCandidateRepositoryImpl(DynamoDbClient client) {
+    public NviCandidateRepository(DynamoDbClient client) {
         super(client);
         this.table = this.client.table(NVI_TABLE_NAME, CandidateDao.TABLE_SCHEMA);
-        this.uniqunessTable = this.client.table(NVI_TABLE_NAME, UNIQUENESS_TABLE_SCHEMA);
+        this.uniquenessTable = this.client.table(NVI_TABLE_NAME, CandidateUniquenessEntry.TABLE_SCHEMA);
         this.publicationIdIndex = this.table.index(SECONDARY_INDEX_PUBLICATION_ID);
     }
 
-    @Override
     public CandidateWithIdentifier save(Candidate candidate) {
         var uuid = UUID.randomUUID();
         var insert = new CandidateDao(uuid, candidate);
@@ -53,7 +47,7 @@ public class NviCandidateRepositoryImpl extends DynamoRepository implements NviC
                              .build();
         var request = TransactWriteItemsEnhancedRequest.builder()
                           .addPutItem(this.table, putRequest)
-                          .addPutItem(this.uniqunessTable, putUniquenessRequest)
+                          .addPutItem(this.uniquenessTable, putUniquenessRequest)
                           .build();
 
 
@@ -62,7 +56,6 @@ public class NviCandidateRepositoryImpl extends DynamoRepository implements NviC
         return new CandidateWithIdentifier(fetched.getCandidate(), fetched.getIdentifier());
     }
 
-    @Override
     public Optional<CandidateWithIdentifier> findById(UUID id) {
         var queryObj = new CandidateDao(id, new Candidate.Builder().build());
         var fetched = this.table.getItem(queryObj);
@@ -70,7 +63,6 @@ public class NviCandidateRepositoryImpl extends DynamoRepository implements NviC
 
     }
 
-    @Override
     public Optional<CandidateWithIdentifier> findByPublicationId(URI publicationId) {
         var query = QueryEnhancedRequest.builder()
                         .queryConditional(QueryConditional.keyEqualTo(Key.builder()
