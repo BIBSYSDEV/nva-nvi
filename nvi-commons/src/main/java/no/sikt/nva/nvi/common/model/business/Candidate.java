@@ -3,8 +3,13 @@ package no.sikt.nva.nvi.common.model.business;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import nva.commons.core.JacocoGenerated;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -22,6 +27,39 @@ public record Candidate(URI publicationId,
                         List<Note> notes) {
 
     public Candidate {
+    }
+
+    public AttributeValue toDynamoDb() {
+        Map<String, AttributeValue> map = new HashMap<>();
+        map.put("publicationId", AttributeValue.fromS(publicationId.toString()));
+        if (publicationBucketUri != null) map.put("publicationBucketUri", AttributeValue.fromS(publicationBucketUri.toString()));
+        map.put("isApplicable", AttributeValue.fromBool(isApplicable));
+        map.put("instanceType", AttributeValue.fromS(instanceType));
+        map.put("level", AttributeValue.fromS(level().getValue()));
+        map.put("publicationDate", publicationDate.toDynamoDb());
+        map.put("isInternationalCollaboration", AttributeValue.fromBool(isInternationalCollaboration));
+        map.put("creatorCount", AttributeValue.fromN(String.valueOf(creatorCount)));
+        map.put("creators", AttributeValue.fromL(creators.stream().map(Creator::toDynamoDb).toList()));
+        map.put("approvalStatuses", AttributeValue.fromL(approvalStatuses.stream().map(ApprovalStatus::toDynamoDb).toList()));
+        if (notes != null) map.put("notes", AttributeValue.fromL(notes.stream().map(Note::toDynamoDb).toList()));
+        return AttributeValue.fromM(map);
+    }
+
+    public static Candidate fromDynamoDb(AttributeValue input) {
+        Map<String, AttributeValue> map = input.m();
+        return new Builder()
+            .withPublicationId(URI.create(map.get("publicationId").s()))
+            .withPublicationBucketUri(Optional.ofNullable(map.get("publicationBucketUri")).map(AttributeValue::s).map(URI::create).orElse(null))
+            .withIsApplicable(map.get("isApplicable").bool())
+            .withInstanceType(map.get("instanceType").s())
+            .withLevel(Level.parse(map.get("level").s()))
+            .withPublicationDate(PublicationDate.fromDynamoDb(map.get("publicationDate")))
+            .withIsInternationalCollaboration(map.get("isInternationalCollaboration").bool())
+            .withCreatorCount(Integer.parseInt(map.get("creatorCount").n()))
+            .withCreators(map.get("creators").l().stream().map(Creator::fromDynamoDb).collect(Collectors.toList()))
+            .withApprovalStatuses(map.get("approvalStatuses").l().stream().map(ApprovalStatus::fromDynamoDb).collect(Collectors.toList()))
+            .withNotes(Optional.ofNullable(map.get("notes")).map(AttributeValue::l).map(l -> l.stream().map(Note::fromDynamoDb).collect(Collectors.toList())).orElse(null))
+            .build();
     }
 
     public static final class Builder {

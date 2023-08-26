@@ -4,6 +4,10 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -11,6 +15,25 @@ public record ApprovalStatus(URI institutionId,
                              Status status,
                              Username finalizedBy,
                              Instant finalizedDate) {
+
+    public AttributeValue toDynamoDb() {
+        var map = new HashMap<String, AttributeValue>();
+        map.put("institutionId", AttributeValue.fromS(institutionId.toString()));
+        map.put("status", AttributeValue.fromS(status.getValue()));
+        if (finalizedBy != null) map.put("finalizedBy", finalizedBy.toDynamoDb());
+        if (finalizedDate != null) map.put("finalizedDate", AttributeValue.fromN(String.valueOf(finalizedDate.toEpochMilli())));
+        return AttributeValue.fromM(map);
+    }
+
+    public static ApprovalStatus fromDynamoDb(AttributeValue input) {
+        Map<String, AttributeValue> map = input.m();
+        return new ApprovalStatus(
+            URI.create(map.get("institutionId").s()),
+            Status.parse(map.get("status").s()),
+            Optional.ofNullable(map.get("finalizedBy")).map(Username::fromDynamoDb).orElse(null),
+            Optional.ofNullable(map.get("finalizedDate")).map(AttributeValue::n).map(Long::parseLong).map(Instant::ofEpochMilli).orElse(null)
+        );
+    }
 
     public static final class Builder {
 

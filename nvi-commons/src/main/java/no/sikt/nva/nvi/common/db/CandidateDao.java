@@ -22,7 +22,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 
 @SuppressWarnings({"PMD.GodClass", "PMD.ExcessivePublicCount"})
 @DynamoDbBean(converterProviders = { CandidateConverterProvider.class, DefaultAttributeConverterProvider.class})
-public class CandidateDao implements DynamoEntryWithRangeKey {
+public class CandidateDao extends Dao implements DynamoEntryWithRangeKey {
 
     public static final TableSchema<CandidateDao> TABLE_SCHEMA = TableSchema.fromClass(CandidateDao.class);
     private static final String DATA_FIELD = "data";
