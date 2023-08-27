@@ -1,10 +1,13 @@
 package no.sikt.nva.nvi.common.db;
 
+import static no.sikt.nva.nvi.common.ApplicationConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SECONDARY_INDEX_PUBLICATION_ID;
+import static no.sikt.nva.nvi.common.ApplicationConstants.SORT_KEY;
 import static nva.commons.core.attempt.Try.attempt;
 import java.net.URI;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -12,6 +15,7 @@ import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
@@ -22,6 +26,8 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public class NviCandidateRepository extends DynamoRepository  {
 
+    private static final String PARTITION_KEY_NAME_PLACEHOLDER = "#partitionKey";
+    private static final String SORT_KEY_NAME_PLACEHOLDER = "#sortKey";
     private final DynamoDbTable<CandidateDao> table;
     private final DynamoDbTable<CandidateUniquenessEntry> uniquenessTable;
     private final DynamoDbIndex<CandidateDao> publicationIdIndex;
@@ -33,23 +39,44 @@ public class NviCandidateRepository extends DynamoRepository  {
         this.publicationIdIndex = this.table.index(SECONDARY_INDEX_PUBLICATION_ID);
     }
 
+    private static String keyNotExistsCondition() {
+        return String.format("attribute_not_exists(%s) AND attribute_not_exists(%s)",
+                             PARTITION_KEY_NAME_PLACEHOLDER, SORT_KEY_NAME_PLACEHOLDER);
+    }
+
+    private static Map<String, String> primaryKeyEqualityConditionAttributeNames() {
+        return Map.of(
+            PARTITION_KEY_NAME_PLACEHOLDER, HASH_KEY,
+            SORT_KEY_NAME_PLACEHOLDER, SORT_KEY
+        );
+    }
+
+    private static Expression uniquePrimaryKeysExpression() {
+        return Expression.builder()
+                   .expression(keyNotExistsCondition())
+                   .expressionNames(primaryKeyEqualityConditionAttributeNames())
+                   .build();
+    }
+
     public CandidateWithIdentifier save(Candidate candidate) {
         var uuid = UUID.randomUUID();
         var insert = new CandidateDao(uuid, candidate);
         var uniqueness = new CandidateUniquenessEntry(candidate.publicationId().toString());
 
-        var putRequest = TransactPutItemEnhancedRequest.builder(CandidateDao.class)
+        var putCandidateRequest = TransactPutItemEnhancedRequest.builder(CandidateDao.class)
                              .item(insert)
+                             .conditionExpression(uniquePrimaryKeysExpression())
                              .build();
 
         var putUniquenessRequest = TransactPutItemEnhancedRequest.builder(CandidateUniquenessEntry.class)
                              .item(uniqueness)
+                             .conditionExpression(uniquePrimaryKeysExpression())
                              .build();
+
         var request = TransactWriteItemsEnhancedRequest.builder()
-                          .addPutItem(this.table, putRequest)
+                          .addPutItem(this.table, putCandidateRequest)
                           .addPutItem(this.uniquenessTable, putUniquenessRequest)
                           .build();
-
 
         this.client.transactWriteItems(request);
         var fetched = this.table.getItem(insert);
