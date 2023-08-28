@@ -9,6 +9,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Objects;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.common.service.NviService;
+import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,6 +17,11 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UpsertNviCandidateHandler.class);
     private final NviService nviService;
+
+    @JacocoGenerated
+    public UpsertNviCandidateHandler() {
+        this.nviService = new NviService();
+    }
 
     public UpsertNviCandidateHandler(NviService nviService) {
         this.nviService = nviService;
