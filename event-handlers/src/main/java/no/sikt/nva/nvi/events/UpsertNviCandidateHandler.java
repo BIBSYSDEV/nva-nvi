@@ -1,4 +1,4 @@
-package events;
+package no.sikt.nva.nvi.events;
 
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
