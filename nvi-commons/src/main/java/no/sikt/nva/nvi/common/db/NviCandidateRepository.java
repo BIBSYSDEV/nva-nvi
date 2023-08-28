@@ -105,7 +105,7 @@ public class NviCandidateRepository extends DynamoRepository  {
                         .map(Page::items)
                         .flatMap(Collection::stream)
                         .map(CandidateDao::toCandidateWithIdentifier)
-                        .collect(Collectors.toList());
+                        .toList();
 
         return attempt(() -> users.get(0)).toOptional();
     }

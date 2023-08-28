@@ -12,20 +12,24 @@ public record Note(Username user,
                    String text,
                    Instant createdDate) {
 
+    public static final String USER_FIELD = "user";
+    public static final String TEXT_FIELD = "text";
+    public static final String UPDATED_DATE_FIELD = "updatedDate";
+
     public AttributeValue toDynamoDb() {
         return AttributeValue.fromM(
-            Map.of("user", user.toDynamoDb(),
-                   "text", AttributeValue.fromS(text),
-                   "updatedDate", AttributeValue.fromN(String.valueOf(createdDate.toEpochMilli()))
+            Map.of(USER_FIELD, user.toDynamoDb(),
+                   TEXT_FIELD, AttributeValue.fromS(text),
+                   UPDATED_DATE_FIELD, AttributeValue.fromN(String.valueOf(createdDate.toEpochMilli()))
             ));
     }
 
     public static Note fromDynamoDb(AttributeValue input) {
         Map<String, AttributeValue> map = input.m();
         return new Note(
-            Username.fromDynamoDb(map.get("user")),
-            map.get("text").s(),
-            Instant.ofEpochMilli(Integer.parseInt(map.get("updatedDate").n()))
+            Username.fromDynamoDb(map.get(USER_FIELD)),
+            map.get(TEXT_FIELD).s(),
+            Instant.ofEpochMilli(Integer.parseInt(map.get(UPDATED_DATE_FIELD).n()))
         );
     }
 

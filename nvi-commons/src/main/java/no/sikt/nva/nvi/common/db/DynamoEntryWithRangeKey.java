@@ -9,7 +9,7 @@ public interface DynamoEntryWithRangeKey extends Typed {
      * Setter of the primary hash key. This method is supposed to be used only by when deserializing an item using Json
      * serializer.
      *
-     * @param primaryRangeKey the primary hash key.
+     * @param primaryHashKey the primary hash key.
      */
     void setPrimaryKeyHashKey(String primaryHashKey);
 

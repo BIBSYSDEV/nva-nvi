@@ -11,6 +11,7 @@ public class CandidateUniquenessEntry extends UniquenessEntry {
         CandidateUniquenessEntry.class);
 
     private static final String TYPE = "CandidateUniquenessEntry";
+
     public CandidateUniquenessEntry(String identifier) {
         super(identifier);
     }

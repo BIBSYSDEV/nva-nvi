@@ -11,13 +11,18 @@ public record ReportingStatus(URI institutionId,
                               CompletionStatus status,
                               Instant updatedDate) {
 
+    public static final String INSTITUTION_ID_FIELD = "institutionId";
+    public static final String PERIOD_FIELD = "period";
+    public static final String STATUS_FIELD = "status";
+    public static final String UPDATED_DATE_FIELD = "updatedDate";
+
     @JacocoGenerated //TODO: Will be used in Period, in next DB task
     public AttributeValue toDynamoDb() {
         return AttributeValue.fromM(
-            Map.of("institutionId", AttributeValue.fromS(institutionId.toString()),
-                   "period", period.toDynamoDb(),
-                   "status", AttributeValue.fromS(status.getValue()),
-                   "updatedDate", AttributeValue.fromN(String.valueOf(updatedDate.toEpochMilli()))
+            Map.of(INSTITUTION_ID_FIELD, AttributeValue.fromS(institutionId.toString()),
+                   PERIOD_FIELD, period.toDynamoDb(),
+                   STATUS_FIELD, AttributeValue.fromS(status.getValue()),
+                   UPDATED_DATE_FIELD, AttributeValue.fromN(String.valueOf(updatedDate.toEpochMilli()))
             ));
     }
 
@@ -25,10 +30,10 @@ public record ReportingStatus(URI institutionId,
     public ReportingStatus fromDynamoDb(AttributeValue input) {
         Map<String, AttributeValue> map = input.m();
         return new ReportingStatus(
-            URI.create(map.get("institutionId").s()),
-            Period.fromDynamoDb(map.get("period")),
-            CompletionStatus.valueOf(map.get("status").s()),
-            Instant.ofEpochMilli(Integer.parseInt(map.get("updatedDate").n()))
+            URI.create(map.get(INSTITUTION_ID_FIELD).s()),
+            Period.fromDynamoDb(map.get(PERIOD_FIELD)),
+            CompletionStatus.valueOf(map.get(STATUS_FIELD).s()),
+            Instant.ofEpochMilli(Integer.parseInt(map.get(UPDATED_DATE_FIELD).n()))
         );
     }
 

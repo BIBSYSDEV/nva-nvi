@@ -5,20 +5,24 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 public record PublicationDate(String year, String month, String day) {
 
+    public static final String YEAR_FIELD = "year";
+    public static final String MONTH_FIELD = "month";
+    public static final String DAY_FIELD = "day";
+
     public AttributeValue toDynamoDb() {
         return AttributeValue.fromM(
-            Map.of("year", AttributeValue.fromS(year),
-                   "month", AttributeValue.fromS(month),
-                   "day", AttributeValue.fromS(day)
+            Map.of(YEAR_FIELD, AttributeValue.fromS(year),
+                   MONTH_FIELD, AttributeValue.fromS(month),
+                   DAY_FIELD, AttributeValue.fromS(day)
             ));
     }
 
     public static PublicationDate fromDynamoDb(AttributeValue input) {
         Map<String, AttributeValue> map = input.m();
         return new PublicationDate(
-            map.get("year").s(),
-            map.get("month").s(),
-            map.get("day").s()
+            map.get(YEAR_FIELD).s(),
+            map.get(MONTH_FIELD).s(),
+            map.get(DAY_FIELD).s()
         );
     }
 }

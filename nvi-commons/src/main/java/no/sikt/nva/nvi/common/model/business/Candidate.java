@@ -26,40 +26,67 @@ public record Candidate(URI publicationId,
                         List<ApprovalStatus> approvalStatuses,
                         List<Note> notes) {
 
+    public static final String PUBLICATION_ID_FIELD = "publicationId";
+    public static final String PUBLICATION_BUCKET_URI_FIELD = "publicationBucketUri";
+    public static final String IS_APPLICABLE_FIELD = "isApplicable";
+    public static final String INSTANCE_TYPE_FIELD = "instanceType";
+    public static final String LEVEL_FIELD = "level";
+    public static final String PUBLICATION_DATE_FIELD = "publicationDate";
+    public static final String IS_INTERNATIONAL_COLLABORATION_FIELD = "isInternationalCollaboration";
+    public static final String CREATOR_COUNT_FIELD = "creatorCount";
+    public static final String CREATORS_FIELD = "creators";
+    public static final String APPROVAL_STATUSES_FIELD = "approvalStatuses";
+    public static final String NOTES_FIELD = "notes";
+
     public Candidate {
     }
 
     public AttributeValue toDynamoDb() {
         Map<String, AttributeValue> map = new HashMap<>();
-        map.put("publicationId", AttributeValue.fromS(publicationId.toString()));
-        if (publicationBucketUri != null) map.put("publicationBucketUri", AttributeValue.fromS(publicationBucketUri.toString()));
-        map.put("isApplicable", AttributeValue.fromBool(isApplicable));
-        map.put("instanceType", AttributeValue.fromS(instanceType));
-        map.put("level", AttributeValue.fromS(level().getValue()));
-        map.put("publicationDate", publicationDate.toDynamoDb());
-        map.put("isInternationalCollaboration", AttributeValue.fromBool(isInternationalCollaboration));
-        map.put("creatorCount", AttributeValue.fromN(String.valueOf(creatorCount)));
-        map.put("creators", AttributeValue.fromL(creators.stream().map(Creator::toDynamoDb).toList()));
-        map.put("approvalStatuses", AttributeValue.fromL(approvalStatuses.stream().map(ApprovalStatus::toDynamoDb).toList()));
-        if (notes != null) map.put("notes", AttributeValue.fromL(notes.stream().map(Note::toDynamoDb).toList()));
+        map.put(PUBLICATION_ID_FIELD, AttributeValue.fromS(publicationId.toString()));
+        if (publicationBucketUri != null) {
+            map.put(PUBLICATION_BUCKET_URI_FIELD, AttributeValue.fromS(publicationBucketUri.toString()));
+        }
+        map.put(IS_APPLICABLE_FIELD, AttributeValue.fromBool(isApplicable));
+        map.put(INSTANCE_TYPE_FIELD, AttributeValue.fromS(instanceType));
+        map.put(LEVEL_FIELD, AttributeValue.fromS(level().getValue()));
+        map.put(PUBLICATION_DATE_FIELD, publicationDate.toDynamoDb());
+        map.put(IS_INTERNATIONAL_COLLABORATION_FIELD, AttributeValue.fromBool(isInternationalCollaboration));
+        map.put(CREATOR_COUNT_FIELD, AttributeValue.fromN(String.valueOf(creatorCount)));
+        map.put(CREATORS_FIELD, AttributeValue.fromL(creators.stream().map(Creator::toDynamoDb).toList()));
+        map.put(APPROVAL_STATUSES_FIELD,
+                AttributeValue.fromL(approvalStatuses.stream().map(ApprovalStatus::toDynamoDb).toList())
+        );
+        if (notes != null) {
+            map.put(NOTES_FIELD, AttributeValue.fromL(notes.stream().map(Note::toDynamoDb).toList()));
+        }
         return AttributeValue.fromM(map);
     }
 
     public static Candidate fromDynamoDb(AttributeValue input) {
         Map<String, AttributeValue> map = input.m();
         return new Builder()
-            .withPublicationId(URI.create(map.get("publicationId").s()))
-            .withPublicationBucketUri(Optional.ofNullable(map.get("publicationBucketUri")).map(AttributeValue::s).map(URI::create).orElse(null))
-            .withIsApplicable(map.get("isApplicable").bool())
-            .withInstanceType(map.get("instanceType").s())
-            .withLevel(Level.parse(map.get("level").s()))
-            .withPublicationDate(PublicationDate.fromDynamoDb(map.get("publicationDate")))
-            .withIsInternationalCollaboration(map.get("isInternationalCollaboration").bool())
-            .withCreatorCount(Integer.parseInt(map.get("creatorCount").n()))
-            .withCreators(map.get("creators").l().stream().map(Creator::fromDynamoDb).collect(Collectors.toList()))
-            .withApprovalStatuses(map.get("approvalStatuses").l().stream().map(ApprovalStatus::fromDynamoDb).collect(Collectors.toList()))
-            .withNotes(Optional.ofNullable(map.get("notes")).map(AttributeValue::l).map(l -> l.stream().map(Note::fromDynamoDb).collect(Collectors.toList())).orElse(null))
-            .build();
+            .withPublicationId(URI.create(map.get(PUBLICATION_ID_FIELD).s()))
+                 .withPublicationBucketUri(Optional.ofNullable(map.get(PUBLICATION_BUCKET_URI_FIELD))
+                                               .map(AttributeValue::s).map(URI::create).orElse(null))
+                 .withIsApplicable(map.get(IS_APPLICABLE_FIELD).bool())
+                 .withInstanceType(map.get(INSTANCE_TYPE_FIELD).s())
+                 .withLevel(Level.parse(map.get(LEVEL_FIELD).s()))
+                 .withPublicationDate(PublicationDate.fromDynamoDb(map.get(PUBLICATION_DATE_FIELD)))
+                 .withIsInternationalCollaboration(map.get(IS_INTERNATIONAL_COLLABORATION_FIELD).bool())
+                 .withCreatorCount(Integer.parseInt(map.get(CREATOR_COUNT_FIELD).n()))
+                 .withCreators(
+                     map.get(CREATORS_FIELD).l().stream().map(Creator::fromDynamoDb).toList()
+                 )
+                 .withApprovalStatuses(
+                     map.get(APPROVAL_STATUSES_FIELD).l()
+                         .stream().map(ApprovalStatus::fromDynamoDb).toList()
+                 )
+                 .withNotes(Optional.ofNullable(map.get(NOTES_FIELD))
+                                .map(AttributeValue::l).map(l -> l.stream().map(Note::fromDynamoDb)
+                                                                     .toList()).orElse(null)
+                 )
+                 .build();
     }
 
     public static final class Builder {

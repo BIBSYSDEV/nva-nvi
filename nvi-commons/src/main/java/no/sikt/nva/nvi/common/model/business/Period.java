@@ -11,21 +11,26 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 @JsonSerialize
 public record Period(int year, Instant start, Instant end) {
 
+    public static final String YEAR_FIELD = "year";
+    public static final String START_FIELD = "start";
+    public static final String END_FIELD = "end";
+
     @JacocoGenerated //TODO: Will be used in Period, in next DB task
     public AttributeValue toDynamoDb() {
         return AttributeValue.fromM(
-            Map.of("year", AttributeValue.fromN(String.valueOf(year)),
-                   "start", AttributeValue.fromN(String.valueOf(start.toEpochMilli())),
-                   "end", AttributeValue.fromN(String.valueOf(end.toEpochMilli()))
+            Map.of(YEAR_FIELD, AttributeValue.fromN(String.valueOf(year)),
+                   START_FIELD, AttributeValue.fromN(String.valueOf(start.toEpochMilli())),
+                   END_FIELD, AttributeValue.fromN(String.valueOf(end.toEpochMilli()))
             ));
     }
+
     @JacocoGenerated //TODO: Will be used in Period, in next DB task
     public static Period fromDynamoDb(AttributeValue input) {
         Map<String, AttributeValue> map = input.m();
         return new Period(
-            Integer.parseInt(map.get("year").n()),
-            Instant.ofEpochMilli(Integer.parseInt(map.get("start").n())),
-            Instant.ofEpochMilli(Integer.parseInt(map.get("end").n()))
+            Integer.parseInt(map.get(YEAR_FIELD).n()),
+            Instant.ofEpochMilli(Integer.parseInt(map.get(START_FIELD).n())),
+            Instant.ofEpochMilli(Integer.parseInt(map.get(END_FIELD).n()))
         );
     }
 

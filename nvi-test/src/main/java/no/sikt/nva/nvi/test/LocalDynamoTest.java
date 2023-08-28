@@ -35,18 +35,18 @@ public class LocalDynamoTest {
 
     public DynamoDbClient initializeTestDatabase() {
 
-        DynamoDbClient localDynamo = DynamoDBEmbedded.create().dynamoDbClient();
+        var localDynamo = DynamoDBEmbedded.create().dynamoDbClient();
 
 
-        String tableName = ApplicationConstants.NVI_TABLE_NAME;
-        CreateTableResponse createTableResult = createTable(localDynamo, tableName);
-        TableDescription tableDescription = createTableResult.tableDescription();
+        var tableName = ApplicationConstants.NVI_TABLE_NAME;
+        var createTableResult = createTable(localDynamo, tableName);
+        var tableDescription = createTableResult.tableDescription();
         Assertions.assertEquals(tableName, tableDescription.tableName());
         assertThatTableKeySchemaContainsBothKeys(tableDescription.keySchema());
         Assertions.assertEquals(TableStatus.ACTIVE, tableDescription.tableStatus());
         MatcherAssert.assertThat(tableDescription.tableArn(), StringContains.containsString(tableName));
 
-        ListTablesResponse tables = localDynamo.listTables();
+        var tables = localDynamo.listTables();
         Assertions.assertEquals(SINGLE_TABLE_EXPECTED, tables.tableNames().size());
         return localDynamo;
     }

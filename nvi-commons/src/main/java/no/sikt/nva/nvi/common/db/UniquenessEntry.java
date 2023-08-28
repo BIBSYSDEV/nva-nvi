@@ -16,6 +16,7 @@ public abstract class UniquenessEntry implements DynamoEntryWithRangeKey {
     @JacocoGenerated
     public UniquenessEntry() {
     }
+
     public UniquenessEntry(String identifier) {
         this.partitionKey = getType() + FIELD_DELIMITER + identifier;
         this.sortKey = partitionKey;

@@ -34,13 +34,13 @@ public class NviServiceTest extends LocalDynamoTest {
 
     private NviService nviService;
 
-    private NviCandidateRepository fakeNviCandidateRepository;
+    private NviCandidateRepository nviCandidateRepository;
 
     @BeforeEach
     void setup() {
         localDynamo = initializeTestDatabase();
-        fakeNviCandidateRepository = new NviCandidateRepository(localDynamo);
-        nviService = new NviService(fakeNviCandidateRepository);
+        nviCandidateRepository = new NviCandidateRepository(localDynamo);
+        nviService = new NviService(nviCandidateRepository);
     }
 
     @Test
@@ -116,7 +116,7 @@ public class NviServiceTest extends LocalDynamoTest {
 
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType, randomLevel,
                                                         publicationDate);
-        var fetchedCandidate = fakeNviCandidateRepository.findByPublicationId(generatePublicationId(identifier)).map(
+        var fetchedCandidate = nviCandidateRepository.findByPublicationId(generatePublicationId(identifier)).map(
             CandidateWithIdentifier::candidate);
 
         assertThat(fetchedCandidate.get(),
