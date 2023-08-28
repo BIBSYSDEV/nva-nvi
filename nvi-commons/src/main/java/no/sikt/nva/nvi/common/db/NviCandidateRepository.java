@@ -14,8 +14,8 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import nva.commons.core.JacocoGenerated;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
-import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Expression;
@@ -117,7 +117,7 @@ public class NviCandidateRepository extends DynamoRepository  {
     public static NviCandidateRepository defaultNviCandidateRepository() {
         var dynamoDbClient = DynamoDbClient.builder()
                    .httpClient(UrlConnectionHttpClient.create())
-                   .credentialsProvider(EnvironmentVariableCredentialsProvider.create())
+                   .credentialsProvider(DefaultCredentialsProvider.create())
                    .region(REGION)
                    .build();
         return new NviCandidateRepository(dynamoDbClient);

@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events;
 
+import static no.sikt.nva.nvi.common.service.NviService.defaultNviService;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -20,7 +21,7 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
 
     @JacocoGenerated
     public UpsertNviCandidateHandler() {
-        this.nviService = new NviService();
+        this.nviService = defaultNviService();
     }
 
     public UpsertNviCandidateHandler(NviService nviService) {

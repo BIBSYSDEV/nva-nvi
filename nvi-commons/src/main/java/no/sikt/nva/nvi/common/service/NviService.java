@@ -29,11 +29,6 @@ public class NviService {
     public static final String PERIOD_NOT_NUMERIC_MESSAGE = "Period is not numeric!";
     private final NviCandidateRepository nviCandidateRepository;
 
-    @JacocoGenerated
-    public NviService() {
-        this(defaultNviCandidateRepository());
-    }
-
     public NviService(NviCandidateRepository nviCandidateRepository) {
         this.nviCandidateRepository = nviCandidateRepository;
     }
@@ -156,5 +151,10 @@ public class NviService {
     @JacocoGenerated
     private boolean isNotExistingCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
         return !existsByPublicationId(evaluatedCandidate.candidateDetails().publicationId());
+    }
+
+    @JacocoGenerated
+    public static NviService defaultNviService() {
+        return new NviService(defaultNviCandidateRepository());
     }
 }
