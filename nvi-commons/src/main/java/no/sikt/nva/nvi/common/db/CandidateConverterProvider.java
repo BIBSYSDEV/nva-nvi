@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.db;
 
-import java.util.Set;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import software.amazon.awssdk.enhanced.dynamodb.AttributeConverter;
 import software.amazon.awssdk.enhanced.dynamodb.AttributeConverterProvider;

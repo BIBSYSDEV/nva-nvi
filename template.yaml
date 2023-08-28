@@ -171,7 +171,8 @@ Resources:
         DestinationArn: !GetAtt ApiAccessLogGroup.Arn
         Format: '{ "apiId": "$context.apiId", "requestId": "$context.requestId", "requestTime": "$context.requestTime", "requestTimeEpoch": "$context.requestTimeEpoch", "httpMethod": "$context.httpMethod", "path": "$context.path", "status": "$context.status",  "error.message": "$context.error.message" }'
       StageName: Prod
-      EndpointConfiguration: REGIONAL
+      EndpointConfiguration:
+        Type: REGIONAL
       DefinitionBody:
         'Fn::Transform':
           Name: AWS::Include
@@ -241,8 +242,8 @@ Resources:
   UpsertNviCandidateHandler:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.handlers.IndexNviCandidateHandler::handleRequest
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.UpsertNviCandidateHandler::handleRequest
       Timeout: 30
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
@@ -254,6 +255,50 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt NewCandidateQueue.Arn
+
+  #Add table name to env variables and remove comment when table is implemented
+  CreateNviPeriodHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.rest.CreateNviPeriodHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+          API_HOST: !Ref ApiDomain
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /period
+            Method: post
+            RestApiId: !Ref ScientificIndexApi
+
+  #Add table name to env variables and remove comment when table is implemented
+  UpdateNviPeriodHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.rest.UpdateNviPeriodHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+          API_HOST: !Ref ApiDomain
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /nvi-period
+            Method: put
+            RestApiId: !Ref ScientificIndexApi
 
   DeleteNviCandidateHandler:
     Type: AWS::Serverless::Function

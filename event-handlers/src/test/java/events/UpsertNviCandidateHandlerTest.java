@@ -1,4 +1,4 @@
-package handlers;
+package events;
 
 import static no.sikt.nva.nvi.test.TestUtils.extractNviInstitutionIds;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;

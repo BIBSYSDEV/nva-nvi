@@ -9,7 +9,7 @@ public interface Typed {
 
     String getType();
 
-    default void setType(String type) throws IllegalStateException {
+    default void setType(String type) {
         if (!getType().equals(type)) {
             throw new IllegalStateException(errorMessage(type));
         }
