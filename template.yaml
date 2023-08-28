@@ -14,6 +14,7 @@ Globals:
       Variables:
         SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
         SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
+        NVI_TABLE_NAME: !Ref NvaNviTable
   Api:
     Cors:
       AllowMethods: "'PUT, GET,OPTIONS,DELETE,POST'"
@@ -158,6 +159,9 @@ Resources:
                 Action:
                   - lambda:InvokeFunction
                 Resource: '*'
+        - DynamoDBCrudPolicy:
+            TableName: !Ref NvaNviTable
+
 
   #============================= Roles ==========================================================
   ScientificIndexApi:
@@ -338,3 +342,37 @@ Resources:
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
+
+#============================= Database =========================================================
+  NvaNviTable:
+    Type: AWS::DynamoDB::Table
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    Properties:
+      TableName: !Sub 'nva-nvi-${AWS::StackName}'
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PrimaryKeyHashKey
+          AttributeType: S
+        - AttributeName: PrimaryKeyRangeKey
+          AttributeType: S
+        - AttributeName: SecondaryIndex1HashKey
+          AttributeType: S
+        - AttributeName: SecondaryIndex1RangeKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PrimaryKeyHashKey
+          KeyType: HASH
+        - AttributeName: PrimaryKeyRangeKey
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: SearchByPublicationId
+          KeySchema:
+            - AttributeName: SecondaryIndex1HashKey
+              KeyType: HASH
+            - AttributeName: SecondaryIndex1RangeKey
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL

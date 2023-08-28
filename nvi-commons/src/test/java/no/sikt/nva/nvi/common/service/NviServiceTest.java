@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
+import static no.sikt.nva.nvi.common.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.test.TestUtils.extractNviInstitutionIds;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
@@ -16,8 +17,9 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.db.NviCandidateRepository;
+import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.business.NviPeriod;
@@ -27,24 +29,85 @@ import no.sikt.nva.nvi.common.model.events.CandidateStatus;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.PublicationDate;
+import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.ConflictException;
 import nva.commons.apigateway.exceptions.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 
-public class NviServiceTest {
+public class NviServiceTest extends LocalDynamoTest {
 
     private NviService nviService;
 
-    private FakeNviCandidateRepository fakeNviCandidateRepository;
+    private NviCandidateRepository nviCandidateRepository;
 
     @BeforeEach
     void setup() {
-        //TODO: Replace fakeNviCandidateRepository with actual repository when implemented
-        fakeNviCandidateRepository = new FakeNviCandidateRepository();
-        nviService = new NviService(fakeNviCandidateRepository);
+        localDynamo = initializeTestDatabase();
+        nviCandidateRepository = new NviCandidateRepository(localDynamo);
+        nviService = new NviService(nviCandidateRepository);
+    }
+
+    @Test
+    void shouldCreateAndFetchPublicationById() {
+        var identifier = UUID.randomUUID();
+        var verifiedCreators = List.of(new Creator(randomUri(), List.of(randomUri())));
+        var instanceType = randomString();
+        var randomLevel = randomElement(Level.values());
+        var publicationDate = randomPublicationDate();
+        var evaluatedCandidateDto = createEvaluatedCandidateDto(identifier, verifiedCreators, instanceType, randomLevel,
+                                                                publicationDate);
+
+        var createdCandidate = nviService.upsertCandidate(evaluatedCandidateDto).get();
+        var createdCandidateId = createdCandidate.identifier();
+
+        var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType, randomLevel,
+                                                        publicationDate);
+        var fetchedCandidate = nviService.findById(createdCandidateId).get().candidate();
+
+        assertThat(fetchedCandidate,
+                   is(equalTo(expectedCandidate)));
+    }
+
+    @Test
+    void shouldCreateAndFetchPublicationByPublicationId() {
+        var identifier = UUID.randomUUID();
+        var verifiedCreators = List.of(new Creator(randomUri(), List.of(randomUri())));
+        var instanceType = randomString();
+        var randomLevel = randomElement(Level.values());
+        var publicationDate = randomPublicationDate();
+        var evaluatedCandidateDto = createEvaluatedCandidateDto(identifier, verifiedCreators, instanceType, randomLevel,
+                                                                publicationDate);
+
+        nviService.upsertCandidate(evaluatedCandidateDto).get().identifier();
+
+        var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType, randomLevel,
+                                                        publicationDate);
+        var fetchedCandidate = nviService.findByPublicationId(generatePublicationId(identifier)).get().candidate();
+
+        assertThat(fetchedCandidate,
+                   is(equalTo(expectedCandidate)));
+    }
+
+    @Test
+    void shouldCreateUniquenessIdentifierWhenCreatingCandidate() {
+        var identifier = UUID.randomUUID();
+        var verifiedCreators = List.of(new Creator(randomUri(), List.of(randomUri())));
+        var instanceType = randomString();
+        var randomLevel = randomElement(Level.values());
+        var publicationDate = randomPublicationDate();
+        var evaluatedCandidateDto = createEvaluatedCandidateDto(identifier, verifiedCreators, instanceType, randomLevel,
+                                                                publicationDate);
+        nviService.upsertCandidate(evaluatedCandidateDto).get().identifier();
+
+        var scan = this.localDynamo.scan(ScanRequest.builder().tableName(NVI_TABLE_NAME).build());
+        var items = scan.items().size();
+
+        assertThat(items,
+                   is(equalTo(2)));
     }
 
     @Test
@@ -61,8 +124,11 @@ public class NviServiceTest {
 
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType, randomLevel,
                                                         publicationDate);
-        assertThat(fakeNviCandidateRepository.findByPublicationId(expectedCandidate.publicationId()),
-                   is(equalTo(Optional.of(expectedCandidate))));
+        var fetchedCandidate = nviCandidateRepository.findByPublicationId(generatePublicationId(identifier)).map(
+            CandidateWithIdentifier::candidate);
+
+        assertThat(fetchedCandidate.get(),
+                   is(equalTo(expectedCandidate)));
     }
 
     //TODO: Change test when nviService is implemented
