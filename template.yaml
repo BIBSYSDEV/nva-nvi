@@ -159,8 +159,28 @@ Resources:
                 Action:
                   - lambda:InvokeFunction
                 Resource: '*'
-        - DynamoDBCrudPolicy:
-            TableName: !Ref NvaNviTable
+        - PolicyName: crudDynamodb
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:BatchGetItem
+                  - dynamodb:BatchWriteItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:DescribeLimits
+                  - dynamodb:DescribeReservedCapacity
+                  - dynamodb:DescribeReservedCapacityOfferings
+                  - dynamodb:DescribeTable
+                  - dynamodb:GetItem
+                  - dynamodb:GetRecords
+                  - dynamodb:ListStreams
+                  - dynamodb:PutItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:UpdateItem
+                Resource:
+                  - !GetAtt NvaNviTable.StreamArn
 
 
   #============================= Roles ==========================================================
