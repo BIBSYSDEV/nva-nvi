@@ -180,7 +180,7 @@ Resources:
                   - dynamodb:Scan
                   - dynamodb:UpdateItem
                 Resource:
-                  - !GetAtt NvaNviTable.StreamArn
+                  - !GetAtt NvaNviTable.Arn
 
 
   #============================= Roles ==========================================================
