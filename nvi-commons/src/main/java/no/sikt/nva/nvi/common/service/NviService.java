@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
+import static no.sikt.nva.nvi.common.db.NviCandidateRepository.defaultNviCandidateRepository;
 import static no.sikt.nva.nvi.common.model.events.CandidateStatus.CANDIDATE;
 import java.net.URI;
 import java.util.List;
@@ -27,6 +28,11 @@ public class NviService {
     public static final String INVALID_LENGTH_MESSAGE = "Provided period has invalid length!";
     public static final String PERIOD_NOT_NUMERIC_MESSAGE = "Period is not numeric!";
     private final NviCandidateRepository nviCandidateRepository;
+
+    @JacocoGenerated
+    public NviService() {
+        this(defaultNviCandidateRepository());
+    }
 
     public NviService(NviCandidateRepository nviCandidateRepository) {
         this.nviCandidateRepository = nviCandidateRepository;

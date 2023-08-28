@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.ApplicationConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.ApplicationConstants.NVI_TABLE_NAME;
+import static no.sikt.nva.nvi.common.ApplicationConstants.REGION;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SORT_KEY;
 import static nva.commons.core.attempt.Try.attempt;
@@ -12,6 +13,9 @@ import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.Candidate;
+import nva.commons.core.JacocoGenerated;
+import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Expression;
@@ -107,5 +111,15 @@ public class NviCandidateRepository extends DynamoRepository  {
                         .toList();
 
         return attempt(() -> users.get(0)).toOptional();
+    }
+
+    @JacocoGenerated
+    public static NviCandidateRepository defaultNviCandidateRepository() {
+        var dynamoDbClient = DynamoDbClient.builder()
+                   .httpClient(UrlConnectionHttpClient.create())
+                   .credentialsProvider(EnvironmentVariableCredentialsProvider.create())
+                   .region(REGION)
+                   .build();
+        return new NviCandidateRepository(dynamoDbClient);
     }
 }
