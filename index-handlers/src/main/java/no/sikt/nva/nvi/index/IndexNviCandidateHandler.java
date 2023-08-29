@@ -9,6 +9,8 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.util.Base64;
 import java.util.List;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;
@@ -58,9 +60,11 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
 
     private void updateIndex(DynamodbStreamRecord record) {
         var string = attempt(() -> JsonUtils.dynamoObjectMapper.writeValueAsString(record)).orElseThrow();
-        var recordJson =
+        LOGGER.info("String {}: ", string);
+
+        var dynamodbStreamRecord =
             attempt(() -> JsonUtils.dtoObjectMapper.readValue(string, DynamodbStreamRecord.class)).orElseThrow();
-        LOGGER.info("RecordJson: {}", recordJson);
+
 
         if (isInsert(record) || isModify(record)) {
             addDocumentToIndex(record);

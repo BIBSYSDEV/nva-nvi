@@ -19,6 +19,7 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStream
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.StreamRecord;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -28,6 +29,7 @@ import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
@@ -98,6 +100,6 @@ class IndexNviCandidateHandlerTest {
 
     private static StreamRecord randomPayload() {
         return new StreamRecord().withOldImage(Map.of(randomString(), new AttributeValue(randomString())))
-                                 .withNewImage(Map.of(randomString(), new AttributeValue(randomString())));
+                   .withNewImage(Map.of(randomString(), new AttributeValue(randomString())));
     }
 }
