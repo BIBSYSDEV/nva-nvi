@@ -1,11 +1,14 @@
 package no.sikt.nva.nvi.evaluator.calculator;
 
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_PUBLISHER_LEVEL;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_PUBLISHER;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_INSTANCE_TYPE;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_JOURNAL_LEVEL;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLISHER;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
@@ -20,9 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,16 +74,12 @@ public final class PointCalculator {
                     LEVEL_ONE, BigDecimal.valueOf(1),
                     LEVEL_TWO, BigDecimal.valueOf(3))));
     private static final boolean HARDCODED_INTERNATIONAL_COLLABORATION_BOOLEAN_TO_BE_REPLACED = false;
-    private static final String DEFAULT_LEVEL = "0";
 
     private PointCalculator() {
     }
 
     public static Map<URI, BigDecimal> calculatePoints(JsonNode jsonNode,
                                                        Map<URI, List<URI>> nviCreatorsWithInstitutionIds) {
-        var instanceType = extractInstanceType(jsonNode);
-        var instanceTypeAndLevelPoints = calculateInstanceTypeAndLevelPoints(instanceType,
-                                                                             getLevel(instanceType, jsonNode));
         //TODO: set isInternationalCollaboration when Cristin proxy api has implemented land code
         var isInternationalCollaboration = HARDCODED_INTERNATIONAL_COLLABORATION_BOOLEAN_TO_BE_REPLACED;
         return calculatePoints(calculateInstanceTypeAndLevelPoints(jsonNode),

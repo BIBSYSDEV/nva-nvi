@@ -89,7 +89,7 @@ class PointCalculatorTest {
         var creator1 = randomUri();
         var creator2 = randomUri();
         var creator1Institutions = List.of(nviInstitution1);
-        var creator2Institutions = List.of(nviInstitution1);
+        var creator2Institutions = List.of(nviInstitution2);
         var expandedResource = createExpandedResource(
             randomUri(),
             createContributorNodes(
