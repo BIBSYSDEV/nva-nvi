@@ -43,14 +43,16 @@ import org.slf4j.LoggerFactory;
 
 public class CandidateCalculator {
 
-    public static final String CONTENT_TYPE = "application/json";
-    public static final String COULD_NOT_FETCH_AFFILIATION_MESSAGE = "Could not fetch affiliation for: ";
-    public static final String CUSTOMER = "customer";
-    public static final String CRISTIN_ID = "cristinId";
-    public static final String AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE =
-        "Affiliation fetched successfully with " + "status {}";
-    public static final String VERIFIED = "Verified";
-    public static final String ERROR_COULD_NOT_FETCH_CRISTIN_ORG = "Could not fetch Cristin organization for: {}. "
+    private static final String CONTENT_TYPE = "application/json";
+    private static final String COULD_NOT_FETCH_CUSTOMER_MESSAGE = "Could not fetch customer for: ";
+    private static final String CUSTOMER = "customer";
+    private static final String CRISTIN_ID = "cristinId";
+    private static final String CUSTOMER_FETCHED_SUCCESSFULLY_MESSAGE =
+        "Customer fetched successfully with " + "status {}";
+    private static final String VERIFIED = "Verified";
+
+    private static final String COULD_NOT_FETCH_CRISTIN_ORG_MESSAGE = "Could not fetch Cristin organization for: ";
+    private static final String ERROR_COULD_NOT_FETCH_CRISTIN_ORG = COULD_NOT_FETCH_CRISTIN_ORG_MESSAGE + "{}. "
                                                                    + "Response code: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(CandidateCalculator.class);
     //TODO to be configured somehow
@@ -183,7 +185,7 @@ public class CandidateCalculator {
             return toCristinOrganization(response.body());
         } else {
             LOGGER.error(ERROR_COULD_NOT_FETCH_CRISTIN_ORG, organizationId, response.statusCode());
-            throw new RuntimeException();
+            throw new RuntimeException(COULD_NOT_FETCH_CRISTIN_ORG_MESSAGE + organizationId);
         }
     }
 
@@ -209,13 +211,13 @@ public class CandidateCalculator {
         return attempt(() -> dtoObjectMapper.readValue(response, Organization.class)).orElseThrow();
     }
 
-    private boolean isNviInstitution(String affiliation) {
-        var response = getResponse(createCustomerApiUri(affiliation));
+    private boolean isNviInstitution(String institutionId) {
+        var response = getResponse(createCustomerApiUri(institutionId));
         if (isSuccessOrNotFound(response)) {
-            LOGGER.info(AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE, response.statusCode());
+            LOGGER.info(CUSTOMER_FETCHED_SUCCESSFULLY_MESSAGE, response.statusCode());
             return mapToNviInstitutionValue(response);
         }
-        throw new RuntimeException(COULD_NOT_FETCH_AFFILIATION_MESSAGE + affiliation);
+        throw new RuntimeException(COULD_NOT_FETCH_CUSTOMER_MESSAGE + institutionId);
     }
 
     private HttpResponse<String> getResponse(URI uri) {
