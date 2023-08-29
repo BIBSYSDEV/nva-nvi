@@ -190,6 +190,18 @@ Resources:
                   - dynamodb:*
                 Resource:
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/nva-nvi-${AWS::StackName}/index/*
+        - PolicyName: DynamoDbStreamAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetShardIterator
+                  - dynamodb:DescribeStream
+                  - dynamodb:ListStreams
+                  - dynamodb:GetRecords
+                Resource:
+                  - !GetAtt NvaNviTable.StreamArn
 
 
   #============================= Roles ==========================================================
@@ -256,6 +268,7 @@ Resources:
   IndexNviCandidateHandler:
     Type: AWS::Serverless::Function
     Properties:
+      Description: 'Listens to DynamoDbStream and creates, modifies and deletes record from nvi-index'
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.IndexNviCandidateHandler::handleRequest
       Timeout: 30
@@ -267,6 +280,15 @@ Resources:
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+      Events:
+        FanoutSource:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt NvaNviTable.StreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 10
+            Enabled: true
+
 
   UpsertNviCandidateHandler:
     Type: AWS::Serverless::Function
@@ -405,3 +427,5 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES

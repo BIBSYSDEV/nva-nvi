@@ -55,6 +55,7 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     }
 
     private void updateIndex(DynamodbStreamRecord record) {
+        LOGGER.info("DynamoRecord: {}", record);
         if (isInsert(record) || isModify(record)) {
             addDocumentToIndex(record);
         }
