@@ -59,6 +59,7 @@ class IndexNviCandidateHandlerTest {
         when(storageReader.read(any())).thenReturn(CANDIDATE_MISSING_FIELDS);
 
         handler.handleRequest(createEvent(INSERT), CONTEXT);
+
         assertThat(appender.getMessages(), containsString(DOCUMENT_ADDED_MESSAGE));
     }
 

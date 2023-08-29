@@ -11,6 +11,7 @@ import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationTyp
 import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.StorageReader;
+import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
@@ -41,6 +42,7 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     }
 
     public Void handleRequest(DynamodbEvent event, Context context) {
+        LOGGER.info("DynamoDbEvent: {}", event.toString());
         event.getRecords().forEach(this::updateIndex);
         return null;
     }
