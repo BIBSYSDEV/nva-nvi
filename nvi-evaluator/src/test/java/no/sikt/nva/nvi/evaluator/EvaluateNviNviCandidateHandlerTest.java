@@ -131,10 +131,10 @@ class EvaluateNviNviCandidateHandlerTest {
 
     @Test
     void shouldCalculatePointsOnValidAcademicArticle() throws IOException {
-        var cristinOrgRes = createResponse(200, getHardCodedCristinOrgRes());
+        var cristinOrgResponse = createResponse(200, getHardCodedCristinOrgResponse());
         when(uriRetriever.fetchResponse(eq(
             URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0")), any())).thenReturn(
-            Optional.of(cristinOrgRes));
+            Optional.of(cristinOrgResponse));
         when(uriRetriever.fetchResponse(eq(URI.create(
                                             "https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
                                             + ".dev.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0")),
@@ -158,10 +158,10 @@ class EvaluateNviNviCandidateHandlerTest {
 
     @Test
     void shouldCreateInstitutionApprovalsForTopLevelInstitutions() throws IOException {
-        var cristinOrgRes = createResponse(200, getHardCodedCristinOrgRes());
+        var cristinOrgResponse = createResponse(200, getHardCodedCristinOrgResponse());
         when(uriRetriever.fetchResponse(eq(
             URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0")), any())).thenReturn(
-            Optional.of(cristinOrgRes));
+            Optional.of(cristinOrgResponse));
         when(uriRetriever.fetchResponse(eq(URI.create(
                                             "https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
                                             + ".dev.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0")),
@@ -320,9 +320,9 @@ class EvaluateNviNviCandidateHandlerTest {
 
     @Test
     void shouldCreateNonCandidateEventWhenZeroNviInstitutions() throws IOException {
-        var cristinOrgRes = createResponse(200, getHardCodedCristinOrgRes());
+        var cristinOrgResponse = createResponse(200, getHardCodedCristinOrgResponse());
         var cristinOrgSubUnit = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0");
-        when(uriRetriever.fetchResponse(eq(cristinOrgSubUnit), any())).thenReturn(Optional.of(cristinOrgRes));
+        when(uriRetriever.fetchResponse(eq(cristinOrgSubUnit), any())).thenReturn(Optional.of(cristinOrgResponse));
         when(uriRetriever.fetchResponse(eq(URI.create(
                                             "https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
                                             + ".dev.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0")),
@@ -350,9 +350,9 @@ class EvaluateNviNviCandidateHandlerTest {
 
     @Test
     void shouldThrowExceptionWhenProblemsFetchingCustomer() throws IOException {
-        var cristinOrgRes = createResponse(200, getHardCodedCristinOrgRes());
+        var cristinOrgResponse = createResponse(200, getHardCodedCristinOrgResponse());
         var cristinOrgSubUnit = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0");
-        when(uriRetriever.fetchResponse(eq(cristinOrgSubUnit), any())).thenReturn(Optional.of(cristinOrgRes));
+        when(uriRetriever.fetchResponse(eq(cristinOrgSubUnit), any())).thenReturn(Optional.of(cristinOrgResponse));
         when(uriRetriever.fetchResponse(eq(URI.create(
                                             "https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
                                             + ".dev.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0")),
@@ -403,7 +403,7 @@ class EvaluateNviNviCandidateHandlerTest {
 
     }
 
-    private static String getHardCodedCristinOrgRes() {
+    private static String getHardCodedCristinOrgResponse() {
         return """
             {
               "@context" : "https://bibsysdev.github.io/src/organization-context.json",
