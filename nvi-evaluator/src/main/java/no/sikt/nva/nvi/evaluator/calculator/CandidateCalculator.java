@@ -25,6 +25,7 @@ import no.sikt.nva.nvi.common.model.events.Publication;
 import no.sikt.nva.nvi.common.model.events.Publication.EntityDescription.Contributor;
 import no.sikt.nva.nvi.common.model.events.Publication.EntityDescription.Contributor.Affiliation;
 import no.sikt.nva.nvi.evaluator.model.CustomerResponse;
+import no.sikt.nva.nvi.evaluator.model.Organization;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -49,6 +50,8 @@ public class CandidateCalculator {
     public static final String AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE =
         "Affiliation fetched successfully with " + "status {}";
     public static final String VERIFIED = "Verified";
+    public static final String ERROR_COULD_NOT_FETCH_CRISTIN_ORG = "Could not fetch Cristin organization for: {}. "
+                                                                   + "Response code: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(CandidateCalculator.class);
     //TODO to be configured somehow
     private static final String NVI_YEAR = "2023";
@@ -117,7 +120,7 @@ public class CandidateCalculator {
         return attempt(() -> dtoObjectMapper.readValue(responseBody, CustomerResponse.class)).orElseThrow();
     }
 
-    private static URI createUri(String affiliation) {
+    private static URI createCustomerApiUri(String affiliation) {
         var getCustomerEndpoint = UriWrapper.fromHost(API_HOST).addChild(CUSTOMER).addChild(CRISTIN_ID).getUri();
         return URI.create(getCustomerEndpoint + "/" + URLEncoder.encode(affiliation, StandardCharsets.UTF_8));
     }
@@ -174,6 +177,16 @@ public class CandidateCalculator {
                    .toList();
     }
 
+    private Organization fetchOrganization(URI organizationId) {
+        var response = getResponse(organizationId);
+        if (isHttpOk(response)) {
+            return toCristinOrganization(response.body());
+        } else {
+            LOGGER.error(ERROR_COULD_NOT_FETCH_CRISTIN_ORG, organizationId, response.statusCode());
+            throw new RuntimeException();
+        }
+    }
+
     private Contributor filterInstitutionsToKeepNvaCustomers(Contributor contributor) {
         return new Contributor(contributor.identity(), filterNviAffiliations(contributor));
     }
@@ -182,6 +195,9 @@ public class CandidateCalculator {
         return contributor.affiliations()
                    .stream()
                    .map(Affiliation::id)
+                   .map(this::fetchOrganization)
+                   .map(Organization::getTopLevelOrg)
+                   .map(Organization::id)
                    .map(URI::toString)
                    .filter(this::isNviInstitution)
                    .map(URI::create)
@@ -189,8 +205,12 @@ public class CandidateCalculator {
                    .toList();
     }
 
+    private Organization toCristinOrganization(String response) {
+        return attempt(() -> dtoObjectMapper.readValue(response, Organization.class)).orElseThrow();
+    }
+
     private boolean isNviInstitution(String affiliation) {
-        var response = getResponse(affiliation);
+        var response = getResponse(createCustomerApiUri(affiliation));
         if (isSuccessOrNotFound(response)) {
             LOGGER.info(AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE, response.statusCode());
             return mapToNviInstitutionValue(response);
@@ -198,8 +218,8 @@ public class CandidateCalculator {
         throw new RuntimeException(COULD_NOT_FETCH_AFFILIATION_MESSAGE + affiliation);
     }
 
-    private HttpResponse<String> getResponse(String affiliation) {
-        return Optional.ofNullable(uriRetriever.fetchResponse(createUri(affiliation), CONTENT_TYPE))
+    private HttpResponse<String> getResponse(URI uri) {
+        return Optional.ofNullable(uriRetriever.fetchResponse(uri, CONTENT_TYPE))
                    .stream()
                    .filter(Optional::isPresent)
                    .map(Optional::get)

@@ -11,6 +11,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -128,7 +129,11 @@ class EvaluateNviNviCandidateHandlerTest {
 
     @Test
     void shouldCalculatePointsOnValidAcademicArticle() throws IOException {
-        when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(okResponse));
+        var cristinOrgRes = createResponse(200, getHardCodedCristinOrgRes());
+        var cristinOrgSubUnit = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0");
+        var topLevelCristinOrg = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
+        when(uriRetriever.fetchResponse(eq(cristinOrgSubUnit), any())).thenReturn(Optional.of(cristinOrgRes));
+        when(uriRetriever.fetchResponse(eq(URI.create("https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi.sandbox.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0")), any())).thenReturn(Optional.of(okResponse));
         var path = "candidate_academicArticle.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
@@ -142,9 +147,62 @@ class EvaluateNviNviCandidateHandlerTest {
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class))
                 .orElseThrow();
         assertThat(body.institutionPoints(), notNullValue());
-        assertThat(body.institutionPoints().get(URI.create("https://api.dev.nva.aws.unit"
-                                                           + ".no/cristin/organization/20754.0.0.0")),
+        assertThat(body.institutionPoints().get(topLevelCristinOrg),
                    is(equalTo(BigDecimal.ONE.setScale(4, RoundingMode.HALF_UP))));
+    }
+
+    @Test
+    void shouldCreateInstitutionApprovalsForTopLevelInstitutions() throws IOException {
+        var cristinOrgRes = createResponse(200, getHardCodedCristinOrgRes());
+        var cristinOrgSubUnit = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0");
+        var topLevelCristinOrg = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
+        when(uriRetriever.fetchResponse(eq(cristinOrgSubUnit), any())).thenReturn(Optional.of(cristinOrgRes));
+        when(uriRetriever.fetchResponse(eq(URI.create("https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi.sandbox.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0")), any())).thenReturn(Optional.of(okResponse));
+        var path = "candidate_academicArticle.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, output, context);
+        var sentMessages = sqsClient.getSentMessages();
+        assertThat(sentMessages, hasSize(1));
+        var message = sentMessages.get(0);
+        assertThat(message.messageBody(), containsString(fileUri.toString()));
+        var body =
+            attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class))
+                .orElseThrow();
+        assertThat(body.institutionPoints(), notNullValue());
+        assertThat(body.institutionPoints().get(topLevelCristinOrg), notNullValue());
+
+    }
+
+    private static String getHardCodedCristinOrgRes() {
+        return """
+            {
+              "@context" : "https://bibsysdev.github.io/src/organization-context.json",
+              "type" : "Organization",
+              "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.20.0",
+              "labels" : {
+                "en" : "Department of Marine Technology",
+                "nb" : "Institutt for marin teknikk"
+              },
+              "partOf" : [ {
+                "type" : "Organization",
+                "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.0.0",
+                "labels" : {
+                  "en" : "Faculty of Engineering",
+                  "nb" : "Fakultet for ingeniørvitenskap"
+                },
+                "partOf" : [ {
+                  "type" : "Organization",
+                  "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0",
+                  "labels" : {
+                    "en" : "Norwegian University of Science and Technology",
+                    "nb" : "Norges teknisk-naturvitenskapelige universitet",
+                    "nn" : "Noregs teknisk-naturvitskaplege universitet"
+                  }
+                } ]
+              } ]
+            }""";
     }
 
     @Test
