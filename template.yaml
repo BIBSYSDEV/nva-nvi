@@ -48,6 +48,9 @@ Parameters:
   NewCandidateDLQName:
     Type: String
     Default: NewCandidateDLQ
+  UpdateIndexHandlerDLQName:
+    Type: String
+    Default: UpdateIndexHandlerDLQ
   SearchInfrastructureApiHost:
     Type: String
     Description: Host of external search infrastructure API (SWS).
@@ -83,6 +86,10 @@ Resources:
     Properties:
       QueueName: !Ref NewCandidateDLQName
       MessageRetentionPeriod: 43200
+  UpdateIndexHandlerDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref UpdateIndexHandlerDLQName
 
   #============================= Permissions =======================================================
   NvaNviRole:
@@ -280,6 +287,7 @@ Resources:
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+          DLQ_URL: !Ref UpdateIndexHandlerDLQ
       Events:
         FanoutSource:
           Type: DynamoDB

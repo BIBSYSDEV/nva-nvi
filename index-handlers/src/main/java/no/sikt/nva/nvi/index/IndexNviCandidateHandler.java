@@ -11,14 +11,15 @@ import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationTyp
 import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.StorageReader;
-import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, Void> {
 
@@ -42,7 +43,6 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     }
 
     public Void handleRequest(DynamodbEvent event, Context context) {
-        LOGGER.info("DynamoDbEvent: {}", event.toString());
         event.getRecords().forEach(this::updateIndex);
         return null;
     }
@@ -57,7 +57,11 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     }
 
     private void updateIndex(DynamodbStreamRecord record) {
-        LOGGER.info("DynamoRecord: {}", record);
+        var string = attempt(() -> JsonUtils.dynamoObjectMapper.writeValueAsString(record)).orElseThrow();
+        var recordJson =
+            attempt(() -> JsonUtils.dtoObjectMapper.readValue(string, DynamodbStreamRecord.class)).orElseThrow();
+        LOGGER.info("RecordJson: {}", recordJson);
+
         if (isInsert(record) || isModify(record)) {
             addDocumentToIndex(record);
         }
