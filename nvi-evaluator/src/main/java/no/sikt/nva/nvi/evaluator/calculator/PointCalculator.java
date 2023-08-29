@@ -1,11 +1,9 @@
 package no.sikt.nva.nvi.evaluator.calculator;
 
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_VERIFICATION_STATUS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_PUBLISHER_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_INSTANCE_TYPE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_JOURNAL_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_LEVEL;
@@ -16,11 +14,10 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.utils.JsonPointers;
 
@@ -29,7 +26,6 @@ public final class PointCalculator {
     private static final int SCALE = 10;
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private static final MathContext MATH_CONTEXT = new MathContext(SCALE, ROUNDING_MODE);
-    private static final String VERIFIED = "Verified";
     private static final BigDecimal INTERNATIONAL_COLLABORATION_FACTOR =
         new BigDecimal("1.3").setScale(SCALE, ROUNDING_MODE);
     private static final BigDecimal NOT_INTERNATIONAL_COLLABORATION_FACTOR =
@@ -47,12 +43,13 @@ public final class PointCalculator {
             ACADEMIC_LITERATURE_REVIEW, Map.of("1", BigDecimal.ONE, "2", BigDecimal.valueOf(3))
         );
     private static final boolean HARDCODED_INTERNATIONAL_COLLABORATION_BOOLEAN_TO_BE_REPLACED = false;
-    public static final String DEFAULT_LEVEL = "0";
+    private static final String DEFAULT_LEVEL = "0";
 
     private PointCalculator() {
     }
 
-    public static Map<URI, BigDecimal> calculatePoints(JsonNode jsonNode, Set<URI> approvalInstitutions) {
+    public static Map<URI, BigDecimal> calculatePoints(JsonNode jsonNode,
+                                                       Map<URI, List<URI>> nviCreatorsWithInstitutionIds) {
         var instanceType = extractInstanceType(jsonNode);
         var instanceTypeAndLevelPoints = calculateInstanceTypeAndLevelPoints(instanceType,
                                                                              getLevel(instanceType, jsonNode));
@@ -61,7 +58,7 @@ public final class PointCalculator {
         return calculatePoints(instanceTypeAndLevelPoints,
                                countCreatorShares(jsonNode),
                                isInternationalCollaboration,
-                               countInstitutionCreatorShares(jsonNode, approvalInstitutions));
+                               countInstitutionCreatorShares(nviCreatorsWithInstitutionIds));
     }
 
     private static Map<URI, BigDecimal> calculatePoints(BigDecimal instanceTypeAndLevelPoints, int creatorShareCount,
@@ -95,19 +92,21 @@ public final class PointCalculator {
                    .setScale(RESULT_SCALE, ROUNDING_MODE);
     }
 
-    private static Map<URI, Long> countInstitutionCreatorShares(JsonNode jsonNode, Set<URI> approvalInstitutions) {
-        var contributors = jsonNode.at(JSON_PTR_CONTRIBUTOR);
-        return streamNode(contributors)
-                   .filter(PointCalculator::isVerified)
-                   .flatMap(contributor -> streamNode(contributor.at(JSON_PTR_AFFILIATIONS)))
-                   .map(affiliation -> extractJsonNodeTextValue(affiliation, JSON_PTR_ID))
-                   .map(URI::create)
-                   .filter(approvalInstitutions::contains)
-                   .collect(Collectors.groupingByConcurrent(Function.identity(), Collectors.counting()));
+    private static Map<URI, Long> countInstitutionCreatorShares(Map<URI, List<URI>> nviCreatorsWithInstitutions) {
+        return nviCreatorsWithInstitutions.entrySet()
+                   .stream()
+                   .flatMap(entry -> entry.getValue().stream())
+                   .distinct()
+                   .collect(Collectors.toMap(institutionId -> institutionId,
+                                             institutionId -> countCreators(institutionId,
+                                                                            nviCreatorsWithInstitutions)));
     }
 
-    private static boolean isVerified(JsonNode contributor) {
-        return VERIFIED.equals(extractJsonNodeTextValue(contributor, JSON_POINTER_IDENTITY_VERIFICATION_STATUS));
+    private static Long countCreators(URI institutionId, Map<URI, List<URI>> nviCreatorsWithInstitutions) {
+        return nviCreatorsWithInstitutions.entrySet()
+                   .stream()
+                   .filter(creator -> creator.getValue().contains(institutionId))
+                   .count();
     }
 
     private static BigDecimal divideInstitutionShareOnTotalShares(Long institutionCreatorShareCount,

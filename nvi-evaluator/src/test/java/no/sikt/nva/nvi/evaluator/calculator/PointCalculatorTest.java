@@ -13,7 +13,7 @@ import java.math.RoundingMode;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,13 +25,15 @@ class PointCalculatorTest {
     @MethodSource("singleCreatorSingleInstitutionPointProvider")
     void shouldCalculateNviPointsCorrectlyForSingleInstitution(PointParameters parameters) {
 
+        var creator = randomUri();
         var institutionId = randomUri();
+        var institutions = List.of(institutionId);
         var expandedResource = createExpandedResource(
             randomUri(),
-            createContributorNodes(getContributorNode(randomUri(), true, List.of(institutionId))),
+            createContributorNodes(getContributorNode(creator, true, institutions)),
             getInstanceTypeReference(parameters));
 
-        var institutionPoints = calculatePoints(expandedResource, Set.of(institutionId));
+        var institutionPoints = calculatePoints(expandedResource, Map.of(creator, institutions));
 
         assertThat(institutionPoints.get(institutionId), is(equalTo(parameters.institution1Points())));
     }
@@ -44,16 +46,20 @@ class PointCalculatorTest {
 
         var creator1 = randomUri();
         var creator2 = randomUri();
+        var creator1Institutions = List.of(nviInstitution1, nviInstitution2);
+        var creator2Institutions = List.of(nviInstitution1);
         var expandedResource = createExpandedResource(
             randomUri(),
             createContributorNodes(
-                getContributorNode(creator1, true, List.of(nviInstitution1, nviInstitution2)),
-                getContributorNode(creator2, true, List.of(nviInstitution1)),
+                getContributorNode(creator1, true, creator1Institutions),
+                getContributorNode(creator2, true, creator2Institutions),
                 getContributorNode(randomUri(), false, createRandomInstitutions(parameters))
             ),
             getInstanceTypeReference(parameters));
 
-        var pointsMap = calculatePoints(expandedResource, Set.of(nviInstitution1, nviInstitution2));
+        var pointsMap = calculatePoints(expandedResource,
+                                        Map.of(creator1, creator1Institutions,
+                                               creator2, creator2Institutions));
 
         assertThat(pointsMap.get(nviInstitution1), is(equalTo(parameters.institution1Points())));
         assertThat(pointsMap.get(nviInstitution2), is(equalTo(parameters.institution2Points())));

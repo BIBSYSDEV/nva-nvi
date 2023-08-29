@@ -131,9 +131,12 @@ class EvaluateNviNviCandidateHandlerTest {
     void shouldCalculatePointsOnValidAcademicArticle() throws IOException {
         var cristinOrgRes = createResponse(200, getHardCodedCristinOrgRes());
         var cristinOrgSubUnit = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0");
-        var topLevelCristinOrg = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
+        var cristinOrgTopLevel = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
         when(uriRetriever.fetchResponse(eq(cristinOrgSubUnit), any())).thenReturn(Optional.of(cristinOrgRes));
-        when(uriRetriever.fetchResponse(eq(URI.create("https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi.sandbox.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0")), any())).thenReturn(Optional.of(okResponse));
+        when(uriRetriever.fetchResponse(eq(URI.create(
+                                            "https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
+                                            + ".dev.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0")),
+                                        any())).thenReturn(Optional.of(okResponse));
         var path = "candidate_academicArticle.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
@@ -147,7 +150,7 @@ class EvaluateNviNviCandidateHandlerTest {
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class))
                 .orElseThrow();
         assertThat(body.institutionPoints(), notNullValue());
-        assertThat(body.institutionPoints().get(topLevelCristinOrg),
+        assertThat(body.institutionPoints().get(cristinOrgTopLevel),
                    is(equalTo(BigDecimal.ONE.setScale(4, RoundingMode.HALF_UP))));
     }
 
@@ -155,9 +158,12 @@ class EvaluateNviNviCandidateHandlerTest {
     void shouldCreateInstitutionApprovalsForTopLevelInstitutions() throws IOException {
         var cristinOrgRes = createResponse(200, getHardCodedCristinOrgRes());
         var cristinOrgSubUnit = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0");
-        var topLevelCristinOrg = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
+        var cristinOrgTopLevel = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
         when(uriRetriever.fetchResponse(eq(cristinOrgSubUnit), any())).thenReturn(Optional.of(cristinOrgRes));
-        when(uriRetriever.fetchResponse(eq(URI.create("https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi.sandbox.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0")), any())).thenReturn(Optional.of(okResponse));
+        when(uriRetriever.fetchResponse(eq(URI.create(
+                                            "https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
+                                            + ".dev.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0")),
+                                        any())).thenReturn(Optional.of(okResponse));
         var path = "candidate_academicArticle.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
@@ -171,38 +177,7 @@ class EvaluateNviNviCandidateHandlerTest {
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class))
                 .orElseThrow();
         assertThat(body.institutionPoints(), notNullValue());
-        assertThat(body.institutionPoints().get(topLevelCristinOrg), notNullValue());
-
-    }
-
-    private static String getHardCodedCristinOrgRes() {
-        return """
-            {
-              "@context" : "https://bibsysdev.github.io/src/organization-context.json",
-              "type" : "Organization",
-              "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.20.0",
-              "labels" : {
-                "en" : "Department of Marine Technology",
-                "nb" : "Institutt for marin teknikk"
-              },
-              "partOf" : [ {
-                "type" : "Organization",
-                "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.0.0",
-                "labels" : {
-                  "en" : "Faculty of Engineering",
-                  "nb" : "Fakultet for ingeniørvitenskap"
-                },
-                "partOf" : [ {
-                  "type" : "Organization",
-                  "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0",
-                  "labels" : {
-                    "en" : "Norwegian University of Science and Technology",
-                    "nb" : "Norges teknisk-naturvitenskapelige universitet",
-                    "nn" : "Noregs teknisk-naturvitskaplege universitet"
-                  }
-                } ]
-              } ]
-            }""";
+        assertThat(body.institutionPoints().get(cristinOrgTopLevel), notNullValue());
     }
 
     @Test
@@ -400,6 +375,36 @@ class EvaluateNviNviCandidateHandlerTest {
     @Test
     void shouldReadDlqAndRetryAfterGivenTime() {
 
+    }
+
+    private static String getHardCodedCristinOrgRes() {
+        return """
+            {
+              "@context" : "https://bibsysdev.github.io/src/organization-context.json",
+              "type" : "Organization",
+              "id" : "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0",
+              "labels" : {
+                "en" : "Department of Marine Technology",
+                "nb" : "Institutt for marin teknikk"
+              },
+              "partOf" : [ {
+                "type" : "Organization",
+                "id" : "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.0.0",
+                "labels" : {
+                  "en" : "Faculty of Engineering",
+                  "nb" : "Fakultet for ingeniørvitenskap"
+                },
+                "partOf" : [ {
+                  "type" : "Organization",
+                  "id" : "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0",
+                  "labels" : {
+                    "en" : "Norwegian University of Science and Technology",
+                    "nb" : "Norges teknisk-naturvitenskapelige universitet",
+                    "nn" : "Noregs teknisk-naturvitskaplege universitet"
+                  }
+                } ]
+              } ]
+            }""";
     }
 
     private static CandidateEvaluatedMessage getSingleCandidateResponse(List<SendMessageRequest> sentMessages)
