@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.test;
 
 import java.net.URI;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -8,11 +9,20 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
+import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.model.business.Level;
+import no.sikt.nva.nvi.common.model.business.Note;
 import no.sikt.nva.nvi.common.model.business.PublicationDate;
 import no.sikt.nva.nvi.common.model.business.Status;
 import no.sikt.nva.nvi.common.model.business.Creator;
+import no.sikt.nva.nvi.common.model.business.Username;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import nva.commons.core.paths.UriWrapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
+import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 public final class TestUtils {
 
@@ -67,10 +77,39 @@ public final class TestUtils {
                    .distinct();
     }
 
-    private static LocalDate randomLocalDate() {
+    public static LocalDate randomLocalDate() {
         var daysBetween = ChronoUnit.DAYS.between(START_DATE, LocalDate.now());
         var randomDays = new Random().nextInt((int) daysBetween);
 
         return START_DATE.plusDays(randomDays);
+    }
+
+
+    public static Candidate.Builder randomCandidateBuilder() {
+        return new Candidate.Builder()
+                   .withPublicationId(randomUri())
+                   .withPublicationBucketUri(randomUri())
+                   .withIsApplicable(randomBoolean())
+                   .withInstanceType(randomString())
+                   .withLevel(randomElement(Level.values()))
+                   .withPublicationDate(new PublicationDate(randomString(), randomString(), randomString()))
+                   .withIsInternationalCollaboration(randomBoolean())
+                   .withCreatorCount(randomInteger())
+                   .withCreators(List.of(new Creator(randomUri(), List.of(randomUri()))))
+                   .withApprovalStatuses(List.of(randomApprovalStatus()))
+                   .withNotes(List.of(new Note(randomUsername(),randomString(), Instant.EPOCH)));
+    }
+
+    public static Candidate randomCandidate() {
+        return randomCandidateBuilder()
+                   .build();
+    }
+
+    public static ApprovalStatus randomApprovalStatus() {
+        return new ApprovalStatus(randomUri(), randomElement(Status.values()), randomUsername(), Instant.EPOCH);
+    }
+
+    public static Username randomUsername() {
+        return new Username(randomString());
     }
 }

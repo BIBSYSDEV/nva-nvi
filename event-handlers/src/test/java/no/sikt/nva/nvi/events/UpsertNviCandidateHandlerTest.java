@@ -1,4 +1,4 @@
-package events;
+package no.sikt.nva.nvi.events;
 
 import static no.sikt.nva.nvi.test.TestUtils.extractNviInstitutionIds;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
@@ -22,6 +22,8 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.db.NviCandidateRepository;
+import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
@@ -30,6 +32,7 @@ import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,18 +40,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class UpsertNviCandidateHandlerTest {
+public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     public static final Context CONTEXT = mock(Context.class);
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
-    FakeNviCandidateRepository fakeNviCandidateRepository;
+    NviCandidateRepository nviCandidateRepository;
     private UpsertNviCandidateHandler handler;
 
     @BeforeEach
     void setup() {
-        //TODO: Replace fakeNviCandidateRepository with actual repository when implemented
-        fakeNviCandidateRepository = new FakeNviCandidateRepository();
-        NviService nviService = new NviService(fakeNviCandidateRepository);
+        localDynamo = initializeTestDatabase();
+        nviCandidateRepository = new NviCandidateRepository(localDynamo);
+        NviService nviService = new NviService(nviCandidateRepository);
         handler = new UpsertNviCandidateHandler(nviService);
     }
 
@@ -86,8 +89,11 @@ public class UpsertNviCandidateHandlerTest {
 
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType, randomLevel,
                                                         publicationDate);
+        var fetchedCandidate = nviCandidateRepository.findByPublicationId(expectedCandidate.publicationId())
+                                   .map(CandidateWithIdentifier::candidate);
+
         assertThat(
-            fakeNviCandidateRepository.findByPublicationId(expectedCandidate.publicationId()).orElse(null),
+            fetchedCandidate.get(),
             is(equalTo(expectedCandidate)));
     }
 
