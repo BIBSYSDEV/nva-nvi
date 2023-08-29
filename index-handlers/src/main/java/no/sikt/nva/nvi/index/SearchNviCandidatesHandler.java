@@ -9,6 +9,7 @@ import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.SearchResponseDto;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
+import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
@@ -32,9 +33,11 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
 
     @Override
     protected SearchResponseDto processInput(Void input, RequestInfo requestInfo,
-                                             Context context) {
+                                             Context context) throws UnauthorizedException {
+        var customer = requestInfo.getTopLevelOrgCristinId().get();
+        var username = requestInfo.getUserName();
         return attempt(() -> contructQuery(requestInfo))
-                   .map(openSearchClient::search)
+                   .map(query -> openSearchClient.search(query, username, customer))
                    .map(SearchResponseDto::fromSearchResponse)
                    .orElseThrow();
     }

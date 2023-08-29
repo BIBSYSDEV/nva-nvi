@@ -3,22 +3,29 @@ package no.sikt.nva.nvi.index;
 import java.util.Map;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
+import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
 
 public final class Aggregations {
 
+    public static final int DEFAULT_AGGREGATION_SIZE = 100;
     private static final String AFFILIATIONS = "affiliations";
     private static final String APPROVAL_STATUS = "approvalStatus";
     private static final String PENDING = "pending";
     private static final String APPROVED = "approved";
     private static final String REJECTED = "rejected";
+    public static final String ASSIGNEE = "assignee";
+    public static final String KEYWORD = "keyword";
     private static final CharSequence JSON_PATH_DELIMITER = ".";
     public static final Map<String, Aggregation> AGGREGATIONS_MAP = Map.of(
         jsonPathOf(APPROVAL_STATUS, PENDING), pendingAggregation(),
         jsonPathOf(APPROVAL_STATUS, APPROVED), approvedAggregation(),
-        jsonPathOf(APPROVAL_STATUS, REJECTED), rejectedAggregation()
+        jsonPathOf(APPROVAL_STATUS, REJECTED), rejectedAggregation(),
+        jsonPathOf(ASSIGNEE), termAggregation(jsonPathOf(ASSIGNEE, KEYWORD)),
+        jsonPathOf(APPROVAL_STATUS, PENDING,"myinstitution"), termAggregation(jsonPathOf(AFFILIATIONS, "id", "keyword"))
     );
 
     private Aggregations() {
@@ -45,6 +52,13 @@ public final class Aggregations {
         return new Aggregation.Builder()
                    .filter(queryToMatchApprovalStatus(ApprovalStatus.PENDING))
                    .build();
+    }
+
+    private static Aggregation termAggregation(String field) {
+        return new TermsAggregation.Builder()
+                   .field(field)
+                   .size(DEFAULT_AGGREGATION_SIZE)
+                   .build()._toAggregation();
     }
 
     private static Aggregation rejectedAggregation() {

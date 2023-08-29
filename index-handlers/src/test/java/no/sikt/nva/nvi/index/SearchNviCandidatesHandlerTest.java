@@ -57,7 +57,7 @@ public class SearchNviCandidatesHandlerTest {
 
     @Test
     void shouldReturnDocumentFromIndex() throws IOException {
-        when(openSearchClient.search(any())).thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
+        when(openSearchClient.search(any(), any(), any())).thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
         handler.handleRequest(request("*"), output, context);
         var response = GatewayResponse.fromOutputStream(output, SearchResponseDto.class);
         var hits = response.getBodyObject(SearchResponseDto.class).hits();
@@ -67,7 +67,7 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldReturnDocumentFromIndexContainingSingleHitWhenUsingTerms() throws IOException {
         var document = singleNviCandidateIndexDocument();
-        when(openSearchClient.search(any())).thenReturn(createSearchResponse(document));
+        when(openSearchClient.search(any(), any(), any())).thenReturn(createSearchResponse(document));
         handler.handleRequest(request(document.identifier()), output, context);
         var response = GatewayResponse.fromOutputStream(output, SearchResponseDto.class);
         var hits = response.getBodyObject(SearchResponseDto.class).hits();
@@ -77,7 +77,7 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldThrowExceptionWhenSearchFails() throws IOException {
         var document = singleNviCandidateIndexDocument();
-        when(openSearchClient.search(any())).thenThrow(RuntimeException.class);
+        when(openSearchClient.search(any(), any(), any())).thenThrow(RuntimeException.class);
         handler.handleRequest(request(document.identifier()), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
         assertThat(Objects.requireNonNull(response.getBodyObject(Problem.class).getStatus()).getStatusCode(),
@@ -112,6 +112,7 @@ public class SearchNviCandidatesHandlerTest {
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
         return new NviCandidateIndexDocument(randomUri(), randomString(), randomString(), randomString(),
+                                             randomString(),
                                              randomPublicationDetails(), List.of());
     }
 

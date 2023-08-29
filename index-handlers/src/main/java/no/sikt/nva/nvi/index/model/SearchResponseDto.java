@@ -4,6 +4,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.json.stream.JsonGenerator;
@@ -87,6 +88,10 @@ public record SearchResponseDto(@JsonProperty("@context") URI context,
             var value = nodeEntry.getValue();
             if (value.isValueNode()) {
                 outputAggregationNode.set(newName.get(), value);
+            } else if (value.isArray()) {
+                var arrayNode = JsonUtils.dtoObjectMapper.createArrayNode();
+                value.forEach(element -> arrayNode.add(formatAggregations(element)));
+                outputAggregationNode.set(newName.get(), arrayNode);
             } else {
                 outputAggregationNode.set(newName.get(), formatAggregations(nodeEntry.getValue()));
             }

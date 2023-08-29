@@ -17,6 +17,7 @@ import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.security.Key;
 import java.time.Clock;
@@ -56,6 +57,8 @@ import org.testcontainers.shaded.org.bouncycastle.operator.DefaultSecretKeySizeP
 
 public class OpenSearchClientTest {
 
+    private static final URI CUSTOMER = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
+    private static final String USERNAME = "user123";
     public static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:2.0.0";
     private static final OpensearchContainer container = new OpensearchContainer(OPEN_SEARCH_IMAGE);
     private static RestClient restClient;
@@ -82,7 +85,7 @@ public class OpenSearchClientTest {
         var document = singleNviCandidateIndexDocument();
         openSearchClient.addDocumentToIndex(document);
         Thread.sleep(2000);
-        var searchResponse = openSearchClient.search(searchTermToQuery(document.identifier()));
+        var searchResponse = openSearchClient.search(searchTermToQuery(document.identifier()), USERNAME, CUSTOMER);
         var nviCandidateIndexDocument = searchResponseToIndexDocumentList(searchResponse);
         assertThat(nviCandidateIndexDocument, containsInAnyOrder(document));
     }
@@ -92,7 +95,8 @@ public class OpenSearchClientTest {
         throws InterruptedException, IOException {
         var document = singleNviCandidateIndexDocument();
         addDocumentsToIndex(singleNviCandidateIndexDocument(), singleNviCandidateIndexDocument(), document);
-        var searchResponse = openSearchClient.search(searchTermToQuery(document.identifier()));
+        var searchResponse =
+            openSearchClient.search(searchTermToQuery(document.identifier()), USERNAME, CUSTOMER);
         var nviCandidateIndexDocument = searchResponseToIndexDocumentList(searchResponse);
         assertThat(nviCandidateIndexDocument, hasSize(1));
     }
@@ -103,7 +107,7 @@ public class OpenSearchClientTest {
         addDocumentsToIndex(document);
         openSearchClient.deleteIndex();
         assertThrows(OpenSearchException.class,
-                     () -> openSearchClient.search(searchTermToQuery(document.identifier())));
+                     () -> openSearchClient.search(searchTermToQuery(document.identifier()), USERNAME, CUSTOMER));
     }
 
     @Test
@@ -113,7 +117,7 @@ public class OpenSearchClientTest {
         openSearchClient.removeDocumentFromIndex(document);
         Thread.sleep(2000);
         var searchResponse =
-            openSearchClient.search(searchTermToQuery(document.identifier()));
+            openSearchClient.search(searchTermToQuery(document.identifier()), USERNAME, CUSTOMER);
         var nviCandidateIndexDocument = searchResponseToIndexDocumentList(searchResponse);
         assertThat(nviCandidateIndexDocument, hasSize(0));
     }
@@ -123,7 +127,17 @@ public class OpenSearchClientTest {
         addDocumentsToIndex(documentFromString("document_approved.json"),
                             documentFromString("document_pending.json"),
                             documentFromString("document_rejected.json"));
-        var searchResponse = openSearchClient.search(searchTermToQuery("*"));
+        var searchResponse = openSearchClient.search(searchTermToQuery("*"), USERNAME, CUSTOMER);
+        var response = SearchResponseDto.fromSearchResponse(searchResponse);
+        assertThat(response.aggregations(), is(notNullValue()));
+    }
+
+    @Test
+    void shouldReturnAggregationsForPendingApprovalStatusMyInstitution() throws IOException, InterruptedException {
+        addDocumentsToIndex(documentFromString("document_approved.json"),
+                            documentFromString("document_pending.json"),
+                            documentFromString("document_rejected.json"));
+        var searchResponse = openSearchClient.search(searchTermToQuery("*"), USERNAME, CUSTOMER);
         var response = SearchResponseDto.fromSearchResponse(searchResponse);
         assertThat(response.aggregations(), is(notNullValue()));
     }
@@ -135,7 +149,8 @@ public class OpenSearchClientTest {
                             documentFromString("document_rejected.json"));
         var queryString =
             "publicationDetails.contributors.id:\"https://api.dev.nva.aws.unit" + ".no/cristin/person/1136326\"";
-        var searchResponse = openSearchClient.search(searchTermToQuery(queryString));
+        var searchResponse =
+            openSearchClient.search(searchTermToQuery(queryString), USERNAME, CUSTOMER);
         var response = SearchResponseDto.fromSearchResponse(searchResponse);
         assertThat(response.hits(), hasSize(2));
     }
@@ -160,7 +175,8 @@ public class OpenSearchClientTest {
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
-        return new NviCandidateIndexDocument(randomUri(), randomString(), randomInteger().toString(), randomString(),
+        return new NviCandidateIndexDocument(randomUri(), randomString(), randomString(), randomInteger().toString(),
+                                             randomString(),
                                              randomPublicationDetails(), randomAffiliationList());
     }
 

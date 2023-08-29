@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -29,7 +30,7 @@ public class FakeSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     @Override
-    public SearchResponse<NviCandidateIndexDocument> search(Query query) {
+    public SearchResponse<NviCandidateIndexDocument> search(Query query, String username, URI customer) {
         return null;
     }
 
