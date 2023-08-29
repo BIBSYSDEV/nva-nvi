@@ -13,7 +13,6 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 public record Candidate(URI publicationId,
-
                         URI publicationBucketUri,
                         boolean isApplicable,
                         String instanceType,
