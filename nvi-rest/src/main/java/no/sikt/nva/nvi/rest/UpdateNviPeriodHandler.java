@@ -9,7 +9,7 @@ import no.sikt.nva.nvi.common.model.business.NviPeriod.Builder;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.rest.model.NviPeriodDto;
-import no.sikt.nva.nvi.rest.utils.ExceptionMapper;
+import no.sikt.nva.nvi.utils.ExceptionMapper;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
