@@ -1,0 +1,30 @@
+{
+  "@context": "https://bibsysdev.github.io/src/organization-context.json",
+  "type": "Organization",
+  "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0",
+  "labels": {
+    "en": "Department of Marine Technology",
+    "nb": "Institutt for marin teknikk"
+  },
+  "partOf": [
+    {
+      "type": "Organization",
+      "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.0.0",
+      "labels": {
+        "en": "Faculty of Engineering",
+        "nb": "Fakultet for ingeniørvitenskap"
+      },
+      "partOf": [
+        {
+          "type": "Organization",
+          "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0",
+          "labels": {
+            "en": "Norwegian University of Science and Technology",
+            "nb": "Norges teknisk-naturvitenskapelige universitet",
+            "nn": "Noregs teknisk-naturvitskaplege universitet"
+          }
+        }
+      ]
+    }
+  ]
+}

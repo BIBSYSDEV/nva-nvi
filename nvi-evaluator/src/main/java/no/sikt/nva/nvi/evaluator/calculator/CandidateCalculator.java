@@ -47,8 +47,6 @@ public class CandidateCalculator {
     private static final String COULD_NOT_FETCH_CUSTOMER_MESSAGE = "Could not fetch customer for: ";
     private static final String CUSTOMER = "customer";
     private static final String CRISTIN_ID = "cristinId";
-    private static final String CUSTOMER_FETCHED_SUCCESSFULLY_MESSAGE =
-        "Customer fetched successfully with " + "status {}";
     private static final String VERIFIED = "Verified";
 
     private static final String COULD_NOT_FETCH_CRISTIN_ORG_MESSAGE = "Could not fetch Cristin organization for: ";
@@ -214,7 +212,6 @@ public class CandidateCalculator {
     private boolean isNviInstitution(String institutionId) {
         var response = getResponse(createCustomerApiUri(institutionId));
         if (isSuccessOrNotFound(response)) {
-            LOGGER.info(CUSTOMER_FETCHED_SUCCESSFULLY_MESSAGE, response.statusCode());
             return mapToNviInstitutionValue(response);
         }
         throw new RuntimeException(COULD_NOT_FETCH_CUSTOMER_MESSAGE + institutionId);
