@@ -86,7 +86,7 @@ public class ExpandedResourceGenerator {
 
             var affiliations = createAndPopulateAffiliationsNode(document);
 
-            contributorNode.set("approvals", affiliations);
+            contributorNode.set("affiliations", affiliations);
 
             var identity = objectMapper.createObjectNode();
             identity.put("id", contributor.id());

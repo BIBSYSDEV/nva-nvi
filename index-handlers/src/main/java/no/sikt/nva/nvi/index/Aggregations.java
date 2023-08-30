@@ -9,7 +9,7 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
 
 public final class Aggregations {
 
-    private static final String AFFILIATIONS = "approvals";
+    private static final String APPROVALS = "affiliations";
     private static final String APPROVAL_STATUS = "approvalStatus";
     private static final String PENDING = "pending";
     private static final String APPROVED = "approved";
@@ -56,7 +56,7 @@ public final class Aggregations {
     private static Query queryToMatchApprovalStatus(ApprovalStatus approvalStatus) {
         return new Query(new QueryStringQuery.Builder()
                              .query(approvalStatus.toString())
-                             .defaultField(jsonPathOf(AFFILIATIONS, APPROVAL_STATUS))
+                             .defaultField(jsonPathOf(APPROVALS, APPROVAL_STATUS))
                              .build());
     }
 }

@@ -356,18 +356,6 @@ Resources:
             Method: put
             RestApiId: !Ref ScientificIndexApi
 
-  DeleteNviCandidateHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.index.DeleteNviCandidateHandler::handleRequest
-      Timeout: 30
-      MemorySize: 1536
-      Role: !GetAtt NvaNviRole.Arn
-      AutoPublishAlias: live
-      SnapStart:
-        ApplyOn: PublishedVersions
-
   SearchNviCandidatesHandler:
     Type: AWS::Serverless::Function
     Properties:
