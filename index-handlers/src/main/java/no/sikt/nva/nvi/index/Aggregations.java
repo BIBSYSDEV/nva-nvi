@@ -9,7 +9,7 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
 
 public final class Aggregations {
 
-    private static final String AFFILIATIONS = "affiliations";
+    private static final String AFFILIATIONS = "approvals";
     private static final String APPROVAL_STATUS = "approvalStatus";
     private static final String PENDING = "pending";
     private static final String APPROVED = "approved";

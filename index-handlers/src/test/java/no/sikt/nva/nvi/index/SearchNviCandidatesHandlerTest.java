@@ -111,7 +111,7 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
-        return new NviCandidateIndexDocument(randomUri(), randomString(), randomString(), randomString(),
+        return new NviCandidateIndexDocument(randomUri(), randomString(),
                                              randomPublicationDetails(), List.of());
     }
 

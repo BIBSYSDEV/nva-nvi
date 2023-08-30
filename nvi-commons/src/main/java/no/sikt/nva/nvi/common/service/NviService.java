@@ -161,7 +161,6 @@ public class NviService {
 
     @JacocoGenerated
     public static NviService defaultNviService() {
-        LOGGER.info("Initiating something NviService");
         return new NviService(defaultNviCandidateRepository());
     }
 }

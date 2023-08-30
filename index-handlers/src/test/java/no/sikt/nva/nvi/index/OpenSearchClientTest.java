@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
-import no.sikt.nva.nvi.index.model.Affiliation;
+import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
@@ -153,16 +153,16 @@ public class OpenSearchClientTest {
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
-        return new NviCandidateIndexDocument(randomUri(), randomString(), randomInteger().toString(), randomString(),
+        return new NviCandidateIndexDocument(randomUri(), randomString(),
                                              randomPublicationDetails(), randomAffiliationList());
     }
 
-    private static List<Affiliation> randomAffiliationList() {
+    private static List<Approval> randomAffiliationList() {
         return IntStream.range(0, 5).boxed().map(i -> randomAffiliation()).toList();
     }
 
-    private static Affiliation randomAffiliation() {
-        return new Affiliation(randomString(), Map.of(), randomStatus());
+    private static Approval randomAffiliation() {
+        return new Approval(randomString(), Map.of(), randomStatus());
     }
 
     private static ApprovalStatus randomStatus() {

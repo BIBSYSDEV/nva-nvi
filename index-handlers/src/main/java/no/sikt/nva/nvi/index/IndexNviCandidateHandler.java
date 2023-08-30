@@ -50,14 +50,12 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     public IndexNviCandidateHandler(StorageReader<URI> storageReader,
                                     SearchClient<NviCandidateIndexDocument> openSearchClient,
                                     NviService nviService) {
-        LOGGER.info("Initiating something");
         this.storageReader = storageReader;
         this.openSearchClient = openSearchClient;
         this.nviService = nviService;
     }
 
     public Void handleRequest(DynamodbEvent event, Context context) {
-        LOGGER.info("Incoming event {}: ", event.getRecords().toString());
         event.getRecords().stream()
             .filter(this::isCandidate)
             .forEach(this::updateIndex);
@@ -92,7 +90,6 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     }
 
     private void updateIndex(DynamodbStreamRecord record) {
-        LOGGER.info("Updating index {}: ", record.toString());
         if (isInsert(record) || isModify(record)) {
             addDocumentToIndex(record);
         }
@@ -127,21 +124,15 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     }
 
     private void addDocumentToIndex(DynamodbStreamRecord record) {
-        LOGGER.info("Adding to index {}: ", record.toString());
-        LOGGER.info("Record id {}: ", extractIdentifierFromOldImage(record).toString());
         var candidate = nviService.findById(extractIdentifierFromOldImage(record));
-        LOGGER.info("Fetched candidate: {}", candidate);
+
         attempt(candidate::get)
             .map(CandidateWithIdentifier::candidate)
             .map(IndexNviCandidateHandler::extractBucketUri)
             .map(storageReader::read)
-            .map(blob -> generateDocument(blob, extractApprovalStatuses(candidate.orElseThrow())))
+            .map(blob -> generateDocument(blob, candidate.orElseThrow()))
             .forEach(openSearchClient::addDocumentToIndex);
 
         LOGGER.info(DOCUMENT_ADDED_MESSAGE);
-    }
-
-    private static List<ApprovalStatus> extractApprovalStatuses(CandidateWithIdentifier candidate) {
-        return candidate.candidate().approvalStatuses();
     }
 }

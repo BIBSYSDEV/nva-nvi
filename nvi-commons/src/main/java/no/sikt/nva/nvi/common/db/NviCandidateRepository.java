@@ -121,7 +121,6 @@ public class NviCandidateRepository extends DynamoRepository  {
                    .credentialsProvider(DefaultCredentialsProvider.create())
                    .region(REGION)
                    .build();
-        LOGGER.info("Initiating something CandidateRepository");
         return new NviCandidateRepository(dynamoDbClient);
     }
 }

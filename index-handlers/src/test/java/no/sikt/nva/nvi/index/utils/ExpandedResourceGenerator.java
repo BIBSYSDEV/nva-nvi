@@ -86,7 +86,7 @@ public class ExpandedResourceGenerator {
 
             var affiliations = createAndPopulateAffiliationsNode(document);
 
-            contributorNode.set("affiliations", affiliations);
+            contributorNode.set("approvals", affiliations);
 
             var identity = objectMapper.createObjectNode();
             identity.put("id", contributor.id());
@@ -104,7 +104,7 @@ public class ExpandedResourceGenerator {
     private static ArrayNode createAndPopulateAffiliationsNode(NviCandidateIndexDocument document) {
         var affiliations = objectMapper.createArrayNode();
 
-        document.affiliations().forEach(affiliation -> {
+        document.Approvals().forEach(affiliation -> {
             var affiliationNode = objectMapper.createObjectNode();
             affiliationNode.put("id", affiliation.id());
             affiliationNode.put("type", "Organization");

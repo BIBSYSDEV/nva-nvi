@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.index.IndexNviCandidateHandler.DOCUMENT_REMOVED_ME
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,8 +29,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
+import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
+import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
+import no.sikt.nva.nvi.common.model.events.CandidateStatus;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
@@ -104,12 +110,12 @@ class IndexNviCandidateHandlerTest extends LocalDynamoTest {
         var string = IoUtils.stringFromResources(Path.of("dynamoDbRecordEvent.json"));
         var event = JsonUtils.dtoObjectMapper.readValue(string, DynamodbStreamRecord.class);
         return (DynamodbStreamRecord) new DynamodbStreamRecord().withEventName(randomElement(operationType))
-                                          .withEventID(randomString())
-                                          .withAwsRegion(randomString())
-                                          .withDynamodb(randomPayload())
-                                          .withEventSource(randomString())
-                                          .withEventVersion(randomString())
-                                          .withDynamodb(event.getDynamodb());
+                                                                .withEventID(randomString())
+                                                                .withAwsRegion(randomString())
+                                                                .withDynamodb(randomPayload())
+                                                                .withEventSource(randomString())
+                                                                .withEventVersion(randomString())
+                                                                .withDynamodb(event.getDynamodb());
     }
 
     private static StreamRecord randomPayload() {
@@ -118,12 +124,15 @@ class IndexNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     private static CandidateWithIdentifier randomCandidateWithIdentifier() {
-        var candidate = randomCandidateBuilder().withApprovalStatuses(List.of(getApprovalStatus())).build();
+        var candidate = randomCandidateBuilder()
+                   .withApprovalStatuses(List.of(getApprovalStatus()))
+                   .build();
         return new CandidateWithIdentifier(candidate, randomUUID());
     }
 
     private static ApprovalStatus getApprovalStatus() {
-        return new ApprovalStatus.Builder().withInstitutionId(
-            URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0")).build();
+        return new ApprovalStatus.Builder()
+                   .withInstitutionId(URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"))
+                   .build();
     }
 }
