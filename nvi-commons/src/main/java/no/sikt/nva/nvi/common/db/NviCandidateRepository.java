@@ -1,24 +1,17 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.sikt.nva.nvi.common.ApplicationConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.ApplicationConstants.NVI_TABLE_NAME;
-import static no.sikt.nva.nvi.common.ApplicationConstants.REGION;
-import static no.sikt.nva.nvi.common.ApplicationConstants.SECONDARY_INDEX_PUBLICATION_ID;
-import static no.sikt.nva.nvi.common.ApplicationConstants.SORT_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static nva.commons.core.attempt.Try.attempt;
 import java.net.URI;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import nva.commons.core.JacocoGenerated;
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
-import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
@@ -28,38 +21,17 @@ import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhanced
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public class NviCandidateRepository extends DynamoRepository  {
-
-    private static final String PARTITION_KEY_NAME_PLACEHOLDER = "#partitionKey";
-    private static final String SORT_KEY_NAME_PLACEHOLDER = "#sortKey";
-    private final DynamoDbTable<CandidateDao> table;
+    private final DynamoDbTable<CandidateDao> candidateTable;
     private final DynamoDbTable<CandidateUniquenessEntry> uniquenessTable;
     private final DynamoDbIndex<CandidateDao> publicationIdIndex;
 
     public NviCandidateRepository(DynamoDbClient client) {
         super(client);
-        this.table = this.client.table(NVI_TABLE_NAME, CandidateDao.TABLE_SCHEMA);
+        this.candidateTable = this.client.table(NVI_TABLE_NAME, CandidateDao.TABLE_SCHEMA);
         this.uniquenessTable = this.client.table(NVI_TABLE_NAME, CandidateUniquenessEntry.TABLE_SCHEMA);
-        this.publicationIdIndex = this.table.index(SECONDARY_INDEX_PUBLICATION_ID);
+        this.publicationIdIndex = this.candidateTable.index(SECONDARY_INDEX_PUBLICATION_ID);
     }
 
-    private static String keyNotExistsCondition() {
-        return String.format("attribute_not_exists(%s) AND attribute_not_exists(%s)",
-                             PARTITION_KEY_NAME_PLACEHOLDER, SORT_KEY_NAME_PLACEHOLDER);
-    }
-
-    private static Map<String, String> primaryKeyEqualityConditionAttributeNames() {
-        return Map.of(
-            PARTITION_KEY_NAME_PLACEHOLDER, HASH_KEY,
-            SORT_KEY_NAME_PLACEHOLDER, SORT_KEY
-        );
-    }
-
-    private static Expression uniquePrimaryKeysExpression() {
-        return Expression.builder()
-                   .expression(keyNotExistsCondition())
-                   .expressionNames(primaryKeyEqualityConditionAttributeNames())
-                   .build();
-    }
 
     public CandidateWithIdentifier save(Candidate candidate) {
         var uuid = UUID.randomUUID();
@@ -77,18 +49,18 @@ public class NviCandidateRepository extends DynamoRepository  {
                              .build();
 
         var request = TransactWriteItemsEnhancedRequest.builder()
-                          .addPutItem(this.table, putCandidateRequest)
+                          .addPutItem(this.candidateTable, putCandidateRequest)
                           .addPutItem(this.uniquenessTable, putUniquenessRequest)
                           .build();
 
         this.client.transactWriteItems(request);
-        var fetched = this.table.getItem(insert);
+        var fetched = this.candidateTable.getItem(insert);
         return new CandidateWithIdentifier(fetched.getCandidate(), fetched.getIdentifier());
     }
 
     public Optional<CandidateWithIdentifier> findById(UUID id) {
         var queryObj = new CandidateDao(id, new Candidate.Builder().build());
-        var fetched = this.table.getItem(queryObj);
+        var fetched = this.candidateTable.getItem(queryObj);
         return Optional.ofNullable(fetched).map(CandidateDao::toCandidateWithIdentifier);
 
     }
@@ -111,15 +83,5 @@ public class NviCandidateRepository extends DynamoRepository  {
                         .toList();
 
         return attempt(() -> users.get(0)).toOptional();
-    }
-
-    @JacocoGenerated
-    public static NviCandidateRepository defaultNviCandidateRepository() {
-        var dynamoDbClient = DynamoDbClient.builder()
-                   .httpClient(UrlConnectionHttpClient.create())
-                   .credentialsProvider(DefaultCredentialsProvider.create())
-                   .region(REGION)
-                   .build();
-        return new NviCandidateRepository(dynamoDbClient);
     }
 }

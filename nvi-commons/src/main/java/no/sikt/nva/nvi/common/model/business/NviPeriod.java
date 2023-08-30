@@ -3,7 +3,9 @@ package no.sikt.nva.nvi.common.model.business;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -19,25 +21,34 @@ public record NviPeriod(String publishingYear,
     public static final String CREATED_BY_FIELD = "createdBy";
     public static final String MODIFIED_BY_FIELD = "modifiedBy";
 
-    @JacocoGenerated //TODO: Will be used in Period, in next DB task
     public AttributeValue toDynamoDb() {
-        return AttributeValue.fromM(
-            Map.of(PUBLISHING_YEAR_FIELD, AttributeValue.fromN(publishingYear),
-                   REPORTING_DATA_FIELD, AttributeValue.fromN(String.valueOf(reportingDate.toEpochMilli())),
-                   CREATED_BY_FIELD, createdBy.toDynamoDb(),
-                   MODIFIED_BY_FIELD, modifiedBy.toDynamoDb()
-            ));
+        Map<String, AttributeValue> map = new HashMap<>();
+        map.put(PUBLISHING_YEAR_FIELD, AttributeValue.fromS(publishingYear));
+        if (reportingDate != null) {
+            map.put(REPORTING_DATA_FIELD, AttributeValue.fromN(String.valueOf(reportingDate.toEpochMilli())));
+        }
+        map.put(CREATED_BY_FIELD, createdBy.toDynamoDb());
+        if (modifiedBy != null) {
+            map.put(MODIFIED_BY_FIELD, modifiedBy.toDynamoDb());
+        }
+        return AttributeValue.fromM(map);
     }
 
-    @JacocoGenerated //TODO: Will be used in Period, in next DB task
     public static NviPeriod fromDynamoDb(AttributeValue input) {
         Map<String, AttributeValue> map = input.m();
-        return new NviPeriod(
-            map.get(PUBLISHING_YEAR_FIELD).s(),
-            Instant.ofEpochMilli(Integer.parseInt(map.get(REPORTING_DATA_FIELD).n())),
-            Username.fromDynamoDb(map.get(CREATED_BY_FIELD)),
-            Username.fromDynamoDb(map.get(MODIFIED_BY_FIELD))
-        );
+
+        return new Builder()
+                   .withPublishingYear(map.get(PUBLISHING_YEAR_FIELD).s())
+                   .withReportingDate(
+                       Optional.ofNullable(map.get(REPORTING_DATA_FIELD))
+                           .map(AttributeValue::n).map(Long::parseLong).map(Instant::ofEpochMilli)
+                           .orElse(null)
+                   )
+                   .withCreatedBy(Username.fromDynamoDb(map.get(CREATED_BY_FIELD)))
+                   .withModifiedBy(
+                       Optional.ofNullable(map.get(MODIFIED_BY_FIELD)).map(Username::fromDynamoDb).orElse(null)
+                   )
+                   .build();
     }
 
     public Builder copy() {

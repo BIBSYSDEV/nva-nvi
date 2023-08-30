@@ -1,12 +1,13 @@
 package no.sikt.nva.nvi.common.service;
 
-import static no.sikt.nva.nvi.common.db.NviCandidateRepository.defaultNviCandidateRepository;
+import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.common.model.events.CandidateStatus.CANDIDATE;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
+import no.sikt.nva.nvi.common.db.NviPeriodRepository;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
@@ -22,15 +23,18 @@ import nva.commons.apigateway.exceptions.NotFoundException;
 
 import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.core.JacocoGenerated;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public class NviService {
 
     public static final String INVALID_LENGTH_MESSAGE = "Provided period has invalid length!";
     public static final String PERIOD_NOT_NUMERIC_MESSAGE = "Period is not numeric!";
     private final NviCandidateRepository nviCandidateRepository;
+    private final NviPeriodRepository nviPeriodRepository;
 
-    public NviService(NviCandidateRepository nviCandidateRepository) {
-        this.nviCandidateRepository = nviCandidateRepository;
+    public NviService(DynamoDbClient dynamoDbClient) {
+        this.nviCandidateRepository = new NviCandidateRepository(dynamoDbClient);
+        this.nviPeriodRepository = new NviPeriodRepository(dynamoDbClient);
     }
 
     //TODO: Remove JacocoGenerated when other if/else cases are implemented
@@ -42,21 +46,18 @@ public class NviService {
         return Optional.empty();
     }
 
-    //TODO: Implement persistence
     public NviPeriod createPeriod(NviPeriod period) throws BadRequestException {
         validatePeriod(period);
-        return period;
+        return nviPeriodRepository.save(period);
     }
 
-    //TODO: Implement persistence, remember validation rules for reportingDate
     public NviPeriod updatePeriod(NviPeriod period) throws NotFoundException, ConflictException, BadRequestException {
         validatePeriod(period);
-        return period;
+        return nviPeriodRepository.save(period);
     }
 
-    //TODO: Implement persistence
     public NviPeriod getPeriod(String publishingYear) {
-        return new NviPeriod.Builder().withPublishingYear(publishingYear).build();
+        return nviPeriodRepository.findByYear(publishingYear).orElseThrow(); //TODO: Handle not-found. optional?
     }
 
     private static boolean isInteger(String value) {
@@ -155,6 +156,6 @@ public class NviService {
 
     @JacocoGenerated
     public static NviService defaultNviService() {
-        return new NviService(defaultNviCandidateRepository());
+        return new NviService(defaultDynamoClient());
     }
 }

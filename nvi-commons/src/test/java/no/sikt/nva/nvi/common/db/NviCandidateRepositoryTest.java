@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.ApplicationConstants.NVI_TABLE_NAME;
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;

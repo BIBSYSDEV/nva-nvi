@@ -29,7 +29,7 @@ public record Note(Username user,
         return new Note(
             Username.fromDynamoDb(map.get(USER_FIELD)),
             map.get(TEXT_FIELD).s(),
-            Instant.ofEpochMilli(Integer.parseInt(map.get(UPDATED_DATE_FIELD).n()))
+            Instant.ofEpochMilli(Long.parseLong(map.get(UPDATED_DATE_FIELD).n()))
         );
     }
 
