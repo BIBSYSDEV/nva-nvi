@@ -58,7 +58,7 @@ class IndexNviCandidateHandlerTest extends LocalDynamoTest {
         storageReader = mock(StorageReader.class);
         SearchClient<NviCandidateIndexDocument> openSearchClient = mock(OpenSearchClient.class);
         nviService = mock(NviService.class);
-        handler = new IndexNviCandidateHandler(storageReader, openSearchClient, nviService);
+        handler = new IndexNviCandidateHandler(storageReader, openSearchClient);
         appender = LogUtils.getTestingAppenderForRootLogger();
         localDynamo = initializeTestDatabase();
         doNothing().when(openSearchClient).addDocumentToIndex(any());
