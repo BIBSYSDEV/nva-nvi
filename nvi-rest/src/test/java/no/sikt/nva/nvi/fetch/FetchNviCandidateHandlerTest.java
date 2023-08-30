@@ -63,15 +63,16 @@ class FetchNviCandidateHandlerTest {
         var gatewayResponse = getGatewayResponse();
         assertEquals(HttpStatus.SC_OK, gatewayResponse.getStatusCode());
         var bodyObject = gatewayResponse.getBodyObject(FetchCandidateResponse.class);
-        var expectedResponse = getExpectedResponse(candidateId, candidateWithIdentifier);
+        var expectedResponse = getExpectedResponse(candidateWithIdentifier);
 
         assertEquals(bodyObject, expectedResponse);
     }
 
-    private static FetchCandidateResponse getExpectedResponse(UUID candidateId,
-                                                              CandidateWithIdentifier candidateWithIdentifier) {
+    private static FetchCandidateResponse getExpectedResponse(CandidateWithIdentifier candidateWithIdentifier) {
         var candidate = candidateWithIdentifier.candidate();
-        return new FetchCandidateResponse(candidateId, candidate.publicationId(), getApprovalStatuses(candidate),
+        return new FetchCandidateResponse(candidateWithIdentifier.identifier(),
+                                          candidate.publicationId(),
+                                          getApprovalStatuses(candidate),
                                           candidate.points(),
                                           getNotes(candidate));
     }
