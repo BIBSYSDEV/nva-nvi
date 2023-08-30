@@ -43,7 +43,7 @@ public class CreateNviPeriodHandler extends ApiGatewayHandler<NviPeriodDto, NviP
                    .map(Builder::build)
                    .map(nviService::createPeriod)
                    .map(NviPeriodDto::fromNviPeriod)
-                   .orElseThrow(ExceptionMapper::map);
+                   .orElseThrow(failure -> ExceptionMapper.map(failure.getException()));
     }
 
     @Override

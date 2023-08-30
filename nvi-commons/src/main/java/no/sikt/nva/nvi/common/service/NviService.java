@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.service;
 import static no.sikt.nva.nvi.common.db.NviCandidateRepository.defaultNviCandidateRepository;
 import static no.sikt.nva.nvi.common.model.events.CandidateStatus.CANDIDATE;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -57,6 +58,13 @@ public class NviService {
     //TODO: Implement persistence
     public NviPeriod getPeriod(String publishingYear) {
         return new NviPeriod.Builder().withPublishingYear(publishingYear).build();
+    }
+
+    //TODO: Implement
+    public Candidate upsertApproval(ApprovalStatus approvalStatus) {
+        return new Candidate(URI.create(""), URI.create(""), false, "", Level.LEVEL_ONE,
+                             new PublicationDate("","",""), false, 1,
+                             Collections.emptyList(),List.of(approvalStatus),Collections.emptyList());
     }
 
     private static boolean isInteger(String value) {

@@ -6,6 +6,7 @@ dependencies {
     implementation libs.nva.commons.apigateway
     implementation libs.nva.commons.core
     implementation libs.nva.json
+    implementation libs.jackson.databind
     implementation libs.nva.commons.auth
 
     testImplementation libs.nva.testutils
