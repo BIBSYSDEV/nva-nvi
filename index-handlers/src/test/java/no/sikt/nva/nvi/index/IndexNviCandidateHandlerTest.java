@@ -49,7 +49,8 @@ class IndexNviCandidateHandlerTest extends LocalDynamoTest {
     public static final Context CONTEXT = mock(Context.class);
     public static final String CANDIDATE = IoUtils.stringFromResources(Path.of("candidate.json"));
     public static final String CANDIDATE_MISSING_FIELDS = IoUtils.stringFromResources(Path.of("candidateV2.json"));
-    public static final String INSTITUION_ID_FROM_EVENT = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0";
+    public static final String INSTITUTION_ID_FROM_EVENT =
+        "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0";
     private IndexNviCandidateHandler handler;
     private TestAppender appender;
     private StorageReader<URI> storageReader;
@@ -143,7 +144,7 @@ class IndexNviCandidateHandlerTest extends LocalDynamoTest {
 
     private static ApprovalStatus getApprovalStatus() {
         return new ApprovalStatus.Builder()
-                   .withInstitutionId(URI.create(INSTITUION_ID_FROM_EVENT))
+                   .withInstitutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
                    .build();
     }
 }
