@@ -7,6 +7,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
@@ -103,26 +104,26 @@ public class NviService {
         return new PublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
     }
 
-    private static List<ApprovalStatus> generatePendingApprovalStatuses(Map<URI, BigDecimal> institutionUri) {
-        return institutionUri.entrySet().stream()
-                   .map(entry -> ApprovalStatus.builder()
-                                     .withStatus(Status.PENDING)
-                                     .withInstitutionId(entry.getKey())
-                                     .withPoints(entry.getValue())
-                                     .build())
+    private static List<ApprovalStatus> generatePendingApprovalStatuses(Set<URI> institutionUris) {
+        return institutionUris.stream()
+                   .map(uri -> ApprovalStatus.builder()
+                                          .withStatus(Status.PENDING)
+                                          .withInstitutionId(uri)
+                                          .build())
                    .toList();
     }
 
     private static Candidate toPendingCandidate(CandidateDetails candidateDetails,
                                                 Map<URI, BigDecimal> institutionPoints) {
-        return new Candidate.Builder()
+        return Candidate.builder()
                    .withPublicationId(candidateDetails.publicationId())
                    .withIsApplicable(true)
                    .withCreators(mapToVerifiedCreators(candidateDetails.verifiedCreators()))
                    .withLevel(Level.parse(candidateDetails.level()))
                    .withInstanceType(candidateDetails.instanceType())
                    .withPublicationDate(mapToPublicationDate(candidateDetails.publicationDate()))
-                   .withApprovalStatuses(generatePendingApprovalStatuses(institutionPoints))
+                   .withPoints(institutionPoints)
+                   .withApprovalStatuses(generatePendingApprovalStatuses(institutionPoints.keySet()))
                    .build();
     }
 

@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
@@ -76,11 +77,12 @@ public final class TestUtils {
     }
 
     public static Candidate.Builder randomCandidateBuilder() {
-        return new Candidate.Builder()
+        return Candidate.builder()
                    .withPublicationId(randomUri())
                    .withPublicationBucketUri(randomUri())
                    .withIsApplicable(randomBoolean())
                    .withInstanceType(randomString())
+                   .withPoints(Map.of(randomUri(), randomBigDecimal()))
                    .withLevel(randomElement(Level.values()))
                    .withPublicationDate(new PublicationDate(randomString(), randomString(), randomString()))
                    .withIsInternationalCollaboration(randomBoolean())
@@ -96,9 +98,7 @@ public final class TestUtils {
     }
 
     public static ApprovalStatus randomApprovalStatus() {
-        return new ApprovalStatus(randomUri(), randomElement(Status.values()), randomBigDecimal(),
-                                  randomUsername(),
-                                  Instant.EPOCH);
+        return new ApprovalStatus(randomUri(), randomElement(Status.values()), randomUsername(), Instant.EPOCH);
     }
 
     public static Username randomUsername() {

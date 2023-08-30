@@ -202,20 +202,19 @@ public class NviServiceTest extends LocalDynamoTest {
                                               String instanceType,
                                               Level level, PublicationDate publicationDate,
                                               Map<URI, BigDecimal> institutionPoints) {
-        return new Candidate.Builder()
+        return Candidate.builder()
                    .withPublicationId(generatePublicationId(identifier))
                    .withCreators(mapToVerifiedCreators(creators))
                    .withInstanceType(instanceType)
                    .withLevel(level)
                    .withIsApplicable(true)
                    .withPublicationDate(toPublicationDate(publicationDate))
-                   .withApprovalStatuses(institutionPoints.entrySet().stream()
-                                             .map(entry -> ApprovalStatus.builder()
-                                                               .withStatus(Status.PENDING)
-                                                               .withInstitutionId(entry.getKey())
-                                                               .withPoints(entry.getValue())
-                                                               .build())
-                                             .toList())
+                   .withPoints(institutionPoints)
+                   .withApprovalStatuses(institutionPoints.keySet().stream()
+                                             .map(bigDecimal -> ApprovalStatus.builder()
+                                                                    .withStatus(Status.PENDING)
+                                                                    .withInstitutionId(bigDecimal)
+                                                                    .build()).toList())
                    .build();
     }
 }
