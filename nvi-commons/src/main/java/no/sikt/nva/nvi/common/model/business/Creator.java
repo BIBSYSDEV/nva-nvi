@@ -19,7 +19,7 @@ public record Creator(URI creatorId, List<URI> affiliations) {
     }
 
     public static Creator fromDynamoDb(AttributeValue input) {
-        Map<String, AttributeValue> map = input.m();
+        var map = input.m();
         return new Creator(
             URI.create(map.get(CREATOR_ID_FIELD).s()),
             map.get(AFFILIATIONS_FIELD).l().stream().map(AttributeValue::s).map(URI::create).toList()

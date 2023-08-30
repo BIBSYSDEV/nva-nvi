@@ -43,7 +43,7 @@ public record Candidate(URI publicationId,
     }
 
     public static Candidate fromDynamoDb(AttributeValue input) {
-        Map<String, AttributeValue> map = input.m();
+        var map = input.m();
         return new Builder()
                    .withPublicationId(URI.create(map.get(PUBLICATION_ID_FIELD).s()))
                    .withPublicationBucketUri(Optional.ofNullable(map.get(PUBLICATION_BUCKET_URI_FIELD))
@@ -56,12 +56,10 @@ public record Candidate(URI publicationId,
                    .withCreatorCount(Integer.parseInt(map.get(CREATOR_COUNT_FIELD).n()))
                    .withCreators(
                        map.get(CREATORS_FIELD).l().stream().map(Creator::fromDynamoDb).toList()
-                   )
-                   .withPoints(
-                       map.get(POINTS_FIELD).m().entrySet().stream()
-                           .collect(Collectors.toMap(entry -> URI.create(entry.getKey()),
-                                                     entry -> new BigDecimal(entry.getValue().n())))
-                   )
+                   ).withPoints(
+                map.get(POINTS_FIELD).m().entrySet().stream()
+                    .collect(Collectors.toMap(entry -> URI.create(entry.getKey()),
+                                              entry -> new BigDecimal(entry.getValue().n()))))
                    .withApprovalStatuses(
                        map.get(APPROVAL_STATUSES_FIELD).l()
                            .stream().map(ApprovalStatus::fromDynamoDb).toList()
@@ -73,12 +71,8 @@ public record Candidate(URI publicationId,
                    .build();
     }
 
-    public static Builder builder() {
-        return new Builder();
-    }
-
     public AttributeValue toDynamoDb() {
-        Map<String, AttributeValue> map = new HashMap<>();
+        var map = new HashMap<String, AttributeValue>();
         map.put(PUBLICATION_ID_FIELD, AttributeValue.fromS(publicationId.toString()));
         if (publicationBucketUri != null) {
             map.put(PUBLICATION_BUCKET_URI_FIELD, AttributeValue.fromS(publicationBucketUri.toString()));
@@ -93,14 +87,15 @@ public record Candidate(URI publicationId,
         map.put(APPROVAL_STATUSES_FIELD,
                 AttributeValue.fromL(approvalStatuses.stream().map(ApprovalStatus::toDynamoDb).toList())
         );
+        if (notes != null) {
+            map.put(NOTES_FIELD, AttributeValue.fromL(notes.stream().map(Note::toDynamoDb).toList()));
+        }
         map.put(POINTS_FIELD,
                 AttributeValue.fromM(
                     points.entrySet().stream().collect(Collectors.toMap(entry -> String.valueOf(entry.getKey()),
                                                                         entry -> AttributeValue.fromN(
                                                                             entry.getValue().toString())))));
-        if (notes != null) {
-            map.put(NOTES_FIELD, AttributeValue.fromL(notes.stream().map(Note::toDynamoDb).toList()));
-        }
+
         return AttributeValue.fromM(map);
     }
 

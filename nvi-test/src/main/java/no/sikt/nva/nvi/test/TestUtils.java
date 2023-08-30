@@ -20,6 +20,7 @@ import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.model.business.Creator;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.business.Note;
+import no.sikt.nva.nvi.common.model.business.NviPeriod;
 import no.sikt.nva.nvi.common.model.business.PublicationDate;
 import no.sikt.nva.nvi.common.model.business.Status;
 import no.sikt.nva.nvi.common.model.business.Username;
@@ -89,11 +90,28 @@ public final class TestUtils {
                    .withCreatorCount(randomInteger())
                    .withCreators(List.of(new Creator(randomUri(), List.of(randomUri()))))
                    .withApprovalStatuses(List.of(randomApprovalStatus()))
-                   .withNotes(List.of(new Note(randomUsername(), randomString(), Instant.EPOCH)));
+                   .withNotes(List.of(new Note(randomUsername(), randomString(), getNowWithMillisecondAccuracy())));
+    }
+
+    public static String randomYear() {
+        return String.valueOf(randomInteger(3000));
     }
 
     public static Candidate randomCandidate() {
         return randomCandidateBuilder()
+                   .build();
+    }
+
+    public static NviPeriod.Builder randomNviPeriodBuilder() {
+        return new NviPeriod.Builder()
+                   .withCreatedBy(randomUsername())
+                   .withModifiedBy(randomUsername())
+                   .withReportingDate(getNowWithMillisecondAccuracy())
+                   .withPublishingYear(randomYear());
+    }
+
+    public static NviPeriod randomNviPeriod() {
+        return randomNviPeriodBuilder()
                    .build();
     }
 
@@ -109,5 +127,10 @@ public final class TestUtils {
         var randomBigDecimal =
             MIN_BIG_DECIMAL.add(BigDecimal.valueOf(Math.random()).multiply(MAX_BIG_DECIMAL.subtract(MIN_BIG_DECIMAL)));
         return randomBigDecimal.setScale(SCALE, RoundingMode.HALF_UP);
+    }
+
+    private static Instant getNowWithMillisecondAccuracy() {
+        var now = Instant.now();
+        return Instant.ofEpochMilli(now.toEpochMilli());
     }
 }

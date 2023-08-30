@@ -55,7 +55,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     void setup() {
         localDynamo = initializeTestDatabase();
         nviCandidateRepository = new NviCandidateRepository(localDynamo);
-        NviService nviService = new NviService(nviCandidateRepository);
+        NviService nviService = new NviService(localDynamo);
         handler = new UpsertNviCandidateHandler(nviService);
     }
 

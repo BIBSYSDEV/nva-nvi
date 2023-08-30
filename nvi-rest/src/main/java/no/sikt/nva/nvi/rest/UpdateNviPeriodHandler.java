@@ -23,7 +23,7 @@ public class UpdateNviPeriodHandler extends ApiGatewayHandler<NviPeriodDto, NviP
     @JacocoGenerated
     public UpdateNviPeriodHandler() {
         super(NviPeriodDto.class);
-        this.nviService = new NviService(null);
+        this.nviService = NviService.defaultNviService();
     }
 
     public UpdateNviPeriodHandler(NviService nviService) {
