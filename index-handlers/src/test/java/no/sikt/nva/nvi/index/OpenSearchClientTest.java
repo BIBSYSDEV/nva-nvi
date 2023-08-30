@@ -24,9 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.IntStream;
+import no.sikt.nva.nvi.common.model.business.Status;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.model.Approval;
-import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.index.model.SearchResponseDto;
@@ -165,8 +165,8 @@ public class OpenSearchClientTest {
         return new Approval(randomString(), Map.of(), randomStatus());
     }
 
-    private static ApprovalStatus randomStatus() {
-        var values = Arrays.stream(ApprovalStatus.values()).toList();
+    private static Status randomStatus() {
+        var values = Arrays.stream(Status.values()).toList();
         var size = values.size();
         var random = new Random();
         return values.get(random.nextInt(size));
