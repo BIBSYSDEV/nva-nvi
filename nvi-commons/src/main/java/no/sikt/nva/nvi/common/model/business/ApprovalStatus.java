@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -21,22 +20,8 @@ public record ApprovalStatus(URI institutionId,
     public static final String FINALIZED_BY_FIELD = "finalizedBy";
     public static final String FINALIZED_DATE_FIELD = "finalizedDate";
 
-    public AttributeValue toDynamoDb() {
-        var map = new HashMap<String, AttributeValue>();
-        // Create fields for all strings below
-        map.put(INSTITUTION_ID_FIELD, AttributeValue.fromS(institutionId.toString()));
-        map.put(STATUS_FIELD, AttributeValue.fromS(status.getValue()));
-        if (finalizedBy != null) {
-            map.put(FINALIZED_BY_FIELD, finalizedBy.toDynamoDb());
-        }
-        if (finalizedDate != null) {
-            map.put(FINALIZED_DATE_FIELD, AttributeValue.fromN(String.valueOf(finalizedDate.toEpochMilli())));
-        }
-        return AttributeValue.fromM(map);
-    }
-
     public static ApprovalStatus fromDynamoDb(AttributeValue input) {
-        Map<String, AttributeValue> map = input.m();
+        var map = input.m();
         return new Builder()
                    .withInstitutionId(URI.create(map.get(INSTITUTION_ID_FIELD).s()))
                    .withStatus(Status.parse(map.get(STATUS_FIELD).s()))
@@ -48,6 +33,23 @@ public record ApprovalStatus(URI institutionId,
                                           .map(Instant::ofEpochMilli)
                                           .orElse(null))
                    .build();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public AttributeValue toDynamoDb() {
+        var map = new HashMap<String, AttributeValue>();
+        map.put(INSTITUTION_ID_FIELD, AttributeValue.fromS(institutionId.toString()));
+        map.put(STATUS_FIELD, AttributeValue.fromS(status.getValue()));
+        if (finalizedBy != null) {
+            map.put(FINALIZED_BY_FIELD, finalizedBy.toDynamoDb());
+        }
+        if (finalizedDate != null) {
+            map.put(FINALIZED_DATE_FIELD, AttributeValue.fromN(String.valueOf(finalizedDate.toEpochMilli())));
+        }
+        return AttributeValue.fromM(map);
     }
 
     public static final class Builder {

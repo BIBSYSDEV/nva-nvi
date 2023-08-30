@@ -1,12 +1,13 @@
 package no.sikt.nva.nvi.common.db;
 
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.common.ApplicationConstants.HASH_KEY;
-import static no.sikt.nva.nvi.common.ApplicationConstants.SECONDARY_INDEX_1_HASH_KEY;
-import static no.sikt.nva.nvi.common.ApplicationConstants.SECONDARY_INDEX_1_RANGE_KEY;
-import static no.sikt.nva.nvi.common.ApplicationConstants.SECONDARY_INDEX_PUBLICATION_ID;
-import static no.sikt.nva.nvi.common.ApplicationConstants.SORT_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_HASH_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_RANGE_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
+import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.db.converters.CandidateConverterProvider;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import nva.commons.core.JacocoGenerated;
@@ -24,7 +25,6 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 public class CandidateDao extends Dao implements DynamoEntryWithRangeKey {
 
     public static final TableSchema<CandidateDao> TABLE_SCHEMA = TableSchema.fromClass(CandidateDao.class);
-    private static final String DATA_FIELD = "data";
     public static final String TYPE = "CANDIDATE";
     private UUID identifier;
     private Candidate candidate;

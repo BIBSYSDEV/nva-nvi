@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.common.ApplicationConstants.SORT_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 import static no.sikt.nva.nvi.common.service.NviService.defaultNviService;
 import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient;
 import static no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator.generateDocument;
