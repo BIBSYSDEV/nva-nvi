@@ -137,8 +137,10 @@ public class NviService {
                    .withCreators(mapToVerifiedCreators(candidateEvaluatedMessage.candidateDetails().verifiedCreators()))
                    .withLevel(Level.parse(candidateEvaluatedMessage.candidateDetails().level()))
                    .withInstanceType(candidateEvaluatedMessage.candidateDetails().instanceType())
-                   .withPublicationDate(mapToPublicationDate(candidateEvaluatedMessage.candidateDetails().publicationDate()))
-                   .withApprovalStatuses(generatePendingApprovalStatuses(extractInstitutionIds(candidateEvaluatedMessage.candidateDetails())))
+                   .withPublicationDate(
+                       mapToPublicationDate(candidateEvaluatedMessage.candidateDetails().publicationDate()))
+                   .withApprovalStatuses(generatePendingApprovalStatuses(
+                       extractInstitutionIds(candidateEvaluatedMessage.candidateDetails())))
                    .build();
     }
 

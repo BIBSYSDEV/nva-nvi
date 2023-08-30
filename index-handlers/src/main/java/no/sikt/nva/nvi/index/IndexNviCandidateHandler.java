@@ -40,24 +40,24 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     private static final String EXPANDED_RESOURCES_BUCKET = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
     private final StorageReader<URI> storageReader;
-    private NviService nviService;
+    private final NviService nviService;
 
     @JacocoGenerated
     public IndexNviCandidateHandler() {
-        this(new S3StorageReader(EXPANDED_RESOURCES_BUCKET), defaultOpenSearchClient());
+        this(new S3StorageReader(EXPANDED_RESOURCES_BUCKET), defaultOpenSearchClient(), defaultNviService());
     }
 
     public IndexNviCandidateHandler(StorageReader<URI> storageReader,
-                                    SearchClient<NviCandidateIndexDocument> openSearchClient) {
+                                    SearchClient<NviCandidateIndexDocument> openSearchClient,
+                                    NviService nviService) {
         LOGGER.info("Initiating something");
         this.storageReader = storageReader;
         this.openSearchClient = openSearchClient;
-        LOGGER.info("Initiating nviService");
+        this.nviService = nviService;
     }
 
     public Void handleRequest(DynamodbEvent event, Context context) {
         LOGGER.info("Incoming event {}: ", event.getRecords().toString());
-        nviService = defaultNviService();
         event.getRecords().stream()
             .filter(this::isCandidate)
             .forEach(this::updateIndex);

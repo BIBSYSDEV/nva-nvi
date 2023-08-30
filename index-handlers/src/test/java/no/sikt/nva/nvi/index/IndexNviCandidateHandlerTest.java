@@ -47,7 +47,6 @@ class IndexNviCandidateHandlerTest extends LocalDynamoTest {
     public static final Context CONTEXT = mock(Context.class);
     public static final String CANDIDATE = IoUtils.stringFromResources(Path.of("candidate.json"));
     public static final String CANDIDATE_MISSING_FIELDS = IoUtils.stringFromResources(Path.of("candidateV2.json"));
-    public static final String INSTITUTION_ID_FROM_DOCUMENT = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0";
     private IndexNviCandidateHandler handler;
     private TestAppender appender;
     private StorageReader<URI> storageReader;
@@ -58,42 +57,42 @@ class IndexNviCandidateHandlerTest extends LocalDynamoTest {
         storageReader = mock(StorageReader.class);
         SearchClient<NviCandidateIndexDocument> openSearchClient = mock(OpenSearchClient.class);
         nviService = mock(NviService.class);
-        handler = new IndexNviCandidateHandler(storageReader, openSearchClient);
+        handler = new IndexNviCandidateHandler(storageReader, openSearchClient, nviService);
         appender = LogUtils.getTestingAppenderForRootLogger();
-        localDynamo = initializeTestDatabase();
         doNothing().when(openSearchClient).addDocumentToIndex(any());
         doNothing().when(openSearchClient).removeDocumentFromIndex(any());
     }
 
-//    @Test
-//    void shouldAddDocumentToIndexWhenIncomingEventIsInsert() throws JsonProcessingException {
-//        when(storageReader.read(any())).thenReturn(CANDIDATE_MISSING_FIELDS);
-//        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
-//
-//        handler.handleRequest(createEvent(INSERT), CONTEXT);
-//
-//        assertThat(appender.getMessages(), containsString(DOCUMENT_ADDED_MESSAGE));
-//    }
-//
-//    @Test
-//    void shouldUpdateExistingIndexDocumentWhenIncomingEventIsModify() throws JsonProcessingException {
-//        when(storageReader.read(any())).thenReturn(CANDIDATE);
-//        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
-//
-//        handler.handleRequest(createEvent(MODIFY), CONTEXT);
-//
-//        assertThat(appender.getMessages(), containsString(DOCUMENT_ADDED_MESSAGE));
-//    }
-//
-//    @Test
-//    void shouldRemoveDocumentFromIndexWhenIncomingEventIsRemove() throws JsonProcessingException {
-//        when(storageReader.read(any())).thenReturn(CANDIDATE);
-//        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
-//
-//        handler.handleRequest(createEvent(REMOVE), CONTEXT);
-//
-//        assertThat(appender.getMessages(), containsString(DOCUMENT_REMOVED_MESSAGE));
-//    }
+    @Test
+    void shouldAddDocumentToIndexWhenIncomingEventIsInsert() throws JsonProcessingException {
+        when(storageReader.read(any())).thenReturn(CANDIDATE_MISSING_FIELDS);
+        CandidateWithIdentifier value = randomCandidateWithIdentifier();
+        when(nviService.findById(any())).thenReturn(Optional.of(value));
+
+        handler.handleRequest(createEvent(INSERT), CONTEXT);
+
+        assertThat(appender.getMessages(), containsString(DOCUMENT_ADDED_MESSAGE));
+    }
+
+    @Test
+    void shouldUpdateExistingIndexDocumentWhenIncomingEventIsModify() throws JsonProcessingException {
+        when(storageReader.read(any())).thenReturn(CANDIDATE);
+        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
+
+        handler.handleRequest(createEvent(MODIFY), CONTEXT);
+
+        assertThat(appender.getMessages(), containsString(DOCUMENT_ADDED_MESSAGE));
+    }
+
+    @Test
+    void shouldRemoveDocumentFromIndexWhenIncomingEventIsRemove() throws JsonProcessingException {
+        when(storageReader.read(any())).thenReturn(CANDIDATE);
+        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
+
+        handler.handleRequest(createEvent(REMOVE), CONTEXT);
+
+        assertThat(appender.getMessages(), containsString(DOCUMENT_REMOVED_MESSAGE));
+    }
 
     private static DynamodbEvent createEvent(OperationType operationType) throws JsonProcessingException {
         var event = new DynamodbEvent();
@@ -106,12 +105,12 @@ class IndexNviCandidateHandlerTest extends LocalDynamoTest {
         var string = IoUtils.stringFromResources(Path.of("dynamoDbRecordEvent.json"));
         var event = JsonUtils.dtoObjectMapper.readValue(string, DynamodbStreamRecord.class);
         return (DynamodbStreamRecord) new DynamodbStreamRecord().withEventName(randomElement(operationType))
-                                                                .withEventID(randomString())
-                                                                .withAwsRegion(randomString())
-                                                                .withDynamodb(randomPayload())
-                                                                .withEventSource(randomString())
-                                                                .withEventVersion(randomString())
-                                                                .withDynamodb(event.getDynamodb());
+                                          .withEventID(randomString())
+                                          .withAwsRegion(randomString())
+                                          .withDynamodb(randomPayload())
+                                          .withEventSource(randomString())
+                                          .withEventVersion(randomString())
+                                          .withDynamodb(event.getDynamodb());
     }
 
     private static StreamRecord randomPayload() {
@@ -120,15 +119,12 @@ class IndexNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     private static CandidateWithIdentifier randomCandidateWithIdentifier() {
-        var candidate = randomCandidateBuilder()
-                   .withApprovalStatuses(List.of(getApprovalStatus()))
-                   .build();
+        var candidate = randomCandidateBuilder().withApprovalStatuses(List.of(getApprovalStatus())).build();
         return new CandidateWithIdentifier(candidate, randomUUID());
     }
 
     private static ApprovalStatus getApprovalStatus() {
-        return new ApprovalStatus.Builder()
-                   .withInstitutionId(URI.create(INSTITUTION_ID_FROM_DOCUMENT))
-                   .build();
+        return new ApprovalStatus.Builder().withInstitutionId(
+            URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0")).build();
     }
 }

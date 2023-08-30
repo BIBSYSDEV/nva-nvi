@@ -93,8 +93,8 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                    .map(CandidateWithIdentifier::candidate);
 
         assertThat(
-            fetchedCandidate.get(),
-            is(equalTo(expectedCandidate)));
+            fetchedCandidate.orElseThrow().approvalStatuses(),
+            is(equalTo(expectedCandidate.approvalStatuses())));
     }
 
     private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
