@@ -1,9 +1,8 @@
 package no.sikt.nva.nvi.fetch;
 
 import static no.sikt.nva.nvi.fetch.FetchNviCandidateHandler.PARAM_CANDIDATE_IDENTIFIER;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -12,20 +11,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
-import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
-import no.sikt.nva.nvi.common.model.business.Candidate;
-import no.sikt.nva.nvi.common.model.business.Creator;
-import no.sikt.nva.nvi.common.model.business.Level;
-import no.sikt.nva.nvi.common.model.business.Note;
-import no.sikt.nva.nvi.common.model.business.PublicationDate;
-import no.sikt.nva.nvi.common.model.business.Status;
-import no.sikt.nva.nvi.common.model.business.Username;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
@@ -86,19 +75,7 @@ class FetchNviCandidateHandlerTest {
 
     private static CandidateWithIdentifier getCandidate(UUID id) {
         return new CandidateWithIdentifier(
-            new Candidate(randomUri(),
-                          randomUri(),
-                          true,
-                          randomString(),
-                          Level.LEVEL_ONE,
-                          new PublicationDate(randomString(),randomString(), randomString()),
-                          false,
-                          1,
-                          List.of(new Creator(randomUri(), List.of(randomUri()))),
-                          List.of(new ApprovalStatus(randomUri(), Status.PENDING,
-                                                     new Username(randomString()),
-                                                     Instant.now())),
-                          List.of(new Note(new Username(randomString()), randomString(), Instant.now()))),
+            randomCandidate(),
             id);
     }
 
