@@ -13,6 +13,8 @@ Globals:
     Environment:
       Variables:
         NVI_TABLE_NAME: !Ref NvaNviTable
+        SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
+        SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
   Api:
     Cors:
       AllowMethods: "'PUT, GET,OPTIONS,DELETE,POST'"
@@ -281,8 +283,6 @@ Resources:
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-          SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
-          SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
       Events:
         FanoutSource:
           Type: DynamoDB
@@ -365,8 +365,6 @@ Resources:
         Variables:
           ALLOWED_ORIGIN: '*'
           API_HOST: !Ref ApiDomain
-          SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
-          SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
       Events:
         GetEvent:
           Type: Api

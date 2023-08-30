@@ -9,9 +9,9 @@ import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -23,6 +23,7 @@ import com.amazonaws.services.lambda.runtime.events.models.dynamodb.StreamRecord
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +42,8 @@ import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.SearchResponse;
 
 class UpdateIndexHandlerTest extends LocalDynamoTest {
 
@@ -52,17 +55,16 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private UpdateIndexHandler handler;
     private TestAppender appender;
     private StorageReader<URI> storageReader;
+    private FakeSearchClient openSearchClient;
     private NviService nviService;
 
     @BeforeEach
     void setup() {
         storageReader = mock(StorageReader.class);
-        SearchClient<NviCandidateIndexDocument> openSearchClient = mock(OpenSearchClient.class);
+        openSearchClient = new FakeSearchClient();
         nviService = mock(NviService.class);
         handler = new UpdateIndexHandler(storageReader, openSearchClient, nviService);
         appender = LogUtils.getTestingAppenderForRootLogger();
-        doNothing().when(openSearchClient).addDocumentToIndex(any());
-        doNothing().when(openSearchClient).removeDocumentFromIndex(any());
     }
 
     private static DynamodbStreamRecord candidateRecord(String fileName) throws JsonProcessingException {
@@ -76,8 +78,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
 
         handler.handleRequest(createEvent(INSERT, candidateRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
-
-        assertThat(appender.getMessages(), containsString(DOCUMENT_ADDED_MESSAGE));
+        var document = openSearchClient.getDocuments();
+        assertThat(document.get(0), hasProperty("context"));
     }
 
     @Test
@@ -154,5 +156,36 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         return new ApprovalStatus.Builder()
                    .withInstitutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
                    .build();
+    }
+
+    private static class FakeSearchClient implements SearchClient<NviCandidateIndexDocument> {
+
+        private List<NviCandidateIndexDocument> documents;
+        public FakeSearchClient(){
+            this.documents = new ArrayList<>();
+        }
+        @Override
+        public void addDocumentToIndex(NviCandidateIndexDocument indexDocument) {
+            documents.add(indexDocument);
+        }
+
+        @Override
+        public void removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) {
+
+        }
+
+        @Override
+        public SearchResponse<NviCandidateIndexDocument> search(Query query) {
+            return null;
+        }
+
+        @Override
+        public void deleteIndex() {
+
+        }
+
+        public List<NviCandidateIndexDocument> getDocuments() {
+            return documents;
+        }
     }
 }
