@@ -7,6 +7,7 @@ import java.net.URI;
 import java.util.List;
 import nva.commons.core.JacocoGenerated;
 
+@JacocoGenerated
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,

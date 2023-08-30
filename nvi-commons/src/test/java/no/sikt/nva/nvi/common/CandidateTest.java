@@ -56,7 +56,7 @@ public class CandidateTest {
     }
 
     private List<Creator> randomVerifiedCreators() {
-        return IntStream.range(1, 20).boxed().map(i -> randomVerifiedCreator()).collect(Collectors.toList());
+        return IntStream.range(1, 20).boxed().map(i -> randomVerifiedCreator()).toList();
     }
 
     private Creator randomVerifiedCreator() {
@@ -64,11 +64,11 @@ public class CandidateTest {
     }
 
     private List<URI> randomAffiliations() {
-        return IntStream.range(1, 20).boxed().map(i -> randomUri()).collect(Collectors.toList());
+        return IntStream.range(1, 20).boxed().map(i -> randomUri()).toList();
     }
 
     private List<ApprovalStatus> randomApprovalStatuses() {
-        return IntStream.range(1, 20).boxed().map(i -> randomInstitutionStatus()).collect(Collectors.toList());
+        return IntStream.range(1, 20).boxed().map(i -> randomInstitutionStatus()).toList();
     }
 
     private ApprovalStatus randomInstitutionStatus() {
@@ -81,7 +81,7 @@ public class CandidateTest {
     }
 
     private List<Note> randomNotes() {
-        return IntStream.range(1, 20).boxed().map(i -> randomNote()).collect(Collectors.toList());
+        return IntStream.range(1, 20).boxed().map(i -> randomNote()).toList();
     }
 
     private Note randomNote() {
