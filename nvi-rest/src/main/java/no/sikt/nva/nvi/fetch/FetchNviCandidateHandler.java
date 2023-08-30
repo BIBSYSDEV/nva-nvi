@@ -10,7 +10,6 @@ import no.sikt.nva.nvi.utils.ExceptionMapper;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
-import nva.commons.apigateway.exceptions.NotFoundException;
 
 public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, FetchCandidateResponse> {
 
