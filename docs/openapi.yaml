@@ -222,13 +222,14 @@ components:
     FetchNviCandidateResponse:
       type: object
       properties:
+        id:
+          $ref: '#/components/schemas/Id'
         publicationId:
           $ref: '#/components/schemas/Id'
         approvalStatus:
           type: array
           items:
             $ref: '#/components/schemas/ApprovalStatus'
-
         notes:
           type: array
           items:
