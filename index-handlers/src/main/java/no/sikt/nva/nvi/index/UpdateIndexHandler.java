@@ -25,7 +25,7 @@ import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, Void> {
+public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
     public static final String DOCUMENT_ADDED_MESSAGE = "Document has been added/updated";
     public static final String DOCUMENT_REMOVED_MESSAGE = "Document has been removed";
@@ -33,7 +33,7 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     private static final String PRIMARY_KEY_DELIMITER = "#";
     private static final String PRIMARY_KEY_RANGE_KEY = "PrimaryKeyRangeKey";
     private static final String IDENTIFIER = "identifier";
-    private static final Logger LOGGER = LoggerFactory.getLogger(IndexNviCandidateHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(UpdateIndexHandler.class);
     private static final Environment ENVIRONMENT = new Environment();
     private static final String EXPANDED_RESOURCES_BUCKET = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
@@ -41,13 +41,13 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     private final NviService nviService;
 
     @JacocoGenerated
-    public IndexNviCandidateHandler() {
+    public UpdateIndexHandler() {
         this(new S3StorageReader(EXPANDED_RESOURCES_BUCKET), defaultOpenSearchClient(), defaultNviService());
     }
 
-    public IndexNviCandidateHandler(StorageReader<URI> storageReader,
-                                    SearchClient<NviCandidateIndexDocument> openSearchClient,
-                                    NviService nviService) {
+    public UpdateIndexHandler(StorageReader<URI> storageReader,
+                              SearchClient<NviCandidateIndexDocument> openSearchClient,
+                              NviService nviService) {
         this.storageReader = storageReader;
         this.openSearchClient = openSearchClient;
         this.nviService = nviService;
@@ -115,7 +115,7 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
             .map(Optional::get)
             .map(CandidateWithIdentifier::candidate)
             .map(Candidate::publicationId)
-            .map(IndexNviCandidateHandler::toIndexDocumentWithId)
+            .map(UpdateIndexHandler::toIndexDocumentWithId)
             .forEach(openSearchClient::removeDocumentFromIndex);
 
         LOGGER.info(DOCUMENT_REMOVED_MESSAGE);
@@ -126,7 +126,7 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
 
         attempt(candidate::get)
             .map(CandidateWithIdentifier::candidate)
-            .map(IndexNviCandidateHandler::extractBucketUri)
+            .map(UpdateIndexHandler::extractBucketUri)
             .map(storageReader::read)
             .map(blob -> generateDocument(blob, candidate.orElseThrow()))
             .forEach(openSearchClient::addDocumentToIndex);

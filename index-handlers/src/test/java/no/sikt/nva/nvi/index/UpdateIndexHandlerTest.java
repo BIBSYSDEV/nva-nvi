@@ -4,8 +4,8 @@ import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.Opera
 import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType.MODIFY;
 import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType.REMOVE;
 import static java.util.UUID.randomUUID;
-import static no.sikt.nva.nvi.index.IndexNviCandidateHandler.DOCUMENT_ADDED_MESSAGE;
-import static no.sikt.nva.nvi.index.IndexNviCandidateHandler.DOCUMENT_REMOVED_MESSAGE;
+import static no.sikt.nva.nvi.index.UpdateIndexHandler.DOCUMENT_ADDED_MESSAGE;
+import static no.sikt.nva.nvi.index.UpdateIndexHandler.DOCUMENT_REMOVED_MESSAGE;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -44,14 +44,14 @@ import nva.commons.logutils.TestAppender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class IndexNviCandidateHandlerTest extends LocalDynamoTest {
+class UpdateIndexHandlerTest extends LocalDynamoTest {
 
     public static final Context CONTEXT = mock(Context.class);
     public static final String CANDIDATE = IoUtils.stringFromResources(Path.of("candidate.json"));
     public static final String CANDIDATE_MISSING_FIELDS = IoUtils.stringFromResources(Path.of("candidateV2.json"));
     public static final String INSTITUTION_ID_FROM_EVENT =
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0";
-    private IndexNviCandidateHandler handler;
+    private UpdateIndexHandler handler;
     private TestAppender appender;
     private StorageReader<URI> storageReader;
     private NviService nviService;
@@ -61,7 +61,7 @@ class IndexNviCandidateHandlerTest extends LocalDynamoTest {
         storageReader = mock(StorageReader.class);
         SearchClient<NviCandidateIndexDocument> openSearchClient = mock(OpenSearchClient.class);
         nviService = mock(NviService.class);
-        handler = new IndexNviCandidateHandler(storageReader, openSearchClient, nviService);
+        handler = new UpdateIndexHandler(storageReader, openSearchClient, nviService);
         appender = LogUtils.getTestingAppenderForRootLogger();
         doNothing().when(openSearchClient).addDocumentToIndex(any());
         doNothing().when(openSearchClient).removeDocumentFromIndex(any());

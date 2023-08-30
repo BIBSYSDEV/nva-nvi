@@ -253,11 +253,11 @@ Resources:
                 responsePayload:
                   topic: [ "PublicationService.ExpandedEntry.Persisted" ]
 
-  IndexNviCandidateHandler:
+  UpdateIndexHandler:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.index.IndexNviCandidateHandler::handleRequest
+      Handler: no.sikt.nva.nvi.index.UpdateIndexHandler::handleRequest
       Timeout: 30
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
