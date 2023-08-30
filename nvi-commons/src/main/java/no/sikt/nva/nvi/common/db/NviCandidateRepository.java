@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.common.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.common.ApplicationConstants.REGION;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.ApplicationConstants.SORT_KEY;
+import static no.sikt.nva.nvi.common.service.NviService.LOGGER;
 import static nva.commons.core.attempt.Try.attempt;
 import java.net.URI;
 import java.util.Collection;
@@ -120,6 +121,7 @@ public class NviCandidateRepository extends DynamoRepository  {
                    .credentialsProvider(DefaultCredentialsProvider.create())
                    .region(REGION)
                    .build();
+        LOGGER.info("Initiating something CandidateRepository");
         return new NviCandidateRepository(dynamoDbClient);
     }
 }

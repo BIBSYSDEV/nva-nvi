@@ -31,10 +31,10 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
 
     public static final String DOCUMENT_ADDED_MESSAGE = "Document has been added/updated";
     public static final String DOCUMENT_REMOVED_MESSAGE = "Document has been removed";
-    public static final String CANDIDATE_TYPE = "CANDIDATE";
-    public static final String PRIMARY_KEY_DELIMITER = "#";
-    public static final String PRIMARY_KEY_RANGE_KEY = "PrimaryKeyRangeKey";
-    public static final String IDENTIFIER = "identifier";
+    private static final String CANDIDATE_TYPE = "CANDIDATE";
+    private static final String PRIMARY_KEY_DELIMITER = "#";
+    private static final String PRIMARY_KEY_RANGE_KEY = "PrimaryKeyRangeKey";
+    private static final String IDENTIFIER = "identifier";
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexNviCandidateHandler.class);
     private static final Environment ENVIRONMENT = new Environment();
     private static final String EXPANDED_RESOURCES_BUCKET = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
@@ -48,9 +48,12 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     }
 
     public IndexNviCandidateHandler(StorageReader<URI> storageReader,
-                                    SearchClient<NviCandidateIndexDocument> openSearchClient, NviService nviService) {
+                                    SearchClient<NviCandidateIndexDocument> openSearchClient,
+                                    NviService nviService) {
+        LOGGER.info("Initiating something");
         this.storageReader = storageReader;
         this.openSearchClient = openSearchClient;
+        LOGGER.info("Initiating nviService");
         this.nviService = nviService;
     }
 

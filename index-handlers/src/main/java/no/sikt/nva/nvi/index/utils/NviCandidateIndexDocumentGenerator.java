@@ -65,12 +65,6 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static Affiliation expandAffiliation(JsonNode resource,
                                                  no.sikt.nva.nvi.common.model.business.ApprovalStatus approvalStatus) {
-
-        var some = getJsonNodeStream(resource, JSON_PTR_CONTRIBUTOR)
-                       .flatMap(contributor -> getJsonNodeStream(contributor, JSON_PTR_AFFILIATIONS))
-                       .filter(affiliation -> nonNull(affiliation.at(JSON_PTR_ID)))
-                       .filter(affiliation -> extractId(affiliation).equals(approvalStatus.institutionId().toString()))
-                       .toList();
         return getJsonNodeStream(resource, JSON_PTR_CONTRIBUTOR)
                    .flatMap(contributor -> getJsonNodeStream(contributor, JSON_PTR_AFFILIATIONS))
                    .filter(affiliation -> nonNull(affiliation.at(JSON_PTR_ID)))

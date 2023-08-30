@@ -22,9 +22,12 @@ import nva.commons.apigateway.exceptions.NotFoundException;
 
 import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.core.JacocoGenerated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NviService {
 
+    public static final Logger LOGGER = LoggerFactory.getLogger(NviService.class);
     public static final String INVALID_LENGTH_MESSAGE = "Provided period has invalid length!";
     public static final String PERIOD_NOT_NUMERIC_MESSAGE = "Period is not numeric!";
     private final NviCandidateRepository nviCandidateRepository;
@@ -155,6 +158,7 @@ public class NviService {
 
     @JacocoGenerated
     public static NviService defaultNviService() {
+        LOGGER.info("Initiating something NviService");
         return new NviService(defaultNviCandidateRepository());
     }
 }
