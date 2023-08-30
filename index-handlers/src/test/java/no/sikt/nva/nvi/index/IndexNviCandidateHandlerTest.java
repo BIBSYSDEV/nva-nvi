@@ -66,8 +66,7 @@ class IndexNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldAddDocumentToIndexWhenIncomingEventIsInsert() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE_MISSING_FIELDS);
-        CandidateWithIdentifier value = randomCandidateWithIdentifier();
-        when(nviService.findById(any())).thenReturn(Optional.of(value));
+        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
 
         handler.handleRequest(createEvent(INSERT), CONTEXT);
 

@@ -5,7 +5,6 @@ plugins {
 
 dependencies {
     implementation project(':nvi-commons')
-    implementation project(':nvi-test')
     implementation libs.nva.json
     implementation libs.nva.core
     implementation libs.nva.commons.secrets
@@ -32,6 +31,7 @@ dependencies {
     testImplementation "org.testcontainers:testcontainers:1.18.3"
     testImplementation 'org.testcontainers:junit-jupiter:1.18.3'
 
+    testImplementation project(':nvi-test')
     testImplementation(group: 'com.amazonaws', name: 'DynamoDBLocal', version: '1.19.0') {
         exclude group: 'com.amazonaws', module: 'aws-java-sdk-dynamodb'
         exclude group: 'com.amazonaws', module: 'aws-java-sdk-core'

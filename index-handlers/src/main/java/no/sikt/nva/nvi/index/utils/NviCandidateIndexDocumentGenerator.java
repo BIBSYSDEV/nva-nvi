@@ -41,14 +41,15 @@ public final class NviCandidateIndexDocumentGenerator {
     private NviCandidateIndexDocumentGenerator() {
     }
 
-    public static NviCandidateIndexDocument generateDocument(String resource, List<no.sikt.nva.nvi.common.model.business.ApprovalStatus> affiliationApprovals) {
+    public static NviCandidateIndexDocument generateDocument(
+        String resource, List<no.sikt.nva.nvi.common.model.business.ApprovalStatus> affiliationApprovals) {
         return createNviCandidateIndexDocument(attempt(() -> dtoObjectMapper.readTree(resource))
                                                    .map(root -> root.at("/body")).orElseThrow(),
                                                affiliationApprovals);
     }
 
-    private static NviCandidateIndexDocument createNviCandidateIndexDocument(JsonNode resource,
-                                                                             List<no.sikt.nva.nvi.common.model.business.ApprovalStatus> approvalAffiliations) {
+    private static NviCandidateIndexDocument createNviCandidateIndexDocument(
+        JsonNode resource, List<no.sikt.nva.nvi.common.model.business.ApprovalStatus> approvalAffiliations) {
         return new NviCandidateIndexDocument.Builder()
                    .withContext(URI.create(Contexts.NVI_CONTEXT))
                    .withIdentifier(extractPublicationIdentifier(resource))
@@ -59,7 +60,8 @@ public final class NviCandidateIndexDocumentGenerator {
                    .build();
     }
 
-    private static List<Affiliation> createAffiliations(JsonNode resource, List<no.sikt.nva.nvi.common.model.business.ApprovalStatus> approvalAffiliations) {
+    private static List<Affiliation> createAffiliations(
+        JsonNode resource, List<no.sikt.nva.nvi.common.model.business.ApprovalStatus> approvalAffiliations) {
         return approvalAffiliations.stream().map(id -> expandAffiliation(resource, id)).toList();
     }
 
