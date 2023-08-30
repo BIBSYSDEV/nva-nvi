@@ -10,10 +10,12 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType;
 import java.net.URI;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
+import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;
@@ -123,14 +125,18 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
 
     private void addDocumentToIndex(DynamodbStreamRecord record) {
         var candidate = nviService.findById(extractIdentifierFromOldImage(record));
-
+        LOGGER.info("Fetched candidate: {}", candidate.toString());
         attempt(candidate::get)
             .map(CandidateWithIdentifier::candidate)
             .map(IndexNviCandidateHandler::extractBucketUri)
             .map(storageReader::read)
-            .map(blob -> generateDocument(blob, candidate.orElseThrow().candidate().approvalStatuses()))
+            .map(blob -> generateDocument(blob, extractApprovalStatuses(candidate.orElseThrow())))
             .forEach(openSearchClient::addDocumentToIndex);
 
         LOGGER.info(DOCUMENT_ADDED_MESSAGE);
+    }
+
+    private static List<ApprovalStatus> extractApprovalStatuses(CandidateWithIdentifier candidate) {
+        return candidate.candidate().approvalStatuses();
     }
 }

@@ -111,8 +111,8 @@ public class NviService {
         return nviCandidateRepository.findByPublicationId(publicationId).isPresent();
     }
 
-    private CandidateWithIdentifier createCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-        var pendingCandidate = toPendingCandidate(evaluatedCandidate.candidateDetails());
+    private CandidateWithIdentifier createCandidate(CandidateEvaluatedMessage candidateEvaluatedMessage) {
+        var pendingCandidate = toPendingCandidate(candidateEvaluatedMessage);
         return nviCandidateRepository.save(pendingCandidate);
     }
 
@@ -126,15 +126,15 @@ public class NviService {
         return nviCandidateRepository.findByPublicationId(publicationId);
     }
 
-    private static Candidate toPendingCandidate(CandidateDetails candidateDetails) {
+    private static Candidate toPendingCandidate(CandidateEvaluatedMessage candidateDetails) {
         return new Candidate.Builder()
-                   .withPublicationId(candidateDetails.publicationId())
+                   .withPublicationId(candidateDetails.candidateDetails().publicationId())
                    .withIsApplicable(true)
-                   .withCreators(mapToVerifiedCreators(candidateDetails.verifiedCreators()))
-                   .withLevel(Level.parse(candidateDetails.level()))
-                   .withInstanceType(candidateDetails.instanceType())
-                   .withPublicationDate(mapToPublicationDate(candidateDetails.publicationDate()))
-                   .withApprovalStatuses(generatePendingApprovalStatuses(extractInstitutionIds(candidateDetails)))
+                   .withCreators(mapToVerifiedCreators(candidateDetails.candidateDetails().verifiedCreators()))
+                   .withLevel(Level.parse(candidateDetails.candidateDetails().level()))
+                   .withInstanceType(candidateDetails.candidateDetails().instanceType())
+                   .withPublicationDate(mapToPublicationDate(candidateDetails.candidateDetails().publicationDate()))
+                   .withApprovalStatuses(generatePendingApprovalStatuses(extractInstitutionIds(candidateDetails.candidateDetails())))
                    .build();
     }
 
