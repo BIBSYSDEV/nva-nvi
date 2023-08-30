@@ -270,43 +270,43 @@ Resources:
                 responsePayload:
                   topic: [ "PublicationService.ExpandedEntry.Persisted" ]
 
-  UpdateIndexHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      Description: 'Listens to DynamoDbStream and creates, modifies and deletes record from nvi-index'
-      CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.index.UpdateIndexHandler::handleRequest
-      Timeout: 30
-      MemorySize: 1536
-      Role: !GetAtt NvaNviRole.Arn
-      AutoPublishAlias: live
-      Environment:
-        Variables:
-          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-      Events:
-        FanoutSource:
-          Type: DynamoDB
-          Properties:
-            Stream: !GetAtt NvaNviTable.StreamArn
-            StartingPosition: TRIM_HORIZON
-            BatchSize: 10
-            Enabled: true
-
-
-  UpsertNviCandidateHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: event-handlers
-      Handler: no.sikt.nva.nvi.events.UpsertNviCandidateHandler::handleRequest
-      Timeout: 30
-      MemorySize: 1536
-      Role: !GetAtt NvaNviRole.Arn
-      AutoPublishAlias: live
-      Events:
-        SqsEvent:
-          Type: SQS
-          Properties:
-            Queue: !GetAtt NewCandidateQueue.Arn
+#  UpdateIndexHandler:
+#    Type: AWS::Serverless::Function
+#    Properties:
+#      Description: 'Listens to DynamoDbStream and creates, modifies and deletes record from nvi-index'
+#      CodeUri: index-handlers
+#      Handler: no.sikt.nva.nvi.index.UpdateIndexHandler::handleRequest
+#      Timeout: 30
+#      MemorySize: 1536
+#      Role: !GetAtt NvaNviRole.Arn
+#      AutoPublishAlias: live
+#      Environment:
+#        Variables:
+#          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+#      Events:
+#        FanoutSource:
+#          Type: DynamoDB
+#          Properties:
+#            Stream: !GetAtt NvaNviTable.StreamArn
+#            StartingPosition: TRIM_HORIZON
+#            BatchSize: 10
+#            Enabled: true
+#
+#
+#  UpsertNviCandidateHandler:
+#    Type: AWS::Serverless::Function
+#    Properties:
+#      CodeUri: event-handlers
+#      Handler: no.sikt.nva.nvi.events.UpsertNviCandidateHandler::handleRequest
+#      Timeout: 30
+#      MemorySize: 1536
+#      Role: !GetAtt NvaNviRole.Arn
+#      AutoPublishAlias: live
+#      Events:
+#        SqsEvent:
+#          Type: SQS
+#          Properties:
+#            Queue: !GetAtt NewCandidateQueue.Arn
 
   #Add table name to env variables and remove comment when table is implemented
   CreateNviPeriodHandler:
