@@ -287,7 +287,6 @@ Resources:
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-          DLQ_URL: !Ref UpdateIndexHandlerDLQ
       Events:
         FanoutSource:
           Type: DynamoDB
