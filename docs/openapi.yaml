@@ -142,6 +142,48 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /candidates/{candidateIdentifier}:
+    get:
+      description: 'Get scientific index candidate'
+      parameters:
+        - in: path
+          name: candidateIdentifier
+          description: The identifer of the publication
+          required: true
+          schema:
+            type: string
+      security:
+        - CognitoUserPool: [
+          'https://api.nva.unit.no/scopes/backend',
+          'https://api.nva.unit.no/scopes/frontend',
+          'aws.cognito.signin.user.admin',
+        ]
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchNviCandidatesHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FetchNviCandidateResponse"
+        '404':
+          description: "Candidate not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '500':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
 components:
   schemas:
     NviPeriod:
@@ -177,6 +219,47 @@ components:
         took:
           type: integer
           description: time consumed on server in ms.
+    FetchNviCandidateResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        publicationId:
+          $ref: '#/components/schemas/Id'
+        approvalStatus:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApprovalStatus'
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+    ApprovalStatus:
+      type: object
+      properties:
+        institutionId:
+          $ref: '#/components/schemas/Id'
+        status:
+          type: string
+          enum: ['Approved','Pending','Rejected']
+        finalizedBy:
+          $ref: '#/components/schemas/Username'
+        finalizedDate:
+          type: string
+    Note:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/Username'
+        text:
+          type: string
+        createdDate:
+          type: string
+    Username:
+      type: object
+      properties:
+        value:
+          type: string
     Context:
       type: string
       pattern: 'https:\/\/.*$'

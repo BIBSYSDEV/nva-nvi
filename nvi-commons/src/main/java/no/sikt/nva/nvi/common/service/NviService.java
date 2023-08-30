@@ -66,12 +66,10 @@ public class NviService {
         return new NviPeriod.Builder().withPublishingYear(publishingYear).build();
     }
 
-    @JacocoGenerated //TODO: Remove when its actually used
     public Optional<CandidateWithIdentifier> findById(UUID uuid) {
         return nviCandidateRepository.findById(uuid);
     }
 
-    @JacocoGenerated //TODO: Remove when its actually used
     public Optional<CandidateWithIdentifier> findByPublicationId(URI publicationId) {
         return nviCandidateRepository.findByPublicationId(publicationId);
     }
@@ -125,12 +123,6 @@ public class NviService {
                    .withPoints(institutionPoints)
                    .withApprovalStatuses(generatePendingApprovalStatuses(institutionPoints.keySet()))
                    .build();
-    }
-
-    @JacocoGenerated
-    @SuppressWarnings("PMD.UnusedPrivateMethod")
-    private boolean exists(UUID uuid) {
-        return nviCandidateRepository.findById(uuid).isPresent();
     }
 
     private boolean existsByPublicationId(URI publicationId) {
