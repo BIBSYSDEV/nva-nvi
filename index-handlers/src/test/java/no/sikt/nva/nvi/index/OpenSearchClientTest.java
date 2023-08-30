@@ -154,14 +154,14 @@ public class OpenSearchClientTest {
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
         return new NviCandidateIndexDocument(randomUri(), randomString(),
-                                             randomPublicationDetails(), randomAffiliationList());
+                                             randomPublicationDetails(), randomApprovalList());
     }
 
-    private static List<Approval> randomAffiliationList() {
-        return IntStream.range(0, 5).boxed().map(i -> randomAffiliation()).toList();
+    private static List<Approval> randomApprovalList() {
+        return IntStream.range(0, 5).boxed().map(i -> randomApproval()).toList();
     }
 
-    private static Approval randomAffiliation() {
+    private static Approval randomApproval() {
         return new Approval(randomString(), Map.of(), randomStatus());
     }
 

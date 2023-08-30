@@ -96,11 +96,11 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withId(extractId(identity))
                    .withName(extractJsonNodeTextValue(identity, JSON_PTR_NAME))
                    .withOrcid(extractJsonNodeTextValue(identity, JSON_PTR_ORCID))
-                   .withAffiliations(extractApprovals(contributor))
+                   .withAffiliations(extractAffiliations(contributor))
                    .build();
     }
 
-    private static List<String> extractApprovals(JsonNode contributor) {
+    private static List<String> extractAffiliations(JsonNode contributor) {
         return streamNode(contributor.at(JSON_PTR_AFFILIATIONS))
                    .map(affiliation -> extractJsonNodeTextValue(affiliation, JSON_PTR_ID))
                    .toList();

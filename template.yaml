@@ -265,6 +265,14 @@ Resources:
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+      Events:
+        FanoutSource:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt NvaNviTable.StreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 10
+            Enabled: true
 
   UpsertNviCandidateHandler:
     Type: AWS::Serverless::Function
