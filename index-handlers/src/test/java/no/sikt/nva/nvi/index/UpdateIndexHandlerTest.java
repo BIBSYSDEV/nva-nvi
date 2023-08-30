@@ -5,7 +5,6 @@ import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.Opera
 import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType.REMOVE;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.index.UpdateIndexHandler.DOCUMENT_ADDED_MESSAGE;
-import static no.sikt.nva.nvi.index.UpdateIndexHandler.DOCUMENT_REMOVED_MESSAGE;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -76,7 +75,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         when(storageReader.read(any())).thenReturn(CANDIDATE_MISSING_FIELDS);
         when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
 
-        handler.handleRequest(createEvent(INSERT, candidateRecord("dynamoDbRecordEvent.json")), CONTEXT);
+        handler.handleRequest(createEvent(INSERT, candidateRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
 
         assertThat(appender.getMessages(), containsString(DOCUMENT_ADDED_MESSAGE));
     }
@@ -86,23 +85,33 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
         when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
 
-        handler.handleRequest(createEvent(MODIFY, candidateRecord("dynamoDbRecordEvent.json")), CONTEXT);
+        handler.handleRequest(createEvent(MODIFY, candidateRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
 
         assertThat(appender.getMessages(), containsString(DOCUMENT_ADDED_MESSAGE));
     }
 
     @Test
-    void shouldRemoveDocumentFromIndexWhenIncomingEventIsRemove() throws JsonProcessingException {
+    void shouldRemoveFromIndexWhenIncomingEventIsRemove() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
         when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
 
-        handler.handleRequest(createEvent(REMOVE, candidateRecord("dynamoDbRecordEvent.json")), CONTEXT);
+        handler.handleRequest(createEvent(MODIFY, candidateRecord("dynamoDbRecordNotApplicable.json")), CONTEXT);
 
-        assertThat(appender.getMessages(), containsString(DOCUMENT_REMOVED_MESSAGE));
+        assertThat(appender.getMessages(), containsString(StringUtils.EMPTY_STRING));
     }
 
     @Test
-    void shouldNotDoAnythingWhenConsumedRecordIsNotCandidate() throws JsonProcessingException {
+    void shouldDoNothingWhenIncomingEventIsRemove() throws JsonProcessingException {
+        when(storageReader.read(any())).thenReturn(CANDIDATE);
+        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
+
+        handler.handleRequest(createEvent(REMOVE, candidateRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
+
+        assertThat(appender.getMessages(), containsString(StringUtils.EMPTY_STRING));
+    }
+
+    @Test
+    void shouldDoNothingWhenConsumedRecordIsNotCandidate() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
         when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
 

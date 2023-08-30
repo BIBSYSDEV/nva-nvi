@@ -256,8 +256,6 @@ Resources:
           CANDIDATE_QUEUE_NAME: !Ref NewCandidateQueueName
           CANDIDATE_DLQ_NAME: !Ref NewCandidateDLQName
       AutoPublishAlias: live
-      SnapStart:
-        ApplyOn: PublishedVersions
       Events:
         EventBridgeEvent:
           Type: EventBridgeRule
@@ -304,8 +302,6 @@ Resources:
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
-      SnapStart:
-        ApplyOn: PublishedVersions
       Events:
         SqsEvent:
           Type: SQS
@@ -365,8 +361,6 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
-      SnapStart:
-        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'

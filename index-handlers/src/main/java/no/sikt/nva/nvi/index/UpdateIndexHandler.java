@@ -36,6 +36,8 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateIndexHandler.class);
     private static final Environment ENVIRONMENT = new Environment();
     private static final String EXPANDED_RESOURCES_BUCKET = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
+    public static final String DATA_PROPERTY = "data";
+    public static final String IS_APPLICABLE_PROPERTY = "isApplicable";
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
     private final StorageReader<URI> storageReader;
     private final NviService nviService;
@@ -56,6 +58,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     public Void handleRequest(DynamodbEvent event, Context context) {
         event.getRecords().stream()
             .filter(this::isCandidate)
+            .filter(this::isUpdate)
             .forEach(this::updateIndex);
 
         return null;
@@ -88,24 +91,20 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     private void updateIndex(DynamodbStreamRecord record) {
-        if (isInsert(record) || isModify(record)) {
+        if (isApplicable(record)) {
             addDocumentToIndex(record);
-        }
-        if (isRemove(record)) {
+        } else {
             removeDocumentFromIndex(record);
         }
     }
 
-    private boolean isRemove(DynamodbStreamRecord record) {
-        return getEventType(record).equals(OperationType.REMOVE);
+    private static Boolean isApplicable(DynamodbStreamRecord record) {
+        return record.getDynamodb().getNewImage().get(DATA_PROPERTY).getM().get(IS_APPLICABLE_PROPERTY).getBOOL();
     }
 
-    private boolean isModify(DynamodbStreamRecord record) {
-        return getEventType(record).equals(OperationType.MODIFY);
-    }
-
-    private boolean isInsert(DynamodbStreamRecord record) {
-        return getEventType(record).equals(OperationType.INSERT);
+    private boolean isUpdate(DynamodbStreamRecord record) {
+        var eventType = getEventType(record);
+        return OperationType.INSERT.equals(eventType) || OperationType.MODIFY.equals(eventType);
     }
 
     private void removeDocumentFromIndex(DynamodbStreamRecord record) {
