@@ -55,7 +55,7 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     }
 
     public Void handleRequest(DynamodbEvent event, Context context) {
-
+        LOGGER.info("Incoming event {}: ", event.getRecords().toString());
         event.getRecords().stream()
             .filter(this::isCandidate)
             .forEach(this::updateIndex);
@@ -90,6 +90,7 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     }
 
     private void updateIndex(DynamodbStreamRecord record) {
+        LOGGER.info("Updating index {}: ", record.toString());
         if (isInsert(record) || isModify(record)) {
             addDocumentToIndex(record);
         }
@@ -124,8 +125,10 @@ public class IndexNviCandidateHandler implements RequestHandler<DynamodbEvent, V
     }
 
     private void addDocumentToIndex(DynamodbStreamRecord record) {
+        LOGGER.info("Adding to index {}: ", record.toString());
+        LOGGER.info("Record id {}: ", extractIdentifierFromOldImage(record).toString());
         var candidate = nviService.findById(extractIdentifierFromOldImage(record));
-        LOGGER.info("Fetched candidate: {}", candidate.toString());
+        LOGGER.info("Fetched candidate: {}", candidate);
         attempt(candidate::get)
             .map(CandidateWithIdentifier::candidate)
             .map(IndexNviCandidateHandler::extractBucketUri)
