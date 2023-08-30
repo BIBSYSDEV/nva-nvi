@@ -71,6 +71,10 @@ public record Candidate(URI publicationId,
                    .build();
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public AttributeValue toDynamoDb() {
         var map = new HashMap<String, AttributeValue>();
         map.put(PUBLICATION_ID_FIELD, AttributeValue.fromS(publicationId.toString()));
