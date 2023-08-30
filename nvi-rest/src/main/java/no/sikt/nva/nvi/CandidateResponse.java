@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.fetch;
+package no.sikt.nva.nvi;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -7,16 +7,18 @@ import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.fetch.ApprovalStatus;
+import no.sikt.nva.nvi.fetch.Note;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record FetchCandidateResponse(UUID id,
-                                     URI publicationId,
-                                     List<ApprovalStatus> approvalStatuses,
-                                     List<Note> notes) {
+public record CandidateResponse(UUID id,
+                                URI publicationId,
+                                List<ApprovalStatus> approvalStatuses,
+                                List<Note> notes) {
 
-    public static FetchCandidateResponse fromCandidate(CandidateWithIdentifier candidate) {
-        return new FetchCandidateResponse(
+    public static CandidateResponse fromCandidate(CandidateWithIdentifier candidate) {
+        return new CandidateResponse(
             candidate.identifier(),
             candidate.candidate().publicationId(),
             mapToApprovalStatus(candidate.candidate()),
@@ -27,7 +29,7 @@ public record FetchCandidateResponse(UUID id,
     private static List<Note> mapToNotes(Candidate candidate) {
         return candidate.notes()
                    .stream()
-                   .map(FetchCandidateResponse::mapToNote)
+                   .map(CandidateResponse::mapToNote)
                    .toList();
     }
 
@@ -38,7 +40,7 @@ public record FetchCandidateResponse(UUID id,
     private static List<ApprovalStatus> mapToApprovalStatus(Candidate candidate) {
         return candidate.approvalStatuses()
                    .stream()
-                   .map(FetchCandidateResponse::mapToApprovalStatus)
+                   .map(CandidateResponse::mapToApprovalStatus)
                    .toList();
     }
 

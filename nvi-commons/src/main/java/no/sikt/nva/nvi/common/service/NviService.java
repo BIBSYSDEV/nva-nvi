@@ -10,17 +10,16 @@ import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.model.business.Creator;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.business.NviPeriod;
 import no.sikt.nva.nvi.common.model.business.PublicationDate;
 import no.sikt.nva.nvi.common.model.business.Status;
-import no.sikt.nva.nvi.common.model.business.Creator;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
+import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.ConflictException;
 import nva.commons.apigateway.exceptions.NotFoundException;
-
-import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.core.JacocoGenerated;
 
 public class NviService {
@@ -70,6 +69,11 @@ public class NviService {
 
     public Optional<CandidateWithIdentifier> findByPublicationId(URI publicationId) {
         return nviCandidateRepository.findByPublicationId(publicationId);
+    }
+
+    public CandidateWithIdentifier upsertApproval(ApprovalStatus approvalStatus) {
+
+        return null;
     }
 
     private static boolean isInteger(String value) {
@@ -148,10 +152,5 @@ public class NviService {
     @JacocoGenerated
     private boolean isNotExistingCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
         return !existsByPublicationId(evaluatedCandidate.candidateDetails().publicationId());
-    }
-
-    @JacocoGenerated
-    public static NviService defaultNviService() {
-        return new NviService(defaultNviCandidateRepository());
     }
 }

@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.utils;
 
+import java.util.NoSuchElementException;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.BadMethodException;
 import nva.commons.apigateway.exceptions.BadRequestException;

@@ -1,15 +1,17 @@
 plugins {
     id 'nva.nvi.java-conventions'
+    id 'nva.nvi.dynamodblocal'
 }
+
 dependencies {
     implementation project(':nvi-commons')
+    implementation project(':nvi-test')
     implementation libs.nva.json
     implementation libs.nva.core
     implementation libs.nva.commons.secrets
     implementation libs.nva.commons.auth
     implementation libs.nva.commons.apigateway
     implementation libs.nva.s3
-
 
     implementation libs.aws.lambda.java.core
     implementation libs.aws.lambda.events
@@ -29,6 +31,11 @@ dependencies {
     testImplementation 'org.opensearch:opensearch-testcontainers:2.0.0'
     testImplementation "org.testcontainers:testcontainers:1.18.3"
     testImplementation 'org.testcontainers:junit-jupiter:1.18.3'
+
+    testImplementation(group: 'com.amazonaws', name: 'DynamoDBLocal', version: '1.19.0') {
+        exclude group: 'com.amazonaws', module: 'aws-java-sdk-dynamodb'
+        exclude group: 'com.amazonaws', module: 'aws-java-sdk-core'
+    }
 
 
     implementation libs.bundles.jacksonjr

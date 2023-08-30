@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
@@ -73,7 +74,7 @@ class FetchNviCandidateHandlerTest {
         var gatewayResponse = getGatewayResponse();
 
         assertEquals(HttpStatus.SC_OK, gatewayResponse.getStatusCode());
-        var bodyObject = gatewayResponse.getBodyObject(FetchCandidateResponse.class);
+        var bodyObject = gatewayResponse.getBodyObject(CandidateResponse.class);
         assertEquals(bodyObject.id(), candidateId);
     }
 
@@ -102,14 +103,14 @@ class FetchNviCandidateHandlerTest {
             id);
     }
 
-    private GatewayResponse<FetchCandidateResponse> getGatewayResponse()
+    private GatewayResponse<CandidateResponse> getGatewayResponse()
         throws JsonProcessingException {
         return dtoObjectMapper.readValue(
             output.toString(),
             dtoObjectMapper.getTypeFactory()
                 .constructParametricType(
                     GatewayResponse.class,
-                    FetchCandidateResponse.class
+                    CandidateResponse.class
                 ));
     }
 }
