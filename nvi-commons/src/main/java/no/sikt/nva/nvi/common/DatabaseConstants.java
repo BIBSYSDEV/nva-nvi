@@ -1,9 +1,6 @@
 package no.sikt.nva.nvi.common;
 
-import static no.unit.nva.s3.S3Driver.AWS_REGION_ENV_VARIABLE;
-import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
-import software.amazon.awssdk.regions.Region;
 
 @JacocoGenerated
 public final class DatabaseConstants {

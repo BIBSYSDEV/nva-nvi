@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
-import no.sikt.nva.nvi.common.db.converters.CandidateConverterProvider;
 import no.sikt.nva.nvi.common.db.converters.NviPeriodConverterProvider;
 import no.sikt.nva.nvi.common.model.business.NviPeriod;
 import nva.commons.core.JacocoGenerated;
