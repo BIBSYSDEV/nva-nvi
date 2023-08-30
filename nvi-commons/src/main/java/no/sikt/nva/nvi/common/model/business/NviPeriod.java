@@ -22,7 +22,7 @@ public record NviPeriod(String publishingYear,
     public static final String MODIFIED_BY_FIELD = "modifiedBy";
 
     public AttributeValue toDynamoDb() {
-        Map<String, AttributeValue> map = new HashMap<>();
+        var map = new HashMap<String, AttributeValue>();
         map.put(PUBLISHING_YEAR_FIELD, AttributeValue.fromS(publishingYear));
         if (reportingDate != null) {
             map.put(REPORTING_DATA_FIELD, AttributeValue.fromN(String.valueOf(reportingDate.toEpochMilli())));

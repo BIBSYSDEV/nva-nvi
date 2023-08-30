@@ -23,7 +23,6 @@ public record ApprovalStatus(URI institutionId,
 
     public AttributeValue toDynamoDb() {
         var map = new HashMap<String, AttributeValue>();
-        // Create fields for all strings below
         map.put(INSTITUTION_ID_FIELD, AttributeValue.fromS(institutionId.toString()));
         map.put(STATUS_FIELD, AttributeValue.fromS(status.getValue()));
         if (finalizedBy != null) {

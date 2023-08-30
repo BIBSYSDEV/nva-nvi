@@ -43,7 +43,7 @@ public record Candidate(URI publicationId,
     }
 
     public AttributeValue toDynamoDb() {
-        Map<String, AttributeValue> map = new HashMap<>();
+        var map = new HashMap<String, AttributeValue>();
         map.put(PUBLICATION_ID_FIELD, AttributeValue.fromS(publicationId.toString()));
         if (publicationBucketUri != null) {
             map.put(PUBLICATION_BUCKET_URI_FIELD, AttributeValue.fromS(publicationBucketUri.toString()));
