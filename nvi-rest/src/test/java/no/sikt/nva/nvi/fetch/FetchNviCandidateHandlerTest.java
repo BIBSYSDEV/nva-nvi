@@ -11,10 +11,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
+import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
@@ -53,17 +55,40 @@ class FetchNviCandidateHandlerTest {
 
     @Test
     void shouldReturnValidCandidateIfExists() throws IOException {
-
         var candidateId = UUID.randomUUID();
-        var candidate = getCandidate(candidateId);
-        when(service.findById(candidateId)).thenReturn(Optional.of(candidate));
+        var candidateWithIdentifier = getCandidate(candidateId);
+        when(service.findById(candidateId)).thenReturn(Optional.of(candidateWithIdentifier));
         var input = getInput(candidateId);
         handler.handleRequest(input, output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
-
         assertEquals(HttpStatus.SC_OK, gatewayResponse.getStatusCode());
         var bodyObject = gatewayResponse.getBodyObject(FetchCandidateResponse.class);
-        assertEquals(bodyObject.id(), candidateId);
+        var expectedResponse = getExpectedResponse(candidateId, candidateWithIdentifier);
+
+        assertEquals(bodyObject, expectedResponse);
+    }
+
+    private static FetchCandidateResponse getExpectedResponse(UUID candidateId,
+                                                              CandidateWithIdentifier candidateWithIdentifier) {
+        var candidate = candidateWithIdentifier.candidate();
+        return new FetchCandidateResponse(candidateId, candidate.publicationId(), getApprovalStatuses(candidate),
+                                          candidate.points(),
+                                          getNotes(candidate));
+    }
+
+    private static List<Note> getNotes(Candidate candidate) {
+        return candidate.notes().stream()
+                   .map(note -> new Note(note.user(), note.text(), note.createdDate()))
+                   .toList();
+    }
+
+    private static List<ApprovalStatus> getApprovalStatuses(Candidate candidate) {
+        return candidate.approvalStatuses().stream()
+                   .map(approvalStatus -> new ApprovalStatus(
+                       approvalStatus.institutionId(),
+                       approvalStatus.status(), approvalStatus.finalizedBy(),
+                       approvalStatus.finalizedDate()))
+                   .toList();
     }
 
     private static InputStream getInput(UUID publicationId) throws JsonProcessingException {
