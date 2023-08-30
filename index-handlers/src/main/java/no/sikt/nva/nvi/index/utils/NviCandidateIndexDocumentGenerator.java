@@ -42,10 +42,9 @@ public final class NviCandidateIndexDocumentGenerator {
 
     public static NviCandidateIndexDocument generateDocument(
         String resource, CandidateWithIdentifier affiliationApprovals) {
-        var s =  createNviCandidateIndexDocument(attempt(() -> dtoObjectMapper.readTree(resource))
+        return createNviCandidateIndexDocument(attempt(() -> dtoObjectMapper.readTree(resource))
                                                    .map(root -> root.at("/body")).orElseThrow(),
                                                affiliationApprovals);
-        return s;
     }
 
     private static NviCandidateIndexDocument createNviCandidateIndexDocument(
