@@ -5,13 +5,10 @@ import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.Opera
 import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType.REMOVE;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.index.UpdateIndexHandler.DOCUMENT_ADDED_MESSAGE;
-import static no.sikt.nva.nvi.index.model.Contexts.NVI_CONTEXT;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.StringContains.containsString;
@@ -35,10 +32,8 @@ import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.StringUtils;
@@ -55,8 +50,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     public static final Context CONTEXT = mock(Context.class);
     public static final String CANDIDATE = IoUtils.stringFromResources(Path.of("candidate.json"));
     public static final String CANDIDATE_MISSING_FIELDS = IoUtils.stringFromResources(Path.of("candidateV2.json"));
-    public static final String INSTITUTION_ID_FROM_EVENT =
-        "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0";
+    public static final String INSTITUTION_ID_FROM_EVENT = "https://api.dev.nva.aws.unit"
+                                                           + ".no/cristin/organization/20754.0.0.0";
     private UpdateIndexHandler handler;
     private TestAppender appender;
     private StorageReader<URI> storageReader;
@@ -72,17 +67,12 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         appender = LogUtils.getTestingAppenderForRootLogger();
     }
 
-    private static DynamodbStreamRecord candidateRecord(String fileName) throws JsonProcessingException {
-        return JsonUtils.dtoObjectMapper.readValue(IoUtils.stringFromResources(Path.of(
-            fileName)), DynamodbStreamRecord.class);
-    }
-
     @Test
     void shouldAddDocumentToIndexWhenIncomingEventIsInsert() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE_MISSING_FIELDS);
         when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
 
-        handler.handleRequest(createEvent(INSERT, candidateRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
+        handler.handleRequest(createEvent(INSERT, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
         var document = openSearchClient.getDocuments().get(0);
 
         assertThat(document, is(instanceOf(NviCandidateIndexDocument.class)));
@@ -93,7 +83,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
         when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
 
-        handler.handleRequest(createEvent(MODIFY, candidateRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
+        handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
 
         assertThat(appender.getMessages(), containsString(DOCUMENT_ADDED_MESSAGE));
     }
@@ -103,7 +93,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
         when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
 
-        handler.handleRequest(createEvent(MODIFY, candidateRecord("dynamoDbRecordNotApplicable.json")), CONTEXT);
+        handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordNotApplicable.json")), CONTEXT);
 
         assertThat(appender.getMessages(), containsString(StringUtils.EMPTY_STRING));
     }
@@ -113,7 +103,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
         when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
 
-        handler.handleRequest(createEvent(REMOVE, candidateRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
+        handler.handleRequest(createEvent(REMOVE, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
 
         assertThat(appender.getMessages(), containsString(StringUtils.EMPTY_STRING));
     }
@@ -123,9 +113,14 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
         when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
 
-        handler.handleRequest(createEvent(REMOVE, candidateRecord("dynamoDbUniqueEntryEvent.json")), CONTEXT);
+        handler.handleRequest(createEvent(REMOVE, toRecord("dynamoDbUniqueEntryEvent.json")), CONTEXT);
 
         assertThat(appender.getMessages(), containsString(StringUtils.EMPTY_STRING));
+    }
+
+    private static DynamodbStreamRecord toRecord(String fileName) throws JsonProcessingException {
+        return JsonUtils.dtoObjectMapper.readValue(IoUtils.stringFromResources(Path.of(fileName)),
+                                                   DynamodbStreamRecord.class);
     }
 
     private static DynamodbEvent createEvent(OperationType operationType, DynamodbStreamRecord record) {
@@ -138,12 +133,12 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                                                    DynamodbStreamRecord record) {
 
         return (DynamodbStreamRecord) new DynamodbStreamRecord().withEventName(randomElement(operationType))
-                                                                .withEventID(randomString())
-                                                                .withAwsRegion(randomString())
-                                                                .withDynamodb(randomPayload())
-                                                                .withEventSource(randomString())
-                                                                .withEventVersion(randomString())
-                                                                .withDynamodb(record.getDynamodb());
+                                          .withEventID(randomString())
+                                          .withAwsRegion(randomString())
+                                          .withDynamodb(randomPayload())
+                                          .withEventSource(randomString())
+                                          .withEventVersion(randomString())
+                                          .withDynamodb(record.getDynamodb());
     }
 
     private static StreamRecord randomPayload() {
@@ -152,24 +147,22 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     private static CandidateWithIdentifier randomCandidateWithIdentifier() {
-        var candidate = randomCandidateBuilder()
-                   .withApprovalStatuses(List.of(getApprovalStatus()))
-                   .build();
+        var candidate = randomCandidateBuilder().withApprovalStatuses(List.of(getApprovalStatus())).build();
         return new CandidateWithIdentifier(candidate, randomUUID());
     }
 
     private static ApprovalStatus getApprovalStatus() {
-        return new ApprovalStatus.Builder()
-                   .withInstitutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
-                   .build();
+        return new ApprovalStatus.Builder().withInstitutionId(URI.create(INSTITUTION_ID_FROM_EVENT)).build();
     }
 
     private static class FakeSearchClient implements SearchClient<NviCandidateIndexDocument> {
 
-        private List<NviCandidateIndexDocument> documents;
-        public FakeSearchClient(){
+        private final List<NviCandidateIndexDocument> documents;
+
+        public FakeSearchClient() {
             this.documents = new ArrayList<>();
         }
+
         @Override
         public void addDocumentToIndex(NviCandidateIndexDocument indexDocument) {
             documents.add(indexDocument);
