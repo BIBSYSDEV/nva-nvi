@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.common.service;
 import static no.sikt.nva.nvi.common.db.NviCandidateRepository.defaultNviCandidateRepository;
 import static no.sikt.nva.nvi.common.model.events.CandidateStatus.CANDIDATE;
 import java.net.URI;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -34,6 +33,11 @@ public class NviService {
         this.nviCandidateRepository = nviCandidateRepository;
     }
 
+    @JacocoGenerated
+    public static NviService defaultNviService() {
+        return new NviService(defaultNviCandidateRepository());
+    }
+
     //TODO: Remove JacocoGenerated when other if/else cases are implemented
     @JacocoGenerated
     public Optional<CandidateWithIdentifier> upsertCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
@@ -60,11 +64,12 @@ public class NviService {
         return new NviPeriod.Builder().withPublishingYear(publishingYear).build();
     }
 
-    //TODO: Implement
-    public Candidate upsertApproval(ApprovalStatus approvalStatus) {
-        return new Candidate(URI.create(""), URI.create(""), false, "", Level.LEVEL_ONE,
-                             new PublicationDate("","",""), false, 1,
-                             Collections.emptyList(),List.of(approvalStatus),Collections.emptyList());
+    public Optional<CandidateWithIdentifier> findById(UUID uuid) {
+        return nviCandidateRepository.findById(uuid);
+    }
+
+    public Optional<CandidateWithIdentifier> findByPublicationId(URI publicationId) {
+        return nviCandidateRepository.findByPublicationId(publicationId);
     }
 
     private static boolean isInteger(String value) {
@@ -109,31 +114,6 @@ public class NviService {
                    .toList();
     }
 
-    @JacocoGenerated
-    @SuppressWarnings("PMD.UnusedPrivateMethod")
-    private boolean exists(UUID uuid) {
-        return nviCandidateRepository.findById(uuid).isPresent();
-    }
-
-    private boolean existsByPublicationId(URI publicationId) {
-        return nviCandidateRepository.findByPublicationId(publicationId).isPresent();
-    }
-
-    private CandidateWithIdentifier createCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-        var pendingCandidate = toPendingCandidate(evaluatedCandidate.candidateDetails());
-        return nviCandidateRepository.save(pendingCandidate);
-    }
-
-    @JacocoGenerated //TODO: Remove when its actually used
-    public Optional<CandidateWithIdentifier> findById(UUID uuid) {
-        return nviCandidateRepository.findById(uuid);
-    }
-
-    @JacocoGenerated //TODO: Remove when its actually used
-    public Optional<CandidateWithIdentifier> findByPublicationId(URI publicationId) {
-        return nviCandidateRepository.findByPublicationId(publicationId);
-    }
-
     private static Candidate toPendingCandidate(CandidateDetails candidateDetails) {
         return new Candidate.Builder()
                    .withPublicationId(candidateDetails.publicationId())
@@ -144,6 +124,15 @@ public class NviService {
                    .withPublicationDate(mapToPublicationDate(candidateDetails.publicationDate()))
                    .withApprovalStatuses(generatePendingApprovalStatuses(extractInstitutionIds(candidateDetails)))
                    .build();
+    }
+
+    private boolean existsByPublicationId(URI publicationId) {
+        return nviCandidateRepository.findByPublicationId(publicationId).isPresent();
+    }
+
+    private CandidateWithIdentifier createCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
+        var pendingCandidate = toPendingCandidate(evaluatedCandidate.candidateDetails());
+        return nviCandidateRepository.save(pendingCandidate);
     }
 
     private void validatePeriod(NviPeriod period) throws BadRequestException {
