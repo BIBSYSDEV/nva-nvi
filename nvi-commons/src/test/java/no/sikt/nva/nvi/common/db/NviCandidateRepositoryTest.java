@@ -28,7 +28,7 @@ class NviCandidateRepositoryTest extends LocalDynamoTest {
         var candidate1 = randomCandidateBuilder().withPublicationId(publicationId).build();
         var candidate2 = randomCandidateBuilder().withPublicationId(publicationId).build();
         nviCandidateRepository.save(candidate1);
-        assertThrows(RuntimeException.class,() -> nviCandidateRepository.save(candidate2));
+        assertThrows(RuntimeException.class, () -> nviCandidateRepository.save(candidate2));
         var tableItemCount = localDynamo.scan(ScanRequest.builder().tableName(NVI_TABLE_NAME).build()).count();
         assertThat(tableItemCount, is(equalTo(2)));
     }

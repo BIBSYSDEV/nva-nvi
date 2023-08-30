@@ -1,45 +1,43 @@
 package no.sikt.nva.nvi.test;
 
-import java.net.URI;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
-import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
-import no.sikt.nva.nvi.common.model.business.Candidate;
-import no.sikt.nva.nvi.common.model.business.Level;
-import no.sikt.nva.nvi.common.model.business.Note;
-import no.sikt.nva.nvi.common.model.business.NviPeriod;
-import no.sikt.nva.nvi.common.model.business.PublicationDate;
-import no.sikt.nva.nvi.common.model.business.Status;
-import no.sikt.nva.nvi.common.model.business.Creator;
-import no.sikt.nva.nvi.common.model.business.Username;
-import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
-import nva.commons.core.paths.UriWrapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.net.URI;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
+import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
+import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.model.business.Creator;
+import no.sikt.nva.nvi.common.model.business.Level;
+import no.sikt.nva.nvi.common.model.business.Note;
+import no.sikt.nva.nvi.common.model.business.NviPeriod;
+import no.sikt.nva.nvi.common.model.business.PublicationDate;
+import no.sikt.nva.nvi.common.model.business.Status;
+import no.sikt.nva.nvi.common.model.business.Username;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
+import nva.commons.core.paths.UriWrapper;
 
 public final class TestUtils {
 
+    public static final int SCALE = 10;
+    public static final BigDecimal MIN_BIG_DECIMAL = BigDecimal.ZERO;
+    public static final BigDecimal MAX_BIG_DECIMAL = BigDecimal.TEN;
     private static final String BUCKET_HOST = "example.org";
     private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
     private static final String PUBLICATION_API_PATH = "publication";
     private static final String API_HOST = "example.com";
 
     private TestUtils() {
-    }
-
-    public static ApprovalStatus createPendingApprovalStatus(URI institutionUri) {
-        return new ApprovalStatus.Builder()
-                   .withStatus(Status.PENDING)
-                   .withInstitutionId(institutionUri)
-                   .build();
     }
 
     public static CandidateDetails.PublicationDate randomPublicationDate() {
@@ -72,12 +70,6 @@ public final class TestUtils {
                    .toList();
     }
 
-    public static Stream<URI> extractNviInstitutionIds(List<CandidateDetails.Creator> creators) {
-        return creators.stream()
-                   .flatMap(creatorDto -> creatorDto.nviInstitutions().stream())
-                   .distinct();
-    }
-
     public static LocalDate randomLocalDate() {
         var daysBetween = ChronoUnit.DAYS.between(START_DATE, LocalDate.now());
         var randomDays = new Random().nextInt((int) daysBetween);
@@ -85,13 +77,13 @@ public final class TestUtils {
         return START_DATE.plusDays(randomDays);
     }
 
-
     public static Candidate.Builder randomCandidateBuilder() {
-        return new Candidate.Builder()
+        return Candidate.builder()
                    .withPublicationId(randomUri())
                    .withPublicationBucketUri(randomUri())
                    .withIsApplicable(randomBoolean())
                    .withInstanceType(randomString())
+                   .withPoints(Map.of(randomUri(), randomBigDecimal()))
                    .withLevel(randomElement(Level.values()))
                    .withPublicationDate(new PublicationDate(randomString(), randomString(), randomString()))
                    .withIsInternationalCollaboration(randomBoolean())
@@ -105,11 +97,6 @@ public final class TestUtils {
         return String.valueOf(randomInteger(3000));
     }
 
-    private static Instant getNowWithMillisecondAccuracy() {
-        var now = Instant.now();
-        return Instant.ofEpochMilli(now.toEpochMilli());
-    }
-
     public static Candidate randomCandidate() {
         return randomCandidateBuilder()
                    .build();
@@ -121,7 +108,6 @@ public final class TestUtils {
                    .withModifiedBy(randomUsername())
                    .withReportingDate(getNowWithMillisecondAccuracy())
                    .withPublishingYear(randomYear());
-
     }
 
     public static NviPeriod randomNviPeriod() {
@@ -135,5 +121,16 @@ public final class TestUtils {
 
     public static Username randomUsername() {
         return new Username(randomString());
+    }
+
+    public static BigDecimal randomBigDecimal() {
+        var randomBigDecimal =
+            MIN_BIG_DECIMAL.add(BigDecimal.valueOf(Math.random()).multiply(MAX_BIG_DECIMAL.subtract(MIN_BIG_DECIMAL)));
+        return randomBigDecimal.setScale(SCALE, RoundingMode.HALF_UP);
+    }
+
+    private static Instant getNowWithMillisecondAccuracy() {
+        var now = Instant.now();
+        return Instant.ofEpochMilli(now.toEpochMilli());
     }
 }

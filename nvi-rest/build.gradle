@@ -1,5 +1,6 @@
 plugins {
     id 'nva.nvi.java-conventions'
+    id 'nva.nvi.dynamodblocal'
 }
 dependencies {
     implementation project(':nvi-commons')
@@ -8,8 +9,10 @@ dependencies {
     implementation libs.nva.json
     implementation libs.nva.commons.auth
     implementation libs.jackson.databind
+
     testImplementation libs.nva.testutils
     testImplementation libs.bundles.testing
+    testImplementation project(':nvi-test')
 }
 
 test {

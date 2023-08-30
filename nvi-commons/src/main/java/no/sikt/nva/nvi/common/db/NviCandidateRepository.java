@@ -58,7 +58,7 @@ public class NviCandidateRepository extends DynamoRepository  {
     }
 
     public Optional<CandidateWithIdentifier> findById(UUID id) {
-        var queryObj = new CandidateDao(id, new Candidate.Builder().build());
+        var queryObj = new CandidateDao(id, Candidate.builder().build());
         var fetched = this.candidateTable.getItem(queryObj);
         return Optional.ofNullable(fetched).map(CandidateDao::toCandidateWithIdentifier);
 

@@ -34,7 +34,7 @@ public class CandidateTest {
     }
 
     private Candidate randomCandidate() {
-        return new Candidate.Builder()
+        return Candidate.builder()
                    .withPublicationId(randomUri())
                    .withApprovalStatuses(randomApprovalStatuses())
                    .withCreatorCount(randomInteger())
@@ -71,7 +71,7 @@ public class CandidateTest {
     }
 
     private ApprovalStatus randomInstitutionStatus() {
-        return new ApprovalStatus.Builder()
+        return ApprovalStatus.builder()
                    .withStatus(Status.APPROVED)
                    .withInstitutionId(randomUri())
                    .withFinalizedBy(randomUsername())

@@ -20,19 +20,6 @@ public record ApprovalStatus(URI institutionId,
     public static final String FINALIZED_BY_FIELD = "finalizedBy";
     public static final String FINALIZED_DATE_FIELD = "finalizedDate";
 
-    public AttributeValue toDynamoDb() {
-        var map = new HashMap<String, AttributeValue>();
-        map.put(INSTITUTION_ID_FIELD, AttributeValue.fromS(institutionId.toString()));
-        map.put(STATUS_FIELD, AttributeValue.fromS(status.getValue()));
-        if (finalizedBy != null) {
-            map.put(FINALIZED_BY_FIELD, finalizedBy.toDynamoDb());
-        }
-        if (finalizedDate != null) {
-            map.put(FINALIZED_DATE_FIELD, AttributeValue.fromN(String.valueOf(finalizedDate.toEpochMilli())));
-        }
-        return AttributeValue.fromM(map);
-    }
-
     public static ApprovalStatus fromDynamoDb(AttributeValue input) {
         var map = input.m();
         return new Builder()
@@ -48,6 +35,23 @@ public record ApprovalStatus(URI institutionId,
                    .build();
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public AttributeValue toDynamoDb() {
+        var map = new HashMap<String, AttributeValue>();
+        map.put(INSTITUTION_ID_FIELD, AttributeValue.fromS(institutionId.toString()));
+        map.put(STATUS_FIELD, AttributeValue.fromS(status.getValue()));
+        if (finalizedBy != null) {
+            map.put(FINALIZED_BY_FIELD, finalizedBy.toDynamoDb());
+        }
+        if (finalizedDate != null) {
+            map.put(FINALIZED_DATE_FIELD, AttributeValue.fromN(String.valueOf(finalizedDate.toEpochMilli())));
+        }
+        return AttributeValue.fromM(map);
+    }
+
     public static final class Builder {
 
         private URI institutionId;
@@ -55,7 +59,7 @@ public record ApprovalStatus(URI institutionId,
         private Username finalizedBy;
         private Instant finalizedDate;
 
-        public Builder() {
+        private Builder() {
         }
 
         public Builder withInstitutionId(URI institutionId) {
