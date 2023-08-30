@@ -129,15 +129,16 @@ public class NviService {
         return nviCandidateRepository.findByPublicationId(publicationId);
     }
 
-    private static Candidate toPendingCandidate(CandidateEvaluatedMessage candidateDetails) {
+    private static Candidate toPendingCandidate(CandidateEvaluatedMessage candidateEvaluatedMessage) {
         return new Candidate.Builder()
-                   .withPublicationId(candidateDetails.candidateDetails().publicationId())
+                   .withPublicationBucketUri(candidateEvaluatedMessage.publicationBucketUri())
+                   .withPublicationId(candidateEvaluatedMessage.candidateDetails().publicationId())
                    .withIsApplicable(true)
-                   .withCreators(mapToVerifiedCreators(candidateDetails.candidateDetails().verifiedCreators()))
-                   .withLevel(Level.parse(candidateDetails.candidateDetails().level()))
-                   .withInstanceType(candidateDetails.candidateDetails().instanceType())
-                   .withPublicationDate(mapToPublicationDate(candidateDetails.candidateDetails().publicationDate()))
-                   .withApprovalStatuses(generatePendingApprovalStatuses(extractInstitutionIds(candidateDetails.candidateDetails())))
+                   .withCreators(mapToVerifiedCreators(candidateEvaluatedMessage.candidateDetails().verifiedCreators()))
+                   .withLevel(Level.parse(candidateEvaluatedMessage.candidateDetails().level()))
+                   .withInstanceType(candidateEvaluatedMessage.candidateDetails().instanceType())
+                   .withPublicationDate(mapToPublicationDate(candidateEvaluatedMessage.candidateDetails().publicationDate()))
+                   .withApprovalStatuses(generatePendingApprovalStatuses(extractInstitutionIds(candidateEvaluatedMessage.candidateDetails())))
                    .build();
     }
 
