@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index;
 
+import static no.sikt.nva.nvi.common.ApplicationConstants.SORT_KEY;
 import static no.sikt.nva.nvi.common.service.NviService.defaultNviService;
 import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient;
 import static no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator.generateDocument;
@@ -31,7 +32,6 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     public static final String DOCUMENT_REMOVED_MESSAGE = "Document has been removed";
     private static final String CANDIDATE_TYPE = "CANDIDATE";
     private static final String PRIMARY_KEY_DELIMITER = "#";
-    private static final String PRIMARY_KEY_RANGE_KEY = "PrimaryKeyRangeKey";
     private static final String IDENTIFIER = "identifier";
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateIndexHandler.class);
     private static final Environment ENVIRONMENT = new Environment();
@@ -66,7 +66,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     private static String extractRecordType(DynamodbStreamRecord record) {
-        return record.getDynamodb().getKeys().get(PRIMARY_KEY_RANGE_KEY).getS().split(PRIMARY_KEY_DELIMITER)[0];
+        return record.getDynamodb().getKeys().get(SORT_KEY).getS().split(PRIMARY_KEY_DELIMITER)[0];
     }
 
     private static URI extractBucketUri(Candidate candidate) {

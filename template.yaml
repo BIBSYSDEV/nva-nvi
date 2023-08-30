@@ -12,8 +12,6 @@ Globals:
     MemorySize: 1536
     Environment:
       Variables:
-        SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
-        SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
         NVI_TABLE_NAME: !Ref NvaNviTable
   Api:
     Cors:
@@ -48,6 +46,9 @@ Parameters:
   NewCandidateDLQName:
     Type: String
     Default: NewCandidateDLQ
+  UpdateIndexHandlerDLQName:
+    Type: String
+    Default: UpdateIndexHandlerDLQ
   SearchInfrastructureApiHost:
     Type: String
     Description: Host of external search infrastructure API (SWS).
@@ -83,6 +84,10 @@ Resources:
     Properties:
       QueueName: !Ref NewCandidateDLQName
       MessageRetentionPeriod: 43200
+  UpdateIndexHandlerDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref UpdateIndexHandlerDLQName
 
   #============================= Permissions =======================================================
   NvaNviRole:
@@ -190,6 +195,18 @@ Resources:
                   - dynamodb:*
                 Resource:
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/nva-nvi-${AWS::StackName}/index/*
+        - PolicyName: DynamoDbStreamAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetShardIterator
+                  - dynamodb:DescribeStream
+                  - dynamodb:ListStreams
+                  - dynamodb:GetRecords
+                Resource:
+                  - !GetAtt NvaNviTable.StreamArn
 
 
   #============================= Roles ==========================================================
@@ -256,6 +273,7 @@ Resources:
   UpdateIndexHandler:
     Type: AWS::Serverless::Function
     Properties:
+      Description: 'Listens to DynamoDbStream and creates, modifies and deletes record from nvi-index'
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.UpdateIndexHandler::handleRequest
       Timeout: 30
@@ -265,6 +283,8 @@ Resources:
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+          SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
+          SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
       Events:
         FanoutSource:
           Type: DynamoDB
@@ -273,6 +293,7 @@ Resources:
             StartingPosition: TRIM_HORIZON
             BatchSize: 10
             Enabled: true
+
 
   UpsertNviCandidateHandler:
     Type: AWS::Serverless::Function
@@ -335,18 +356,6 @@ Resources:
             Method: put
             RestApiId: !Ref ScientificIndexApi
 
-  DeleteNviCandidateHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.index.DeleteNviCandidateHandler::handleRequest
-      Timeout: 30
-      MemorySize: 1536
-      Role: !GetAtt NvaNviRole.Arn
-      AutoPublishAlias: live
-      SnapStart:
-        ApplyOn: PublishedVersions
-
   SearchNviCandidatesHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -362,6 +371,8 @@ Resources:
         Variables:
           ALLOWED_ORIGIN: '*'
           API_HOST: !Ref ApiDomain
+          SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
+          SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
       Events:
         GetEvent:
           Type: Api
@@ -411,3 +422,5 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
