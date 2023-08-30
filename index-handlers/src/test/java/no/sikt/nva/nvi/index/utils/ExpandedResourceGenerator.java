@@ -14,7 +14,7 @@ public class ExpandedResourceGenerator {
     public static String createExpandedResource(NviCandidateIndexDocument document, String host) {
         var root = objectMapper.createObjectNode();
 
-        root.put("id", UriWrapper.fromUri(host).addChild(document.identifier()).toString());
+        root.put("id", UriWrapper.fromUri(host).addChild(document.identifier().toString()).toString());
 
         var entityDescription = objectMapper.createObjectNode();
 
@@ -39,7 +39,7 @@ public class ExpandedResourceGenerator {
 
         root.set("entityDescription", entityDescription);
 
-        root.put("identifier", document.identifier());
+        root.put("identifier", document.identifier().toString());
 
         var body = objectMapper.createObjectNode();
         body.set("body", root);

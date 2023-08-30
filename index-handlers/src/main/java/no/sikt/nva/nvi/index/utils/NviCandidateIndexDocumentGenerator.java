@@ -41,14 +41,14 @@ public final class NviCandidateIndexDocumentGenerator {
     private NviCandidateIndexDocumentGenerator() {
     }
 
-    public static NviCandidateIndexDocument generateDocument(String resource, List<String> affiliationApprovals) {
+    public static NviCandidateIndexDocument generateDocument(String resource, List<no.sikt.nva.nvi.common.model.business.ApprovalStatus> affiliationApprovals) {
         return createNviCandidateIndexDocument(attempt(() -> dtoObjectMapper.readTree(resource))
                                                    .map(root -> root.at("/body")).orElseThrow(),
                                                affiliationApprovals);
     }
 
     private static NviCandidateIndexDocument createNviCandidateIndexDocument(JsonNode resource,
-                                                                             List<String> approvalAffiliations) {
+                                                                             List<no.sikt.nva.nvi.common.model.business.ApprovalStatus> approvalAffiliations) {
         return new NviCandidateIndexDocument.Builder()
                    .withContext(URI.create(Contexts.NVI_CONTEXT))
                    .withIdentifier(extractPublicationIdentifier(resource))
@@ -59,16 +59,22 @@ public final class NviCandidateIndexDocumentGenerator {
                    .build();
     }
 
-    private static List<Affiliation> createAffiliations(JsonNode resource, List<String> approvalAffiliations) {
+    private static List<Affiliation> createAffiliations(JsonNode resource, List<no.sikt.nva.nvi.common.model.business.ApprovalStatus> approvalAffiliations) {
         return approvalAffiliations.stream().map(id -> expandAffiliation(resource, id)).toList();
     }
 
-    private static Affiliation expandAffiliation(JsonNode resource, String id) {
+    private static Affiliation expandAffiliation(JsonNode resource,
+                                                 no.sikt.nva.nvi.common.model.business.ApprovalStatus approvalStatus) {
 
+        var some = getJsonNodeStream(resource, JSON_PTR_CONTRIBUTOR)
+                       .flatMap(contributor -> getJsonNodeStream(contributor, JSON_PTR_AFFILIATIONS))
+                       .filter(affiliation -> nonNull(affiliation.at(JSON_PTR_ID)))
+                       .filter(affiliation -> extractId(affiliation).equals(approvalStatus.institutionId().toString()))
+                       .toList();
         return getJsonNodeStream(resource, JSON_PTR_CONTRIBUTOR)
                    .flatMap(contributor -> getJsonNodeStream(contributor, JSON_PTR_AFFILIATIONS))
                    .filter(affiliation -> nonNull(affiliation.at(JSON_PTR_ID)))
-                   .filter(affiliation -> extractId(affiliation).equals(id))
+                   .filter(affiliation -> extractId(affiliation).equals(approvalStatus.institutionId().toString()))
                    .findFirst()
                    .map(NviCandidateIndexDocumentGenerator::createAffiliation)
                    .orElse(null);
@@ -80,7 +86,10 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private static String extractPublicationIdentifier(JsonNode resource) {
-        return UriWrapper.fromUri(extractJsonNodeTextValue(resource, JSON_PTR_ID)).getPath().getLastPathElement();
+        return attempt(() -> extractJsonNodeTextValue(resource, JSON_PTR_ID))
+                   .map(UriWrapper::fromUri)
+                   .map(UriWrapper::getLastPathElement)
+                   .orElseThrow();
     }
 
     private static PublicationDetails extractPublication(JsonNode resource) {

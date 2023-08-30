@@ -1,43 +1,106 @@
-{[
-  {
-    eventID: 0bd6374d0896ee1cce80bef6e5ad3f02,
-    eventName: INSERT,
-    eventVersion: 1.1,
-    eventSource: aws
-    :
-    dynamodb,
-    awsRegion: eu-west-1,
-    dynamodb: {
-      ApproximateCreationDateTime: Tue
-      Aug
-      29
-      11: 07
-      :
-      50
-      UTC
-      2023,
-      Keys: {
-        PrimaryKeyRangeKey=
-  {
-    S: CANDIDATE
-    #
-    22ac7ea6-4f4f-4c24-bba4-59158c1e0a25
+{
+  "eventID": "e6d0a4122fad36f07da8d61e10ca9f05",
+  "eventName": "INSERT",
+  "eventVersion": "1.1",
+  "eventSource": "aws:dynamodb",
+  "awsRegion": "eu-west-1",
+  "dynamodb": {
+    "approximateCreationDateTime": "2023-08-29T13:07:03.000+00:00",
+    "keys": {
+      "PrimaryKeyRangeKey": {
+        "s": "CANDIDATE#167ee953-b8a9-4ef6-a3c7-a62519ed6a6e"
+      },
+      "PrimaryKeyHashKey": {
+        "s": "CANDIDATE#167ee953-b8a9-4ef6-a3c7-a62519ed6a6e"
+      }
+    },
+    "newImage": {
+      "identifier": {
+        "s": "167ee953-b8a9-4ef6-a3c7-a62519ed6a6e"
+      },
+      "SecondaryIndex1HashKey": {
+        "s": "https://api.dev.nva.aws.unit.no/publication/018a3c252deb-7fa96a4f-aa10-4fa8-aba6-209bdca078bf"
+      },
+      "data": {
+        "m": {
+          "isInternationalCollaboration": {
+            "bool": false
+          },
+          "level": {
+            "s": "1"
+          },
+          "creators": {
+            "l": [
+              {
+                "m": {
+                  "creatorId": {
+                    "s": "https://api.dev.nva.aws.unit.no/cristin/person/1136326"
+                  },
+                  "affiliations": {
+                    "l": [
+                      {
+                        "s": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "instanceType": {
+            "s": "AcademicArticle"
+          },
+          "isApplicable": {
+            "bool": true
+          },
+          "creatorCount": {
+            "n": "0"
+          },
+          "publicationId": {
+            "s": "https://api.dev.nva.aws.unit.no/publication/018a3c252deb-7fa96a4f-aa10-4fa8-aba6-209bdca078bf"
+          },
+          "publicationDate": {
+            "m": {
+              "month": {
+                "s": "8"
+              },
+              "year": {
+                "s": "2023"
+              },
+              "day": {
+                "s": "28"
+              }
+            }
+          },
+          "approvalStatuses": {
+            "l": [
+              {
+                "m": {
+                  "institutionId": {
+                    "s": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+                  },
+                  "status": {
+                    "s": "Pending"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "SecondaryIndex1RangeKey": {
+        "s": "https://api.dev.nva.aws.unit.no/publication/018a3c252deb-7fa96a4f-aa10-4fa8-aba6-209bdca078bf"
+      },
+      "PrimaryKeyHashKey": {
+        "s": "CANDIDATE#167ee953-b8a9-4ef6-a3c7-a62519ed6a6e"
+      },
+      "PrimaryKeyRangeKey": {
+        "s": "CANDIDATE#167ee953-b8a9-4ef6-a3c7-a62519ed6a6e"
+      }
+    },
+    "sequenceNumber": "3750100000000011651060377",
+    "sizeBytes": 1056,
+    "streamViewType": "NEW_AND_OLD_IMAGES"
   },
-  PrimaryKeyHashKey=
-  {
-    S: CANDIDATE
-    #
-    22ac7ea6-4f4f-4c24-bba4-59158c1e0a25
-  }
-},
-  NewImage
-  :
-  {
-    identifier=
-  {
-    S: 22ac7ea6-4f4f-4c24-bba4-59158c1e0a25
-  },
-  SecondaryIndex1HashKey=
-  {
-    S: https
-    ://api.dev.nva.aws.unit.no/publication/018a3c252deb-7fa96a4f-aa10-4fa8-aba6-209bdca078bf,}, data={M: {isInternationalCollaboration={BOOL: false}, level={S: 1,}, creators={L: [{M: {creatorId={S: https://api.dev.nva.aws.unit.no/cristin/person/1136326,}, affiliations={L: [{S: https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0,}],}},}],}, instanceType={S: AcademicArticle,}, isApplicable={BOOL: true}, creatorCount={N: 0,}, publicationId={S: https://api.dev.nva.aws.unit.no/publication/018a3c252deb-7fa96a4f-aa10-4fa8-aba6-209bdca078bf,}, publicationDate={M: {month={S: 8,}, year={S: 2023,}, day={S: 28,}},}, approvalStatuses={L: [{M: {institutionId={S: https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0,}, status={S: Pending,}},}],}},}, SecondaryIndex1RangeKey={S: https://api.dev.nva.aws.unit.no/publication/018a3c252deb-7fa96a4f-aa10-4fa8-aba6-209bdca078bf,}, PrimaryKeyHashKey={S: CANDIDATE#22ac7ea6-4f4f-4c24-bba4-59158c1e0a25,}, PrimaryKeyRangeKey={S: CANDIDATE#22ac7ea6-4f4f-4c24-bba4-59158c1e0a25,}},SequenceNumber: 3747800000000012658146409,SizeBytes: 1056,StreamViewType: NEW_AND_OLD_IMAGES},eventSourceArn: arn:aws:dynamodb:eu-west-1:884807050265:table/nva-nvi-master-pipelines-NvaNvi-1LZJ4B13FNYPO-nva-nvi/stream/2023-08-29T09:19:20.077}]}
+  "eventSourceARN": "arn:aws:dynamodb:eu-west-1:884807050265:table/nva-nvi-master-pipelines-NvaNvi-1LZJ4B13FNYPO-nva-nvi/stream/2023-08-29T09:19:20.077"
+}

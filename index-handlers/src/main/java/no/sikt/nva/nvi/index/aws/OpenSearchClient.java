@@ -100,13 +100,13 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     private static DeleteRequest contructDeleteRequest(NviCandidateIndexDocument indexDocument) {
-        return new DeleteRequest.Builder().index(NVI_CANDIDATES_INDEX).id(indexDocument.identifier()).build();
+        return new DeleteRequest.Builder().index(NVI_CANDIDATES_INDEX).id(indexDocument.identifier().toString()).build();
     }
 
     private static IndexRequest<NviCandidateIndexDocument> constructIndexRequest(
         NviCandidateIndexDocument indexDocument) {
         return new IndexRequest.Builder<NviCandidateIndexDocument>().index(NVI_CANDIDATES_INDEX)
-                                                                    .id(indexDocument.identifier())
+                                                                    .id(indexDocument.identifier().toString())
                                                                     .document(indexDocument)
                                                                     .build();
     }

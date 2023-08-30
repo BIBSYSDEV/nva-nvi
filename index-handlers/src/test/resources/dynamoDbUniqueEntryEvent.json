@@ -1,0 +1,30 @@
+{
+  "eventID": "6117a144b0b700dc340a3e76aedf17f4",
+  "eventName": "INSERT",
+  "eventVersion": "1.1",
+  "eventSource": "aws:dynamodb",
+  "awsRegion": "eu-west-1",
+  "dynamodb": {
+    "approximateCreationDateTime": "2023-08-29T13:07:03.000+00:00",
+    "keys": {
+      "PrimaryKeyRangeKey": {
+        "s": "CandidateUniquenessEntry#https://api.dev.nva.aws.unit.no/publication/018a3c252deb-7fa96a4f-aa10-4fa8-aba6-209bdca078bf"
+      },
+      "PrimaryKeyHashKey": {
+        "s": "CandidateUniquenessEntry#https://api.dev.nva.aws.unit.no/publication/018a3c252deb-7fa96a4f-aa10-4fa8-aba6-209bdca078bf"
+      }
+    },
+    "newImage": {
+      "PrimaryKeyHashKey": {
+        "s": "CandidateUniquenessEntry#https://api.dev.nva.aws.unit.no/publication/018a3c252deb-7fa96a4f-aa10-4fa8-aba6-209bdca078bf"
+      },
+      "PrimaryKeyRangeKey": {
+        "s": "CandidateUniquenessEntry#https://api.dev.nva.aws.unit.no/publication/018a3c252deb-7fa96a4f-aa10-4fa8-aba6-209bdca078bf"
+      }
+    },
+    "sequenceNumber": "3750300000000021000272805",
+    "sizeBytes": 542,
+    "streamViewType": "NEW_AND_OLD_IMAGES"
+  },
+  "eventSourceARN": "arn:aws:dynamodb:eu-west-1:884807050265:table/nva-nvi-master-pipelines-NvaNvi-1LZJ4B13FNYPO-nva-nvi/stream/2023-08-29T09:19:20.077"
+}
