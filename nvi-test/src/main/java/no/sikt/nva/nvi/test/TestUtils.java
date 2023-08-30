@@ -6,6 +6,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -26,6 +27,9 @@ import nva.commons.core.paths.UriWrapper;
 
 public final class TestUtils {
 
+    public static final int SCALE = 10;
+    public static final BigDecimal MIN_BIG_DECIMAL = BigDecimal.ZERO;
+    public static final BigDecimal MAX_BIG_DECIMAL = BigDecimal.TEN;
     private static final String BUCKET_HOST = "example.org";
     private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
     private static final String PUBLICATION_API_PATH = "publication";
@@ -92,11 +96,18 @@ public final class TestUtils {
     }
 
     public static ApprovalStatus randomApprovalStatus() {
-        return new ApprovalStatus(randomUri(), randomElement(Status.values()), BigDecimal.ONE, randomUsername(),
+        return new ApprovalStatus(randomUri(), randomElement(Status.values()), randomBigDecimal(),
+                                  randomUsername(),
                                   Instant.EPOCH);
     }
 
     public static Username randomUsername() {
         return new Username(randomString());
+    }
+
+    public static BigDecimal randomBigDecimal() {
+        var randomBigDecimal =
+            MIN_BIG_DECIMAL.add(BigDecimal.valueOf(Math.random()).multiply(MAX_BIG_DECIMAL.subtract(MIN_BIG_DECIMAL)));
+        return randomBigDecimal.setScale(SCALE, RoundingMode.HALF_UP);
     }
 }

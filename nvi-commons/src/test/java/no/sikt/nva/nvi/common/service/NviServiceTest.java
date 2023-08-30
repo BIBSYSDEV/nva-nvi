@@ -4,11 +4,11 @@ import static no.sikt.nva.nvi.common.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.mapToVerifiedCreators;
+import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomPublicationDate;
 import static no.sikt.nva.nvi.test.TestUtils.toPublicationDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
-import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -63,7 +63,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var instanceType = randomString();
         var randomLevel = randomElement(Level.values());
         var publicationDate = randomPublicationDate();
-        var institutionPoints = Map.of(institutionId, BigDecimal.valueOf(randomInteger()));
+        var institutionPoints = Map.of(institutionId, randomBigDecimal());
         var evaluatedCandidateDto = createEvaluatedCandidateDto(identifier, verifiedCreators, instanceType, randomLevel,
                                                                 publicationDate, institutionPoints);
 
@@ -85,7 +85,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var instanceType = randomString();
         var randomLevel = randomElement(Level.values());
         var publicationDate = randomPublicationDate();
-        var institutionPoints = Map.of(institutionId, BigDecimal.valueOf(randomInteger()));
+        var institutionPoints = Map.of(institutionId, randomBigDecimal());
         var evaluatedCandidateDto = createEvaluatedCandidateDto(identifier, verifiedCreators, instanceType, randomLevel,
                                                                 publicationDate, institutionPoints);
 
@@ -106,7 +106,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var instanceType = randomString();
         var randomLevel = randomElement(Level.values());
         var publicationDate = randomPublicationDate();
-        var institutionPoints = Map.of(institutionId, BigDecimal.valueOf(randomInteger()));
+        var institutionPoints = Map.of(institutionId, randomBigDecimal());
         var evaluatedCandidateDto = createEvaluatedCandidateDto(identifier, verifiedCreators, instanceType, randomLevel,
                                                                 publicationDate, institutionPoints);
         nviService.upsertCandidate(evaluatedCandidateDto).get().identifier();
@@ -125,7 +125,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var instanceType = randomString();
         var randomLevel = randomElement(Level.values());
         var publicationDate = randomPublicationDate();
-        var institutionPoints = Map.of(institutionId, BigDecimal.valueOf(randomInteger()));
+        var institutionPoints = Map.of(institutionId, randomBigDecimal());
         var evaluatedCandidateDto = createEvaluatedCandidateDto(identifier, verifiedCreators, instanceType, randomLevel,
                                                                 publicationDate, institutionPoints);
 
