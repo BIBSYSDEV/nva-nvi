@@ -5,13 +5,14 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
+
+
 public record Candidate(URI publicationId,
 
                         URI publicationBucketUri,
@@ -41,7 +42,7 @@ public record Candidate(URI publicationId,
     }
 
     public AttributeValue toDynamoDb() {
-        Map<String, AttributeValue> map = new HashMap<>();
+        var map = new HashMap<String, AttributeValue>();
         map.put(PUBLICATION_ID_FIELD, AttributeValue.fromS(publicationId.toString()));
         if (publicationBucketUri != null) {
             map.put(PUBLICATION_BUCKET_URI_FIELD, AttributeValue.fromS(publicationBucketUri.toString()));
@@ -63,7 +64,7 @@ public record Candidate(URI publicationId,
     }
 
     public static Candidate fromDynamoDb(AttributeValue input) {
-        Map<String, AttributeValue> map = input.m();
+        var map = input.m();
         return new Builder()
             .withPublicationId(URI.create(map.get(PUBLICATION_ID_FIELD).s()))
                  .withPublicationBucketUri(Optional.ofNullable(map.get(PUBLICATION_BUCKET_URI_FIELD))

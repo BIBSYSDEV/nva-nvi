@@ -18,7 +18,7 @@ public record PublicationDate(String year, String month, String day) {
     }
 
     public static PublicationDate fromDynamoDb(AttributeValue input) {
-        Map<String, AttributeValue> map = input.m();
+        var map = input.m();
         return new PublicationDate(
             map.get(YEAR_FIELD).s(),
             map.get(MONTH_FIELD).s(),

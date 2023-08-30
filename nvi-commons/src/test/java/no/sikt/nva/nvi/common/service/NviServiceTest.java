@@ -48,7 +48,7 @@ public class NviServiceTest extends LocalDynamoTest {
     void setup() {
         localDynamo = initializeTestDatabase();
         nviCandidateRepository = new NviCandidateRepository(localDynamo);
-        nviService = new NviService(nviCandidateRepository);
+        nviService = new NviService(localDynamo);
     }
 
     @Test
@@ -131,21 +131,20 @@ public class NviServiceTest extends LocalDynamoTest {
                    is(equalTo(expectedCandidate)));
     }
 
-    //TODO: Change test when nviService is implemented
     @Test
     void shouldCreateNviPeriod() throws BadRequestException {
         var period = createPeriod("2014");
         nviService.createPeriod(period);
-        assertThat(nviService.getPeriod(period.publishingYear()), is(not(equalTo(period))));
+        assertThat(nviService.getPeriod(period.publishingYear()), is(equalTo(period)));
     }
 
-    //TODO: Change test when nviService is implemented
     @Test
     void shouldUpdateNviPeriod() throws BadRequestException, ConflictException, NotFoundException {
-        var period = createPeriod("2014");
-        nviService.createPeriod(period);
-        nviService.updatePeriod(period.copy().withReportingDate(randomInstant()).build());
-        assertThat(nviService.getPeriod(period.publishingYear()), is(not(equalTo(period))));
+        var originalPeriod = createPeriod("2014");
+        nviService.createPeriod(originalPeriod);
+        nviService.updatePeriod(originalPeriod.copy().withReportingDate(randomInstant()).build());
+        var fetchedPeriod = nviService.getPeriod(originalPeriod.publishingYear());
+        assertThat(fetchedPeriod, is(not(equalTo(originalPeriod))));
     }
 
     @Test
