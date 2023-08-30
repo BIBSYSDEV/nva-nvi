@@ -4,9 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
-import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
@@ -35,7 +33,7 @@ public record NviPeriod(String publishingYear,
     }
 
     public static NviPeriod fromDynamoDb(AttributeValue input) {
-        Map<String, AttributeValue> map = input.m();
+        var map = input.m();
 
         return new Builder()
                    .withPublishingYear(map.get(PUBLISHING_YEAR_FIELD).s())

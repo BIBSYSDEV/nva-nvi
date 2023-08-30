@@ -1,13 +1,10 @@
 package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.ApplicationConstants.NVI_TABLE_NAME;
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.randomNviPeriodBuilder;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +24,7 @@ class NviPeriodRepositoryTest extends LocalDynamoTest {
     @Test
     public void shouldUpdateExistingRecordWhenSavedSecondTime() {
 
-        String year = "1989";
+        var year = TestUtils.randomYear();
         var user1 = TestUtils.randomUsername();
         var user2 = TestUtils.randomUsername();
 
@@ -38,7 +35,7 @@ class NviPeriodRepositoryTest extends LocalDynamoTest {
         var tableItemCount = localDynamo.scan(ScanRequest.builder().tableName(NVI_TABLE_NAME).build()).count();
         assertThat(tableItemCount, is(equalTo(1)));
 
-        var fetched = nviPeriodRepository.findByYear(year);
+        var fetched = nviPeriodRepository.findByPublishingYear(year);
         assertThat(fetched.get().modifiedBy(), is(equalTo(user2)));
     }
 }

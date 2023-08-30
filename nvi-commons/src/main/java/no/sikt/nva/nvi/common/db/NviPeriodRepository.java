@@ -24,8 +24,8 @@ public class NviPeriodRepository extends DynamoRepository  {
         return fetched.getNviPeriod();
     }
 
-    public Optional<NviPeriod> findByYear(String year) {
-        var queryObj = new NviPeriodDao(new NviPeriod.Builder().withPublishingYear(year).build());
+    public Optional<NviPeriod> findByPublishingYear(String publishingYear) {
+        var queryObj = new NviPeriodDao(new NviPeriod.Builder().withPublishingYear(publishingYear).build());
         var fetched = this.nviPeriodTable.getItem(queryObj);
         return Optional.ofNullable(fetched).map(NviPeriodDao::getNviPeriod);
 

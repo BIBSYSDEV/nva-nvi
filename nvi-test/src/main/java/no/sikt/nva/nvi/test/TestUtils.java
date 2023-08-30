@@ -101,6 +101,10 @@ public final class TestUtils {
                    .withNotes(List.of(new Note(randomUsername(), randomString(), getNowWithMillisecondAccuracy())));
     }
 
+    public static String randomYear() {
+        return String.valueOf(randomInteger(3000));
+    }
+
     private static Instant getNowWithMillisecondAccuracy() {
         var now = Instant.now();
         return Instant.ofEpochMilli(now.toEpochMilli());
@@ -116,7 +120,7 @@ public final class TestUtils {
                    .withCreatedBy(randomUsername())
                    .withModifiedBy(randomUsername())
                    .withReportingDate(getNowWithMillisecondAccuracy())
-                   .withPublishingYear(String.valueOf(randomInteger(3000)));
+                   .withPublishingYear(randomYear());
 
     }
 

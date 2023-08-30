@@ -61,7 +61,8 @@ public class NviService {
     }
 
     public NviPeriod getPeriod(String publishingYear) {
-        return nviPeriodRepository.findByYear(publishingYear).orElseThrow(); //TODO: Handle not-found. optional?
+        //TODO: Handle not-found. optional?
+        return nviPeriodRepository.findByPublishingYear(publishingYear).orElseThrow();
     }
 
     public Optional<CandidateWithIdentifier> findById(UUID uuid) {

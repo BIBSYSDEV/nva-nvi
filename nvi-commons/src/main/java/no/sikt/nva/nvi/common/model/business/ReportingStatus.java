@@ -28,7 +28,7 @@ public record ReportingStatus(URI institutionId,
 
     @JacocoGenerated //TODO: Will be used when persisted to DB
     public ReportingStatus fromDynamoDb(AttributeValue input) {
-        Map<String, AttributeValue> map = input.m();
+        var map = input.m();
         return new ReportingStatus(
             URI.create(map.get(INSTITUTION_ID_FIELD).s()),
             NviPeriod.fromDynamoDb(map.get(NVI_PERIOD_FIELD)),
