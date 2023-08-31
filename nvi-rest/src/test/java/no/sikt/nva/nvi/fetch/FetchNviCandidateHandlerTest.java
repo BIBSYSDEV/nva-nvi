@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.fetch;
 
 import static no.sikt.nva.nvi.fetch.FetchNviCandidateHandler.PARAM_CANDIDATE_IDENTIFIER;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -67,15 +68,41 @@ class FetchNviCandidateHandlerTest {
     void shouldReturnValidCandidateIfExists() throws IOException {
 
         var candidateId = UUID.randomUUID();
-        var candidate = getCandidate(candidateId);
-        when(service.findById(candidateId)).thenReturn(Optional.of(candidate));
+        var candidateWithIdentifier = getCandidate(candidateId);
+        when(service.findById(candidateId)).thenReturn(Optional.of(candidateWithIdentifier));
         var input = getInput(candidateId);
         handler.handleRequest(input, output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
 
         assertEquals(HttpStatus.SC_OK, gatewayResponse.getStatusCode());
         var bodyObject = gatewayResponse.getBodyObject(CandidateResponse.class);
-        assertEquals(bodyObject.id(), candidateId);
+        var expectedResponse = getExpectedResponse(candidateWithIdentifier);
+
+        assertEquals(bodyObject, expectedResponse);
+    }
+
+    private static CandidateResponse getExpectedResponse(CandidateWithIdentifier candidateWithIdentifier) {
+        var candidate = candidateWithIdentifier.candidate();
+        return new CandidateResponse(candidateWithIdentifier.identifier(),
+                                          candidate.publicationId(),
+                                          getApprovalStatuses(candidate),
+                                          candidate.points(),
+                                          getNotes(candidate));
+    }
+
+    private static List<Note> getNotes(Candidate candidate) {
+        return candidate.notes().stream()
+                   .map(note -> new Note(note.user(), note.text(), note.createdDate()))
+                   .toList();
+    }
+
+    private static List<ApprovalStatus> getApprovalStatuses(Candidate candidate) {
+        return candidate.approvalStatuses().stream()
+                   .map(approvalStatus -> new ApprovalStatus(
+                       approvalStatus.institutionId(),
+                       approvalStatus.status(), approvalStatus.finalizedBy(),
+                       approvalStatus.finalizedDate()))
+                   .toList();
     }
 
     private static InputStream getInput(UUID publicationId) throws JsonProcessingException {
@@ -87,19 +114,7 @@ class FetchNviCandidateHandlerTest {
 
     private static CandidateWithIdentifier getCandidate(UUID id) {
         return new CandidateWithIdentifier(
-            new Candidate(randomUri(),
-                          randomUri(),
-                          true,
-                          randomString(),
-                          Level.LEVEL_ONE,
-                          new PublicationDate(randomString(),randomString(), randomString()),
-                          false,
-                          1,
-                          List.of(new Creator(randomUri(), List.of(randomUri()))),
-                          List.of(new ApprovalStatus(randomUri(), Status.PENDING,
-                                                     new Username(randomString()),
-                                                     Instant.now())),
-                          List.of(new Note(new Username(randomString()), randomString(), Instant.now()))),
+            randomCandidate(),
             id);
     }
 
