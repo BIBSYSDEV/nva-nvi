@@ -188,10 +188,10 @@ public class CandidateCalculator {
     }
 
     private Contributor filterInstitutionsToKeepNvaCustomers(Contributor contributor) {
-        return new Contributor(contributor.identity(), filterNviAffiliations(contributor));
+        return new Contributor(contributor.identity(), getTopLevelOrgNviInstitutions(contributor));
     }
 
-    private List<Affiliation> filterNviAffiliations(Contributor contributor) {
+    private List<Affiliation> getTopLevelOrgNviInstitutions(Contributor contributor) {
         return contributor.affiliations()
                    .stream()
                    .map(Affiliation::id)
