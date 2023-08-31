@@ -11,15 +11,11 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent.RequestContext.Authorizer.JWT.JWTBuilder;
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.security.Key;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -36,10 +32,8 @@ import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.index.model.SearchResponseDto;
 import no.unit.nva.auth.CachedJwtProvider;
-import no.unit.nva.auth.CachedValueProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
 import no.unit.nva.commons.json.JsonUtils;
-import no.unit.nva.testutils.RandomDataGenerator;
 import nva.commons.core.ioutils.IoUtils;
 import org.apache.http.HttpHost;
 import org.jetbrains.annotations.NotNull;
@@ -53,7 +47,6 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.testcontainers.OpensearchContainer;
-import org.testcontainers.shaded.org.bouncycastle.operator.DefaultSecretKeySizeProvider;
 
 public class OpenSearchClientTest {
 

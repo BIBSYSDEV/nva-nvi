@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Clock;
+import java.util.Map;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
 import no.sikt.nva.nvi.index.Aggregations;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
@@ -22,6 +23,10 @@ import org.apache.http.HttpHost;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.mapping.KeywordProperty;
+import org.opensearch.client.opensearch._types.mapping.NestedProperty;
+import org.opensearch.client.opensearch._types.mapping.Property;
+import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
@@ -88,6 +93,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
 
     @Override
     public SearchResponse<NviCandidateIndexDocument> search(Query query, String username, URI customer) throws IOException {
+        var mappings = client.indices().getMapping();
         return client.withTransportOptions(getOptions())
                    .search(constructSearchRequest(query, username, customer), NviCandidateIndexDocument.class);
     }
@@ -119,7 +125,24 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     private static CreateIndexRequest getCreateIndexRequest() {
-        return new CreateIndexRequest.Builder().index(NVI_CANDIDATES_INDEX).build();
+        var mappings = new TypeMapping.Builder()
+                           .properties(constructProperties())
+                           .build();
+        return new CreateIndexRequest.Builder().mappings(mappings).index(NVI_CANDIDATES_INDEX).build();
+    }
+
+    private static Map<String, Property> constructProperties() {
+        return Map.of("affiliations", new Property.Builder()
+                                          .nested(new NestedProperty.Builder()
+                                                      .includeInParent(true)
+                                                      .properties(Map.of("id", keywordProperty(),
+                                                                         "assignee", keywordProperty(),
+                                                                         "approvalStatus", keywordProperty())).build())
+                                          .build());
+    }
+
+    private static Property keywordProperty() {
+        return new Property.Builder().keyword(new KeywordProperty.Builder().build()).build();
     }
 
     private TransportOptions getOptions() {
