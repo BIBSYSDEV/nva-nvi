@@ -1,11 +1,11 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.PENDING;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.AFFILIATIONS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ID;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.NUMBER_OF_AFFILIATIONS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.NUMBER_OF_APPROVALS;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Map;
@@ -36,13 +36,13 @@ public final class Aggregations {
     }
 
     private static Aggregation forControlMultipleApprovalsAggregation(String customer) {
-        var customerQuery = termQuery(customer, jsonPathOf(AFFILIATIONS,ID));
-        var approvalStatusQuery = termQuery(PENDING.toString(), jsonPathOf(AFFILIATIONS, APPROVAL_STATUS));
-        var assigneeQuery = notExistsQuery(jsonPathOf(AFFILIATIONS, ASSIGNEE));
-        var multipleAffiliationsQuery = mustMatch(rangeFromQuery(NUMBER_OF_AFFILIATIONS, 2));
+        var customerQuery = termQuery(customer, jsonPathOf(APPROVALS, ID));
+        var approvalStatusQuery = termQuery(PENDING.toString(), jsonPathOf(APPROVALS, APPROVAL_STATUS));
+        var assigneeQuery = notExistsQuery(jsonPathOf(APPROVALS, ASSIGNEE));
+        var multipleAffiliationsQuery = mustMatch(rangeFromQuery(NUMBER_OF_APPROVALS, 2));
 
         var nestedQuery = new NestedQuery.Builder()
-                              .path(AFFILIATIONS)
+                              .path(APPROVALS)
                               .query(mustMatch(customerQuery, assigneeQuery, approvalStatusQuery))
                               .build()._toQuery();
 
@@ -52,12 +52,12 @@ public final class Aggregations {
     }
 
     private static Aggregation forControlAggregation(String customer) {
-        var customerQuery = termQuery(customer, jsonPathOf(AFFILIATIONS,ID));
-        var approvalStatusQuery = termQuery(PENDING.toString(), jsonPathOf(AFFILIATIONS, APPROVAL_STATUS));
-        var assigneeQuery = notExistsQuery(jsonPathOf(AFFILIATIONS, ASSIGNEE));
+        var customerQuery = termQuery(customer, jsonPathOf(APPROVALS, ID));
+        var approvalStatusQuery = termQuery(PENDING.toString(), jsonPathOf(APPROVALS, APPROVAL_STATUS));
+        var assigneeQuery = notExistsQuery(jsonPathOf(APPROVALS, ASSIGNEE));
 
         var nestedQuery = new NestedQuery.Builder()
-                        .path(AFFILIATIONS)
+                        .path(APPROVALS)
                         .query(mustMatch(customerQuery, assigneeQuery, approvalStatusQuery))
                         .build()._toQuery();
 

@@ -1,6 +1,8 @@
 plugins {
     id 'nva.nvi.java-conventions'
+    id 'nva.nvi.dynamodblocal'
 }
+
 dependencies {
     implementation project(':nvi-commons')
     implementation libs.nva.json
@@ -9,7 +11,6 @@ dependencies {
     implementation libs.nva.commons.auth
     implementation libs.nva.commons.apigateway
     implementation libs.nva.s3
-
 
     implementation libs.aws.lambda.java.core
     implementation libs.aws.lambda.events
@@ -30,6 +31,12 @@ dependencies {
     testImplementation "org.testcontainers:testcontainers:1.18.3"
     testImplementation 'org.testcontainers:junit-jupiter:1.18.3'
 
+    testImplementation project(':nvi-test')
+    testImplementation(group: 'com.amazonaws', name: 'DynamoDBLocal', version: '1.19.0') {
+        exclude group: 'com.amazonaws', module: 'aws-java-sdk-dynamodb'
+        exclude group: 'com.amazonaws', module: 'aws-java-sdk-core'
+    }
+
 
     implementation libs.bundles.jacksonjr
     implementation libs.bundles.logging
@@ -37,10 +44,11 @@ dependencies {
 
 test {
     useJUnitPlatform()
-    environment "EXPANDED_RESOURCES_BUCKET", "ignoredBucket"
+    environment("EXPANDED_RESOURCES_BUCKET", "ignoredBucket")
     environment("SEARCH_INFRASTRUCTURE_API_HOST", "localhost")
     environment("SEARCH_INFRASTRUCTURE_AUTH_URI", "localhost")
     environment("SEARCH_INFRASTRUCTURE_API_URI", "localhost")
+    environment("NVI_TABLE_NAME", "some-table")
     environment("ALLOWED_ORIGIN", "*")
     environment("API_HOST", "example.com")
 }

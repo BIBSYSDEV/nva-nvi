@@ -11,8 +11,8 @@ public final class SearchConstants {
 
     public static final String ID = "id";
     public static final String ASSIGNEE = "assignee";
-    public static final String NUMBER_OF_AFFILIATIONS = "numberOfAffiliations";
-    public static final String AFFILIATIONS = "affiliations";
+    public static final String NUMBER_OF_APPROVALS = "numberOfApprovals";
+    public static final String APPROVALS = "approvals";
     public static final String APPROVAL_STATUS = "approvalStatus";
     public static final String NVI_CANDIDATES_INDEX = "nvi-candidates";
     public static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
@@ -31,7 +31,7 @@ public final class SearchConstants {
     }
 
     private static Map<String, Property> mappingProperties() {
-        return Map.of(AFFILIATIONS, new Property.Builder()
+        return Map.of(APPROVALS, new Property.Builder()
                                     .nested(new NestedProperty.Builder()
                                                 .includeInParent(true)
                                                 .properties(affiliationsProperties()).build())

@@ -1,9 +1,9 @@
-package events;
+package no.sikt.nva.nvi.events;
 
-import static no.sikt.nva.nvi.test.TestUtils.extractNviInstitutionIds;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.mapToVerifiedCreators;
+import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomPublicationDate;
 import static no.sikt.nva.nvi.test.TestUtils.toPublicationDate;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -19,36 +19,43 @@ import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import java.math.BigDecimal;
+import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.db.NviCandidateRepository;
+import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
+import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.model.business.Level;
+import no.sikt.nva.nvi.common.model.business.Status;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.common.model.events.CandidateStatus;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.test.TestUtils;
+import no.sikt.nva.nvi.test.LocalDynamoTest;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class UpsertNviCandidateHandlerTest {
+public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     public static final Context CONTEXT = mock(Context.class);
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
-    FakeNviCandidateRepository fakeNviCandidateRepository;
+    NviCandidateRepository nviCandidateRepository;
     private UpsertNviCandidateHandler handler;
 
     @BeforeEach
     void setup() {
-        //TODO: Replace fakeNviCandidateRepository with actual repository when implemented
-        fakeNviCandidateRepository = new FakeNviCandidateRepository();
-        NviService nviService = new NviService(fakeNviCandidateRepository);
+        localDynamo = initializeTestDatabase();
+        nviCandidateRepository = new NviCandidateRepository(localDynamo);
+        NviService nviService = new NviService(localDynamo);
         handler = new UpsertNviCandidateHandler(nviService);
     }
 
@@ -75,20 +82,22 @@ public class UpsertNviCandidateHandlerTest {
     @Test
     void shouldSaveNewNviCandidateWithPendingInstitutionApprovalsIfCandidateDoesNotExist() {
         var identifier = UUID.randomUUID();
-        var verifiedCreators = List.of(randomCreator());
+        var institutionId = randomUri();
+        var creators = List.of(new Creator(randomUri(), List.of(institutionId)));
         var instanceType = randomString();
         var randomLevel = randomElement(Level.values());
         var publicationDate = randomPublicationDate();
+        var institutionPoints = Map.of(institutionId, randomBigDecimal());
 
-        var sqsEvent = createEvent(identifier, verifiedCreators, instanceType, randomLevel, publicationDate
-        );
+        var sqsEvent = createEvent(identifier, creators, instanceType, randomLevel, publicationDate, institutionPoints);
         handler.handleRequest(sqsEvent, CONTEXT);
 
-        var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType, randomLevel,
-                                                        publicationDate);
-        assertThat(
-            fakeNviCandidateRepository.findByPublicationId(expectedCandidate.publicationId()).orElse(null),
-            is(equalTo(expectedCandidate)));
+        var expectedCandidate = createExpectedCandidate(identifier, creators, instanceType, randomLevel,
+                                                        publicationDate, institutionPoints);
+        var fetchedCandidate = nviCandidateRepository.findByPublicationId(expectedCandidate.publicationId())
+                                   .map(CandidateWithIdentifier::candidate);
+
+        assertThat(fetchedCandidate.orElseThrow(), is(equalTo(expectedCandidate)));
     }
 
     private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
@@ -137,7 +146,8 @@ public class UpsertNviCandidateHandlerTest {
     }
 
     private SQSEvent createEvent(UUID identifier, List<Creator> verifiedCreators, String instanceType,
-                                 Level randomLevel, PublicationDate publicationDate) {
+                                 Level randomLevel, PublicationDate publicationDate,
+                                 Map<URI, BigDecimal> institutionPoints) {
         return createEvent(CandidateEvaluatedMessage.builder()
                                .withStatus(CandidateStatus.CANDIDATE)
                                .withPublicationBucketUri(generateS3BucketUri(identifier))
@@ -146,21 +156,28 @@ public class UpsertNviCandidateHandlerTest {
                                                                           randomLevel.getValue(),
                                                                           publicationDate,
                                                                           verifiedCreators))
+                               .withInstitutionPoints(institutionPoints)
                                .build());
     }
 
     private Candidate createExpectedCandidate(UUID identifier, List<Creator> creators,
                                               String instanceType,
-                                              Level level, PublicationDate publicationDate) {
-        return new Candidate.Builder()
+                                              Level level, PublicationDate publicationDate,
+                                              Map<URI, BigDecimal> institutionPoints) {
+        return Candidate.builder()
+                   .withPublicationBucketUri(generateS3BucketUri(identifier))
                    .withPublicationId(generatePublicationId(identifier))
                    .withCreators(mapToVerifiedCreators(creators))
                    .withInstanceType(instanceType)
                    .withLevel(level)
                    .withIsApplicable(true)
                    .withPublicationDate(toPublicationDate(publicationDate))
-                   .withApprovalStatuses(extractNviInstitutionIds(creators)
-                                             .map(TestUtils::createPendingApprovalStatus)
+                   .withPoints(institutionPoints)
+                   .withApprovalStatuses(institutionPoints.keySet().stream()
+                                             .map(bigDecimal -> ApprovalStatus.builder()
+                                                                    .withStatus(Status.PENDING)
+                                                                    .withInstitutionId(bigDecimal)
+                                                                    .build())
                                              .toList())
                    .build();
     }

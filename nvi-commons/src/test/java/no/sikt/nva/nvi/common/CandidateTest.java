@@ -11,7 +11,6 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
@@ -35,7 +34,7 @@ public class CandidateTest {
     }
 
     private Candidate randomCandidate() {
-        return new Candidate.Builder()
+        return Candidate.builder()
                    .withPublicationId(randomUri())
                    .withApprovalStatuses(randomApprovalStatuses())
                    .withCreatorCount(randomInteger())
@@ -56,7 +55,7 @@ public class CandidateTest {
     }
 
     private List<Creator> randomVerifiedCreators() {
-        return IntStream.range(1, 20).boxed().map(i -> randomVerifiedCreator()).collect(Collectors.toList());
+        return IntStream.range(1, 20).boxed().map(i -> randomVerifiedCreator()).toList();
     }
 
     private Creator randomVerifiedCreator() {
@@ -64,15 +63,15 @@ public class CandidateTest {
     }
 
     private List<URI> randomAffiliations() {
-        return IntStream.range(1, 20).boxed().map(i -> randomUri()).collect(Collectors.toList());
+        return IntStream.range(1, 20).boxed().map(i -> randomUri()).toList();
     }
 
     private List<ApprovalStatus> randomApprovalStatuses() {
-        return IntStream.range(1, 20).boxed().map(i -> randomInstitutionStatus()).collect(Collectors.toList());
+        return IntStream.range(1, 20).boxed().map(i -> randomInstitutionStatus()).toList();
     }
 
     private ApprovalStatus randomInstitutionStatus() {
-        return new ApprovalStatus.Builder()
+        return ApprovalStatus.builder()
                    .withStatus(Status.APPROVED)
                    .withInstitutionId(randomUri())
                    .withFinalizedBy(randomUsername())
@@ -81,7 +80,7 @@ public class CandidateTest {
     }
 
     private List<Note> randomNotes() {
-        return IntStream.range(1, 20).boxed().map(i -> randomNote()).collect(Collectors.toList());
+        return IntStream.range(1, 20).boxed().map(i -> randomNote()).toList();
     }
 
     private Note randomNote() {

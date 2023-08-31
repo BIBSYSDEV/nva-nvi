@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
-import no.sikt.nva.nvi.index.model.Affiliation;
+import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
@@ -39,6 +39,7 @@ import no.unit.nva.auth.CognitoAuthenticator;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.ioutils.IoUtils;
 import org.apache.http.HttpHost;
+import org.checkerframework.checker.units.qual.C;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -82,7 +83,8 @@ public class OpenSearchClientTest {
         var document = singleNviCandidateIndexDocument();
         openSearchClient.addDocumentToIndex(document);
         Thread.sleep(2000);
-        var searchResponse = openSearchClient.search(searchTermToQuery(document.identifier()), USERNAME, CUSTOMER);
+        var searchResponse =
+            openSearchClient.search(searchTermToQuery(document.identifier()), USERNAME, CUSTOMER);
         var nviCandidateIndexDocument = searchResponseToIndexDocumentList(searchResponse);
         assertThat(nviCandidateIndexDocument, containsInAnyOrder(document));
     }
@@ -179,18 +181,17 @@ public class OpenSearchClientTest {
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
-        var affiliations = randomAffiliationList();
-        return new NviCandidateIndexDocument(randomUri(), randomString(), randomInteger().toString(),
-                                             randomString(),
-                                             randomPublicationDetails(), affiliations, affiliations.size());
+        var approvals = randomApprovalList();
+        return new NviCandidateIndexDocument(randomUri(), randomString(), randomPublicationDetails(),
+                                             approvals, approvals.size());
     }
 
-    private static List<Affiliation> randomAffiliationList() {
-        return IntStream.range(0, 5).boxed().map(i -> randomAffiliation()).toList();
+    private static List<Approval> randomApprovalList() {
+        return IntStream.range(0, 5).boxed().map(i -> randomApproval()).toList();
     }
 
-    private static Affiliation randomAffiliation() {
-        return new Affiliation(randomString(), Map.of(), randomStatus());
+    private static Approval randomApproval() {
+        return new Approval(randomString(), Map.of(), randomStatus());
     }
 
     private static ApprovalStatus randomStatus() {
@@ -211,13 +212,12 @@ public class OpenSearchClientTest {
 
     public final class FakeCachedJwtProvider {
 
-        public static String TEST_TOKEN =
-            "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1"
-            + "aWxkZXIiLCJpYXQiOjE2Njg1MTE4NTcsImV4cCI6MTcwMDA0Nzg1NywiYXVkIjoi"
-            + "d3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpd"
-            + "mVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2"
-            + "NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjoiTWFuYWdlciIsInNjb3BlIjoiZXhhbX"
-            + "BsZS1zY29wZSJ9.ne8Jb4f2xao1zSJFZxIBRrh4WFNjkaBRV3-Ybp6fHZU";
+        public static String TEST_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1"
+                                          + "aWxkZXIiLCJpYXQiOjE2Njg1MTE4NTcsImV4cCI6MTcwMDA0Nzg1NywiYXVkIjoi"
+                                          + "d3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpd"
+                                          + "mVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2"
+                                          + "NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjoiTWFuYWdlciIsInNjb3BlIjoiZXhhbX"
+                                          + "BsZS1zY29wZSJ9.ne8Jb4f2xao1zSJFZxIBRrh4WFNjkaBRV3-Ybp6fHZU";
 
         public static CachedJwtProvider setup() {
             var jwt = mock(DecodedJWT.class);

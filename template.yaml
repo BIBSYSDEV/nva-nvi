@@ -12,6 +12,7 @@ Globals:
     MemorySize: 1536
     Environment:
       Variables:
+        NVI_TABLE_NAME: !Ref NvaNviTable
         SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
         SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
   Api:
@@ -158,6 +159,50 @@ Resources:
                 Action:
                   - lambda:InvokeFunction
                 Resource: '*'
+        - PolicyName: crudDynamodb
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:BatchGetItem
+                  - dynamodb:BatchWriteItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:DescribeLimits
+                  - dynamodb:DescribeReservedCapacity
+                  - dynamodb:DescribeReservedCapacityOfferings
+                  - dynamodb:DescribeTable
+                  - dynamodb:GetItem
+                  - dynamodb:GetRecords
+                  - dynamodb:ListStreams
+                  - dynamodb:PutItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:UpdateItem
+                Resource:
+                  - !GetAtt NvaNviTable.Arn
+        - PolicyName: crudDynamoDbIndex
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:*
+                Resource:
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/nva-nvi-${AWS::StackName}/index/*
+        - PolicyName: DynamoDbStreamAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetShardIterator
+                  - dynamodb:DescribeStream
+                  - dynamodb:ListStreams
+                  - dynamodb:GetRecords
+                Resource:
+                  - !GetAtt NvaNviTable.StreamArn
+
 
   #============================= Roles ==========================================================
   ScientificIndexApi:
@@ -206,8 +251,6 @@ Resources:
           CANDIDATE_QUEUE_NAME: !Ref NewCandidateQueueName
           CANDIDATE_DLQ_NAME: !Ref NewCandidateDLQName
       AutoPublishAlias: live
-      SnapStart:
-        ApplyOn: PublishedVersions
       Events:
         EventBridgeEvent:
           Type: EventBridgeRule
@@ -220,20 +263,28 @@ Resources:
                 responsePayload:
                   topic: [ "PublicationService.ExpandedEntry.Persisted" ]
 
-  IndexNviCandidateHandler:
+  UpdateIndexHandler:
     Type: AWS::Serverless::Function
     Properties:
+      Description: 'Listens to DynamoDbStream and creates, modifies and deletes record from nvi-index'
       CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.index.IndexNviCandidateHandler::handleRequest
+      Handler: no.sikt.nva.nvi.index.UpdateIndexHandler::handleRequest
       Timeout: 30
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
-      SnapStart:
-        ApplyOn: PublishedVersions
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+      Events:
+        FanoutSource:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt NvaNviTable.StreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 10
+            Enabled: true
+
 
   UpsertNviCandidateHandler:
     Type: AWS::Serverless::Function
@@ -244,8 +295,6 @@ Resources:
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
-      SnapStart:
-        ApplyOn: PublishedVersions
       Events:
         SqsEvent:
           Type: SQS
@@ -296,18 +345,6 @@ Resources:
             Method: put
             RestApiId: !Ref ScientificIndexApi
 
-  DeleteNviCandidateHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.index.DeleteNviCandidateHandler::handleRequest
-      Timeout: 30
-      MemorySize: 1536
-      Role: !GetAtt NvaNviRole.Arn
-      AutoPublishAlias: live
-      SnapStart:
-        ApplyOn: PublishedVersions
-
   SearchNviCandidatesHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -317,8 +354,6 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
-      SnapStart:
-        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -327,7 +362,7 @@ Resources:
         GetEvent:
           Type: Api
           Properties:
-            Path: /candidates
+            Path: /candidate
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
@@ -338,3 +373,63 @@ Resources:
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
+
+  # ======================= API HANDLERS ========================
+
+  FetchNviCandidateHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.fetch.FetchNviCandidateHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+          API_HOST: !Ref ApiDomain
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /candidate/{candidateIdentifier}
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+
+
+#============================= Database =========================================================
+  NvaNviTable:
+    Type: AWS::DynamoDB::Table
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    Properties:
+      TableName: !Sub 'nva-nvi-${AWS::StackName}'
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PrimaryKeyHashKey
+          AttributeType: S
+        - AttributeName: PrimaryKeyRangeKey
+          AttributeType: S
+        - AttributeName: SecondaryIndex1HashKey
+          AttributeType: S
+        - AttributeName: SecondaryIndex1RangeKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PrimaryKeyHashKey
+          KeyType: HASH
+        - AttributeName: PrimaryKeyRangeKey
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: SearchByPublicationId
+          KeySchema:
+            - AttributeName: SecondaryIndex1HashKey
+              KeyType: HASH
+            - AttributeName: SecondaryIndex1RangeKey
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES

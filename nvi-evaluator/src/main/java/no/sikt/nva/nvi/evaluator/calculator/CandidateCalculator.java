@@ -25,6 +25,7 @@ import no.sikt.nva.nvi.common.model.events.Publication;
 import no.sikt.nva.nvi.common.model.events.Publication.EntityDescription.Contributor;
 import no.sikt.nva.nvi.common.model.events.Publication.EntityDescription.Contributor.Affiliation;
 import no.sikt.nva.nvi.evaluator.model.CustomerResponse;
+import no.sikt.nva.nvi.evaluator.model.Organization;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -42,13 +43,15 @@ import org.slf4j.LoggerFactory;
 
 public class CandidateCalculator {
 
-    public static final String CONTENT_TYPE = "application/json";
-    public static final String COULD_NOT_FETCH_AFFILIATION_MESSAGE = "Could not fetch affiliation for: ";
-    public static final String CUSTOMER = "customer";
-    public static final String CRISTIN_ID = "cristinId";
-    public static final String AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE =
-        "Affiliation fetched successfully with " + "status {}";
-    public static final String VERIFIED = "Verified";
+    private static final String CONTENT_TYPE = "application/json";
+    private static final String COULD_NOT_FETCH_CUSTOMER_MESSAGE = "Could not fetch customer for: ";
+    private static final String CUSTOMER = "customer";
+    private static final String CRISTIN_ID = "cristinId";
+    private static final String VERIFIED = "Verified";
+
+    private static final String COULD_NOT_FETCH_CRISTIN_ORG_MESSAGE = "Could not fetch Cristin organization for: ";
+    private static final String ERROR_COULD_NOT_FETCH_CRISTIN_ORG = COULD_NOT_FETCH_CRISTIN_ORG_MESSAGE + "{}. "
+                                                                   + "Response code: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(CandidateCalculator.class);
     //TODO to be configured somehow
     private static final String NVI_YEAR = "2023";
@@ -117,7 +120,7 @@ public class CandidateCalculator {
         return attempt(() -> dtoObjectMapper.readValue(responseBody, CustomerResponse.class)).orElseThrow();
     }
 
-    private static URI createUri(String affiliation) {
+    private static URI createCustomerApiUri(String affiliation) {
         var getCustomerEndpoint = UriWrapper.fromHost(API_HOST).addChild(CUSTOMER).addChild(CRISTIN_ID).getUri();
         return URI.create(getCustomerEndpoint + "/" + URLEncoder.encode(affiliation, StandardCharsets.UTF_8));
     }
@@ -174,14 +177,27 @@ public class CandidateCalculator {
                    .toList();
     }
 
-    private Contributor filterInstitutionsToKeepNvaCustomers(Contributor contributor) {
-        return new Contributor(contributor.identity(), filterNviAffiliations(contributor));
+    private Organization fetchOrganization(URI organizationId) {
+        var response = getResponse(organizationId);
+        if (isHttpOk(response)) {
+            return toCristinOrganization(response.body());
+        } else {
+            LOGGER.error(ERROR_COULD_NOT_FETCH_CRISTIN_ORG, organizationId, response.statusCode());
+            throw new RuntimeException(COULD_NOT_FETCH_CRISTIN_ORG_MESSAGE + organizationId);
+        }
     }
 
-    private List<Affiliation> filterNviAffiliations(Contributor contributor) {
+    private Contributor filterInstitutionsToKeepNvaCustomers(Contributor contributor) {
+        return new Contributor(contributor.identity(), getTopLevelOrgNviInstitutions(contributor));
+    }
+
+    private List<Affiliation> getTopLevelOrgNviInstitutions(Contributor contributor) {
         return contributor.affiliations()
                    .stream()
                    .map(Affiliation::id)
+                   .map(this::fetchOrganization)
+                   .map(Organization::getTopLevelOrg)
+                   .map(Organization::id)
                    .map(URI::toString)
                    .filter(this::isNviInstitution)
                    .map(URI::create)
@@ -189,17 +205,20 @@ public class CandidateCalculator {
                    .toList();
     }
 
-    private boolean isNviInstitution(String affiliation) {
-        var response = getResponse(affiliation);
-        if (isSuccessOrNotFound(response)) {
-            LOGGER.info(AFFILIATION_FETCHED_SUCCESSFULLY_MESSAGE, response.statusCode());
-            return mapToNviInstitutionValue(response);
-        }
-        throw new RuntimeException(COULD_NOT_FETCH_AFFILIATION_MESSAGE + affiliation);
+    private Organization toCristinOrganization(String response) {
+        return attempt(() -> dtoObjectMapper.readValue(response, Organization.class)).orElseThrow();
     }
 
-    private HttpResponse<String> getResponse(String affiliation) {
-        return Optional.ofNullable(uriRetriever.fetchResponse(createUri(affiliation), CONTENT_TYPE))
+    private boolean isNviInstitution(String institutionId) {
+        var response = getResponse(createCustomerApiUri(institutionId));
+        if (isSuccessOrNotFound(response)) {
+            return mapToNviInstitutionValue(response);
+        }
+        throw new RuntimeException(COULD_NOT_FETCH_CUSTOMER_MESSAGE + institutionId);
+    }
+
+    private HttpResponse<String> getResponse(URI uri) {
+        return Optional.ofNullable(uriRetriever.fetchResponse(uri, CONTENT_TYPE))
                    .stream()
                    .filter(Optional::isPresent)
                    .map(Optional::get)
