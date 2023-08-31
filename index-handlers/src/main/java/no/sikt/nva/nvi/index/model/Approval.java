@@ -10,6 +10,6 @@ import nva.commons.core.JacocoGenerated;
 @JsonSerialize
 public record Approval(String id,
                        Map<String, String> labels,
-                       no.sikt.nva.nvi.common.model.business.Status approvalStatus) {
+                       ApprovalStatus approvalStatus) {
 
 }

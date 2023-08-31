@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodRepository;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
@@ -89,13 +88,6 @@ public class NviService {
                    .toList();
     }
 
-    private static Set<URI> extractInstitutionIds(CandidateDetails candidateDetails) {
-        return candidateDetails.verifiedCreators()
-                   .stream()
-                   .flatMap(creator -> creator.nviInstitutions().stream())
-                   .collect(Collectors.toSet());
-    }
-
     private static boolean isNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
         return CANDIDATE.equals(evaluatedCandidate.status());
     }
@@ -119,19 +111,17 @@ public class NviService {
         return nviCandidateRepository.findById(uuid).isPresent();
     }
 
-    @JacocoGenerated //TODO: Remove when its actually used
     public Optional<CandidateWithIdentifier> findById(UUID uuid) {
         return nviCandidateRepository.findById(uuid);
     }
 
-    @JacocoGenerated //TODO: Remove when its actually used
     public Optional<CandidateWithIdentifier> findByPublicationId(URI publicationId) {
         return nviCandidateRepository.findByPublicationId(publicationId);
     }
 
     private static Candidate toPendingCandidate(CandidateEvaluatedMessage candidateEvaluatedMessage,
                                                 Map<URI, BigDecimal> institutionPoints) {
-        return new Candidate.Builder()
+        return Candidate.builder()
                    .withPublicationBucketUri(candidateEvaluatedMessage.publicationBucketUri())
                    .withPublicationId(candidateEvaluatedMessage.candidateDetails().publicationId())
                    .withIsApplicable(true)
@@ -141,8 +131,7 @@ public class NviService {
                    .withPublicationDate(mapToPublicationDate(candidateEvaluatedMessage.candidateDetails()
                                                                  .publicationDate()))
                    .withPoints(institutionPoints)
-                   .withApprovalStatuses(generatePendingApprovalStatuses(
-                       extractInstitutionIds(candidateEvaluatedMessage.candidateDetails())))
+                   .withApprovalStatuses(generatePendingApprovalStatuses(institutionPoints.keySet()))
                    .build();
     }
 

@@ -164,7 +164,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                               String instanceType,
                                               Level level, PublicationDate publicationDate,
                                               Map<URI, BigDecimal> institutionPoints) {
-        return new Candidate.Builder()
+        return Candidate.builder()
                    .withPublicationBucketUri(generateS3BucketUri(identifier))
                    .withPublicationId(generatePublicationId(identifier))
                    .withCreators(mapToVerifiedCreators(creators))

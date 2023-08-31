@@ -118,7 +118,7 @@ public record Candidate(URI publicationId,
         private List<ApprovalStatus> approvalStatuses;
         private List<Note> notes;
 
-        public Builder() {
+        private Builder() {
         }
 
         public Builder withPublicationId(URI publicationId) {

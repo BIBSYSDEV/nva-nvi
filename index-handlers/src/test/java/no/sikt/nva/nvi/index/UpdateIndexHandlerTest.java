@@ -29,11 +29,11 @@ import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
-import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Status;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.Approval;
+import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
@@ -137,7 +137,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
             "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
             Map.of("nb", "Sikt – Kunnskapssektorens tjenesteleverandør",
                    "en", "Sikt - Norwegian Agency for Shared Services in Education and Research"),
-            Status.PENDING));
+            ApprovalStatus.PENDING));
     }
 
     private static PublicationDetails constructPublicationDetails() {
@@ -187,8 +187,9 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         return new CandidateWithIdentifier(candidate, randomUUID());
     }
 
-    private static ApprovalStatus getApprovalStatus() {
-        return new ApprovalStatus.Builder().withInstitutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
+    private static no.sikt.nva.nvi.common.model.business.ApprovalStatus getApprovalStatus() {
+        return no.sikt.nva.nvi.common.model.business.ApprovalStatus.builder()
+                   .withInstitutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
                    .withStatus(Status.PENDING).build();
     }
 
