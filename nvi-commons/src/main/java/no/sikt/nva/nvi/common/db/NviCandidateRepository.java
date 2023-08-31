@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
+import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -82,5 +83,9 @@ public class NviCandidateRepository extends DynamoRepository  {
                         .toList();
 
         return attempt(() -> users.get(0)).toOptional();
+    }
+
+    public CandidateWithIdentifier updateApprovalStatus(UUID candidateId, ApprovalStatus approvalStatus) {
+        return null;
     }
 }

@@ -78,16 +78,9 @@ public class NviService {
 
     public CandidateWithIdentifier upsertApproval(UUID candidateId, ApprovalStatus approvalStatus) {
 
-        nviCandidateRepository.findById(candidateId)
-            .map(candidateWithIdentifier -> updateApprovalStatus(candidateWithIdentifier, approvalStatus));
-        return null;
+        return nviCandidateRepository.updateApprovalStatus(candidateId, approvalStatus);
     }
 
-    private CandidateWithIdentifier updateApprovalStatus(CandidateWithIdentifier candidateWithIdentifier, ApprovalStatus approvalStatus) {
-        List<ApprovalStatus> approvalStatuses = candidateWithIdentifier.candidate().approvalStatuses();
-        
-        return null;
-    }
 
     private static boolean isInteger(String value) {
         try {
