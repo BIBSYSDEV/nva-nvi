@@ -12,11 +12,11 @@ import nva.commons.core.JacocoGenerated;
 @JsonSerialize
 public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         String identifier,
-                                        String assignee,
                                         String year,
                                         String type,
                                         PublicationDetails publicationDetails,
-                                        List<Affiliation> affiliations) {
+                                        List<Affiliation> affiliations,
+                                        int numberOfAffiliations) {
 
     private static final String CONTEXT = "@context";
 
@@ -26,11 +26,11 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
 
         private URI context;
         private String identifier;
-        private String assignee;
         private String year;
         private String type;
         private PublicationDetails publicationDetails;
         private List<Affiliation> affiliations;
+        private int numberOfAffiliations;
 
         public Builder withContext(URI context) {
             this.context = context;
@@ -39,11 +39,6 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
 
         public Builder withIdentifier(String identifier) {
             this.identifier = identifier;
-            return this;
-        }
-
-        public Builder withAssignee(String assignee) {
-            this.assignee = assignee;
             return this;
         }
 
@@ -67,9 +62,15 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             return this;
         }
 
+        public Builder withNumberOfAffiliations(int numberOfAffiliations) {
+            this.numberOfAffiliations = numberOfAffiliations;
+            return this;
+        }
+
         public NviCandidateIndexDocument build() {
-            return new NviCandidateIndexDocument(context, identifier, assignee, year, type, publicationDetails,
-                                                 affiliations);
+            return new NviCandidateIndexDocument(context, identifier, year, type, publicationDetails,
+                                                 affiliations,
+                                                 numberOfAffiliations);
         }
     }
 }

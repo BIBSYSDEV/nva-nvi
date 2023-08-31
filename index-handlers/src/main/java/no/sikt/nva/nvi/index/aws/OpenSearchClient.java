@@ -1,15 +1,17 @@
 package no.sikt.nva.nvi.index.aws;
 
 import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
-import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_API_HOST;
-import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_API_HOST;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_CREDENTIALS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.mappings;
 import static nva.commons.core.attempt.Try.attempt;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Clock;
-import java.util.Map;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
 import no.sikt.nva.nvi.index.Aggregations;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
@@ -23,10 +25,6 @@ import org.apache.http.HttpHost;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
-import org.opensearch.client.opensearch._types.mapping.KeywordProperty;
-import org.opensearch.client.opensearch._types.mapping.NestedProperty;
-import org.opensearch.client.opensearch._types.mapping.Property;
-import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
@@ -44,8 +42,7 @@ import org.slf4j.LoggerFactory;
 @JacocoGenerated
 public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument> {
 
-    public static final String NVI_CANDIDATES_INDEX = "nvi-candidates";
-    private static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchClient.class);
     private static final String ERROR_MSG_CREATE_INDEX = "Error while creating index: " + NVI_CANDIDATES_INDEX;
     public static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";
@@ -92,8 +89,8 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     @Override
-    public SearchResponse<NviCandidateIndexDocument> search(Query query, String username, URI customer) throws IOException {
-        var mappings = client.indices().getMapping();
+    public SearchResponse<NviCandidateIndexDocument> search(Query query, String username, URI customer)
+        throws IOException {
         return client.withTransportOptions(getOptions())
                    .search(constructSearchRequest(query, username, customer), NviCandidateIndexDocument.class);
     }
@@ -125,25 +122,10 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     private static CreateIndexRequest getCreateIndexRequest() {
-        var mappings = new TypeMapping.Builder()
-                           .properties(constructProperties())
-                           .build();
-        return new CreateIndexRequest.Builder().mappings(mappings).index(NVI_CANDIDATES_INDEX).build();
+        return new CreateIndexRequest.Builder().mappings(mappings()).index(NVI_CANDIDATES_INDEX).build();
     }
 
-    private static Map<String, Property> constructProperties() {
-        return Map.of("affiliations", new Property.Builder()
-                                          .nested(new NestedProperty.Builder()
-                                                      .includeInParent(true)
-                                                      .properties(Map.of("id", keywordProperty(),
-                                                                         "assignee", keywordProperty(),
-                                                                         "approvalStatus", keywordProperty())).build())
-                                          .build());
-    }
 
-    private static Property keywordProperty() {
-        return new Property.Builder().keyword(new KeywordProperty.Builder().build()).build();
-    }
 
     private TransportOptions getOptions() {
         return RestClientOptions.builder().addHeader(AUTHORIZATION, cachedJwtProvider.getValue().getToken()).build();

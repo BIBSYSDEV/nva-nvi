@@ -49,13 +49,15 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static NviCandidateIndexDocument createNviCandidateIndexDocument(JsonNode resource,
                                                                              List<String> approvalAffiliations) {
+        var affiliations = createAffiliations(resource, approvalAffiliations);
         return new NviCandidateIndexDocument.Builder()
                    .withContext(URI.create(Contexts.NVI_CONTEXT))
                    .withIdentifier(extractPublicationIdentifier(resource))
                    .withType(TYPE_NVI_CANDIDATE)
-                   .withAffiliations(createAffiliations(resource, approvalAffiliations))
+                   .withAffiliations(affiliations)
                    .withPublicationDetails(extractPublication(resource))
                    .withYear(extractYear(resource))
+                   .withNumberOfAffiliations(affiliations.size())
                    .build();
     }
 

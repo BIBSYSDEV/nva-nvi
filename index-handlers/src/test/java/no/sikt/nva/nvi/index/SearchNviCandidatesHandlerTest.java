@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.index.aws.OpenSearchClient.NVI_CANDIDATES_INDEX;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -57,9 +57,11 @@ public class SearchNviCandidatesHandlerTest {
 
     @Test
     void shouldReturnDocumentFromIndex() throws IOException {
-        when(openSearchClient.search(any(), any(), any())).thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
+        when(openSearchClient.search(any(), any(), any()))
+            .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
         handler.handleRequest(request("*"), output, context);
-        var response = GatewayResponse.fromOutputStream(output, SearchResponseDto.class);
+        var response =
+            GatewayResponse.fromOutputStream(output, SearchResponseDto.class);
         var hits = response.getBodyObject(SearchResponseDto.class).hits();
         assertThat(hits, hasSize(1));
     }
@@ -69,7 +71,8 @@ public class SearchNviCandidatesHandlerTest {
         var document = singleNviCandidateIndexDocument();
         when(openSearchClient.search(any(), any(), any())).thenReturn(createSearchResponse(document));
         handler.handleRequest(request(document.identifier()), output, context);
-        var response = GatewayResponse.fromOutputStream(output, SearchResponseDto.class);
+        var response =
+            GatewayResponse.fromOutputStream(output, SearchResponseDto.class);
         var hits = response.getBodyObject(SearchResponseDto.class).hits();
         assertThat(hits, hasSize(1));
     }
@@ -111,9 +114,9 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
-        return new NviCandidateIndexDocument(randomUri(), randomString(), randomString(), randomString(),
+        return new NviCandidateIndexDocument(randomUri(), randomString(), randomString(),
                                              randomString(),
-                                             randomPublicationDetails(), List.of());
+                                             randomPublicationDetails(), List.of(), 0);
     }
 
     private static PublicationDetails randomPublicationDetails() {
@@ -123,6 +126,8 @@ public class SearchNviCandidatesHandlerTest {
     private InputStream request(String searchTerm) throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
                    .withQueryParameters(Map.of(QUERY, searchTerm))
+                   .withTopLevelCristinOrgId(randomUri())
+                   .withUserName(randomString())
                    .build();
     }
 }

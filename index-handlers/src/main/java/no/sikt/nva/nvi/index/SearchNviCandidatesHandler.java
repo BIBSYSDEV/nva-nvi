@@ -34,7 +34,7 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
     @Override
     protected SearchResponseDto processInput(Void input, RequestInfo requestInfo,
                                              Context context) throws UnauthorizedException {
-        var customer = requestInfo.getTopLevelOrgCristinId().get();
+        var customer = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         var username = requestInfo.getUserName();
         return attempt(() -> contructQuery(requestInfo))
                    .map(query -> openSearchClient.search(query, username, customer))

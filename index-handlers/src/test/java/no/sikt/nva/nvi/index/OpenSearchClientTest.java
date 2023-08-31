@@ -1,10 +1,13 @@
 package no.sikt.nva.nvi.index;
 
+import static no.sikt.nva.nvi.index.Aggregations.FOR_CONTROL_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.FOR_CONTROL_MULTIPLE_APPROVALS_AGGREGATION_NAME;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -54,6 +57,7 @@ public class OpenSearchClientTest {
     private static final String USERNAME = "user123";
     public static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:2.0.0";
     private static final OpensearchContainer container = new OpensearchContainer(OPEN_SEARCH_IMAGE);
+    public static final String DOC_COUNT = "docCount";
     private static RestClient restClient;
     private static OpenSearchClient openSearchClient;
 
@@ -116,12 +120,20 @@ public class OpenSearchClientTest {
     }
 
     @Test
-    void shouldReturnToControlAggregationWithSingleDocumentCount() throws IOException, InterruptedException {
+    void shouldReturnForControlAggregationsWithExpectedCount() throws IOException, InterruptedException {
         addDocumentsToIndex(documentFromString("document_single_pending_approval.json"),
                             documentFromString("document_multiple_pending_approvals.json"));
-        var searchResponse = openSearchClient.search(searchTermToQuery("*"), USERNAME, CUSTOMER);
+        var searchResponse =
+            openSearchClient.search(searchTermToQuery("*"), USERNAME, CUSTOMER);
         var response = SearchResponseDto.fromSearchResponse(searchResponse);
-        assertThat(response.aggregations(), is(notNullValue()));
+
+        var forControlDocCount =
+            response.aggregations().get(FOR_CONTROL_AGGREGATION_NAME).get(DOC_COUNT).asInt();
+        var forControlMultipleApprovalsDocCount =
+            response.aggregations().get(FOR_CONTROL_MULTIPLE_APPROVALS_AGGREGATION_NAME).get(DOC_COUNT).asInt();
+
+        assertThat(forControlDocCount, is(equalTo(2)));
+        assertThat(forControlMultipleApprovalsDocCount, is(equalTo(1)));
     }
 
     @Test
@@ -140,7 +152,7 @@ public class OpenSearchClientTest {
                             documentFromString("document_pending.json"),
                             documentFromString("document_rejected.json"));
         var queryString =
-            "publicationDetails.contributors.id:\"https://api.dev.nva.aws.unit" + ".no/cristin/person/1136326\"";
+            "publicationDetails.contributors.id:\"https://api.dev.nva.aws.unit.no/cristin/person/1136326\"";
         var searchResponse =
             openSearchClient.search(searchTermToQuery(queryString), USERNAME, CUSTOMER);
         var response = SearchResponseDto.fromSearchResponse(searchResponse);
@@ -167,9 +179,10 @@ public class OpenSearchClientTest {
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
-        return new NviCandidateIndexDocument(randomUri(), randomString(), randomString(), randomInteger().toString(),
+        var affiliations = randomAffiliationList();
+        return new NviCandidateIndexDocument(randomUri(), randomString(), randomInteger().toString(),
                                              randomString(),
-                                             randomPublicationDetails(), randomAffiliationList());
+                                             randomPublicationDetails(), affiliations, affiliations.size());
     }
 
     private static List<Affiliation> randomAffiliationList() {

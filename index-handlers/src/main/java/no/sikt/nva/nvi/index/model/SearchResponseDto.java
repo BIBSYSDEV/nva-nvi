@@ -4,11 +4,9 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.json.stream.JsonGenerator;
-import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URI;
 import java.util.List;
@@ -40,8 +38,7 @@ public record SearchResponseDto(@JsonProperty("@context") URI context,
         "sum_other_doc_count", "sumOtherDocCount",
         "doc_count", "docCount");
 
-    public static SearchResponseDto fromSearchResponse(SearchResponse<NviCandidateIndexDocument> searchResponse)
-        throws IOException {
+    public static SearchResponseDto fromSearchResponse(SearchResponse<NviCandidateIndexDocument> searchResponse) {
         List<JsonNode> sourcesList = extractSourcesList(searchResponse);
         long total = searchResponse.hits().total().value();
         long took = searchResponse.took();
@@ -88,10 +85,6 @@ public record SearchResponseDto(@JsonProperty("@context") URI context,
             var value = nodeEntry.getValue();
             if (value.isValueNode()) {
                 outputAggregationNode.set(newName.get(), value);
-            } else if (value.isArray()) {
-                var arrayNode = JsonUtils.dtoObjectMapper.createArrayNode();
-                value.forEach(element -> arrayNode.add(formatAggregations(element)));
-                outputAggregationNode.set(newName.get(), arrayNode);
             } else {
                 outputAggregationNode.set(newName.get(), formatAggregations(nodeEntry.getValue()));
             }
