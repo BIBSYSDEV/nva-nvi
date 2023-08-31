@@ -93,6 +93,7 @@ public class EventModelTest {
 
     private Creator toCreator(Contributor contributor) {
         contributor.identity().verificationStatus();
+        contributor.role().type();
         return new Creator(contributor.identity().id(), contributor.affiliations()
                                                             .stream()
                                                             .map(Affiliation::id)
