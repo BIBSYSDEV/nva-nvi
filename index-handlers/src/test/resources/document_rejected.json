@@ -26,6 +26,7 @@
       "approvalStatus": "REJECTED"
     },
     {
+      "assignee": "user1",
       "id": "https://api.dev.nva.aws.unit.no/cristin/organization/204.0.0.0",
       "labels": {
         "nb": "Sikt – Kunnskapssektorens tjenesteleverandør",

@@ -1,9 +1,9 @@
 package no.sikt.nva.nvi.index;
 
+import java.net.URI;
 import java.util.Map;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
-import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
 import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -20,37 +20,40 @@ public final class Aggregations {
     public static final String ASSIGNEE = "assignee";
     public static final String KEYWORD = "keyword";
     private static final CharSequence JSON_PATH_DELIMITER = ".";
-    public static final Map<String, Aggregation> AGGREGATIONS_MAP = Map.of(
-        jsonPathOf(APPROVAL_STATUS, PENDING), pendingAggregation(),
-        jsonPathOf(APPROVAL_STATUS, APPROVED), approvedAggregation(),
-        jsonPathOf(APPROVAL_STATUS, REJECTED), rejectedAggregation(),
-        jsonPathOf(ASSIGNEE), termAggregation(jsonPathOf(ASSIGNEE, KEYWORD)),
-        jsonPathOf(APPROVAL_STATUS, PENDING,"myinstitution"), termAggregation(jsonPathOf(AFFILIATIONS, "id", "keyword"))
-    );
 
     private Aggregations() {
+    }
+
+    public static Map<String, Aggregation> generateAggregations(String username, URI customer) {
+        return Map.of(
+            jsonPathOf(APPROVAL_STATUS, PENDING), pendingAggregation(customer.toString()),
+            jsonPathOf(APPROVAL_STATUS, APPROVED), approvedAggregation(),
+            jsonPathOf(APPROVAL_STATUS, REJECTED), rejectedAggregation(),
+            jsonPathOf(ASSIGNEE), termAggregation(jsonPathOf(ASSIGNEE, KEYWORD)),
+            jsonPathOf(APPROVAL_STATUS, PENDING,"myinstitution"), termAggregation(jsonPathOf(AFFILIATIONS, "id", "keyword"))
+        );
     }
 
     private static String jsonPathOf(String... args) {
         return String.join(JSON_PATH_DELIMITER, args);
     }
 
-    private static Aggregation approvedAggregation() {
+    private static Aggregation approvedAggregation(String customer) {
         return new Aggregation.Builder()
                    .filter(queryNotToMatchApprovalStatusPendingAndRejected())
                    .build();
     }
 
-    private static Query queryNotToMatchApprovalStatusPendingAndRejected() {
+    private static Query queryNotToMatchApprovalStatusPendingAndRejected(String customer) {
         return new Builder()
-                   .mustNot(queryToMatchApprovalStatus(ApprovalStatus.PENDING),
-                            queryToMatchApprovalStatus(ApprovalStatus.REJECTED))
+                   .mustNot(queryToMatchApprovalStatus(ApprovalStatus.PENDING, customer),
+                            queryToMatchApprovalStatus(ApprovalStatus.REJECTED, customer))
                    .build()._toQuery();
     }
 
-    private static Aggregation pendingAggregation() {
+    private static Aggregation pendingAggregation(String customer) {
         return new Aggregation.Builder()
-                   .filter(queryToMatchApprovalStatus(ApprovalStatus.PENDING))
+                   .filter(queryToMatchApprovalStatus(ApprovalStatus.PENDING, customer))
                    .build();
     }
 
@@ -61,13 +64,13 @@ public final class Aggregations {
                    .build()._toAggregation();
     }
 
-    private static Aggregation rejectedAggregation() {
+    private static Aggregation rejectedAggregation(String customer) {
         return new Aggregation.Builder()
-                   .filter(queryToMatchApprovalStatus(ApprovalStatus.REJECTED))
+                   .filter(queryToMatchApprovalStatus(ApprovalStatus.REJECTED, customer))
                    .build();
     }
 
-    private static Query queryToMatchApprovalStatus(ApprovalStatus approvalStatus) {
+    private static Query queryToMatchApprovalStatus(ApprovalStatus approvalStatus, String customer) {
         return new Query(new QueryStringQuery.Builder()
                              .query(approvalStatus.toString())
                              .defaultField(jsonPathOf(AFFILIATIONS, APPROVAL_STATUS))
