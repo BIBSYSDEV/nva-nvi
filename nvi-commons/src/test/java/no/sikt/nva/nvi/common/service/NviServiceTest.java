@@ -202,6 +202,7 @@ public class NviServiceTest extends LocalDynamoTest {
                                               Level level, PublicationDate publicationDate,
                                               Map<URI, BigDecimal> institutionPoints) {
         return Candidate.builder()
+                   .withPublicationBucketUri(generateS3BucketUri(identifier))
                    .withPublicationId(generatePublicationId(identifier))
                    .withCreators(mapToVerifiedCreators(creators))
                    .withInstanceType(instanceType)

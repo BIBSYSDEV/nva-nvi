@@ -68,14 +68,6 @@ public class NviService {
         return nviPeriodRepository.findByPublishingYear(publishingYear).orElseThrow();
     }
 
-    public Optional<CandidateWithIdentifier> findById(UUID uuid) {
-        return nviCandidateRepository.findById(uuid);
-    }
-
-    public Optional<CandidateWithIdentifier> findByPublicationId(URI publicationId) {
-        return nviCandidateRepository.findByPublicationId(publicationId);
-    }
-
     private static boolean isInteger(String value) {
         try {
             Integer.parseInt(value);
@@ -113,15 +105,31 @@ public class NviService {
                    .toList();
     }
 
-    private static Candidate toPendingCandidate(CandidateDetails candidateDetails,
+    @JacocoGenerated
+    @SuppressWarnings("PMD.UnusedPrivateMethod")
+    private boolean exists(UUID uuid) {
+        return nviCandidateRepository.findById(uuid).isPresent();
+    }
+
+    public Optional<CandidateWithIdentifier> findById(UUID uuid) {
+        return nviCandidateRepository.findById(uuid);
+    }
+
+    public Optional<CandidateWithIdentifier> findByPublicationId(URI publicationId) {
+        return nviCandidateRepository.findByPublicationId(publicationId);
+    }
+
+    private static Candidate toPendingCandidate(CandidateEvaluatedMessage candidateEvaluatedMessage,
                                                 Map<URI, BigDecimal> institutionPoints) {
         return Candidate.builder()
-                   .withPublicationId(candidateDetails.publicationId())
+                   .withPublicationBucketUri(candidateEvaluatedMessage.publicationBucketUri())
+                   .withPublicationId(candidateEvaluatedMessage.candidateDetails().publicationId())
                    .withIsApplicable(true)
-                   .withCreators(mapToVerifiedCreators(candidateDetails.verifiedCreators()))
-                   .withLevel(Level.parse(candidateDetails.level()))
-                   .withInstanceType(candidateDetails.instanceType())
-                   .withPublicationDate(mapToPublicationDate(candidateDetails.publicationDate()))
+                   .withCreators(mapToVerifiedCreators(candidateEvaluatedMessage.candidateDetails().verifiedCreators()))
+                   .withLevel(Level.parse(candidateEvaluatedMessage.candidateDetails().level()))
+                   .withInstanceType(candidateEvaluatedMessage.candidateDetails().instanceType())
+                   .withPublicationDate(mapToPublicationDate(candidateEvaluatedMessage.candidateDetails()
+                                                                 .publicationDate()))
                    .withPoints(institutionPoints)
                    .withApprovalStatuses(generatePendingApprovalStatuses(institutionPoints.keySet()))
                    .build();
@@ -132,7 +140,7 @@ public class NviService {
     }
 
     private CandidateWithIdentifier createCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-        var pendingCandidate = toPendingCandidate(evaluatedCandidate.candidateDetails(),
+        var pendingCandidate = toPendingCandidate(evaluatedCandidate,
                                                   evaluatedCandidate.institutionPoints());
         return nviCandidateRepository.save(pendingCandidate);
     }

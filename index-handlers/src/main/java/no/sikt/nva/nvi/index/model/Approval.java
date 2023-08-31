@@ -8,8 +8,8 @@ import nva.commons.core.JacocoGenerated;
 @JacocoGenerated
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record Affiliation(String id,
-                          Map<String, String> labels,
-                          ApprovalStatus approvalStatus) {
+public record Approval(String id,
+                       Map<String, String> labels,
+                       ApprovalStatus approvalStatus) {
 
 }

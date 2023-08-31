@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.model;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.List;
@@ -10,25 +11,21 @@ import nva.commons.core.JacocoGenerated;
 @JacocoGenerated
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
+@JsonTypeName("NviCandidate")
 public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         String identifier,
-                                        String year,
-                                        String type,
                                         PublicationDetails publicationDetails,
-                                        List<Affiliation> affiliations) {
+                                        List<Approval> approvals) {
 
     private static final String CONTEXT = "@context";
-
 
     @JacocoGenerated
     public static class Builder {
 
         private URI context;
         private String identifier;
-        private String year;
-        private String type;
         private PublicationDetails publicationDetails;
-        private List<Affiliation> affiliations;
+        private List<Approval> approvals;
 
         public Builder withContext(URI context) {
             this.context = context;
@@ -40,28 +37,18 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             return this;
         }
 
-        public Builder withYear(String year) {
-            this.year = year;
-            return this;
-        }
-
-        public Builder withType(String type) {
-            this.type = type;
-            return this;
-        }
-
         public Builder withPublicationDetails(PublicationDetails publicationDetails) {
             this.publicationDetails = publicationDetails;
             return this;
         }
 
-        public Builder withAffiliations(List<Affiliation> affiliations) {
-            this.affiliations = affiliations;
+        public Builder withApprovals(List<Approval> approvals) {
+            this.approvals = approvals;
             return this;
         }
 
         public NviCandidateIndexDocument build() {
-            return new NviCandidateIndexDocument(context, identifier, year, type, publicationDetails, affiliations);
+            return new NviCandidateIndexDocument(context, identifier, publicationDetails, approvals);
         }
     }
 }
