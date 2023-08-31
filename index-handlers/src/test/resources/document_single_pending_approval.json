@@ -1,7 +1,8 @@
 {
   "@context": "https://bibsysdev.github.io/src/nvi-context.json",
-  "identifier": "01892ad6fc07-4ddfbfc5-3145-4b06-9f77",
+  "identifier": "someRandomIdentifier",
   "year": "2023",
+  "numberOfApprovals": 1,
   "type": "NviCandidate",
   "publicationDetails": {
     "id": "https://api.dev.nva.aws.unit.no/publication/01892ad6fc07-4ddfbfc5-3145-4b06-9f77-d4202d074380",
@@ -17,21 +18,12 @@
   },
   "affiliations": [
     {
-      "assignee": "user123",
-      "id": "https://api.dev.nva.aws.unit.no/cristin/organization/754.0.0.0",
-      "labels": {
-        "nb": "Sikt – Kunnskapssektorens tjenesteleverandør",
-        "en": "Sikt - Norwegian Agency for Shared Services in Education and Research"
-      },
-      "approvalStatus": "APPROVED"
-    },
-    {
       "id": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
       "labels": {
         "nb": "Sikt – Kunnskapssektorens tjenesteleverandør",
         "en": "Sikt - Norwegian Agency for Shared Services in Education and Research"
       },
-      "approvalStatus": "APPROVED"
+      "approvalStatus": "PENDING"
     }
   ]
 }

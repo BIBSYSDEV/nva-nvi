@@ -116,10 +116,9 @@ public class OpenSearchClientTest {
     }
 
     @Test
-    void shouldReturnAggregationsForApprovalStatus() throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_approved.json"),
-                            documentFromString("document_pending.json"),
-                            documentFromString("document_rejected.json"));
+    void shouldReturnToControlAggregationWithSingleDocumentCount() throws IOException, InterruptedException {
+        addDocumentsToIndex(documentFromString("document_single_pending_approval.json"),
+                            documentFromString("document_multiple_pending_approvals.json"));
         var searchResponse = openSearchClient.search(searchTermToQuery("*"), USERNAME, CUSTOMER);
         var response = SearchResponseDto.fromSearchResponse(searchResponse);
         assertThat(response.aggregations(), is(notNullValue()));
@@ -127,7 +126,7 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldReturnAggregationsForPendingApprovalStatusMyInstitution() throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_approved.json"),
+        addDocumentsToIndex(documentFromString("document_single_pending_approval.json"),
                             documentFromString("document_pending.json"),
                             documentFromString("document_rejected.json"));
         var searchResponse = openSearchClient.search(searchTermToQuery("*"), USERNAME, CUSTOMER);
@@ -137,7 +136,7 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldReturnDocumentsWithContributorWhenFilterByContributor() throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_approved.json"),
+        addDocumentsToIndex(documentFromString("document_single_pending_approval.json"),
                             documentFromString("document_pending.json"),
                             documentFromString("document_rejected.json"));
         var queryString =
