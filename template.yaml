@@ -378,7 +378,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: nvi-rest
-      Handler: no.unit.nva.nvi.fetch.FetchNviCandidateHandler::handleRequest
+      Handler: no.sikt.nva.nvi.fetch.FetchNviCandidateHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
       MemorySize: 1536
@@ -391,7 +391,7 @@ Resources:
         GetEvent:
           Type: Api
           Properties:
-            Path: /candidates/{candidateIdentifier}
+            Path: /candidate/{candidateIdentifier}
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
