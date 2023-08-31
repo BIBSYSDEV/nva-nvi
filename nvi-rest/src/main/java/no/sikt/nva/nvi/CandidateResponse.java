@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.fetch;
+package no.sikt.nva.nvi;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;

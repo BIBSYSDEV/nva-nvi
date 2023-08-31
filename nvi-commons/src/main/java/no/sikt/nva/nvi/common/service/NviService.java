@@ -76,8 +76,16 @@ public class NviService {
         return nviCandidateRepository.findByPublicationId(publicationId);
     }
 
-    public CandidateWithIdentifier upsertApproval(ApprovalStatus approvalStatus) {
+    public CandidateWithIdentifier upsertApproval(UUID candidateId, ApprovalStatus approvalStatus) {
 
+        nviCandidateRepository.findById(candidateId)
+            .map(candidateWithIdentifier -> updateApprovalStatus(candidateWithIdentifier, approvalStatus));
+        return null;
+    }
+
+    private CandidateWithIdentifier updateApprovalStatus(CandidateWithIdentifier candidateWithIdentifier, ApprovalStatus approvalStatus) {
+        List<ApprovalStatus> approvalStatuses = candidateWithIdentifier.candidate().approvalStatuses();
+        
         return null;
     }
 

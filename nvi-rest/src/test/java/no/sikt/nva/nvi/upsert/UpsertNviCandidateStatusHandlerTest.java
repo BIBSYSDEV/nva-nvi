@@ -17,6 +17,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
@@ -63,7 +64,7 @@ class UpsertNviCandidateStatusHandlerTest {
 
     @Test
     void shouldReturnBadRequestWhenMissingAccessRights() throws IOException, BadRequestException {
-        when(nviService.upsertApproval(any())).thenThrow(IllegalArgumentException.class);
+        when(nviService.upsertApproval(UUID.randomUUID(), any())).thenThrow(IllegalArgumentException.class);
         handler.handleRequest(createRequest(randomStatusRequest()), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -79,7 +80,7 @@ class UpsertNviCandidateStatusHandlerTest {
         var approvalStatus = response.candidate()
                                  .approvalStatuses()
                                  .get(0);
-        when(nviService.upsertApproval(any())).thenReturn(response);
+        when(nviService.upsertApproval(any(), any())).thenReturn(response);
 
         handler.handleRequest(request, output, context);
 
@@ -92,6 +93,7 @@ class UpsertNviCandidateStatusHandlerTest {
                                        new Username(
                                            approvalStatus.finalizedBy().value()),
                                        approvalStatus.finalizedDate())),
+            new HashMap<>(),
             Collections.emptyList());
         CandidateResponse bodyAsInstance = gatewayResponse.getBodyObject(CandidateResponse.class);
         assertThat(bodyAsInstance, is(equalTo(candidateResponse)));
@@ -100,13 +102,14 @@ class UpsertNviCandidateStatusHandlerTest {
     private static CandidateWithIdentifier mockServiceResponse(NviStatusRequest nviStatusRequest,
                                                                Status status) {
         return new CandidateWithIdentifier(
-            new Candidate.Builder()
+            Candidate.builder()
                 .withPublicationId(nviStatusRequest.institutionId())
                 .withApprovalStatuses(
                     List.of(new no.sikt.nva.nvi.common.model.business.ApprovalStatus(nviStatusRequest.institutionId(),
                                                                                      status,
                                                                                      new Username(randomString()),
                                                                                      Instant.now())))
+                .withPoints(new HashMap<>())
                 .withNotes(List.of())
                 .build(),
             nviStatusRequest.candidateId());

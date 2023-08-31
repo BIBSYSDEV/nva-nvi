@@ -5,12 +5,12 @@ import static no.sikt.nva.nvi.common.utils.RequestUtil.getUsername;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.time.Instant;
-import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Status;
 import no.sikt.nva.nvi.common.model.business.Username;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
+import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.rest.NviApprovalStatus;
 import no.sikt.nva.nvi.rest.NviStatusRequest;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
@@ -24,7 +24,7 @@ public class UpsertNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
     private final NviService nviService;
 
     public UpsertNviCandidateStatusHandler() {
-        this(new NviService(null));
+        this(NviService.defaultNviService());
     }
 
     public UpsertNviCandidateStatusHandler(NviService service) {
@@ -38,7 +38,7 @@ public class UpsertNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
 
         return attempt(() -> toStatus(input, getUsername(requestInfo)))
-                   .map(nviService::upsertApproval)
+                   .map(approvalStatus -> nviService.upsertApproval(input.candidateId(), approvalStatus))
                    .map(CandidateResponse::fromCandidate)
                    .orElseThrow(ExceptionMapper::map);
     }
