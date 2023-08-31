@@ -227,6 +227,18 @@ class EvaluateNviNviCandidateHandlerTest {
     }
 
     @Test
+    void shouldCreateNonCandidateEventOnAcademicArticleWithoutRoleCreator() throws IOException {
+        var path = "nonCandidate_nonCreatorRole";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, output, context);
+        var sentMessages = sqsClient.getSentMessages();
+        var candidate = getSingleCandidateResponse(sentMessages);
+        assertThat(candidate.status(), is(equalTo(CandidateStatus.NON_CANDIDATE)));
+    }
+
+    @Test
     void shouldCreateNonCandidateEventWhenIdentityIsNotVerified() throws IOException {
         var path = "nonCandidate_nonVerified.json";
         var content = IoUtils.inputStreamFromResources(path);

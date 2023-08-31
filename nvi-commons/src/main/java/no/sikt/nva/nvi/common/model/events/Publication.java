@@ -24,10 +24,16 @@ public record Publication(URI id,
 
         public record Contributor(Identity identity,
 
+                                  Role role,
+
                                   List<Affiliation> affiliations) {
 
             public record Identity(URI id,
                                    String verificationStatus) {
+
+            }
+
+            public record Role(String type){
 
             }
 

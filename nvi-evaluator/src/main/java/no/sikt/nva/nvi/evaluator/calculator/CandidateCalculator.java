@@ -43,15 +43,15 @@ import org.slf4j.LoggerFactory;
 
 public class CandidateCalculator {
 
+    public static final String ROLE_CREATOR = "Creator";
     private static final String CONTENT_TYPE = "application/json";
     private static final String COULD_NOT_FETCH_CUSTOMER_MESSAGE = "Could not fetch customer for: ";
     private static final String CUSTOMER = "customer";
     private static final String CRISTIN_ID = "cristinId";
     private static final String VERIFIED = "Verified";
-
     private static final String COULD_NOT_FETCH_CRISTIN_ORG_MESSAGE = "Could not fetch Cristin organization for: ";
     private static final String ERROR_COULD_NOT_FETCH_CRISTIN_ORG = COULD_NOT_FETCH_CRISTIN_ORG_MESSAGE + "{}. "
-                                                                   + "Response code: {}";
+                                                                    + "Response code: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(CandidateCalculator.class);
     //TODO to be configured somehow
     private static final String NVI_YEAR = "2023";
@@ -167,10 +167,15 @@ public class CandidateCalculator {
         return new PublicationDate(publicationDate.day(), publicationDate.month(), publicationDate.year());
     }
 
+    private static boolean isCreator(Contributor contributor) {
+        return ROLE_CREATOR.equals(contributor.role().type());
+    }
+
     private List<Creator> extractVerifiedCreator(Publication publication) {
         return publication.entityDescription()
                    .contributors()
                    .stream()
+                   .filter(CandidateCalculator::isCreator)
                    .filter(CandidateCalculator::isVerified)
                    .map(this::filterInstitutionsToKeepNvaCustomers)
                    .map(CandidateCalculator::toCreator)
@@ -188,7 +193,7 @@ public class CandidateCalculator {
     }
 
     private Contributor filterInstitutionsToKeepNvaCustomers(Contributor contributor) {
-        return new Contributor(contributor.identity(), getTopLevelOrgNviInstitutions(contributor));
+        return new Contributor(contributor.identity(), contributor.role(), getTopLevelOrgNviInstitutions(contributor));
     }
 
     private List<Affiliation> getTopLevelOrgNviInstitutions(Contributor contributor) {
