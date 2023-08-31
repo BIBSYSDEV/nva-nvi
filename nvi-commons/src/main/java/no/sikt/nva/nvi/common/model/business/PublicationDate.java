@@ -1,6 +1,9 @@
 package no.sikt.nva.nvi.common.model.business;
 
+import static java.util.Objects.nonNull;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 public record PublicationDate(String year, String month, String day) {
@@ -10,19 +13,25 @@ public record PublicationDate(String year, String month, String day) {
     public static final String DAY_FIELD = "day";
 
     public AttributeValue toDynamoDb() {
-        return AttributeValue.fromM(
-            Map.of(YEAR_FIELD, AttributeValue.fromS(year),
-                   MONTH_FIELD, AttributeValue.fromS(month),
-                   DAY_FIELD, AttributeValue.fromS(day)
-            ));
+        Map<String, AttributeValue> map = new HashMap<>();
+        if (nonNull(year)) {
+            map.put(YEAR_FIELD, AttributeValue.fromS(year));
+        }
+        if (nonNull(month)) {
+            map.put(MONTH_FIELD, AttributeValue.fromS(month));
+        }
+        if (nonNull(day)) {
+            map.put(DAY_FIELD, AttributeValue.fromS(day));
+        }
+        return AttributeValue.fromM(map);
     }
 
     public static PublicationDate fromDynamoDb(AttributeValue input) {
         Map<String, AttributeValue> map = input.m();
         return new PublicationDate(
-            map.get(YEAR_FIELD).s(),
-            map.get(MONTH_FIELD).s(),
-            map.get(DAY_FIELD).s()
+            Optional.ofNullable(map.get(YEAR_FIELD)).map(AttributeValue::s).orElse(null),
+            Optional.ofNullable(map.get(MONTH_FIELD)).map(AttributeValue::s).orElse(null),
+            Optional.ofNullable(map.get(DAY_FIELD)).map(AttributeValue::s).orElse(null)
         );
     }
 }

@@ -15,6 +15,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.List;
 import java.util.UUID;
@@ -129,6 +130,20 @@ public class NviServiceTest extends LocalDynamoTest {
 
         assertThat(fetchedCandidate.get(),
                    is(equalTo(expectedCandidate)));
+    }
+
+    @Test
+    void nviServiceShouldHandleDatesWithoutDayOrMonthValues() {
+        var identifier = UUID.randomUUID();
+        var verifiedCreators = List.of(new Creator(randomUri(), List.of(randomUri())),
+                                       new Creator(randomUri(), List.of()));
+        var instanceType = randomString();
+        var randomLevel = randomElement(Level.values());
+        var publicationDate = new PublicationDate(null, null, "2022");
+        var evaluatedCandidateDto = createEvaluatedCandidateDto(identifier, verifiedCreators, instanceType, randomLevel,
+                                                                publicationDate);
+
+        assertDoesNotThrow(() -> nviService.upsertCandidate(evaluatedCandidateDto));
     }
 
     //TODO: Change test when nviService is implemented
