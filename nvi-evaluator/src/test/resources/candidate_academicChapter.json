@@ -186,7 +186,7 @@
         "@container": "@set"
       }
     },
-    "id": "https://api.dev.nva.aws.unit.no/publication/0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4",
+    "id": "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
     "entityDescription": {
       "type": "EntityDescription",
       "alternativeAbstracts": {},
@@ -195,28 +195,13 @@
           "type": "Contributor",
           "affiliations": [
             {
-              "id": "https://www.example.org/9e3de71b-0ecb-4464-b9f1-2f92b974839c",
+              "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0",
               "type": "Organization"
             }
           ],
           "identity": {
             "type": "Identity",
-            "verificationStatus": "Verified"
-          },
-          "role": {
-            "type": "RoleOther"
-          }
-        },
-        {
-          "type": "Contributor",
-          "affiliations": [
-            {
-              "id": "https://www.example.org/39a728f4-88f5-46a9-a476-ff0c2b4c635b",
-              "type": "Organization"
-            }
-          ],
-          "identity": {
-            "type": "Identity",
+            "id" : "https://api.dev.nva.aws.unit.no/cristin/person/997998",
             "verificationStatus": "Verified"
           },
           "role": {

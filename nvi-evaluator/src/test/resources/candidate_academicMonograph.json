@@ -187,31 +187,19 @@
         "@container" : "@set"
       }
     },
-    "id" : "https://api.dev.nva.aws.unit.no/publication/0188bee5a7f1-17acf7d5-5658-4a5a-89b2-b2ea73032661",
+    "id" : "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
     "entityDescription" : {
       "type" : "EntityDescription",
       "alternativeAbstracts" : { },
       "contributors" : [ {
         "type" : "Contributor",
         "affiliations" : [ {
-          "id" : "https://www.example.org/34050105-357b-4d2e-9673-4dd3fd5e20b1",
+          "id" : "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0",
           "type" : "Organization"
         } ],
         "identity" : {
           "type" : "Identity",
-          "verificationStatus" : "Verified"
-        },
-        "role" : {
-          "type" : "RoleOther"
-        }
-      }, {
-        "type" : "Contributor",
-        "affiliations" : [ {
-          "id" : "https://www.example.org/745bbc2d-7e7e-4c9d-b551-73cd909ad60d",
-          "type" : "Organization"
-        } ],
-        "identity" : {
-          "type" : "Identity",
+          "id" : "https://api.dev.nva.aws.unit.no/cristin/person/997998",
           "verificationStatus" : "Verified"
         },
         "role" : {
