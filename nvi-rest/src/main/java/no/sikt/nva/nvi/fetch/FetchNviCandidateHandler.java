@@ -18,7 +18,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, FetchCandi
     private final NviService service;
 
     @JacocoGenerated
-    public FetchNviCandidateHandler(){
+    public FetchNviCandidateHandler() {
         this(NviService.defaultNviService());
     }
 
@@ -33,7 +33,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, FetchCandi
         return attempt(() -> requestInfo.getPathParameter(PARAM_CANDIDATE_IDENTIFIER))
                    .map(UUID::fromString)
                    .map(service::findById)
-                   .map(Optional::orElseThrow)
+                   .map(Optional::get)
                    .map(FetchCandidateResponse::fromCandidate)
                    .orElseThrow(ExceptionMapper::map);
     }
