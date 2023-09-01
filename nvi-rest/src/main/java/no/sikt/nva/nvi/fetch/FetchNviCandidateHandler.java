@@ -18,7 +18,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, FetchCandi
     private final NviService service;
 
     @JacocoGenerated
-    public FetchNviCandidateHandler(){
+    public FetchNviCandidateHandler() {
         this(NviService.defaultNviService());
     }
 

@@ -32,7 +32,7 @@ public class NviCandidateRepository extends DynamoRepository  {
     }
 
 
-    public CandidateWithIdentifier save(Candidate candidate) {
+    public CandidateWithIdentifier create(Candidate candidate) {
         var uuid = UUID.randomUUID();
         var insert = new CandidateDao(uuid, candidate);
         var uniqueness = new CandidateUniquenessEntry(candidate.publicationId().toString());
@@ -53,6 +53,14 @@ public class NviCandidateRepository extends DynamoRepository  {
                           .build();
 
         this.client.transactWriteItems(request);
+        var fetched = this.candidateTable.getItem(insert);
+        return new CandidateWithIdentifier(fetched.getCandidate(), fetched.getIdentifier());
+    }
+
+    public CandidateWithIdentifier update(UUID identifier, Candidate candidate) {
+        var insert = new CandidateDao(identifier, candidate);
+
+        this.candidateTable.putItem(insert);
         var fetched = this.candidateTable.getItem(insert);
         return new CandidateWithIdentifier(fetched.getCandidate(), fetched.getIdentifier());
     }

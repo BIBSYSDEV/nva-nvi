@@ -47,8 +47,11 @@ public class NviService {
     //TODO: Remove JacocoGenerated when other if/else cases are implemented
     @JacocoGenerated
     public Optional<CandidateWithIdentifier> upsertCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-        if (isNotExistingCandidate(evaluatedCandidate) && isNviCandidate(evaluatedCandidate)) {
+        if (!isExistingCandidate(evaluatedCandidate) && isNviCandidate(evaluatedCandidate)) {
             return Optional.of(createCandidate(evaluatedCandidate));
+        } else if (isExistingCandidate(evaluatedCandidate) && isNviCandidate(evaluatedCandidate)) {
+            var existing = findByPublicationId(evaluatedCandidate.candidateDetails().publicationId()).orElseThrow();
+            return Optional.of(updateCandidate(existing.identifier(), evaluatedCandidate));
         }
         return Optional.empty();
     }
@@ -142,7 +145,13 @@ public class NviService {
     private CandidateWithIdentifier createCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
         var pendingCandidate = toPendingCandidate(evaluatedCandidate,
                                                   evaluatedCandidate.institutionPoints());
-        return nviCandidateRepository.save(pendingCandidate);
+        return nviCandidateRepository.create(pendingCandidate);
+    }
+
+    private CandidateWithIdentifier updateCandidate(UUID identifier, CandidateEvaluatedMessage evaluatedCandidate) {
+        var pendingCandidate = toPendingCandidate(evaluatedCandidate,
+                                                  evaluatedCandidate.institutionPoints());
+        return nviCandidateRepository.update(identifier, pendingCandidate);
     }
 
     private void validatePeriod(NviPeriod period) throws BadRequestException {
@@ -156,7 +165,7 @@ public class NviService {
 
     //TODO: Remove JacocoGenerated when case for existing candidate is implemented
     @JacocoGenerated
-    private boolean isNotExistingCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-        return !existsByPublicationId(evaluatedCandidate.candidateDetails().publicationId());
+    private boolean isExistingCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
+        return existsByPublicationId(evaluatedCandidate.candidateDetails().publicationId());
     }
 }

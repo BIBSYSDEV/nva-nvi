@@ -75,6 +75,22 @@ public record Candidate(URI publicationId,
         return new Builder();
     }
 
+    public Builder copy() {
+        return new Builder()
+                   .withPublicationId(publicationId)
+                   .withPublicationBucketUri(publicationBucketUri)
+                   .withIsApplicable(isApplicable)
+                   .withInstanceType(instanceType)
+                   .withLevel(level)
+                   .withPublicationDate(publicationDate)
+                   .withIsInternationalCollaboration(isInternationalCollaboration)
+                   .withCreatorCount(creatorCount)
+                   .withCreators(creators)
+                   .withPoints(points)
+                   .withApprovalStatuses(approvalStatuses)
+                   .withNotes(notes);
+    }
+
     public AttributeValue toDynamoDb() {
         var map = new HashMap<String, AttributeValue>();
         map.put(PUBLICATION_ID_FIELD, AttributeValue.fromS(publicationId.toString()));
