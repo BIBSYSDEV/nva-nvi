@@ -1,6 +1,6 @@
 {
   "@context": "https://bibsysdev.github.io/src/nvi-context.json",
-  "identifier": "someRandomIdentifier1",
+  "identifier": "someRandomIdentifier5",
   "numberOfApprovals": 1,
   "publicationDetails": {
     "id": "https://api.dev.nva.aws.unit.no/publication/01892ad6fc07-4ddfbfc5-3145-4b06-9f77-d4202d074380",
@@ -16,6 +16,7 @@
   },
   "approvals": [
     {
+      "assignee": "user1",
       "id": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
       "labels": {
         "nb": "Sikt – Kunnskapssektorens tjenesteleverandør",

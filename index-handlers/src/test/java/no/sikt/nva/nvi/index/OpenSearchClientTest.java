@@ -1,11 +1,16 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.index.Aggregations.PEDNING_COLLABORATION_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.APPROVED_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.APPROVED_COLLABORATION_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.ASSIGNMENTS_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.COMPLETED_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.TOTAL_COUNT_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.PENDING_COLLABORATION_AGGREGATION_NAME;
 import static no.sikt.nva.nvi.index.Aggregations.PENDING_AGGREGATION_NAME;
 import static no.sikt.nva.nvi.index.Aggregations.ASSIGNED_AGGREGATION_NAME;
 import static no.sikt.nva.nvi.index.Aggregations.ASSIGNED_COLLABORATION_AGGREGATION_NAME;
-import static no.sikt.nva.nvi.index.Aggregations.FOR_CONTROL_MULTIPLE_APPROVALS_AGGREGATION_NAME;
-import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
+import static no.sikt.nva.nvi.index.Aggregations.REJECTED_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.REJECTED_COLLABORATION_AGGREGATION_NAME;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -13,7 +18,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -57,7 +61,7 @@ import org.opensearch.testcontainers.OpensearchContainer;
 public class OpenSearchClientTest {
 
     private static final URI CUSTOMER = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
-    private static final String USERNAME = "user123";
+    private static final String USERNAME = "user1";
     public static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:2.0.0";
     private static final OpensearchContainer container = new OpensearchContainer(OPEN_SEARCH_IMAGE);
     public static final String DOC_COUNT = "docCount";
@@ -125,34 +129,53 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldReturnForControlAggregationsWithExpectedCount() throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_single_pending_approval.json"),
-                            documentFromString("document_multiple_pending_approvals.json"),
-                            documentFromString("document_single_pending_approval_with_assignee.json"),
-                            documentFromString("document_multiple_pending_approvals_with_assignee.json"),
-                            documentFromString("document_approved.json"));
+        addDocumentsToIndex(documentFromString("document_pending.json"),
+                            documentFromString("document_pending_collaboration.json"),
+                            documentFromString("document_assigned.json"),
+                            documentFromString("document_assigned_collaboration.json"),
+                            documentFromString("document_approved.json"),
+                            documentFromString("document_approved_collaboration.json"),
+                            documentFromString("document_rejected.json"),
+                            documentFromString("document_rejected_collaboration.json"));
+
+
         var searchResponse =
             openSearchClient.search(searchTermToQuery("*"), USERNAME, CUSTOMER);
         var response = SearchResponseDto.fromSearchResponse(searchResponse);
 
-        var forControlDocCount =
-            getDocCount(response, PENDING_AGGREGATION_NAME);
-        assertThat(forControlDocCount, is(equalTo(2)));
 
-        var forControlMultipleApprovalsDocCount =
-            getDocCount(response, PEDNING_COLLABORATION_AGGREGATION_NAME);
-        assertThat(forControlMultipleApprovalsDocCount, is(equalTo(1)));
+        var pendingDocCount = getDocCount(response, PENDING_AGGREGATION_NAME);
+        assertThat(pendingDocCount, is(equalTo(2)));
 
-        var forControlAssignedDocCount =
-            getDocCount(response, ASSIGNED_AGGREGATION_NAME);
-        assertThat(forControlAssignedDocCount, is(equalTo(2)));
+        var pendingCollaborationDocCount = getDocCount(response, PENDING_COLLABORATION_AGGREGATION_NAME);
+        assertThat(pendingCollaborationDocCount, is(equalTo(1)));
 
-        var forControlAssignedMultipleApprovalsDocCount =
-            getDocCount(response, ASSIGNED_COLLABORATION_AGGREGATION_NAME);
-        assertThat(forControlAssignedMultipleApprovalsDocCount, is(equalTo(1)));
+        var assignedDocCount = getDocCount(response, ASSIGNED_AGGREGATION_NAME);
+        assertThat(assignedDocCount, is(equalTo(2)));
 
-        var forControlAssignedMultipleApprovalsDocCount =
-            getDocCount(response, ASSIGNED_COLLABORATION_AGGREGATION_NAME);
-        assertThat(forControlAssignedMultipleApprovalsDocCount, is(equalTo(1)));
+        var assignedCollaborationDocCount = getDocCount(response, ASSIGNED_COLLABORATION_AGGREGATION_NAME);
+        assertThat(assignedCollaborationDocCount, is(equalTo(1)));
+
+        var approvedDocCount = getDocCount(response, APPROVED_AGGREGATION_NAME);
+        assertThat(approvedDocCount, is(equalTo(2)));
+
+        var approvedCollaborationDocCount = getDocCount(response, APPROVED_COLLABORATION_AGGREGATION_NAME);
+        assertThat(approvedCollaborationDocCount, is(equalTo(1)));
+
+        var rejectedDocCount = getDocCount(response, REJECTED_AGGREGATION_NAME);
+        assertThat(rejectedDocCount, is(equalTo(2)));
+
+        var rejectedCollaborationDocCount = getDocCount(response, REJECTED_COLLABORATION_AGGREGATION_NAME);
+        assertThat(rejectedCollaborationDocCount, is(equalTo(1)));
+
+        var assignmentsDocCount = getDocCount(response, ASSIGNMENTS_AGGREGATION_NAME);
+        assertThat(assignmentsDocCount, is(equalTo(6)));
+
+        var completedDocCunt = getDocCount(response, COMPLETED_AGGREGATION_NAME);
+        assertThat(completedDocCunt, is(equalTo(4)));
+
+        var totalCountDocCount = getDocCount(response, TOTAL_COUNT_AGGREGATION_NAME);
+        assertThat(totalCountDocCount, is(equalTo(8)));
     }
 
     private static int getDocCount(SearchResponseDto response, String aggregationName) {
@@ -161,7 +184,7 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldReturnDocumentsWithContributorWhenFilterByContributor() throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_single_pending_approval.json"),
+        addDocumentsToIndex(documentFromString("document_pending.json"),
                             documentFromString("document_pending.json"),
                             documentFromString("document_rejected.json"));
         var queryString =
