@@ -135,8 +135,11 @@ public class CandidateCalculator {
     }
 
     private static URI createCustomerApiUri(String affiliation) {
-        var getCustomerEndpoint = UriWrapper.fromHost(API_HOST).addChild(CUSTOMER).addChild(CRISTIN_ID).getUri();
-        return URI.create(getCustomerEndpoint + "/" + URLEncoder.encode(affiliation, StandardCharsets.UTF_8));
+        return UriWrapper.fromHost(API_HOST)
+                   .addChild(CUSTOMER)
+                   .addChild(CRISTIN_ID)
+                   .addChild(URLEncoder.encode(affiliation, StandardCharsets.UTF_8))
+                   .getUri();
     }
 
     private static URI extractContributorId(JsonNode creatorNode) {

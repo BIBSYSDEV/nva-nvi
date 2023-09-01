@@ -510,10 +510,12 @@ class EvaluateNviNviCandidateHandlerTest {
     }
 
     private void mockCristinResponseAndCustomerApiResponseForNonNviInstitution() {
-        var response = createResponse(200,
-                                      "{\"id\": \"https://api.dev.nva.aws.unit.no/cristin/organization/150.50.50.0\","
-                                      + " \"partOf\": [{\"type\": \"Organization\", \"id\": \"https://api.dev.nva.aws"
-                                      + ".unit.no/cristin/organization/150.0.0.0\"}]}");
+        var responseBodyForNonNviInstitution = """
+            {"id": "https://api.dev.nva.aws.unit.no/cristin/organization/150.50.50.0",\s
+            "partOf":\s
+            [{"type": "Organization", "id": "https://api.dev.nva.aws.unit.no/cristin/organization/150.0.0.0"}]}
+            """;
+        var response = createResponse(200, responseBodyForNonNviInstitution);
         var cristinOrgNonNviSubUnit = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/150.50.50.0");
         var crinstinOrgNonNviTopLevelCristinApiUri = URI.create(
             "https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi.dev.nva.aws.unit"
