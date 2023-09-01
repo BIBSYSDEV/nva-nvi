@@ -157,7 +157,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var message = sentMessages.get(0);
         var messageBody =
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicArticle", BigDecimal.ONE, fileUri);
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicArticle", BigDecimal.valueOf(0.7071), fileUri);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
