@@ -27,6 +27,7 @@ public final class Aggregations {
     public static final String FOR_CONTROL_ASSIGNED_AGGREGATION_NAME = "for_control_assigned";
     public static final String FOR_CONTROL_ASSIGNED_MULTIPLE_APPROVALS_AGGREGATION_NAME =
         "for_control_assigned_multiple_approvals";
+    public static final int MULTIPLE = 2;
 
     private Aggregations() {
     }
@@ -41,29 +42,25 @@ public final class Aggregations {
     }
 
     private static Aggregation forControlAssignedMultipleApprovalsAggregation(String customer) {
-        var customerQuery = termQuery(customer, jsonPathOf(APPROVALS, ID));
-        var approvalStatusQuery = termQuery(PENDING.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS));
-        var assigneeQuery = existsQuery(jsonPathOf(APPROVALS, ASSIGNEE));
-        var multipleAffiliationsQuery = mustMatch(rangeFromQuery(NUMBER_OF_APPROVALS, 2));
-
         var nestedQuery = new NestedQuery.Builder()
                               .path(APPROVALS)
-                              .query(mustMatch(assigneeQuery, customerQuery, approvalStatusQuery))
+                              .query(mustMatch(termQuery(customer, jsonPathOf(APPROVALS, ID)),
+                                               termQuery(PENDING.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)),
+                                               existsQuery(jsonPathOf(APPROVALS, ASSIGNEE))))
                               .build()._toQuery();
 
         return new Aggregation.Builder()
-                   .filter(mustMatch(nestedQuery, multipleAffiliationsQuery))
+                   .filter(mustMatch(nestedQuery,
+                                     mustMatch(rangeFromQuery(NUMBER_OF_APPROVALS, 2))))
                    .build();
     }
 
     private static Aggregation forControlAssignedAggregation(String customer) {
-        var customerQuery = termQuery(customer, jsonPathOf(APPROVALS, ID));
-        var approvalStatusQuery = termQuery(PENDING.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS));
-        var assigneeQuery = existsQuery(jsonPathOf(APPROVALS, ASSIGNEE));
-
         var nestedQuery = new NestedQuery.Builder()
                               .path(APPROVALS)
-                              .query(mustMatch(assigneeQuery, customerQuery, approvalStatusQuery))
+                              .query(mustMatch(termQuery(customer, jsonPathOf(APPROVALS, ID)),
+                                               termQuery(PENDING.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)),
+                                               existsQuery(jsonPathOf(APPROVALS, ASSIGNEE))))
                               .build()._toQuery();
 
         return new Aggregation.Builder()
@@ -72,29 +69,25 @@ public final class Aggregations {
     }
 
     private static Aggregation forControlMultipleApprovalsAggregation(String customer) {
-        var customerQuery = termQuery(customer, jsonPathOf(APPROVALS, ID));
-        var approvalStatusQuery = termQuery(PENDING.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS));
-        var assigneeQuery = notExistsQuery(jsonPathOf(APPROVALS, ASSIGNEE));
-        var multipleAffiliationsQuery = mustMatch(rangeFromQuery(NUMBER_OF_APPROVALS, 2));
-
         var nestedQuery = new NestedQuery.Builder()
                               .path(APPROVALS)
-                              .query(mustMatch(customerQuery, assigneeQuery, approvalStatusQuery))
+                              .query(mustMatch(termQuery(customer, jsonPathOf(APPROVALS, ID)),
+                                               termQuery(PENDING.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)),
+                                               notExistsQuery(jsonPathOf(APPROVALS, ASSIGNEE))))
                               .build()._toQuery();
 
         return new Aggregation.Builder()
-                   .filter(mustMatch(nestedQuery, multipleAffiliationsQuery))
+                   .filter(mustMatch(nestedQuery,
+                                     mustMatch(rangeFromQuery(NUMBER_OF_APPROVALS, MULTIPLE))))
                    .build();
     }
 
     private static Aggregation forControlAggregation(String customer) {
-        var customerQuery = termQuery(customer, jsonPathOf(APPROVALS, ID));
-        var approvalStatusQuery = termQuery(PENDING.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS));
-        var assigneeQuery = notExistsQuery(jsonPathOf(APPROVALS, ASSIGNEE));
-
         var nestedQuery = new NestedQuery.Builder()
                         .path(APPROVALS)
-                        .query(mustMatch(customerQuery, assigneeQuery, approvalStatusQuery))
+                        .query(mustMatch(termQuery(customer, jsonPathOf(APPROVALS, ID)),
+                                         termQuery(PENDING.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)),
+                                         notExistsQuery(jsonPathOf(APPROVALS, ASSIGNEE))))
                         .build()._toQuery();
 
         return new Aggregation.Builder()

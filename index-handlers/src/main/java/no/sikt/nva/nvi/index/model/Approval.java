@@ -38,6 +38,7 @@ public record Approval(String id,
             return this;
         }
 
+        @JacocoGenerated
         public Builder withAssignee(String assignee) {
             this.assignee = assignee;
             return this;
