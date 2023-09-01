@@ -166,8 +166,8 @@ class EvaluateNviNviCandidateHandlerTest {
     void shouldCreateNewCandidateWithPointsOnlyForNviInstitutions() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         mockCristinResponseAndCustomerApiResponseForNonNviInstitution();
-        var content = IoUtils.inputStreamFromResources("candidate_verifiedCreator_without_nviInstitutions.json");
-        var fileUri = s3Driver.insertFile(UnixPath.of("candidate_verifiedCreator_without_nviInstitutions.json"),
+        var content = IoUtils.inputStreamFromResources("candidate_verifiedCreator_with_nonNviInstitution.json");
+        var fileUri = s3Driver.insertFile(UnixPath.of("candidate_verifiedCreator_with_nonNviInstitution.json"),
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
