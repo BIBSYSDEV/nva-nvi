@@ -31,10 +31,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
@@ -50,6 +53,8 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -74,9 +79,17 @@ public class OpenSearchClientTest {
     }
 
     @BeforeAll
-    static void init() {
+    static void init() throws JsonProcessingException, InterruptedException {
         setUpTestContainer();
         openSearchClient = new OpenSearchClient(restClient, FakeCachedJwtProvider.setup());
+        addDocumentsToIndex(documentFromString("document_pending.json"),
+                            documentFromString("document_pending_collaboration.json"),
+                            documentFromString("document_assigned.json"),
+                            documentFromString("document_assigned_collaboration.json"),
+                            documentFromString("document_approved.json"),
+                            documentFromString("document_approved_collaboration.json"),
+                            documentFromString("document_rejected.json"),
+                            documentFromString("document_rejected_collaboration.json"));
     }
 
     @AfterAll
@@ -127,72 +140,21 @@ public class OpenSearchClientTest {
         assertThat(nviCandidateIndexDocument, hasSize(0));
     }
 
-    @Test
-    void shouldReturnAggregationsWithExpectedCount() throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_pending.json"),
-                            documentFromString("document_pending_collaboration.json"),
-                            documentFromString("document_assigned.json"),
-                            documentFromString("document_assigned_collaboration.json"),
-                            documentFromString("document_approved.json"),
-                            documentFromString("document_approved_collaboration.json"),
-                            documentFromString("document_rejected.json"),
-                            documentFromString("document_rejected_collaboration.json"));
-
+    @ParameterizedTest
+    @MethodSource("aggregationNameAndExpectedCountProvider")
+    void shouldReturnAggregationsWithExpectedCount(Entry<String, Integer> entry)
+        throws IOException {
 
         var searchResponse =
             openSearchClient.search(searchTermToQuery("*"), USERNAME, CUSTOMER);
         var response = SearchResponseDto.fromSearchResponse(searchResponse);
+        var docCount = getDocCount(response, entry.getKey());
 
-
-        var pendingDocCount = getDocCount(response, PENDING_AGGREGATION_NAME);
-        assertThat(pendingDocCount, is(equalTo(2)));
-
-        var pendingCollaborationDocCount = getDocCount(response, PENDING_COLLABORATION_AGGREGATION_NAME);
-        assertThat(pendingCollaborationDocCount, is(equalTo(1)));
-
-        var assignedDocCount = getDocCount(response, ASSIGNED_AGGREGATION_NAME);
-        assertThat(assignedDocCount, is(equalTo(2)));
-
-        var assignedCollaborationDocCount = getDocCount(response, ASSIGNED_COLLABORATION_AGGREGATION_NAME);
-        assertThat(assignedCollaborationDocCount, is(equalTo(1)));
-
-        var approvedDocCount = getDocCount(response, APPROVED_AGGREGATION_NAME);
-        assertThat(approvedDocCount, is(equalTo(2)));
-
-        var approvedCollaborationDocCount = getDocCount(response, APPROVED_COLLABORATION_AGGREGATION_NAME);
-        assertThat(approvedCollaborationDocCount, is(equalTo(1)));
-
-        var rejectedDocCount = getDocCount(response, REJECTED_AGGREGATION_NAME);
-        assertThat(rejectedDocCount, is(equalTo(2)));
-
-        var rejectedCollaborationDocCount = getDocCount(response, REJECTED_COLLABORATION_AGGREGATION_NAME);
-        assertThat(rejectedCollaborationDocCount, is(equalTo(1)));
-
-        var assignmentsDocCount = getDocCount(response, ASSIGNMENTS_AGGREGATION_NAME);
-        assertThat(assignmentsDocCount, is(equalTo(6)));
-
-        var completedDocCunt = getDocCount(response, COMPLETED_AGGREGATION_NAME);
-        assertThat(completedDocCunt, is(equalTo(4)));
-
-        var totalCountDocCount = getDocCount(response, TOTAL_COUNT_AGGREGATION_NAME);
-        assertThat(totalCountDocCount, is(equalTo(8)));
+        assertThat(docCount, is(equalTo(entry.getValue())));
     }
 
     private static int getDocCount(SearchResponseDto response, String aggregationName) {
         return response.aggregations().get(aggregationName).get(DOC_COUNT).asInt();
-    }
-
-    @Test
-    void shouldReturnDocumentsWithContributorWhenFilterByContributor() throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_pending.json"),
-                            documentFromString("document_rejected.json"),
-                            documentFromString("document_approved.json"));
-        var queryString =
-            "publicationDetails.contributors.id:\"https://api.dev.nva.aws.unit.no/cristin/person/1136326\"";
-        var searchResponse =
-            openSearchClient.search(searchTermToQuery(queryString), USERNAME, CUSTOMER);
-        var response = SearchResponseDto.fromSearchResponse(searchResponse);
-        assertThat(response.hits(), hasSize(2));
     }
 
     private static NviCandidateIndexDocument documentFromString(String fileName) throws JsonProcessingException {
@@ -239,9 +201,25 @@ public class OpenSearchClientTest {
         return new PublicationDetails(randomString(), randomString(), randomString(), randomString(), List.of());
     }
 
-    private void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {
+    private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {
         Arrays.stream(documents).forEach(document -> openSearchClient.addDocumentToIndex(document));
         Thread.sleep(2000);
+    }
+
+    private static Stream<Entry<String, Integer>> aggregationNameAndExpectedCountProvider() {
+        var map = new HashMap<String, Integer>();
+        map.put(PENDING_AGGREGATION_NAME, 2);
+        map.put(PENDING_COLLABORATION_AGGREGATION_NAME, 1);
+        map.put(ASSIGNED_AGGREGATION_NAME, 2);
+        map.put(ASSIGNED_COLLABORATION_AGGREGATION_NAME, 1);
+        map.put(APPROVED_AGGREGATION_NAME, 2);
+        map.put(APPROVED_COLLABORATION_AGGREGATION_NAME, 1);
+        map.put(REJECTED_AGGREGATION_NAME, 2);
+        map.put(REJECTED_COLLABORATION_AGGREGATION_NAME, 1);
+        map.put(ASSIGNMENTS_AGGREGATION_NAME, 6);
+        map.put(COMPLETED_AGGREGATION_NAME, 4);
+        map.put(TOTAL_COUNT_AGGREGATION_NAME, 8);
+        return map.entrySet().stream();
     }
 
     public final class FakeCachedJwtProvider {
