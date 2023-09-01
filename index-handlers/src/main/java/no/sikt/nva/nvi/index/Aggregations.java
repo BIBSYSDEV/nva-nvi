@@ -43,18 +43,18 @@ public final class Aggregations {
 
     public static Map<String, Aggregation> generateAggregations(String username, String customer) {
         return new HashMap<>() {{
-            put(PENDING_AGGREGATION_NAME, pendingAggregation(customer));
-            put(PENDING_COLLABORATION_AGGREGATION_NAME, pendingCollaborationAggregation(customer));
-            put(ASSIGNED_AGGREGATION_NAME, assignedAggregation(customer));
-            put(ASSIGNED_COLLABORATION_AGGREGATION_NAME, assignedCollaborationAggregation(customer));
-            put(APPROVED_AGGREGATION_NAME, approvedAggregation(customer));
-            put(APPROVED_COLLABORATION_AGGREGATION_NAME, approvedCollaborationAggregation(customer));
-            put(REJECTED_AGGREGATION_NAME, rejectedAggregation(customer));
-            put(REJECTED_COLLABORATION_AGGREGATION_NAME, rejectedCollaborationAggregation(customer));
-            put(ASSIGNMENTS_AGGREGATION_NAME, assignmentsAggregation(username, customer));
-            put(COMPLETED_AGGREGATION_NAME, completedAggregation(customer));
-            put(TOTAL_COUNT_AGGREGATION_NAME, totalCountAggregation(customer));
-        }};
+                    put(PENDING_AGGREGATION_NAME, pendingAggregation(customer));
+                    put(PENDING_COLLABORATION_AGGREGATION_NAME, pendingCollaborationAggregation(customer));
+                    put(ASSIGNED_AGGREGATION_NAME, assignedAggregation(customer));
+                    put(ASSIGNED_COLLABORATION_AGGREGATION_NAME, assignedCollaborationAggregation(customer));
+                    put(APPROVED_AGGREGATION_NAME, approvedAggregation(customer));
+                    put(APPROVED_COLLABORATION_AGGREGATION_NAME, approvedCollaborationAggregation(customer));
+                    put(REJECTED_AGGREGATION_NAME, rejectedAggregation(customer));
+                    put(REJECTED_COLLABORATION_AGGREGATION_NAME, rejectedCollaborationAggregation(customer));
+                    put(ASSIGNMENTS_AGGREGATION_NAME, assignmentsAggregation(username, customer));
+                    put(COMPLETED_AGGREGATION_NAME, completedAggregation(customer));
+                    put(TOTAL_COUNT_AGGREGATION_NAME, totalCountAggregation(customer));
+                }};
     }
 
     private static Aggregation totalCountAggregation(String customer) {

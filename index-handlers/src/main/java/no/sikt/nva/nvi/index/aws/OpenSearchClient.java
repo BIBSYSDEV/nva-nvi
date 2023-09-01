@@ -92,7 +92,8 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     public SearchResponse<NviCandidateIndexDocument> search(Query query, String username, URI customer)
         throws IOException {
         return client.withTransportOptions(getOptions())
-                   .search(constructSearchRequest(query, username, customer.toString()), NviCandidateIndexDocument.class);
+                   .search(constructSearchRequest(query, username, customer.toString()),
+                           NviCandidateIndexDocument.class);
     }
 
     @Override
