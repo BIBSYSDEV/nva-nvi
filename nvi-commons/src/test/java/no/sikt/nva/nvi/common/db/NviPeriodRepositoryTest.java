@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.test.TestUtils.randomNviPeriodBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -9,7 +8,6 @@ import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 
 class NviPeriodRepositoryTest extends LocalDynamoTest {
 
@@ -32,7 +30,7 @@ class NviPeriodRepositoryTest extends LocalDynamoTest {
         var nviPeriod2 = randomNviPeriodBuilder().withPublishingYear(year).withModifiedBy(user2).build();
         nviPeriodRepository.save(nviPeriod1);
         nviPeriodRepository.save(nviPeriod2);
-        var tableItemCount = localDynamo.scan(ScanRequest.builder().tableName(NVI_TABLE_NAME).build()).count();
+        var tableItemCount = scanDB().count();
         assertThat(tableItemCount, is(equalTo(1)));
 
         var fetched = nviPeriodRepository.findByPublishingYear(year);

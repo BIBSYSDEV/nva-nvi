@@ -2,8 +2,7 @@
   "body": {
     "type": "Publication",
     "publicationContextUris": [
-      "https://api.dev.nva.aws.unit.no/publication-channels/d1a0860e-f246-4c8a-a725-98e6bb4fc022",
-      "https://api.dev.nva.aws.unit.no/publication-channels/d96f1b8c-a0f0-450d-ac18-5d11a2ea1f1b"
+      "https://api.dev.nva.aws.unit.no/publication-channels/journal/490845/2023"
     ],
     "@context": {
       "@vocab": "https://nva.sikt.no/ontology/publication#",
@@ -193,7 +192,6 @@
     "id": "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
     "entityDescription": {
       "type": "EntityDescription",
-      "alternativeAbstracts": {},
       "contributors": [
         {
           "type": "Contributor",
@@ -228,6 +226,23 @@
           "role": {
             "type": "Creator"
           }
+        },
+        {
+          "type": "Contributor",
+          "affiliations": [
+            {
+              "id": "https://api.dev.nva.aws.unit.no/cristin/organization/150.50.50.0",
+              "type": "Organization"
+            }
+          ],
+          "identity": {
+            "id": "https://api.dev.nva.aws.unit.no/cristin/person/123456",
+            "type": "Identity",
+            "verificationStatus": "Verified"
+          },
+          "role": {
+            "type": "Creator"
+          }
         }
       ],
       "publicationDate": {
@@ -237,20 +252,12 @@
       "reference": {
         "type": "Reference",
         "publicationContext": {
-          "type": "Book",
-          "publisher": {
-            "id": "https://api.dev.nva.aws.unit.no/publication-channels/d1a0860e-f246-4c8a-a725-98e6bb4fc022",
-            "type": "Publisher",
-            "level": "1"
-          },
-          "series": {
-            "id": "https://api.dev.nva.aws.unit.no/publication-channels/d96f1b8c-a0f0-450d-ac18-5d11a2ea1f1b",
-            "type": "Series",
-            "level": "1"
-          }
+          "id": "https://api.dev.nva.aws.unit.no/publication-channels/journal/490845/2023",
+          "type": "Journal",
+          "level": "1"
         },
         "publicationInstance": {
-          "type": "AcademicMonograph"
+          "type": "AcademicArticle"
         }
       }
     },
@@ -258,6 +265,6 @@
   },
   "consumptionAttributes": {
     "index": "resources",
-    "documentIdentifier": "0188bee5a7f1-17acf7d5-5658-4a5a-89b2-b2ea73032661"
+    "documentIdentifier": "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d"
   }
 }

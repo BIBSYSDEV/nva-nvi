@@ -1,230 +1,253 @@
 {
-  "body" : {
-    "type" : "Publication",
-    "publicationContextUris" : [ "https://api.dev.nva.aws.unit.no/publication-channels/journal/490845/2023" ],
-    "@context" : {
-      "@vocab" : "https://nva.sikt.no/ontology/publication#",
-      "hasPart" : "https://bibsysdev.github.io/src/organization-ontology.ttl#hasPart",
-      "xsd" : "http://www.w3.org/2001/XMLSchema#",
-      "DIRHEALTH" : "https://nva.sikt.no/ontology/approvals-body#DIRHEALTH",
-      "NMA" : "https://nva.sikt.no/ontology/approvals-body#NMA",
-      "NARA" : "https://nva.sikt.no/ontology/approvals-body#NARA",
-      "REK" : "https://nva.sikt.no/ontology/approvals-body#REK",
-      "ShortFilm" : "https://nva.sikt.no/ontology/publication#ShortFilm",
-      "SerialFilmProduction" : "https://nva.sikt.no/ontology/publication#SerialFilmProduction",
-      "Film" : "https://nva.sikt.no/ontology/publication#Film",
-      "InteractiveFilm" : "https://nva.sikt.no/ontology/publication#InteractiveFilm",
-      "AugmentedVirtualRealityFilm" : "https://nva.sikt.no/ontology/publication#AugmentedVirtualRealityFilm",
-      "approvedBy" : {
-        "@context" : {
-          "@vocab" : "https://nva.sikt.no/ontology/approvals-body#"
+  "body": {
+    "type": "Publication",
+    "publicationContextUris": [
+      "https://api.dev.nva.aws.unit.no/publication-channels/journal/490845/2023"
+    ],
+    "@context": {
+      "@vocab": "https://nva.sikt.no/ontology/publication#",
+      "hasPart": "https://bibsysdev.github.io/src/organization-ontology.ttl#hasPart",
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "DIRHEALTH": "https://nva.sikt.no/ontology/approvals-body#DIRHEALTH",
+      "NMA": "https://nva.sikt.no/ontology/approvals-body#NMA",
+      "NARA": "https://nva.sikt.no/ontology/approvals-body#NARA",
+      "REK": "https://nva.sikt.no/ontology/approvals-body#REK",
+      "ShortFilm": "https://nva.sikt.no/ontology/publication#ShortFilm",
+      "SerialFilmProduction": "https://nva.sikt.no/ontology/publication#SerialFilmProduction",
+      "Film": "https://nva.sikt.no/ontology/publication#Film",
+      "InteractiveFilm": "https://nva.sikt.no/ontology/publication#InteractiveFilm",
+      "AugmentedVirtualRealityFilm": "https://nva.sikt.no/ontology/publication#AugmentedVirtualRealityFilm",
+      "approvedBy": {
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/approvals-body#"
         },
-        "@type" : "@vocab"
+        "@type": "@vocab"
       },
-      "activeFrom" : {
-        "@type" : "xsd:dateTime"
+      "activeFrom": {
+        "@type": "xsd:dateTime"
       },
-      "activeTo" : {
-        "@type" : "xsd:dateTime"
+      "activeTo": {
+        "@type": "xsd:dateTime"
       },
-      "additionalIdentifiers" : {
-        "@container" : "@set",
-        "@id" : "additionalIdentifier"
+      "additionalIdentifiers": {
+        "@container": "@set",
+        "@id": "additionalIdentifier"
       },
-      "affiliations" : {
-        "@container" : "@set",
-        "@id" : "affiliation"
+      "affiliations": {
+        "@container": "@set",
+        "@id": "affiliation"
       },
-      "alternativeTitles" : {
-        "@container" : "@language",
-        "@id" : "alternativeTitle"
+      "alternativeTitles": {
+        "@container": "@language",
+        "@id": "alternativeTitle"
       },
-      "approvals" : {
-        "@container" : "@set",
-        "@id" : "approval"
+      "approvals": {
+        "@container": "@set",
+        "@id": "approval"
       },
-      "approvalStatus" : {
-        "@context" : {
-          "@vocab" : "https://nva.sikt.no/ontology/publication#"
+      "approvalStatus": {
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/publication#"
         },
-        "@type" : "@vocab"
+        "@type": "@vocab"
       },
-      "architectureOutput" : {
-        "@container" : "@set",
-        "@id" : "architectureOutput"
+      "architectureOutput": {
+        "@container": "@set",
+        "@id": "architectureOutput"
       },
-      "associatedArtifacts" : {
-        "@container" : "@set",
-        "@id" : "associatedArtifact"
+      "associatedArtifacts": {
+        "@container": "@set",
+        "@id": "associatedArtifact"
       },
-      "compliesWith" : {
-        "@container" : "@set",
-        "@id" : "compliesWith"
+      "compliesWith": {
+        "@container": "@set",
+        "@id": "compliesWith"
       },
-      "concertProgramme" : {
-        "@container" : "@set",
-        "@id" : "concertProgramme"
+      "concertProgramme": {
+        "@container": "@set",
+        "@id": "concertProgramme"
       },
-      "contributors" : {
-        "@container" : "@set",
-        "@id" : "contributor"
+      "contributors": {
+        "@container": "@set",
+        "@id": "contributor"
       },
-      "createdDate" : {
-        "@type" : "xsd:dateTime"
+      "createdDate": {
+        "@type": "xsd:dateTime"
       },
-      "doi" : {
-        "@type" : "@id"
+      "doi": {
+        "@type": "@id"
       },
-      "embargoDate" : {
-        "@type" : "xsd:dateTime"
+      "embargoDate": {
+        "@type": "xsd:dateTime"
       },
-      "from" : {
-        "@type" : "xsd:dateTime"
+      "from": {
+        "@type": "xsd:dateTime"
       },
-      "fundings" : {
-        "@container" : "@set",
-        "@id" : "funding"
+      "fundings": {
+        "@container": "@set",
+        "@id": "funding"
       },
-      "handle" : {
-        "@type" : "@id"
+      "handle": {
+        "@type": "@id"
       },
-      "id" : "@id",
-      "indexedDate" : {
-        "@type" : "xsd:dateTime"
+      "id": "@id",
+      "indexedDate": {
+        "@type": "xsd:dateTime"
       },
-      "isbnList" : {
-        "@container" : "@set",
-        "@id" : "isbn"
+      "isbnList": {
+        "@container": "@set",
+        "@id": "isbn"
       },
-      "labels" : {
-        "@container" : "@language",
-        "@id" : "label"
+      "labels": {
+        "@container": "@language",
+        "@id": "label"
       },
-      "language" : {
-        "@type" : "@id"
+      "language": {
+        "@type": "@id"
       },
-      "link" : {
-        "@type" : "@id"
+      "link": {
+        "@type": "@id"
       },
-      "manifestations" : {
-        "@container" : "@set",
-        "@id" : "manifestation"
+      "manifestations": {
+        "@container": "@set",
+        "@id": "manifestation"
       },
-      "metadataSource" : {
-        "@type" : "@id"
+      "metadataSource": {
+        "@type": "@id"
       },
-      "modifiedDate" : {
-        "@type" : "xsd:dateTime"
+      "modifiedDate": {
+        "@type": "xsd:dateTime"
       },
-      "musicalWorks" : {
-        "@container" : "@set",
-        "@id" : "musicalWork"
+      "musicalWorks": {
+        "@container": "@set",
+        "@id": "musicalWork"
       },
-      "nameType" : {
-        "@context" : {
-          "@vocab" : "https://nva.sikt.no/ontology/publication#"
+      "nameType": {
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/publication#"
         },
-        "@type" : "@vocab"
+        "@type": "@vocab"
       },
-      "outputs" : {
-        "@container" : "@set",
-        "@id" : "output"
+      "outputs": {
+        "@container": "@set",
+        "@id": "output"
       },
-      "ownerAffiliation" : {
-        "@type" : "@id"
+      "ownerAffiliation": {
+        "@type": "@id"
       },
-      "projects" : {
-        "@container" : "@set",
-        "@id" : "project"
+      "projects": {
+        "@container": "@set",
+        "@id": "project"
       },
-      "publishedDate" : {
-        "@type" : "xsd:dateTime"
+      "publishedDate": {
+        "@type": "xsd:dateTime"
       },
-      "referencedBy" : {
-        "@container" : "@set",
-        "@id" : "referencedBy"
+      "referencedBy": {
+        "@container": "@set",
+        "@id": "referencedBy"
       },
-      "related" : {
-        "@container" : "@set",
-        "@id" : "related"
+      "related": {
+        "@container": "@set",
+        "@id": "related"
       },
-      "status" : {
-        "@context" : {
-          "@vocab" : "https://nva.sikt.no/ontology/publication#"
+      "status": {
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/publication#"
         },
-        "@type" : "@vocab"
+        "@type": "@vocab"
       },
-      "subjects" : {
-        "@container" : "@set",
-        "@id" : "subject",
-        "@type" : "@id"
+      "subjects": {
+        "@container": "@set",
+        "@id": "subject",
+        "@type": "@id"
       },
-      "tags" : {
-        "@container" : "@set",
-        "@id" : "tag"
+      "tags": {
+        "@container": "@set",
+        "@id": "tag"
       },
-      "to" : {
-        "@type" : "xsd:dateTime"
+      "to": {
+        "@type": "xsd:dateTime"
       },
-      "trackList" : {
-        "@container" : "@set",
-        "@id" : "trackList"
+      "trackList": {
+        "@container": "@set",
+        "@id": "trackList"
       },
-      "type" : "@type",
-      "venues" : {
-        "@container" : "@set",
-        "@id" : "venue"
+      "type": "@type",
+      "venues": {
+        "@container": "@set",
+        "@id": "venue"
       },
-      "nviType" : {
-        "@type" : "@vocab",
-        "@context" : {
-          "@vocab" : "https://nva.sikt.no/ontology/publication#"
+      "nviType": {
+        "@type": "@vocab",
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/publication#"
         }
       },
-      "NviCandidate" : "https://nva.sikt.no/ontology/publication#NviCandidate",
-      "NonNviCandidate" : "https://nva.sikt.no/ontology/publication#NonNviCandidate",
-      "publicationContextUris" : {
-        "@container" : "@set"
+      "NviCandidate": "https://nva.sikt.no/ontology/publication#NviCandidate",
+      "NonNviCandidate": "https://nva.sikt.no/ontology/publication#NonNviCandidate",
+      "publicationContextUris": {
+        "@container": "@set"
       }
     },
-    "id" : "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
-    "entityDescription" : {
-      "type" : "EntityDescription",
-      "contributors" : [ {
-        "type" : "Contributor",
-        "affiliations" : [ {
-          "id" : "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0",
-          "type" : "Organization"
-        } ],
-        "identity" : {
-          "id" : "https://api.dev.nva.aws.unit.no/cristin/person/997998",
-          "type" : "Identity",
-          "verificationStatus": "Verified"
+    "id": "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
+    "entityDescription": {
+      "type": "EntityDescription",
+      "contributors": [
+        {
+          "type": "Contributor",
+          "affiliations": [
+            {
+              "id": "https://www.example.org/9e3de71b-0ecb-4464-b9f1-2f92b974839c",
+              "type": "Organization"
+            }
+          ],
+          "identity": {
+            "type": "Identity",
+            "id": "https://api.dev.nva.aws.unit.no/cristin/person/123456",
+            "verificationStatus": "Verified"
+          },
+          "role": {
+            "type": "RoleOther"
+          }
         },
-        "role" : {
-          "type" : "Creator"
+        {
+          "type": "Contributor",
+          "affiliations": [
+            {
+              "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0",
+              "type": "Organization"
+            }
+          ],
+          "identity": {
+            "id": "https://api.dev.nva.aws.unit.no/cristin/person/997998",
+            "type": "Identity",
+            "verificationStatus": "Verified"
+          },
+          "role": {
+            "type": "Creator"
+          }
         }
-      } ],
-      "publicationDate" : {
-        "type" : "PublicationDate",
-        "year" : "2023"
+      ],
+      "publicationDate": {
+        "type": "PublicationDate",
+        "year": "2023"
       },
-      "reference" : {
-        "type" : "Reference",
-        "publicationContext" : {
-          "id" : "https://api.dev.nva.aws.unit.no/publication-channels/journal/490845/2023",
-          "type" : "Journal",
-          "level" : "1"
+      "reference": {
+        "type": "Reference",
+        "publicationContext": {
+          "id": "https://api.dev.nva.aws.unit.no/publication-channels/journal/490845/2023",
+          "type": "Journal",
+          "level": "1"
         },
-        "publicationInstance" : {
-          "type" : "AcademicArticle"
+        "publicationInstance": {
+          "type": "AcademicArticle"
         }
       }
     },
-    "status" : "PUBLISHED"
+    "status": "PUBLISHED"
   },
-  "consumptionAttributes" : {
-    "index" : "resources",
-    "documentIdentifier" : "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d"
+  "consumptionAttributes": {
+    "index": "resources",
+    "documentIdentifier": "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d"
   }
 }

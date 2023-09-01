@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.fetch;
 
 import static no.sikt.nva.nvi.fetch.FetchNviCandidateHandler.PARAM_CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -11,8 +12,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
@@ -56,7 +59,22 @@ class FetchNviCandidateHandlerTest {
     @Test
     void shouldReturnValidCandidateIfExists() throws IOException {
         var candidateId = UUID.randomUUID();
-        var candidateWithIdentifier = getCandidate(candidateId);
+        var candidateWithIdentifier = getCandidate(candidateId, randomCandidate());
+        when(service.findById(candidateId)).thenReturn(Optional.of(candidateWithIdentifier));
+        var input = getInput(candidateId);
+        handler.handleRequest(input, output, CONTEXT);
+        var gatewayResponse = getGatewayResponse();
+        assertEquals(HttpStatus.SC_OK, gatewayResponse.getStatusCode());
+        var bodyObject = gatewayResponse.getBodyObject(FetchCandidateResponse.class);
+        var expectedResponse = getExpectedResponse(candidateWithIdentifier);
+
+        assertEquals(bodyObject, expectedResponse);
+    }
+
+    @Test
+    void shouldHandleNullNotes() throws IOException {
+        var candidateId = UUID.randomUUID();
+        var candidateWithIdentifier = getCandidate(candidateId, randomCandidateBuilder().withNotes(null).build());
         when(service.findById(candidateId)).thenReturn(Optional.of(candidateWithIdentifier));
         var input = getInput(candidateId);
         handler.handleRequest(input, output, CONTEXT);
@@ -78,9 +96,11 @@ class FetchNviCandidateHandlerTest {
     }
 
     private static List<Note> getNotes(Candidate candidate) {
-        return candidate.notes().stream()
-                   .map(note -> new Note(note.user(), note.text(), note.createdDate()))
-                   .toList();
+        return Objects.nonNull(candidate.notes())
+                   ? candidate.notes().stream()
+                         .map(note -> new Note(note.user(), note.text(), note.createdDate()))
+                         .toList()
+                   : Collections.emptyList();
     }
 
     private static List<ApprovalStatus> getApprovalStatuses(Candidate candidate) {
@@ -99,10 +119,8 @@ class FetchNviCandidateHandlerTest {
                    .build();
     }
 
-    private static CandidateWithIdentifier getCandidate(UUID id) {
-        return new CandidateWithIdentifier(
-            randomCandidate(),
-            id);
+    private static CandidateWithIdentifier getCandidate(UUID id, Candidate candidate) {
+        return new CandidateWithIdentifier(candidate, id);
     }
 
     private GatewayResponse<FetchCandidateResponse> getGatewayResponse()
