@@ -128,7 +128,7 @@ public class OpenSearchClientTest {
     }
 
     @Test
-    void shouldReturnForControlAggregationsWithExpectedCount() throws IOException, InterruptedException {
+    void shouldReturnAggregationsWithExpectedCount() throws IOException, InterruptedException {
         addDocumentsToIndex(documentFromString("document_pending.json"),
                             documentFromString("document_pending_collaboration.json"),
                             documentFromString("document_assigned.json"),

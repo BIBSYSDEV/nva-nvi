@@ -39,7 +39,7 @@ public final class SearchConstants {
     private static NestedProperty approvalsNestedProperty() {
         return new NestedProperty.Builder()
                    .includeInParent(true)
-                   .properties(affiliationsProperties())
+                   .properties(approvalProperties())
                    .build();
     }
 
@@ -51,7 +51,7 @@ public final class SearchConstants {
         return ENVIRONMENT.readEnv("SEARCH_INFRASTRUCTURE_AUTH_URI");
     }
 
-    private static Map<String, Property> affiliationsProperties() {
+    private static Map<String, Property> approvalProperties() {
         return Map.of(ID, keywordProperty(),
                       ASSIGNEE, keywordProperty(),
                       APPROVAL_STATUS, keywordProperty());
