@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.test;
 
+import static no.sikt.nva.nvi.common.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_RANGE_KEY;
@@ -23,6 +24,8 @@ import software.amazon.awssdk.services.dynamodb.model.Projection;
 import software.amazon.awssdk.services.dynamodb.model.ProjectionType;
 import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
+import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 import software.amazon.awssdk.services.dynamodb.model.TableStatus;
 
 public class LocalDynamoTest {
@@ -121,6 +124,10 @@ public class LocalDynamoTest {
     private void assertThatTableKeySchemaContainsBothKeys(List<KeySchemaElement> tableKeySchema) {
         MatcherAssert.assertThat(tableKeySchema.toString(), StringContains.containsString(HASH_KEY));
         MatcherAssert.assertThat(tableKeySchema.toString(), StringContains.containsString(SORT_KEY));
+    }
+
+    protected ScanResponse scanDB() {
+        return localDynamo.scan(ScanRequest.builder().tableName(NVI_TABLE_NAME).build());
     }
 
 

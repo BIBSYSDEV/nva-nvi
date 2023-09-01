@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.service;
 
-import static no.sikt.nva.nvi.common.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.mapToVerifiedCreators;
@@ -41,7 +40,6 @@ import nva.commons.apigateway.exceptions.ConflictException;
 import nva.commons.apigateway.exceptions.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 
 public class NviServiceTest extends LocalDynamoTest {
 
@@ -73,6 +71,37 @@ public class NviServiceTest extends LocalDynamoTest {
 
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType, randomLevel,
                                                         publicationDate, institutionPoints);
+        var fetchedCandidate = nviService.findById(createdCandidateId).get().candidate();
+
+        assertThat(fetchedCandidate, is(equalTo(expectedCandidate)));
+    }
+
+    @Test
+    void shouldUpdateExistingCandidateWhenUpsertIsCalledAndTheCandidateExists() {
+        var bucketIdentifier = UUID.randomUUID();
+        var institutionId = randomUri();
+        var verifiedCreators = List.of(new Creator(randomUri(), List.of(institutionId)));
+        var instanceType = randomString();
+        var randomLevel = randomElement(Level.values());
+        var publicationDate = randomPublicationDate();
+        var institutionPoints = Map.of(institutionId, randomBigDecimal());
+        var originalEvaluatedCandidateDto = createEvaluatedCandidateDto(bucketIdentifier, verifiedCreators,
+                                                                        instanceType, randomLevel,
+                                                                publicationDate, institutionPoints);
+
+        var newInstanceType = randomString();
+        var updatedEvaluatedCandidateDto = createEvaluatedCandidateDto(bucketIdentifier, verifiedCreators,
+                                                                       newInstanceType, randomLevel,
+                                                                        publicationDate, institutionPoints);
+
+        var originalUpserted = nviService.upsertCandidate(originalEvaluatedCandidateDto).get();
+        var updatedUpserted = nviService.upsertCandidate(updatedEvaluatedCandidateDto).get();
+        assertThat(updatedUpserted, is(not(equalTo(originalUpserted))));
+
+        var createdCandidateId = originalUpserted.identifier();
+
+        var expectedCandidate = createExpectedCandidate(bucketIdentifier, verifiedCreators, newInstanceType,
+                                                        randomLevel, publicationDate, institutionPoints);
         var fetchedCandidate = nviService.findById(createdCandidateId).get().candidate();
 
         assertThat(fetchedCandidate, is(equalTo(expectedCandidate)));
@@ -112,8 +141,7 @@ public class NviServiceTest extends LocalDynamoTest {
                                                                 publicationDate, institutionPoints);
         nviService.upsertCandidate(evaluatedCandidateDto).get().identifier();
 
-        var scan = this.localDynamo.scan(ScanRequest.builder().tableName(NVI_TABLE_NAME).build());
-        var items = scan.items().size();
+        var items = scanDB().items().size();
 
         assertThat(items, is(equalTo(2)));
     }
@@ -197,16 +225,16 @@ public class NviServiceTest extends LocalDynamoTest {
         return new Username(randomString());
     }
 
-    private CandidateEvaluatedMessage createEvaluatedCandidateDto(UUID identifier,
+    private CandidateEvaluatedMessage createEvaluatedCandidateDto(UUID bucketUriIdentifier,
                                                                   List<CandidateDetails.Creator> creators,
                                                                   String instanceType, Level randomLevel,
                                                                   PublicationDate publicationDate,
                                                                   Map<URI, BigDecimal> institutionPoints) {
         return CandidateEvaluatedMessage.builder()
                    .withStatus(CandidateStatus.CANDIDATE)
-                   .withPublicationBucketUri(generateS3BucketUri(identifier))
+                   .withPublicationBucketUri(generateS3BucketUri(bucketUriIdentifier))
                    .withInstitutionPoints(institutionPoints)
-                   .withCandidateDetails(new CandidateDetails(generatePublicationId(identifier),
+                   .withCandidateDetails(new CandidateDetails(generatePublicationId(bucketUriIdentifier),
                                                               instanceType,
                                                               randomLevel.getValue(),
                                                               publicationDate,
