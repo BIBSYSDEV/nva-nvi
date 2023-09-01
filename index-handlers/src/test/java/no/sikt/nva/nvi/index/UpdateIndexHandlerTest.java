@@ -138,7 +138,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
             "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
             Map.of("nb", "Sikt – Kunnskapssektorens tjenesteleverandør",
                    "en", "Sikt - Norwegian Agency for Shared Services in Education and Research"),
-            ApprovalStatus.PENDING));
+            ApprovalStatus.PENDING, null));
     }
 
     private static PublicationDetails constructPublicationDetails() {

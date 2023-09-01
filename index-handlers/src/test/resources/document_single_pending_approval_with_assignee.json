@@ -1,6 +1,6 @@
 {
   "@context": "https://bibsysdev.github.io/src/nvi-context.json",
-  "identifier": "someRandomIdentifier",
+  "identifier": "someRandomIdentifier3",
   "numberOfApprovals": 1,
   "publicationDetails": {
     "id": "https://api.dev.nva.aws.unit.no/publication/01892ad6fc07-4ddfbfc5-3145-4b06-9f77-d4202d074380",

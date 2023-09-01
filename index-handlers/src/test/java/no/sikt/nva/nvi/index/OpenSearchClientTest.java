@@ -197,7 +197,7 @@ public class OpenSearchClientTest {
     }
 
     private static Approval randomApproval() {
-        return new Approval(randomString(), Map.of(), randomStatus());
+        return new Approval(randomString(), Map.of(), randomStatus(), null);
     }
 
     private static ApprovalStatus randomStatus() {

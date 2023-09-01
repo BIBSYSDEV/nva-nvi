@@ -70,8 +70,11 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private static Approval toApproval(no.sikt.nva.nvi.common.model.business.ApprovalStatus approval) {
-        return new Approval(approval.institutionId().toString(), Map.of(),
-                            ApprovalStatus.fromValue(approval.status().getValue()));
+        return new Approval.Builder()
+                   .withId(approval.institutionId().toString())
+                   .withLabels(Map.of())
+                   .withApprovalStatus(ApprovalStatus.fromValue(approval.status().getValue()))
+                   .build();
     }
 
     private static Approval expandApprovals(JsonNode resource,
@@ -87,9 +90,11 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static Approval createApproval(JsonNode affiliation,
                                            Approval approval) {
-        return new Approval(extractId(affiliation),
-                            convertToMap(affiliation.at(JSON_PTR_LABELS)),
-                            approval.approvalStatus());
+        return new Approval.Builder()
+                   .withId(extractId(affiliation))
+                   .withLabels(convertToMap(affiliation.at(JSON_PTR_LABELS)))
+                   .withApprovalStatus(approval.approvalStatus())
+                   .build();
     }
 
     private static PublicationDetails extractPublicationDetails(JsonNode resource) {
