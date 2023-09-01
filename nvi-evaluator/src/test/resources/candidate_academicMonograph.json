@@ -199,30 +199,30 @@
           "type": "Contributor",
           "affiliations": [
             {
-              "type": "Contributor",
-              "affiliations": [
-                {
-                  "id": "https://www.example.org/9e3de71b-0ecb-4464-b9f1-2f92b974839c",
-                  "type": "Organization"
-                }
-              ],
-              "identity": {
-                "type": "Identity",
-                "id": "https://api.dev.nva.aws.unit.no/cristin/person/123456",
-                "verificationStatus": "Verified"
-              },
-              "role": {
-                "type": "RoleOther"
-              }
-            },
+              "id": "https://www.example.org/9e3de71b-0ecb-4464-b9f1-2f92b974839c",
+              "type": "Organization"
+            }
+          ],
+          "identity": {
+            "type": "Identity",
+            "id": "https://api.dev.nva.aws.unit.no/cristin/person/123456",
+            "verificationStatus": "Verified"
+          },
+          "role": {
+            "type": "RoleOther"
+          }
+        },
+        {
+          "type": "Contributor",
+          "affiliations": [
             {
               "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0",
               "type": "Organization"
             }
           ],
           "identity": {
-            "type": "Identity",
             "id": "https://api.dev.nva.aws.unit.no/cristin/person/997998",
+            "type": "Identity",
             "verificationStatus": "Verified"
           },
           "role": {
