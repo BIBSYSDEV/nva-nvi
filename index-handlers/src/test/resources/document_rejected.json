@@ -1,8 +1,6 @@
 {
   "@context": "https://bibsysdev.github.io/src/nvi-context.json",
-  "identifier": "01892ad6fc07-3145-4bf77-d4202d074380",
-  "year": "2023",
-  "type": "NviCandidate",
+  "identifier": "01892ad6fc07-1234234-657-78698677",
   "publicationDetails": {
     "id": "https://api.dev.nva.aws.unit.no/publication/01892ad6fc07-4ddfbfc5-3145-4b06-9f77-d4202d074380",
     "type": "AcademicArticle",

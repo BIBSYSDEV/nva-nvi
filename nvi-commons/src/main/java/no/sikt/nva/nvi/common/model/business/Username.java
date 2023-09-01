@@ -13,7 +13,7 @@ public record Username(String value) {
     }
 
     public static Username fromDynamoDb(AttributeValue input) {
-        Map<String, AttributeValue> map = input.m();
+        var map = input.m();
         return new Username(
             map.get(VALUE_FIELD).s()
         );

@@ -16,7 +16,7 @@ public record ReportingStatus(URI institutionId,
     public static final String STATUS_FIELD = "status";
     public static final String UPDATED_DATE_FIELD = "updatedDate";
 
-    @JacocoGenerated //TODO: Will be used in Period, in next DB task
+    @JacocoGenerated //TODO: Will be used when persisted to DB
     public AttributeValue toDynamoDb() {
         return AttributeValue.fromM(
             Map.of(INSTITUTION_ID_FIELD, AttributeValue.fromS(institutionId.toString()),
@@ -26,9 +26,9 @@ public record ReportingStatus(URI institutionId,
             ));
     }
 
-    @JacocoGenerated //TODO: Will be used in Period, in next DB task
+    @JacocoGenerated //TODO: Will be used when persisted to DB
     public ReportingStatus fromDynamoDb(AttributeValue input) {
-        Map<String, AttributeValue> map = input.m();
+        var map = input.m();
         return new ReportingStatus(
             URI.create(map.get(INSTITUTION_ID_FIELD).s()),
             NviPeriod.fromDynamoDb(map.get(NVI_PERIOD_FIELD)),

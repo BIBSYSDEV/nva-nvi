@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.ApplicationConstants.NVI_TABLE_NAME;
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -29,7 +28,7 @@ class NviCandidateRepositoryTest extends LocalDynamoTest {
         var candidate1 = randomCandidateBuilder().withPublicationId(publicationId).build();
         var candidate2 = randomCandidateBuilder().withPublicationId(publicationId).build();
         nviCandidateRepository.save(candidate1);
-        assertThrows(RuntimeException.class,() -> nviCandidateRepository.save(candidate2));
+        assertThrows(RuntimeException.class, () -> nviCandidateRepository.save(candidate2));
         var tableItemCount = localDynamo.scan(ScanRequest.builder().tableName(NVI_TABLE_NAME).build()).count();
         assertThat(tableItemCount, is(equalTo(2)));
     }

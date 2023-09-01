@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.db;
+package no.sikt.nva.nvi.common.db.converters;
 
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import software.amazon.awssdk.enhanced.dynamodb.AttributeConverter;
