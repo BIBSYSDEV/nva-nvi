@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.index.Aggregations.FOR_CONTROL_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.FOR_CONTROL_ASSIGNED_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.FOR_CONTROL_ASSIGNED_MULTIPLE_APPROVALS_AGGREGATION_NAME;
 import static no.sikt.nva.nvi.index.Aggregations.FOR_CONTROL_MULTIPLE_APPROVALS_AGGREGATION_NAME;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -39,7 +41,6 @@ import no.unit.nva.auth.CognitoAuthenticator;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.ioutils.IoUtils;
 import org.apache.http.HttpHost;
-import org.checkerframework.checker.units.qual.C;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -124,28 +125,33 @@ public class OpenSearchClientTest {
     @Test
     void shouldReturnForControlAggregationsWithExpectedCount() throws IOException, InterruptedException {
         addDocumentsToIndex(documentFromString("document_single_pending_approval.json"),
-                            documentFromString("document_multiple_pending_approvals.json"));
+                            documentFromString("document_multiple_pending_approvals.json"),
+                            documentFromString("document_single_pending_approval_with_assignee.json"),
+                            documentFromString("document_multiple_pending_approvals_with_assignee.json"));
         var searchResponse =
             openSearchClient.search(searchTermToQuery("*"), USERNAME, CUSTOMER);
         var response = SearchResponseDto.fromSearchResponse(searchResponse);
 
         var forControlDocCount =
-            response.aggregations().get(FOR_CONTROL_AGGREGATION_NAME).get(DOC_COUNT).asInt();
-        var forControlMultipleApprovalsDocCount =
-            response.aggregations().get(FOR_CONTROL_MULTIPLE_APPROVALS_AGGREGATION_NAME).get(DOC_COUNT).asInt();
-
+            getDocCount(response, FOR_CONTROL_AGGREGATION_NAME);
         assertThat(forControlDocCount, is(equalTo(2)));
+
+        var forControlMultipleApprovalsDocCount =
+            getDocCount(response, FOR_CONTROL_MULTIPLE_APPROVALS_AGGREGATION_NAME);
         assertThat(forControlMultipleApprovalsDocCount, is(equalTo(1)));
+
+        var forControlAssignedDocCount =
+            getDocCount(response, FOR_CONTROL_ASSIGNED_AGGREGATION_NAME);
+        assertThat(forControlAssignedDocCount, is(equalTo(2)));
+
+        var forControlAssignedMultipleApprovalsDocCount =
+            getDocCount(response, FOR_CONTROL_ASSIGNED_MULTIPLE_APPROVALS_AGGREGATION_NAME);
+        assertThat(forControlAssignedMultipleApprovalsDocCount, is(equalTo(1)));
+
     }
 
-    @Test
-    void shouldReturnAggregationsForPendingApprovalStatusMyInstitution() throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_single_pending_approval.json"),
-                            documentFromString("document_pending.json"),
-                            documentFromString("document_rejected.json"));
-        var searchResponse = openSearchClient.search(searchTermToQuery("*"), USERNAME, CUSTOMER);
-        var response = SearchResponseDto.fromSearchResponse(searchResponse);
-        assertThat(response.aggregations(), is(notNullValue()));
+    private static int getDocCount(SearchResponseDto response, String aggregationName) {
+        return response.aggregations().get(aggregationName).get(DOC_COUNT).asInt();
     }
 
     @Test

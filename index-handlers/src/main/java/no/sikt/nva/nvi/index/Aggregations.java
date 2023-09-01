@@ -24,20 +24,56 @@ public final class Aggregations {
     private static final CharSequence JSON_PATH_DELIMITER = ".";
     public static final String FOR_CONTROL_AGGREGATION_NAME = "for_control";
     public static final String FOR_CONTROL_MULTIPLE_APPROVALS_AGGREGATION_NAME = "for_control_multiple_approvals";
+    public static final String FOR_CONTROL_ASSIGNED_AGGREGATION_NAME = "for_control_assigned";
+    public static final String FOR_CONTROL_ASSIGNED_MULTIPLE_APPROVALS_AGGREGATION_NAME =
+        "for_control_assigned_multiple_approvals";
 
     private Aggregations() {
     }
 
     public static Map<String, Aggregation> generateAggregations(String username, URI customer) {
-        return Map.of(FOR_CONTROL_AGGREGATION_NAME,
-                      forControlAggregation(customer.toString()),
+        return Map.of(FOR_CONTROL_AGGREGATION_NAME, forControlAggregation(customer.toString()),
                       FOR_CONTROL_MULTIPLE_APPROVALS_AGGREGATION_NAME,
-                      forControlMultipleApprovalsAggregation(customer.toString()));
+                      forControlMultipleApprovalsAggregation(customer.toString()),
+                      FOR_CONTROL_ASSIGNED_AGGREGATION_NAME, forControlAssignedAggregation(customer.toString()),
+                      FOR_CONTROL_ASSIGNED_MULTIPLE_APPROVALS_AGGREGATION_NAME,
+                      forControlAssignedMultipleApprovalsAggregation(customer.toString()));
+    }
+
+    private static Aggregation forControlAssignedMultipleApprovalsAggregation(String customer) {
+        var customerQuery = termQuery(customer, jsonPathOf(APPROVALS, ID));
+        var approvalStatusQuery = termQuery(PENDING.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS));
+        var assigneeQuery = existsQuery(jsonPathOf(APPROVALS, ASSIGNEE));
+        var multipleAffiliationsQuery = mustMatch(rangeFromQuery(NUMBER_OF_APPROVALS, 2));
+
+        var nestedQuery = new NestedQuery.Builder()
+                              .path(APPROVALS)
+                              .query(mustMatch(assigneeQuery, customerQuery, approvalStatusQuery))
+                              .build()._toQuery();
+
+        return new Aggregation.Builder()
+                   .filter(mustMatch(nestedQuery, multipleAffiliationsQuery))
+                   .build();
+    }
+
+    private static Aggregation forControlAssignedAggregation(String customer) {
+        var customerQuery = termQuery(customer, jsonPathOf(APPROVALS, ID));
+        var approvalStatusQuery = termQuery(PENDING.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS));
+        var assigneeQuery = existsQuery(jsonPathOf(APPROVALS, ASSIGNEE));
+
+        var nestedQuery = new NestedQuery.Builder()
+                              .path(APPROVALS)
+                              .query(mustMatch(assigneeQuery, customerQuery, approvalStatusQuery))
+                              .build()._toQuery();
+
+        return new Aggregation.Builder()
+                   .filter(mustMatch(nestedQuery))
+                   .build();
     }
 
     private static Aggregation forControlMultipleApprovalsAggregation(String customer) {
         var customerQuery = termQuery(customer, jsonPathOf(APPROVALS, ID));
-        var approvalStatusQuery = termQuery(PENDING.toString(), jsonPathOf(APPROVALS, APPROVAL_STATUS));
+        var approvalStatusQuery = termQuery(PENDING.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS));
         var assigneeQuery = notExistsQuery(jsonPathOf(APPROVALS, ASSIGNEE));
         var multipleAffiliationsQuery = mustMatch(rangeFromQuery(NUMBER_OF_APPROVALS, 2));
 
@@ -53,7 +89,7 @@ public final class Aggregations {
 
     private static Aggregation forControlAggregation(String customer) {
         var customerQuery = termQuery(customer, jsonPathOf(APPROVALS, ID));
-        var approvalStatusQuery = termQuery(PENDING.toString(), jsonPathOf(APPROVALS, APPROVAL_STATUS));
+        var approvalStatusQuery = termQuery(PENDING.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS));
         var assigneeQuery = notExistsQuery(jsonPathOf(APPROVALS, ASSIGNEE));
 
         var nestedQuery = new NestedQuery.Builder()
@@ -75,6 +111,12 @@ public final class Aggregations {
     private static Query notExistsQuery(String field) {
         return new Builder()
                    .mustNot(new ExistsQuery.Builder().field(field).build()._toQuery())
+                   .build()._toQuery();
+    }
+
+    private static Query existsQuery(String field) {
+        return new Builder()
+                   .must(notExistsQuery(field))
                    .build()._toQuery();
     }
 

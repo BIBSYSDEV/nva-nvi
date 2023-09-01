@@ -32,10 +32,15 @@ public final class SearchConstants {
 
     private static Map<String, Property> mappingProperties() {
         return Map.of(APPROVALS, new Property.Builder()
-                                    .nested(new NestedProperty.Builder()
-                                                .includeInParent(true)
-                                                .properties(affiliationsProperties()).build())
+                                    .nested(approvalsNestedProperty())
                                     .build());
+    }
+
+    private static NestedProperty approvalsNestedProperty() {
+        return new NestedProperty.Builder()
+                   .includeInParent(true)
+                   .properties(affiliationsProperties())
+                   .build();
     }
 
     private static String readSearchInfrastructureApiHost() {
