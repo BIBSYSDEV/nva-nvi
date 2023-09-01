@@ -129,6 +129,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .withIdentifier(candidateWithIdentifier.identifier().toString())
                    .withApprovals(constructExpectedApprovals())
                    .withPublicationDetails(constructPublicationDetails())
+                   .withNumberOfApprovals(1)
                    .build();
     }
 
@@ -137,7 +138,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
             "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
             Map.of("nb", "Sikt – Kunnskapssektorens tjenesteleverandør",
                    "en", "Sikt - Norwegian Agency for Shared Services in Education and Research"),
-            ApprovalStatus.PENDING));
+            ApprovalStatus.PENDING, null));
     }
 
     private static PublicationDetails constructPublicationDetails() {
@@ -212,7 +213,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         }
 
         @Override
-        public SearchResponse<NviCandidateIndexDocument> search(Query query) {
+        public SearchResponse<NviCandidateIndexDocument> search(Query query, String username, URI customer) {
             return null;
         }
 

@@ -1,9 +1,11 @@
 package no.sikt.nva.nvi.index.aws;
 
 import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
-import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_API_HOST;
-import static no.sikt.nva.nvi.common.ApplicationConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
-import static no.sikt.nva.nvi.index.Aggregations.AGGREGATIONS_MAP;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_API_HOST;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_CREDENTIALS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.mappings;
 import static nva.commons.core.attempt.Try.attempt;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import java.io.IOException;
@@ -11,6 +13,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Clock;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
+import no.sikt.nva.nvi.index.Aggregations;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CachedValueProvider;
@@ -39,8 +42,7 @@ import org.slf4j.LoggerFactory;
 @JacocoGenerated
 public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument> {
 
-    public static final String NVI_CANDIDATES_INDEX = "nvi-candidates";
-    private static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchClient.class);
     private static final String ERROR_MSG_CREATE_INDEX = "Error while creating index: " + NVI_CANDIDATES_INDEX;
     public static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";
@@ -87,9 +89,11 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     @Override
-    public SearchResponse<NviCandidateIndexDocument> search(Query query) throws IOException {
+    public SearchResponse<NviCandidateIndexDocument> search(Query query, String username, URI customer)
+        throws IOException {
         return client.withTransportOptions(getOptions())
-                   .search(constructSearchRequest(query), NviCandidateIndexDocument.class);
+                   .search(constructSearchRequest(query, username, customer.toString()),
+                           NviCandidateIndexDocument.class);
     }
 
     @Override
@@ -119,8 +123,10 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     private static CreateIndexRequest getCreateIndexRequest() {
-        return new CreateIndexRequest.Builder().index(NVI_CANDIDATES_INDEX).build();
+        return new CreateIndexRequest.Builder().mappings(mappings()).index(NVI_CANDIDATES_INDEX).build();
     }
+
+
 
     private TransportOptions getOptions() {
         return RestClientOptions.builder().addHeader(AUTHORIZATION, cachedJwtProvider.getValue().getToken()).build();
@@ -155,10 +161,10 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         return new RuntimeException(exception.getMessage());
     }
 
-    private SearchRequest constructSearchRequest(Query query) {
+    private SearchRequest constructSearchRequest(Query query, String username, String customer) {
         return new SearchRequest.Builder().index(NVI_CANDIDATES_INDEX)
                                           .query(query)
-                                          .aggregations(AGGREGATIONS_MAP)
+                                          .aggregations(Aggregations.generateAggregations(username, customer))
                                           .build();
     }
 }

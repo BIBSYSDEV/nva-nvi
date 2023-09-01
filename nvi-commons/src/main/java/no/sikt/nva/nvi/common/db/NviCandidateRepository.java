@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.sikt.nva.nvi.common.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
+import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static nva.commons.core.attempt.Try.attempt;
 import java.net.URI;
 import java.util.Collection;

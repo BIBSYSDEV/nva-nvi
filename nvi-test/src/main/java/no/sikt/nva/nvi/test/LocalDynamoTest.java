@@ -1,15 +1,14 @@
 package no.sikt.nva.nvi.test;
 
-import static no.sikt.nva.nvi.common.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_RANGE_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
+import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
 import java.util.ArrayList;
 import java.util.List;
-import no.sikt.nva.nvi.common.ApplicationConstants;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.StringContains;
 import org.junit.jupiter.api.Assertions;
@@ -39,7 +38,7 @@ public class LocalDynamoTest {
         var localDynamo = DynamoDBEmbedded.create().dynamoDbClient();
 
 
-        var tableName = ApplicationConstants.NVI_TABLE_NAME;
+        var tableName = NVI_TABLE_NAME;
         var createTableResult = createTable(localDynamo, tableName);
         var tableDescription = createTableResult.tableDescription();
         Assertions.assertEquals(tableName, tableDescription.tableName());

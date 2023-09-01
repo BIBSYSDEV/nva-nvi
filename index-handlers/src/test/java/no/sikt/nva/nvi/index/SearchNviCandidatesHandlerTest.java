@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.index.aws.OpenSearchClient.NVI_CANDIDATES_INDEX;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -57,9 +57,11 @@ public class SearchNviCandidatesHandlerTest {
 
     @Test
     void shouldReturnDocumentFromIndex() throws IOException {
-        when(openSearchClient.search(any())).thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
+        when(openSearchClient.search(any(), any(), any()))
+            .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
         handler.handleRequest(request("*"), output, context);
-        var response = GatewayResponse.fromOutputStream(output, SearchResponseDto.class);
+        var response =
+            GatewayResponse.fromOutputStream(output, SearchResponseDto.class);
         var hits = response.getBodyObject(SearchResponseDto.class).hits();
         assertThat(hits, hasSize(1));
     }
@@ -67,9 +69,10 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldReturnDocumentFromIndexContainingSingleHitWhenUsingTerms() throws IOException {
         var document = singleNviCandidateIndexDocument();
-        when(openSearchClient.search(any())).thenReturn(createSearchResponse(document));
-        handler.handleRequest(request(document.identifier().toString()), output, context);
-        var response = GatewayResponse.fromOutputStream(output, SearchResponseDto.class);
+        when(openSearchClient.search(any(), any(), any())).thenReturn(createSearchResponse(document));
+        handler.handleRequest(request(document.identifier()), output, context);
+        var response =
+            GatewayResponse.fromOutputStream(output, SearchResponseDto.class);
         var hits = response.getBodyObject(SearchResponseDto.class).hits();
         assertThat(hits, hasSize(1));
     }
@@ -77,8 +80,8 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldThrowExceptionWhenSearchFails() throws IOException {
         var document = singleNviCandidateIndexDocument();
-        when(openSearchClient.search(any())).thenThrow(RuntimeException.class);
-        handler.handleRequest(request(document.identifier().toString()), output, context);
+        when(openSearchClient.search(any(), any(), any())).thenThrow(RuntimeException.class);
+        handler.handleRequest(request(document.identifier()), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
         assertThat(Objects.requireNonNull(response.getBodyObject(Problem.class).getStatus()).getStatusCode(),
                    is(equalTo(HttpURLConnection.HTTP_INTERNAL_ERROR)));
@@ -112,7 +115,7 @@ public class SearchNviCandidatesHandlerTest {
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
         return new NviCandidateIndexDocument(randomUri(), randomString(),
-                                             randomPublicationDetails(), List.of());
+                                             randomPublicationDetails(), List.of(), 0);
     }
 
     private static PublicationDetails randomPublicationDetails() {
@@ -122,6 +125,8 @@ public class SearchNviCandidatesHandlerTest {
     private InputStream request(String searchTerm) throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
                    .withQueryParameters(Map.of(QUERY, searchTerm))
+                   .withTopLevelCristinOrgId(randomUri())
+                   .withUserName(randomString())
                    .build();
     }
 }

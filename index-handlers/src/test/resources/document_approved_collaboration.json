@@ -1,7 +1,7 @@
 {
   "@context": "https://bibsysdev.github.io/src/nvi-context.json",
-  "identifier": "someRandomIdentifier7",
-  "numberOfApprovals": 1,
+  "identifier": "someRandomIdentifier6",
+  "numberOfApprovals": 2,
   "publicationDetails": {
     "id": "https://api.dev.nva.aws.unit.no/publication/01892ad6fc07-4ddfbfc5-3145-4b06-9f77-d4202d074380",
     "type": "AcademicArticle",
@@ -9,7 +9,7 @@
     "publicationDate": "2023",
     "contributors": [
       {
-        "id": "https://api.dev.nva.aws.unit.no/cristin/person/1136326",
+        "id": "https://api.dev.nva.aws.unit.no/cristin/person/1136323555",
         "name": "Kir Truhacev"
       }
     ]
@@ -22,7 +22,15 @@
         "nb": "Sikt – Kunnskapssektorens tjenesteleverandør",
         "en": "Sikt - Norwegian Agency for Shared Services in Education and Research"
       },
-      "approvalStatus": "Rejected"
+      "approvalStatus": "Approved"
+    },
+    {
+      "id": "https://api.dev.nva.aws.unit.no/cristin/organization/2333.0.0.0",
+      "labels": {
+        "nb": "NTNU",
+        "en": "NTNU"
+      },
+      "approvalStatus": "Pending"
     }
   ]
 }

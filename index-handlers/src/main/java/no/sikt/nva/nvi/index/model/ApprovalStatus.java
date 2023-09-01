@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.index.model;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
-import nva.commons.core.JacocoGenerated;
 import nva.commons.core.SingletonCollector;
 
 public enum ApprovalStatus {
@@ -15,7 +15,7 @@ public enum ApprovalStatus {
         this.value = value;
     }
 
-    @JacocoGenerated
+    @JsonValue
     public String getValue() {
         return value;
     }

@@ -15,7 +15,8 @@ import nva.commons.core.JacocoGenerated;
 public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         String identifier,
                                         PublicationDetails publicationDetails,
-                                        List<Approval> approvals) {
+                                        List<Approval> approvals,
+                                        int numberOfApprovals) {
 
     private static final String CONTEXT = "@context";
 
@@ -26,6 +27,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         private String identifier;
         private PublicationDetails publicationDetails;
         private List<Approval> approvals;
+        private int numberOfApprovals;
 
         public Builder withContext(URI context) {
             this.context = context;
@@ -47,8 +49,14 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             return this;
         }
 
+        public Builder withNumberOfApprovals(int numberOfApprovals) {
+            this.numberOfApprovals = numberOfApprovals;
+            return this;
+        }
+
         public NviCandidateIndexDocument build() {
-            return new NviCandidateIndexDocument(context, identifier, publicationDetails, approvals);
+            return new NviCandidateIndexDocument(context, identifier, publicationDetails,
+                                                 approvals, numberOfApprovals);
         }
     }
 }
