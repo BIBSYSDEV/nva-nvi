@@ -51,6 +51,7 @@ public class NviService {
             return Optional.of(createCandidate(evaluatedCandidate));
         } else if (isExistingCandidate(evaluatedCandidate) && isNviCandidate(evaluatedCandidate)) {
             var existing = findByPublicationId(evaluatedCandidate.candidateDetails().publicationId()).orElseThrow();
+            //TODO: Reset NVI Candidates here. See https://unit.atlassian.net/browse/NP-45113;
             return Optional.of(updateCandidate(existing.identifier(), evaluatedCandidate));
         }
         return Optional.empty();

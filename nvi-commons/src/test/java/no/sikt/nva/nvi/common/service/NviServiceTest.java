@@ -208,16 +208,16 @@ public class NviServiceTest extends LocalDynamoTest {
         return new Username(randomString());
     }
 
-    private CandidateEvaluatedMessage createEvaluatedCandidateDto(UUID bucketIdentifier,
+    private CandidateEvaluatedMessage createEvaluatedCandidateDto(UUID bucketUriIdentifier,
                                                                   List<CandidateDetails.Creator> creators,
                                                                   String instanceType, Level randomLevel,
                                                                   PublicationDate publicationDate,
                                                                   Map<URI, BigDecimal> institutionPoints) {
         return CandidateEvaluatedMessage.builder()
                    .withStatus(CandidateStatus.CANDIDATE)
-                   .withPublicationBucketUri(generateS3BucketUri(bucketIdentifier))
+                   .withPublicationBucketUri(generateS3BucketUri(bucketUriIdentifier))
                    .withInstitutionPoints(institutionPoints)
-                   .withCandidateDetails(new CandidateDetails(generatePublicationId(bucketIdentifier),
+                   .withCandidateDetails(new CandidateDetails(generatePublicationId(bucketUriIdentifier),
                                                               instanceType,
                                                               randomLevel.getValue(),
                                                               publicationDate,
