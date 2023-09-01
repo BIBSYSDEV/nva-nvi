@@ -95,16 +95,7 @@ public class CandidateCalculator {
             return createNonCandidateResponse(body);
         }
 
-        var verifiedCreatorsWithNviInstitutions = getJsonNodeStream(body, JSON_PTR_CONTRIBUTOR)
-                                                      .filter(CandidateCalculator::isVerified)
-                                                      .filter(CandidateCalculator::isCreator)
-                                                      .collect(Collectors.toMap(
-                                                          CandidateCalculator::extractContributorId,
-                                                          this::getTopLevelNviInstitutions))
-                                                      .entrySet()
-                                                      .stream()
-                                                      .filter(entry -> !entry.getValue().isEmpty())
-                                                      .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+        var verifiedCreatorsWithNviInstitutions = getVerifiedCreatorsWithNviInstitutions(body);
 
         return verifiedCreatorsWithNviInstitutions.isEmpty()
                    ? createNonCandidateResponse(body)
@@ -121,6 +112,10 @@ public class CandidateCalculator {
         var model = ModelFactory.createDefaultModel();
         loadDataIntoModel(model, stringToStream(body.toString()));
         return model;
+    }
+
+    private static boolean doesNotHaveNviInstitutions(Entry<URI, List<URI>> entry) {
+        return !entry.getValue().isEmpty();
     }
 
     private static NonNviCandidate createNonCandidateResponse(JsonNode publication) {
@@ -237,14 +232,17 @@ public class CandidateCalculator {
         return CREATOR.equals(extractJsonNodeTextValue(contributorNode, JSON_PTR_ROLE_TYPE));
     }
 
-    private CandidateType createCandidateResponse(Map<URI, List<URI>> verifiedCreatorsWithNviInstitutions,
-                                                  JsonNode body) {
-        var instanceType = extractInstanceType(body);
-        return new NviCandidate(new CandidateDetails(URI.create(extractJsonNodeTextValue(body, JSON_PTR_ID)),
-                                                     instanceType,
-                                                     extractLevel(instanceType, body),
-                                                     extractPublicationDate(body),
-                                                     mapToCreatorList(verifiedCreatorsWithNviInstitutions)));
+    private Map<URI, List<URI>> getVerifiedCreatorsWithNviInstitutions(JsonNode body) {
+        return getJsonNodeStream(body, JSON_PTR_CONTRIBUTOR)
+                   .filter(CandidateCalculator::isVerified)
+                   .filter(CandidateCalculator::isCreator)
+                   .collect(Collectors.toMap(
+                       CandidateCalculator::extractContributorId,
+                       this::getTopLevelNviInstitutions))
+                   .entrySet()
+                   .stream()
+                   .filter(CandidateCalculator::doesNotHaveNviInstitutions)
+                   .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     }
 
     private List<URI> getTopLevelNviInstitutions(JsonNode creator) {
@@ -255,6 +253,16 @@ public class CandidateCalculator {
                    .map(Organization::id)
                    .filter(this::isNviInstitution)
                    .toList();
+    }
+
+    private CandidateType createCandidateResponse(Map<URI, List<URI>> verifiedCreatorsWithNviInstitutions,
+                                                  JsonNode body) {
+        var instanceType = extractInstanceType(body);
+        return new NviCandidate(new CandidateDetails(URI.create(extractJsonNodeTextValue(body, JSON_PTR_ID)),
+                                                     instanceType,
+                                                     extractLevel(instanceType, body),
+                                                     extractPublicationDate(body),
+                                                     mapToCreatorList(verifiedCreatorsWithNviInstitutions)));
     }
 
     private Organization fetchOrganization(URI organizationId) {
