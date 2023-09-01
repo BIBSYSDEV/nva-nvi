@@ -173,7 +173,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var message = sentMessages.get(0);
         var messageBody =
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicChapter", BigDecimal.ONE, fileUri);
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicChapter", BigDecimal.valueOf(0.7071), fileUri);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -189,7 +189,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var message = sentMessages.get(0);
         var messageBody =
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicMonograph", BigDecimal.valueOf(5), fileUri);
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicMonograph", BigDecimal.valueOf(3.5355), fileUri);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -205,7 +205,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var message = sentMessages.get(0);
         var messageBody =
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicLiteratureReview", BigDecimal.valueOf(1),
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicLiteratureReview", BigDecimal.valueOf(0.7071),
                                                                    fileUri);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
@@ -226,7 +226,7 @@ class EvaluateNviNviCandidateHandlerTest {
                 .orElseThrow();
         assertThat(body.institutionPoints(), notNullValue());
         assertThat(body.institutionPoints().get(CRISTIN_ORG_TOP_LEVEL_ID),
-                   is(equalTo(BigDecimal.ONE.setScale(4, RoundingMode.HALF_UP))));
+                   is(equalTo(BigDecimal.valueOf(0.7071).setScale(4, RoundingMode.HALF_UP))));
     }
 
     @Test

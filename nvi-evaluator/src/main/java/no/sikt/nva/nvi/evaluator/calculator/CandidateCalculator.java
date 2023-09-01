@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -99,9 +100,13 @@ public class CandidateCalculator {
                                                       .filter(CandidateCalculator::isCreator)
                                                       .collect(Collectors.toMap(
                                                           CandidateCalculator::extractContributorId,
-                                                          this::getTopLevelNviInstitutions));
+                                                          this::getTopLevelNviInstitutions))
+                                                      .entrySet()
+                                                      .stream()
+                                                      .filter(entry -> !entry.getValue().isEmpty())
+                                                      .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
-        return doesNotHaveNviInstitutions(verifiedCreatorsWithNviInstitutions)
+        return verifiedCreatorsWithNviInstitutions.isEmpty()
                    ? createNonCandidateResponse(body)
                    : createCandidateResponse(verifiedCreatorsWithNviInstitutions, body);
     }
@@ -119,12 +124,7 @@ public class CandidateCalculator {
     }
 
     private static NonNviCandidate createNonCandidateResponse(JsonNode publication) {
-        return new NonNviCandidate.Builder().withPublicationId(
-            extractId(publication)).build();
-    }
-
-    private static boolean doesNotHaveNviInstitutions(Map<URI, List<URI>> verifiedCreators) {
-        return verifiedCreators.values().stream().toList().isEmpty();
+        return new NonNviCandidate.Builder().withPublicationId(extractId(publication)).build();
     }
 
     @JacocoGenerated
