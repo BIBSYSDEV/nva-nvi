@@ -22,26 +22,29 @@ import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 public final class Aggregations {
 
     private static final CharSequence JSON_PATH_DELIMITER = ".";
-    public static final String FOR_CONTROL_AGGREGATION_NAME = "for_control";
-    public static final String FOR_CONTROL_MULTIPLE_APPROVALS_AGGREGATION_NAME = "for_control_multiple_approvals";
-    public static final String FOR_CONTROL_ASSIGNED_AGGREGATION_NAME = "for_control_assigned";
-    public static final String FOR_CONTROL_ASSIGNED_MULTIPLE_APPROVALS_AGGREGATION_NAME =
-        "for_control_assigned_multiple_approvals";
+    public static final String PENDING_AGGREGATION_NAME = "pending";
+    public static final String PEDNING_COLLABORATION_AGGREGATION_NAME = "pending_collaboration";
+    public static final String ASSIGNED_AGGREGATION_NAME = "assigned";
+    public static final String ASSIGNED_COLLABORATION_AGGREGATION_NAME = "assigned_collaboration";
     public static final int MULTIPLE = 2;
+    public static final String APPROVED_AGGREGATION_NAME = "approved";
 
     private Aggregations() {
     }
 
     public static Map<String, Aggregation> generateAggregations(String username, URI customer) {
-        return Map.of(FOR_CONTROL_AGGREGATION_NAME, forControlAggregation(customer.toString()),
-                      FOR_CONTROL_MULTIPLE_APPROVALS_AGGREGATION_NAME,
-                      forControlMultipleApprovalsAggregation(customer.toString()),
-                      FOR_CONTROL_ASSIGNED_AGGREGATION_NAME, forControlAssignedAggregation(customer.toString()),
-                      FOR_CONTROL_ASSIGNED_MULTIPLE_APPROVALS_AGGREGATION_NAME,
-                      forControlAssignedMultipleApprovalsAggregation(customer.toString()));
+        return Map.of(PENDING_AGGREGATION_NAME, pendingAggregation(customer.toString()),
+                      PEDNING_COLLABORATION_AGGREGATION_NAME, pendingCollaborationAggregation(customer.toString()),
+                      ASSIGNED_AGGREGATION_NAME, assignedAggregation(customer.toString()),
+                      ASSIGNED_COLLABORATION_AGGREGATION_NAME, assignedCollaborationAggregation(customer.toString()),
+                      APPROVED_AGGREGATION_NAME, approvedAggregation(customer.toString()));
     }
 
-    private static Aggregation forControlAssignedMultipleApprovalsAggregation(String customer) {
+    private static Aggregation approvedAggregation(String customer) {
+        return null;
+    }
+
+    private static Aggregation assignedCollaborationAggregation(String customer) {
         var nestedQuery = new NestedQuery.Builder()
                               .path(APPROVALS)
                               .query(mustMatch(termQuery(customer, jsonPathOf(APPROVALS, ID)),
@@ -55,7 +58,7 @@ public final class Aggregations {
                    .build();
     }
 
-    private static Aggregation forControlAssignedAggregation(String customer) {
+    private static Aggregation assignedAggregation(String customer) {
         var nestedQuery = new NestedQuery.Builder()
                               .path(APPROVALS)
                               .query(mustMatch(termQuery(customer, jsonPathOf(APPROVALS, ID)),
@@ -68,7 +71,7 @@ public final class Aggregations {
                    .build();
     }
 
-    private static Aggregation forControlMultipleApprovalsAggregation(String customer) {
+    private static Aggregation pendingCollaborationAggregation(String customer) {
         var nestedQuery = new NestedQuery.Builder()
                               .path(APPROVALS)
                               .query(mustMatch(termQuery(customer, jsonPathOf(APPROVALS, ID)),
@@ -82,7 +85,7 @@ public final class Aggregations {
                    .build();
     }
 
-    private static Aggregation forControlAggregation(String customer) {
+    private static Aggregation pendingAggregation(String customer) {
         var nestedQuery = new NestedQuery.Builder()
                         .path(APPROVALS)
                         .query(mustMatch(termQuery(customer, jsonPathOf(APPROVALS, ID)),

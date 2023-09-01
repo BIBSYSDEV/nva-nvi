@@ -20,7 +20,7 @@
         "nb": "Sikt – Kunnskapssektorens tjenesteleverandør",
         "en": "Sikt - Norwegian Agency for Shared Services in Education and Research"
       },
-      "approvalStatus": "REJECTED"
+      "approvalStatus": "Rejected"
     },
     {
       "id": "https://api.dev.nva.aws.unit.no/cristin/organization/204.0.0.0",
@@ -28,7 +28,7 @@
         "nb": "Sikt – Kunnskapssektorens tjenesteleverandør",
         "en": "Sikt - Norwegian Agency for Shared Services in Education and Research"
       },
-      "approvalStatus": "PENDING"
+      "approvalStatus": "Pending"
     },
     {
       "id": "https://api.dev.nva.aws.unit.no/cristin/organization/2333.0.0.0",
@@ -36,7 +36,7 @@
         "nb": "Label",
         "en": "Label"
       },
-      "approvalStatus": "APPROVED"
+      "approvalStatus": "Approved"
     }
   ]
 }
