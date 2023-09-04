@@ -227,8 +227,10 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     private static List<InstitutionPoints> mapToInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
-        return institutionPoints.entrySet().stream().map(entry -> new InstitutionPoints(entry.getKey()
-            , entry.getValue())).toList();
+        return institutionPoints.entrySet()
+                   .stream()
+                   .map(entry -> new InstitutionPoints(entry.getKey(), entry.getValue()))
+                   .toList();
     }
 
     private CandidateEvaluatedMessage createEvaluatedCandidateDto(UUID bucketUriIdentifier,

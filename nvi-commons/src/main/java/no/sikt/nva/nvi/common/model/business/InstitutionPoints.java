@@ -27,7 +27,7 @@ public record InstitutionPoints(URI institutionId, BigDecimal points) {
         );
     }
 
-    public AttributeValue toDynamoDb(){
+    public AttributeValue toDynamoDb() {
         var map = new HashMap<String, AttributeValue>();
         map.put(INSTITUTION_ID_FIELD, AttributeValue.fromS(institutionId.toString()));
         map.put(POINTS_FIELD, AttributeValue.fromN(points.toString()));
