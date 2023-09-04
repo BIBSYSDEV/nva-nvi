@@ -63,7 +63,7 @@ public class NviService {
         return nviPeriodRepository.save(period);
     }
 
-    public NviPeriod updatePeriod(NviPeriod period) throws BadRequestException {
+    public NviPeriod updatePeriod(NviPeriod period) throws NotFoundException, ConflictException, BadRequestException {
         validatePeriod(period);
         return nviPeriodRepository.save(period);
     }
