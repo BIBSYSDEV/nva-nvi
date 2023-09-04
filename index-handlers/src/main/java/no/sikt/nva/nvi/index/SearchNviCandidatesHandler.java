@@ -4,9 +4,11 @@ import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.SearchResponseDto;
+import no.sikt.nva.nvi.index.utils.SearchConstants;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
@@ -16,8 +18,9 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
 
 public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchResponseDto> {
 
-    private static final String SEARCH_TERM_KEY = "query";
+    private static final String QUERY_PATH_PARAM = "query";
     private static final String SEARCH_ALL_DOCUMENTS_DEFAULT_QUERY = "*";
+    public static final String FILTER_QUERY_PARAM = "filter";
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
 
     @JacocoGenerated
@@ -36,8 +39,10 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
                                              Context context) throws UnauthorizedException {
         var customer = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         var username = requestInfo.getUserName();
-        return attempt(() -> contructQuery(requestInfo))
-                   .map(query -> openSearchClient.search(query, username, customer))
+        var filter = getFilter(requestInfo);
+        var searchTerm = getSearchTerm(requestInfo);
+
+        return attempt(() -> openSearchClient.search(searchTerm, filter, username, customer))
                    .map(SearchResponseDto::fromSearchResponse)
                    .orElseThrow();
     }
@@ -49,19 +54,12 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
 
     private static String getSearchTerm(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
-                   .getOrDefault(SEARCH_TERM_KEY, SEARCH_ALL_DOCUMENTS_DEFAULT_QUERY);
+                   .getOrDefault(QUERY_PATH_PARAM, SEARCH_ALL_DOCUMENTS_DEFAULT_QUERY);
     }
 
-    private static QueryStringQuery constructQueryStringQuery(RequestInfo requestInfo) {
-        return new QueryStringQuery.Builder()
-                   .query(getSearchTerm(requestInfo))
-                   .build();
-    }
-
-    private Query contructQuery(RequestInfo requestInfo) {
-        return new Query.Builder()
-                   .queryString(constructQueryStringQuery(requestInfo))
-                   .build();
+    private static String getFilter(RequestInfo requestInfo) {
+        return requestInfo.getQueryParameters()
+                   .getOrDefault(FILTER_QUERY_PARAM, SEARCH_ALL_DOCUMENTS_DEFAULT_QUERY);
     }
 }
 

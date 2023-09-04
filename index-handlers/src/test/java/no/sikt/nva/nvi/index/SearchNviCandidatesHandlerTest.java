@@ -57,7 +57,7 @@ public class SearchNviCandidatesHandlerTest {
 
     @Test
     void shouldReturnDocumentFromIndex() throws IOException {
-        when(openSearchClient.search(any(), any(), any()))
+        when(openSearchClient.search(any(), any(), any(), any()))
             .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
         handler.handleRequest(request("*"), output, context);
         var response =
@@ -69,7 +69,7 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldReturnDocumentFromIndexContainingSingleHitWhenUsingTerms() throws IOException {
         var document = singleNviCandidateIndexDocument();
-        when(openSearchClient.search(any(), any(), any())).thenReturn(createSearchResponse(document));
+        when(openSearchClient.search(any(), any(), any(), any())).thenReturn(createSearchResponse(document));
         handler.handleRequest(request(document.identifier()), output, context);
         var response =
             GatewayResponse.fromOutputStream(output, SearchResponseDto.class);
@@ -80,7 +80,7 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldThrowExceptionWhenSearchFails() throws IOException {
         var document = singleNviCandidateIndexDocument();
-        when(openSearchClient.search(any(), any(), any())).thenThrow(RuntimeException.class);
+        when(openSearchClient.search(any(), any(), any(), any())).thenThrow(RuntimeException.class);
         handler.handleRequest(request(document.identifier()), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
         assertThat(Objects.requireNonNull(response.getBodyObject(Problem.class).getStatus()).getStatusCode(),
