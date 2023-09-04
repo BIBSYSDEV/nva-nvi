@@ -52,8 +52,8 @@ public class CreateNviPeriodHandlerTest {
     }
 
     @Test
-    void shouldReturnBadRequestWhenMissingAccessRightsToOpenNviPeriod() throws IOException, BadRequestException {
-        when(nviService.createPeriod(any())).thenThrow(BadRequestException.class);
+    void shouldReturnBadRequestWhenMissingAccessRightsToOpenNviPeriod() throws IOException {
+        when(nviService.createPeriod(any())).thenThrow(IllegalArgumentException.class);
         handler.handleRequest(createRequest(), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -62,7 +62,7 @@ public class CreateNviPeriodHandlerTest {
 
     //TODO: Assert persisted period when nviService is implemented
     @Test
-    void shouldCreateNviPeriod() throws IOException, BadRequestException {
+    void shouldCreateNviPeriod() throws IOException {
         when(nviService.createPeriod(any())).thenReturn(randomPeriod());
         handler.handleRequest(createRequest(), output, context);
         var response = GatewayResponse.fromOutputStream(output, Period.class);

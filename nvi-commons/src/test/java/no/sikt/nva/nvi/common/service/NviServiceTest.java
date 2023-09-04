@@ -35,7 +35,6 @@ import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
-import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.ConflictException;
 import nva.commons.apigateway.exceptions.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -87,12 +86,12 @@ public class NviServiceTest extends LocalDynamoTest {
         var institutionPoints = Map.of(institutionId, randomBigDecimal());
         var originalEvaluatedCandidateDto = createEvaluatedCandidateDto(bucketIdentifier, verifiedCreators,
                                                                         instanceType, randomLevel,
-                                                                publicationDate, institutionPoints);
+                                                                        publicationDate, institutionPoints);
 
         var newInstanceType = randomString();
         var updatedEvaluatedCandidateDto = createEvaluatedCandidateDto(bucketIdentifier, verifiedCreators,
                                                                        newInstanceType, randomLevel,
-                                                                        publicationDate, institutionPoints);
+                                                                       publicationDate, institutionPoints);
 
         var originalUpserted = nviService.upsertCandidate(originalEvaluatedCandidateDto).get();
         var updatedUpserted = nviService.upsertCandidate(updatedEvaluatedCandidateDto).get();
@@ -185,14 +184,20 @@ public class NviServiceTest extends LocalDynamoTest {
 
     //TODO: Change test when nviService is implemented
     @Test
-    void shouldCreateNviPeriod() throws BadRequestException {
+    void shouldCreateNviPeriod()  {
         var period = createPeriod("2014");
         nviService.createPeriod(period);
         assertThat(nviService.getPeriod(period.publishingYear()), is(equalTo(period)));
     }
 
     @Test
-    void shouldUpdateNviPeriod() throws BadRequestException, ConflictException, NotFoundException {
+    void shouldThrowExceptionIdPeriodIsNonNumeric() {
+        NviPeriod period = createPeriod("asd");
+        assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
+    }
+
+    @Test
+    void shouldUpdateNviPeriod()  {
         var originalPeriod = createPeriod("2014");
         nviService.createPeriod(originalPeriod);
         nviService.updatePeriod(originalPeriod.copy().withReportingDate(randomInstant()).build());
@@ -203,13 +208,13 @@ public class NviServiceTest extends LocalDynamoTest {
     @Test
     void shouldReturnBadRequestWhenPublishingYearIsNotAYear() {
         var period = createPeriod(randomString());
-        assertThrows(BadRequestException.class, () -> nviService.createPeriod(period));
+        assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
     }
 
     @Test
     void shouldReturnBadRequestWhenPublishingYearHasInvalidLength() {
         var period = createPeriod("22");
-        assertThrows(BadRequestException.class, () -> nviService.createPeriod(period));
+        assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
     }
 
     private static NviPeriod createPeriod(String publishingYear) {

@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
@@ -65,7 +66,7 @@ class FetchNviCandidateHandlerTest {
         handler.handleRequest(input, output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
         assertEquals(HttpStatus.SC_OK, gatewayResponse.getStatusCode());
-        var bodyObject = gatewayResponse.getBodyObject(FetchCandidateResponse.class);
+        var bodyObject = gatewayResponse.getBodyObject(CandidateResponse.class);
         var expectedResponse = getExpectedResponse(candidateWithIdentifier);
 
         assertEquals(bodyObject, expectedResponse);
@@ -80,19 +81,19 @@ class FetchNviCandidateHandlerTest {
         handler.handleRequest(input, output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
         assertEquals(HttpStatus.SC_OK, gatewayResponse.getStatusCode());
-        var bodyObject = gatewayResponse.getBodyObject(FetchCandidateResponse.class);
+        var bodyObject = gatewayResponse.getBodyObject(CandidateResponse.class);
         var expectedResponse = getExpectedResponse(candidateWithIdentifier);
 
         assertEquals(bodyObject, expectedResponse);
     }
 
-    private static FetchCandidateResponse getExpectedResponse(CandidateWithIdentifier candidateWithIdentifier) {
+    private static CandidateResponse getExpectedResponse(CandidateWithIdentifier candidateWithIdentifier) {
         var candidate = candidateWithIdentifier.candidate();
-        return new FetchCandidateResponse(candidateWithIdentifier.identifier(),
-                                          candidate.publicationId(),
-                                          getApprovalStatuses(candidate),
-                                          candidate.points(),
-                                          getNotes(candidate));
+        return new CandidateResponse(candidateWithIdentifier.identifier(),
+                                     candidate.publicationId(),
+                                     getApprovalStatuses(candidate),
+                                     candidate.points(),
+                                     getNotes(candidate));
     }
 
     private static List<Note> getNotes(Candidate candidate) {
@@ -123,14 +124,14 @@ class FetchNviCandidateHandlerTest {
         return new CandidateWithIdentifier(candidate, id);
     }
 
-    private GatewayResponse<FetchCandidateResponse> getGatewayResponse()
+    private GatewayResponse<CandidateResponse> getGatewayResponse()
         throws JsonProcessingException {
         return dtoObjectMapper.readValue(
             output.toString(),
             dtoObjectMapper.getTypeFactory()
                 .constructParametricType(
                     GatewayResponse.class,
-                    FetchCandidateResponse.class
+                    CandidateResponse.class
                 ));
     }
 }

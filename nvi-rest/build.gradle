@@ -12,7 +12,7 @@ dependencies {
     implementation libs.jackson.databind
     testImplementation libs.nva.testutils
     testImplementation libs.bundles.testing
-    testImplementation libs.aws.sdk2.dynamodb
+    implementation libs.aws.sdk2.dynamodb
     testImplementation project(":nvi-test")
 }
 

@@ -123,16 +123,6 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         assertThat(appender.getMessages(), containsString(StringUtils.EMPTY_STRING));
     }
 
-    private NviCandidateIndexDocument constructExpectedDocument(CandidateWithIdentifier candidateWithIdentifier) {
-        return new NviCandidateIndexDocument.Builder()
-                   .withContext(URI.create("https://bibsysdev.github.io/src/nvi-context.json"))
-                   .withIdentifier(candidateWithIdentifier.identifier().toString())
-                   .withApprovals(constructExpectedApprovals())
-                   .withPublicationDetails(constructPublicationDetails())
-                   .withNumberOfApprovals(1)
-                   .build();
-    }
-
     private static List<Approval> constructExpectedApprovals() {
         return List.of(new Approval(
             "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
@@ -192,6 +182,16 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         return no.sikt.nva.nvi.common.model.business.ApprovalStatus.builder()
                    .withInstitutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
                    .withStatus(Status.PENDING).build();
+    }
+
+    private NviCandidateIndexDocument constructExpectedDocument(CandidateWithIdentifier candidateWithIdentifier) {
+        return new NviCandidateIndexDocument.Builder()
+                   .withContext(URI.create("https://bibsysdev.github.io/src/nvi-context.json"))
+                   .withIdentifier(candidateWithIdentifier.identifier().toString())
+                   .withApprovals(constructExpectedApprovals())
+                   .withPublicationDetails(constructPublicationDetails())
+                   .withNumberOfApprovals(1)
+                   .build();
     }
 
     private static class FakeSearchClient implements SearchClient<NviCandidateIndexDocument> {

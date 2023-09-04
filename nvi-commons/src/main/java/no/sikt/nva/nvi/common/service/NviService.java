@@ -57,12 +57,12 @@ public class NviService {
         return Optional.empty();
     }
 
-    public NviPeriod createPeriod(NviPeriod period) throws BadRequestException {
+    public NviPeriod createPeriod(NviPeriod period)   {
         validatePeriod(period);
         return nviPeriodRepository.save(period);
     }
 
-    public NviPeriod updatePeriod(NviPeriod period) throws NotFoundException, ConflictException, BadRequestException {
+    public NviPeriod updatePeriod(NviPeriod period) {
         validatePeriod(period);
         return nviPeriodRepository.save(period);
     }
@@ -72,6 +72,7 @@ public class NviService {
         return nviPeriodRepository.findByPublishingYear(publishingYear).orElseThrow();
     }
 
+    @JacocoGenerated
     public CandidateWithIdentifier upsertApproval(ApprovalStatus approvalStatus) {
 
         return null;
@@ -160,12 +161,12 @@ public class NviService {
         return nviCandidateRepository.update(identifier, pendingCandidate);
     }
 
-    private void validatePeriod(NviPeriod period) throws BadRequestException {
+    private void validatePeriod(NviPeriod period) {
         if (hasInvalidLength(period)) {
-            throw new BadRequestException(INVALID_LENGTH_MESSAGE);
+            throw new IllegalArgumentException(INVALID_LENGTH_MESSAGE);
         }
         if (!isInteger(period.publishingYear())) {
-            throw new BadRequestException(PERIOD_NOT_NUMERIC_MESSAGE);
+            throw new IllegalArgumentException(PERIOD_NOT_NUMERIC_MESSAGE);
         }
     }
 

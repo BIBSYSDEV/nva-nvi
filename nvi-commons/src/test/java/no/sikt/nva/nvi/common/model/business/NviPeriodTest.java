@@ -10,7 +10,7 @@ class NviPeriodTest {
     public void shouldConvertBackAndForthBetweeenDbModelWithoutLoosingData() {
         var period = TestUtils.randomNviPeriod();
         var db = period.toDynamoDb();
-        var periodFromDb = NviPeriod.fromDynamoDb(db);
+        var periodFromDb = NviPeriod.builder().build().fromDynamoDb(db, NviPeriod.class);
         assertEquals(period, periodFromDb);
     }
 

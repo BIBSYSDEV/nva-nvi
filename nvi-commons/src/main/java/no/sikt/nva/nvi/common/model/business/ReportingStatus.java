@@ -31,7 +31,7 @@ public record ReportingStatus(URI institutionId,
         var map = input.m();
         return new ReportingStatus(
             URI.create(map.get(INSTITUTION_ID_FIELD).s()),
-            NviPeriod.fromDynamoDb(map.get(NVI_PERIOD_FIELD)),
+            NviPeriod.builder().build().fromDynamoDb(map.get(NVI_PERIOD_FIELD), NviPeriod.class),
             CompletionStatus.valueOf(map.get(STATUS_FIELD).s()),
             Instant.ofEpochMilli(Integer.parseInt(map.get(UPDATED_DATE_FIELD).n()))
         );

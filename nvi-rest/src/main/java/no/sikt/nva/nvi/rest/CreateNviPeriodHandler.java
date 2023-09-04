@@ -1,10 +1,10 @@
 package no.sikt.nva.nvi.rest;
 
-import static no.sikt.nva.nvi.common.utils.RequestUtil.getUsername;
+import static no.sikt.nva.nvi.rest.utils.RequestUtil.getUsername;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
-import no.sikt.nva.nvi.common.utils.RequestUtil;
+import no.sikt.nva.nvi.rest.utils.RequestUtil;
 import no.sikt.nva.nvi.rest.model.NviPeriodDto;
 import no.sikt.nva.nvi.common.model.business.NviPeriod;
 import no.sikt.nva.nvi.common.model.business.NviPeriod.Builder;

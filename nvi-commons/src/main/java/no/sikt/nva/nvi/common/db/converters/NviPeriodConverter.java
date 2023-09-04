@@ -16,7 +16,7 @@ public class NviPeriodConverter implements AttributeConverter<NviPeriod> {
 
     @Override
     public NviPeriod transformTo(AttributeValue input) {
-        return NviPeriod.fromDynamoDb(input);
+        return NviPeriod.builder().build().fromDynamoDb(input, NviPeriod.class);
     }
 
     @Override
