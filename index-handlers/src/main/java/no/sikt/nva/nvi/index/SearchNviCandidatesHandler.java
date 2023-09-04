@@ -4,17 +4,13 @@ import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
-import java.net.URI;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.SearchResponseDto;
-import no.sikt.nva.nvi.index.utils.SearchConstants;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
-import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
 
 public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchResponseDto> {
 

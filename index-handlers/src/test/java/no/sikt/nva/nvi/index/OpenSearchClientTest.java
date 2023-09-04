@@ -50,6 +50,8 @@ import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.ioutils.IoUtils;
 import org.apache.http.HttpHost;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -77,9 +79,17 @@ public class OpenSearchClientTest {
     }
 
     @BeforeAll
-    static void init() {
+    public static void init() throws JsonProcessingException, InterruptedException {
         setUpTestContainer();
         openSearchClient = new OpenSearchClient(restClient, FakeCachedJwtProvider.setup());
+        addDocumentsToIndex(documentFromString("document_pending.json"),
+                            documentFromString("document_pending_collaboration.json"),
+                            documentFromString("document_assigned.json"),
+                            documentFromString("document_assigned_collaboration.json"),
+                            documentFromString("document_approved.json"),
+                            documentFromString("document_approved_collaboration.json"),
+                            documentFromString("document_rejected.json"),
+                            documentFromString("document_rejected_collaboration.json"));
     }
 
     @AfterAll
@@ -132,16 +142,8 @@ public class OpenSearchClientTest {
 
     @ParameterizedTest
     @MethodSource("aggregationNameAndExpectedCountProvider")
-    void shouldReturnAggregationsWithExpectedCount(Entry<String, Integer> entry)
-        throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_pending.json"),
-                            documentFromString("document_pending_collaboration.json"),
-                            documentFromString("document_assigned.json"),
-                            documentFromString("document_assigned_collaboration.json"),
-                            documentFromString("document_approved.json"),
-                            documentFromString("document_approved_collaboration.json"),
-                            documentFromString("document_rejected.json"),
-                            documentFromString("document_rejected_collaboration.json"));
+    void shouldReturnAggregationsWithExpectedCount(Entry<String, Integer> entry) throws IOException {
+
 
         var searchResponse =
             openSearchClient.search("*", null, USERNAME, CUSTOMER);
@@ -153,21 +155,12 @@ public class OpenSearchClientTest {
 
 
     @Test
-    void shouldQueryResourcesCorrectlyWhenUsingFilter() throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_pending.json"),
-                            documentFromString("document_pending_collaboration.json"),
-                            documentFromString("document_assigned.json"),
-                            documentFromString("document_assigned_collaboration.json"),
-                            documentFromString("document_approved.json"),
-                            documentFromString("document_approved_collaboration.json"),
-                            documentFromString("document_rejected.json"),
-                            documentFromString("document_rejected_collaboration.json"));
-
+    void shouldReturnSearchResultsUsingFilterAndSearchTermCombined() throws IOException {
         var searchTerm = "Testing nvi flow 36";
         var customer = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0";
-        var pending = "pending";
+        var filter = "pending";
         var searchResponse = openSearchClient.search(
-            searchTerm, pending, randomString(), URI.create(customer));
+            searchTerm, filter, randomString(), URI.create(customer));
         assertThat(searchResponse.hits().hits(), hasSize(2));
     }
 
