@@ -2,13 +2,10 @@ package no.sikt.nva.nvi.common.model.business;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.math.BigDecimal;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
@@ -22,7 +19,7 @@ public record Candidate(URI publicationId,
                         boolean isInternationalCollaboration,
                         int creatorCount,
                         List<Creator> creators,
-                        Map<URI, BigDecimal> points,
+                        List<InstitutionPoints> points,
                         List<ApprovalStatus> approvalStatuses,
                         List<Note> notes) {
 
@@ -56,10 +53,7 @@ public record Candidate(URI publicationId,
                    .withCreatorCount(Integer.parseInt(map.get(CREATOR_COUNT_FIELD).n()))
                    .withCreators(
                        map.get(CREATORS_FIELD).l().stream().map(Creator::fromDynamoDb).toList()
-                   ).withPoints(
-                map.get(POINTS_FIELD).m().entrySet().stream()
-                    .collect(Collectors.toMap(entry -> URI.create(entry.getKey()),
-                                              entry -> new BigDecimal(entry.getValue().n()))))
+                   ).withPoints(map.get(POINTS_FIELD).l().stream().map(InstitutionPoints::fromDynamoDb).toList())
                    .withApprovalStatuses(
                        map.get(APPROVAL_STATUSES_FIELD).l()
                            .stream().map(ApprovalStatus::fromDynamoDb).toList()
@@ -107,14 +101,10 @@ public record Candidate(URI publicationId,
         map.put(APPROVAL_STATUSES_FIELD,
                 AttributeValue.fromL(approvalStatuses.stream().map(ApprovalStatus::toDynamoDb).toList())
         );
+        map.put(POINTS_FIELD, AttributeValue.fromL(points.stream().map(InstitutionPoints::toDynamoDb).toList()));
         if (notes != null) {
             map.put(NOTES_FIELD, AttributeValue.fromL(notes.stream().map(Note::toDynamoDb).toList()));
         }
-        map.put(POINTS_FIELD,
-                AttributeValue.fromM(
-                    points.entrySet().stream().collect(Collectors.toMap(entry -> String.valueOf(entry.getKey()),
-                                                                        entry -> AttributeValue.fromN(
-                                                                            entry.getValue().toString())))));
 
         return AttributeValue.fromM(map);
     }
@@ -130,7 +120,7 @@ public record Candidate(URI publicationId,
         private boolean isInternationalCollaboration;
         private int creatorCount;
         private List<Creator> creators;
-        private Map<URI, BigDecimal> points;
+        private List<InstitutionPoints> points;
         private List<ApprovalStatus> approvalStatuses;
         private List<Note> notes;
 
@@ -182,7 +172,7 @@ public record Candidate(URI publicationId,
             return this;
         }
 
-        public Builder withPoints(Map<URI, BigDecimal> points) {
+        public Builder withPoints(List<InstitutionPoints> points) {
             this.points = points;
             return this;
         }

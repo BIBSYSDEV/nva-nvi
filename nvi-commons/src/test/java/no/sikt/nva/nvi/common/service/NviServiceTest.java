@@ -25,6 +25,7 @@ import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.model.business.InstitutionPoints;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.business.NviPeriod;
 import no.sikt.nva.nvi.common.model.business.Status;
@@ -87,12 +88,12 @@ public class NviServiceTest extends LocalDynamoTest {
         var institutionPoints = Map.of(institutionId, randomBigDecimal());
         var originalEvaluatedCandidateDto = createEvaluatedCandidateDto(bucketIdentifier, verifiedCreators,
                                                                         instanceType, randomLevel,
-                                                                publicationDate, institutionPoints);
+                                                                        publicationDate, institutionPoints);
 
         var newInstanceType = randomString();
         var updatedEvaluatedCandidateDto = createEvaluatedCandidateDto(bucketIdentifier, verifiedCreators,
                                                                        newInstanceType, randomLevel,
-                                                                        publicationDate, institutionPoints);
+                                                                       publicationDate, institutionPoints);
 
         var originalUpserted = nviService.upsertCandidate(originalEvaluatedCandidateDto).get();
         var updatedUpserted = nviService.upsertCandidate(updatedEvaluatedCandidateDto).get();
@@ -225,6 +226,11 @@ public class NviServiceTest extends LocalDynamoTest {
         return new Username(randomString());
     }
 
+    private static List<InstitutionPoints> mapToInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
+        return institutionPoints.entrySet().stream().map(entry -> new InstitutionPoints(entry.getKey()
+            , entry.getValue())).toList();
+    }
+
     private CandidateEvaluatedMessage createEvaluatedCandidateDto(UUID bucketUriIdentifier,
                                                                   List<CandidateDetails.Creator> creators,
                                                                   String instanceType, Level randomLevel,
@@ -254,7 +260,7 @@ public class NviServiceTest extends LocalDynamoTest {
                    .withLevel(level)
                    .withIsApplicable(true)
                    .withPublicationDate(toPublicationDate(publicationDate))
-                   .withPoints(institutionPoints)
+                   .withPoints(mapToInstitutionPoints(institutionPoints))
                    .withApprovalStatuses(institutionPoints.keySet().stream()
                                              .map(bigDecimal -> ApprovalStatus.builder()
                                                                     .withStatus(Status.PENDING)
