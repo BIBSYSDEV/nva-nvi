@@ -16,6 +16,14 @@ public record ApprovalStatus(URI institutionId,
         return new Builder();
     }
 
+    public Builder but() {
+        return builder()
+                   .withInstitutionId(institutionId)
+                   .withStatus(status)
+                   .withFinalizedBy(finalizedBy)
+                   .withFinalizedDate(finalizedDate);
+    }
+
     public static final class Builder {
 
         private URI institutionId;

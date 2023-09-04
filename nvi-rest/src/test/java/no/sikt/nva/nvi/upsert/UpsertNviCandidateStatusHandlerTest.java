@@ -71,7 +71,7 @@ class UpsertNviCandidateStatusHandlerTest {
 
     @Test
     void shouldReturnBadRequestWhenMissingAccessRights() throws IOException, BadRequestException {
-        when(nviService.upsertApproval(any())).thenThrow(IllegalArgumentException.class);
+        when(nviService.upsertApproval(any(), any())).thenThrow(IllegalArgumentException.class);
         handler.handleRequest(createRequest(randomStatusRequest()), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -88,7 +88,7 @@ class UpsertNviCandidateStatusHandlerTest {
         var approvalStatus = response.candidate()
                                  .approvalStatuses()
                                  .get(0);
-        when(nviService.upsertApproval(any())).thenReturn(response);
+        when(nviService.upsertApproval(any(), any())).thenReturn(response);
 
         handler.handleRequest(request, output, context);
 

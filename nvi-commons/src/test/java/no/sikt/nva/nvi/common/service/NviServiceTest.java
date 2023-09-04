@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -35,10 +36,10 @@ import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
-import nva.commons.apigateway.exceptions.ConflictException;
-import nva.commons.apigateway.exceptions.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class NviServiceTest extends LocalDynamoTest {
 
@@ -184,7 +185,7 @@ public class NviServiceTest extends LocalDynamoTest {
 
     //TODO: Change test when nviService is implemented
     @Test
-    void shouldCreateNviPeriod()  {
+    void shouldCreateNviPeriod() {
         var period = createPeriod("2014");
         nviService.createPeriod(period);
         assertThat(nviService.getPeriod(period.publishingYear()), is(equalTo(period)));
@@ -197,7 +198,7 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldUpdateNviPeriod()  {
+    void shouldUpdateNviPeriod() {
         var originalPeriod = createPeriod("2014");
         nviService.createPeriod(originalPeriod);
         nviService.updatePeriod(originalPeriod.copy().withReportingDate(randomInstant()).build());
@@ -215,6 +216,30 @@ public class NviServiceTest extends LocalDynamoTest {
     void shouldReturnBadRequestWhenPublishingYearHasInvalidLength() {
         var period = createPeriod("22");
         assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Status.class, names = {"APPROVED", "REJECTED"})
+    void shouldUpsertApproval(Status status) {
+        UUID identifier = UUID.randomUUID();
+        URI institutionUri = randomUri();
+        nviCandidateRepository.create(createExpectedCandidate(identifier, List.of(new Creator(randomUri(),
+                                                                                              List.of(institutionUri))),
+                                                              randomString(), Level.LEVEL_ONE,
+                                                              new PublicationDate(randomString(), randomString(),
+                                                                                  randomString()),
+                                                              Map.of(institutionUri, new BigDecimal("1.2"))));
+        ApprovalStatus newApprovalStatus = createApprovalStatus(status, institutionUri);
+        CandidateWithIdentifier candidateWithIdentifier = nviService.upsertApproval(identifier, newApprovalStatus);
+        assertThat(candidateWithIdentifier.candidate().approvalStatuses().get(0).status(), is(equalTo(status)));
+    }
+
+    private static ApprovalStatus createApprovalStatus(Status status, URI institutionUri) {
+        return ApprovalStatus.builder().withInstitutionId(institutionUri)
+                   .withStatus(status)
+                   .withFinalizedBy(new Username(randomString()))
+                   .withFinalizedDate(Instant.now())
+                   .build();
     }
 
     private static NviPeriod createPeriod(String publishingYear) {
@@ -260,11 +285,13 @@ public class NviServiceTest extends LocalDynamoTest {
                    .withIsApplicable(true)
                    .withPublicationDate(toPublicationDate(publicationDate))
                    .withPoints(institutionPoints)
-                   .withApprovalStatuses(institutionPoints.keySet().stream()
-                                             .map(bigDecimal -> ApprovalStatus.builder()
-                                                                    .withStatus(Status.PENDING)
-                                                                    .withInstitutionId(bigDecimal)
-                                                                    .build()).toList())
+                   .withApprovalStatuses(
+                       institutionPoints.keySet()
+                           .stream()
+                           .map(institutionId -> ApprovalStatus.builder()
+                                                     .withStatus(Status.PENDING)
+                                                     .withInstitutionId(institutionId)
+                                                     .build()).toList())
                    .build();
     }
 }

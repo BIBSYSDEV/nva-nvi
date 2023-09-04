@@ -2,18 +2,20 @@ package no.sikt.nva.nvi.upsert;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.fetch.FetchNviCandidateHandler.PARAM_CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.rest.utils.RequestUtil.getUsername;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.time.Instant;
+import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Status;
 import no.sikt.nva.nvi.common.model.business.Username;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.utils.RequestUtil;
 import no.sikt.nva.nvi.rest.NviApprovalStatus;
 import no.sikt.nva.nvi.rest.NviStatusRequest;
+import no.sikt.nva.nvi.rest.utils.RequestUtil;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
@@ -41,7 +43,9 @@ public class UpsertNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
 
         return attempt(() -> toStatus(input, getUsername(requestInfo)))
-                   .map(nviService::upsertApproval)
+                   .map(approvalStatus -> nviService.upsertApproval(
+                       UUID.fromString(requestInfo.getPathParameter(PARAM_CANDIDATE_IDENTIFIER)),
+                       approvalStatus))
                    .map(CandidateResponse::fromCandidate)
                    .orElseThrow(ExceptionMapper::map);
     }

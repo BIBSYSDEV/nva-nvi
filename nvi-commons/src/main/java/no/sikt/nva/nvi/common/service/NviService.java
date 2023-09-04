@@ -4,6 +4,7 @@ import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.common.model.events.CandidateStatus.CANDIDATE;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -11,6 +12,7 @@ import java.util.Set;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodRepository;
+import no.sikt.nva.nvi.common.model.ApprovalStatusWithIdentifier;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
@@ -21,9 +23,6 @@ import no.sikt.nva.nvi.common.model.business.PublicationDate;
 import no.sikt.nva.nvi.common.model.business.Status;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
-import nva.commons.apigateway.exceptions.BadRequestException;
-import nva.commons.apigateway.exceptions.ConflictException;
-import nva.commons.apigateway.exceptions.NotFoundException;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -57,7 +56,7 @@ public class NviService {
         return Optional.empty();
     }
 
-    public NviPeriod createPeriod(NviPeriod period)   {
+    public NviPeriod createPeriod(NviPeriod period) {
         validatePeriod(period);
         return nviPeriodRepository.save(period);
     }
@@ -72,10 +71,23 @@ public class NviService {
         return nviPeriodRepository.findByPublishingYear(publishingYear).orElseThrow();
     }
 
-    @JacocoGenerated
-    public CandidateWithIdentifier upsertApproval(ApprovalStatus approvalStatus) {
+    public CandidateWithIdentifier upsertApproval(UUID identifier, ApprovalStatus approvalStatus) {
+        Optional<ApprovalStatusWithIdentifier> approvalByIdAndInstitutionId =
+            nviCandidateRepository.findApprovalByIdAndInstitutionId(
+                identifier, approvalStatus.institutionId());
+        ApprovalStatus newStatus = approvalByIdAndInstitutionId.map(
+                a -> toUpdatedApprovalStatus(a.approvalStatus(), approvalStatus))
+                                             .orElseThrow();
+        nviCandidateRepository.updateApprovalStatus(identifier, newStatus);
+        return nviCandidateRepository.getById(identifier);
+    }
 
-        return null;
+    public Optional<CandidateWithIdentifier> findById(UUID uuid) {
+        return nviCandidateRepository.findById(uuid);
+    }
+
+    public Optional<CandidateWithIdentifier> findByPublicationId(URI publicationId) {
+        return nviCandidateRepository.findByPublicationId(publicationId);
     }
 
     private static boolean isInteger(String value) {
@@ -109,24 +121,10 @@ public class NviService {
     private static List<ApprovalStatus> generatePendingApprovalStatuses(Set<URI> institutionUris) {
         return institutionUris.stream()
                    .map(uri -> ApprovalStatus.builder()
-                                          .withStatus(Status.PENDING)
-                                          .withInstitutionId(uri)
-                                          .build())
+                                   .withStatus(Status.PENDING)
+                                   .withInstitutionId(uri)
+                                   .build())
                    .toList();
-    }
-
-    @JacocoGenerated
-    @SuppressWarnings("PMD.UnusedPrivateMethod")
-    private boolean exists(UUID uuid) {
-        return nviCandidateRepository.findById(uuid).isPresent();
-    }
-
-    public Optional<CandidateWithIdentifier> findById(UUID uuid) {
-        return nviCandidateRepository.findById(uuid);
-    }
-
-    public Optional<CandidateWithIdentifier> findByPublicationId(URI publicationId) {
-        return nviCandidateRepository.findByPublicationId(publicationId);
     }
 
     private static Candidate toPendingCandidate(CandidateEvaluatedMessage candidateEvaluatedMessage,
@@ -143,6 +141,27 @@ public class NviService {
                    .withPoints(institutionPoints)
                    .withApprovalStatuses(generatePendingApprovalStatuses(institutionPoints.keySet()))
                    .build();
+    }
+
+    private ApprovalStatus toUpdatedApprovalStatus(ApprovalStatus oldApprovalStatus, ApprovalStatus newApprovalStatus) {
+        return switch (newApprovalStatus.status()) {
+            case APPROVED, REJECTED -> oldApprovalStatus.but()
+                                           .withStatus(newApprovalStatus.status())
+                                           .withFinalizedBy(newApprovalStatus.finalizedBy())
+                                           .withFinalizedDate(Instant.now())
+                                           .build();
+            case PENDING -> oldApprovalStatus.but()
+                                .withStatus(Status.PENDING)
+                                .withFinalizedBy(null)
+                                .withFinalizedDate(null)
+                                .build();
+        };
+    }
+
+    @JacocoGenerated
+    @SuppressWarnings("PMD.UnusedPrivateMethod")
+    private boolean exists(UUID uuid) {
+        return nviCandidateRepository.findById(uuid).isPresent();
     }
 
     private boolean existsByPublicationId(URI publicationId) {
