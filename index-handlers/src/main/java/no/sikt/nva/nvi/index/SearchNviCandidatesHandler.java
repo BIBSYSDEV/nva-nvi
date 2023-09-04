@@ -59,7 +59,7 @@ public class SearchNviCandidatesHandler
         this.openSearchClient = openSearchClient;
     }
 
-    public static PaginatedSearchResult<NviCandidateIndexDocument> fromSearchResponse(
+    public static PaginatedSearchResult<NviCandidateIndexDocument> toPaginatedSearchResult(
         SearchResponse<NviCandidateIndexDocument> searchResponse, int offset, int size, String searchTerm)
         throws UnprocessableContentException {
         return PaginatedSearchResult.create(constructBaseUri(),
@@ -83,7 +83,7 @@ public class SearchNviCandidatesHandler
         var username = requestInfo.getUserName();
         return attempt(() -> contructQuery(requestInfo))
                    .map(query -> openSearchClient.search(query, offset, size, username, customer))
-                   .map(searchResponse -> fromSearchResponse(searchResponse, offset, size, searchTerm))
+                   .map(searchResponse -> toPaginatedSearchResult(searchResponse, offset, size, searchTerm))
                    .orElseThrow();
     }
 
