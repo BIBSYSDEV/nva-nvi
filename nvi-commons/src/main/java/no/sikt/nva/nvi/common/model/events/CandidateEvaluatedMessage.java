@@ -14,7 +14,6 @@ public record CandidateEvaluatedMessage(
     CandidateStatus status,
     URI publicationBucketUri,
     CandidateDetails candidateDetails,
-
     Map<URI, BigDecimal> institutionPoints
 ) {
 

@@ -27,6 +27,9 @@ public final class ExceptionMapper {
         }
         if (exception instanceof ConflictException) {
             return new ConflictException("Conflict occurred!");
+        }
+        if (exception instanceof NullPointerException) {
+            throw new RuntimeException(exception.getMessage());
         } else {
             return (ApiGatewayException) exception;
         }

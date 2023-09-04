@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.json.stream.JsonGenerator;
-import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URI;
 import java.util.List;
@@ -39,8 +38,7 @@ public record SearchResponseDto(@JsonProperty("@context") URI context,
         "sum_other_doc_count", "sumOtherDocCount",
         "doc_count", "docCount");
 
-    public static SearchResponseDto fromSearchResponse(SearchResponse<NviCandidateIndexDocument> searchResponse)
-        throws IOException {
+    public static SearchResponseDto fromSearchResponse(SearchResponse<NviCandidateIndexDocument> searchResponse) {
         List<JsonNode> sourcesList = extractSourcesList(searchResponse);
         long total = searchResponse.hits().total().value();
         long took = searchResponse.took();

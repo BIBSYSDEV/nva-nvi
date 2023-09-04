@@ -2,18 +2,18 @@ package no.sikt.nva.nvi.common.model.business;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import nva.commons.core.JacocoGenerated;
+import java.util.stream.Collectors;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 public record Candidate(URI publicationId,
-
                         URI publicationBucketUri,
                         boolean isApplicable,
                         String instanceType,
@@ -22,6 +22,7 @@ public record Candidate(URI publicationId,
                         boolean isInternationalCollaboration,
                         int creatorCount,
                         List<Creator> creators,
+                        Map<URI, BigDecimal> points,
                         List<ApprovalStatus> approvalStatuses,
                         List<Note> notes) {
 
@@ -34,14 +35,64 @@ public record Candidate(URI publicationId,
     public static final String IS_INTERNATIONAL_COLLABORATION_FIELD = "isInternationalCollaboration";
     public static final String CREATOR_COUNT_FIELD = "creatorCount";
     public static final String CREATORS_FIELD = "creators";
+    public static final String POINTS_FIELD = "points";
     public static final String APPROVAL_STATUSES_FIELD = "approvalStatuses";
     public static final String NOTES_FIELD = "notes";
 
     public Candidate {
     }
 
+    public static Candidate fromDynamoDb(AttributeValue input) {
+        var map = input.m();
+        return new Builder()
+                   .withPublicationId(URI.create(map.get(PUBLICATION_ID_FIELD).s()))
+                   .withPublicationBucketUri(Optional.ofNullable(map.get(PUBLICATION_BUCKET_URI_FIELD))
+                                                 .map(AttributeValue::s).map(URI::create).orElse(null))
+                   .withIsApplicable(map.get(IS_APPLICABLE_FIELD).bool())
+                   .withInstanceType(map.get(INSTANCE_TYPE_FIELD).s())
+                   .withLevel(Level.parse(map.get(LEVEL_FIELD).s()))
+                   .withPublicationDate(PublicationDate.fromDynamoDb(map.get(PUBLICATION_DATE_FIELD)))
+                   .withIsInternationalCollaboration(map.get(IS_INTERNATIONAL_COLLABORATION_FIELD).bool())
+                   .withCreatorCount(Integer.parseInt(map.get(CREATOR_COUNT_FIELD).n()))
+                   .withCreators(
+                       map.get(CREATORS_FIELD).l().stream().map(Creator::fromDynamoDb).toList()
+                   ).withPoints(
+                map.get(POINTS_FIELD).m().entrySet().stream()
+                    .collect(Collectors.toMap(entry -> URI.create(entry.getKey()),
+                                              entry -> new BigDecimal(entry.getValue().n()))))
+                   .withApprovalStatuses(
+                       map.get(APPROVAL_STATUSES_FIELD).l()
+                           .stream().map(ApprovalStatus::fromDynamoDb).toList()
+                   )
+                   .withNotes(Optional.ofNullable(map.get(NOTES_FIELD))
+                                  .map(AttributeValue::l).map(l -> l.stream().map(Note::fromDynamoDb)
+                                                                       .toList()).orElse(null)
+                   )
+                   .build();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public Builder copy() {
+        return new Builder()
+                   .withPublicationId(publicationId)
+                   .withPublicationBucketUri(publicationBucketUri)
+                   .withIsApplicable(isApplicable)
+                   .withInstanceType(instanceType)
+                   .withLevel(level)
+                   .withPublicationDate(publicationDate)
+                   .withIsInternationalCollaboration(isInternationalCollaboration)
+                   .withCreatorCount(creatorCount)
+                   .withCreators(creators)
+                   .withPoints(points)
+                   .withApprovalStatuses(approvalStatuses)
+                   .withNotes(notes);
+    }
+
     public AttributeValue toDynamoDb() {
-        Map<String, AttributeValue> map = new HashMap<>();
+        var map = new HashMap<String, AttributeValue>();
         map.put(PUBLICATION_ID_FIELD, AttributeValue.fromS(publicationId.toString()));
         if (publicationBucketUri != null) {
             map.put(PUBLICATION_BUCKET_URI_FIELD, AttributeValue.fromS(publicationBucketUri.toString()));
@@ -59,33 +110,13 @@ public record Candidate(URI publicationId,
         if (notes != null) {
             map.put(NOTES_FIELD, AttributeValue.fromL(notes.stream().map(Note::toDynamoDb).toList()));
         }
-        return AttributeValue.fromM(map);
-    }
+        map.put(POINTS_FIELD,
+                AttributeValue.fromM(
+                    points.entrySet().stream().collect(Collectors.toMap(entry -> String.valueOf(entry.getKey()),
+                                                                        entry -> AttributeValue.fromN(
+                                                                            entry.getValue().toString())))));
 
-    public static Candidate fromDynamoDb(AttributeValue input) {
-        Map<String, AttributeValue> map = input.m();
-        return new Builder()
-            .withPublicationId(URI.create(map.get(PUBLICATION_ID_FIELD).s()))
-                 .withPublicationBucketUri(Optional.ofNullable(map.get(PUBLICATION_BUCKET_URI_FIELD))
-                                               .map(AttributeValue::s).map(URI::create).orElse(null))
-                 .withIsApplicable(map.get(IS_APPLICABLE_FIELD).bool())
-                 .withInstanceType(map.get(INSTANCE_TYPE_FIELD).s())
-                 .withLevel(Level.parse(map.get(LEVEL_FIELD).s()))
-                 .withPublicationDate(PublicationDate.fromDynamoDb(map.get(PUBLICATION_DATE_FIELD)))
-                 .withIsInternationalCollaboration(map.get(IS_INTERNATIONAL_COLLABORATION_FIELD).bool())
-                 .withCreatorCount(Integer.parseInt(map.get(CREATOR_COUNT_FIELD).n()))
-                 .withCreators(
-                     map.get(CREATORS_FIELD).l().stream().map(Creator::fromDynamoDb).toList()
-                 )
-                 .withApprovalStatuses(
-                     map.get(APPROVAL_STATUSES_FIELD).l()
-                         .stream().map(ApprovalStatus::fromDynamoDb).toList()
-                 )
-                 .withNotes(Optional.ofNullable(map.get(NOTES_FIELD))
-                                .map(AttributeValue::l).map(l -> l.stream().map(Note::fromDynamoDb)
-                                                                     .toList()).orElse(null)
-                 )
-                 .build();
+        return AttributeValue.fromM(map);
     }
 
     public static final class Builder {
@@ -99,10 +130,11 @@ public record Candidate(URI publicationId,
         private boolean isInternationalCollaboration;
         private int creatorCount;
         private List<Creator> creators;
+        private Map<URI, BigDecimal> points;
         private List<ApprovalStatus> approvalStatuses;
         private List<Note> notes;
 
-        public Builder() {
+        private Builder() {
         }
 
         public Builder withPublicationId(URI publicationId) {
@@ -110,7 +142,6 @@ public record Candidate(URI publicationId,
             return this;
         }
 
-        @JacocoGenerated
         public Builder withPublicationBucketUri(URI publicationBucketUri) {
             this.publicationBucketUri = publicationBucketUri;
             return this;
@@ -151,6 +182,11 @@ public record Candidate(URI publicationId,
             return this;
         }
 
+        public Builder withPoints(Map<URI, BigDecimal> points) {
+            this.points = points;
+            return this;
+        }
+
         public Builder withApprovalStatuses(List<ApprovalStatus> approvalStatuses) {
             this.approvalStatuses = approvalStatuses;
             return this;
@@ -163,7 +199,7 @@ public record Candidate(URI publicationId,
 
         public Candidate build() {
             return new Candidate(publicationId, publicationBucketUri, isApplicable, instanceType, level,
-                                 publicationDate, isInternationalCollaboration, creatorCount, creators,
+                                 publicationDate, isInternationalCollaboration, creatorCount, creators, points,
                                  approvalStatuses, notes);
         }
     }

@@ -1,14 +1,14 @@
 package no.sikt.nva.nvi.test;
 
-import static no.sikt.nva.nvi.common.ApplicationConstants.HASH_KEY;
-import static no.sikt.nva.nvi.common.ApplicationConstants.SECONDARY_INDEX_1_HASH_KEY;
-import static no.sikt.nva.nvi.common.ApplicationConstants.SECONDARY_INDEX_1_RANGE_KEY;
-import static no.sikt.nva.nvi.common.ApplicationConstants.SECONDARY_INDEX_PUBLICATION_ID;
-import static no.sikt.nva.nvi.common.ApplicationConstants.SORT_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_HASH_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_RANGE_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
+import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
+import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
 import java.util.ArrayList;
 import java.util.List;
-import no.sikt.nva.nvi.common.ApplicationConstants;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.StringContains;
 import org.junit.jupiter.api.Assertions;
@@ -19,12 +19,12 @@ import software.amazon.awssdk.services.dynamodb.model.CreateTableResponse;
 import software.amazon.awssdk.services.dynamodb.model.GlobalSecondaryIndex;
 import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
 import software.amazon.awssdk.services.dynamodb.model.KeyType;
-import software.amazon.awssdk.services.dynamodb.model.ListTablesResponse;
 import software.amazon.awssdk.services.dynamodb.model.Projection;
 import software.amazon.awssdk.services.dynamodb.model.ProjectionType;
 import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
-import software.amazon.awssdk.services.dynamodb.model.TableDescription;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
+import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 import software.amazon.awssdk.services.dynamodb.model.TableStatus;
 
 public class LocalDynamoTest {
@@ -38,7 +38,7 @@ public class LocalDynamoTest {
         var localDynamo = DynamoDBEmbedded.create().dynamoDbClient();
 
 
-        var tableName = ApplicationConstants.NVI_TABLE_NAME;
+        var tableName = NVI_TABLE_NAME;
         var createTableResult = createTable(localDynamo, tableName);
         var tableDescription = createTableResult.tableDescription();
         Assertions.assertEquals(tableName, tableDescription.tableName());
@@ -123,6 +123,10 @@ public class LocalDynamoTest {
     private void assertThatTableKeySchemaContainsBothKeys(List<KeySchemaElement> tableKeySchema) {
         MatcherAssert.assertThat(tableKeySchema.toString(), StringContains.containsString(HASH_KEY));
         MatcherAssert.assertThat(tableKeySchema.toString(), StringContains.containsString(SORT_KEY));
+    }
+
+    protected ScanResponse scanDB() {
+        return localDynamo.scan(ScanRequest.builder().tableName(NVI_TABLE_NAME).build());
     }
 
 

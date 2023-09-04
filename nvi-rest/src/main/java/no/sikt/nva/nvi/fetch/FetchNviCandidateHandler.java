@@ -11,11 +11,17 @@ import no.sikt.nva.nvi.utils.ExceptionMapper;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.core.JacocoGenerated;
 
 public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateResponse> {
 
     public static final String PARAM_CANDIDATE_IDENTIFIER = "candidateIdentifier";
     private final NviService service;
+
+    @JacocoGenerated
+    public FetchNviCandidateHandler() {
+        this(NviService.defaultNviService());
+    }
 
     public FetchNviCandidateHandler(NviService service) {
         super(Void.class);
