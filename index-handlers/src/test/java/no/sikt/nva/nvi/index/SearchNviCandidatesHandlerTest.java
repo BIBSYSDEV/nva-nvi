@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
 import static no.sikt.nva.nvi.index.aws.OpenSearchClient.NVI_CANDIDATES_INDEX;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -71,7 +70,7 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldReturnDocumentFromIndex() throws IOException {
         var expectedDocument = singleNviCandidateIndexDocument();
-        when(openSearchClient.search(any(), eq(DEFAULT_OFFSET_SIZE), eq(DEFAULT_QUERY_SIZE))).thenReturn(
+        when(openSearchClient.search(any(), eq(DEFAULT_OFFSET_SIZE), eq(DEFAULT_QUERY_SIZE), any(), any())).thenReturn(
             createSearchResponse(List.of(expectedDocument), 1));
         handler.handleRequest(request("*", null, null), output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);

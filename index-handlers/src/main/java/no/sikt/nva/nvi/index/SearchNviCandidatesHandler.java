@@ -18,9 +18,9 @@ import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
+import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.apigateway.exceptions.UnprocessableContentException;
 import nva.commons.core.Environment;
-import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
@@ -72,10 +72,11 @@ public class SearchNviCandidatesHandler
 
     @Override
     protected PaginatedSearchResult<NviCandidateIndexDocument> processInput(Void input, RequestInfo requestInfo,
-                                                                            Context context) {
+                                                                            Context context)
+        throws UnauthorizedException {
 
-        int offset = extractQueryParamOffsetOrDefault(requestInfo);
-        int size = extractQueryParamSizeOrDefault(requestInfo);
+        var offset = extractQueryParamOffsetOrDefault(requestInfo);
+        var size = extractQueryParamSizeOrDefault(requestInfo);
         var searchTerm = extractSearchTermOrDefault(requestInfo);
         var customer = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         var username = requestInfo.getUserName();

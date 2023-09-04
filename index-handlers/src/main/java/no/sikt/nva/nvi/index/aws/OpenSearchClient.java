@@ -1,10 +1,9 @@
 package no.sikt.nva.nvi.index.aws;
 
 import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
+import static no.sikt.nva.nvi.index.Aggregations.generateAggregations;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_API_HOST;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_CREDENTIALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.mappings;
 import static nva.commons.core.attempt.Try.attempt;
 import com.auth0.jwt.interfaces.DecodedJWT;
@@ -13,7 +12,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Clock;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
-import no.sikt.nva.nvi.index.Aggregations;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CachedValueProvider;
@@ -93,7 +91,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     public SearchResponse<NviCandidateIndexDocument> search(Query query, int offset, int size, String username,
                                                             URI customer) throws IOException {
         return client.withTransportOptions(getOptions())
-                   .search(constructSearchRequest(query, username, customer.toString(), offset, size),
+                   .search(constructSearchRequest(query, offset, size, username, customer.toString()),
                            NviCandidateIndexDocument.class);
     }
 
@@ -165,7 +163,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
                    .query(query)
                    .from(offset)
                    .size(size)
-                   .aggregations(Aggregations.generateAggregations(username, customer))
+                   .aggregations(generateAggregations(username, customer))
                    .build();
     }
 }
