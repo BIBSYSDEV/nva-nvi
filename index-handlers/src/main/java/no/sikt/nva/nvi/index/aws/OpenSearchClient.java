@@ -2,8 +2,10 @@ package no.sikt.nva.nvi.index.aws;
 
 import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
 import static no.sikt.nva.nvi.index.Aggregations.generateAggregations;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_API_HOST;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_CREDENTIALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.mappings;
 import static nva.commons.core.attempt.Try.attempt;
 import com.auth0.jwt.interfaces.DecodedJWT;
@@ -40,9 +42,7 @@ import org.slf4j.LoggerFactory;
 @JacocoGenerated
 public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument> {
 
-    public static final String NVI_CANDIDATES_INDEX = "nvi-candidates";
-    public static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";
-    private static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
+    private static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchClient.class);
     private static final String ERROR_MSG_CREATE_INDEX = "Error while creating index: " + NVI_CANDIDATES_INDEX;
     private final org.opensearch.client.opensearch.OpenSearchClient client;
