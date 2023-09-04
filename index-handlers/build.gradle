@@ -8,6 +8,7 @@ dependencies {
     implementation libs.nva.commons.secrets
     implementation libs.nva.commons.auth
     implementation libs.nva.commons.apigateway
+    implementation libs.nva.commons.pagination
     implementation libs.nva.s3
 
 
@@ -44,4 +45,5 @@ test {
     environment("NVI_TABLE_NAME", "some-table")
     environment("ALLOWED_ORIGIN", "*")
     environment("API_HOST", "example.com")
+    environment("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
 }

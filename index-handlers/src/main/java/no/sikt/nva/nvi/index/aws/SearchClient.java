@@ -10,7 +10,7 @@ public interface SearchClient<T> {
 
     void removeDocumentFromIndex(T indexDocument);
 
-    SearchResponse<T> search(Query query) throws IOException;
+    SearchResponse<T> search(Query query, int offset, int size) throws IOException;
 
     void deleteIndex() throws IOException;
 }

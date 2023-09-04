@@ -28,16 +28,12 @@ public class FakeSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     @Override
-    public SearchResponse<NviCandidateIndexDocument> search(Query query) {
+    public SearchResponse<NviCandidateIndexDocument> search(Query query, int offset, int size) {
         return null;
     }
 
     @Override
     public void deleteIndex() {
 
-    }
-
-    public Set<NviCandidateIndexDocument> listAllDocuments() {
-        return new HashSet<>(this.indexContents.values());
     }
 }
