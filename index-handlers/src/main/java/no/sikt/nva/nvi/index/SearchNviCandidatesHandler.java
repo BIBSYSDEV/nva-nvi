@@ -78,7 +78,7 @@ public class SearchNviCandidatesHandler
 
         var offset = extractQueryParamOffsetOrDefault(requestInfo);
         var size = extractQueryParamSizeOrDefault(requestInfo);
-        var searchTerm = extractSearchTermOrDefault(requestInfo);
+        var searchTerm = extractQueryParamSearchTermOrDefault(requestInfo);
         var customer = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         var username = requestInfo.getUserName();
         return attempt(() -> contructQuery(requestInfo))
@@ -146,25 +146,23 @@ public class SearchNviCandidatesHandler
                 newName = Optional.of(fieldName.replaceFirst(WORD_ENDING_WITH_HASHTAG_REGEX, ""));
             }
 
-            var value = nodeEntry.getValue();
-            if (value.isValueNode()) {
-                outputAggregationNode.set(newName.get(), value);
-            } else {
-                outputAggregationNode.set(newName.get(), formatAggregations(nodeEntry.getValue()));
-            }
+            var value = nodeEntry.getValue().isValueNode()
+                            ? nodeEntry.getValue() : formatAggregations(nodeEntry.getValue());
+
+            outputAggregationNode.set(newName.get(), value);
         }
 
         return outputAggregationNode;
     }
 
-    private static String extractSearchTermOrDefault(RequestInfo requestInfo) {
+    private static String extractQueryParamSearchTermOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
                    .getOrDefault(SEARCH_TERM_KEY, SEARCH_ALL_DOCUMENTS_DEFAULT_QUERY);
     }
 
     private static QueryStringQuery constructQueryStringQuery(RequestInfo requestInfo) {
         return new QueryStringQuery.Builder()
-                   .query(extractSearchTermOrDefault(requestInfo))
+                   .query(extractQueryParamSearchTermOrDefault(requestInfo))
                    .build();
     }
 
