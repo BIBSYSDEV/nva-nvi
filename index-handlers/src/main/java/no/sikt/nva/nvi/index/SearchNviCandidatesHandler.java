@@ -32,13 +32,14 @@ import org.opensearch.client.opensearch.core.search.Hit;
 public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
-    private static final String WORD_ENDING_WITH_HASHTAG_REGEX = "[A-za-z0-9]*#";
-    private static final String HOST = new Environment().readEnv("API_HOST");
+    public static final Environment ENVIRONMENT = new Environment();
+    private static final String HOST = ENVIRONMENT.readEnv("API_HOST");
+    private static final String CUSTOM_DOMAIN_BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String QUERY_SIZE_PARAM = "size";
     private static final String QUERY_OFFSET_PARAM = "offset";
     private static final int DEFAULT_QUERY_SIZE = 10;
     private static final int DEFAULT_OFFSET_SIZE = 0;
-    private static final String CUSTOM_DOMAIN_BASE_PATH = new Environment().readEnv("CUSTOM_DOMAIN_BASE_PATH");
+    private static final String WORD_ENDING_WITH_HASHTAG_REGEX = "[A-za-z0-9]*#";
     private static final Map<String, String> AGGREGATION_FIELDS_TO_CHANGE = Map.of(
         "doc_count_error_upper_bound", "docCountErrorUpperBound",
         "sum_other_doc_count", "sumOtherDocCount",
