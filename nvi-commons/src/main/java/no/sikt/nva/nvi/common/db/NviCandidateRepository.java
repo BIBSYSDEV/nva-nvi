@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.sikt.nva.nvi.common.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
+import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static nva.commons.core.attempt.Try.attempt;
 import java.net.URI;
 import java.util.Collection;
@@ -32,7 +32,7 @@ public class NviCandidateRepository extends DynamoRepository  {
     }
 
 
-    public CandidateWithIdentifier save(Candidate candidate) {
+    public CandidateWithIdentifier create(Candidate candidate) {
         var uuid = UUID.randomUUID();
         var insert = new CandidateDao(uuid, candidate);
         var uniqueness = new CandidateUniquenessEntry(candidate.publicationId().toString());
@@ -53,6 +53,14 @@ public class NviCandidateRepository extends DynamoRepository  {
                           .build();
 
         this.client.transactWriteItems(request);
+        var fetched = this.candidateTable.getItem(insert);
+        return new CandidateWithIdentifier(fetched.getCandidate(), fetched.getIdentifier());
+    }
+
+    public CandidateWithIdentifier update(UUID identifier, Candidate candidate) {
+        var insert = new CandidateDao(identifier, candidate);
+
+        this.candidateTable.putItem(insert);
         var fetched = this.candidateTable.getItem(insert);
         return new CandidateWithIdentifier(fetched.getCandidate(), fetched.getIdentifier());
     }

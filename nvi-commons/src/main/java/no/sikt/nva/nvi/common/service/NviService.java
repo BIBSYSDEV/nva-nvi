@@ -47,8 +47,12 @@ public class NviService {
     //TODO: Remove JacocoGenerated when other if/else cases are implemented
     @JacocoGenerated
     public Optional<CandidateWithIdentifier> upsertCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-        if (isNotExistingCandidate(evaluatedCandidate) && isNviCandidate(evaluatedCandidate)) {
+        if (!isExistingCandidate(evaluatedCandidate) && isNviCandidate(evaluatedCandidate)) {
             return Optional.of(createCandidate(evaluatedCandidate));
+        } else if (isExistingCandidate(evaluatedCandidate) && isNviCandidate(evaluatedCandidate)) {
+            var existing = findByPublicationId(evaluatedCandidate.candidateDetails().publicationId()).orElseThrow();
+            //TODO: Reset NVI Candidates here. See https://unit.atlassian.net/browse/NP-45113;
+            return Optional.of(updateCandidate(existing.identifier(), evaluatedCandidate));
         }
         return Optional.empty();
     }
@@ -66,14 +70,6 @@ public class NviService {
     public NviPeriod getPeriod(String publishingYear) {
         //TODO: Handle not-found. optional?
         return nviPeriodRepository.findByPublishingYear(publishingYear).orElseThrow();
-    }
-
-    public Optional<CandidateWithIdentifier> findById(UUID uuid) {
-        return nviCandidateRepository.findById(uuid);
-    }
-
-    public Optional<CandidateWithIdentifier> findByPublicationId(URI publicationId) {
-        return nviCandidateRepository.findByPublicationId(publicationId);
     }
 
     private static boolean isInteger(String value) {
@@ -113,15 +109,31 @@ public class NviService {
                    .toList();
     }
 
-    private static Candidate toPendingCandidate(CandidateDetails candidateDetails,
+    @JacocoGenerated
+    @SuppressWarnings("PMD.UnusedPrivateMethod")
+    private boolean exists(UUID uuid) {
+        return nviCandidateRepository.findById(uuid).isPresent();
+    }
+
+    public Optional<CandidateWithIdentifier> findById(UUID uuid) {
+        return nviCandidateRepository.findById(uuid);
+    }
+
+    public Optional<CandidateWithIdentifier> findByPublicationId(URI publicationId) {
+        return nviCandidateRepository.findByPublicationId(publicationId);
+    }
+
+    private static Candidate toPendingCandidate(CandidateEvaluatedMessage candidateEvaluatedMessage,
                                                 Map<URI, BigDecimal> institutionPoints) {
         return Candidate.builder()
-                   .withPublicationId(candidateDetails.publicationId())
+                   .withPublicationBucketUri(candidateEvaluatedMessage.publicationBucketUri())
+                   .withPublicationId(candidateEvaluatedMessage.candidateDetails().publicationId())
                    .withIsApplicable(true)
-                   .withCreators(mapToVerifiedCreators(candidateDetails.verifiedCreators()))
-                   .withLevel(Level.parse(candidateDetails.level()))
-                   .withInstanceType(candidateDetails.instanceType())
-                   .withPublicationDate(mapToPublicationDate(candidateDetails.publicationDate()))
+                   .withCreators(mapToVerifiedCreators(candidateEvaluatedMessage.candidateDetails().verifiedCreators()))
+                   .withLevel(Level.parse(candidateEvaluatedMessage.candidateDetails().level()))
+                   .withInstanceType(candidateEvaluatedMessage.candidateDetails().instanceType())
+                   .withPublicationDate(mapToPublicationDate(candidateEvaluatedMessage.candidateDetails()
+                                                                 .publicationDate()))
                    .withPoints(institutionPoints)
                    .withApprovalStatuses(generatePendingApprovalStatuses(institutionPoints.keySet()))
                    .build();
@@ -132,9 +144,15 @@ public class NviService {
     }
 
     private CandidateWithIdentifier createCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-        var pendingCandidate = toPendingCandidate(evaluatedCandidate.candidateDetails(),
+        var pendingCandidate = toPendingCandidate(evaluatedCandidate,
                                                   evaluatedCandidate.institutionPoints());
-        return nviCandidateRepository.save(pendingCandidate);
+        return nviCandidateRepository.create(pendingCandidate);
+    }
+
+    private CandidateWithIdentifier updateCandidate(UUID identifier, CandidateEvaluatedMessage evaluatedCandidate) {
+        var pendingCandidate = toPendingCandidate(evaluatedCandidate,
+                                                  evaluatedCandidate.institutionPoints());
+        return nviCandidateRepository.update(identifier, pendingCandidate);
     }
 
     private void validatePeriod(NviPeriod period) throws BadRequestException {
@@ -148,7 +166,7 @@ public class NviService {
 
     //TODO: Remove JacocoGenerated when case for existing candidate is implemented
     @JacocoGenerated
-    private boolean isNotExistingCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-        return !existsByPublicationId(evaluatedCandidate.candidateDetails().publicationId());
+    private boolean isExistingCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
+        return existsByPublicationId(evaluatedCandidate.candidateDetails().publicationId());
     }
 }

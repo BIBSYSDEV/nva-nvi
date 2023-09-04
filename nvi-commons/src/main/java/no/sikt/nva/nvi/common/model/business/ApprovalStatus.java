@@ -22,7 +22,7 @@ public record ApprovalStatus(URI institutionId,
 
     public static ApprovalStatus fromDynamoDb(AttributeValue input) {
         var map = input.m();
-        return new Builder()
+        return ApprovalStatus.builder()
                    .withInstitutionId(URI.create(map.get(INSTITUTION_ID_FIELD).s()))
                    .withStatus(Status.parse(map.get(STATUS_FIELD).s()))
                    .withFinalizedBy(

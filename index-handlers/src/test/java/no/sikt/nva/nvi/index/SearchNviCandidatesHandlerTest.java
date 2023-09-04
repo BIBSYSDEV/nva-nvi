@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index;
 
+import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
 import static no.sikt.nva.nvi.index.aws.OpenSearchClient.NVI_CANDIDATES_INDEX;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -82,7 +83,7 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldReturnDocumentFromIndexContainingSingleHitWhenUsingTerms() throws IOException {
         var document = singleNviCandidateIndexDocument();
-        when(openSearchClient.search(any(), eq(DEFAULT_OFFSET_SIZE), eq(DEFAULT_QUERY_SIZE))).thenReturn(
+        when(openSearchClient.search(any(), eq(DEFAULT_OFFSET_SIZE), eq(DEFAULT_QUERY_SIZE), any(), any())).thenReturn(
             createSearchResponse(List.of(document), 1));
         handler.handleRequest(request(document.identifier(), null, null), output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
@@ -93,7 +94,7 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldReturnPaginatedSearchResultWithDefaultOffsetAndSizeIfNotGiven() throws IOException {
         var documents = generateNumberOfIndexDocuments(10);
-        when(openSearchClient.search(any(), eq(DEFAULT_OFFSET_SIZE), eq(DEFAULT_QUERY_SIZE))).thenReturn(
+        when(openSearchClient.search(any(), eq(DEFAULT_OFFSET_SIZE), eq(DEFAULT_QUERY_SIZE), any(), any())).thenReturn(
             createSearchResponse(documents, documents.size()));
         handler.handleRequest(request(null, null, null), output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
@@ -104,7 +105,7 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldThrowExceptionWhenSearchFails() throws IOException {
         var document = singleNviCandidateIndexDocument();
-        when(openSearchClient.search(any(), eq(DEFAULT_OFFSET_SIZE), eq(DEFAULT_QUERY_SIZE))).thenThrow(
+        when(openSearchClient.search(any(), eq(DEFAULT_OFFSET_SIZE), eq(DEFAULT_QUERY_SIZE), any(), any())).thenThrow(
             RuntimeException.class);
         handler.handleRequest(request(document.identifier(), null, null), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -140,8 +141,8 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
-        return new NviCandidateIndexDocument(randomUri(), randomString(), randomString(), randomString(),
-                                             randomPublicationDetails(), List.of());
+        return new NviCandidateIndexDocument(randomUri(), randomString(),
+                                             randomPublicationDetails(), List.of(), 0);
     }
 
     private static PublicationDetails randomPublicationDetails() {
@@ -169,6 +170,8 @@ public class SearchNviCandidatesHandlerTest {
 
     private InputStream request(String searchTerm, Integer offset, Integer size) throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
+                   .withTopLevelCristinOrgId(randomUri())
+                   .withUserName(randomString())
                    .withQueryParameters(getQueryParameters(searchTerm, offset, size))
                    .build();
     }

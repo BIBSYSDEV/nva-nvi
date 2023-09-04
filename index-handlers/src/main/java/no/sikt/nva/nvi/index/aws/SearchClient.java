@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.aws;
 
 import java.io.IOException;
+import java.net.URI;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
@@ -10,7 +11,7 @@ public interface SearchClient<T> {
 
     void removeDocumentFromIndex(T indexDocument);
 
-    SearchResponse<T> search(Query query, int offset, int size) throws IOException;
+    SearchResponse<T> search(Query query, int offset, int size, String username, URI customer) throws IOException;
 
     void deleteIndex() throws IOException;
 }

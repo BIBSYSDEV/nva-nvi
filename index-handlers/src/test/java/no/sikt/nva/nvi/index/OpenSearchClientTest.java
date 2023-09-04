@@ -1,6 +1,16 @@
 package no.sikt.nva.nvi.index;
 
-import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
+import static no.sikt.nva.nvi.index.Aggregations.APPROVED_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.APPROVED_COLLABORATION_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.ASSIGNMENTS_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.COMPLETED_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.TOTAL_COUNT_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.PENDING_COLLABORATION_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.PENDING_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.ASSIGNED_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.ASSIGNED_COLLABORATION_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.REJECTED_AGGREGATION_NAME;
+import static no.sikt.nva.nvi.index.Aggregations.REJECTED_COLLABORATION_AGGREGATION_NAME;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -16,18 +26,22 @@ import static org.mockito.Mockito.when;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
-import no.sikt.nva.nvi.index.model.Affiliation;
+import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
@@ -40,6 +54,8 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -51,9 +67,13 @@ import org.opensearch.testcontainers.OpensearchContainer;
 public class OpenSearchClientTest {
 
     private static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:2.0.0";
+    private static final URI CUSTOMER = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
+    private static final String USERNAME = "user1";
+    public static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:2.0.0";
     private static final OpensearchContainer container = new OpensearchContainer(OPEN_SEARCH_IMAGE);
     private static final int DEFAULT_QUERY_SIZE = 10;
     private static final int DEFAULT_OFFSET_SIZE = 0;
+    public static final String DOC_COUNT = "docCount";
     private static RestClient restClient;
     private static OpenSearchClient openSearchClient;
 
@@ -63,9 +83,17 @@ public class OpenSearchClientTest {
     }
 
     @BeforeAll
-    static void init() {
+    static void init() throws JsonProcessingException, InterruptedException {
         setUpTestContainer();
         openSearchClient = new OpenSearchClient(restClient, FakeCachedJwtProvider.setup());
+        addDocumentsToIndex(documentFromString("document_pending.json"),
+                            documentFromString("document_pending_collaboration.json"),
+                            documentFromString("document_assigned.json"),
+                            documentFromString("document_assigned_collaboration.json"),
+                            documentFromString("document_approved.json"),
+                            documentFromString("document_approved_collaboration.json"),
+                            documentFromString("document_rejected.json"),
+                            documentFromString("document_rejected_collaboration.json"));
     }
 
     @AfterAll
@@ -115,7 +143,7 @@ public class OpenSearchClientTest {
         addDocumentsToIndex(List.of(document));
         openSearchClient.deleteIndex();
         assertThrows(OpenSearchException.class,
-                     () -> openSearchClient.search(searchTermToQuery(document.identifier()), DEFAULT_OFFSET_SIZE,
+                     () -> openSearchClient.search(searchTermToQuery(document.identifier()), USERNAME, CUSTOMER, DEFAULT_OFFSET_SIZE,
                                                    DEFAULT_QUERY_SIZE));
     }
 
@@ -125,9 +153,8 @@ public class OpenSearchClientTest {
         addDocumentsToIndex(List.of(document));
         openSearchClient.removeDocumentFromIndex(document);
         Thread.sleep(2000);
-        var searchResponse =
-            openSearchClient.search(searchTermToQuery(document.identifier()), DEFAULT_OFFSET_SIZE,
-                                    DEFAULT_QUERY_SIZE);
+        var searchResponse = openSearchClient.search(searchTermToQuery(document.identifier()), DEFAULT_OFFSET_SIZE,
+                                    DEFAULT_QUERY_SIZE, USERNAME, CUSTOMER);
         var nviCandidateIndexDocument = extractHitsFromSearchResponse(searchResponse);
         assertThat(nviCandidateIndexDocument, hasSize(0));
     }
@@ -140,6 +167,19 @@ public class OpenSearchClientTest {
         var searchResponse = openSearchClient.search(searchTermToQuery("*"), DEFAULT_OFFSET_SIZE,
                                                      DEFAULT_QUERY_SIZE);
         assertThat(searchResponse.aggregations(), is(notNullValue()));
+    }
+
+    @ParameterizedTest
+    @MethodSource("aggregationNameAndExpectedCountProvider")
+    void shouldReturnAggregationsWithExpectedCount(Entry<String, Integer> entry)
+        throws IOException {
+
+        var searchResponse =
+            openSearchClient.search(searchTermToQuery("*"), USERNAME, CUSTOMER);
+        var response = SearchResponseDto.fromSearchResponse(searchResponse);
+        var docCount = getDocCount(response, entry.getKey());
+
+        assertThat(docCount, is(equalTo(entry.getValue())));
     }
 
     @Test
@@ -182,16 +222,17 @@ public class OpenSearchClientTest {
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
-        return new NviCandidateIndexDocument(randomUri(), randomString(), randomInteger().toString(), randomString(),
-                                             randomPublicationDetails(), randomAffiliationList());
+        var approvals = randomApprovalList();
+        return new NviCandidateIndexDocument(randomUri(), randomString(), randomPublicationDetails(),
+                                             approvals, approvals.size());
     }
 
-    private static List<Affiliation> randomAffiliationList() {
-        return IntStream.range(0, 5).boxed().map(i -> randomAffiliation()).toList();
+    private static List<Approval> randomApprovalList() {
+        return IntStream.range(0, 5).boxed().map(i -> randomApproval()).toList();
     }
 
-    private static Affiliation randomAffiliation() {
-        return new Affiliation(randomString(), Map.of(), randomStatus());
+    private static Approval randomApproval() {
+        return new Approval(randomString(), Map.of(), randomStatus(), null);
     }
 
     private static ApprovalStatus randomStatus() {
@@ -210,15 +251,30 @@ public class OpenSearchClientTest {
         Thread.sleep(2000);
     }
 
+    private static Stream<Entry<String, Integer>> aggregationNameAndExpectedCountProvider() {
+        var map = new HashMap<String, Integer>();
+        map.put(PENDING_AGGREGATION_NAME, 2);
+        map.put(PENDING_COLLABORATION_AGGREGATION_NAME, 1);
+        map.put(ASSIGNED_AGGREGATION_NAME, 2);
+        map.put(ASSIGNED_COLLABORATION_AGGREGATION_NAME, 1);
+        map.put(APPROVED_AGGREGATION_NAME, 2);
+        map.put(APPROVED_COLLABORATION_AGGREGATION_NAME, 1);
+        map.put(REJECTED_AGGREGATION_NAME, 2);
+        map.put(REJECTED_COLLABORATION_AGGREGATION_NAME, 1);
+        map.put(ASSIGNMENTS_AGGREGATION_NAME, 6);
+        map.put(COMPLETED_AGGREGATION_NAME, 4);
+        map.put(TOTAL_COUNT_AGGREGATION_NAME, 8);
+        return map.entrySet().stream();
+    }
+
     private static final class FakeCachedJwtProvider {
 
-        public static String TEST_TOKEN =
-            "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1"
-            + "aWxkZXIiLCJpYXQiOjE2Njg1MTE4NTcsImV4cCI6MTcwMDA0Nzg1NywiYXVkIjoi"
-            + "d3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpd"
-            + "mVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2"
-            + "NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjoiTWFuYWdlciIsInNjb3BlIjoiZXhhbX"
-            + "BsZS1zY29wZSJ9.ne8Jb4f2xao1zSJFZxIBRrh4WFNjkaBRV3-Ybp6fHZU";
+        public static String TEST_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1"
+                                          + "aWxkZXIiLCJpYXQiOjE2Njg1MTE4NTcsImV4cCI6MTcwMDA0Nzg1NywiYXVkIjoi"
+                                          + "d3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpd"
+                                          + "mVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2"
+                                          + "NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjoiTWFuYWdlciIsInNjb3BlIjoiZXhhbX"
+                                          + "BsZS1zY29wZSJ9.ne8Jb4f2xao1zSJFZxIBRrh4WFNjkaBRV3-Ybp6fHZU";
 
         public static CachedJwtProvider setup() {
             var jwt = mock(DecodedJWT.class);

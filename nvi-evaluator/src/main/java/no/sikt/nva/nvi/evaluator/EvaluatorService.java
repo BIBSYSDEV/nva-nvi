@@ -6,8 +6,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
@@ -15,6 +15,7 @@ import no.sikt.nva.nvi.common.model.events.CandidateStatus;
 import no.sikt.nva.nvi.common.model.events.NonNviCandidate;
 import no.sikt.nva.nvi.common.model.events.NviCandidate;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.evaluator.calculator.PointCalculator;
 import no.unit.nva.events.models.EventReference;
@@ -45,15 +46,14 @@ public class EvaluatorService {
     }
 
     private static Map<URI, BigDecimal> calculatePoints(JsonNode jsonNode, NviCandidate candidateType) {
-        return PointCalculator.calculatePoints(jsonNode, extractApprovalInstitutions(candidateType));
+        return PointCalculator.calculatePoints(jsonNode, extractNviCreatorsWithInstitutions(candidateType));
     }
 
-    private static Set<URI> extractApprovalInstitutions(NviCandidate candidate) {
+    private static Map<URI, List<URI>> extractNviCreatorsWithInstitutions(NviCandidate candidate) {
         return candidate.candidateDetails()
                    .verifiedCreators()
                    .stream()
-                   .flatMap(creator -> creator.nviInstitutions().stream())
-                   .collect(Collectors.toSet());
+                   .collect(Collectors.toMap(Creator::id, Creator::nviInstitutions));
     }
 
     private static CandidateDetails createCandidateDetails(NonNviCandidate candidateType) {

@@ -4,8 +4,10 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.Candidate;
@@ -29,10 +31,12 @@ public record FetchCandidateResponse(UUID id,
     }
 
     private static List<Note> mapToNotes(Candidate candidate) {
-        return candidate.notes()
-                   .stream()
-                   .map(FetchCandidateResponse::mapToNote)
-                   .toList();
+        return Objects.nonNull(candidate.notes())
+                   ? candidate.notes()
+                         .stream()
+                         .map(FetchCandidateResponse::mapToNote)
+                         .toList()
+                   : Collections.emptyList();
     }
 
     private static Note mapToNote(no.sikt.nva.nvi.common.model.business.Note note) {
