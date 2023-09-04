@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.index.aws.OpenSearchClient.NVI_CANDIDATES_INDEX;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -36,7 +37,10 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch._types.ShardStatistics;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.SearchResponse.Builder;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.opensearch.client.opensearch.core.search.TotalHits;
@@ -102,6 +106,19 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
+    void shouldReturnPaginatedSearchResultWithAggregations() throws IOException {
+        var documents = generateNumberOfIndexDocuments(10);
+        var aggregateName = randomString();
+        var docCount = randomInteger();
+        when(openSearchClient.search(any(), eq(DEFAULT_OFFSET_SIZE), eq(DEFAULT_QUERY_SIZE), any(), any())).thenReturn(
+            createSearchResponse(documents, documents.size(), aggregateName, docCount));
+        handler.handleRequest(request(null, null, null), output, context);
+        var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
+        assertEquals(docCount, paginatedSearchResult.getAggregations().at("/" + aggregateName + "/docCount").asInt());
+    }
+
+    @Test
     void shouldThrowExceptionWhenSearchFails() throws IOException {
         var document = singleNviCandidateIndexDocument();
         when(openSearchClient.search(any(), eq(DEFAULT_OFFSET_SIZE), eq(DEFAULT_QUERY_SIZE), any(), any())).thenThrow(
@@ -114,12 +131,28 @@ public class SearchNviCandidatesHandlerTest {
 
     private static SearchResponse<NviCandidateIndexDocument> createSearchResponse(
         List<NviCandidateIndexDocument> documents, int total) {
-        return new SearchResponse.Builder<NviCandidateIndexDocument>()
-                   .hits(constructHitsMetadata(documents))
+        return getNviCandidateIndexDocumentBuilder(documents, total).build();
+    }
+
+    private static SearchResponse<NviCandidateIndexDocument> createSearchResponse(
+        List<NviCandidateIndexDocument> documents, int total, String aggregateName, int docCount) {
+        return getNviCandidateIndexDocumentBuilder(documents, total)
+                   .aggregations(aggregateName, generateFilterAggregate(docCount))
+                   .build();
+    }
+
+    @NotNull
+    private static Aggregate generateFilterAggregate(int docCount) {
+        return new Aggregate(new FilterAggregate.Builder().docCount(docCount).build());
+    }
+
+    @NotNull
+    private static SearchResponse.Builder<NviCandidateIndexDocument> getNviCandidateIndexDocumentBuilder(
+        List<NviCandidateIndexDocument> documents, int total) {
+        return new Builder<NviCandidateIndexDocument>().hits(constructHitsMetadata(documents))
                    .took(10)
                    .timedOut(false)
-                   .shards(new ShardStatistics.Builder().failed(0).successful(1).total(total).build())
-                   .build();
+                   .shards(new ShardStatistics.Builder().failed(0).successful(1).total(total).build());
     }
 
     private static HitsMetadata<NviCandidateIndexDocument> constructHitsMetadata(
