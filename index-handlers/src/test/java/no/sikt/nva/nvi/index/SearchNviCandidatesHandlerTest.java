@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,8 @@ import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
+import nva.commons.core.Environment;
+import nva.commons.core.paths.UriWrapper;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,6 +55,14 @@ import org.zalando.problem.Problem;
 public class SearchNviCandidatesHandlerTest {
 
     public static final String QUERY = "query";
+    public static final Environment ENVIRONMENT = new Environment();
+    public static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
+    public static final String CUSTOM_DOMAIN_BASE_PATH = ENVIRONMENT.readEnv(
+        "CUSTOM_DOMAIN_BASE_PATH");
+    public static final String QUERY_PARAM_SEARCH_TERM = "query";
+    public static final String DEFAULT_SEARCH_TERM = "*";
+    public static final String QUERY_PARAM_OFFSET = "offset";
+    public static final String QUERY_PARAM_SIZE = "size";
     private static final String QUERY_SIZE_PARAM = "size";
     private static final String QUERY_OFFSET_PARAM = "offset";
     private static final int DEFAULT_QUERY_SIZE = 10;
@@ -106,6 +117,19 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
+    void shouldReturnPaginatedSearchResultWithId() throws IOException {
+        var documents = generateNumberOfIndexDocuments(1);
+        when(openSearchClient.search(any(), eq(DEFAULT_OFFSET_SIZE), eq(DEFAULT_QUERY_SIZE), any(), any())).thenReturn(
+            createSearchResponse(documents, documents.size()));
+        handler.handleRequest(request(null, null, null), output, context);
+        var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
+
+        var expectedId = constructExpectedUri(DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE, DEFAULT_SEARCH_TERM);
+        assertEquals(expectedId, paginatedSearchResult.getId());
+    }
+
+    @Test
     void shouldReturnPaginatedSearchResultWithAggregations() throws IOException {
         var documents = generateNumberOfIndexDocuments(10);
         var aggregateName = randomString();
@@ -127,6 +151,15 @@ public class SearchNviCandidatesHandlerTest {
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
         assertThat(Objects.requireNonNull(response.getBodyObject(Problem.class).getStatus()).getStatusCode(),
                    is(equalTo(HttpURLConnection.HTTP_INTERNAL_ERROR)));
+    }
+
+    private static URI constructExpectedUri(int offsetSize, int size, String searchTerm) {
+        return UriWrapper.fromHost(API_HOST)
+                   .addChild(CUSTOM_DOMAIN_BASE_PATH)
+                   .addQueryParameter(QUERY_PARAM_SEARCH_TERM, searchTerm)
+                   .addQueryParameter(QUERY_PARAM_OFFSET, String.valueOf(offsetSize))
+                   .addQueryParameter(QUERY_PARAM_SIZE, String.valueOf(size))
+                   .getUri();
     }
 
     private static SearchResponse<NviCandidateIndexDocument> createSearchResponse(
