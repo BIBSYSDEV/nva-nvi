@@ -18,6 +18,18 @@ paths:
           required: false
           schema:
             type: string
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: The offset of the search for use in pagination. Must be divisible by the size.
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 10
+          description: The size of each page of the search for use in pagination. Default is 10.
       security:
         - CognitoUserPool: [
           'https://api.nva.unit.no/scopes/backend',
@@ -198,27 +210,62 @@ components:
         - reportingDate
     CandidateSearchResponse:
       type: object
-      description: Search meta information, with results
       properties:
         '@context':
           $ref: '#/components/schemas/Context'
         id:
           $ref: '#/components/schemas/Id'
-        processingTime:
+        totalHits:
           type: integer
-          description: time consumed on server in ms.
-        size:
-          type: integer
-          description: Number of results returned from query
-        aggregations:
+        nextResults:
+          type: string
+          nullable: true
+          description: The uri to the next page of results, if there is one
+        previousResults:
+          type: string
+          nullable: true
+          description: The uri to the previous page of results, if there is one
+        hits:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateIndexDocument'
+    CandidateIndexDocument:
+      type: object
+      properties:
+        identifier:
+          type: string
+        publicationDetails:
           type: object
-          description: entity containing the different facets hit by the search.
-        total:
-          type: integer
-          description: Total number of results from query
-        took:
-          type: integer
-          description: time consumed on server in ms.
+          properties:
+            id:
+              type: string
+            type:
+              type: string
+            title:
+              type: string
+            publicationDate:
+              type: string
+            contributors:
+              type: array
+              items:
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  affiliations:
+                    type: array
+        approvals:
+          type: array
+          items:
+            properties:
+              id:
+                type: string
+              labels:
+                type: object
+              approvalStatus:
+                type: string
+
     FetchNviCandidateResponse:
       type: object
       properties:

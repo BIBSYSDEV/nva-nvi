@@ -123,16 +123,6 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         assertThat(appender.getMessages(), containsString(StringUtils.EMPTY_STRING));
     }
 
-    private NviCandidateIndexDocument constructExpectedDocument(CandidateWithIdentifier candidateWithIdentifier) {
-        return new NviCandidateIndexDocument.Builder()
-                   .withContext(URI.create("https://bibsysdev.github.io/src/nvi-context.json"))
-                   .withIdentifier(candidateWithIdentifier.identifier().toString())
-                   .withApprovals(constructExpectedApprovals())
-                   .withPublicationDetails(constructPublicationDetails())
-                   .withNumberOfApprovals(1)
-                   .build();
-    }
-
     private static List<Approval> constructExpectedApprovals() {
         return List.of(new Approval(
             "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
@@ -194,6 +184,16 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .withStatus(Status.PENDING).build();
     }
 
+    private NviCandidateIndexDocument constructExpectedDocument(CandidateWithIdentifier candidateWithIdentifier) {
+        return new NviCandidateIndexDocument.Builder()
+                   .withContext(URI.create("https://bibsysdev.github.io/src/nvi-context.json"))
+                   .withIdentifier(candidateWithIdentifier.identifier().toString())
+                   .withApprovals(constructExpectedApprovals())
+                   .withPublicationDetails(constructPublicationDetails())
+                   .withNumberOfApprovals(1)
+                   .build();
+    }
+
     private static class FakeSearchClient implements SearchClient<NviCandidateIndexDocument> {
 
         private final List<NviCandidateIndexDocument> documents;
@@ -213,7 +213,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         }
 
         @Override
-        public SearchResponse<NviCandidateIndexDocument> search(Query query, String username, URI customer) {
+        public SearchResponse<NviCandidateIndexDocument> search(Query query, int offset, int size, String username,
+                                                                URI customer) {
             return null;
         }
 
