@@ -54,17 +54,15 @@ import org.zalando.problem.Problem;
 @Testcontainers
 public class SearchNviCandidatesHandlerTest {
 
-    public static final String QUERY = "query";
-    public static final Environment ENVIRONMENT = new Environment();
-    public static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
-    public static final String CUSTOM_DOMAIN_BASE_PATH = ENVIRONMENT.readEnv(
+    private static final String QUERY = "query";
+    private static final Environment ENVIRONMENT = new Environment();
+    private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
+    private static final String CUSTOM_DOMAIN_BASE_PATH = ENVIRONMENT.readEnv(
         "CUSTOM_DOMAIN_BASE_PATH");
-    public static final String QUERY_PARAM_SEARCH_TERM = "query";
-    public static final String DEFAULT_SEARCH_TERM = "*";
-    public static final String QUERY_PARAM_OFFSET = "offset";
-    public static final String QUERY_PARAM_SIZE = "size";
-    private static final String QUERY_SIZE_PARAM = "size";
-    private static final String QUERY_OFFSET_PARAM = "offset";
+    private static final String QUERY_PARAM_SEARCH_TERM = "query";
+    private static final String DEFAULT_SEARCH_TERM = "*";
+    private static final String QUERY_PARAM_OFFSET = "offset";
+    private static final String QUERY_PARAM_SIZE = "size";
     private static final int DEFAULT_QUERY_SIZE = 10;
     private static final int DEFAULT_OFFSET_SIZE = 0;
     private static final TypeReference<PaginatedSearchResult<NviCandidateIndexDocument>> TYPE_REF =
@@ -221,10 +219,10 @@ public class SearchNviCandidatesHandlerTest {
             params.put(QUERY, searchTerm);
         }
         if (Objects.nonNull(offset)) {
-            params.put(QUERY_OFFSET_PARAM, String.valueOf(offset));
+            params.put(QUERY_PARAM_OFFSET, String.valueOf(offset));
         }
         if (Objects.nonNull(size)) {
-            params.put(QUERY_SIZE_PARAM, String.valueOf(size));
+            params.put(QUERY_PARAM_SIZE, String.valueOf(size));
         }
         return params;
     }
