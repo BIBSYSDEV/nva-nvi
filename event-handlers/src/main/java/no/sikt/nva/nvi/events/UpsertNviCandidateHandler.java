@@ -9,6 +9,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Objects;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.common.service.NviService;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
@@ -45,9 +46,18 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
     private static CandidateEvaluatedMessage validateRequiredFields(CandidateEvaluatedMessage request) {
         Objects.requireNonNull(request.publicationBucketUri());
         Objects.requireNonNull(request.status());
-        Objects.requireNonNull(request.candidateDetails());
-        Objects.requireNonNull(request.candidateDetails().publicationId());
+        Objects.requireNonNull(request.institutionPoints());
+        validateRequiredCandidateDetails(request.candidateDetails());
         return request;
+    }
+
+    private static void validateRequiredCandidateDetails(CandidateDetails candidateDetails) {
+        Objects.requireNonNull(candidateDetails);
+        Objects.requireNonNull(candidateDetails.publicationId());
+        Objects.requireNonNull(candidateDetails.instanceType());
+        Objects.requireNonNull(candidateDetails.publicationDate());
+        Objects.requireNonNull(candidateDetails.level());
+        Objects.requireNonNull(candidateDetails.verifiedCreators());
     }
 
     private void upsertNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
