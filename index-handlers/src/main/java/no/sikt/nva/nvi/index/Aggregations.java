@@ -35,8 +35,8 @@ import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 public final class Aggregations {
 
     private static final CharSequence JSON_PATH_DELIMITER = ".";
-    public static final String COMPLETED_AGGREGATION_NAME = "completed";
-    public static final String TOTAL_COUNT_AGGREGATION_NAME = "total_count";
+    public static final String COMPLETED_AGGREGATION_AGG = "completed";
+    public static final String TOTAL_COUNT_AGGREGATION_AGG = "total_count";
     public static final int MULTIPLE = 2;
 
     private Aggregations() {
@@ -53,8 +53,8 @@ public final class Aggregations {
         aggregations.put(REJECTED_AGG, statusAggregation(customer, REJECTED));
         aggregations.put(REJECTED_COLLABORATION_AGG, collaborationAggregation(customer, REJECTED));
         aggregations.put(ASSIGNMENTS_AGG, assignmentsAggregation(username, customer));
-        aggregations.put(COMPLETED_AGGREGATION_NAME, completedAggregation(customer));
-        aggregations.put(TOTAL_COUNT_AGGREGATION_NAME, totalCountAggregation(customer));
+        aggregations.put(COMPLETED_AGGREGATION_AGG, completedAggregation(customer));
+        aggregations.put(TOTAL_COUNT_AGGREGATION_AGG, totalCountAggregation(customer));
         return aggregations;
     }
 
