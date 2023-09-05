@@ -19,7 +19,7 @@ import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 
-public class PaginatedResultConverter {
+public final class PaginatedResultConverter {
 
     private static final String WORD_ENDING_WITH_HASHTAG_REGEX = "[A-za-z0-9]*#";
     private static final Map<String, String> AGGREGATION_FIELDS_TO_CHANGE = Map.of(
