@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.service;
 
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.common.model.events.CandidateStatus.CANDIDATE;
+import static nva.commons.core.attempt.Try.attempt;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
@@ -91,12 +92,9 @@ public class NviService {
     }
 
     private static boolean isInteger(String value) {
-        try {
-            Integer.parseInt(value);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
+        return attempt(() -> Integer.parseInt(value))
+                   .map(ignore -> true)
+                   .orElse((ignore) -> false);
     }
 
     private static boolean hasInvalidLength(NviPeriod period) {
@@ -143,6 +141,7 @@ public class NviService {
                    .build();
     }
 
+    @JacocoGenerated // bug in jacoco report that is unable to exhaust the switch. Should be fixed in version 0.8.11
     private ApprovalStatus toUpdatedApprovalStatus(ApprovalStatus oldApprovalStatus, ApprovalStatus newApprovalStatus) {
         return switch (newApprovalStatus.status()) {
             case APPROVED, REJECTED -> oldApprovalStatus.but()

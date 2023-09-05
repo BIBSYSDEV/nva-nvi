@@ -31,7 +31,7 @@ public class ApprovalStatusDao extends Dao implements DynamoEntryWithRangeKey {
         this.approvalStatus = approvalStatus;
     }
 
-    public static String SK(String institutionUri) {
+    public static String sk0(String institutionUri) {
         return String.join(FIELD_DELIMITER, TYPE, institutionUri);
     }
 
@@ -39,7 +39,7 @@ public class ApprovalStatusDao extends Dao implements DynamoEntryWithRangeKey {
     @DynamoDbPartitionKey
     @DynamoDbAttribute(HASH_KEY)
     public String getPrimaryKeyHashKey() {
-        return CandidateDao.PK(identifier.toString());
+        return CandidateDao.pk0(identifier.toString());
     }
 
     @Override
@@ -51,7 +51,7 @@ public class ApprovalStatusDao extends Dao implements DynamoEntryWithRangeKey {
     @DynamoDbSortKey
     @DynamoDbAttribute(SORT_KEY)
     public String getPrimaryKeyRangeKey() {
-        return SK(approvalStatus.institutionId().toString());
+        return sk0(approvalStatus.institutionId().toString());
     }
 
     @Override

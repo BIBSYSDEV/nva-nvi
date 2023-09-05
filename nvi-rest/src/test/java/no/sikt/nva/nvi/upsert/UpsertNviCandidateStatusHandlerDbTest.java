@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
@@ -32,6 +33,8 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public class UpsertNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
@@ -52,22 +55,24 @@ public class UpsertNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
         handler = new UpsertNviCandidateStatusHandler(nviService);
     }
 
-    @Test
-    void shouldUpdateApprovalStatus() throws IOException {
+    @ParameterizedTest
+    @EnumSource(NviApprovalStatus.class)
+    void shouldUpdateApprovalStatus(NviApprovalStatus status) throws IOException {
         URI institutionId = randomUri();
-        var candidateWithIdentifier = nviCandidateRepository.save(createCandidate(institutionId));
+        var candidateWithIdentifier = nviCandidateRepository.create(createCandidate(institutionId));
 
         NviStatusRequest req = new NviStatusRequest(candidateWithIdentifier.identifier(), institutionId,
-                                                                 NviApprovalStatus.APPROVED);
+                                                                 status);
         InputStream request = createRequest(req);
         handler.handleRequest(request, output, context);
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         CandidateResponse bodyAsInstance = gatewayResponse.getBodyObject(CandidateResponse.class);
-        assertThat(bodyAsInstance.approvalStatuses().get(0).status(), is(equalTo(Status.APPROVED)));
+        assertThat(bodyAsInstance.approvalStatuses().get(0).status().getValue(), is(equalTo(status.getValue())));
     }
     private InputStream createRequest(NviStatusRequest body) throws JsonProcessingException {
         URI customerId = randomUri();
         return new HandlerRequestBuilder<NviStatusRequest>(JsonUtils.dtoObjectMapper)
+                   .withPathParameters(Map.of("candidateIdentifier", body.candidateId().toString()))
                    .withBody(body)
                    .withCurrentCustomer(customerId)
                    //TODO CHANGE TO CORRECT ACCESS RIGHT

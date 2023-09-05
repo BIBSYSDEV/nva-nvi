@@ -29,7 +29,7 @@ class NviCandidateRepositoryTest extends LocalDynamoTest {
         var candidate2 = randomCandidateBuilder().withPublicationId(publicationId).build();
         nviCandidateRepository.create(candidate1);
         assertThrows(RuntimeException.class, () -> nviCandidateRepository.create(candidate2));
-        assertThat(scanDB().count(), is(equalTo(2)));
+        assertThat(scanDB().count(), is(equalTo(3)));
     }
 
     @Test
@@ -40,7 +40,7 @@ class NviCandidateRepositoryTest extends LocalDynamoTest {
         nviCandidateRepository.update(created.identifier(),newCandidate);
         var fetched = nviCandidateRepository.findById(created.identifier()).get().candidate();
 
-        assertThat(scanDB().count(), is(equalTo(2)));
+        assertThat(scanDB().count(), is(equalTo(3)));
         assertThat(fetched, is(not(equalTo(originalCandidate))));
         assertThat(fetched, is(equalTo(newCandidate)));
     }

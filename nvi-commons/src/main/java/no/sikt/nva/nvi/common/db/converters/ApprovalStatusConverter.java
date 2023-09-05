@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.db.converters;
 
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
+import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.AttributeConverter;
 import software.amazon.awssdk.enhanced.dynamodb.AttributeValueType;
 import software.amazon.awssdk.enhanced.dynamodb.EnhancedType;
@@ -19,6 +20,7 @@ public class ApprovalStatusConverter implements AttributeConverter<ApprovalStatu
     }
 
     @Override
+    @JacocoGenerated
     public EnhancedType<ApprovalStatus> type() {
         return EnhancedType.of(ApprovalStatus.class);
     }

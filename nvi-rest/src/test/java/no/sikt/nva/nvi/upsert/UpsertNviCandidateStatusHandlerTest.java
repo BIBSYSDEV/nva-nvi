@@ -20,6 +20,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.CandidateResponse;
@@ -72,7 +73,7 @@ class UpsertNviCandidateStatusHandlerTest {
 
     @Test
     void shouldReturnBadRequestWhenMissingAccessRights() throws IOException, BadRequestException {
-        when(nviService.upsertApproval(any())).thenThrow(IllegalArgumentException.class);
+        when(nviService.upsertApproval(any(),any())).thenThrow(IllegalArgumentException.class);
         handler.handleRequest(createRequest(randomStatusRequest()), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -139,6 +140,7 @@ class UpsertNviCandidateStatusHandlerTest {
         return new HandlerRequestBuilder<NviStatusRequest>(JsonUtils.dtoObjectMapper)
                    .withBody(body)
                    .withCurrentCustomer(customerId)
+                   .withPathParameters(Map.of("candidateIdentifier", body.candidateId().toString()))
                    //TODO CHANGE TO CORRECT ACCESS RIGHT
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE.name())
                    .withUserName(randomString())

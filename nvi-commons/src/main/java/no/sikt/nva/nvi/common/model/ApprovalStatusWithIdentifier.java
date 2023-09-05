@@ -2,15 +2,19 @@ package no.sikt.nva.nvi.common.model;
 
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
+import nva.commons.core.JacocoGenerated;
 
-public record ApprovalStatusWithIdentifier (
+// Unused getter of identifier
+@JacocoGenerated
+public record ApprovalStatusWithIdentifier(
     UUID identifier,
     ApprovalStatus approvalStatus
-){
+) {
 
     public static Builder builder() {
         return new Builder();
     }
+
     public static final class Builder {
 
         private UUID identifier;
@@ -18,7 +22,6 @@ public record ApprovalStatusWithIdentifier (
 
         private Builder() {
         }
-
 
         public Builder withIdentifier(UUID identifier) {
             this.identifier = identifier;

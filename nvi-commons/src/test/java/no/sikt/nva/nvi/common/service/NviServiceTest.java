@@ -143,7 +143,7 @@ public class NviServiceTest extends LocalDynamoTest {
 
         var items = scanDB().items().size();
 
-        assertThat(items, is(equalTo(2)));
+        assertThat(items, is(equalTo(3)));
     }
 
     @Test
@@ -193,7 +193,7 @@ public class NviServiceTest extends LocalDynamoTest {
 
     @Test
     void shouldThrowExceptionIdPeriodIsNonNumeric() {
-        NviPeriod period = createPeriod("asd");
+        NviPeriod period = createPeriod("2OI4");
         assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
     }
 
@@ -223,15 +223,17 @@ public class NviServiceTest extends LocalDynamoTest {
     void shouldUpsertApproval(Status status) {
         UUID identifier = UUID.randomUUID();
         URI institutionUri = randomUri();
-        nviCandidateRepository.create(createExpectedCandidate(identifier, List.of(new Creator(randomUri(),
-                                                                                              List.of(institutionUri))),
-                                                              randomString(), Level.LEVEL_ONE,
-                                                              new PublicationDate(randomString(), randomString(),
-                                                                                  randomString()),
-                                                              Map.of(institutionUri, new BigDecimal("1.2"))));
+        CandidateWithIdentifier initialObj = nviCandidateRepository.create(
+            createExpectedCandidate(identifier, List.of(new Creator(randomUri(),
+                                                                    List.of(institutionUri))),
+                                    randomString(), Level.LEVEL_ONE,
+                                    new PublicationDate(randomString(), randomString(),
+                                                        randomString()),
+                                    Map.of(institutionUri, new BigDecimal("1.2"))));
         ApprovalStatus newApprovalStatus = createApprovalStatus(status, institutionUri);
-        CandidateWithIdentifier candidateWithIdentifier = nviService.upsertApproval(identifier, newApprovalStatus);
-        assertThat(candidateWithIdentifier.candidate().approvalStatuses().get(0).status(), is(equalTo(status)));
+        CandidateWithIdentifier response = nviService.upsertApproval(initialObj.identifier(),
+                                                                                    newApprovalStatus);
+        assertThat(response.candidate().approvalStatuses().get(0).status(), is(equalTo(status)));
     }
 
     private static ApprovalStatus createApprovalStatus(Status status, URI institutionUri) {

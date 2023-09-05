@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.fetch;
 
 import static no.sikt.nva.nvi.fetch.FetchNviCandidateHandler.PARAM_CANDIDATE_IDENTIFIER;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,7 +60,7 @@ class FetchNviCandidateHandlerTest {
     @Test
     void shouldReturnValidCandidateIfExists() throws IOException {
         var candidateId = UUID.randomUUID();
-        var candidateWithIdentifier = getCandidate(candidateId);
+        var candidateWithIdentifier = getCandidate(candidateId,randomCandidate());
         when(service.findById(candidateId)).thenReturn(Optional.of(candidateWithIdentifier));
         var input = getInput(candidateId);
         handler.handleRequest(input, output, CONTEXT);
@@ -72,7 +73,6 @@ class FetchNviCandidateHandlerTest {
         assertEquals(bodyObject, expectedResponse);
     }
 
-    private static CandidateResponse getExpectedResponse(CandidateWithIdentifier candidateWithIdentifier) {
     @Test
     void shouldHandleNullNotes() throws IOException {
         var candidateId = UUID.randomUUID();

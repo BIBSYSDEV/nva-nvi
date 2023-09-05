@@ -22,7 +22,6 @@ public record Candidate(URI publicationId,
                         List<ApprovalStatus> approvalStatuses,
                         List<Note> notes) implements DynamoDbModel<Candidate> {
 
-
     public Candidate {
     }
 
