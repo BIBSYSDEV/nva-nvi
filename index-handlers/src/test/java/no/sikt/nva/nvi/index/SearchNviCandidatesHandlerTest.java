@@ -54,15 +54,14 @@ import org.zalando.problem.Problem;
 @Testcontainers
 public class SearchNviCandidatesHandlerTest {
 
-    private static final String QUERY = "query";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
     private static final String CUSTOM_DOMAIN_BASE_PATH = ENVIRONMENT.readEnv(
         "CUSTOM_DOMAIN_BASE_PATH");
-    private static final String QUERY_PARAM_SEARCH_TERM = "query";
-    private static final String DEFAULT_SEARCH_TERM = "*";
+    private static final String QUERY_PARAM_QUERY = "query";
     private static final String QUERY_PARAM_OFFSET = "offset";
     private static final String QUERY_PARAM_SIZE = "size";
+    private static final String DEFAULT_SEARCH_TERM = "*";
     private static final int DEFAULT_QUERY_SIZE = 10;
     private static final int DEFAULT_OFFSET_SIZE = 0;
     private static final TypeReference<PaginatedSearchResult<NviCandidateIndexDocument>> TYPE_REF =
@@ -154,7 +153,7 @@ public class SearchNviCandidatesHandlerTest {
     private static URI constructExpectedUri(int offsetSize, int size, String searchTerm) {
         return UriWrapper.fromHost(API_HOST)
                    .addChild(CUSTOM_DOMAIN_BASE_PATH)
-                   .addQueryParameter(QUERY_PARAM_SEARCH_TERM, searchTerm)
+                   .addQueryParameter(QUERY_PARAM_QUERY, searchTerm)
                    .addQueryParameter(QUERY_PARAM_OFFSET, String.valueOf(offsetSize))
                    .addQueryParameter(QUERY_PARAM_SIZE, String.valueOf(size))
                    .getUri();
@@ -216,7 +215,7 @@ public class SearchNviCandidatesHandlerTest {
     private static Map<String, String> getQueryParameters(String searchTerm, Integer offset, Integer size) {
         var params = new HashMap<String, String>();
         if (Objects.nonNull(searchTerm)) {
-            params.put(QUERY, searchTerm);
+            params.put(QUERY_PARAM_QUERY, searchTerm);
         }
         if (Objects.nonNull(offset)) {
             params.put(QUERY_PARAM_OFFSET, String.valueOf(offset));
