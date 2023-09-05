@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common;
 
+import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -15,6 +16,7 @@ import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.model.business.Creator;
+import no.sikt.nva.nvi.common.model.business.InstitutionPoints;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.business.Note;
 import no.sikt.nva.nvi.common.model.business.PublicationDate;
@@ -45,6 +47,7 @@ public class CandidateTest {
                    .withCreators(randomVerifiedCreators())
                    .withNotes(randomNotes())
                    .withPublicationDate(localDateNowAsPublicationDate())
+                   .withPoints(List.of(new InstitutionPoints(randomUri(), randomBigDecimal())))
                    .build();
     }
 
