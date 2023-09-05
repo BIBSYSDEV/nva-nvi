@@ -20,6 +20,7 @@ import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.DbCandidate;
+import no.sikt.nva.nvi.common.model.business.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
@@ -97,7 +98,7 @@ class FetchNviCandidateHandlerTest {
     }
 
     private static List<InstitutionPoints> mapToInstitutionPoints(
-        List<no.sikt.nva.nvi.common.model.business.InstitutionPoints> points) {
+        List<DbInstitutionPoints> points) {
         return points
                    .stream()
                    .map(institutionPoint -> new InstitutionPoints(

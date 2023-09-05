@@ -3,23 +3,26 @@ package no.sikt.nva.nvi.common.model.business;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
+import nva.commons.core.JacocoGenerated;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record Note(Username user,
-                   String text,
-                   Instant createdDate) implements DynamoDbModel<Note> {
+@JacocoGenerated //TODO use later :)
+public record DbNote(DbUsername user,
+                     String text,
+                     Instant createdDate) {
 
+    @JacocoGenerated //TODO use later :)
     public static final class Builder {
 
-        private Username user;
+        private DbUsername user;
         private String text;
         private Instant createdDate;
 
         public Builder() {
         }
 
-        public Builder withUser(Username user) {
+        public Builder withUser(DbUsername user) {
             this.user = user;
             return this;
         }
@@ -34,8 +37,8 @@ public record Note(Username user,
             return this;
         }
 
-        public Note build() {
-            return new Note(user, text, createdDate);
+        public DbNote build() {
+            return new DbNote(user, text, createdDate);
         }
     }
 }

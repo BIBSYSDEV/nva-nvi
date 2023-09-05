@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.model.events;
+package no.sikt.nva.nvi.evaluator.model;
 
 import nva.commons.core.JacocoGenerated;
 

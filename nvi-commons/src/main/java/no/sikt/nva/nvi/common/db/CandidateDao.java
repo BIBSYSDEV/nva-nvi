@@ -6,7 +6,7 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_HASH_KE
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_RANGE_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
-import static no.sikt.nva.nvi.common.db.Dao.DATA_FIELD;
+import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.business.DbCandidate;
 import nva.commons.core.JacocoGenerated;
@@ -25,10 +25,6 @@ public record CandidateDao(
 ) implements DynamoEntryWithRangeKey {
 
     public static final String TYPE = "CANDIDATE";
-
-    private CandidateDao(Builder b) {
-        this(b.identifier, b.candidate);
-    }
 
     @DynamoDbIgnore
     public static String pk0(String identifier) {
@@ -63,24 +59,15 @@ public record CandidateDao(
     @JacocoGenerated
     @DynamoDbSecondaryPartitionKey(indexNames = {SECONDARY_INDEX_PUBLICATION_ID})
     @DynamoDbAttribute(SECONDARY_INDEX_1_HASH_KEY)
-    public String getSearchByPublicationIdHashKey() {
+    public String searchByPublicationIdHashKey() {
         return nonNull(candidate.publicationId()) ? candidate.publicationId().toString() : null;
     }
 
     @JacocoGenerated
     @DynamoDbSecondarySortKey(indexNames = {SECONDARY_INDEX_PUBLICATION_ID})
     @DynamoDbAttribute(SECONDARY_INDEX_1_RANGE_KEY)
-    public String getSearchByPublicationIdSortKey() {
+    public String searchByPublicationIdSortKey() {
         return nonNull(candidate.publicationId()) ? candidate.publicationId().toString() : null;
-    }
-
-    @DynamoDbAttribute(DATA_FIELD)
-    public DbCandidate getCandidate() {
-        return candidate;
-    }
-
-    public Builder copy() {
-        return builder().identifier(identifier).candidate(candidate);
     }
 
     public static final class Builder {
@@ -90,11 +77,26 @@ public record CandidateDao(
 
         private Builder() {
         }
-        public Builder type(String noop) { return this; }
-        public Builder primaryKeyHashKey(String noop) { return this; }
-        public Builder primaryKeyRangeKey(String noop) { return this; }
-        public Builder searchByPublicationIdHashKey(String noop) { return this; }
-        public Builder searchByPublicationIdSortKey(String noop) { return this; }
+
+        public Builder type(String noop) {
+            return this;
+        }
+
+        public Builder primaryKeyHashKey(String noop) {
+            return this;
+        }
+
+        public Builder primaryKeyRangeKey(String noop) {
+            return this;
+        }
+
+        public Builder searchByPublicationIdHashKey(String noop) {
+            return this;
+        }
+
+        public Builder searchByPublicationIdSortKey(String noop) {
+            return this;
+        }
 
         public Builder identifier(UUID identifier) {
             this.identifier = identifier;

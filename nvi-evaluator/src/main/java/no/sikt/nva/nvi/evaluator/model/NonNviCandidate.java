@@ -1,7 +1,6 @@
-package no.sikt.nva.nvi.common.model.events;
+package no.sikt.nva.nvi.evaluator.model;
 
 import java.net.URI;
-
 
 public record NonNviCandidate(URI publicationId) implements CandidateType {
 

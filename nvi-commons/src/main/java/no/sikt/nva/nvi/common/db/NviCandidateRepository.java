@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.DbCandidate;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
@@ -84,16 +83,9 @@ public class NviCandidateRepository extends DynamoRepository {
                 var approvalStatuses = this.approvalStatusTable.query(queryCandidateParts(id, ApprovalStatusDao.TYPE))
                                            .items().stream()
                                            .map(ApprovalStatusDao::approvalStatus).toList();
-                return new Candidate(id, candidateDao.getCandidate(), approvalStatuses);
+                return new Candidate(id, candidateDao.candidate(), approvalStatuses);
             }
         );
-    }
-
-    public Candidate get(UUID uuid) {
-        var candidateDao = candidateTable.getItem(candidateKey(uuid));
-        var approvalStatuses = approvalStatusTable.query(queryCandidateParts(uuid, ApprovalStatusDao.TYPE))
-                                   .items().stream().map(ApprovalStatusDao::approvalStatus).toList();
-        return new Candidate(uuid, candidateDao.candidate(), approvalStatuses);
     }
 
     public Candidate getById(UUID id) {
@@ -103,7 +95,7 @@ public class NviCandidateRepository extends DynamoRepository {
                                  .map(ApprovalStatusDao::approvalStatus)
                                  .toList();
 
-        return new Candidate(id, candidateDao.getCandidate(), approvalStatus);
+        return new Candidate(id, candidateDao.candidate(), approvalStatus);
     }
 
     public Optional<Candidate> findByPublicationId(URI publicationId) {
@@ -130,17 +122,15 @@ public class NviCandidateRepository extends DynamoRepository {
                    .findFirst();
     }
 
-    public Optional<ApprovalStatus> findApprovalByIdAndInstitutionId(UUID identifier, URI uri) {
+    public Optional<DbApprovalStatus> findApprovalByIdAndInstitutionId(UUID identifier, URI uri) {
         var query = QueryConditional.keyEqualTo(
             Key.builder().partitionValue(CandidateDao.pk0(identifier.toString()))
                 .sortValue(ApprovalStatusDao.sk0(uri.toString())).build()
         );
         var result = approvalStatusTable.query(query);
         return result.items()
-                   .stream().map(approvalStatusDao ->
-                                     new ApprovalStatus(
-                                         approvalStatusDao.identifier(),
-                                         approvalStatusDao.approvalStatus()))
+                   .stream()
+                   .map(ApprovalStatusDao::approvalStatus)
                    .findFirst();
     }
 

@@ -14,17 +14,15 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.model.business.Creator;
+import no.sikt.nva.nvi.common.model.business.DbCreator;
 import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.DbCandidate;
-import no.sikt.nva.nvi.common.model.business.InstitutionPoints;
-import no.sikt.nva.nvi.common.model.business.Level;
-import no.sikt.nva.nvi.common.model.business.Note;
-import no.sikt.nva.nvi.common.model.business.NviPeriod;
-import no.sikt.nva.nvi.common.model.business.PublicationDate;
-import no.sikt.nva.nvi.common.model.business.Status;
-import no.sikt.nva.nvi.common.model.business.Username;
-import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
+import no.sikt.nva.nvi.common.model.business.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.model.business.DbLevel;
+import no.sikt.nva.nvi.common.model.business.DbNviPeriod;
+import no.sikt.nva.nvi.common.model.business.DbPublicationDate;
+import no.sikt.nva.nvi.common.model.business.DbStatus;
+import no.sikt.nva.nvi.common.model.business.DbUsername;
 import nva.commons.core.paths.UriWrapper;
 
 public final class TestUtils {
@@ -40,17 +38,11 @@ public final class TestUtils {
     private TestUtils() {
     }
 
-    public static CandidateDetails.PublicationDate randomPublicationDate() {
+    public static DbPublicationDate randomPublicationDate() {
         var randomDate = randomLocalDate();
-        return new CandidateDetails.PublicationDate(String.valueOf(randomDate.getYear()),
+        return new DbPublicationDate(String.valueOf(randomDate.getYear()),
                                                     String.valueOf(randomDate.getMonthValue()),
                                                     String.valueOf(randomDate.getDayOfMonth()));
-    }
-
-    public static PublicationDate toPublicationDate(CandidateDetails.PublicationDate publicationDate) {
-        return new PublicationDate(publicationDate.year(),
-                                   publicationDate.month(),
-                                   publicationDate.day());
     }
 
     public static URI generateS3BucketUri(UUID identifier) {
@@ -64,12 +56,6 @@ public final class TestUtils {
                    .getUri();
     }
 
-    public static List<Creator> mapToVerifiedCreators(List<CandidateDetails.Creator> creators) {
-        return creators.stream()
-                   .map(creator -> new Creator(creator.id(), creator.nviInstitutions()))
-                   .toList();
-    }
-
     public static LocalDate randomLocalDate() {
         var daysBetween = ChronoUnit.DAYS.between(START_DATE, LocalDate.now());
         var randomDays = new Random().nextInt((int) daysBetween);
@@ -79,16 +65,16 @@ public final class TestUtils {
 
     public static DbCandidate.Builder randomCandidateBuilder() {
         return DbCandidate.builder()
-                   .withPublicationId(randomUri())
-                   .withPublicationBucketUri(randomUri())
-                   .withIsApplicable(randomBoolean())
-                   .withInstanceType(randomString())
-                   .withPoints(List.of(new InstitutionPoints(randomUri(), randomBigDecimal())))
-                   .withLevel(randomElement(Level.values()))
-                   .withPublicationDate(new PublicationDate(randomString(), randomString(), randomString()))
-                   .withIsInternationalCollaboration(randomBoolean())
-                   .withCreatorCount(randomInteger())
-                   .withCreators(List.of(new Creator(randomUri(), List.of(randomUri()))));
+                   .publicationId(randomUri())
+                   .publicationBucketUri(randomUri())
+                   .applicable(randomBoolean())
+                   .instanceType(randomString())
+                   .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
+                   .level(randomElement(DbLevel.values()))
+                   .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
+                   .internationalCollaboration(randomBoolean())
+                   .creatorCount(randomInteger())
+                   .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))));
     }
 
     public static String randomYear() {
@@ -100,25 +86,25 @@ public final class TestUtils {
                    .build();
     }
 
-    public static NviPeriod.Builder randomNviPeriodBuilder() {
-        return new NviPeriod.Builder()
-                   .withCreatedBy(randomUsername())
-                   .withModifiedBy(randomUsername())
-                   .withReportingDate(getNowWithMillisecondAccuracy())
-                   .withPublishingYear(randomYear());
+    public static DbNviPeriod.Builder randomNviPeriodBuilder() {
+        return DbNviPeriod.builder()
+                   .createdBy(randomUsername())
+                   .modifiedBy(randomUsername())
+                   .reportingDate(getNowWithMillisecondAccuracy())
+                   .publishingYear(randomYear());
     }
 
-    public static NviPeriod randomNviPeriod() {
+    public static DbNviPeriod randomNviPeriod() {
         return randomNviPeriodBuilder()
                    .build();
     }
 
     public static DbApprovalStatus randomApprovalStatus() {
-        return new DbApprovalStatus(randomUri(), randomElement(Status.values()), randomUsername(), Instant.EPOCH);
+        return new DbApprovalStatus(randomUri(), randomElement(DbStatus.values()), randomUsername(), Instant.EPOCH);
     }
 
-    public static Username randomUsername() {
-        return new Username(randomString());
+    public static DbUsername randomUsername() {
+        return new DbUsername(randomString());
     }
 
     public static BigDecimal randomBigDecimal() {

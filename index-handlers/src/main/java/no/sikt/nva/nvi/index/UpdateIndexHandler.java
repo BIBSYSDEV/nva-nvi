@@ -15,8 +15,6 @@ import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.Candidate;
-import no.sikt.nva.nvi.common.db.CandidateDao;
-import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.DbCandidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;

@@ -6,8 +6,8 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import no.sikt.nva.nvi.rest.utils.RequestUtil;
 import no.sikt.nva.nvi.rest.model.NviPeriodDto;
-import no.sikt.nva.nvi.common.model.business.NviPeriod;
-import no.sikt.nva.nvi.common.model.business.NviPeriod.Builder;
+import no.sikt.nva.nvi.common.model.business.DbNviPeriod;
+import no.sikt.nva.nvi.common.model.business.DbNviPeriod.Builder;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
 import nva.commons.apigateway.AccessRight;
@@ -38,8 +38,8 @@ public class CreateNviPeriodHandler extends ApiGatewayHandler<NviPeriodDto, NviP
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_PERIODS);
 
         return attempt(input::toNviPeriod)
-                   .map(NviPeriod::copy)
-                   .map(builder -> builder.withCreatedBy(getUsername(requestInfo)))
+                   .map(DbNviPeriod::copy)
+                   .map(builder -> builder.createdBy(getUsername(requestInfo)))
                    .map(Builder::build)
                    .map(nviService::createPeriod)
                    .map(NviPeriodDto::fromNviPeriod)

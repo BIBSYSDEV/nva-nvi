@@ -4,12 +4,8 @@ import java.math.BigDecimal;
 import java.net.URI;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
-@DynamoDbImmutable(builder = InstitutionPoints.Builder.class)
-public record InstitutionPoints(URI institutionId, BigDecimal points) {
-
-    private InstitutionPoints(Builder b) {
-        this(b.institutionId, b.points);
-    }
+@DynamoDbImmutable(builder = DbInstitutionPoints.Builder.class)
+public record DbInstitutionPoints(URI institutionId, BigDecimal points) {
 
     public static Builder builder() {
         return new Builder();
@@ -33,8 +29,8 @@ public record InstitutionPoints(URI institutionId, BigDecimal points) {
             return this;
         }
 
-        public InstitutionPoints build() {
-            return new InstitutionPoints(institutionId, points);
+        public DbInstitutionPoints build() {
+            return new DbInstitutionPoints(institutionId, points);
         }
     }
 }

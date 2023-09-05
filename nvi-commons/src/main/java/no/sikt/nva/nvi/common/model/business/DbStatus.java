@@ -3,21 +3,23 @@ package no.sikt.nva.nvi.common.model.business;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
+import nva.commons.core.JacocoGenerated;
 
-public enum Status {
+@JacocoGenerated
+public enum DbStatus {
     APPROVED("Approved"), PENDING("Pending"), REJECTED("Rejected");
 
     @JsonValue
     private final String value;
 
-    Status(String value) {
+    DbStatus(String value) {
         this.value = value;
     }
 
     @JsonCreator
-    public static Status parse(String value) {
+    public static DbStatus parse(String value) {
         return Arrays
-                   .stream(Status.values())
+                   .stream(DbStatus.values())
                    .filter(status -> status.getValue().equalsIgnoreCase(value))
                    .findFirst()
                    .orElseThrow();

@@ -18,9 +18,10 @@ import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.DbCandidate;
-import no.sikt.nva.nvi.common.model.business.Level;
-import no.sikt.nva.nvi.common.model.business.PublicationDate;
-import no.sikt.nva.nvi.common.model.business.Status;
+import no.sikt.nva.nvi.common.model.business.DbCreator;
+import no.sikt.nva.nvi.common.model.business.DbLevel;
+import no.sikt.nva.nvi.common.model.business.DbPublicationDate;
+import no.sikt.nva.nvi.common.model.business.DbStatus;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.NviApprovalStatus;
 import no.sikt.nva.nvi.rest.NviStatusRequest;
@@ -42,6 +43,7 @@ public class UpsertNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
     private DynamoDbClient localDynamo;
     private Context context;
     private ByteArrayOutputStream output;
+
     @BeforeEach
     void setUp() {
         output = new ByteArrayOutputStream();
@@ -55,19 +57,40 @@ public class UpsertNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
     @ParameterizedTest
     @EnumSource(NviApprovalStatus.class)
     void shouldUpdateApprovalStatus(NviApprovalStatus status) throws IOException {
-        URI institutionId = randomUri();
-        var candidateWithIdentifier = nviCandidateRepository.create(createCandidate(institutionId));
+        var institutionId = randomUri();
+        var candidate = createCandidate(institutionId);
+        var candidateWithIdentifier = nviCandidateRepository.create(candidate,
+                                                                    List.of(DbApprovalStatus.builder()
+                                                                                .institutionId(institutionId)
+                                                                                .status(DbStatus.PENDING)
+                                                                                .build()));
 
-        NviStatusRequest req = new NviStatusRequest(candidateWithIdentifier.identifier(), institutionId,
-                                                                 status);
-        InputStream request = createRequest(req);
+        var req = new NviStatusRequest(candidateWithIdentifier.identifier(), institutionId, status);
+        var request = createRequest(req);
         handler.handleRequest(request, output, context);
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
-        CandidateResponse bodyAsInstance = gatewayResponse.getBodyObject(CandidateResponse.class);
+        var bodyAsInstance = gatewayResponse.getBodyObject(CandidateResponse.class);
         assertThat(bodyAsInstance.approvalStatuses().get(0).status().getValue(), is(equalTo(status.getValue())));
     }
+
+    private static DbCandidate createCandidate(URI institutionId) {
+        return DbCandidate.builder()
+                   .publicationId(randomUri())
+                   .level(DbLevel.LEVEL_ONE)
+                   .internationalCollaboration(false)
+                   .publicationBucketUri(randomUri())
+                   .publicationDate(
+                       new DbPublicationDate("2023", "01", "01"))
+                   .creators(List.of(new DbCreator(randomUri(), List.of(institutionId))))
+                   .creatorCount(1)
+                   .instanceType("AcademicArticle")
+                   .applicable(true)
+                   .points(List.of())
+                   .build();
+    }
+
     private InputStream createRequest(NviStatusRequest body) throws JsonProcessingException {
-        URI customerId = randomUri();
+        var customerId = randomUri();
         return new HandlerRequestBuilder<NviStatusRequest>(JsonUtils.dtoObjectMapper)
                    .withPathParameters(Map.of("candidateIdentifier", body.candidateId().toString()))
                    .withBody(body)
@@ -75,26 +98,6 @@ public class UpsertNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
                    //TODO CHANGE TO CORRECT ACCESS RIGHT
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE.name())
                    .withUserName(randomString())
-                   .build();
-    }
-
-    private static DbCandidate createCandidate(URI institutionId) {
-        return DbCandidate.builder()
-                   .withPublicationId(randomUri())
-                   .withApprovalStatuses(List.of(
-                       new DbApprovalStatus(institutionId,
-                                            Status.PENDING,
-                                            null, null)))
-                   .withLevel(Level.LEVEL_ONE)
-                   .withIsInternationalCollaboration(false)
-                   .withPublicationBucketUri(randomUri())
-                   .withPublicationDate(
-                       new PublicationDate("2023", "01", "01"))
-                   .withCreators(List.of(new DbCreator(randomUri(), List.of(institutionId))))
-                   .withCreatorCount(1)
-                   .withInstanceType("AcademicArticle")
-                   .withIsApplicable(true)
-                   .withNotes(List.of())
                    .build();
     }
 }

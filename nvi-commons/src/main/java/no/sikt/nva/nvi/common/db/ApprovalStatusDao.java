@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
-import static no.sikt.nva.nvi.common.db.Dao.DATA_FIELD;
+import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
 import nva.commons.core.JacocoGenerated;

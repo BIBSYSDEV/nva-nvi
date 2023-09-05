@@ -29,9 +29,8 @@ import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.Candidate;
-import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
-import no.sikt.nva.nvi.common.model.business.Status;
+import no.sikt.nva.nvi.common.model.business.DbStatus;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.Approval;
@@ -183,7 +182,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private static DbApprovalStatus getApprovalStatus() {
         return DbApprovalStatus.builder()
                    .institutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
-                   .status(Status.PENDING).build();
+                   .status(DbStatus.PENDING).build();
     }
 
     private NviCandidateIndexDocument constructExpectedDocument(Candidate candidate) {

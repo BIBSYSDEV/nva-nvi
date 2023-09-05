@@ -2,12 +2,8 @@ package no.sikt.nva.nvi.common.model.business;
 
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
-@DynamoDbImmutable(builder = PublicationDate.Builder.class)
-public record PublicationDate(String year, String month, String day) {
-
-    private PublicationDate(Builder b) {
-        this(b.year, b.month, b.day);
-    }
+@DynamoDbImmutable(builder = DbPublicationDate.Builder.class)
+public record DbPublicationDate(String year, String month, String day) {
 
     public static Builder builder() {
         return new Builder();
@@ -37,8 +33,8 @@ public record PublicationDate(String year, String month, String day) {
             return this;
         }
 
-        public PublicationDate build() {
-            return new PublicationDate(year, month, day);
+        public DbPublicationDate build() {
+            return new DbPublicationDate(year, month, day);
         }
     }
 }

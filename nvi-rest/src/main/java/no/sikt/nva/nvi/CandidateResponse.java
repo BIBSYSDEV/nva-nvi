@@ -9,6 +9,7 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.DbCandidate;
+import no.sikt.nva.nvi.common.model.business.DbInstitutionPoints;
 import no.sikt.nva.nvi.fetch.ApprovalStatus;
 import no.sikt.nva.nvi.fetch.InstitutionPoints;
 import no.sikt.nva.nvi.fetch.Note;
@@ -41,7 +42,7 @@ public record CandidateResponse(UUID id,
 
 
     private static InstitutionPoints mapToInstitutionPoint(
-        no.sikt.nva.nvi.common.model.business.InstitutionPoints institutionPoints) {
+        DbInstitutionPoints institutionPoints) {
         return new InstitutionPoints(institutionPoints.institutionId(),
                                      institutionPoints.points());
     }

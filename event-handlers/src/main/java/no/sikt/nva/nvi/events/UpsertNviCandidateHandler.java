@@ -7,9 +7,16 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import java.math.BigDecimal;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
-import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
+import no.sikt.nva.nvi.common.model.business.DbCandidate;
+import no.sikt.nva.nvi.common.model.business.DbCreator;
+import no.sikt.nva.nvi.common.model.business.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.model.business.DbLevel;
+import no.sikt.nva.nvi.common.model.business.DbPublicationDate;
 import no.sikt.nva.nvi.common.service.NviService;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
@@ -60,8 +67,44 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         Objects.requireNonNull(candidateDetails.verifiedCreators());
     }
 
+    private static DbCandidate toPendingCandidate(CandidateEvaluatedMessage message) {
+        return DbCandidate.builder()
+                   .publicationBucketUri(message.publicationBucketUri())
+                   .publicationId(message.candidateDetails().publicationId())
+                   .applicable(true)
+                   .creators(mapToVerifiedCreators(message.candidateDetails().verifiedCreators()))
+                   .level(DbLevel.parse(message.candidateDetails().level()))
+                   .instanceType(message.candidateDetails().instanceType())
+                   .publicationDate(mapToPublicationDate(message.candidateDetails()
+                                                             .publicationDate()))
+                   .points(mapToInstitutionPoints(message.institutionPoints()))
+                   .build();
+    }
+
+    private static List<DbInstitutionPoints> mapToInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
+        return institutionPoints.entrySet().stream()
+                   .map(entry -> new DbInstitutionPoints(entry.getKey(), entry.getValue())).toList();
+    }
+
+    private static DbPublicationDate mapToPublicationDate(CandidateDetails.PublicationDate publicationDate) {
+        return new DbPublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
+    }
+
+    private static List<DbCreator> mapToVerifiedCreators(List<CandidateDetails.Creator> creators) {
+        return creators.stream()
+                   .map(
+                       verifiedCreatorDto -> new DbCreator(verifiedCreatorDto.id(),
+                                                           verifiedCreatorDto.nviInstitutions()))
+                   .toList();
+    }
+
     private void upsertNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-        nviService.upsertCandidate(evaluatedCandidate);
+        nviService.upsertCandidate(isNviCandidate(evaluatedCandidate),
+                                   toPendingCandidate(evaluatedCandidate));
+    }
+
+    private static boolean isNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
+        return evaluatedCandidate.status() == CandidateStatus.CANDIDATE;
     }
 
     private CandidateEvaluatedMessage parseBody(String body) {

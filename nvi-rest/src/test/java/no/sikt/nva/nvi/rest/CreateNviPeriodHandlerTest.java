@@ -17,13 +17,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.time.Period;
-import no.sikt.nva.nvi.common.model.business.NviPeriod;
+import no.sikt.nva.nvi.common.model.business.DbNviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
-import nva.commons.apigateway.exceptions.BadRequestException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
@@ -71,12 +70,12 @@ public class CreateNviPeriodHandlerTest {
     }
 
     private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
-        return new HandlerRequestBuilder<NviPeriod>(JsonUtils.dtoObjectMapper).withBody(randomPeriod()).build();
+        return new HandlerRequestBuilder<DbNviPeriod>(JsonUtils.dtoObjectMapper).withBody(randomPeriod()).build();
     }
 
     private InputStream createRequest() throws JsonProcessingException {
         var customerId = randomUri();
-        return new HandlerRequestBuilder<NviPeriod>(JsonUtils.dtoObjectMapper)
+        return new HandlerRequestBuilder<DbNviPeriod>(JsonUtils.dtoObjectMapper)
                    .withBody(randomPeriod())
                    .withCurrentCustomer(customerId)
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_PERIODS.name())
@@ -84,11 +83,11 @@ public class CreateNviPeriodHandlerTest {
                    .build();
     }
 
-    private NviPeriod randomPeriod() {
+    private DbNviPeriod randomPeriod() {
         var start = randomInstant();
-        return new NviPeriod.Builder()
-                   .withReportingDate(start)
-                   .withPublishingYear(String.valueOf(randomInteger(9999)))
+        return DbNviPeriod.builder()
+                   .reportingDate(start)
+                   .publishingYear(String.valueOf(randomInteger(9999)))
                    .build();
     }
 }

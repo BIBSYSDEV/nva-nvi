@@ -10,8 +10,8 @@ import java.time.Instant;
 import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
-import no.sikt.nva.nvi.common.model.business.Status;
-import no.sikt.nva.nvi.common.model.business.Username;
+import no.sikt.nva.nvi.common.model.business.DbStatus;
+import no.sikt.nva.nvi.common.model.business.DbUsername;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.NviApprovalStatus;
 import no.sikt.nva.nvi.rest.NviStatusRequest;
@@ -55,7 +55,7 @@ public class UpsertNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
         return HTTP_OK;
     }
 
-    private DbApprovalStatus toStatus(NviStatusRequest input, Username username) {
+    private DbApprovalStatus toStatus(NviStatusRequest input, DbUsername username) {
         return new DbApprovalStatus(input.institutionId(), mapStatus(input.status()), username, Instant.now());
     }
 
@@ -64,11 +64,11 @@ public class UpsertNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
     // https://www.jacoco.org/jacoco/trunk/doc/changes.html
     // https://github.com/jacoco/jacoco/pull/1472
     @JacocoGenerated
-    private Status mapStatus(NviApprovalStatus status) {
+    private DbStatus mapStatus(NviApprovalStatus status) {
         return switch (status) {
-            case APPROVED -> Status.APPROVED;
-            case PENDING -> Status.PENDING;
-            case REJECTED -> Status.REJECTED;
+            case APPROVED -> DbStatus.APPROVED;
+            case PENDING -> DbStatus.PENDING;
+            case REJECTED -> DbStatus.REJECTED;
         };
     }
 }

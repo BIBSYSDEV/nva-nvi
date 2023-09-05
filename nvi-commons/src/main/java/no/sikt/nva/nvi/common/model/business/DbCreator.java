@@ -4,12 +4,8 @@ import java.net.URI;
 import java.util.List;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
-@DynamoDbImmutable(builder = Creator.Builder.class)
-public record Creator(URI creatorId, List<URI> affiliations) {
-
-    private Creator(Builder b) {
-        this(b.creatorId, b.affiliations);
-    }
+@DynamoDbImmutable(builder = DbCreator.Builder.class)
+public record DbCreator(URI creatorId, List<URI> affiliations) {
 
     public static Builder builder() {
         return new Builder();
@@ -33,8 +29,8 @@ public record Creator(URI creatorId, List<URI> affiliations) {
             return this;
         }
 
-        public Creator build() {
-            return new Creator(creatorId, affiliations);
+        public DbCreator build() {
+            return new DbCreator(creatorId, affiliations);
         }
     }
 }

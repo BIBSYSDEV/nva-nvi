@@ -4,21 +4,20 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
-public enum Level {
-    UNASSIGNED("Unassigned"), LEVEL_ONE("1"), LEVEL_TWO("2");
+public enum DbCompletionStatus {
+    COMPLETED("Completed"), IN_PROGRESS("In progress");
 
     @JsonValue
     private final String value;
 
-    Level(String value) {
-
+    DbCompletionStatus(String value) {
         this.value = value;
     }
 
     @JsonCreator
-    public static Level parse(String value) {
+    public static DbCompletionStatus parse(String value) {
         return Arrays
-                   .stream(Level.values())
+                   .stream(DbCompletionStatus.values())
                    .filter(level -> level.getValue().equalsIgnoreCase(value))
                    .findFirst()
                    .orElseThrow();

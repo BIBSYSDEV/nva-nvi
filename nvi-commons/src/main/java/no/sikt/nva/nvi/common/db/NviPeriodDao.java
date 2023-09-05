@@ -2,34 +2,33 @@ package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
-import no.sikt.nva.nvi.common.db.converters.NviPeriodConverterProvider;
-import no.sikt.nva.nvi.common.model.business.NviPeriod;
+import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
+import no.sikt.nva.nvi.common.model.business.DbNviPeriod;
 import nva.commons.core.JacocoGenerated;
-import software.amazon.awssdk.enhanced.dynamodb.DefaultAttributeConverterProvider;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-@SuppressWarnings({"PMD.GodClass", "PMD.ExcessivePublicCount"})
-@DynamoDbBean(converterProviders = { NviPeriodConverterProvider.class, DefaultAttributeConverterProvider.class})
-public class NviPeriodDao extends Dao implements DynamoEntryWithRangeKey {
+@DynamoDbImmutable(builder = NviPeriodDao.Builder.class)
+public record NviPeriodDao(
+
+    String identifier,
+    @DynamoDbAttribute(DATA_FIELD)
+    DbNviPeriod nviPeriod
+) implements DynamoEntryWithRangeKey {
 
     public static final TableSchema<NviPeriodDao> TABLE_SCHEMA = TableSchema.fromClass(NviPeriodDao.class);
 
     public static final String TYPE = "PERIOD";
-    private String identifier;
-    private NviPeriod nviPeriod;
 
-    public NviPeriodDao() {
-        super();
+    public NviPeriodDao(DbNviPeriod nviPeriod) {
+        this(nviPeriod.publishingYear(), nviPeriod);
     }
 
-    public NviPeriodDao(NviPeriod nviPeriod) {
-        super();
-        this.identifier = nviPeriod.publishingYear();
-        this.nviPeriod = nviPeriod;
+    public static Builder builder() {
+        return new Builder();
     }
 
     @Override
@@ -39,22 +38,12 @@ public class NviPeriodDao extends Dao implements DynamoEntryWithRangeKey {
         return String.join(DynamoEntryWithRangeKey.FIELD_DELIMITER, TYPE, identifier);
     }
 
-//    @Override
-//    public void setPrimaryKeyHashKey(String primaryHashKey) {
-//        //DO NOTHING
-//    }
-//
     @Override
     @DynamoDbSortKey
     @DynamoDbAttribute(SORT_KEY)
     public String primaryKeyRangeKey() {
         return primaryKeyHashKey();
     }
-
-//    @Override
-//    public void setPrimaryKeyRangeKey(String primaryRangeKey) {
-//        //DO NOTHING
-//    }
 
     @Override
     @JacocoGenerated
@@ -63,21 +52,38 @@ public class NviPeriodDao extends Dao implements DynamoEntryWithRangeKey {
         return TYPE;
     }
 
-    @DynamoDbAttribute(DATA_FIELD)
-    public NviPeriod getNviPeriod() {
-        return nviPeriod;
-    }
+    public static final class Builder {
 
-    @JacocoGenerated
-    public void setIdentifier(String identifier) {
-        this.identifier = identifier;
-    }
+        private String identifier;
+        private DbNviPeriod nviPeriod;
 
-    public String getIdentifier() {
-        return identifier;
-    }
+        private Builder() {
+        }
 
-    public void setNviPeriod(NviPeriod nviPeriod) {
-        this.nviPeriod = nviPeriod;
+        public Builder type(String noop) {
+            return this;
+        }
+
+        public Builder primaryKeyHashKey(String noop) {
+            return this;
+        }
+
+        public Builder primaryKeyRangeKey(String noop) {
+            return this;
+        }
+
+        public Builder identifier(String identifier) {
+            this.identifier = identifier;
+            return this;
+        }
+
+        public Builder nviPeriod(DbNviPeriod nviPeriod) {
+            this.nviPeriod = nviPeriod;
+            return this;
+        }
+
+        public NviPeriodDao build() {
+            return new NviPeriodDao(identifier, nviPeriod);
+        }
     }
 }

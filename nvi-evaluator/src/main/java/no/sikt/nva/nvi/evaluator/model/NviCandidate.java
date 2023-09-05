@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.model.events;
+package no.sikt.nva.nvi.evaluator.model;
 
 import java.net.URI;
 import java.util.List;

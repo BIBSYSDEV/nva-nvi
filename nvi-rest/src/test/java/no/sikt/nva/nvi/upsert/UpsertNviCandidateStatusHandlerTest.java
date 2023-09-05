@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.upsert;
 
 import static java.util.Collections.emptyList;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -14,6 +15,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.time.Instant;
@@ -25,10 +27,12 @@ import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.DbCandidate;
-import no.sikt.nva.nvi.common.model.business.Status;
-import no.sikt.nva.nvi.common.model.business.Username;
+import no.sikt.nva.nvi.common.model.business.DbStatus;
+import no.sikt.nva.nvi.common.model.business.DbUsername;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.fetch.ApprovalStatus;
+import no.sikt.nva.nvi.fetch.InstitutionPoints;
+import no.sikt.nva.nvi.fetch.Note;
 import no.sikt.nva.nvi.rest.NviApprovalStatus;
 import no.sikt.nva.nvi.rest.NviStatusRequest;
 import no.unit.nva.commons.json.JsonUtils;
@@ -50,8 +54,8 @@ class UpsertNviCandidateStatusHandlerTest {
     private UpsertNviCandidateStatusHandler handler;
     private NviService nviService;
 
-    static Stream<Status> statusEnumSource() {
-        return Stream.of(Status.APPROVED, Status.REJECTED, Status.PENDING);
+    static Stream<DbStatus> statusEnumSource() {
+        return Stream.of(DbStatus.APPROVED, DbStatus.REJECTED, DbStatus.PENDING);
     }
 
     @BeforeEach
@@ -83,7 +87,7 @@ class UpsertNviCandidateStatusHandlerTest {
     @EnumSource(NviApprovalStatus.class)
     void shouldReturnCandidateResponseWhenSuccessful(NviApprovalStatus status) throws IOException {
         var nviStatusRequest = new NviStatusRequest(UUID.randomUUID(), randomUri(), status);
-        Status innerStatus = Status.parse(status.getValue());
+        DbStatus innerStatus = DbStatus.parse(status.getValue());
         var request = createRequest(nviStatusRequest);
         var response = mockServiceResponse(nviStatusRequest, innerStatus);
         var approvalStatus = response.approvalStatuses()
@@ -98,9 +102,10 @@ class UpsertNviCandidateStatusHandlerTest {
                    is(equalTo(createResponse(nviStatusRequest, response, innerStatus, approvalStatus))));
     }
 
+
     private static CandidateResponse createResponse(
         NviStatusRequest nviStatusRequest,
-        Candidate response, Status status,
+        Candidate response, DbStatus status,
         DbApprovalStatus approvalStatus) {
         return CandidateResponse.builder()
                    .withId(nviStatusRequest.candidateId())
@@ -109,7 +114,7 @@ class UpsertNviCandidateStatusHandlerTest {
                        List.of(ApprovalStatus.builder()
                                    .withInstitutionId(nviStatusRequest.institutionId())
                                    .withStatus(status)
-                                   .withFinalizedBy(new Username(approvalStatus.finalizedBy().value()))
+                                   .withFinalizedBy(new DbUsername(approvalStatus.finalizedBy().value()))
                                    .withFinalizedDate(approvalStatus.finalizedDate())
                                    .build()))
                    .withPoints(emptyList())
@@ -118,16 +123,16 @@ class UpsertNviCandidateStatusHandlerTest {
     }
 
     private static Candidate mockServiceResponse(NviStatusRequest nviStatusRequest,
-                                                 Status status) {
+                                                 DbStatus status) {
         return new Candidate(
             nviStatusRequest.candidateId(),
             DbCandidate.builder()
-                .withPublicationId(nviStatusRequest.institutionId())
-                .withPoints(emptyList())
+                .publicationId(nviStatusRequest.institutionId())
+                .points(emptyList())
                 .build(),
             List.of(new DbApprovalStatus(nviStatusRequest.institutionId(),
                                          status,
-                                         new Username(randomString()),
+                                         new DbUsername(randomString()),
                                          Instant.now())));
     }
 

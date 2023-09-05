@@ -2,12 +2,8 @@ package no.sikt.nva.nvi.common.model.business;
 
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
-@DynamoDbImmutable(builder = Username.Builder.class)
-public record Username(String value) {
-
-    public Username(Builder b) {
-        this(b.value);
-    }
+@DynamoDbImmutable(builder = DbUsername.Builder.class)
+public record DbUsername(String value) {
 
     public static Builder builder() {
         return new Builder();
@@ -25,8 +21,8 @@ public record Username(String value) {
             return this;
         }
 
-        public Username build() {
-            return new Username(value);
+        public DbUsername build() {
+            return new DbUsername(value);
         }
     }
 }

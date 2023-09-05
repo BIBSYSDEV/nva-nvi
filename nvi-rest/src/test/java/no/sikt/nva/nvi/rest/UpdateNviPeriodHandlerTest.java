@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.NoSuchElementException;
-import no.sikt.nva.nvi.common.model.business.NviPeriod;
+import no.sikt.nva.nvi.common.model.business.DbNviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.NviPeriodDto;
 import no.unit.nva.commons.json.JsonUtils;
@@ -83,7 +83,7 @@ public class UpdateNviPeriodHandlerTest {
 
     private InputStream createRequest() throws JsonProcessingException {
         var customerId = randomUri();
-        return new HandlerRequestBuilder<NviPeriod>(JsonUtils.dtoObjectMapper).withBody(randomPeriod())
+        return new HandlerRequestBuilder<DbNviPeriod>(JsonUtils.dtoObjectMapper).withBody(randomPeriod())
                    .withCurrentCustomer(customerId)
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_PERIODS.name())
                    .withUserName(randomString())
@@ -92,14 +92,14 @@ public class UpdateNviPeriodHandlerTest {
     }
 
     private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
-        return new HandlerRequestBuilder<NviPeriod>(JsonUtils.dtoObjectMapper).withBody(randomPeriod()).build();
+        return new HandlerRequestBuilder<DbNviPeriod>(JsonUtils.dtoObjectMapper).withBody(randomPeriod()).build();
     }
 
-    private NviPeriod randomPeriod() {
+    private DbNviPeriod randomPeriod() {
         var start = randomInstant();
-        return new NviPeriod.Builder()
-                   .withReportingDate(start)
-                   .withPublishingYear(String.valueOf(randomInteger(9999)))
+        return DbNviPeriod.builder()
+                   .reportingDate(start)
+                   .publishingYear(String.valueOf(randomInteger(9999)))
                    .build();
     }
 }
