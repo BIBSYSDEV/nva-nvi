@@ -17,7 +17,8 @@ public class DeleteNviIndexHandlerTest {
     @Test
     void shouldDeleteIndex() {
         var appender = LogUtils.getTestingAppenderForRootLogger();
-        var handler = new DeleteNviIndexHandler(new FakeSearchClient());
+        var searchClient = mock(OpenSearchClient.class);
+        var handler = new DeleteNviIndexHandler(searchClient);
         handler.handleRequest(null, mock(Context.class));
         assertThat(appender.getMessages(), containsString(FINISHED));
     }

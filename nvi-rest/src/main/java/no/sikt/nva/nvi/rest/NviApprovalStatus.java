@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 import no.sikt.nva.nvi.common.model.business.Status;
+import nva.commons.core.JacocoGenerated;
 
+@JacocoGenerated
 public enum NviApprovalStatus {
 
     APPROVED("Approved"), PENDING("Pending"), REJECTED("Rejected");
@@ -15,6 +17,7 @@ public enum NviApprovalStatus {
     NviApprovalStatus(String value) {
         this.value = value;
     }
+
     @JsonCreator
     public static Status parse(String value) {
         return Arrays

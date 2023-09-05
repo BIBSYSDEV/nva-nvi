@@ -97,7 +97,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var fetchedCandidate = nviCandidateRepository.findByPublicationId(expectedCandidate.publicationId())
                                    .map(CandidateWithIdentifier::candidate);
 
-        assertThat(fetchedCandidate.get(), is(equalTo(expectedCandidate)));
+        assertThat(fetchedCandidate.orElseThrow(), is(equalTo(expectedCandidate)));
     }
 
     private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
@@ -165,6 +165,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                               Level level, PublicationDate publicationDate,
                                               Map<URI, BigDecimal> institutionPoints) {
         return Candidate.builder()
+                   .withPublicationBucketUri(generateS3BucketUri(identifier))
                    .withPublicationId(generatePublicationId(identifier))
                    .withCreators(mapToVerifiedCreators(creators))
                    .withInstanceType(instanceType)

@@ -8,6 +8,7 @@ repositories {
 }
 
 dependencies {
+//    https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.
     //To support dynamodb local when testing, using mac m1
     testImplementation(group: 'com.amazonaws', name: 'DynamoDBLocal', version: '1.19.0')
     if (System.getProperty("os.arch") == "aarch64") {

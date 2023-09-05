@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -21,20 +24,26 @@ public record CandidateResponse(UUID id,
                                 List<Note> notes) {
 
     public static CandidateResponse fromCandidate(CandidateWithIdentifier candidate) {
-        return new CandidateResponse(
-            candidate.identifier(),
-            candidate.candidate().publicationId(),
-            mapToApprovalStatus(candidate.candidate()),
-            candidate.candidate().points(),
-            mapToNotes(candidate.candidate())
-        );
+        return CandidateResponse.builder()
+                   .withId(candidate.identifier())
+                   .withPublicationId(candidate.candidate().publicationId())
+                   .withApprovalStatuses(mapToApprovalStatus(candidate.candidate()))
+                   .withPoints(candidate.candidate().points())
+                   .withNotes(mapToNotes(candidate.candidate()))
+                   .build();
+    }
+
+    public static Builder builder() {
+        return new Builder();
     }
 
     private static List<Note> mapToNotes(Candidate candidate) {
-        return candidate.notes()
-                   .stream()
-                   .map(CandidateResponse::mapToNote)
-                   .toList();
+        var notes = candidate.notes();
+        return notes == null
+                   ? Collections.emptyList()
+                   : notes.stream()
+                         .map(CandidateResponse::mapToNote)
+                         .toList();
     }
 
     private static Note mapToNote(no.sikt.nva.nvi.common.model.business.Note note) {
@@ -52,5 +61,46 @@ public record CandidateResponse(UUID id,
         no.sikt.nva.nvi.common.model.business.ApprovalStatus approvalStatus) {
         return new ApprovalStatus(approvalStatus.institutionId(), approvalStatus.status(), approvalStatus.finalizedBy(),
                                   approvalStatus.finalizedDate());
+    }
+
+    public static final class Builder {
+
+        private UUID id;
+        private URI publicationId;
+        private List<ApprovalStatus> approvalStatuses = new ArrayList<>();
+        private Map<URI, BigDecimal> points = new HashMap<>();
+        private List<Note> notes = new ArrayList<>();
+
+        private Builder() {
+        }
+
+        public Builder withId(UUID id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder withPublicationId(URI publicationId) {
+            this.publicationId = publicationId;
+            return this;
+        }
+
+        public Builder withApprovalStatuses(List<ApprovalStatus> approvalStatuses) {
+            this.approvalStatuses = approvalStatuses;
+            return this;
+        }
+
+        public Builder withPoints(Map<URI, BigDecimal> points) {
+            this.points = points;
+            return this;
+        }
+
+        public Builder withNotes(List<Note> notes) {
+            this.notes = notes;
+            return this;
+        }
+
+        public CandidateResponse build() {
+            return new CandidateResponse(id, publicationId, approvalStatuses, points, notes);
+        }
     }
 }

@@ -10,6 +10,7 @@ dependencies {
     implementation libs.jackson.databind
     implementation libs.nva.commons.auth
     implementation libs.jackson.databind
+
     testImplementation libs.nva.testutils
     testImplementation libs.bundles.testing
     testImplementation libs.aws.sdk2.dynamodb

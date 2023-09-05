@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.service;
 
-import static no.sikt.nva.nvi.common.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.mapToVerifiedCreators;
@@ -15,9 +14,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -35,12 +36,10 @@ import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
-import nva.commons.apigateway.exceptions.BadRequestException;
-import nva.commons.apigateway.exceptions.ConflictException;
-import nva.commons.apigateway.exceptions.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class NviServiceTest extends LocalDynamoTest {
 
@@ -72,6 +71,37 @@ public class NviServiceTest extends LocalDynamoTest {
 
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType, randomLevel,
                                                         publicationDate, institutionPoints);
+        var fetchedCandidate = nviService.findById(createdCandidateId).get().candidate();
+
+        assertThat(fetchedCandidate, is(equalTo(expectedCandidate)));
+    }
+
+    @Test
+    void shouldUpdateExistingCandidateWhenUpsertIsCalledAndTheCandidateExists() {
+        var bucketIdentifier = UUID.randomUUID();
+        var institutionId = randomUri();
+        var verifiedCreators = List.of(new Creator(randomUri(), List.of(institutionId)));
+        var instanceType = randomString();
+        var randomLevel = randomElement(Level.values());
+        var publicationDate = randomPublicationDate();
+        var institutionPoints = Map.of(institutionId, randomBigDecimal());
+        var originalEvaluatedCandidateDto = createEvaluatedCandidateDto(bucketIdentifier, verifiedCreators,
+                                                                        instanceType, randomLevel,
+                                                                        publicationDate, institutionPoints);
+
+        var newInstanceType = randomString();
+        var updatedEvaluatedCandidateDto = createEvaluatedCandidateDto(bucketIdentifier, verifiedCreators,
+                                                                       newInstanceType, randomLevel,
+                                                                       publicationDate, institutionPoints);
+
+        var originalUpserted = nviService.upsertCandidate(originalEvaluatedCandidateDto).get();
+        var updatedUpserted = nviService.upsertCandidate(updatedEvaluatedCandidateDto).get();
+        assertThat(updatedUpserted, is(not(equalTo(originalUpserted))));
+
+        var createdCandidateId = originalUpserted.identifier();
+
+        var expectedCandidate = createExpectedCandidate(bucketIdentifier, verifiedCreators, newInstanceType,
+                                                        randomLevel, publicationDate, institutionPoints);
         var fetchedCandidate = nviService.findById(createdCandidateId).get().candidate();
 
         assertThat(fetchedCandidate, is(equalTo(expectedCandidate)));
@@ -111,8 +141,7 @@ public class NviServiceTest extends LocalDynamoTest {
                                                                 publicationDate, institutionPoints);
         nviService.upsertCandidate(evaluatedCandidateDto).get().identifier();
 
-        var scan = this.localDynamo.scan(ScanRequest.builder().tableName(NVI_TABLE_NAME).build());
-        var items = scan.items().size();
+        var items = scanDB().items().size();
 
         assertThat(items, is(equalTo(2)));
     }
@@ -140,14 +169,36 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldCreateNviPeriod() throws BadRequestException {
+    void nviServiceShouldHandleDatesWithoutDayOrMonthValues() {
+        var identifier = UUID.randomUUID();
+        var verifiedCreators = List.of(new Creator(randomUri(), List.of(randomUri())),
+                                       new Creator(randomUri(), List.of()));
+        var instanceType = randomString();
+        var randomLevel = randomElement(Level.values());
+        var publicationDate = new PublicationDate(null, null, "2022");
+        var evaluatedCandidateDto =
+            createEvaluatedCandidateDto(identifier, verifiedCreators, instanceType, randomLevel, publicationDate,
+                                        Map.of());
+
+        assertDoesNotThrow(() -> nviService.upsertCandidate(evaluatedCandidateDto));
+    }
+
+    //TODO: Change test when nviService is implemented
+    @Test
+    void shouldCreateNviPeriod() {
         var period = createPeriod("2014");
         nviService.createPeriod(period);
         assertThat(nviService.getPeriod(period.publishingYear()), is(equalTo(period)));
     }
 
     @Test
-    void shouldUpdateNviPeriod() throws BadRequestException, ConflictException, NotFoundException {
+    void shouldThrowExceptionIdPeriodIsNonNumeric() {
+        NviPeriod period = createPeriod("asd");
+        assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
+    }
+
+    @Test
+    void shouldUpdateNviPeriod() {
         var originalPeriod = createPeriod("2014");
         nviService.createPeriod(originalPeriod);
         nviService.updatePeriod(originalPeriod.copy().withReportingDate(randomInstant()).build());
@@ -158,13 +209,37 @@ public class NviServiceTest extends LocalDynamoTest {
     @Test
     void shouldReturnBadRequestWhenPublishingYearIsNotAYear() {
         var period = createPeriod(randomString());
-        assertThrows(BadRequestException.class, () -> nviService.createPeriod(period));
+        assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
     }
 
     @Test
     void shouldReturnBadRequestWhenPublishingYearHasInvalidLength() {
         var period = createPeriod("22");
-        assertThrows(BadRequestException.class, () -> nviService.createPeriod(period));
+        assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Status.class, names = {"APPROVED", "REJECTED"})
+    void shouldUpsertApproval(Status status) {
+        UUID identifier = UUID.randomUUID();
+        URI institutionUri = randomUri();
+        nviCandidateRepository.create(createExpectedCandidate(identifier, List.of(new Creator(randomUri(),
+                                                                                              List.of(institutionUri))),
+                                                              randomString(), Level.LEVEL_ONE,
+                                                              new PublicationDate(randomString(), randomString(),
+                                                                                  randomString()),
+                                                              Map.of(institutionUri, new BigDecimal("1.2"))));
+        ApprovalStatus newApprovalStatus = createApprovalStatus(status, institutionUri);
+        CandidateWithIdentifier candidateWithIdentifier = nviService.upsertApproval(identifier, newApprovalStatus);
+        assertThat(candidateWithIdentifier.candidate().approvalStatuses().get(0).status(), is(equalTo(status)));
+    }
+
+    private static ApprovalStatus createApprovalStatus(Status status, URI institutionUri) {
+        return ApprovalStatus.builder().withInstitutionId(institutionUri)
+                   .withStatus(status)
+                   .withFinalizedBy(new Username(randomString()))
+                   .withFinalizedDate(Instant.now())
+                   .build();
     }
 
     private static NviPeriod createPeriod(String publishingYear) {
@@ -180,16 +255,16 @@ public class NviServiceTest extends LocalDynamoTest {
         return new Username(randomString());
     }
 
-    private CandidateEvaluatedMessage createEvaluatedCandidateDto(UUID identifier,
+    private CandidateEvaluatedMessage createEvaluatedCandidateDto(UUID bucketUriIdentifier,
                                                                   List<CandidateDetails.Creator> creators,
                                                                   String instanceType, Level randomLevel,
                                                                   PublicationDate publicationDate,
                                                                   Map<URI, BigDecimal> institutionPoints) {
         return CandidateEvaluatedMessage.builder()
                    .withStatus(CandidateStatus.CANDIDATE)
-                   .withPublicationBucketUri(generateS3BucketUri(identifier))
+                   .withPublicationBucketUri(generateS3BucketUri(bucketUriIdentifier))
                    .withInstitutionPoints(institutionPoints)
-                   .withCandidateDetails(new CandidateDetails(generatePublicationId(identifier),
+                   .withCandidateDetails(new CandidateDetails(generatePublicationId(bucketUriIdentifier),
                                                               instanceType,
                                                               randomLevel.getValue(),
                                                               publicationDate,
@@ -202,6 +277,7 @@ public class NviServiceTest extends LocalDynamoTest {
                                               Level level, PublicationDate publicationDate,
                                               Map<URI, BigDecimal> institutionPoints) {
         return Candidate.builder()
+                   .withPublicationBucketUri(generateS3BucketUri(identifier))
                    .withPublicationId(generatePublicationId(identifier))
                    .withCreators(mapToVerifiedCreators(creators))
                    .withInstanceType(instanceType)
@@ -209,11 +285,13 @@ public class NviServiceTest extends LocalDynamoTest {
                    .withIsApplicable(true)
                    .withPublicationDate(toPublicationDate(publicationDate))
                    .withPoints(institutionPoints)
-                   .withApprovalStatuses(institutionPoints.keySet().stream()
-                                             .map(bigDecimal -> ApprovalStatus.builder()
-                                                                    .withStatus(Status.PENDING)
-                                                                    .withInstitutionId(bigDecimal)
-                                                                    .build()).toList())
+                   .withApprovalStatuses(
+                       institutionPoints.keySet()
+                           .stream()
+                           .map(institutionId -> ApprovalStatus.builder()
+                                                     .withStatus(Status.PENDING)
+                                                     .withInstitutionId(institutionId)
+                                                     .build()).toList())
                    .build();
     }
 }

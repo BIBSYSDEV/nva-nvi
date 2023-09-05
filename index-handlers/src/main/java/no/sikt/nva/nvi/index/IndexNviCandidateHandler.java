@@ -9,7 +9,6 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;

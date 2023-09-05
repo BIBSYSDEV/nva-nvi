@@ -39,11 +39,15 @@ public class CandidateDao extends Dao implements DynamoEntryWithRangeKey {
         this.candidate = candidate;
     }
 
+    public static String PK(String identifier) {
+        return String.join(FIELD_DELIMITER, TYPE, identifier);
+    }
+
     @Override
     @DynamoDbPartitionKey
     @DynamoDbAttribute(HASH_KEY)
     public String getPrimaryKeyHashKey() {
-        return String.join(DynamoEntryWithRangeKey.FIELD_DELIMITER, TYPE, identifier.toString());
+        return PK(identifier.toString());
     }
 
     @Override

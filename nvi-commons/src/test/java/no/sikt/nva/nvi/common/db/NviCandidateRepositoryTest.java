@@ -1,8 +1,9 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.sikt.nva.nvi.common.ApplicationConstants.NVI_TABLE_NAME;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -10,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 
 class NviCandidateRepositoryTest extends LocalDynamoTest {
 
@@ -27,9 +27,23 @@ class NviCandidateRepositoryTest extends LocalDynamoTest {
         var publicationId = randomUri();
         var candidate1 = randomCandidateBuilder().withPublicationId(publicationId).build();
         var candidate2 = randomCandidateBuilder().withPublicationId(publicationId).build();
-        nviCandidateRepository.save(candidate1);
-        assertThrows(RuntimeException.class, () -> nviCandidateRepository.save(candidate2));
-        var tableItemCount = localDynamo.scan(ScanRequest.builder().tableName(NVI_TABLE_NAME).build()).count();
-        assertThat(tableItemCount, is(equalTo(2)));
+        nviCandidateRepository.create(candidate1);
+        assertThrows(RuntimeException.class, () -> nviCandidateRepository.create(candidate2));
+        assertThat(scanDB().count(), is(equalTo(2)));
     }
+
+    @Test
+    public void shouldOverwriteExistingCandidateWhenUpdating() {
+        var originalCandidate = randomCandidate();
+        var created = nviCandidateRepository.create(originalCandidate);
+        var newCandidate = originalCandidate.copy().withPublicationBucketUri(randomUri()).build();
+        nviCandidateRepository.update(created.identifier(),newCandidate);
+        var fetched = nviCandidateRepository.findById(created.identifier()).get().candidate();
+
+        assertThat(scanDB().count(), is(equalTo(2)));
+        assertThat(fetched, is(not(equalTo(originalCandidate))));
+        assertThat(fetched, is(equalTo(newCandidate)));
+    }
+
+
 }

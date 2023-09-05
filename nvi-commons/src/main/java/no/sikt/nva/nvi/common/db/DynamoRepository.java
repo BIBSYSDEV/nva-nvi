@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.sikt.nva.nvi.common.ApplicationConstants.REGION;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
+import static no.sikt.nva.nvi.common.utils.ApplicationConstants.REGION;
 import java.util.Map;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;

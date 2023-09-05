@@ -16,6 +16,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.util.NoSuchElementException;
 import no.sikt.nva.nvi.common.model.business.NviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.NviPeriodDto;
@@ -23,9 +24,6 @@ import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
-import nva.commons.apigateway.exceptions.BadRequestException;
-import nva.commons.apigateway.exceptions.ConflictException;
-import nva.commons.apigateway.exceptions.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
@@ -55,8 +53,8 @@ public class UpdateNviPeriodHandlerTest {
 
     @Test
     void shouldReturnNotFoundWhenPeriodDoesNotExists()
-        throws IOException, NotFoundException, ConflictException, BadRequestException {
-        when(nviService.updatePeriod(any())).thenThrow(NotFoundException.class);
+        throws IOException {
+        when(nviService.updatePeriod(any())).thenThrow(NoSuchElementException.class);
         handler.handleRequest(createRequest(), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -65,8 +63,8 @@ public class UpdateNviPeriodHandlerTest {
 
     @Test
     void shouldReturnConflictWhenUpdatingReportingDateNotSupportedDate()
-        throws NotFoundException, IOException, ConflictException, BadRequestException {
-        when(nviService.updatePeriod(any())).thenThrow(ConflictException.class);
+        throws IOException {
+        when(nviService.updatePeriod(any())).thenThrow(IllegalStateException.class);
         handler.handleRequest(createRequest(), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -75,7 +73,7 @@ public class UpdateNviPeriodHandlerTest {
 
     @Test
     void shouldUpdateNviPeriodSuccessfully()
-        throws IOException, ConflictException, NotFoundException, BadRequestException {
+        throws IOException {
         when(nviService.updatePeriod(any())).thenReturn(randomPeriod());
         handler.handleRequest(createRequest(), output, context);
         var response = GatewayResponse.fromOutputStream(output, NviPeriodDto.class);

@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.index.model;
 
-import nva.commons.core.JacocoGenerated;
+import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Arrays;
+import nva.commons.core.SingletonCollector;
 
 public enum ApprovalStatus {
     PENDING("Pending"),
@@ -13,8 +15,15 @@ public enum ApprovalStatus {
         this.value = value;
     }
 
-    @JacocoGenerated
+    @JsonValue
     public String getValue() {
         return value;
+    }
+
+    public static ApprovalStatus fromValue(String candidate) {
+        return Arrays.stream(values())
+                   .filter(item -> item.getValue().equalsIgnoreCase(candidate))
+                   .collect(SingletonCollector.tryCollect())
+                   .orElseThrow();
     }
 }

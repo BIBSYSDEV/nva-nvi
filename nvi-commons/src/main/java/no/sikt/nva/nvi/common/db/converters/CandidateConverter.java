@@ -16,7 +16,7 @@ public class CandidateConverter implements AttributeConverter<Candidate> {
 
     @Override
     public Candidate transformTo(AttributeValue input) {
-        return Candidate.fromDynamoDb(input);
+        return Candidate.builder().build().fromDynamoDb(input, Candidate.class);
     }
 
     @Override

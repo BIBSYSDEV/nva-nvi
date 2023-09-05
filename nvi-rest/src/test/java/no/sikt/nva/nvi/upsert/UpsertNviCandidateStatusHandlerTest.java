@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.upsert;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -17,9 +19,9 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.Candidate;
@@ -37,6 +39,8 @@ import nva.commons.apigateway.exceptions.BadRequestException;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.zalando.problem.Problem;
 
 class UpsertNviCandidateStatusHandlerTest {
@@ -45,6 +49,10 @@ class UpsertNviCandidateStatusHandlerTest {
     private ByteArrayOutputStream output;
     private UpsertNviCandidateStatusHandler handler;
     private NviService nviService;
+
+    static Stream<Status> statusEnumSource() {
+        return Stream.of(Status.APPROVED, Status.REJECTED, Status.PENDING);
+    }
 
     @BeforeEach
     void init() {
@@ -64,19 +72,20 @@ class UpsertNviCandidateStatusHandlerTest {
 
     @Test
     void shouldReturnBadRequestWhenMissingAccessRights() throws IOException, BadRequestException {
-        when(nviService.upsertApproval(UUID.randomUUID(), any())).thenThrow(IllegalArgumentException.class);
+        when(nviService.upsertApproval(any())).thenThrow(IllegalArgumentException.class);
         handler.handleRequest(createRequest(randomStatusRequest()), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
         assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
     }
 
-    @Test
-    void shouldReturnCandidateResponseWhenSuccessful() throws IOException {
-        var nviStatusRequest = new NviStatusRequest(UUID.randomUUID(), randomUri(), NviApprovalStatus.APPROVED);
+    @ParameterizedTest
+    @EnumSource(NviApprovalStatus.class)
+    void shouldReturnCandidateResponseWhenSuccessful(NviApprovalStatus status) throws IOException {
+        var nviStatusRequest = new NviStatusRequest(UUID.randomUUID(), randomUri(), status);
+        Status innerStatus = Status.parse(status.getValue());
         var request = createRequest(nviStatusRequest);
-        var status = Status.APPROVED;
-        var response = mockServiceResponse(nviStatusRequest, status);
+        var response = mockServiceResponse(nviStatusRequest, innerStatus);
         var approvalStatus = response.candidate()
                                  .approvalStatuses()
                                  .get(0);
@@ -85,18 +94,28 @@ class UpsertNviCandidateStatusHandlerTest {
         handler.handleRequest(request, output, context);
 
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
-        var candidateResponse = new CandidateResponse(
-            nviStatusRequest.candidateId(),
-            response.candidate().publicationId(),
-            List.of(new ApprovalStatus(nviStatusRequest.institutionId(),
-                                       status,
-                                       new Username(
-                                           approvalStatus.finalizedBy().value()),
-                                       approvalStatus.finalizedDate())),
-            new HashMap<>(),
-            Collections.emptyList());
-        CandidateResponse bodyAsInstance = gatewayResponse.getBodyObject(CandidateResponse.class);
-        assertThat(bodyAsInstance, is(equalTo(candidateResponse)));
+        var bodyAsInstance = gatewayResponse.getBodyObject(CandidateResponse.class);
+        assertThat(bodyAsInstance,
+                   is(equalTo(createResponse(nviStatusRequest, response, innerStatus, approvalStatus))));
+    }
+
+    private static CandidateResponse createResponse(
+        NviStatusRequest nviStatusRequest,
+        CandidateWithIdentifier response, Status status,
+        no.sikt.nva.nvi.common.model.business.ApprovalStatus approvalStatus) {
+        return CandidateResponse.builder()
+                   .withId(nviStatusRequest.candidateId())
+                   .withPublicationId(response.candidate().publicationId())
+                   .withApprovalStatuses(
+                       List.of(ApprovalStatus.builder()
+                                   .withInstitutionId(nviStatusRequest.institutionId())
+                                   .withStatus(status)
+                                   .withFinalizedBy(new Username(approvalStatus.finalizedBy().value()))
+                                   .withFinalizedDate(approvalStatus.finalizedDate())
+                                   .build()))
+                   .withPoints(emptyMap())
+                   .withNotes(emptyList())
+                   .build();
     }
 
     private static CandidateWithIdentifier mockServiceResponse(NviStatusRequest nviStatusRequest,
@@ -109,7 +128,7 @@ class UpsertNviCandidateStatusHandlerTest {
                                                                                      status,
                                                                                      new Username(randomString()),
                                                                                      Instant.now())))
-                .withPoints(new HashMap<>())
+                .withPoints(emptyMap())
                 .withNotes(List.of())
                 .build(),
             nviStatusRequest.candidateId());

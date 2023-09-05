@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.utils;
 
 import java.util.NoSuchElementException;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
-import nva.commons.apigateway.exceptions.BadMethodException;
+import nva.commons.apigateway.exceptions.BadGatewayException;
 import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.ConflictException;
 import nva.commons.apigateway.exceptions.NotFoundException;
@@ -19,16 +19,12 @@ public final class ExceptionMapper {
             || exception instanceof NoSuchElementException) {
             return new NotFoundException("Resource not found!");
         }
-        if (exception instanceof BadMethodException) {
-            return new BadMethodException("Operation is not allowed!");
-        }
         if (exception instanceof IllegalArgumentException) {
-            return new BadRequestException("");
+            return new BadRequestException(exception.getMessage());
         }
-        if (exception instanceof ConflictException) {
+        if (exception instanceof IllegalStateException) {
             return new ConflictException("Conflict occurred!");
-        } else {
-            return (ApiGatewayException) exception;
         }
+        return new BadGatewayException(exception.getMessage());
     }
 }

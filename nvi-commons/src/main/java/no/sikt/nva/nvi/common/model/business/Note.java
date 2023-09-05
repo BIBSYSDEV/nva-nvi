@@ -3,35 +3,12 @@ package no.sikt.nva.nvi.common.model.business;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
-import java.util.Map;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 public record Note(Username user,
                    String text,
-                   Instant createdDate) {
-
-    public static final String USER_FIELD = "user";
-    public static final String TEXT_FIELD = "text";
-    public static final String UPDATED_DATE_FIELD = "updatedDate";
-
-    public AttributeValue toDynamoDb() {
-        return AttributeValue.fromM(
-            Map.of(USER_FIELD, user.toDynamoDb(),
-                   TEXT_FIELD, AttributeValue.fromS(text),
-                   UPDATED_DATE_FIELD, AttributeValue.fromN(String.valueOf(createdDate.toEpochMilli()))
-            ));
-    }
-
-    public static Note fromDynamoDb(AttributeValue input) {
-        var map = input.m();
-        return new Note(
-            Username.fromDynamoDb(map.get(USER_FIELD)),
-            map.get(TEXT_FIELD).s(),
-            Instant.ofEpochMilli(Long.parseLong(map.get(UPDATED_DATE_FIELD).n()))
-        );
-    }
+                   Instant createdDate) implements DynamoDbModel<Note> {
 
     public static final class Builder {
 
