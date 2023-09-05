@@ -117,7 +117,15 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                                         randomString(),
                                                                         randomElement(Level.values()).getValue(),
                                                                         randomPublicationDate(),
-                                                                        List.of(randomCreator()))).build());
+                                                                        List.of(randomCreator()))).build(),
+                         CandidateEvaluatedMessage.builder()
+                             .withStatus(randomElement(CandidateStatus.values()))
+                             .withPublicationBucketUri(randomUri())
+                             .withCandidateDetails(new CandidateDetails(randomUri(),
+                                                                        null,
+                                                                        null,
+                                                                        null,
+                                                                        null)).build());
     }
 
     private static SQSEvent createEventWithInvalidBody() {
