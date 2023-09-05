@@ -186,7 +186,7 @@ public final class Aggregations {
 
     private static Query existsQuery(String field) {
         return new Builder()
-                   .must(notExistsQuery(field))
+                   .must(new ExistsQuery.Builder().field(field).build()._toQuery())
                    .build()._toQuery();
     }
 }
