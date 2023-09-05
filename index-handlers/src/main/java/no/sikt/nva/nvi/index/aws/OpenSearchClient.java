@@ -42,10 +42,9 @@ import org.slf4j.LoggerFactory;
 @JacocoGenerated
 public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument> {
 
-
+    private static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchClient.class);
     private static final String ERROR_MSG_CREATE_INDEX = "Error while creating index: " + NVI_CANDIDATES_INDEX;
-    public static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";
     private final org.opensearch.client.opensearch.OpenSearchClient client;
     private final CachedValueProvider<DecodedJWT> cachedJwtProvider;
 
@@ -54,8 +53,8 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         var httpHost = HttpHost.create(SEARCH_INFRASTRUCTURE_API_HOST);
         var restClient = RestClient.builder(httpHost).build();
         var options = RestClientOptions.builder()
-                                       .addHeader(AUTHORIZATION, cachedJwtProvider.getValue().getToken())
-                                       .build();
+                          .addHeader(AUTHORIZATION, cachedJwtProvider.getValue().getToken())
+                          .build();
         var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(), options);
         this.client = new org.opensearch.client.opensearch.OpenSearchClient(transport);
     }
@@ -92,18 +91,20 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     public SearchResponse<NviCandidateIndexDocument> search(String searchTerm,
                                                             String filter,
                                                             String username,
-                                                            URI customer)
+                                                            URI customer,
+                                                            int offset,
+                                                            int size)
         throws IOException {
         return client.withTransportOptions(getOptions())
-                   .search(constructSearchRequest(searchTerm, filter, username, customer.toString()),
+                   .search(constructSearchRequest(searchTerm, filter, username, customer.toString(), offset, size),
                            NviCandidateIndexDocument.class);
     }
 
     @Override
     public void deleteIndex() throws IOException {
         client.withTransportOptions(getOptions())
-              .indices()
-              .delete(new DeleteIndexRequest.Builder().index(NVI_CANDIDATES_INDEX).build());
+            .indices()
+            .delete(new DeleteIndexRequest.Builder().index(NVI_CANDIDATES_INDEX).build());
     }
 
     private static DeleteRequest contructDeleteRequest(NviCandidateIndexDocument indexDocument) {
@@ -113,9 +114,9 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     private static IndexRequest<NviCandidateIndexDocument> constructIndexRequest(
         NviCandidateIndexDocument indexDocument) {
         return new IndexRequest.Builder<NviCandidateIndexDocument>().index(NVI_CANDIDATES_INDEX)
-                                                                    .id(indexDocument.identifier())
-                                                                    .document(indexDocument)
-                                                                    .build();
+                   .id(indexDocument.identifier())
+                   .document(indexDocument)
+                   .build();
     }
 
     private static CognitoCredentials createCognitoCredentials(SecretsReader secretsReader) {
@@ -129,8 +130,6 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         return new CreateIndexRequest.Builder().mappings(mappings()).index(NVI_CANDIDATES_INDEX).build();
     }
 
-
-
     private TransportOptions getOptions() {
         return RestClientOptions.builder().addHeader(AUTHORIZATION, cachedJwtProvider.getValue().getToken()).build();
     }
@@ -139,8 +138,8 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     private boolean indexExists() {
         try {
             client.withTransportOptions(getOptions())
-                  .indices()
-                  .get(GetIndexRequest.of(r -> r.index(NVI_CANDIDATES_INDEX)));
+                .indices()
+                .get(GetIndexRequest.of(r -> r.index(NVI_CANDIDATES_INDEX)));
         } catch (IOException io) {
             throw new RuntimeException(io);
         } catch (OpenSearchException osex) {
@@ -154,8 +153,8 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
 
     private void createIndex() {
         attempt(() -> client.withTransportOptions(getOptions())
-                            .indices()
-                            .create(getCreateIndexRequest()))
+                          .indices()
+                          .create(getCreateIndexRequest()))
             .orElseThrow(failure -> handleFailure(ERROR_MSG_CREATE_INDEX, failure.getException()));
     }
 
@@ -164,10 +163,14 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         return new RuntimeException(exception.getMessage());
     }
 
-    private SearchRequest constructSearchRequest(String searchTerm, String filter, String username, String customer) {
-        return new SearchRequest.Builder().index(NVI_CANDIDATES_INDEX)
-                                          .query(SearchConstants.constructQuery(searchTerm, filter, username, customer))
-                                          .aggregations(Aggregations.generateAggregations(username, customer))
-                                          .build();
+    private SearchRequest constructSearchRequest(String searchTerm, String filter, String username, String customer,
+                                                 int offset, int size) {
+        return new SearchRequest.Builder()
+                   .index(NVI_CANDIDATES_INDEX)
+                   .query(SearchConstants.constructQuery(searchTerm, filter, username, customer))
+                   .aggregations(Aggregations.generateAggregations(username, customer))
+                   .from(offset)
+                   .size(size)
+                   .build();
     }
 }

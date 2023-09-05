@@ -1,20 +1,27 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient;
+import static no.sikt.nva.nvi.index.utils.PaginatedResultConverter.toPaginatedResult;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.index.model.SearchResponseDto;
+import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
 
-public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchResponseDto> {
+public class SearchNviCandidatesHandler
+    extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
-    private static final String QUERY_PATH_PARAM = "query";
+
+    private static final String QUERY_SIZE_PARAM = "size";
+    private static final String QUERY_OFFSET_PARAM = "offset";
+    private static final int DEFAULT_QUERY_SIZE = 10;
+    private static final int DEFAULT_OFFSET_SIZE = 0;
+    public static final String QUERY_PATH_PARAM = "query";
     private static final String SEARCH_ALL_DOCUMENTS_DEFAULT_QUERY = "*";
     public static final String FILTER_QUERY_PARAM = "filter";
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
@@ -31,22 +38,38 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, SearchRe
     }
 
     @Override
-    protected SearchResponseDto processInput(Void input, RequestInfo requestInfo,
-                                             Context context) throws UnauthorizedException {
+    protected PaginatedSearchResult<NviCandidateIndexDocument> processInput(Void input, RequestInfo requestInfo,
+                                                                            Context context)
+        throws UnauthorizedException {
+
+        var offset = extractQueryParamOffsetOrDefault(requestInfo);
+        var size = extractQueryParamSizeOrDefault(requestInfo);
         var customer = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         var username = requestInfo.getUserName();
         var filter = getFilter(requestInfo);
         var searchTerm = getSearchTerm(requestInfo);
 
-        return attempt(() -> openSearchClient.search(searchTerm, filter, username, customer))
-                   .map(SearchResponseDto::fromSearchResponse)
+        return attempt(() -> openSearchClient.search(searchTerm, filter, username, customer, offset, size))
+                   .map(searchResponse -> toPaginatedResult(searchResponse, searchTerm, offset, size))
                    .orElseThrow();
     }
 
     @Override
-    protected Integer getSuccessStatusCode(Void input, SearchResponseDto output) {
+    protected Integer getSuccessStatusCode(Void input, PaginatedSearchResult<NviCandidateIndexDocument> output) {
         return HttpURLConnection.HTTP_OK;
     }
+
+    private static Integer extractQueryParamSizeOrDefault(RequestInfo requestInfo) {
+        return requestInfo.getQueryParameterOpt(QUERY_SIZE_PARAM).map(Integer::parseInt).orElse(DEFAULT_QUERY_SIZE);
+    }
+
+    private static Integer extractQueryParamOffsetOrDefault(RequestInfo requestInfo) {
+        return requestInfo.getQueryParameterOpt(QUERY_OFFSET_PARAM)
+                   .map(Integer::parseInt)
+                   .orElse(DEFAULT_OFFSET_SIZE);
+    }
+
+
 
     private static String getSearchTerm(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()

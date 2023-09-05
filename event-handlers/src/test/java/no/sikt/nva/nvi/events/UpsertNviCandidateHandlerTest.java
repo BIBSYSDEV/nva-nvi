@@ -29,6 +29,7 @@ import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.model.business.InstitutionPoints;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.business.Status;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
@@ -117,7 +118,15 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                                         randomString(),
                                                                         randomElement(Level.values()).getValue(),
                                                                         randomPublicationDate(),
-                                                                        List.of(randomCreator()))).build());
+                                                                        List.of(randomCreator()))).build(),
+                         CandidateEvaluatedMessage.builder()
+                             .withStatus(randomElement(CandidateStatus.values()))
+                             .withPublicationBucketUri(randomUri())
+                             .withCandidateDetails(new CandidateDetails(randomUri(),
+                                                                        null,
+                                                                        null,
+                                                                        null,
+                                                                        null)).build());
     }
 
     private static SQSEvent createEventWithInvalidBody() {
@@ -143,6 +152,13 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         message.setBody(body);
         sqsEvent.setRecords(List.of(message));
         return sqsEvent;
+    }
+
+    private static List<InstitutionPoints> mapToInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
+        return institutionPoints.entrySet()
+                   .stream()
+                   .map(entry -> new InstitutionPoints(entry.getKey(), entry.getValue()))
+                   .toList();
     }
 
     private SQSEvent createEvent(UUID identifier, List<Creator> verifiedCreators, String instanceType,
@@ -172,7 +188,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withLevel(level)
                    .withIsApplicable(true)
                    .withPublicationDate(toPublicationDate(publicationDate))
-                   .withPoints(institutionPoints)
+                   .withPoints(mapToInstitutionPoints(institutionPoints))
                    .withApprovalStatuses(institutionPoints.keySet().stream()
                                              .map(bigDecimal -> ApprovalStatus.builder()
                                                                     .withStatus(Status.PENDING)

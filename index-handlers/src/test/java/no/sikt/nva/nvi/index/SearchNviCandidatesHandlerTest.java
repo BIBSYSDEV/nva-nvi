@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
+import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -8,10 +10,12 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,19 +23,23 @@ import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
-import no.sikt.nva.nvi.index.model.SearchResponseDto;
 import no.unit.nva.commons.json.JsonUtils;
+import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch._types.ShardStatistics;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.SearchResponse.Builder;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.opensearch.client.opensearch.core.search.TotalHits;
@@ -42,7 +50,8 @@ import org.zalando.problem.Problem;
 @Testcontainers
 public class SearchNviCandidatesHandlerTest {
 
-    public static final String QUERY = "query";
+    private static final TypeReference<PaginatedSearchResult<NviCandidateIndexDocument>> TYPE_REF =
+        new TypeReference<>() {};
     private static SearchClient<NviCandidateIndexDocument> openSearchClient;
     private static SearchNviCandidatesHandler handler;
     private static ByteArrayOutputStream output;
@@ -57,60 +66,93 @@ public class SearchNviCandidatesHandlerTest {
 
     @Test
     void shouldReturnDocumentFromIndex() throws IOException {
-        when(openSearchClient.search(any(), any(), any(), any()))
+        when(openSearchClient.search(any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
         handler.handleRequest(request("*"), output, context);
         var response =
-            GatewayResponse.fromOutputStream(output, SearchResponseDto.class);
-        var hits = response.getBodyObject(SearchResponseDto.class).hits();
-        assertThat(hits, hasSize(1));
+            GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedResult =
+            objectMapper.readValue(response.getBody(), TYPE_REF);
+
+        assertThat(paginatedResult.getHits(), hasSize(1));
     }
 
     @Test
     void shouldReturnDocumentFromIndexContainingSingleHitWhenUsingTerms() throws IOException {
         var document = singleNviCandidateIndexDocument();
-        when(openSearchClient.search(any(), any(), any(), any())).thenReturn(createSearchResponse(document));
+        when(openSearchClient.search(any(), any(), any(), any(), anyInt(), anyInt()))
+            .thenReturn(createSearchResponse(document));
         handler.handleRequest(request(document.identifier()), output, context);
         var response =
-            GatewayResponse.fromOutputStream(output, SearchResponseDto.class);
-        var hits = response.getBodyObject(SearchResponseDto.class).hits();
-        assertThat(hits, hasSize(1));
+            GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedResult =
+            objectMapper.readValue(response.getBody(), TYPE_REF);
+
+        assertThat(paginatedResult.getHits(), hasSize(1));
+    }
+
+    @Test
+    void shouldReturnPaginatedSearchResultWithAggregations() throws IOException {
+        var documents = generateNumberOfIndexDocuments(10);
+        var aggregationName = randomString();
+        var docCount = randomInteger();
+        when(openSearchClient.search(any(), any(), any(), any(), anyInt(), anyInt()))
+            .thenReturn(createSearchResponse(documents, 10, aggregationName, docCount));
+        handler.handleRequest(request("*"), output, context);
+        var response =
+            GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedResult =
+            objectMapper.readValue(response.getBody(), TYPE_REF);
+
+        assertThat(paginatedResult.getHits(), hasSize(10));
     }
 
     @Test
     void shouldThrowExceptionWhenSearchFails() throws IOException {
         var document = singleNviCandidateIndexDocument();
-        when(openSearchClient.search(any(), any(), any(), any())).thenThrow(RuntimeException.class);
+        when(openSearchClient.search(any(), any(), any(), any(), anyInt(), anyInt()))
+            .thenThrow(RuntimeException.class);
         handler.handleRequest(request(document.identifier()), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
         assertThat(Objects.requireNonNull(response.getBodyObject(Problem.class).getStatus()).getStatusCode(),
                    is(equalTo(HttpURLConnection.HTTP_INTERNAL_ERROR)));
     }
 
     private static SearchResponse<NviCandidateIndexDocument> createSearchResponse(NviCandidateIndexDocument document) {
-        return new SearchResponse.Builder<NviCandidateIndexDocument>()
-                   .hits(constructHitsMetadata(document))
+        return new Builder<NviCandidateIndexDocument>().hits(constructHitsMetadata(List.of(document)))
                    .took(10)
                    .timedOut(false)
                    .shards(new ShardStatistics.Builder().failed(0).successful(1).total(1).build())
                    .build();
     }
 
-    private static HitsMetadata<NviCandidateIndexDocument> constructHitsMetadata(NviCandidateIndexDocument document) {
+    private static SearchResponse<NviCandidateIndexDocument> createSearchResponse(
+        List<NviCandidateIndexDocument> documents, int total, String aggregateName, int docCount) {
+        return new Builder<NviCandidateIndexDocument>()
+                   .hits(constructHitsMetadata(documents))
+                   .took(10)
+                   .timedOut(false)
+                   .shards(new ShardStatistics.Builder().failed(0).successful(1).total(total).build())
+                   .aggregations(aggregateName, new Aggregate(new FilterAggregate.Builder().docCount(docCount).build()))
+                   .build();
+    }
+
+    private static HitsMetadata<NviCandidateIndexDocument> constructHitsMetadata(
+        List<NviCandidateIndexDocument> document) {
         return new HitsMetadata.Builder<NviCandidateIndexDocument>()
                    .total(new TotalHits.Builder().value(10).relation(TotalHitsRelation.Eq).build())
-                   .hits(toHits(document))
+                   .hits(document.stream().map(SearchNviCandidatesHandlerTest::toHit).collect(Collectors.toList()))
                    .total(new TotalHits.Builder().relation(TotalHitsRelation.Eq).value(1).build())
                    .build();
     }
 
-    @NotNull
-    private static List<Hit<NviCandidateIndexDocument>> toHits(NviCandidateIndexDocument document) {
-        return List.of(new Hit.Builder<NviCandidateIndexDocument>()
-                           .id(randomString())
-                           .index(NVI_CANDIDATES_INDEX)
-                           .source(document)
-                           .build());
+    private static Hit<NviCandidateIndexDocument> toHit(NviCandidateIndexDocument document) {
+        return new Hit.Builder<NviCandidateIndexDocument>()
+                   .id(randomString())
+                   .index(NVI_CANDIDATES_INDEX)
+                   .source(document)
+                   .build();
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
@@ -122,11 +164,17 @@ public class SearchNviCandidatesHandlerTest {
         return new PublicationDetails(randomString(), randomString(), randomString(), randomString(), List.of());
     }
 
+    private List<NviCandidateIndexDocument> generateNumberOfIndexDocuments(int number) {
+        return IntStream.range(0, number).boxed().map(i -> singleNviCandidateIndexDocument()).toList();
+    }
+
     private InputStream request(String searchTerm) throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
-                   .withQueryParameters(Map.of(QUERY, searchTerm))
                    .withTopLevelCristinOrgId(randomUri())
                    .withUserName(randomString())
+                   .withQueryParameters(Map.of("query", searchTerm,
+                                               "offset", randomInteger().toString(),
+                                               "size", randomInteger().toString()))
                    .build();
     }
 }
