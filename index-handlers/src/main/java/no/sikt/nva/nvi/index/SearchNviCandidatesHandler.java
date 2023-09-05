@@ -111,7 +111,7 @@ public class SearchNviCandidatesHandler
     }
 
     private static URI constructBaseUri() {
-        return UriWrapper.fromUri(HOST).addChild(CUSTOM_DOMAIN_BASE_PATH).getUri();
+        return UriWrapper.fromHost(HOST).addChild(CUSTOM_DOMAIN_BASE_PATH).getUri();
     }
 
     private static JsonNode extractAggregations(SearchResponse<NviCandidateIndexDocument> searchResponse) {
