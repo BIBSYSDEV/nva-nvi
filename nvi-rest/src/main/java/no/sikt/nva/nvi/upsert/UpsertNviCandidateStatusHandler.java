@@ -9,7 +9,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.time.Instant;
 import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
-import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
+import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Status;
 import no.sikt.nva.nvi.common.model.business.Username;
 import no.sikt.nva.nvi.common.service.NviService;
@@ -43,7 +43,7 @@ public class UpsertNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
 
         return attempt(() -> toStatus(input, getUsername(requestInfo)))
-                   .map(approvalStatus -> nviService.upsertApproval(
+                   .map(approvalStatus -> nviService.updateApprovalStatus(
                        UUID.fromString(requestInfo.getPathParameter(PARAM_CANDIDATE_IDENTIFIER)),
                        approvalStatus))
                    .map(CandidateResponse::fromCandidate)
@@ -55,8 +55,8 @@ public class UpsertNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
         return HTTP_OK;
     }
 
-    private ApprovalStatus toStatus(NviStatusRequest input, Username username) {
-        return new ApprovalStatus(input.institutionId(), mapStatus(input.status()), username, Instant.now());
+    private DbApprovalStatus toStatus(NviStatusRequest input, Username username) {
+        return new DbApprovalStatus(input.institutionId(), mapStatus(input.status()), username, Instant.now());
     }
 
     // New switch return syntax isn't fullfilling the 100% coverage because of a bug.

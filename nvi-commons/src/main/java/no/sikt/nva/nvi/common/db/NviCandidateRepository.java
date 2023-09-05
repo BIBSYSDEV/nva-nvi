@@ -2,23 +2,21 @@ package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
-import static nva.commons.core.attempt.Try.attempt;
+import static software.amazon.awssdk.enhanced.dynamodb.TableSchema.fromImmutableClass;
+import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.sortBeginsWith;
 import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.model.ApprovalStatusWithIdentifier;
-import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
-import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
-import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.model.ApprovalStatus;
+import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
+import no.sikt.nva.nvi.common.model.business.DbCandidate;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
-import software.amazon.awssdk.enhanced.dynamodb.model.PageIterable;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactPutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -32,120 +30,137 @@ public class NviCandidateRepository extends DynamoRepository {
 
     public NviCandidateRepository(DynamoDbClient client) {
         super(client);
-        this.candidateTable = this.client.table(NVI_TABLE_NAME, CandidateDao.TABLE_SCHEMA);
-        this.uniquenessTable = this.client.table(NVI_TABLE_NAME, CandidateUniquenessEntry.TABLE_SCHEMA);
+        this.candidateTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(CandidateDao.class));
+        this.uniquenessTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(CandidateUniquenessEntry.class));
         this.publicationIdIndex = this.candidateTable.index(SECONDARY_INDEX_PUBLICATION_ID);
-        this.approvalStatusTable = this.client.table(NVI_TABLE_NAME, ApprovalStatusDao.TABLE_SCHEMA);
+        this.approvalStatusTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(ApprovalStatusDao.class));
     }
 
-    public CandidateWithIdentifier create(Candidate candidate) {
-        var uuid = UUID.randomUUID();
-        var insert = new CandidateDao(uuid, candidate);
-        var uniqueness = new CandidateUniquenessEntry(candidate.publicationId().toString());
+    public Candidate create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
+        var identifier = UUID.randomUUID();
+        var candidate = new CandidateDao(identifier, dbCandidate);
+        var uniqueness = new CandidateUniquenessEntry(dbCandidate.publicationId().toString());
         var transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
 
-        // CREATE CANDIDATE
-        transactionBuilder.addPutItem(this.candidateTable, insertTransaction(insert, CandidateDao.class));
-        // CREATE APPROVAL_STATUSES
-        candidate.approvalStatuses().stream()
-            .map(ap -> new ApprovalStatusDao(uuid, ap))
-            .forEach(approvalStatusDao -> {
-                var insItem = insertTransaction(approvalStatusDao, ApprovalStatusDao.class);
-                transactionBuilder.addPutItem(this.approvalStatusTable,
-                                              insItem);
-            });
-        // CREATE UNIQUENESS CANDIDATES
+        transactionBuilder.addPutItem(this.candidateTable, insertTransaction(candidate, CandidateDao.class));
+
+        approvalStatuses
+            .stream().map(as -> new ApprovalStatusDao(identifier, as))
+            .forEach(as -> transactionBuilder.addPutItem(this.approvalStatusTable,
+                                                         insertTransaction(as,
+                                                                           ApprovalStatusDao.class)));
         transactionBuilder.addPutItem(this.uniquenessTable,
                                       insertTransaction(uniqueness, CandidateUniquenessEntry.class));
 
         this.client.transactWriteItems(transactionBuilder.build());
+        var candidateObj = candidateTable.getItem(candidate);
+        var approvalStatusList = approvalStatusTable.query(
+                queryCandidateParts(identifier, ApprovalStatusDao.TYPE))
+                                     .items()
+                                     .stream()
+                                     .map(ApprovalStatusDao::approvalStatus)
+                                     .toList();
 
-        var fetched = this.candidateTable.getItem(insert);
-        var build = QueryConditional.sortBeginsWith(
-            Key.builder()
-                .partitionValue(
-                    CandidateDao.pk0(
-                        uuid.toString()))
-                .sortValue(
-                    ApprovalStatusDao.TYPE)
-                .build());
-        PageIterable<ApprovalStatusDao> query = approvalStatusTable.query(build);
-        List<ApprovalStatusDao> list = query.items().stream().toList();
-        Candidate candidate1 = fetched.getCandidate()
-                                   .copy()
-                                   .withApprovalStatuses(
-                                       list.stream().map(ApprovalStatusDao::getApprovalStatus).toList())
-                                   .build();
-        return new CandidateWithIdentifier(candidate1, fetched.getIdentifier());
+        return new Candidate(identifier, candidateObj.candidate(), approvalStatusList);
     }
 
-    public CandidateWithIdentifier update(UUID identifier, Candidate candidate) {
-        var insert = new CandidateDao(identifier, candidate);
-
-        this.candidateTable.putItem(insert);
-        var fetched = this.candidateTable.getItem(insert);
-        return new CandidateWithIdentifier(fetched.getCandidate(), fetched.getIdentifier());
+    public Candidate update(UUID identifier, DbCandidate dbCandidate,
+                            List<DbApprovalStatus> approvalStatusList) {
+        var candidate = CandidateDao.builder().identifier(identifier).candidate(dbCandidate).build();
+        var approvalStatuses = approvalStatusList.stream().map(a -> new ApprovalStatusDao(identifier, a)).toList();
+        var transaction = TransactWriteItemsEnhancedRequest.builder();
+        transaction.addPutItem(candidateTable, candidate);
+        approvalStatuses.forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
+        // Maybe we need to remove the rows first, but preferably override
+        client.transactWriteItems(transaction.build());
+        return new Candidate(identifier, dbCandidate, approvalStatusList);
     }
 
-    public Optional<CandidateWithIdentifier> findById(UUID id) {
-        var queryObj = new CandidateDao(id, Candidate.builder().build());
+    public Optional<Candidate> findById(UUID id) {
+        var queryObj = new CandidateDao(id, DbCandidate.builder().build());
         var fetched = this.candidateTable.getItem(queryObj);
-        return Optional.ofNullable(fetched).map(CandidateDao::toCandidateWithIdentifier);
+        return Optional.ofNullable(fetched).map(
+            candidateDao -> {
+                var approvalStatuses = this.approvalStatusTable.query(queryCandidateParts(id, ApprovalStatusDao.TYPE))
+                                           .items().stream()
+                                           .map(ApprovalStatusDao::approvalStatus).toList();
+                return new Candidate(id, candidateDao.getCandidate(), approvalStatuses);
+            }
+        );
     }
 
-    public CandidateWithIdentifier getById(UUID id) {
-        var queryObj = new CandidateDao(id, Candidate.builder().build());
-        var fetched = this.candidateTable.getItem(queryObj);
-        var approvalStatuses = approvalStatusTable.query(
-            QueryConditional.sortBeginsWith(
-                Key.builder()
-                    .partitionValue(
-                        CandidateDao.pk0(
-                            id.toString()))
-                    .sortValue(ApprovalStatusDao.TYPE)
-                    .build()));
-        var candidate = fetched.getCandidate().copy()
-                            .withApprovalStatuses(approvalStatuses.items().stream()
-                                                      .map(ApprovalStatusDao::getApprovalStatus)
-                                                      .toList())
-                            .build();
-        return new CandidateWithIdentifier(candidate, id);
+    public Candidate get(UUID uuid) {
+        var candidateDao = candidateTable.getItem(candidateKey(uuid));
+        var approvalStatuses = approvalStatusTable.query(queryCandidateParts(uuid, ApprovalStatusDao.TYPE))
+                                   .items().stream().map(ApprovalStatusDao::approvalStatus).toList();
+        return new Candidate(uuid, candidateDao.candidate(), approvalStatuses);
     }
 
-    public Optional<CandidateWithIdentifier> findByPublicationId(URI publicationId) {
-        var query = QueryEnhancedRequest.builder()
-                        .queryConditional(QueryConditional.keyEqualTo(Key.builder()
-                                                                          .partitionValue(publicationId.toString())
-                                                                          .sortValue(publicationId.toString())
-                                                                          .build()))
-                        .consistentRead(false)
-                        .build();
+    public Candidate getById(UUID id) {
+        var candidateDao = this.candidateTable.getItem(candidateKey(id));
+        var approvalStatus = approvalStatusTable.query(queryCandidateParts(id, ApprovalStatusDao.TYPE))
+                                 .items().stream()
+                                 .map(ApprovalStatusDao::approvalStatus)
+                                 .toList();
+
+        return new Candidate(id, candidateDao.getCandidate(), approvalStatus);
+    }
+
+    public Optional<Candidate> findByPublicationId(URI publicationId) {
+        var query = QueryConditional.keyEqualTo(Key.builder()
+                                                    .partitionValue(publicationId.toString())
+                                                    .sortValue(publicationId.toString())
+                                                    .build());
 
         var result = this.publicationIdIndex.query(query);
 
-        var users = result.stream()
-                        .map(Page::items)
-                        .flatMap(Collection::stream)
-                        .map(CandidateDao::toCandidateWithIdentifier)
-                        .toList();
-
-        return attempt(() -> users.get(0)).toOptional();
-    }
-
-    public Optional<ApprovalStatusWithIdentifier> findApprovalByIdAndInstitutionId(UUID identifier, URI uri) {
-        QueryConditional query = QueryConditional.keyEqualTo(
-            Key.builder().partitionValue(CandidateDao.pk0(identifier.toString()))
-                .sortValue(ApprovalStatusDao.sk0(uri.toString())).build()
-        );
-        PageIterable<ApprovalStatusDao> result = approvalStatusTable.query(query);
-        return result.items()
-                   .stream().map(ApprovalStatusDao::toApprovalStatusWithIdentifier)
+        return result.stream()
+                   .map(Page::items)
+                   .flatMap(Collection::stream)
+                   .map(
+                       candidateDao -> {
+                           var approvalStatus = approvalStatusTable.query(queryCandidateParts(candidateDao.identifier(),
+                                                                                              ApprovalStatusDao.TYPE))
+                                                    .items().stream()
+                                                    .map(ApprovalStatusDao::approvalStatus)
+                                                    .toList();
+                           return new Candidate(candidateDao.identifier(), candidateDao.candidate(),
+                                                approvalStatus);
+                       })
                    .findFirst();
     }
 
-    public void updateApprovalStatus(UUID identifier, ApprovalStatus newStatus) {
+    public Optional<ApprovalStatus> findApprovalByIdAndInstitutionId(UUID identifier, URI uri) {
+        var query = QueryConditional.keyEqualTo(
+            Key.builder().partitionValue(CandidateDao.pk0(identifier.toString()))
+                .sortValue(ApprovalStatusDao.sk0(uri.toString())).build()
+        );
+        var result = approvalStatusTable.query(query);
+        return result.items()
+                   .stream().map(approvalStatusDao ->
+                                     new ApprovalStatus(
+                                         approvalStatusDao.identifier(),
+                                         approvalStatusDao.approvalStatus()))
+                   .findFirst();
+    }
+
+    public void updateApprovalStatus(UUID identifier, DbApprovalStatus newStatus) {
         var insert = new ApprovalStatusDao(identifier, newStatus);
         approvalStatusTable.updateItem(insert);
+    }
+
+    private static Key candidateKey(UUID id) {
+        return Key.builder()
+                   .partitionValue(CandidateDao.pk0(id.toString()))
+                   .sortValue(CandidateDao.pk0(id.toString()))
+                   .build();
+    }
+
+    private static QueryConditional queryCandidateParts(UUID id, String type) {
+        return sortBeginsWith(Key.builder()
+                                  .partitionValue(CandidateDao.pk0(id.toString()))
+                                  .sortValue(type)
+                                  .build());
     }
 
     private static <T> TransactPutItemEnhancedRequest<T> insertTransaction(T insert, Class<T> clazz) {

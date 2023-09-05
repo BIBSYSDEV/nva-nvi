@@ -14,8 +14,10 @@ import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.StorageReader;
+import no.sikt.nva.nvi.common.db.Candidate;
+import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
-import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.model.business.DbCandidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;
 import no.sikt.nva.nvi.index.aws.SearchClient;
@@ -72,7 +74,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         return record.getDynamodb().getKeys().get(SORT_KEY).getS().split(PRIMARY_KEY_DELIMITER)[0];
     }
 
-    private static URI extractBucketUri(Candidate candidate) {
+    private static URI extractBucketUri(DbCandidate candidate) {
         return candidate.publicationBucketUri();
     }
 
@@ -112,8 +114,8 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         attempt(() -> extractIdentifierFromOldImage(record))
             .map(nviService::findById)
             .map(Optional::get)
-            .map(CandidateWithIdentifier::candidate)
-            .map(Candidate::publicationId)
+            .map(Candidate::candidate)
+            .map(DbCandidate::publicationId)
             .map(UpdateIndexHandler::toIndexDocumentWithId)
             .forEach(openSearchClient::removeDocumentFromIndex);
 
@@ -124,7 +126,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         var candidate = nviService.findById(extractIdentifierFromOldImage(record));
 
         attempt(candidate::get)
-            .map(CandidateWithIdentifier::candidate)
+            .map(Candidate::candidate)
             .map(UpdateIndexHandler::extractBucketUri)
             .map(storageReader::read)
             .map(blob -> generateDocument(blob, candidate.orElseThrow()))

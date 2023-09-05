@@ -28,7 +28,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
+import no.sikt.nva.nvi.common.db.Candidate;
+import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
 import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contexts;
@@ -43,18 +44,18 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     public static NviCandidateIndexDocument generateDocument(
-        String resource, CandidateWithIdentifier candidateWithIdentifier) {
+        String resource, Candidate candidateWithIdentifier) {
         return createNviCandidateIndexDocument(attempt(() -> dtoObjectMapper.readTree(resource))
                                                    .map(root -> root.at("/body")).orElseThrow(),
                                                candidateWithIdentifier);
     }
 
     private static NviCandidateIndexDocument createNviCandidateIndexDocument(
-        JsonNode resource, CandidateWithIdentifier candidateWithIdentifier) {
-        var approvals = createApprovals(resource, candidateWithIdentifier.candidate().approvalStatuses());
+        JsonNode resource, Candidate candidate) {
+        var approvals = createApprovals(resource, candidate.approvalStatuses());
         return new NviCandidateIndexDocument.Builder()
                    .withContext(URI.create(Contexts.NVI_CONTEXT))
-                   .withIdentifier(candidateWithIdentifier.identifier().toString())
+                   .withIdentifier(candidate.identifier().toString())
                    .withApprovals(approvals)
                    .withPublicationDetails(extractPublicationDetails(resource))
                    .withNumberOfApprovals(approvals.size())
@@ -62,14 +63,14 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private static List<Approval> createApprovals(
-        JsonNode resource, List<no.sikt.nva.nvi.common.model.business.ApprovalStatus> approvals) {
+        JsonNode resource, List<DbApprovalStatus> approvals) {
         return approvals.stream()
                    .map(approval -> expandApprovals(resource, toApproval(approval)))
                    .filter(Objects::nonNull)
                    .toList();
     }
 
-    private static Approval toApproval(no.sikt.nva.nvi.common.model.business.ApprovalStatus approval) {
+    private static Approval toApproval(DbApprovalStatus approval) {
         return new Approval.Builder()
                    .withId(approval.institutionId().toString())
                    .withLabels(Map.of())

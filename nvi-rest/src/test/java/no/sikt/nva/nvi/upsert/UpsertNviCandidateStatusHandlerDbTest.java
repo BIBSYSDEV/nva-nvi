@@ -16,10 +16,8 @@ import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
-import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
-import no.sikt.nva.nvi.common.model.business.Candidate;
-import no.sikt.nva.nvi.common.model.business.Candidate.Builder;
-import no.sikt.nva.nvi.common.model.business.Creator;
+import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
+import no.sikt.nva.nvi.common.model.business.DbCandidate;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.business.PublicationDate;
 import no.sikt.nva.nvi.common.model.business.Status;
@@ -32,7 +30,6 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -81,19 +78,19 @@ public class UpsertNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
                    .build();
     }
 
-    private static Candidate createCandidate(URI institutionId) {
-        return Candidate.builder()
+    private static DbCandidate createCandidate(URI institutionId) {
+        return DbCandidate.builder()
                    .withPublicationId(randomUri())
                    .withApprovalStatuses(List.of(
-                       new ApprovalStatus(institutionId,
-                                          Status.PENDING,
-                                          null, null)))
+                       new DbApprovalStatus(institutionId,
+                                            Status.PENDING,
+                                            null, null)))
                    .withLevel(Level.LEVEL_ONE)
                    .withIsInternationalCollaboration(false)
                    .withPublicationBucketUri(randomUri())
                    .withPublicationDate(
                        new PublicationDate("2023", "01", "01"))
-                   .withCreators(List.of(new Creator(randomUri(), List.of(institutionId))))
+                   .withCreators(List.of(new DbCreator(randomUri(), List.of(institutionId))))
                    .withCreatorCount(1)
                    .withInstanceType("AcademicArticle")
                    .withIsApplicable(true)

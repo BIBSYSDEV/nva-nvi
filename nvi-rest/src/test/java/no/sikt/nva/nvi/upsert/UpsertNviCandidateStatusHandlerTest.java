@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.upsert;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -18,14 +17,14 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.CandidateResponse;
-import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
-import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.db.Candidate;
+import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
+import no.sikt.nva.nvi.common.model.business.DbCandidate;
 import no.sikt.nva.nvi.common.model.business.Status;
 import no.sikt.nva.nvi.common.model.business.Username;
 import no.sikt.nva.nvi.common.service.NviService;
@@ -73,7 +72,7 @@ class UpsertNviCandidateStatusHandlerTest {
 
     @Test
     void shouldReturnBadRequestWhenMissingAccessRights() throws IOException, BadRequestException {
-        when(nviService.upsertApproval(any(),any())).thenThrow(IllegalArgumentException.class);
+        when(nviService.updateApprovalStatus(any(), any())).thenThrow(IllegalArgumentException.class);
         handler.handleRequest(createRequest(randomStatusRequest()), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -87,10 +86,9 @@ class UpsertNviCandidateStatusHandlerTest {
         Status innerStatus = Status.parse(status.getValue());
         var request = createRequest(nviStatusRequest);
         var response = mockServiceResponse(nviStatusRequest, innerStatus);
-        var approvalStatus = response.candidate()
-                                 .approvalStatuses()
+        var approvalStatus = response.approvalStatuses()
                                  .get(0);
-        when(nviService.upsertApproval(any(), any())).thenReturn(response);
+        when(nviService.updateApprovalStatus(any(), any())).thenReturn(response);
 
         handler.handleRequest(request, output, context);
 
@@ -102,8 +100,8 @@ class UpsertNviCandidateStatusHandlerTest {
 
     private static CandidateResponse createResponse(
         NviStatusRequest nviStatusRequest,
-        CandidateWithIdentifier response, Status status,
-        no.sikt.nva.nvi.common.model.business.ApprovalStatus approvalStatus) {
+        Candidate response, Status status,
+        DbApprovalStatus approvalStatus) {
         return CandidateResponse.builder()
                    .withId(nviStatusRequest.candidateId())
                    .withPublicationId(response.candidate().publicationId())
@@ -114,25 +112,23 @@ class UpsertNviCandidateStatusHandlerTest {
                                    .withFinalizedBy(new Username(approvalStatus.finalizedBy().value()))
                                    .withFinalizedDate(approvalStatus.finalizedDate())
                                    .build()))
-                   .withPoints(emptyMap())
+                   .withPoints(emptyList())
                    .withNotes(emptyList())
                    .build();
     }
 
-    private static CandidateWithIdentifier mockServiceResponse(NviStatusRequest nviStatusRequest,
-                                                               Status status) {
-        return new CandidateWithIdentifier(
-            Candidate.builder()
+    private static Candidate mockServiceResponse(NviStatusRequest nviStatusRequest,
+                                                 Status status) {
+        return new Candidate(
+            nviStatusRequest.candidateId(),
+            DbCandidate.builder()
                 .withPublicationId(nviStatusRequest.institutionId())
-                .withApprovalStatuses(
-                    List.of(new no.sikt.nva.nvi.common.model.business.ApprovalStatus(nviStatusRequest.institutionId(),
-                                                                                     status,
-                                                                                     new Username(randomString()),
-                                                                                     Instant.now())))
-                .withPoints(emptyMap())
-                .withNotes(List.of())
+                .withPoints(emptyList())
                 .build(),
-            nviStatusRequest.candidateId());
+            List.of(new DbApprovalStatus(nviStatusRequest.institutionId(),
+                                         status,
+                                         new Username(randomString()),
+                                         Instant.now())));
     }
 
     private InputStream createRequest(NviStatusRequest body) throws JsonProcessingException {

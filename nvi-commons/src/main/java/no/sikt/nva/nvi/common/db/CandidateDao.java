@@ -6,71 +6,57 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_HASH_KE
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_RANGE_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
+import static no.sikt.nva.nvi.common.db.Dao.DATA_FIELD;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.converters.CandidateConverterProvider;
-import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
-import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.model.business.DbCandidate;
 import nva.commons.core.JacocoGenerated;
-import software.amazon.awssdk.enhanced.dynamodb.DefaultAttributeConverterProvider;
-import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondarySortKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-@SuppressWarnings({"PMD.GodClass", "PMD.ExcessivePublicCount"})
-@DynamoDbBean(converterProviders = { CandidateConverterProvider.class, DefaultAttributeConverterProvider.class})
-public class CandidateDao extends Dao implements DynamoEntryWithRangeKey {
+@DynamoDbImmutable(builder = CandidateDao.Builder.class)
+public record CandidateDao(
+    UUID identifier,
+    @DynamoDbAttribute(DATA_FIELD) DbCandidate candidate
+) implements DynamoEntryWithRangeKey {
 
-    public static final TableSchema<CandidateDao> TABLE_SCHEMA = TableSchema.fromClass(CandidateDao.class);
     public static final String TYPE = "CANDIDATE";
-    private UUID identifier;
-    private Candidate candidate;
 
-    public CandidateDao() {
-        super();
+    private CandidateDao(Builder b) {
+        this(b.identifier, b.candidate);
     }
 
-    public CandidateDao(UUID identifier, Candidate candidate) {
-        super();
-        this.identifier = identifier;
-        this.candidate = candidate;
-    }
-
+    @DynamoDbIgnore
     public static String pk0(String identifier) {
         return String.join(FIELD_DELIMITER, TYPE, identifier);
+    }
+
+    public static Builder builder() {
+        return new Builder();
     }
 
     @Override
     @DynamoDbPartitionKey
     @DynamoDbAttribute(HASH_KEY)
-    public String getPrimaryKeyHashKey() {
+    public String primaryKeyHashKey() {
         return pk0(identifier.toString());
-    }
-
-    @Override
-    public void setPrimaryKeyHashKey(String primaryHashKey) {
-        //DO NOTHING
     }
 
     @Override
     @DynamoDbSortKey
     @DynamoDbAttribute(SORT_KEY)
-    public String getPrimaryKeyRangeKey() {
-        return getPrimaryKeyHashKey();
-    }
-
-    @Override
-    public void setPrimaryKeyRangeKey(String primaryRangeKey) {
-        //DO NOTHING
+    public String primaryKeyRangeKey() {
+        return primaryKeyHashKey();
     }
 
     @Override
     @JacocoGenerated
     @DynamoDbAttribute(TYPE_FIELD)
-    public String getType() {
+    public String type() {
         return TYPE;
     }
 
@@ -82,41 +68,46 @@ public class CandidateDao extends Dao implements DynamoEntryWithRangeKey {
     }
 
     @JacocoGenerated
-    public void setSearchByPublicationIdHashKey(String searchByPublicationIdHashKey) {
-        //DO NOTHING
-    }
-
-    @JacocoGenerated
     @DynamoDbSecondarySortKey(indexNames = {SECONDARY_INDEX_PUBLICATION_ID})
     @DynamoDbAttribute(SECONDARY_INDEX_1_RANGE_KEY)
     public String getSearchByPublicationIdSortKey() {
         return nonNull(candidate.publicationId()) ? candidate.publicationId().toString() : null;
     }
 
-    @JacocoGenerated
-    public void setSearchByPublicationIdSortKey(String searchByPublicationIdSortKey) {
-        //DO NOTHING
-    }
-
     @DynamoDbAttribute(DATA_FIELD)
-    public Candidate getCandidate() {
+    public DbCandidate getCandidate() {
         return candidate;
     }
 
-    @JacocoGenerated
-    public void setIdentifier(UUID identifier) {
-        this.identifier = identifier;
+    public Builder copy() {
+        return builder().identifier(identifier).candidate(candidate);
     }
 
-    public UUID getIdentifier() {
-        return identifier;
-    }
+    public static final class Builder {
 
-    public void setCandidate(Candidate candidate) {
-        this.candidate = candidate;
-    }
+        private UUID identifier;
+        private DbCandidate candidate;
 
-    public CandidateWithIdentifier toCandidateWithIdentifier() {
-        return new CandidateWithIdentifier(candidate, identifier);
+        private Builder() {
+        }
+        public Builder type(String noop) { return this; }
+        public Builder primaryKeyHashKey(String noop) { return this; }
+        public Builder primaryKeyRangeKey(String noop) { return this; }
+        public Builder searchByPublicationIdHashKey(String noop) { return this; }
+        public Builder searchByPublicationIdSortKey(String noop) { return this; }
+
+        public Builder identifier(UUID identifier) {
+            this.identifier = identifier;
+            return this;
+        }
+
+        public Builder candidate(DbCandidate candidate) {
+            this.candidate = candidate;
+            return this;
+        }
+
+        public CandidateDao build() {
+            return new CandidateDao(identifier, candidate);
+        }
     }
 }

@@ -1,27 +1,26 @@
 package no.sikt.nva.nvi.common.model.business;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
-@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-@JsonSerialize
-public record Candidate(URI publicationId,
-                        URI publicationBucketUri,
-                        boolean isApplicable,
-                        String instanceType,
-                        Level level,
-                        PublicationDate publicationDate,
-                        boolean isInternationalCollaboration,
-                        int creatorCount,
-                        List<Creator> creators,
-                        List<InstitutionPoints> points,
-                        List<ApprovalStatus> approvalStatuses,
-                        List<Note> notes) implements DynamoDbModel<Candidate> {
+@DynamoDbImmutable(builder = DbCandidate.Builder.class)
+public record DbCandidate(
+    URI publicationId,
+    URI publicationBucketUri,
+    boolean isApplicable,
+    String instanceType,
+    Level level,
+    PublicationDate publicationDate,
+    boolean isInternationalCollaboration,
+    int creatorCount,
+    List<Creator> creators,
+    List<InstitutionPoints> points
+) {
 
-    public Candidate {
+    private DbCandidate(Builder b) {
+        this(b.publicationId, b.publicationBucketUri, b.isApplicable, b.instanceType, b.level, b.publicationDate,
+             b.isInternationalCollaboration, b.creatorCount, b.creators, b.points);
     }
 
     public static Builder builder() {
@@ -29,7 +28,7 @@ public record Candidate(URI publicationId,
     }
 
     public Builder copy() {
-        return new Builder()
+        return builder()
                    .withPublicationId(publicationId)
                    .withPublicationBucketUri(publicationBucketUri)
                    .withIsApplicable(isApplicable)
@@ -40,8 +39,7 @@ public record Candidate(URI publicationId,
                    .withCreatorCount(creatorCount)
                    .withCreators(creators)
                    .withPoints(points)
-                   .withApprovalStatuses(approvalStatuses)
-                   .withNotes(notes);
+            ;
     }
 
     public static final class Builder {
@@ -56,8 +54,6 @@ public record Candidate(URI publicationId,
         private int creatorCount;
         private List<Creator> creators;
         private List<InstitutionPoints> points;
-        private List<ApprovalStatus> approvalStatuses;
-        private List<Note> notes;
 
         private Builder() {
         }
@@ -112,20 +108,10 @@ public record Candidate(URI publicationId,
             return this;
         }
 
-        public Builder withApprovalStatuses(List<ApprovalStatus> approvalStatuses) {
-            this.approvalStatuses = approvalStatuses;
-            return this;
-        }
-
-        public Builder withNotes(List<Note> notes) {
-            this.notes = notes;
-            return this;
-        }
-
-        public Candidate build() {
-            return new Candidate(publicationId, publicationBucketUri, isApplicable, instanceType, level,
-                                 publicationDate, isInternationalCollaboration, creatorCount, creators, points,
-                                 approvalStatuses, notes);
+        public DbCandidate build() {
+            return new DbCandidate(publicationId, publicationBucketUri, isApplicable, instanceType, level,
+                                   publicationDate, isInternationalCollaboration, creatorCount, creators, points
+            );
         }
     }
 }

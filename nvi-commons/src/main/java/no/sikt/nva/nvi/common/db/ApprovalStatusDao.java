@@ -2,98 +2,85 @@ package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
+import static no.sikt.nva.nvi.common.db.Dao.DATA_FIELD;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.converters.ApprovalStatusConverterProvider;
-import no.sikt.nva.nvi.common.model.ApprovalStatusWithIdentifier;
-import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
+import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
 import nva.commons.core.JacocoGenerated;
-import software.amazon.awssdk.enhanced.dynamodb.DefaultAttributeConverterProvider;
-import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-@DynamoDbBean(converterProviders = {ApprovalStatusConverterProvider.class, DefaultAttributeConverterProvider.class})
-public class ApprovalStatusDao extends Dao implements DynamoEntryWithRangeKey {
+@DynamoDbImmutable(builder = ApprovalStatusDao.Builder.class)
+public record ApprovalStatusDao(
 
-    public static final TableSchema<ApprovalStatusDao> TABLE_SCHEMA = TableSchema.fromClass(ApprovalStatusDao.class);
+    UUID identifier,
+    @DynamoDbAttribute(DATA_FIELD) DbApprovalStatus approvalStatus
+) implements DynamoEntryWithRangeKey {
+
     public static final String TYPE = "APPROVAL_STATUS";
-    private UUID identifier;
-    private ApprovalStatus approvalStatus;
-
-    public ApprovalStatusDao() {
-    }
-
-    public ApprovalStatusDao(UUID identifier, ApprovalStatus approvalStatus) {
-        super();
-        this.identifier = identifier;
-        this.approvalStatus = approvalStatus;
-    }
 
     public static String sk0(String institutionUri) {
         return String.join(FIELD_DELIMITER, TYPE, institutionUri);
     }
 
-    @Override
-    @DynamoDbPartitionKey
-    @DynamoDbAttribute(HASH_KEY)
-    public String getPrimaryKeyHashKey() {
-        return CandidateDao.pk0(identifier.toString());
+    public static Builder builder() {
+        return new Builder();
     }
 
     @Override
-    public void setPrimaryKeyHashKey(String primaryHashKey) {
-        // DO NOTHING
+    @DynamoDbPartitionKey
+    @DynamoDbAttribute(HASH_KEY)
+    public String primaryKeyHashKey() {
+        return CandidateDao.pk0(identifier.toString());
     }
 
     @Override
     @DynamoDbSortKey
     @DynamoDbAttribute(SORT_KEY)
-    public String getPrimaryKeyRangeKey() {
+    public String primaryKeyRangeKey() {
         return sk0(approvalStatus.institutionId().toString());
-    }
-
-    @Override
-    public void setPrimaryKeyRangeKey(String primaryRangeKey) {
-        // DO NOTHING
     }
 
     @Override
     @JacocoGenerated
     @DynamoDbAttribute(TYPE_FIELD)
-    public String getType() {
+    public String type() {
         return TYPE;
     }
 
-    //    @Override
-    //    public void setType(String type) {
-    //        DynamoEntryWithRangeKey.super.setType(type);
-    //    }
+    public static final class Builder {
 
-    @DynamoDbAttribute(DATA_FIELD)
-    public ApprovalStatus getApprovalStatus() {
-        return approvalStatus;
-    }
+        private UUID identifier;
+        private DbApprovalStatus approvalStatus;
 
-    @JacocoGenerated
-    public void setApprovalStatus(ApprovalStatus approvalStatus) {
-        this.approvalStatus = approvalStatus;
-    }
+        private Builder() {
+        }
 
-    public UUID getIdentifier() {
-        return identifier;
-    }
+        public Builder identifier(UUID identifier) {
+            this.identifier = identifier;
+            return this;
+        }
 
-    @JacocoGenerated
-    public void setIdentifier(UUID identifier) {
-        this.identifier = identifier;
-    }
+        public Builder type(String noop) {
+            return this;
+        }
 
-    public ApprovalStatusWithIdentifier toApprovalStatusWithIdentifier() {
-        return ApprovalStatusWithIdentifier.builder()
-                   .withIdentifier(identifier)
-                   .withApprovalStatus(approvalStatus)
-                   .build();
+        public Builder primaryKeyHashKey(String noop) {
+            return this;
+        }
+
+        public Builder primaryKeyRangeKey(String noop) {
+            return this;
+        }
+
+        public Builder approvalStatus(DbApprovalStatus approvalStatus) {
+            this.approvalStatus = approvalStatus;
+            return this;
+        }
+
+        public ApprovalStatusDao build() {
+            return new ApprovalStatusDao(this.identifier, this.approvalStatus);
+        }
     }
 }

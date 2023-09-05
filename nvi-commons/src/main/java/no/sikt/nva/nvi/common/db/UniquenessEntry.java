@@ -2,12 +2,15 @@ package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
+import static no.sikt.nva.nvi.common.db.CandidateUniquenessEntry.TYPE;
+import static no.sikt.nva.nvi.common.db.DynamoEntryWithRangeKey.FIELD_DELIMITER;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-public abstract class UniquenessEntry implements DynamoEntryWithRangeKey {
+public abstract class UniquenessEntry //implements DynamoEntryWithRangeKey
+{
     public static final String DESERIALIZATION_ERROR_MESSAGE = "UniquenessEntries are not supposed to be deserialized";
     private String partitionKey;
     private String sortKey;
@@ -17,26 +20,26 @@ public abstract class UniquenessEntry implements DynamoEntryWithRangeKey {
     }
 
     public UniquenessEntry(String identifier) {
-        this.partitionKey = getType() + FIELD_DELIMITER + identifier;
+        this.partitionKey = TYPE + FIELD_DELIMITER + identifier;
         this.sortKey = partitionKey;
     }
 
     @JacocoGenerated
-    @Override
+//    @Override
     @DynamoDbPartitionKey
     @DynamoDbAttribute(HASH_KEY)
     public String getPrimaryKeyHashKey() {
         return partitionKey;
     }
 
-    @Override
+//    @Override
     @JacocoGenerated
     public void setPrimaryKeyHashKey(String primaryHashKey) {
         this.partitionKey = primaryHashKey;
 
     }
 
-    @Override
+//    @Override
     @JacocoGenerated
     @DynamoDbSortKey
     @DynamoDbAttribute(SORT_KEY)
@@ -44,7 +47,7 @@ public abstract class UniquenessEntry implements DynamoEntryWithRangeKey {
         return sortKey;
     }
 
-    @Override
+//    @Override
     @JacocoGenerated
     public void setPrimaryKeyRangeKey(String primaryRangeKey) {
         this.sortKey = primaryRangeKey;

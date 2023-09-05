@@ -13,9 +13,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
-import no.sikt.nva.nvi.common.model.business.Candidate;
-import no.sikt.nva.nvi.common.model.business.Creator;
+import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
+import no.sikt.nva.nvi.common.model.business.DbCandidate;
 import no.sikt.nva.nvi.common.model.business.InstitutionPoints;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.business.Note;
@@ -31,12 +30,12 @@ public class CandidateTest {
     void shouldMakeRoundTripWithoutLossOfInformation() throws JsonProcessingException {
         var candidate = randomCandidate();
         var json = JsonUtils.dtoObjectMapper.writeValueAsString(candidate);
-        var reconstructedCandidate = JsonUtils.dtoObjectMapper.readValue(json, Candidate.class);
+        var reconstructedCandidate = JsonUtils.dtoObjectMapper.readValue(json, DbCandidate.class);
         assertThat(reconstructedCandidate, is(equalTo(candidate)));
     }
 
-    private Candidate randomCandidate() {
-        return Candidate.builder()
+    private DbCandidate randomCandidate() {
+        return DbCandidate.builder()
                    .withPublicationId(randomUri())
                    .withApprovalStatuses(randomApprovalStatuses())
                    .withCreatorCount(randomInteger())
@@ -57,24 +56,24 @@ public class CandidateTest {
                                    String.valueOf(now.getDayOfMonth()));
     }
 
-    private List<Creator> randomVerifiedCreators() {
+    private List<DbCreator> randomVerifiedCreators() {
         return IntStream.range(1, 20).boxed().map(i -> randomVerifiedCreator()).toList();
     }
 
-    private Creator randomVerifiedCreator() {
-        return new Creator(randomUri(), randomAffiliations());
+    private DbCreator randomVerifiedCreator() {
+        return new DbCreator(randomUri(), randomAffiliations());
     }
 
     private List<URI> randomAffiliations() {
         return IntStream.range(1, 20).boxed().map(i -> randomUri()).toList();
     }
 
-    private List<ApprovalStatus> randomApprovalStatuses() {
+    private List<DbApprovalStatus> randomApprovalStatuses() {
         return IntStream.range(1, 20).boxed().map(i -> randomInstitutionStatus()).toList();
     }
 
-    private ApprovalStatus randomInstitutionStatus() {
-        return ApprovalStatus.builder()
+    private DbApprovalStatus randomInstitutionStatus() {
+        return DbApprovalStatus.builder()
                    .withStatus(Status.APPROVED)
                    .withInstitutionId(randomUri())
                    .withFinalizedBy(randomUsername())

@@ -10,7 +10,7 @@ class CandidateTest {
     public void shouldConvertBackAndForthBetweeenDbModelWithoutLoosingData() {
         var candidate = TestUtils.randomCandidate();
         var db = candidate.toDynamoDb();
-        var candidateFromDb = Candidate.builder().build().fromDynamoDb(db, Candidate.class);
+        var candidateFromDb = DbCandidate.builder().build().fromDynamoDb(db, DbCandidate.class);
         assertEquals(candidate, candidateFromDb);
     }
 

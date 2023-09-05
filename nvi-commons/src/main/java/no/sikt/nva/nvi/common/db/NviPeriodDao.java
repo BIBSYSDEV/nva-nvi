@@ -35,31 +35,31 @@ public class NviPeriodDao extends Dao implements DynamoEntryWithRangeKey {
     @Override
     @DynamoDbPartitionKey
     @DynamoDbAttribute(HASH_KEY)
-    public String getPrimaryKeyHashKey() {
+    public String primaryKeyHashKey() {
         return String.join(DynamoEntryWithRangeKey.FIELD_DELIMITER, TYPE, identifier);
     }
 
-    @Override
-    public void setPrimaryKeyHashKey(String primaryHashKey) {
-        //DO NOTHING
-    }
-
+//    @Override
+//    public void setPrimaryKeyHashKey(String primaryHashKey) {
+//        //DO NOTHING
+//    }
+//
     @Override
     @DynamoDbSortKey
     @DynamoDbAttribute(SORT_KEY)
-    public String getPrimaryKeyRangeKey() {
-        return getPrimaryKeyHashKey();
+    public String primaryKeyRangeKey() {
+        return primaryKeyHashKey();
     }
 
-    @Override
-    public void setPrimaryKeyRangeKey(String primaryRangeKey) {
-        //DO NOTHING
-    }
+//    @Override
+//    public void setPrimaryKeyRangeKey(String primaryRangeKey) {
+//        //DO NOTHING
+//    }
 
     @Override
     @JacocoGenerated
     @DynamoDbAttribute(TYPE_FIELD)
-    public String getType() {
+    public String type() {
         return TYPE;
     }
 

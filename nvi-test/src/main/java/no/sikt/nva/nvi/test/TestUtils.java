@@ -14,9 +14,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
-import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.model.business.Creator;
+import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
+import no.sikt.nva.nvi.common.model.business.DbCandidate;
 import no.sikt.nva.nvi.common.model.business.InstitutionPoints;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.business.Note;
@@ -77,8 +77,8 @@ public final class TestUtils {
         return START_DATE.plusDays(randomDays);
     }
 
-    public static Candidate.Builder randomCandidateBuilder() {
-        return Candidate.builder()
+    public static DbCandidate.Builder randomCandidateBuilder() {
+        return DbCandidate.builder()
                    .withPublicationId(randomUri())
                    .withPublicationBucketUri(randomUri())
                    .withIsApplicable(randomBoolean())
@@ -88,16 +88,14 @@ public final class TestUtils {
                    .withPublicationDate(new PublicationDate(randomString(), randomString(), randomString()))
                    .withIsInternationalCollaboration(randomBoolean())
                    .withCreatorCount(randomInteger())
-                   .withCreators(List.of(new Creator(randomUri(), List.of(randomUri()))))
-                   .withApprovalStatuses(List.of(randomApprovalStatus()))
-                   .withNotes(List.of(new Note(randomUsername(), randomString(), getNowWithMillisecondAccuracy())));
+                   .withCreators(List.of(new Creator(randomUri(), List.of(randomUri()))));
     }
 
     public static String randomYear() {
         return String.valueOf(randomInteger(3000));
     }
 
-    public static Candidate randomCandidate() {
+    public static DbCandidate randomCandidate() {
         return randomCandidateBuilder()
                    .build();
     }
@@ -115,8 +113,8 @@ public final class TestUtils {
                    .build();
     }
 
-    public static ApprovalStatus randomApprovalStatus() {
-        return new ApprovalStatus(randomUri(), randomElement(Status.values()), randomUsername(), Instant.EPOCH);
+    public static DbApprovalStatus randomApprovalStatus() {
+        return new DbApprovalStatus(randomUri(), randomElement(Status.values()), randomUsername(), Instant.EPOCH);
     }
 
     public static Username randomUsername() {

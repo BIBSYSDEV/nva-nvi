@@ -10,7 +10,7 @@ public class CandidateUniquenessEntry extends UniquenessEntry {
     public static final TableSchema<CandidateUniquenessEntry> TABLE_SCHEMA = TableSchema.fromClass(
         CandidateUniquenessEntry.class);
 
-    private static final String TYPE = "CandidateUniquenessEntry";
+    public static final String TYPE = "CandidateUniquenessEntry";
 
     public CandidateUniquenessEntry(String identifier) {
         super(identifier);
@@ -21,9 +21,12 @@ public class CandidateUniquenessEntry extends UniquenessEntry {
         super();
     }
 
-    @Override
+//    @Override
     public String getType() {
         return TYPE;
     }
 
+//    public void setType(String ignore){
+//
+//    }
 }

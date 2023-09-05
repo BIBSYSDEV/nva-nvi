@@ -2,17 +2,15 @@ package no.sikt.nva.nvi;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.math.BigDecimal;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
-import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.db.Candidate;
+import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
+import no.sikt.nva.nvi.common.model.business.DbCandidate;
 import no.sikt.nva.nvi.fetch.ApprovalStatus;
+import no.sikt.nva.nvi.fetch.InstitutionPoints;
 import no.sikt.nva.nvi.fetch.Note;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
@@ -20,34 +18,36 @@ import no.sikt.nva.nvi.fetch.Note;
 public record CandidateResponse(UUID id,
                                 URI publicationId,
                                 List<ApprovalStatus> approvalStatuses,
-                                Map<URI, BigDecimal> points,
+                                List<InstitutionPoints> points,
                                 List<Note> notes) {
 
-    public static CandidateResponse fromCandidate(CandidateWithIdentifier candidate) {
+    public static CandidateResponse fromCandidate(Candidate candidate) {
         return CandidateResponse.builder()
                    .withId(candidate.identifier())
                    .withPublicationId(candidate.candidate().publicationId())
-                   .withApprovalStatuses(mapToApprovalStatus(candidate.candidate()))
-                   .withPoints(candidate.candidate().points())
-                   .withNotes(mapToNotes(candidate.candidate()))
+                   .withApprovalStatuses(mapToApprovalStatus(candidate))
+                   .withPoints(mapToInstitutionPoints(candidate.candidate()))
+                   .withNotes(List.of())
                    .build();
+    }
+
+
+    private static List<InstitutionPoints> mapToInstitutionPoints(DbCandidate candidate) {
+        return candidate.points()
+                   .stream()
+                   .map(CandidateResponse::mapToInstitutionPoint)
+                   .toList();
+    }
+
+
+    private static InstitutionPoints mapToInstitutionPoint(
+        no.sikt.nva.nvi.common.model.business.InstitutionPoints institutionPoints) {
+        return new InstitutionPoints(institutionPoints.institutionId(),
+                                     institutionPoints.points());
     }
 
     public static Builder builder() {
         return new Builder();
-    }
-
-    private static List<Note> mapToNotes(Candidate candidate) {
-        var notes = candidate.notes();
-        return notes == null
-                   ? Collections.emptyList()
-                   : notes.stream()
-                         .map(CandidateResponse::mapToNote)
-                         .toList();
-    }
-
-    private static Note mapToNote(no.sikt.nva.nvi.common.model.business.Note note) {
-        return new Note(note.user(), note.text(), note.createdDate());
     }
 
     private static List<ApprovalStatus> mapToApprovalStatus(Candidate candidate) {
@@ -58,7 +58,7 @@ public record CandidateResponse(UUID id,
     }
 
     private static ApprovalStatus mapToApprovalStatus(
-        no.sikt.nva.nvi.common.model.business.ApprovalStatus approvalStatus) {
+        DbApprovalStatus approvalStatus) {
         return new ApprovalStatus(approvalStatus.institutionId(), approvalStatus.status(), approvalStatus.finalizedBy(),
                                   approvalStatus.finalizedDate());
     }
@@ -68,7 +68,7 @@ public record CandidateResponse(UUID id,
         private UUID id;
         private URI publicationId;
         private List<ApprovalStatus> approvalStatuses = new ArrayList<>();
-        private Map<URI, BigDecimal> points = new HashMap<>();
+        private List<InstitutionPoints> points = new ArrayList<>();
         private List<Note> notes = new ArrayList<>();
 
         private Builder() {
@@ -89,7 +89,7 @@ public record CandidateResponse(UUID id,
             return this;
         }
 
-        public Builder withPoints(Map<URI, BigDecimal> points) {
+        public Builder withPoints(List<InstitutionPoints> points) {
             this.points = points;
             return this;
         }

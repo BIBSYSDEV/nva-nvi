@@ -25,10 +25,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
-import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
-import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
+import no.sikt.nva.nvi.common.model.business.DbCandidate;
 import no.sikt.nva.nvi.common.model.business.InstitutionPoints;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.business.Status;
@@ -96,7 +97,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var expectedCandidate = createExpectedCandidate(identifier, creators, instanceType, randomLevel,
                                                         publicationDate, institutionPoints);
         var fetchedCandidate = nviCandidateRepository.findByPublicationId(expectedCandidate.publicationId())
-                                   .map(CandidateWithIdentifier::candidate);
+                                   .map(Candidate::candidate);
 
         assertThat(fetchedCandidate.orElseThrow(), is(equalTo(expectedCandidate)));
     }
@@ -176,11 +177,11 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                .build());
     }
 
-    private Candidate createExpectedCandidate(UUID identifier, List<Creator> creators,
-                                              String instanceType,
-                                              Level level, PublicationDate publicationDate,
-                                              Map<URI, BigDecimal> institutionPoints) {
-        return Candidate.builder()
+    private DbCandidate createExpectedCandidate(UUID identifier, List<Creator> creators,
+                                                String instanceType,
+                                                Level level, PublicationDate publicationDate,
+                                                Map<URI, BigDecimal> institutionPoints) {
+        return DbCandidate.builder()
                    .withPublicationBucketUri(generateS3BucketUri(identifier))
                    .withPublicationId(generatePublicationId(identifier))
                    .withCreators(mapToVerifiedCreators(creators))
@@ -189,12 +190,6 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withIsApplicable(true)
                    .withPublicationDate(toPublicationDate(publicationDate))
                    .withPoints(mapToInstitutionPoints(institutionPoints))
-                   .withApprovalStatuses(institutionPoints.keySet().stream()
-                                             .map(bigDecimal -> ApprovalStatus.builder()
-                                                                    .withStatus(Status.PENDING)
-                                                                    .withInstitutionId(bigDecimal)
-                                                                    .build())
-                                             .toList())
                    .build();
     }
 }

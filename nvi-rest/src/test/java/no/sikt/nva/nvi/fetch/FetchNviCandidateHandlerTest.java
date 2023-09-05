@@ -12,15 +12,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
-import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
-import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.db.Candidate;
+import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
+import no.sikt.nva.nvi.common.model.business.DbCandidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
@@ -60,7 +59,7 @@ class FetchNviCandidateHandlerTest {
     @Test
     void shouldReturnValidCandidateIfExists() throws IOException {
         var candidateId = UUID.randomUUID();
-        var candidateWithIdentifier = getCandidate(candidateId,randomCandidate());
+        var candidateWithIdentifier = getCandidate(candidateId, randomCandidate(), List.of());
         when(service.findById(candidateId)).thenReturn(Optional.of(candidateWithIdentifier));
         var input = getInput(candidateId);
         handler.handleRequest(input, output, CONTEXT);
@@ -76,7 +75,7 @@ class FetchNviCandidateHandlerTest {
     @Test
     void shouldHandleNullNotes() throws IOException {
         var candidateId = UUID.randomUUID();
-        var candidateWithIdentifier = getCandidate(candidateId, randomCandidateBuilder().withNotes(null).build());
+        var candidateWithIdentifier = getCandidate(candidateId, randomCandidateBuilder().build(), List.of());
         when(service.findById(candidateId)).thenReturn(Optional.of(candidateWithIdentifier));
         var input = getInput(candidateId);
         handler.handleRequest(input, output, CONTEXT);
@@ -88,33 +87,26 @@ class FetchNviCandidateHandlerTest {
         assertEquals(bodyObject, expectedResponse);
     }
 
-    private static CandidateResponse getExpectedResponse(CandidateWithIdentifier candidateWithIdentifier) {
-        var candidate = candidateWithIdentifier.candidate();
-        return new CandidateResponse(candidateWithIdentifier.identifier(),
-                                          candidate.publicationId(),
-                                          getApprovalStatuses(candidate),
-                                          mapToInstitutionPoints(candidate),
-                                          getNotes(candidate));
+    private static CandidateResponse getExpectedResponse(Candidate candidate) {
+        return new CandidateResponse(candidate.identifier(),
+                                     candidate.candidate().publicationId(),
+                                     getApprovalStatuses(candidate.approvalStatuses()),
+                                     mapToInstitutionPoints(candidate.candidate().points()),
+                                     List.of()
+        );
     }
 
-    private static List<InstitutionPoints> mapToInstitutionPoints(Candidate candidate) {
-        return candidate.points()
+    private static List<InstitutionPoints> mapToInstitutionPoints(
+        List<no.sikt.nva.nvi.common.model.business.InstitutionPoints> points) {
+        return points
                    .stream()
                    .map(institutionPoint -> new InstitutionPoints(
                        institutionPoint.institutionId(), institutionPoint.points()))
                    .toList();
     }
 
-    private static List<Note> getNotes(Candidate candidate) {
-        return Objects.nonNull(candidate.notes())
-                   ? candidate.notes().stream()
-                         .map(note -> new Note(note.user(), note.text(), note.createdDate()))
-                         .toList()
-                   : Collections.emptyList();
-    }
-
-    private static List<ApprovalStatus> getApprovalStatuses(Candidate candidate) {
-        return candidate.approvalStatuses().stream()
+    private static List<ApprovalStatus> getApprovalStatuses(List<DbApprovalStatus> approvalStatuses) {
+        return approvalStatuses.stream()
                    .map(approvalStatus -> new ApprovalStatus(
                        approvalStatus.institutionId(),
                        approvalStatus.status(), approvalStatus.finalizedBy(),
@@ -129,8 +121,8 @@ class FetchNviCandidateHandlerTest {
                    .build();
     }
 
-    private static CandidateWithIdentifier getCandidate(UUID id, Candidate candidate) {
-        return new CandidateWithIdentifier(candidate, id);
+    private static Candidate getCandidate(UUID id, DbCandidate candidate, List<DbApprovalStatus> approvalStatusList) {
+        return new Candidate(id, candidate, approvalStatusList);
     }
 
     private GatewayResponse<CandidateResponse> getGatewayResponse()
