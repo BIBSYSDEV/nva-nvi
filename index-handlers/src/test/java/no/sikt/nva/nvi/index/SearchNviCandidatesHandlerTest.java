@@ -9,8 +9,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -20,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -33,6 +36,8 @@ import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
+import nva.commons.core.Environment;
+import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch._types.ShardStatistics;
@@ -50,6 +55,16 @@ import org.zalando.problem.Problem;
 @Testcontainers
 public class SearchNviCandidatesHandlerTest {
 
+    private static final Environment ENVIRONMENT = new Environment();
+    private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
+    private static final String CUSTOM_DOMAIN_BASE_PATH = ENVIRONMENT.readEnv(
+        "CUSTOM_DOMAIN_BASE_PATH");
+    private static final String QUERY_PARAM_QUERY = "query";
+    private static final String QUERY_PARAM_OFFSET = "offset";
+    private static final String QUERY_PARAM_SIZE = "size";
+    private static final String DEFAULT_SEARCH_TERM = "*";
+    private static final int DEFAULT_QUERY_SIZE = 10;
+    private static final int DEFAULT_OFFSET_SIZE = 0;
     private static final TypeReference<PaginatedSearchResult<NviCandidateIndexDocument>> TYPE_REF =
         new TypeReference<>() {};
     private static SearchClient<NviCandidateIndexDocument> openSearchClient;
@@ -89,6 +104,18 @@ public class SearchNviCandidatesHandlerTest {
             objectMapper.readValue(response.getBody(), TYPE_REF);
 
         assertThat(paginatedResult.getHits(), hasSize(1));
+    }
+
+    @Test
+    void shouldReturnPaginatedSearchResultWithId() throws IOException {
+        when(openSearchClient.search(any(), any(), any(), any(), eq(DEFAULT_OFFSET_SIZE), eq(DEFAULT_QUERY_SIZE)))
+            .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
+        handler.handleRequest(request("*"), output, context);
+        var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
+
+        var expectedId = constructExpectedUri(DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE, DEFAULT_SEARCH_TERM);
+        assertEquals(expectedId, paginatedSearchResult.getId());
     }
 
     @Test
@@ -138,6 +165,15 @@ public class SearchNviCandidatesHandlerTest {
                    .build();
     }
 
+    private static URI constructExpectedUri(int offsetSize, int size, String searchTerm) {
+        return UriWrapper.fromHost(API_HOST)
+                   .addChild(CUSTOM_DOMAIN_BASE_PATH)
+                   .addQueryParameter(QUERY_PARAM_QUERY, searchTerm)
+                   .addQueryParameter(QUERY_PARAM_OFFSET, String.valueOf(offsetSize))
+                   .addQueryParameter(QUERY_PARAM_SIZE, String.valueOf(size))
+                   .getUri();
+    }
+
     private static HitsMetadata<NviCandidateIndexDocument> constructHitsMetadata(
         List<NviCandidateIndexDocument> document) {
         return new HitsMetadata.Builder<NviCandidateIndexDocument>()
@@ -173,8 +209,8 @@ public class SearchNviCandidatesHandlerTest {
                    .withTopLevelCristinOrgId(randomUri())
                    .withUserName(randomString())
                    .withQueryParameters(Map.of("query", searchTerm,
-                                               "offset", randomInteger().toString(),
-                                               "size", randomInteger().toString()))
+                                               "offset", String.valueOf(DEFAULT_OFFSET_SIZE),
+                                               "size", String.valueOf(DEFAULT_QUERY_SIZE)))
                    .build();
     }
 }

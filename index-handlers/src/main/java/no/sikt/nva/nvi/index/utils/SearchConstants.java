@@ -22,13 +22,13 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
 public final class SearchConstants {
 
     public static final String PENDING_AGG  = "pending";
-    public static final String PENDING_COLLABORATION_AGG = "pending_collaboration";
+    public static final String PENDING_COLLABORATION_AGG = "pendingCollaboration";
     public static final String ASSIGNED_AGG = "assigned";
-    public static final String ASSIGNED_COLLABORATION_AGG = "assigned_collaboration";
+    public static final String ASSIGNED_COLLABORATION_AGG = "assignedCollaboration";
     public static final String APPROVED_AGG = "approved";
-    public static final String APPROVED_COLLABORATION_AGG = "approved_collaboration";
+    public static final String APPROVED_COLLABORATION_AGG = "approvedCollaboration";
     public static final String REJECTED_AGG = "rejected";
-    public static final String REJECTED_COLLABORATION_AGG = "rejected_collaboration";
+    public static final String REJECTED_COLLABORATION_AGG = "rejectedCollaboration";
     public static final String ASSIGNMENTS_AGG = "assignments";
     public static final String ID = "id";
     public static final String ASSIGNEE = "assignee";
