@@ -5,7 +5,6 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import jakarta.json.stream.JsonGenerator;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
