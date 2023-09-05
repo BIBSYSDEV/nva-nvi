@@ -119,7 +119,7 @@ public class SearchNviCandidatesHandler
         var writer = new StringWriter();
         var mapper = new JsonbJsonpMapper();
 
-        try (JsonGenerator generator = mapper.jsonProvider().createGenerator(writer)) {
+        try (var generator = mapper.jsonProvider().createGenerator(writer)) {
             mapper.serialize(searchResponse, generator);
         }
 
@@ -141,7 +141,7 @@ public class SearchNviCandidatesHandler
             var nodeEntry = iterator.next();
             var fieldName = nodeEntry.getKey();
 
-            Optional<String> newName = Optional.ofNullable(AGGREGATION_FIELDS_TO_CHANGE.get(fieldName));
+            var newName = Optional.ofNullable(AGGREGATION_FIELDS_TO_CHANGE.get(fieldName));
             if (newName.isEmpty()) {
                 newName = Optional.of(fieldName.replaceFirst(WORD_ENDING_WITH_HASHTAG_REGEX, ""));
             }

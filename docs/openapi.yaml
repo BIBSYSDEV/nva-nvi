@@ -214,8 +214,7 @@ components:
         '@context':
           $ref: '#/components/schemas/Context'
         id:
-          type: string
-          description: The url to the candidate search result
+          $ref: '#/components/schemas/Id'
         totalHits:
           type: integer
         nextResults:
