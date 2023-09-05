@@ -18,6 +18,7 @@ import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.model.business.Creator;
+import no.sikt.nva.nvi.common.model.business.InstitutionPoints;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.business.NviPeriod;
 import no.sikt.nva.nvi.common.model.business.PublicationDate;
@@ -119,10 +120,24 @@ public class NviService {
     private static List<ApprovalStatus> generatePendingApprovalStatuses(Set<URI> institutionUris) {
         return institutionUris.stream()
                    .map(uri -> ApprovalStatus.builder()
-                                   .withStatus(Status.PENDING)
-                                   .withInstitutionId(uri)
-                                   .build())
+                                          .withStatus(Status.PENDING)
+                                          .withInstitutionId(uri)
+                                          .build())
                    .toList();
+    }
+
+    @JacocoGenerated
+    @SuppressWarnings("PMD.UnusedPrivateMethod")
+    private boolean exists(UUID uuid) {
+        return nviCandidateRepository.findById(uuid).isPresent();
+    }
+
+    public Optional<CandidateWithIdentifier> findById(UUID uuid) {
+        return nviCandidateRepository.findById(uuid);
+    }
+
+    public Optional<CandidateWithIdentifier> findByPublicationId(URI publicationId) {
+        return nviCandidateRepository.findByPublicationId(publicationId);
     }
 
     private static Candidate toPendingCandidate(CandidateEvaluatedMessage candidateEvaluatedMessage,
@@ -136,9 +151,14 @@ public class NviService {
                    .withInstanceType(candidateEvaluatedMessage.candidateDetails().instanceType())
                    .withPublicationDate(mapToPublicationDate(candidateEvaluatedMessage.candidateDetails()
                                                                  .publicationDate()))
-                   .withPoints(institutionPoints)
+                   .withPoints(mapToInstitutionPoints(institutionPoints))
                    .withApprovalStatuses(generatePendingApprovalStatuses(institutionPoints.keySet()))
                    .build();
+    }
+
+    private static List<InstitutionPoints> mapToInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
+        return institutionPoints.entrySet().stream()
+                   .map(entry -> new InstitutionPoints(entry.getKey(), entry.getValue())).toList();
     }
 
     @JacocoGenerated // bug in jacoco report that is unable to exhaust the switch. Should be fixed in version 0.8.11

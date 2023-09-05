@@ -12,12 +12,12 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.model.business.Creator;
+import no.sikt.nva.nvi.common.model.business.InstitutionPoints;
 import no.sikt.nva.nvi.common.model.business.Level;
 import no.sikt.nva.nvi.common.model.business.Note;
 import no.sikt.nva.nvi.common.model.business.NviPeriod;
@@ -83,7 +83,7 @@ public final class TestUtils {
                    .withPublicationBucketUri(randomUri())
                    .withIsApplicable(randomBoolean())
                    .withInstanceType(randomString())
-                   .withPoints(Map.of(randomUri(), randomBigDecimal()))
+                   .withPoints(List.of(new InstitutionPoints(randomUri(), randomBigDecimal())))
                    .withLevel(randomElement(Level.values()))
                    .withPublicationDate(new PublicationDate(randomString(), randomString(), randomString()))
                    .withIsInternationalCollaboration(randomBoolean())

@@ -213,7 +213,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         }
 
         @Override
-        public SearchResponse<NviCandidateIndexDocument> search(Query query, String username, URI customer) {
+        public SearchResponse<NviCandidateIndexDocument> search(Query query, int offset, int size, String username,
+                                                                URI customer) {
             return null;
         }
 

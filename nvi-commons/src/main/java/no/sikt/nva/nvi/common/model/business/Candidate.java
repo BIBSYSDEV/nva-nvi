@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.common.model.business;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +17,7 @@ public record Candidate(URI publicationId,
                         boolean isInternationalCollaboration,
                         int creatorCount,
                         List<Creator> creators,
-                        Map<URI, BigDecimal> points,
+                        List<InstitutionPoints> points,
                         List<ApprovalStatus> approvalStatuses,
                         List<Note> notes) implements DynamoDbModel<Candidate> {
 
@@ -56,7 +55,7 @@ public record Candidate(URI publicationId,
         private boolean isInternationalCollaboration;
         private int creatorCount;
         private List<Creator> creators;
-        private Map<URI, BigDecimal> points;
+        private List<InstitutionPoints> points;
         private List<ApprovalStatus> approvalStatuses;
         private List<Note> notes;
 
@@ -108,7 +107,7 @@ public record Candidate(URI publicationId,
             return this;
         }
 
-        public Builder withPoints(Map<URI, BigDecimal> points) {
+        public Builder withPoints(List<InstitutionPoints> points) {
             this.points = points;
             return this;
         }

@@ -93,8 +93,16 @@ class FetchNviCandidateHandlerTest {
         return new CandidateResponse(candidateWithIdentifier.identifier(),
                                           candidate.publicationId(),
                                           getApprovalStatuses(candidate),
-                                          candidate.points(),
+                                          mapToInstitutionPoints(candidate),
                                           getNotes(candidate));
+    }
+
+    private static List<InstitutionPoints> mapToInstitutionPoints(Candidate candidate) {
+        return candidate.points()
+                   .stream()
+                   .map(institutionPoint -> new InstitutionPoints(
+                       institutionPoint.institutionId(), institutionPoint.points()))
+                   .toList();
     }
 
     private static List<Note> getNotes(Candidate candidate) {
