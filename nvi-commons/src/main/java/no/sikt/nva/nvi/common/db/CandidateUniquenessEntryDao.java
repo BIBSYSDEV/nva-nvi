@@ -9,15 +9,15 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmut
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-@DynamoDbImmutable(builder = CandidateUniquenessEntry.Builder.class)
-public record CandidateUniquenessEntry(
+@DynamoDbImmutable(builder = CandidateUniquenessEntryDao.Builder.class)
+public record CandidateUniquenessEntryDao(
     String partitionKey,
     String sortKey
 ) implements DynamoEntryWithRangeKey {
 
     public static final String TYPE = "CandidateUniquenessEntry";
 
-    public CandidateUniquenessEntry(String identifier) {
+    public CandidateUniquenessEntryDao(String identifier) {
         this(pk(identifier), pk(identifier));
     }
 
@@ -65,16 +65,19 @@ public record CandidateUniquenessEntry(
 
         @JacocoGenerated
         public Builder primaryKeyHashKey(String noop) {
+            // Used by @DynamoDbImmutable for building the object
             return this;
         }
 
         @JacocoGenerated
         public Builder primaryKeyRangeKey(String noop) {
+            // Used by @DynamoDbImmutable for building the object
             return this;
         }
 
         @JacocoGenerated
         public Builder type(String noop) {
+            // Used by @DynamoDbImmutable for building the object
             return this;
         }
 
@@ -88,8 +91,8 @@ public record CandidateUniquenessEntry(
             return this;
         }
 
-        public CandidateUniquenessEntry build() {
-            return new CandidateUniquenessEntry(partitionKey, sortKey);
+        public CandidateUniquenessEntryDao build() {
+            return new CandidateUniquenessEntryDao(partitionKey, sortKey);
         }
     }
 }

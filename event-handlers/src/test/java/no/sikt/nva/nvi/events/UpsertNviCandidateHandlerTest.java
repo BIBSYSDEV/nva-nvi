@@ -47,7 +47,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     NviCandidateRepository nviCandidateRepository;
     private UpsertNviCandidateHandler handler;
 
-    public static DbPublicationDate toPublicationDate(CandidateDetails.PublicationDate publicationDate) {
+    private static DbPublicationDate toPublicationDate(CandidateDetails.PublicationDate publicationDate) {
         return new DbPublicationDate(publicationDate.year(),
                                      publicationDate.month(),
                                      publicationDate.day());

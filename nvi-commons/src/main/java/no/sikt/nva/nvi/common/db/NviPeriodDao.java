@@ -61,14 +61,17 @@ public record NviPeriodDao(
         }
 
         public Builder type(String noop) {
+            // Used by @DynamoDbImmutable for building the object
             return this;
         }
 
         public Builder primaryKeyHashKey(String noop) {
+            // Used by @DynamoDbImmutable for building the object
             return this;
         }
 
         public Builder primaryKeyRangeKey(String noop) {
+            // Used by @DynamoDbImmutable for building the object
             return this;
         }
 

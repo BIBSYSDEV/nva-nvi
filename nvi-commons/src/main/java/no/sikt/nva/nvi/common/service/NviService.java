@@ -36,19 +36,11 @@ public class NviService {
     }
 
     @JacocoGenerated //TODO Temporary for coverage
-    public Optional<Candidate> upsertCandidate(DbCandidate candidate) {
-        if (!isExistingAndApplicableCandidate(candidate.publicationId()) && candidate.applicable()) {
-            return Optional.of(
-                createCandidate(candidate,
-                                generatePendingApprovalStatuses(candidate.points())
-                ));
-        } else if (isExistingAndApplicableCandidate(candidate.publicationId()) && candidate.applicable()) {
-            var existing = findByPublicationId(candidate.publicationId()).orElseThrow();
-            //TODO: Reset NVI Candidates here. See https://unit.atlassian.net/browse/NP-45113;
-            return Optional.of(updateCandidate(existing.identifier(),
-                                               candidate,
-                                               generatePendingApprovalStatuses(
-                                                   candidate.points())));
+    public Optional<Candidate> upsertCandidate(DbCandidate dbCandidate) {
+        if (isNewCandidate(dbCandidate)) {
+            return createCandidate(dbCandidate);
+        } else if (isExistingCandidate(dbCandidate)) {
+            return updateCandidate(dbCandidate);
         }
         return Optional.empty();
     }
@@ -69,14 +61,11 @@ public class NviService {
     }
 
     public Candidate updateApprovalStatus(UUID identifier, DbApprovalStatus newStatus) {
-        Optional<DbApprovalStatus> approvalByIdAndInstitutionId =
-            nviCandidateRepository.findApprovalByIdAndInstitutionId(
-                identifier, newStatus.institutionId());
-        nviCandidateRepository.updateApprovalStatus(
-            identifier,
-            approvalByIdAndInstitutionId
+        var approvalByIdAndInstitutionId =
+            nviCandidateRepository.findApprovalByIdAndInstitutionId(identifier, newStatus.institutionId())
                 .map(oldStatus -> toUpdatedApprovalStatus(oldStatus, newStatus))
-                .orElseThrow());
+                .orElseThrow();
+        nviCandidateRepository.updateApprovalStatus(identifier, approvalByIdAndInstitutionId);
         return nviCandidateRepository.getById(identifier);
     }
 
@@ -98,8 +87,9 @@ public class NviService {
         return period.publishingYear().length() != 4;
     }
 
-    private static List<DbApprovalStatus> generatePendingApprovalStatuses(List<DbInstitutionPoints> institutionUris) {
-        return institutionUris.stream()
+    private static List<DbApprovalStatus> generatePendingApprovalStatuses(
+        List<DbInstitutionPoints> institutionPointsList) {
+        return institutionPointsList.stream()
                    .map(institutionPoints -> DbApprovalStatus.builder()
                                                  .status(DbStatus.PENDING)
                                                  .institutionId(institutionPoints.institutionId())
@@ -124,6 +114,27 @@ public class NviService {
                    .build();
     }
 
+    private Optional<Candidate> updateCandidate(DbCandidate dbCandidate) {
+        var existingCandidate = findByPublicationId(dbCandidate.publicationId()).orElseThrow();
+        //TODO: Reset NVI Candidates here. See https://unit.atlassian.net/browse/NP-45113;
+        return Optional.of(updateCandidate(existingCandidate.identifier(),
+                                           dbCandidate,
+                                           generatePendingApprovalStatuses(
+                                               dbCandidate.points())));
+    }
+
+    private boolean isExistingCandidate(DbCandidate dbCandidate) {
+        return isExistingCandidate(dbCandidate.publicationId()) && dbCandidate.applicable();
+    }
+
+    private boolean isNewCandidate(DbCandidate dbCandidate) {
+        return !isExistingCandidate(dbCandidate.publicationId()) && dbCandidate.applicable();
+    }
+
+    private Optional<Candidate> createCandidate(DbCandidate candidate) {
+        return Optional.of(createCandidate(candidate, generatePendingApprovalStatuses(candidate.points())));
+    }
+
     @JacocoGenerated // bug in jacoco report that is unable to exhaust the switch. Should be fixed in version 0.8.11
     private DbApprovalStatus toUpdatedApprovalStatus(DbApprovalStatus oldApprovalStatus,
                                                      DbApprovalStatus newApprovalStatus) {
@@ -133,8 +144,8 @@ public class NviService {
         };
     }
 
-    private Candidate createCandidate(DbCandidate pendingCandidate1, List<DbApprovalStatus> approvalStatuses) {
-        return nviCandidateRepository.create(pendingCandidate1, approvalStatuses);
+    private Candidate createCandidate(DbCandidate candidate, List<DbApprovalStatus> approvalStatuses) {
+        return nviCandidateRepository.create(candidate, approvalStatuses);
     }
 
     private Candidate updateCandidate(UUID identifier, DbCandidate candidate, List<DbApprovalStatus> approvalStatuses) {
@@ -150,7 +161,7 @@ public class NviService {
         }
     }
 
-    private boolean isExistingAndApplicableCandidate(URI publicationId) {
+    private boolean isExistingCandidate(URI publicationId) {
         return nviCandidateRepository.findByPublicationId(publicationId).isPresent();
     }
 }

@@ -8,59 +8,8 @@ x-amazon-apigateway-request-validators:
     validateRequestBody: true
     validateRequestParameters: false
 paths:
-  /candidate:
-    get:
-      tags:
-        - Candidate
-      description: 'Search for scientific index candidates'
-      parameters:
-        - in: query
-          name: query
-          description: 'Term to search for in candidates'
-          required: false
-          schema:
-            type: string
-        - in: query
-          name: offset
-          schema:
-            type: integer
-            default: 0
-          description: The offset of the search for use in pagination. Must be divisible by the size.
-        - in: query
-          name: size
-          schema:
-            type: integer
-            default: 10
-          description: The size of each page of the search for use in pagination. Default is 10.
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
-      x-amazon-apigateway-integration:
-        uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchNviCandidatesHandler.Arn}:live/invocations
-        responses: { }
-        httpMethod: POST
-        type: AWS_PROXY
-      responses:
-        '200':
-          description: "OK"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CandidateSearchResponse"
-        '500':
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
   /period:
     post:
-      tags:
-        - Period
       requestBody:
         required: true
         content:
@@ -107,8 +56,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
     put:
-      tags:
-        - Period
       requestBody:
         required: true
         content:
@@ -160,10 +107,55 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /candidate:
+    get:
+      description: 'Search for scientific index candidates'
+      parameters:
+        - in: query
+          name: query
+          description: 'Term to search for in candidates'
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: The offset of the search for use in pagination. Must be divisible by the size.
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 10
+          description: The size of each page of the search for use in pagination. Default is 10.
+      security:
+        - CognitoUserPool: [
+          'https://api.nva.unit.no/scopes/backend',
+          'https://api.nva.unit.no/scopes/frontend',
+          'aws.cognito.signin.user.admin',
+        ]
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchNviCandidatesHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateSearchResponse"
+        '500':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}:
     get:
-      tags:
-        - Candidate
       description: 'Get scientific index candidate'
       parameters:
         - in: path
@@ -205,8 +197,6 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}/status:
     put:
-      tags:
-        - Candidate
       parameters:
         - in: path
           name: candidateIdentifier
@@ -355,7 +345,7 @@ components:
           $ref: '#/components/schemas/Id'
         status:
           type: string
-          enum: ['Approved','Pending','Rejected']
+          enum: [ 'Approved','Pending','Rejected' ]
         finalizedBy:
           $ref: '#/components/schemas/Username'
         finalizedDate:
@@ -422,7 +412,7 @@ components:
           $ref: '#/components/schemas/Id'
         status:
           type: string
-          enum: ['Approved','Pending','Rejected']
+          enum: [ 'Approved','Pending','Rejected' ]
   securitySchemes:
     CognitoUserPool:
       type: apiKey

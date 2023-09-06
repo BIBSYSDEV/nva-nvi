@@ -24,14 +24,14 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 public class NviCandidateRepository extends DynamoRepository {
 
     private final DynamoDbTable<CandidateDao> candidateTable;
-    private final DynamoDbTable<CandidateUniquenessEntry> uniquenessTable;
+    private final DynamoDbTable<CandidateUniquenessEntryDao> uniquenessTable;
     private final DynamoDbIndex<CandidateDao> publicationIdIndex;
     private final DynamoDbTable<ApprovalStatusDao> approvalStatusTable;
 
     public NviCandidateRepository(DynamoDbClient client) {
         super(client);
         this.candidateTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(CandidateDao.class));
-        this.uniquenessTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(CandidateUniquenessEntry.class));
+        this.uniquenessTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(CandidateUniquenessEntryDao.class));
         this.publicationIdIndex = this.candidateTable.index(SECONDARY_INDEX_PUBLICATION_ID);
         this.approvalStatusTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(ApprovalStatusDao.class));
     }
@@ -39,7 +39,7 @@ public class NviCandidateRepository extends DynamoRepository {
     public Candidate create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
         var identifier = UUID.randomUUID();
         var candidate = new CandidateDao(identifier, dbCandidate);
-        var uniqueness = new CandidateUniquenessEntry(dbCandidate.publicationId().toString());
+        var uniqueness = new CandidateUniquenessEntryDao(dbCandidate.publicationId().toString());
         var transactionBuilder = buildTransaction(approvalStatuses, candidate, identifier, uniqueness);
 
         this.client.transactWriteItems(transactionBuilder.build());
@@ -143,7 +143,7 @@ public class NviCandidateRepository extends DynamoRepository {
     }
 
     private Builder buildTransaction(List<DbApprovalStatus> approvalStatuses, CandidateDao candidate, UUID identifier,
-                                     CandidateUniquenessEntry uniqueness) {
+                                     CandidateUniquenessEntryDao uniqueness) {
         var transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
 
         transactionBuilder.addPutItem(this.candidateTable, insertTransaction(candidate, CandidateDao.class));
@@ -154,7 +154,7 @@ public class NviCandidateRepository extends DynamoRepository {
             .forEach(as -> transactionBuilder.addPutItem(this.approvalStatusTable,
                                                          insertTransaction(as, ApprovalStatusDao.class)));
         transactionBuilder.addPutItem(this.uniquenessTable,
-                                      insertTransaction(uniqueness, CandidateUniquenessEntry.class));
+                                      insertTransaction(uniqueness, CandidateUniquenessEntryDao.class));
         return transactionBuilder;
     }
 }
