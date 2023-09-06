@@ -36,13 +36,13 @@ public class NviService {
     }
 
     @JacocoGenerated //TODO Temporary for coverage
-    public Optional<Candidate> upsertCandidate(boolean isNviCandidate, DbCandidate candidate) {
-        if (!isExistingCandidate(candidate.publicationId()) && isNviCandidate) {
+    public Optional<Candidate> upsertCandidate(DbCandidate candidate) {
+        if (!isExistingCandidate(candidate.publicationId()) && candidate.applicable()) {
             return Optional.of(
                 createCandidate(candidate,
                                 generatePendingApprovalStatuses(candidate.points())
                 ));
-        } else if (isExistingCandidate(candidate.publicationId()) && isNviCandidate) {
+        } else if (isExistingCandidate(candidate.publicationId()) && candidate.applicable()) {
             var existing = findByPublicationId(candidate.publicationId()).orElseThrow();
             //TODO: Reset NVI Candidates here. See https://unit.atlassian.net/browse/NP-45113;
             return Optional.of(updateCandidate(existing.identifier(),

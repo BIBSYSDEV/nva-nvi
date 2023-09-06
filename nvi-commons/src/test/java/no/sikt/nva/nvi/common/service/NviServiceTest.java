@@ -61,9 +61,9 @@ public class NviServiceTest extends LocalDynamoTest {
         var publicationDate = randomPublicationDate();
         var institutionPoints = Map.of(institutionId, randomBigDecimal());
         var candidate = createExpectedCandidate(identifier, verifiedCreators, instanceType,
-                                                randomLevel, publicationDate, institutionPoints);
+                                                randomLevel, publicationDate, institutionPoints, true);
 
-        var createdCandidate = nviService.upsertCandidate(true, candidate).get();
+        var createdCandidate = nviService.upsertCandidate(candidate).get();
         var createdCandidateId = createdCandidate.identifier();
 
         var fetchedCandidate = nviService.findById(createdCandidateId).get().candidate();
@@ -83,15 +83,15 @@ public class NviServiceTest extends LocalDynamoTest {
 
         var expectedCandidate = createExpectedCandidate(bucketIdentifier, verifiedCreators, instanceType,
                                                         randomLevel, publicationDate,
-                                                        institutionPoints);
+                                                        institutionPoints, true);
 
         var newInstanceType = randomString();
         var updatedCandidate = createExpectedCandidate(bucketIdentifier, verifiedCreators, newInstanceType,
                                                        randomLevel, publicationDate,
-                                                       institutionPoints);
+                                                       institutionPoints, true);
 
-        var originalUpserted = nviService.upsertCandidate(true, expectedCandidate).get();
-        var updatedUpserted = nviService.upsertCandidate(true, updatedCandidate).get();
+        var originalUpserted = nviService.upsertCandidate(expectedCandidate).get();
+        var updatedUpserted = nviService.upsertCandidate(updatedCandidate).get();
         assertThat(updatedUpserted, is(not(equalTo(originalUpserted))));
 
         var createdCandidateId = originalUpserted.identifier();
@@ -112,8 +112,8 @@ public class NviServiceTest extends LocalDynamoTest {
         var institutionPoints = Map.of(institutionId, randomBigDecimal());
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType,
                                                         randomLevel, publicationDate,
-                                                        institutionPoints);
-        nviService.upsertCandidate(true, expectedCandidate).get().identifier();
+                                                        institutionPoints, true);
+        nviService.upsertCandidate(expectedCandidate).get().identifier();
 
         var fetchedCandidate = nviService.findByPublicationId(generatePublicationId(identifier)).get().candidate();
 
@@ -131,8 +131,8 @@ public class NviServiceTest extends LocalDynamoTest {
         var institutionPoints = Map.of(institutionId, randomBigDecimal());
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType,
                                                         randomLevel, publicationDate,
-                                                        institutionPoints);
-        nviService.upsertCandidate(true, expectedCandidate).get().identifier();
+                                                        institutionPoints, true);
+        nviService.upsertCandidate(expectedCandidate).get().identifier();
 
         var items = scanDB().items().size();
 
@@ -150,9 +150,9 @@ public class NviServiceTest extends LocalDynamoTest {
         var institutionPoints = Map.of(institutionId, randomBigDecimal());
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType,
                                                         randomLevel, publicationDate,
-                                                        institutionPoints);
+                                                        institutionPoints, true);
 
-        nviService.upsertCandidate(true, expectedCandidate);
+        nviService.upsertCandidate(expectedCandidate);
 
         var fetchedCandidate = nviCandidateRepository.findByPublicationId(generatePublicationId(identifier)).map(
             Candidate::candidate);
@@ -171,9 +171,9 @@ public class NviServiceTest extends LocalDynamoTest {
         var institutionPoints = Map.of(institutionId, randomBigDecimal());
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType,
                                                         randomLevel, publicationDate,
-                                                        institutionPoints);
+                                                        institutionPoints, false);
 
-        Optional<Candidate> candidate = nviService.upsertCandidate(false, expectedCandidate);
+        Optional<Candidate> candidate = nviService.upsertCandidate(expectedCandidate);
 
         assertThat(candidate, is(Optional.empty()));
     }
@@ -188,9 +188,9 @@ public class NviServiceTest extends LocalDynamoTest {
         var publicationDate = new DbPublicationDate(null, null, "2022");
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType,
                                                         randomLevel, publicationDate,
-                                                        Map.of());
+                                                        Map.of(), true);
 
-        assertDoesNotThrow(() -> nviService.upsertCandidate(true, expectedCandidate));
+        assertDoesNotThrow(() -> nviService.upsertCandidate(expectedCandidate));
     }
 
     //TODO: Change test when nviService is implemented
@@ -313,14 +313,14 @@ public class NviServiceTest extends LocalDynamoTest {
     private DbCandidate createExpectedCandidate(UUID identifier, List<DbCreator> creators,
                                                 String instanceType,
                                                 DbLevel level, DbPublicationDate publicationDate,
-                                                Map<URI, BigDecimal> institutionPoints) {
+                                                Map<URI, BigDecimal> institutionPoints, boolean applicable) {
         return DbCandidate.builder()
                    .publicationBucketUri(generateS3BucketUri(identifier))
                    .publicationId(generatePublicationId(identifier))
                    .creators(creators)
                    .instanceType(instanceType)
                    .level(level)
-                   .applicable(true)
+                   .applicable(applicable)
                    .publicationDate(publicationDate)
                    .points(mapToInstitutionPoints(institutionPoints))
                    .build();
