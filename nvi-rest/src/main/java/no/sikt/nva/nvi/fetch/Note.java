@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.fetch;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
-import no.sikt.nva.nvi.common.model.business.DbUsername;
+import no.sikt.nva.nvi.common.db.model.DbUsername;
 import nva.commons.core.JacocoGenerated;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)

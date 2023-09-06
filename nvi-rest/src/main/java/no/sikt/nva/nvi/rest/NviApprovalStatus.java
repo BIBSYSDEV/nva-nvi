@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.rest;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
-import no.sikt.nva.nvi.common.model.business.DbStatus;
+import no.sikt.nva.nvi.common.db.model.DbStatus;
 import nva.commons.core.JacocoGenerated;
 
 @JacocoGenerated

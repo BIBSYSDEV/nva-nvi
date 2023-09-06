@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.model.business;
+package no.sikt.nva.nvi.common.db.model;
 
 import java.math.BigDecimal;
 import java.net.URI;

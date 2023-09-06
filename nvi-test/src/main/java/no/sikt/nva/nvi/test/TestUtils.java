@@ -14,15 +14,15 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.model.business.DbCreator;
-import no.sikt.nva.nvi.common.model.business.DbApprovalStatus;
-import no.sikt.nva.nvi.common.model.business.DbCandidate;
-import no.sikt.nva.nvi.common.model.business.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.model.business.DbLevel;
-import no.sikt.nva.nvi.common.model.business.DbNviPeriod;
-import no.sikt.nva.nvi.common.model.business.DbPublicationDate;
-import no.sikt.nva.nvi.common.model.business.DbStatus;
-import no.sikt.nva.nvi.common.model.business.DbUsername;
+import no.sikt.nva.nvi.common.db.model.DbCreator;
+import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.model.DbCandidate;
+import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.DbLevel;
+import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.model.DbStatus;
+import no.sikt.nva.nvi.common.db.model.DbUsername;
 import nva.commons.core.paths.UriWrapper;
 
 public final class TestUtils {

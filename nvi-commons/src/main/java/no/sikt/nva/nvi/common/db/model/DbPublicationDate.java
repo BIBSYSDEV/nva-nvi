@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.model.business;
+package no.sikt.nva.nvi.common.db.model;
 
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 

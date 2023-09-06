@@ -9,10 +9,10 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.Instant;
-import no.sikt.nva.nvi.common.model.business.DbCompletionStatus;
-import no.sikt.nva.nvi.common.model.business.DbNviPeriod;
-import no.sikt.nva.nvi.common.model.business.DbReportingStatus;
-import no.sikt.nva.nvi.common.model.business.DbUsername;
+import no.sikt.nva.nvi.common.db.model.DbCompletionStatus;
+import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.model.DbReportingStatus;
+import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.Test;
 

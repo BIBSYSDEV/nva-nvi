@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.rest.model;
 
 import java.time.Instant;
-import no.sikt.nva.nvi.common.model.business.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 
 public record NviPeriodDto(String publishingYear,
                            Instant reportingDate) {
