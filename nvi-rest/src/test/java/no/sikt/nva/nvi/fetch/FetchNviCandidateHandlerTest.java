@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.fetch;
 
-import static no.sikt.nva.nvi.fetch.FetchNviCandidateHandler.PARAM_CANDIDATE_IDENTIFIER;
+import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.PARAM_CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -21,6 +21,11 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
 import no.sikt.nva.nvi.common.model.business.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.rest.fetch.ApprovalStatus;
+import no.sikt.nva.nvi.rest.fetch.FetchCandidateResponse;
+import no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler;
+import no.sikt.nva.nvi.rest.fetch.InstitutionPoints;
+import no.sikt.nva.nvi.rest.fetch.Note;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.ContentType;
