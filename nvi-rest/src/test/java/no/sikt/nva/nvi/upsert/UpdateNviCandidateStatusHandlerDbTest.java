@@ -35,9 +35,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-public class UpsertNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
+public class UpdateNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
 
-    private UpsertNviCandidateStatusHandler handler;
+    private UpdateNviCandidateStatusHandler handler;
     private NviService nviService;
     private NviCandidateRepository nviCandidateRepository;
     private DynamoDbClient localDynamo;
@@ -51,7 +51,7 @@ public class UpsertNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
         localDynamo = initializeTestDatabase();
         nviCandidateRepository = new NviCandidateRepository(localDynamo);
         nviService = new NviService(localDynamo);
-        handler = new UpsertNviCandidateStatusHandler(nviService);
+        handler = new UpdateNviCandidateStatusHandler(nviService);
     }
 
     @ParameterizedTest

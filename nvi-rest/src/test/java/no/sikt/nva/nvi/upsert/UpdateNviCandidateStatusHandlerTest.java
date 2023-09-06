@@ -15,7 +15,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.time.Instant;
@@ -31,8 +30,6 @@ import no.sikt.nva.nvi.common.model.business.DbStatus;
 import no.sikt.nva.nvi.common.model.business.DbUsername;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.fetch.ApprovalStatus;
-import no.sikt.nva.nvi.fetch.InstitutionPoints;
-import no.sikt.nva.nvi.fetch.Note;
 import no.sikt.nva.nvi.rest.NviApprovalStatus;
 import no.sikt.nva.nvi.rest.NviStatusRequest;
 import no.unit.nva.commons.json.JsonUtils;
@@ -47,11 +44,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.zalando.problem.Problem;
 
-class UpsertNviCandidateStatusHandlerTest {
+class UpdateNviCandidateStatusHandlerTest {
 
     private Context context;
     private ByteArrayOutputStream output;
-    private UpsertNviCandidateStatusHandler handler;
+    private UpdateNviCandidateStatusHandler handler;
     private NviService nviService;
 
     static Stream<DbStatus> statusEnumSource() {
@@ -63,7 +60,7 @@ class UpsertNviCandidateStatusHandlerTest {
         output = new ByteArrayOutputStream();
         context = mock(Context.class);
         nviService = mock(NviService.class);
-        handler = new UpsertNviCandidateStatusHandler(nviService);
+        handler = new UpdateNviCandidateStatusHandler(nviService);
     }
 
     @Test

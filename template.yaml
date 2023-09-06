@@ -286,7 +286,6 @@ Resources:
             BatchSize: 10
             Enabled: true
 
-
   UpsertNviCandidateHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -398,8 +397,28 @@ Resources:
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
+  UpsertNviCandidateStatusHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.upsert.UpdateNviCandidateStatusHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+          API_HOST: !Ref ApiDomain
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /candidate/{candidateIdentifier}/status
+            Method: put
+            RestApiId: !Ref ScientificIndexApi
 
-#============================= Database =========================================================
+  #============================= Database =========================================================
   NvaNviTable:
     Type: AWS::DynamoDB::Table
     UpdateReplacePolicy: Retain

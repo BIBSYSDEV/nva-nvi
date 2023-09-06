@@ -23,16 +23,16 @@ import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.JacocoGenerated;
 
-public class UpsertNviCandidateStatusHandler extends ApiGatewayHandler<NviStatusRequest, CandidateResponse> {
+public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatusRequest, CandidateResponse> {
 
     private final NviService nviService;
 
     @JacocoGenerated
-    public UpsertNviCandidateStatusHandler() {
+    public UpdateNviCandidateStatusHandler() {
         this(new NviService(defaultDynamoClient()));
     }
 
-    public UpsertNviCandidateStatusHandler(NviService service) {
+    public UpdateNviCandidateStatusHandler(NviService service) {
         super(NviStatusRequest.class);
         this.nviService = service;
     }
