@@ -305,7 +305,7 @@ Resources:
   CreateNviPeriodHandler:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: index-handlers
+      CodeUri: nvi-rest
       Handler: no.sikt.nva.nvi.rest.CreateNviPeriodHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
@@ -326,7 +326,7 @@ Resources:
   UpdateNviPeriodHandler:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: index-handlers
+      CodeUri: nvi-rest
       Handler: no.sikt.nva.nvi.rest.UpdateNviPeriodHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
