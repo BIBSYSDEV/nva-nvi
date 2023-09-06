@@ -57,8 +57,8 @@ public record CandidateUniquenessEntryDao(
     @JacocoGenerated
     public static final class Builder {
 
-        private String partitionKey;
-        private String sortKey;
+        private String builderPartitionKey;
+        private String builderSortKey;
 
         private Builder() {
         }
@@ -82,17 +82,17 @@ public record CandidateUniquenessEntryDao(
         }
 
         public Builder partitionKey(String partitionKey) {
-            this.partitionKey = partitionKey;
+            this.builderPartitionKey = partitionKey;
             return this;
         }
 
         public Builder sortKey(String sortKey) {
-            this.sortKey = sortKey;
+            this.builderSortKey = sortKey;
             return this;
         }
 
         public CandidateUniquenessEntryDao build() {
-            return new CandidateUniquenessEntryDao(partitionKey, sortKey);
+            return new CandidateUniquenessEntryDao(builderPartitionKey, builderSortKey);
         }
     }
 }

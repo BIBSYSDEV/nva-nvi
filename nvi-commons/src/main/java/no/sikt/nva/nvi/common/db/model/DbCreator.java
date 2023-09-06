@@ -13,24 +13,24 @@ public record DbCreator(URI creatorId, List<URI> affiliations) {
 
     public static final class Builder {
 
-        private URI creatorId;
-        private List<URI> affiliations;
+        private URI builderCreatorId;
+        private List<URI> builderAffiliations;
 
         private Builder() {
         }
 
         public Builder creatorId(URI creatorId) {
-            this.creatorId = creatorId;
+            this.builderCreatorId = creatorId;
             return this;
         }
 
         public Builder affiliations(List<URI> affiliations) {
-            this.affiliations = affiliations;
+            this.builderAffiliations = affiliations;
             return this;
         }
 
         public DbCreator build() {
-            return new DbCreator(creatorId, affiliations);
+            return new DbCreator(builderCreatorId, builderAffiliations);
         }
     }
 }

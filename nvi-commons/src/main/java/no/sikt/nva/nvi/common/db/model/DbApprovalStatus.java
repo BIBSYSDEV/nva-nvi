@@ -26,36 +26,36 @@ public record DbApprovalStatus(URI institutionId,
 
     public static final class Builder {
 
-        private URI institutionId;
-        private DbStatus status;
-        private DbUsername finalizedBy;
-        private Instant finalizedDate;
+        private URI builderInstitutionId;
+        private DbStatus builderStatus;
+        private DbUsername builderFinalizedBy;
+        private Instant builderFinalizedDate;
 
         private Builder() {
         }
 
         public Builder institutionId(URI institutionId) {
-            this.institutionId = institutionId;
+            this.builderInstitutionId = institutionId;
             return this;
         }
 
         public Builder status(DbStatus status) {
-            this.status = status;
+            this.builderStatus = status;
             return this;
         }
 
         public Builder finalizedBy(DbUsername finalizedBy) {
-            this.finalizedBy = finalizedBy;
+            this.builderFinalizedBy = finalizedBy;
             return this;
         }
 
         public Builder finalizedDate(Instant finalizedDate) {
-            this.finalizedDate = finalizedDate;
+            this.builderFinalizedDate = finalizedDate;
             return this;
         }
 
         public DbApprovalStatus build() {
-            return new DbApprovalStatus(institutionId, status, finalizedBy, finalizedDate);
+            return new DbApprovalStatus(builderInstitutionId, builderStatus, builderFinalizedBy, builderFinalizedDate);
         }
     }
 }

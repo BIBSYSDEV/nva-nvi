@@ -16,36 +16,36 @@ public record DbReportingStatus(URI institutionId,
 
     public static final class Builder {
 
-        private URI institutionId;
-        private DbNviPeriod nviPeriod;
-        private DbCompletionStatus status;
-        private Instant updatedDate;
+        private URI builderInstitutionId;
+        private DbNviPeriod builderNviPeriod;
+        private DbCompletionStatus builderStatus;
+        private Instant builderUpdatedDate;
 
         private Builder() {
         }
 
         public Builder institutionId(URI institutionId) {
-            this.institutionId = institutionId;
+            this.builderInstitutionId = institutionId;
             return this;
         }
 
         public Builder nviPeriod(DbNviPeriod nviPeriod) {
-            this.nviPeriod = nviPeriod;
+            this.builderNviPeriod = nviPeriod;
             return this;
         }
 
         public Builder status(DbCompletionStatus status) {
-            this.status = status;
+            this.builderStatus = status;
             return this;
         }
 
         public Builder updatedDate(Instant updatedDate) {
-            this.updatedDate = updatedDate;
+            this.builderUpdatedDate = updatedDate;
             return this;
         }
 
         public DbReportingStatus build() {
-            return new DbReportingStatus(institutionId, nviPeriod, status, updatedDate);
+            return new DbReportingStatus(builderInstitutionId, builderNviPeriod, builderStatus, builderUpdatedDate);
         }
     }
 }

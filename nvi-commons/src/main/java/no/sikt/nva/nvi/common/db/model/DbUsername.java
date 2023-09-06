@@ -11,18 +11,18 @@ public record DbUsername(String value) {
 
     public static final class Builder {
 
-        private String value;
+        private String builderValue;
 
         private Builder() {
         }
 
         public Builder value(String value) {
-            this.value = value;
+            this.builderValue = value;
             return this;
         }
 
         public DbUsername build() {
-            return new DbUsername(value);
+            return new DbUsername(builderValue);
         }
     }
 }

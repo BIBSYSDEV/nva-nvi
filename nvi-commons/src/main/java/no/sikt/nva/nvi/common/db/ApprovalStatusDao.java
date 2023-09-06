@@ -51,14 +51,14 @@ public record ApprovalStatusDao(
 
     public static final class Builder {
 
-        private UUID identifier;
-        private DbApprovalStatus approvalStatus;
+        private UUID builderIdentifier;
+        private DbApprovalStatus builderApprovalStatus;
 
         private Builder() {
         }
 
         public Builder identifier(UUID identifier) {
-            this.identifier = identifier;
+            this.builderIdentifier = identifier;
             return this;
         }
 
@@ -78,12 +78,12 @@ public record ApprovalStatusDao(
         }
 
         public Builder approvalStatus(DbApprovalStatus approvalStatus) {
-            this.approvalStatus = approvalStatus;
+            this.builderApprovalStatus = approvalStatus;
             return this;
         }
 
         public ApprovalStatusDao build() {
-            return new ApprovalStatusDao(this.identifier, this.approvalStatus);
+            return new ApprovalStatusDao(this.builderIdentifier, this.builderApprovalStatus);
         }
     }
 }

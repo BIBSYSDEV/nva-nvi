@@ -41,73 +41,75 @@ public record DbCandidate(
 
     public static final class Builder {
 
-        private URI publicationId;
-        private URI publicationBucketUri;
-        private boolean applicable;
-        private String instanceType;
-        private DbLevel level;
-        private DbPublicationDate publicationDate;
-        private boolean internationalCollaboration;
-        private int creatorCount;
-        private List<DbCreator> creators;
-        private List<DbInstitutionPoints> points;
+        private URI builderPublicationId;
+        private URI builderPublicationBucketUri;
+        private boolean builderApplicable;
+        private String builderInstanceType;
+        private DbLevel builderLevel;
+        private DbPublicationDate builderPublicationDate;
+        private boolean builderInternationalCollaboration;
+        private int builderCreatorCount;
+        private List<DbCreator> builderCreators;
+        private List<DbInstitutionPoints> builderPoints;
 
         private Builder() {
         }
 
         public Builder publicationId(URI publicationId) {
-            this.publicationId = publicationId;
+            this.builderPublicationId = publicationId;
             return this;
         }
 
         public Builder publicationBucketUri(URI publicationBucketUri) {
-            this.publicationBucketUri = publicationBucketUri;
+            this.builderPublicationBucketUri = publicationBucketUri;
             return this;
         }
 
         public Builder applicable(boolean applicable) {
-            this.applicable = applicable;
+            this.builderApplicable = applicable;
             return this;
         }
 
         public Builder instanceType(String instanceType) {
-            this.instanceType = instanceType;
+            this.builderInstanceType = instanceType;
             return this;
         }
 
         public Builder level(DbLevel level) {
-            this.level = level;
+            this.builderLevel = level;
             return this;
         }
 
         public Builder publicationDate(DbPublicationDate publicationDate) {
-            this.publicationDate = publicationDate;
+            this.builderPublicationDate = publicationDate;
             return this;
         }
 
         public Builder internationalCollaboration(boolean internationalCollaboration) {
-            this.internationalCollaboration = internationalCollaboration;
+            this.builderInternationalCollaboration = internationalCollaboration;
             return this;
         }
 
         public Builder creatorCount(int creatorCount) {
-            this.creatorCount = creatorCount;
+            this.builderCreatorCount = creatorCount;
             return this;
         }
 
         public Builder creators(List<DbCreator> creators) {
-            this.creators = creators;
+            this.builderCreators = creators;
             return this;
         }
 
         public Builder points(List<DbInstitutionPoints> points) {
-            this.points = points;
+            this.builderPoints = points;
             return this;
         }
 
         public DbCandidate build() {
-            return new DbCandidate(publicationId, publicationBucketUri, applicable, instanceType, level,
-                                   publicationDate, internationalCollaboration, creatorCount, creators, points);
+            return new DbCandidate(builderPublicationId, builderPublicationBucketUri, builderApplicable,
+                                   builderInstanceType, builderLevel,
+                                   builderPublicationDate, builderInternationalCollaboration, builderCreatorCount,
+                                   builderCreators, builderPoints);
         }
     }
 }

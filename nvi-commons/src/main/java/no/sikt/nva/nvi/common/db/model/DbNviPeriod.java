@@ -25,37 +25,37 @@ public record DbNviPeriod(String publishingYear,
 
     public static final class Builder {
 
-        private String publishingYear;
-        private Instant reportingDate;
-        private DbUsername createdBy;
-        private DbUsername modifiedBy;
+        private String builderPublishingYear;
+        private Instant builderReportingDate;
+        private DbUsername builderCreatedBy;
+        private DbUsername builderModifiedBy;
 
         private Builder() {
         }
 
 
         public Builder publishingYear(String publishingYear) {
-            this.publishingYear = publishingYear;
+            this.builderPublishingYear = publishingYear;
             return this;
         }
 
         public Builder reportingDate(Instant reportingDate) {
-            this.reportingDate = reportingDate;
+            this.builderReportingDate = reportingDate;
             return this;
         }
 
         public Builder createdBy(DbUsername createdBy) {
-            this.createdBy = createdBy;
+            this.builderCreatedBy = createdBy;
             return this;
         }
 
         public Builder modifiedBy(DbUsername modifiedBy) {
-            this.modifiedBy = modifiedBy;
+            this.builderModifiedBy = modifiedBy;
             return this;
         }
 
         public DbNviPeriod build() {
-            return new DbNviPeriod(publishingYear, reportingDate, createdBy, modifiedBy);
+            return new DbNviPeriod(builderPublishingYear, builderReportingDate, builderCreatedBy, builderModifiedBy);
         }
     }
 }

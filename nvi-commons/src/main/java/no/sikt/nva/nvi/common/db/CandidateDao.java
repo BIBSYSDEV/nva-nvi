@@ -72,8 +72,8 @@ public record CandidateDao(
 
     public static final class Builder {
 
-        private UUID identifier;
-        private DbCandidate candidate;
+        private UUID builderIdentifier;
+        private DbCandidate builderCandidate;
 
         private Builder() {
         }
@@ -104,17 +104,17 @@ public record CandidateDao(
         }
 
         public Builder identifier(UUID identifier) {
-            this.identifier = identifier;
+            this.builderIdentifier = identifier;
             return this;
         }
 
         public Builder candidate(DbCandidate candidate) {
-            this.candidate = candidate;
+            this.builderCandidate = candidate;
             return this;
         }
 
         public CandidateDao build() {
-            return new CandidateDao(identifier, candidate);
+            return new CandidateDao(builderIdentifier, builderCandidate);
         }
     }
 }

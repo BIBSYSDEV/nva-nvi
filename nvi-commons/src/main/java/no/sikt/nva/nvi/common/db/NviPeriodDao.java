@@ -54,8 +54,8 @@ public record NviPeriodDao(
 
     public static final class Builder {
 
-        private String identifier;
-        private DbNviPeriod nviPeriod;
+        private String builderIdentifier;
+        private DbNviPeriod builderNviPeriod;
 
         private Builder() {
         }
@@ -76,17 +76,17 @@ public record NviPeriodDao(
         }
 
         public Builder identifier(String identifier) {
-            this.identifier = identifier;
+            this.builderIdentifier = identifier;
             return this;
         }
 
         public Builder nviPeriod(DbNviPeriod nviPeriod) {
-            this.nviPeriod = nviPeriod;
+            this.builderNviPeriod = nviPeriod;
             return this;
         }
 
         public NviPeriodDao build() {
-            return new NviPeriodDao(identifier, nviPeriod);
+            return new NviPeriodDao(builderIdentifier, builderNviPeriod);
         }
     }
 }

@@ -13,24 +13,24 @@ public record DbInstitutionPoints(URI institutionId, BigDecimal points) {
 
     public static final class Builder {
 
-        private URI institutionId;
-        private BigDecimal points;
+        private URI builderInstitutionId;
+        private BigDecimal builderPoints;
 
         private Builder() {
         }
 
         public Builder institutionId(URI institutionId) {
-            this.institutionId = institutionId;
+            this.builderInstitutionId = institutionId;
             return this;
         }
 
         public Builder points(BigDecimal points) {
-            this.points = points;
+            this.builderPoints = points;
             return this;
         }
 
         public DbInstitutionPoints build() {
-            return new DbInstitutionPoints(institutionId, points);
+            return new DbInstitutionPoints(builderInstitutionId, builderPoints);
         }
     }
 }
