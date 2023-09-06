@@ -5,6 +5,7 @@ public final class JsonPointers {
     public static final String JSON_PTR_CONTRIBUTOR = "/entityDescription/contributors";
     public static final String JSON_PTR_AFFILIATIONS = "/affiliations";
     public static final String JSON_PTR_ID = "/id";
+    public static final String JSON_PTR_COUNTRY_CODE = "/countryCode";
     public static final String JSON_PTR_PUBLICATION_DATE = "/entityDescription/publicationDate";
     public static final String JSON_PTR_MAIN_TITLE = "/entityDescription/mainTitle";
     public static final String JSON_POINTER_IDENTITY_ID = "/identity/id";

@@ -1,10 +1,12 @@
 package no.sikt.nva.nvi.evaluator.calculator;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_PUBLISHER;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_COUNTRY_CODE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_INSTANCE_TYPE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLISHER;
@@ -24,6 +26,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +35,7 @@ public final class PointCalculator {
 
     public static final String ERROR_MSG_EXTRACT_PUBLICATION_CONTEXT = "Could not extract publication channel for "
                                                                        + "instanceType {}, candidate: {}";
+    public static final String COUNTRY_CODE_NORWAY = "NO";
     private static final Logger LOGGER = LoggerFactory.getLogger(PointCalculator.class);
     private static final int SCALE = 10;
     private static final int RESULT_SCALE = 4;
@@ -73,19 +78,28 @@ public final class PointCalculator {
                 JOURNAL, Map.of(
                     LEVEL_ONE, BigDecimal.valueOf(1),
                     LEVEL_TWO, BigDecimal.valueOf(3))));
-    private static final boolean HARDCODED_INTERNATIONAL_COLLABORATION_BOOLEAN_TO_BE_REPLACED = false;
 
     private PointCalculator() {
     }
 
     public static Map<URI, BigDecimal> calculatePoints(JsonNode jsonNode,
                                                        Map<URI, List<URI>> nviCreatorsWithInstitutionIds) {
-        //TODO: set isInternationalCollaboration when Cristin proxy api has implemented land code
-        var isInternationalCollaboration = HARDCODED_INTERNATIONAL_COLLABORATION_BOOLEAN_TO_BE_REPLACED;
         return calculatePoints(calculateInstanceTypeAndLevelPoints(jsonNode),
                                countCreatorShares(jsonNode),
-                               isInternationalCollaboration,
+                               isInternationalCollaboration(jsonNode),
                                countInstitutionCreatorShares(nviCreatorsWithInstitutionIds));
+    }
+
+    private static boolean isInternationalCollaboration(JsonNode jsonNode) {
+        return getJsonNodeStream(jsonNode, JSON_PTR_CONTRIBUTOR)
+                   .flatMap(contributorNode -> getJsonNodeStream(contributorNode, JSON_PTR_AFFILIATIONS))
+                   .filter(affiliationNode -> nonNull(affiliationNode.at(JSON_PTR_COUNTRY_CODE)))
+                   .map(affiliationNode -> extractJsonNodeTextValue(affiliationNode, JSON_PTR_COUNTRY_CODE))
+                   .anyMatch(countryCode -> !COUNTRY_CODE_NORWAY.equals(countryCode));
+    }
+
+    private static Stream<JsonNode> getJsonNodeStream(JsonNode jsonNode, String jsonPtr) {
+        return StreamSupport.stream(jsonNode.at(jsonPtr).spliterator(), false);
     }
 
     private static Map<URI, BigDecimal> calculatePoints(BigDecimal instanceTypeAndLevelPoints, int creatorShareCount,
