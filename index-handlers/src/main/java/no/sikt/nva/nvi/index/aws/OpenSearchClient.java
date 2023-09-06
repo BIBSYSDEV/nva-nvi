@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index.aws;
 
 import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
-import static no.sikt.nva.nvi.index.Aggregations.generateAggregations;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_API_HOST;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
@@ -14,7 +13,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Clock;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
+import no.sikt.nva.nvi.index.Aggregations;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.utils.SearchConstants;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CachedValueProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
@@ -25,7 +26,6 @@ import org.apache.http.HttpHost;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
-import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -88,10 +88,15 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     @Override
-    public SearchResponse<NviCandidateIndexDocument> search(Query query, int offset, int size, String username,
-                                                            URI customer) throws IOException {
+    public SearchResponse<NviCandidateIndexDocument> search(String searchTerm,
+                                                            String filter,
+                                                            String username,
+                                                            URI customer,
+                                                            int offset,
+                                                            int size)
+        throws IOException {
         return client.withTransportOptions(getOptions())
-                   .search(constructSearchRequest(query, offset, size, username, customer.toString()),
+                   .search(constructSearchRequest(searchTerm, filter, username, customer.toString(), offset, size),
                            NviCandidateIndexDocument.class);
     }
 
@@ -158,12 +163,14 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         return new RuntimeException(exception.getMessage());
     }
 
-    private SearchRequest constructSearchRequest(Query query, int offset, int size, String username, String customer) {
-        return new SearchRequest.Builder().index(NVI_CANDIDATES_INDEX)
-                   .query(query)
+    private SearchRequest constructSearchRequest(String searchTerm, String filter, String username, String customer,
+                                                 int offset, int size) {
+        return new SearchRequest.Builder()
+                   .index(NVI_CANDIDATES_INDEX)
+                   .query(SearchConstants.constructQuery(searchTerm, filter, username, customer))
+                   .aggregations(Aggregations.generateAggregations(username, customer))
                    .from(offset)
                    .size(size)
-                   .aggregations(generateAggregations(username, customer))
                    .build();
     }
 }

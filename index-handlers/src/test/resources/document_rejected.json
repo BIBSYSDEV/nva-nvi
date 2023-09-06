@@ -16,7 +16,6 @@
   },
   "approvals": [
     {
-      "assignee": "user1",
       "id": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
       "labels": {
         "nb": "Sikt – Kunnskapssektorens tjenesteleverandør",

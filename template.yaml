@@ -358,6 +358,7 @@ Resources:
         Variables:
           ALLOWED_ORIGIN: '*'
           API_HOST: !Ref ApiDomain
+          COGNITO_HOST: !Ref CognitoAuthorizationUri
       Events:
         GetEvent:
           Type: Api

@@ -129,6 +129,11 @@ paths:
             type: integer
             default: 10
           description: The size of each page of the search for use in pagination. Default is 10.
+        - in: query
+          name: filter
+          schema:
+            $ref: "#/components/schemas/Filter"
+          description: Filter values to use
       security:
         - CognitoUserPool: [
           'https://api.nva.unit.no/scopes/backend',
@@ -251,6 +256,18 @@ paths:
                 $ref: "#/components/schemas/Problem"
 components:
   schemas:
+    Filter:
+      type: string
+      enum:
+        - pending
+        - pendingCollaboration
+        - assigned
+        - assignedCollaboration
+        - approved
+        - approvedCollaboration
+        - rejected
+        - rejectedCollaboration
+        - assignments
     NviPeriod:
       type: object
       properties:

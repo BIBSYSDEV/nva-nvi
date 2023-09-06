@@ -1,14 +1,35 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.index.Aggregations.assignmentsQuery;
+import static no.sikt.nva.nvi.index.Aggregations.containsPendingStatusQuery;
+import static no.sikt.nva.nvi.index.Aggregations.multipleApprovalsQuery;
+import static no.sikt.nva.nvi.index.Aggregations.mustMatch;
+import static no.sikt.nva.nvi.index.Aggregations.statusQuery;
+import static no.sikt.nva.nvi.index.Aggregations.statusQueryWithAssignee;
+import static no.sikt.nva.nvi.index.model.ApprovalStatus.APPROVED;
+import static no.sikt.nva.nvi.index.model.ApprovalStatus.PENDING;
+import static no.sikt.nva.nvi.index.model.ApprovalStatus.REJECTED;
 import java.util.Map;
 import nva.commons.core.Environment;
 import org.opensearch.client.opensearch._types.mapping.KeywordProperty;
 import org.opensearch.client.opensearch._types.mapping.NestedProperty;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
 
 public final class SearchConstants {
 
+    public static final String PENDING_AGG  = "pending";
+    public static final String PENDING_COLLABORATION_AGG = "pendingCollaboration";
+    public static final String ASSIGNED_AGG = "assigned";
+    public static final String ASSIGNED_COLLABORATION_AGG = "assignedCollaboration";
+    public static final String APPROVED_AGG = "approved";
+    public static final String APPROVED_COLLABORATION_AGG = "approvedCollaboration";
+    public static final String REJECTED_AGG = "rejected";
+    public static final String REJECTED_COLLABORATION_AGG = "rejectedCollaboration";
+    public static final String ASSIGNMENTS_AGG = "assignments";
     public static final String ID = "id";
     public static final String ASSIGNEE = "assignee";
     public static final String NUMBER_OF_APPROVALS = "numberOfApprovals";
@@ -24,23 +45,65 @@ public final class SearchConstants {
 
     }
 
+    public static Query constructQuery(String searchTerm, String filter, String username, String customer) {
+        var query = searchTermToQuery(searchTerm);
+        return nonNull(filter)
+                   ? constructQueryWithFilter(filter, username, customer, query)
+                   : mustMatch(searchTermToQuery(searchTerm));
+    }
+
+    private static Query constructQueryWithFilter(String filter, String username, String customer, Query query) {
+        return switch (filter) {
+            case PENDING_AGG -> mustMatch(query,
+                                          statusQueryWithAssignee(customer, PENDING, false));
+
+            case PENDING_COLLABORATION_AGG -> mustMatch(query,
+                                                        statusQueryWithAssignee(customer, PENDING, false),
+                                                        multipleApprovalsQuery());
+
+            case ASSIGNED_AGG -> mustMatch(query,
+                                           statusQueryWithAssignee(customer, PENDING, true));
+
+            case ASSIGNED_COLLABORATION_AGG -> mustMatch(query,
+                                                         statusQueryWithAssignee(customer, PENDING, true),
+                                                         multipleApprovalsQuery());
+
+            case APPROVED_AGG -> mustMatch(query,
+                                           statusQuery(customer, APPROVED));
+
+            case APPROVED_COLLABORATION_AGG -> mustMatch(query,
+                                                         statusQuery(customer, APPROVED),
+                                                         containsPendingStatusQuery(),
+                                                         multipleApprovalsQuery());
+
+            case REJECTED_AGG -> mustMatch(query,
+                                           statusQuery(customer, REJECTED));
+
+            case REJECTED_COLLABORATION_AGG -> mustMatch(query,
+                                                         statusQuery(customer, REJECTED),
+                                                         containsPendingStatusQuery(),
+                                                         multipleApprovalsQuery());
+
+            case ASSIGNMENTS_AGG -> mustMatch(assignmentsQuery(username, customer));
+
+            default -> mustMatch(searchTermToQuery("*"));
+        };
+    }
+
     public static TypeMapping mappings() {
-        return new TypeMapping.Builder()
-                   .properties(mappingProperties())
-                   .build();
+        return new TypeMapping.Builder().properties(mappingProperties()).build();
+    }
+
+    private static Query searchTermToQuery(String searchTerm) {
+        return new QueryStringQuery.Builder().query(searchTerm).build()._toQuery();
     }
 
     private static Map<String, Property> mappingProperties() {
-        return Map.of(APPROVALS, new Property.Builder()
-                                    .nested(approvalsNestedProperty())
-                                    .build());
+        return Map.of(APPROVALS, new Property.Builder().nested(approvalsNestedProperty()).build());
     }
 
     private static NestedProperty approvalsNestedProperty() {
-        return new NestedProperty.Builder()
-                   .includeInParent(true)
-                   .properties(approvalProperties())
-                   .build();
+        return new NestedProperty.Builder().includeInParent(true).properties(approvalProperties()).build();
     }
 
     private static String readSearchInfrastructureApiHost() {
@@ -52,9 +115,7 @@ public final class SearchConstants {
     }
 
     private static Map<String, Property> approvalProperties() {
-        return Map.of(ID, keywordProperty(),
-                      ASSIGNEE, keywordProperty(),
-                      APPROVAL_STATUS, keywordProperty());
+        return Map.of(ID, keywordProperty(), ASSIGNEE, keywordProperty(), APPROVAL_STATUS, keywordProperty());
     }
 
     private static Property keywordProperty() {
