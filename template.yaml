@@ -398,7 +398,7 @@ Resources:
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
-  UpsertNviCandidateStatusHandler:
+  UpdateNviCandidateStatusHandler:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: nvi-rest
