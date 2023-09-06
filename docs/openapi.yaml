@@ -223,7 +223,7 @@ paths:
       x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateNviPeriodHandler.Arn}:live/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateNviCandidateStatusHandler.Arn}:live/invocations
         responses: { }
         httpMethod: POST
         type: AWS_PROXY
