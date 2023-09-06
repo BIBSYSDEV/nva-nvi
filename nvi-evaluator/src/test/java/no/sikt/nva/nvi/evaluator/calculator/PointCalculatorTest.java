@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.evaluator.calculator;
 
 import static no.sikt.nva.nvi.evaluator.calculator.PointCalculator.calculatePoints;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
-import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -15,6 +14,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -22,6 +22,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class PointCalculatorTest {
 
+    public static final String COUNTRY_CODE_NO = "NO";
+    public static final String SOME_INTERNATIONAL_COUNTRY_CODE = "GB";
     private static final String TYPE = "type";
     private static final String PUBLICATION_INSTANCE = "publicationInstance";
     private static final String REFERENCE = "reference";
@@ -41,13 +43,12 @@ class PointCalculatorTest {
 
         var creator = randomUri();
         var institutionId = randomUri();
-        var institutions = List.of(institutionId);
         var expandedResource = createExpandedResource(
             randomUri(),
-            createContributorNodes(getContributorNode(creator, true, institutions)),
+            createContributorNodes(getContributorNode(creator, true, Map.of(institutionId, COUNTRY_CODE_NO))),
             getInstanceTypeReference(parameters));
 
-        var institutionPoints = calculatePoints(expandedResource, Map.of(creator, institutions));
+        var institutionPoints = calculatePoints(expandedResource, Map.of(creator, List.of(institutionId)));
 
         assertThat(institutionPoints.get(institutionId), is(equalTo(parameters.institution1Points())));
     }
@@ -58,22 +59,16 @@ class PointCalculatorTest {
     void shouldCalculateNviPointsForCoPublishingTwoCreatorsAffiliatedWithOneInstitution(PointParameters parameters) {
         var nviInstitution1 = randomUri();
         var nviInstitution2 = randomUri();
-
         var creator1 = randomUri();
         var creator2 = randomUri();
         var creator1Institutions = List.of(nviInstitution1, nviInstitution2);
         var creator2Institutions = List.of(nviInstitution1);
-        var expandedResource = createExpandedResource(
-            randomUri(),
-            createContributorNodes(
-                getContributorNode(creator1, true, creator1Institutions),
-                getContributorNode(creator2, true, creator2Institutions),
-                getContributorNode(randomUri(), false, createRandomInstitutions(parameters, 3))
-            ),
-            getInstanceTypeReference(parameters));
+        var expandedResource = createExpandedResourceWithManyCreators(parameters, creator1, creator2,
+                                                                      creator1Institutions,
+                                                                      creator2Institutions);
 
-        var pointsMap = calculatePoints(expandedResource, Map.of(creator1, creator1Institutions,
-                                                                 creator2, creator2Institutions));
+        var pointsMap = calculatePoints(expandedResource,
+                                        Map.of(creator1, creator1Institutions, creator2, creator2Institutions));
 
         assertThat(pointsMap.get(nviInstitution1), is(equalTo(parameters.institution1Points())));
         assertThat(pointsMap.get(nviInstitution2), is(equalTo(parameters.institution2Points())));
@@ -93,18 +88,36 @@ class PointCalculatorTest {
         var expandedResource = createExpandedResource(
             randomUri(),
             createContributorNodes(
-                getContributorNode(creator1, true, creator1Institutions),
-                getContributorNode(creator2, true, creator2Institutions),
-                getContributorNode(randomUri(), randomBoolean(), createRandomInstitutions(parameters, 2))
-            ),
+                getContributorNode(creator1, true, addCountryCode(creator1Institutions, COUNTRY_CODE_NO)),
+                getContributorNode(creator2, true, addCountryCode(creator1Institutions, COUNTRY_CODE_NO))),
             getInstanceTypeReference(parameters));
 
         var pointsMap = calculatePoints(expandedResource,
-                                        Map.of(creator1, creator1Institutions,
-                                               creator2, creator2Institutions));
+                                        Map.of(creator1, creator1Institutions, creator2, creator2Institutions));
 
         assertThat(pointsMap.get(nviInstitution1), is(equalTo(parameters.institution1Points())));
         assertThat(pointsMap.get(nviInstitution2), is(equalTo(parameters.institution2Points())));
+    }
+
+    private static JsonNode createExpandedResourceWithManyCreators(PointParameters parameters, URI creator1,
+                                                                   URI creator2,
+                                                                   List<URI> creator1Institutions,
+                                                                   List<URI> creator2Institutions) {
+        var countryCodeForNonNviCreators = parameters.isInternationalCollaboration()
+                                               ? SOME_INTERNATIONAL_COUNTRY_CODE : COUNTRY_CODE_NO;
+        var contributorNodes = createContributorNodes(
+            getContributorNode(creator1, true, addCountryCode(creator1Institutions, COUNTRY_CODE_NO)),
+            getContributorNode(creator2, true, addCountryCode(creator2Institutions, COUNTRY_CODE_NO)),
+            getContributorNode(randomUri(), false,
+                               addCountryCode(createRandomInstitutions(parameters, 3), countryCodeForNonNviCreators))
+        );
+        return createExpandedResource(randomUri(), contributorNodes, getInstanceTypeReference(parameters));
+    }
+
+    private static Map<URI, String> addCountryCode(List<URI> creator1Institutions, String countryCode) {
+        return creator1Institutions.stream()
+                   .collect(Collectors.toMap(institutionId -> institutionId,
+                                             institutionId -> countryCode));
     }
 
     private static Stream<PointParameters> twoCreatorsAffiliatedWithTwoDifferentInstitutionsPointProvider() {
@@ -115,18 +128,16 @@ class PointCalculatorTest {
     }
 
     private static Stream<PointParameters> twoCreatorsAffiliatedWithOneInstitutionPointProvider() {
-        //TODO Disabled isInternationCollaboration tests until parameter available
         return Stream.of(
-            //new PointParameters("AcademicMonograph", "Series", "1", true, 3, bd("5.3072"), bd("3.7528")),
             new PointParameters("AcademicMonograph", "Series", "1", false, 3, bd("4.0825"), bd("2.8868")),
-            //new PointParameters("AcademicMonograph", "Series", "2", true, 4, bd("7.3539"), bd("5.2000")),
+            new PointParameters("AcademicMonograph", "Series", "2", true, 4, bd("7.3539"), bd("5.2000")),
             new PointParameters("AcademicMonograph", "Series", "2", false, 4, bd("5.6569"), bd("4.0000")),
-            //new PointParameters("AcademicChapter", "Series", "1", true, 5, bd("0.6325"), bd("0.4472")),
+            new PointParameters("AcademicChapter", "Series", "1", true, 5, bd("0.6325"), bd("0.4472")),
             new PointParameters("AcademicChapter", "Series", "2", false, 5, bd("1.8974"), bd("1.3416")),
             new PointParameters("AcademicArticle", "Journal", "1", false, 7, bd("0.5345"), bd("0.3780")),
-            new PointParameters("AcademicArticle", "Journal", "2", false, 7, bd("1.6036"), bd("1.1339"))
-            //new PointParameters("AcademicLiteratureReview", "Journal", "1", true, 8, bd("0.6500"), bd("0.4596")),
-            //new PointParameters("AcademicLiteratureReview", "Journal", "2", true, 8, bd("1.9500"), bd("1.3789"))
+            new PointParameters("AcademicArticle", "Journal", "2", false, 7, bd("1.6036"), bd("1.1339")),
+            new PointParameters("AcademicLiteratureReview", "Journal", "1", true, 8, bd("0.6500"), bd("0.4596")),
+            new PointParameters("AcademicLiteratureReview", "Journal", "2", true, 8, bd("1.9500"), bd("1.3789"))
         );
     }
 
@@ -217,15 +228,16 @@ class PointCalculatorTest {
         return reference;
     }
 
-    private static ObjectNode getContributorNode(URI contributor, boolean isVerified, List<URI> affiliations) {
+    private static ObjectNode getContributorNode(URI contributor, boolean isVerified,
+                                                 Map<URI, String> affiliationsWithCountryCode) {
         var contributorNode = objectMapper.createObjectNode();
 
         contributorNode.put(TYPE, "Contributor");
 
         var affiliationsNode = objectMapper.createArrayNode();
 
-        affiliations.stream()
-            .map(PointCalculatorTest::createAffiliationNode)
+        affiliationsWithCountryCode.entrySet().stream()
+            .map(entry -> createAffiliationNode(entry.getKey(), entry.getValue()))
             .forEach(affiliationsNode::add);
 
         contributorNode.set(AFFILIATIONS, affiliationsNode);
@@ -241,10 +253,11 @@ class PointCalculatorTest {
                    .put(TYPE, "Identity");
     }
 
-    private static ObjectNode createAffiliationNode(URI affiliation) {
+    private static ObjectNode createAffiliationNode(URI affiliation, String countryCode) {
         return objectMapper.createObjectNode()
                    .put(ID, affiliation.toString())
-                   .put(TYPE, "Organization");
+                   .put(TYPE, "Organization")
+                   .put("countryCode", countryCode);
     }
 
     private static JsonNode createExpandedResource(URI publicationId, JsonNode contributors,
