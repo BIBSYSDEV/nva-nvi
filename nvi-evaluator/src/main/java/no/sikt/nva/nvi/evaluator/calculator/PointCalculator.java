@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.evaluator.calculator;
 
-import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_PUBLISHER;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES;
@@ -131,9 +130,13 @@ public final class PointCalculator {
     private static boolean isInternationalCollaboration(JsonNode jsonNode) {
         return getJsonNodeStream(jsonNode, JSON_PTR_CONTRIBUTOR)
                    .flatMap(contributorNode -> getJsonNodeStream(contributorNode, JSON_PTR_AFFILIATIONS))
-                   .filter(affiliationNode -> nonNull(affiliationNode.at(JSON_PTR_COUNTRY_CODE)))
                    .map(affiliationNode -> extractJsonNodeTextValue(affiliationNode, JSON_PTR_COUNTRY_CODE))
-                   .anyMatch(countryCode -> !COUNTRY_CODE_NORWAY.equals(countryCode));
+                   .filter(Objects::nonNull)
+                   .anyMatch(PointCalculator::isInternationalCountryCode);
+    }
+
+    private static boolean isInternationalCountryCode(String countryCode) {
+        return !COUNTRY_CODE_NORWAY.equals(countryCode);
     }
 
     private static Map<URI, Long> countInstitutionCreatorShares(Map<URI, List<URI>> nviCreatorsWithInstitutions) {
