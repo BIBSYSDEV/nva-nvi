@@ -1,16 +1,17 @@
 package no.sikt.nva.nvi.common.db.model;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
 import nva.commons.core.JacocoGenerated;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
-@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-@JsonSerialize
-@JacocoGenerated //TODO use later :)
+@DynamoDbImmutable(builder = DbNote.Builder.class)
 public record DbNote(DbUsername user,
                      String text,
                      Instant createdDate) {
+
+    public static Builder builder() {
+        return new Builder();
+    }
 
     @JacocoGenerated //TODO use later :)
     public static final class Builder {

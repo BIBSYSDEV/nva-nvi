@@ -46,7 +46,7 @@ public class NviCandidateRepository extends DynamoRepository {
         var candidateObj = candidateTable.getItem(candidate);
 
         return new Candidate(candidateObj.identifier(), candidateObj.candidate(),
-                             getApprovalStatuses(approvalStatusTable, candidateObj.identifier()));
+                             getApprovalStatuses(approvalStatusTable, candidateObj.identifier()),List.of());
     }
 
     public Candidate update(UUID identifier, DbCandidate dbCandidate,
@@ -58,14 +58,15 @@ public class NviCandidateRepository extends DynamoRepository {
         approvalStatuses.forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
         // Maybe we need to remove the rows first, but preferably override
         client.transactWriteItems(transaction.build());
-        return new Candidate(identifier, dbCandidate, approvalStatusList);
+        return new Candidate(identifier, dbCandidate, approvalStatusList,List.of());
     }
 
     public Optional<Candidate> findById(UUID id) {
         var queryObj = new CandidateDao(id, DbCandidate.builder().build());
         var fetched = this.candidateTable.getItem(queryObj);
         return Optional.ofNullable(fetched).map(
-            candidateDao -> new Candidate(id, candidateDao.candidate(), getApprovalStatuses(approvalStatusTable, id))
+            candidateDao -> new Candidate(id, candidateDao.candidate(), getApprovalStatuses(approvalStatusTable, id),
+                                          List.of())
         );
     }
 
@@ -73,7 +74,7 @@ public class NviCandidateRepository extends DynamoRepository {
         var candidateDao = this.candidateTable.getItem(candidateKey(id));
         var approvalStatus = getApprovalStatuses(approvalStatusTable, id);
 
-        return new Candidate(id, candidateDao.candidate(), approvalStatus);
+        return new Candidate(id, candidateDao.candidate(), approvalStatus,List.of());
     }
 
     public Optional<Candidate> findByPublicationId(URI publicationId) {
@@ -90,7 +91,7 @@ public class NviCandidateRepository extends DynamoRepository {
                    .map(
                        candidateDao -> new Candidate(candidateDao.identifier(), candidateDao.candidate(),
                                                      getApprovalStatuses(approvalStatusTable,
-                                                                         candidateDao.identifier())))
+                                                                         candidateDao.identifier()),List.of()))
                    .findFirst();
     }
 

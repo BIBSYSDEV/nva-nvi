@@ -1,8 +1,13 @@
 package no.sikt.nva.nvi.rest;
 
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.fetch.FetchNviCandidateHandler.PARAM_CANDIDATE_IDENTIFIER;
 import com.amazonaws.services.lambda.runtime.Context;
+import java.net.HttpURLConnection;
+import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
+import no.sikt.nva.nvi.common.db.Candidate;
+import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.utils.RequestUtil;
 import nva.commons.apigateway.AccessRight;
@@ -16,7 +21,7 @@ public class CreateNotesHandler extends ApiGatewayHandler<NviNotesRequest, Candi
     private final NviService service;
 
     @JacocoGenerated
-    public CreateNotesHandler(){
+    public CreateNotesHandler() {
         this(new NviService(defaultDynamoClient()));
     }
 
@@ -29,11 +34,15 @@ public class CreateNotesHandler extends ApiGatewayHandler<NviNotesRequest, Candi
     protected CandidateResponse processInput(NviNotesRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
-        return null;
+        DbUsername username = RequestUtil.getUsername(requestInfo);
+        var candidateIdentifier = requestInfo.getPathParameter(PARAM_CANDIDATE_IDENTIFIER);
+
+        Candidate candidate = service.createNote(UUID.fromString(candidateIdentifier), input.note(), username.value());
+        return CandidateResponse.fromCandidate(candidate);
     }
 
     @Override
     protected Integer getSuccessStatusCode(NviNotesRequest input, CandidateResponse output) {
-        return null;
+        return HttpURLConnection.HTTP_OK;
     }
 }

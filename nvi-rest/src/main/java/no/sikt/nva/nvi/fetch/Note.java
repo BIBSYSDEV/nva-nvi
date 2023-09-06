@@ -8,7 +8,6 @@ import nva.commons.core.JacocoGenerated;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-@JacocoGenerated // TODO not in use yet
 public record Note(DbUsername user,
                    String text,
                    Instant createdDate) {

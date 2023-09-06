@@ -77,6 +77,11 @@ public class NviService {
         return nviCandidateRepository.findByPublicationId(publicationId);
     }
 
+    public Candidate createNote(UUID identifier, String note, String user) {
+
+        return null;
+    }
+
     private static boolean isInteger(String value) {
         return attempt(() -> Integer.parseInt(value))
                    .map(ignore -> true)

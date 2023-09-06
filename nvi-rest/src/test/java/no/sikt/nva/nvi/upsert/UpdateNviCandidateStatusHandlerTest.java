@@ -130,7 +130,8 @@ class UpdateNviCandidateStatusHandlerTest {
             List.of(new DbApprovalStatus(nviStatusRequest.institutionId(),
                                          status,
                                          new DbUsername(randomString()),
-                                         Instant.now())));
+                                         Instant.now()))
+        ,List.of());
     }
 
     private InputStream createRequest(NviStatusRequest body) throws JsonProcessingException {
