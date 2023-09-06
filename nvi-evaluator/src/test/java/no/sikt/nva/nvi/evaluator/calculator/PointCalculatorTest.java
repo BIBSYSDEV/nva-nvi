@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -24,6 +25,8 @@ class PointCalculatorTest {
 
     public static final String COUNTRY_CODE_NO = "NO";
     public static final String SOME_INTERNATIONAL_COUNTRY_CODE = "GB";
+    public static final String ROLE = "role";
+    public static final String ROLE_CREATOR = "Creator";
     private static final String TYPE = "type";
     private static final String PUBLICATION_INSTANCE = "publicationInstance";
     private static final String REFERENCE = "reference";
@@ -45,7 +48,8 @@ class PointCalculatorTest {
         var institutionId = randomUri();
         var expandedResource = createExpandedResource(
             randomUri(),
-            createContributorNodes(getContributorNode(creator, true, Map.of(institutionId, COUNTRY_CODE_NO))),
+            createContributorNodes(getContributorNode(creator, true, Map.of(institutionId, COUNTRY_CODE_NO),
+                                                      ROLE_CREATOR)),
             getInstanceTypeReference(parameters));
 
         var institutionPoints = calculatePoints(expandedResource, Map.of(creator, List.of(institutionId)));
@@ -88,8 +92,9 @@ class PointCalculatorTest {
         var expandedResource = createExpandedResource(
             randomUri(),
             createContributorNodes(
-                getContributorNode(creator1, true, addCountryCode(creator1Institutions, COUNTRY_CODE_NO)),
-                getContributorNode(creator2, true, addCountryCode(creator1Institutions, COUNTRY_CODE_NO))),
+                getContributorNode(creator1, true, addCountryCode(creator1Institutions, COUNTRY_CODE_NO), ROLE_CREATOR),
+                getContributorNode(creator2, true, addCountryCode(creator1Institutions, COUNTRY_CODE_NO),
+                                   ROLE_CREATOR)),
             getInstanceTypeReference(parameters));
 
         var pointsMap = calculatePoints(expandedResource,
@@ -99,6 +104,24 @@ class PointCalculatorTest {
         assertThat(pointsMap.get(nviInstitution2), is(equalTo(parameters.institution2Points())));
     }
 
+    @Test
+    void shouldNotGiveInternationalPointsIfNonCreatorAffiliatedWithInternationalInstitution() {
+        var creatorId = randomUri();
+        var institutionId = randomUri();
+        var expandedResource = createExpandedResource(
+            randomUri(),
+            createContributorNodes(getContributorNode(creatorId, true, Map.of(institutionId, COUNTRY_CODE_NO),
+                                                      ROLE_CREATOR),
+                                   getContributorNode(randomUri(), true,
+                                                      Map.of(randomUri(), SOME_INTERNATIONAL_COUNTRY_CODE),
+                                                      "SomeOtherRole")),
+            createJournalReference("AcademicArticle", "2"));
+
+        var institutionPoints = calculatePoints(expandedResource, Map.of(creatorId, List.of(institutionId)));
+
+        assertThat(institutionPoints.get(institutionId), is(equalTo(BigDecimal.valueOf(1))));
+    }
+
     private static JsonNode createExpandedResourceWithManyCreators(PointParameters parameters, URI creator1,
                                                                    URI creator2,
                                                                    List<URI> creator1Institutions,
@@ -106,10 +129,11 @@ class PointCalculatorTest {
         var countryCodeForNonNviCreators = parameters.isInternationalCollaboration()
                                                ? SOME_INTERNATIONAL_COUNTRY_CODE : COUNTRY_CODE_NO;
         var contributorNodes = createContributorNodes(
-            getContributorNode(creator1, true, addCountryCode(creator1Institutions, COUNTRY_CODE_NO)),
-            getContributorNode(creator2, true, addCountryCode(creator2Institutions, COUNTRY_CODE_NO)),
+            getContributorNode(creator1, true, addCountryCode(creator1Institutions, COUNTRY_CODE_NO), ROLE_CREATOR),
+            getContributorNode(creator2, true, addCountryCode(creator2Institutions, COUNTRY_CODE_NO), ROLE_CREATOR),
             getContributorNode(randomUri(), false,
-                               addCountryCode(createRandomInstitutions(parameters, 3), countryCodeForNonNviCreators))
+                               addCountryCode(createRandomInstitutions(parameters, 3), countryCodeForNonNviCreators),
+                               "Creator")
         );
         return createExpandedResource(randomUri(), contributorNodes, getInstanceTypeReference(parameters));
     }
@@ -229,7 +253,7 @@ class PointCalculatorTest {
     }
 
     private static ObjectNode getContributorNode(URI contributor, boolean isVerified,
-                                                 Map<URI, String> affiliationsWithCountryCode) {
+                                                 Map<URI, String> affiliationsWithCountryCode, String role) {
         var contributorNode = objectMapper.createObjectNode();
 
         contributorNode.put(TYPE, "Contributor");
@@ -239,6 +263,10 @@ class PointCalculatorTest {
         affiliationsWithCountryCode.entrySet().stream()
             .map(entry -> createAffiliationNode(entry.getKey(), entry.getValue()))
             .forEach(affiliationsNode::add);
+
+        var roleNode = objectMapper.createObjectNode().put(TYPE, role);
+
+        contributorNode.set(ROLE, roleNode);
 
         contributorNode.set(AFFILIATIONS, affiliationsNode);
 
