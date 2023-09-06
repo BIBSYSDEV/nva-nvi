@@ -115,7 +115,7 @@ class PointCalculatorTest {
                                    getContributorNode(randomUri(), true,
                                                       Map.of(randomUri(), SOME_INTERNATIONAL_COUNTRY_CODE),
                                                       "SomeOtherRole")),
-            createJournalReference("AcademicArticle", "2"));
+            createJournalReference("AcademicArticle", "1"));
 
         var institutionPoints = calculatePoints(expandedResource, Map.of(creatorId, List.of(institutionId)));
 
