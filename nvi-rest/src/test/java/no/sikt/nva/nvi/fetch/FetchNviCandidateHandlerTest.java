@@ -76,14 +76,14 @@ class FetchNviCandidateHandlerTest {
     @Test
     void shouldHandleNullNotes() throws IOException {
         var candidateId = UUID.randomUUID();
-        var candidateWithIdentifier = getCandidate(candidateId, randomCandidateBuilder().build(), List.of());
-        when(service.findById(candidateId)).thenReturn(Optional.of(candidateWithIdentifier));
+        var candidate = getCandidate(candidateId, randomCandidateBuilder().build(), List.of());
+        when(service.findById(candidateId)).thenReturn(Optional.of(candidate));
         var input = getInput(candidateId);
         handler.handleRequest(input, output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
         assertEquals(HttpStatus.SC_OK, gatewayResponse.getStatusCode());
         var bodyObject = gatewayResponse.getBodyObject(CandidateResponse.class);
-        var expectedResponse = getExpectedResponse(candidateWithIdentifier);
+        var expectedResponse = getExpectedResponse(candidate);
 
         assertEquals(bodyObject, expectedResponse);
     }

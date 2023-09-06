@@ -14,7 +14,7 @@ dependencies {
 
     testImplementation libs.nva.testutils
     testImplementation libs.bundles.testing
-    testImplementation project(":nvi-test")
+    testImplementation project(':nvi-test')
 }
 
 test {

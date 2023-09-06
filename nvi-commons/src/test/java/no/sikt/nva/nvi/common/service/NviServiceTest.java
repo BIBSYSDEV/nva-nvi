@@ -243,6 +243,22 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldResetIfStatusSetToPending() {
+
+        var identifier = UUID.randomUUID();
+        var institutionUri = randomUri();
+        var fullCandidate = nviCandidateRepository.create(createDbCandidate(identifier, institutionUri),
+                                                          List.of(createDbApprobalStatus(institutionUri)));
+
+        var response = nviService.updateApprovalStatus(fullCandidate.identifier(),
+                                                       createApprovalStatus(DbStatus.APPROVED, institutionUri));
+        response = nviService.updateApprovalStatus(fullCandidate.identifier(),
+                                                       createApprovalStatus(DbStatus.PENDING, institutionUri));
+
+        assertThat(response.approvalStatuses().get(0).status(), is(equalTo(DbStatus.PENDING)));
+    }
+
+    @Test
     void shouldUpdateCandidate() {
         var identifier = UUID.randomUUID();
         var institutionUri = randomUri();

@@ -168,7 +168,7 @@ paths:
       parameters:
         - in: path
           name: candidateIdentifier
-          description: The identifer of the publication
+          description: The identifer of the candidate
           required: true
           schema:
             type: string
@@ -207,6 +207,13 @@ paths:
     put:
       tags:
         - Candidate
+      parameters:
+        - in: path
+          name: candidateIdentifier
+          description: The identifer of the candidate
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:

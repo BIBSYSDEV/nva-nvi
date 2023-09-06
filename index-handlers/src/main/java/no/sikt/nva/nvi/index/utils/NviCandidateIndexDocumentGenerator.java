@@ -44,10 +44,10 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     public static NviCandidateIndexDocument generateDocument(
-        String resource, Candidate candidateWithIdentifier) {
+        String resource, Candidate candidate) {
         return createNviCandidateIndexDocument(attempt(() -> dtoObjectMapper.readTree(resource))
                                                    .map(root -> root.at("/body")).orElseThrow(),
-                                               candidateWithIdentifier);
+                                               candidate);
     }
 
     private static NviCandidateIndexDocument createNviCandidateIndexDocument(

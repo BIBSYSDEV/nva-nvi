@@ -37,12 +37,12 @@ public class NviService {
 
     @JacocoGenerated //TODO Temporary for coverage
     public Optional<Candidate> upsertCandidate(DbCandidate candidate) {
-        if (!isExistingCandidate(candidate.publicationId()) && candidate.applicable()) {
+        if (!isExistingAndApplicableCandidate(candidate.publicationId()) && candidate.applicable()) {
             return Optional.of(
                 createCandidate(candidate,
                                 generatePendingApprovalStatuses(candidate.points())
                 ));
-        } else if (isExistingCandidate(candidate.publicationId()) && candidate.applicable()) {
+        } else if (isExistingAndApplicableCandidate(candidate.publicationId()) && candidate.applicable()) {
             var existing = findByPublicationId(candidate.publicationId()).orElseThrow();
             //TODO: Reset NVI Candidates here. See https://unit.atlassian.net/browse/NP-45113;
             return Optional.of(updateCandidate(existing.identifier(),
@@ -107,20 +107,29 @@ public class NviService {
                    .toList();
     }
 
+    private static DbApprovalStatus resetStatus(DbApprovalStatus oldApprovalStatus) {
+        return oldApprovalStatus.copy()
+                   .status(DbStatus.PENDING)
+                   .finalizedBy(null)
+                   .finalizedDate(null)
+                   .build();
+    }
+
+    private static DbApprovalStatus updateStatus(DbApprovalStatus oldApprovalStatus,
+                                                 DbApprovalStatus newApprovalStatus) {
+        return oldApprovalStatus.copy()
+                   .status(newApprovalStatus.status())
+                   .finalizedBy(newApprovalStatus.finalizedBy())
+                   .finalizedDate(Instant.now())
+                   .build();
+    }
+
     @JacocoGenerated // bug in jacoco report that is unable to exhaust the switch. Should be fixed in version 0.8.11
     private DbApprovalStatus toUpdatedApprovalStatus(DbApprovalStatus oldApprovalStatus,
                                                      DbApprovalStatus newApprovalStatus) {
         return switch (newApprovalStatus.status()) {
-            case APPROVED, REJECTED -> oldApprovalStatus.copy()
-                                           .status(newApprovalStatus.status())
-                                           .finalizedBy(newApprovalStatus.finalizedBy())
-                                           .finalizedDate(Instant.now())
-                                           .build();
-            case PENDING -> oldApprovalStatus.copy()
-                                .status(DbStatus.PENDING)
-                                .finalizedBy(null)
-                                .finalizedDate(null)
-                                .build();
+            case APPROVED, REJECTED -> updateStatus(oldApprovalStatus, newApprovalStatus);
+            case PENDING -> resetStatus(oldApprovalStatus);
         };
     }
 
@@ -141,7 +150,7 @@ public class NviService {
         }
     }
 
-    private boolean isExistingCandidate(URI publicationId) {
+    private boolean isExistingAndApplicableCandidate(URI publicationId) {
         return nviCandidateRepository.findByPublicationId(publicationId).isPresent();
     }
 }

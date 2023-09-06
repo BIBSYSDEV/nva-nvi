@@ -58,14 +58,14 @@ public class UpdateNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
     @EnumSource(NviApprovalStatus.class)
     void shouldUpdateApprovalStatus(NviApprovalStatus status) throws IOException {
         var institutionId = randomUri();
-        var candidate = createCandidate(institutionId);
-        var candidateWithIdentifier = nviCandidateRepository.create(candidate,
-                                                                    List.of(DbApprovalStatus.builder()
-                                                                                .institutionId(institutionId)
-                                                                                .status(DbStatus.PENDING)
-                                                                                .build()));
+        var dBcandidate = createCandidate(institutionId);
+        var candidate = nviCandidateRepository.create(dBcandidate,
+                                                      List.of(DbApprovalStatus.builder()
+                                                                  .institutionId(institutionId)
+                                                                  .status(DbStatus.PENDING)
+                                                                  .build()));
 
-        var req = new NviStatusRequest(candidateWithIdentifier.identifier(), institutionId, status);
+        var req = new NviStatusRequest(candidate.identifier(), institutionId, status);
         var request = createRequest(req);
         handler.handleRequest(request, output, context);
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);

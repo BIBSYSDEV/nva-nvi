@@ -67,7 +67,7 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         Objects.requireNonNull(candidateDetails.verifiedCreators());
     }
 
-    private static DbCandidate toPendingCandidate(CandidateEvaluatedMessage message) {
+    private static DbCandidate toCandidate(CandidateEvaluatedMessage message) {
         return DbCandidate.builder()
                    .publicationBucketUri(message.publicationBucketUri())
                    .publicationId(message.candidateDetails().publicationId())
@@ -99,11 +99,11 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
     }
 
     private static boolean isNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-        return evaluatedCandidate.status() == CandidateStatus.CANDIDATE;
+        return CandidateStatus.CANDIDATE == evaluatedCandidate.status();
     }
 
     private void upsertNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-        nviService.upsertCandidate(toPendingCandidate(evaluatedCandidate));
+        nviService.upsertCandidate(toCandidate(evaluatedCandidate));
     }
 
     private CandidateEvaluatedMessage parseBody(String body) {

@@ -18,6 +18,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactPutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest.Builder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public class NviCandidateRepository extends DynamoRepository {
@@ -39,28 +40,13 @@ public class NviCandidateRepository extends DynamoRepository {
         var identifier = UUID.randomUUID();
         var candidate = new CandidateDao(identifier, dbCandidate);
         var uniqueness = new CandidateUniquenessEntry(dbCandidate.publicationId().toString());
-        var transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
-
-        transactionBuilder.addPutItem(this.candidateTable, insertTransaction(candidate, CandidateDao.class));
-
-        approvalStatuses
-            .stream().map(as -> new ApprovalStatusDao(identifier, as))
-            .forEach(as -> transactionBuilder.addPutItem(this.approvalStatusTable,
-                                                         insertTransaction(as,
-                                                                           ApprovalStatusDao.class)));
-        transactionBuilder.addPutItem(this.uniquenessTable,
-                                      insertTransaction(uniqueness, CandidateUniquenessEntry.class));
+        var transactionBuilder = buildTransaction(approvalStatuses, candidate, identifier, uniqueness);
 
         this.client.transactWriteItems(transactionBuilder.build());
         var candidateObj = candidateTable.getItem(candidate);
-        var approvalStatusList = approvalStatusTable.query(
-                queryCandidateParts(identifier, ApprovalStatusDao.TYPE))
-                                     .items()
-                                     .stream()
-                                     .map(ApprovalStatusDao::approvalStatus)
-                                     .toList();
 
-        return new Candidate(identifier, candidateObj.candidate(), approvalStatusList);
+        return new Candidate(candidateObj.identifier(), candidateObj.candidate(),
+                             getApprovalStatuses(approvalStatusTable, candidateObj.identifier()));
     }
 
     public Candidate update(UUID identifier, DbCandidate dbCandidate,
@@ -79,21 +65,13 @@ public class NviCandidateRepository extends DynamoRepository {
         var queryObj = new CandidateDao(id, DbCandidate.builder().build());
         var fetched = this.candidateTable.getItem(queryObj);
         return Optional.ofNullable(fetched).map(
-            candidateDao -> {
-                var approvalStatuses = this.approvalStatusTable.query(queryCandidateParts(id, ApprovalStatusDao.TYPE))
-                                           .items().stream()
-                                           .map(ApprovalStatusDao::approvalStatus).toList();
-                return new Candidate(id, candidateDao.candidate(), approvalStatuses);
-            }
+            candidateDao -> new Candidate(id, candidateDao.candidate(), getApprovalStatuses(approvalStatusTable, id))
         );
     }
 
     public Candidate getById(UUID id) {
         var candidateDao = this.candidateTable.getItem(candidateKey(id));
-        var approvalStatus = approvalStatusTable.query(queryCandidateParts(id, ApprovalStatusDao.TYPE))
-                                 .items().stream()
-                                 .map(ApprovalStatusDao::approvalStatus)
-                                 .toList();
+        var approvalStatus = getApprovalStatuses(approvalStatusTable, id);
 
         return new Candidate(id, candidateDao.candidate(), approvalStatus);
     }
@@ -110,15 +88,9 @@ public class NviCandidateRepository extends DynamoRepository {
                    .map(Page::items)
                    .flatMap(Collection::stream)
                    .map(
-                       candidateDao -> {
-                           var approvalStatus = approvalStatusTable.query(queryCandidateParts(candidateDao.identifier(),
-                                                                                              ApprovalStatusDao.TYPE))
-                                                    .items().stream()
-                                                    .map(ApprovalStatusDao::approvalStatus)
-                                                    .toList();
-                           return new Candidate(candidateDao.identifier(), candidateDao.candidate(),
-                                                approvalStatus);
-                       })
+                       candidateDao -> new Candidate(candidateDao.identifier(), candidateDao.candidate(),
+                                                     getApprovalStatuses(approvalStatusTable,
+                                                                         candidateDao.identifier())))
                    .findFirst();
     }
 
@@ -158,5 +130,31 @@ public class NviCandidateRepository extends DynamoRepository {
                    .item(insert)
                    .conditionExpression(uniquePrimaryKeysExpression())
                    .build();
+    }
+
+    private List<DbApprovalStatus> getApprovalStatuses(DynamoDbTable<ApprovalStatusDao> approvalStatusTable,
+                                                       UUID identifier) {
+        return approvalStatusTable.query(
+                queryCandidateParts(identifier, ApprovalStatusDao.TYPE))
+                   .items()
+                   .stream()
+                   .map(ApprovalStatusDao::approvalStatus)
+                   .toList();
+    }
+
+    private Builder buildTransaction(List<DbApprovalStatus> approvalStatuses, CandidateDao candidate, UUID identifier,
+                                     CandidateUniquenessEntry uniqueness) {
+        var transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
+
+        transactionBuilder.addPutItem(this.candidateTable, insertTransaction(candidate, CandidateDao.class));
+
+        approvalStatuses
+            .stream()
+            .map(as -> new ApprovalStatusDao(identifier, as))
+            .forEach(as -> transactionBuilder.addPutItem(this.approvalStatusTable,
+                                                         insertTransaction(as, ApprovalStatusDao.class)));
+        transactionBuilder.addPutItem(this.uniquenessTable,
+                                      insertTransaction(uniqueness, CandidateUniquenessEntry.class));
+        return transactionBuilder;
     }
 }
