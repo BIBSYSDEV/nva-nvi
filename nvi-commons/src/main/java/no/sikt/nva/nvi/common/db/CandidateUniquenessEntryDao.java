@@ -18,7 +18,7 @@ public record CandidateUniquenessEntryDao(
     public static final String TYPE = "CandidateUniquenessEntry";
 
     public CandidateUniquenessEntryDao(String identifier) {
-        this(pk(identifier), pk(identifier));
+        this(pk0(identifier), pk0(identifier));
     }
 
     @JacocoGenerated
@@ -50,7 +50,7 @@ public record CandidateUniquenessEntryDao(
     }
 
     @DynamoDbIgnore
-    private static String pk(String identifier) {
+    private static String pk0(String identifier) {
         return TYPE + FIELD_DELIMITER + identifier;
     }
 
