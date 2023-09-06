@@ -132,7 +132,7 @@ class PointCalculatorTest {
             new PointParameters("AcademicMonograph", "Series", "1", false, 3, bd("4.0825"), bd("2.8868")),
             new PointParameters("AcademicMonograph", "Series", "2", true, 4, bd("7.3539"), bd("5.2000")),
             new PointParameters("AcademicMonograph", "Series", "2", false, 4, bd("5.6569"), bd("4.0000")),
-            new PointParameters("AcademicChapter", "Series", "1", true, 5, bd("0.6325"), bd("0.4472")),
+            new PointParameters("AcademicChapter", "Series", "1", true, 5, bd("0.8222"), bd("0.5814")),
             new PointParameters("AcademicChapter", "Series", "2", false, 5, bd("1.8974"), bd("1.3416")),
             new PointParameters("AcademicArticle", "Journal", "1", false, 7, bd("0.5345"), bd("0.3780")),
             new PointParameters("AcademicArticle", "Journal", "2", false, 7, bd("1.6036"), bd("1.1339")),
