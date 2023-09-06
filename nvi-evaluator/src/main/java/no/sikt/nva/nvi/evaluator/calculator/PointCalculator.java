@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_COUNTRY_CODE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_INSTANCE_TYPE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLISHER;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ROLE_TYPE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
@@ -35,6 +36,7 @@ public final class PointCalculator {
     public static final String ERROR_MSG_EXTRACT_PUBLICATION_CONTEXT = "Could not extract publication channel for "
                                                                        + "instanceType {}, candidate: {}";
     public static final String COUNTRY_CODE_NORWAY = "NO";
+    public static final String ROLE_CREATOR = "Creator";
     private static final Logger LOGGER = LoggerFactory.getLogger(PointCalculator.class);
     private static final int SCALE = 10;
     private static final int RESULT_SCALE = 4;
@@ -129,10 +131,15 @@ public final class PointCalculator {
 
     private static boolean isInternationalCollaboration(JsonNode jsonNode) {
         return getJsonNodeStream(jsonNode, JSON_PTR_CONTRIBUTOR)
+                   .filter(PointCalculator::isCreator)
                    .flatMap(contributorNode -> getJsonNodeStream(contributorNode, JSON_PTR_AFFILIATIONS))
                    .map(affiliationNode -> extractJsonNodeTextValue(affiliationNode, JSON_PTR_COUNTRY_CODE))
                    .filter(Objects::nonNull)
                    .anyMatch(PointCalculator::isInternationalCountryCode);
+    }
+
+    private static boolean isCreator(JsonNode contributorNode) {
+        return ROLE_CREATOR.equals(extractJsonNodeTextValue(contributorNode, JSON_PTR_ROLE_TYPE));
     }
 
     private static boolean isInternationalCountryCode(String countryCode) {
@@ -171,6 +178,7 @@ public final class PointCalculator {
 
     private static int countCreatorShares(JsonNode jsonNode) {
         return streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR))
+                   .filter(PointCalculator::isCreator)
                    .flatMap(contributor -> streamNode(contributor.at(JSON_PTR_AFFILIATIONS)))
                    .map(node -> 1)
                    .reduce(0, Integer::sum);

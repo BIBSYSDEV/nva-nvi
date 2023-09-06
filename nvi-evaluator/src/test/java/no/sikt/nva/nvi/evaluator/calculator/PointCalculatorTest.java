@@ -119,7 +119,7 @@ class PointCalculatorTest {
 
         var institutionPoints = calculatePoints(expandedResource, Map.of(creatorId, List.of(institutionId)));
 
-        assertThat(institutionPoints.get(institutionId), is(equalTo(BigDecimal.valueOf(1))));
+        assertThat(institutionPoints.get(institutionId), is(equalTo(bd("1"))));
     }
 
     private static JsonNode createExpandedResourceWithManyCreators(PointParameters parameters, URI creator1,
