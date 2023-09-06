@@ -90,18 +90,6 @@ public final class PointCalculator {
                                countInstitutionCreatorShares(nviCreatorsWithInstitutionIds));
     }
 
-    private static boolean isInternationalCollaboration(JsonNode jsonNode) {
-        return getJsonNodeStream(jsonNode, JSON_PTR_CONTRIBUTOR)
-                   .flatMap(contributorNode -> getJsonNodeStream(contributorNode, JSON_PTR_AFFILIATIONS))
-                   .filter(affiliationNode -> nonNull(affiliationNode.at(JSON_PTR_COUNTRY_CODE)))
-                   .map(affiliationNode -> extractJsonNodeTextValue(affiliationNode, JSON_PTR_COUNTRY_CODE))
-                   .anyMatch(countryCode -> !COUNTRY_CODE_NORWAY.equals(countryCode));
-    }
-
-    private static Stream<JsonNode> getJsonNodeStream(JsonNode jsonNode, String jsonPtr) {
-        return StreamSupport.stream(jsonNode.at(jsonPtr).spliterator(), false);
-    }
-
     private static Map<URI, BigDecimal> calculatePoints(BigDecimal instanceTypeAndLevelPoints, int creatorShareCount,
                                                         boolean isInternationalCollaboration,
                                                         Map<URI, Long> institutionCreatorShareCounts) {
@@ -138,6 +126,14 @@ public final class PointCalculator {
     private static BigDecimal getInstanceTypeAndLevelPoints(String instanceType,
                                                             String channelType, String level) {
         return INSTANCE_TYPE_AND_LEVEL_POINT_MAP.get(instanceType).get(channelType).get(level);
+    }
+
+    private static boolean isInternationalCollaboration(JsonNode jsonNode) {
+        return getJsonNodeStream(jsonNode, JSON_PTR_CONTRIBUTOR)
+                   .flatMap(contributorNode -> getJsonNodeStream(contributorNode, JSON_PTR_AFFILIATIONS))
+                   .filter(affiliationNode -> nonNull(affiliationNode.at(JSON_PTR_COUNTRY_CODE)))
+                   .map(affiliationNode -> extractJsonNodeTextValue(affiliationNode, JSON_PTR_COUNTRY_CODE))
+                   .anyMatch(countryCode -> !COUNTRY_CODE_NORWAY.equals(countryCode));
     }
 
     private static Map<URI, Long> countInstitutionCreatorShares(Map<URI, List<URI>> nviCreatorsWithInstitutions) {
@@ -208,6 +204,10 @@ public final class PointCalculator {
         } else {
             return jsonNode.at(JSON_PTR_PUBLISHER).toString();
         }
+    }
+
+    private static Stream<JsonNode> getJsonNodeStream(JsonNode jsonNode, String jsonPtr) {
+        return StreamSupport.stream(jsonNode.at(jsonPtr).spliterator(), false);
     }
 
     private record ChannelLevel(String type, String level) {
