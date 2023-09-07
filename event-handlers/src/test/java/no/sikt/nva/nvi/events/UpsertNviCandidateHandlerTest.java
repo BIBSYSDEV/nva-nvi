@@ -2,12 +2,10 @@ package no.sikt.nva.nvi.events;
 
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
-import static no.sikt.nva.nvi.test.TestUtils.mapToVerifiedCreators;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
-import static no.sikt.nva.nvi.test.TestUtils.randomPublicationDate;
-import static no.sikt.nva.nvi.test.TestUtils.toPublicationDate;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
+import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
@@ -26,24 +24,22 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
-import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
-import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
-import no.sikt.nva.nvi.common.model.business.Candidate;
-import no.sikt.nva.nvi.common.model.business.InstitutionPoints;
-import no.sikt.nva.nvi.common.model.business.Level;
-import no.sikt.nva.nvi.common.model.business.Status;
-import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
-import no.sikt.nva.nvi.common.model.events.CandidateStatus;
-import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
-import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator;
-import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.PublicationDate;
+
+import no.sikt.nva.nvi.common.db.model.DbCandidate;
+import no.sikt.nva.nvi.common.db.model.DbCreator;
+import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.DbLevel;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.events.CandidateDetails.Creator;
+import no.sikt.nva.nvi.events.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import no.sikt.nva.nvi.common.db.Candidate;
 
 public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
@@ -178,13 +174,6 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         message.setBody(body);
         sqsEvent.setRecords(List.of(message));
         return sqsEvent;
-    }
-
-    private static List<InstitutionPoints> mapToInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
-        return institutionPoints.entrySet()
-                   .stream()
-                   .map(entry -> new InstitutionPoints(entry.getKey(), entry.getValue()))
-                   .toList();
     }
 
     private SQSEvent createEvent(UUID identifier, List<Creator> verifiedCreators, String instanceType,

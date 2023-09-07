@@ -10,20 +10,12 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodRepository;
-import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
-import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
-import no.sikt.nva.nvi.common.model.business.Candidate;
-import no.sikt.nva.nvi.common.model.business.Creator;
-import no.sikt.nva.nvi.common.model.business.InstitutionPoints;
-import no.sikt.nva.nvi.common.model.business.Level;
-import no.sikt.nva.nvi.common.model.business.NviPeriod;
-import no.sikt.nva.nvi.common.model.business.PublicationDate;
-import no.sikt.nva.nvi.common.model.business.Status;
-import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
-import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
-import nva.commons.apigateway.exceptions.BadRequestException;
-import nva.commons.apigateway.exceptions.ConflictException;
-import nva.commons.apigateway.exceptions.NotFoundException;
+
+import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.model.DbCandidate;
+import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.model.DbStatus;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -64,12 +56,6 @@ public class NviService {
         var nviPeriod = injectCreatedBy(period);
         validatePeriod(nviPeriod);
         return nviPeriodRepository.save(nviPeriod);
-    }
-
-    private NviPeriod injectCreatedBy(NviPeriod period) {
-        return period.copy()
-            .withCreatedBy(getPeriod(period.publishingYear()).createdBy())
-            .build();
     }
 
     public DbNviPeriod getPeriod(String publishingYear) {
@@ -131,6 +117,12 @@ public class NviService {
                    .build();
     }
 
+    private DbNviPeriod injectCreatedBy(DbNviPeriod period) {
+        return period.copy()
+                   .createdBy(getPeriod(period.publishingYear()).createdBy())
+                   .build();
+    }
+
     private boolean isExistingCandidate(DbCandidate dbCandidate) {
         return isExistingCandidate(dbCandidate.publicationId()) && dbCandidate.applicable();
     }
@@ -181,7 +173,7 @@ public class NviService {
             throw new IllegalArgumentException(PERIOD_NOT_NUMERIC_MESSAGE);
         }
         if (period.reportingDate().isBefore(Instant.now())) {
-            throw new BadRequestException(NOT_SUPPORTED_REPORTING_DATE_MESSAGE);
+            throw new IllegalArgumentException(NOT_SUPPORTED_REPORTING_DATE_MESSAGE);
         }
     }
 }
