@@ -27,8 +27,8 @@ import org.slf4j.LoggerFactory;
 
 public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
-    public static final String DOCUMENT_ADDED_MESSAGE = "Document has been added/updated";
-    public static final String DOCUMENT_REMOVED_MESSAGE = "Document has been removed";
+    public static final String DOCUMENT_ADDED_MESSAGE = "Document with identifier {} has been added/updated";
+    public static final String DOCUMENT_REMOVED_MESSAGE = "Document with identifier {} has been removed";
     private static final String CANDIDATE_TYPE = "CANDIDATE";
     private static final String PRIMARY_KEY_DELIMITER = "#";
     private static final String IDENTIFIER = "identifier";
@@ -111,7 +111,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
             .map(UpdateIndexHandler::toIndexDocumentWithId)
             .forEach(openSearchClient::removeDocumentFromIndex);
 
-        LOGGER.info(DOCUMENT_REMOVED_MESSAGE);
+        LOGGER.info(DOCUMENT_REMOVED_MESSAGE, candidate.identifier().toString());
     }
 
     private void addDocumentToIndex(Candidate candidate) {
@@ -120,6 +120,6 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
             .map(storageReader::read)
             .map(blob -> generateDocument(blob, candidate))
             .forEach(openSearchClient::addDocumentToIndex);
-        LOGGER.info(DOCUMENT_ADDED_MESSAGE);
+        LOGGER.info(DOCUMENT_ADDED_MESSAGE, candidate.identifier().toString());
     }
 }
