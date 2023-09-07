@@ -1,34 +1,30 @@
 package no.sikt.nva.nvi.rest;
 
-import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.Matchers.is;
-import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.mockito.ArgumentMatchers.any;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.time.Period;
+import java.util.Date;
 import no.sikt.nva.nvi.common.model.business.NviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
-import nva.commons.apigateway.exceptions.BadRequestException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
-public class CreateNviPeriodHandlerTest {
+public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
 
     private Context context;
     private ByteArrayOutputStream output;
@@ -39,7 +35,7 @@ public class CreateNviPeriodHandlerTest {
     void init() {
         output = new ByteArrayOutputStream();
         context = mock(Context.class);
-        nviService = mock(NviService.class);
+        nviService = new NviService((initializeTestDatabase()));
         handler = new CreateNviPeriodHandler(nviService);
     }
 
@@ -52,32 +48,21 @@ public class CreateNviPeriodHandlerTest {
     }
 
     @Test
-    void shouldReturnBadRequestWhenMissingAccessRightsToOpenNviPeriod() throws IOException, BadRequestException {
-        when(nviService.createPeriod(any())).thenThrow(BadRequestException.class);
-        handler.handleRequest(createRequest(), output, context);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
-
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
-    }
-
-    //TODO: Assert persisted period when nviService is implemented
-    @Test
-    void shouldCreateNviPeriod() throws IOException, BadRequestException {
-        when(nviService.createPeriod(any())).thenReturn(randomPeriod());
-        handler.handleRequest(createRequest(), output, context);
-        var response = GatewayResponse.fromOutputStream(output, Period.class);
-
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CREATED)));
+    void shouldCreateNviPeriod() throws IOException {
+        var period = randomPeriod();
+        handler.handleRequest(createRequest(period), output, context);
+        var persistedPeriod = nviService.getPeriod("2023");
+        assertThat(period.publishingYear(), is(equalTo(persistedPeriod.publishingYear())));
     }
 
     private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
         return new HandlerRequestBuilder<NviPeriod>(JsonUtils.dtoObjectMapper).withBody(randomPeriod()).build();
     }
 
-    private InputStream createRequest() throws JsonProcessingException {
+    private InputStream createRequest(NviPeriod period) throws JsonProcessingException {
         var customerId = randomUri();
         return new HandlerRequestBuilder<NviPeriod>(JsonUtils.dtoObjectMapper)
-                   .withBody(randomPeriod())
+                   .withBody(period)
                    .withCurrentCustomer(customerId)
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_PERIODS.name())
                    .withUserName(randomString())
@@ -85,10 +70,9 @@ public class CreateNviPeriodHandlerTest {
     }
 
     private NviPeriod randomPeriod() {
-        var start = randomInstant();
         return new NviPeriod.Builder()
-                   .withReportingDate(start)
-                   .withPublishingYear(String.valueOf(randomInteger(9999)))
+                   .withReportingDate(new Date(2050, 03, 25).toInstant())
+                   .withPublishingYear("2023")
                    .build();
     }
 }

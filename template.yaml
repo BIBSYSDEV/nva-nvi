@@ -302,11 +302,10 @@ Resources:
           Properties:
             Queue: !GetAtt NewCandidateQueue.Arn
 
-  #Add table name to env variables and remove comment when table is implemented
   CreateNviPeriodHandler:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: index-handlers
+      CodeUri: nvi-rest
       Handler: no.sikt.nva.nvi.rest.CreateNviPeriodHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
@@ -317,18 +316,17 @@ Resources:
           ALLOWED_ORIGIN: '*'
           API_HOST: !Ref ApiDomain
       Events:
-        GetEvent:
+        ApiEvent:
           Type: Api
           Properties:
             Path: /period
             Method: post
             RestApiId: !Ref ScientificIndexApi
 
-  #Add table name to env variables and remove comment when table is implemented
   UpdateNviPeriodHandler:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: index-handlers
+      CodeUri: nvi-rest
       Handler: no.sikt.nva.nvi.rest.UpdateNviPeriodHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
@@ -339,10 +337,10 @@ Resources:
           ALLOWED_ORIGIN: '*'
           API_HOST: !Ref ApiDomain
       Events:
-        GetEvent:
+        ApiEvent:
           Type: Api
           Properties:
-            Path: /nvi-period
+            Path: /period
             Method: put
             RestApiId: !Ref ScientificIndexApi
 
@@ -382,7 +380,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: nvi-rest
-      Handler: no.sikt.nva.nvi.fetch.FetchNviCandidateHandler::handleRequest
+      Handler: no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
       MemorySize: 1536

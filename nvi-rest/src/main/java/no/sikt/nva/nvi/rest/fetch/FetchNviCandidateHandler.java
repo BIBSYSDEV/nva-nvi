@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.fetch;
+package no.sikt.nva.nvi.rest.fetch;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 import static nva.commons.core.attempt.Try.attempt;
