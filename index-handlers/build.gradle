@@ -2,7 +2,6 @@ plugins {
     id 'nva.nvi.java-conventions'
     id 'nva.nvi.dynamodblocal'
 }
-
 dependencies {
     implementation project(':nvi-commons')
     implementation libs.nva.json
@@ -12,6 +11,7 @@ dependencies {
     implementation libs.nva.commons.apigateway
     implementation libs.nva.commons.pagination
     implementation libs.nva.s3
+
 
     implementation libs.aws.lambda.java.core
     implementation libs.aws.lambda.events

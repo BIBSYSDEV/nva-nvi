@@ -8,58 +8,6 @@ x-amazon-apigateway-request-validators:
     validateRequestBody: true
     validateRequestParameters: false
 paths:
-  /candidate:
-    get:
-      description: 'Search for scientific index candidates'
-      parameters:
-        - in: query
-          name: query
-          description: 'Term to search for in candidates'
-          required: false
-          schema:
-            type: string
-        - in: query
-          name: offset
-          schema:
-            type: integer
-            default: 0
-          description: The offset of the search for use in pagination. Must be divisible by the size.
-        - in: query
-          name: size
-          schema:
-            type: integer
-            default: 10
-          description: The size of each page of the search for use in pagination. Default is 10.
-        - in: query
-          name: filter
-          schema:
-            $ref: "#/components/schemas/Filter"
-          description: Filter values to use
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
-      x-amazon-apigateway-integration:
-        uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchNviCandidatesHandler.Arn}:live/invocations
-        responses: { }
-        httpMethod: POST
-        type: AWS_PROXY
-      responses:
-        '200':
-          description: "OK"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CandidateSearchResponse"
-        '500':
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
   /period:
     post:
       requestBody:
@@ -159,13 +107,65 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /candidate:
+    get:
+      description: 'Search for scientific index candidates'
+      parameters:
+        - in: query
+          name: query
+          description: 'Term to search for in candidates'
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: The offset of the search for use in pagination. Must be divisible by the size.
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 10
+          description: The size of each page of the search for use in pagination. Default is 10.
+        - in: query
+          name: filter
+          schema:
+            $ref: "#/components/schemas/Filter"
+          description: Filter values to use
+      security:
+        - CognitoUserPool: [
+          'https://api.nva.unit.no/scopes/backend',
+          'https://api.nva.unit.no/scopes/frontend',
+          'aws.cognito.signin.user.admin',
+        ]
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchNviCandidatesHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateSearchResponse"
+        '500':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}:
     get:
       description: 'Get scientific index candidate'
       parameters:
         - in: path
           name: candidateIdentifier
-          description: The identifer of the publication
+          description: The identifer of the candidate
           required: true
           schema:
             type: string
@@ -187,7 +187,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FetchNviCandidateResponse"
+                $ref: "#/components/schemas/NviCandidateResponse"
         '404':
           description: "Candidate not found"
           content:
@@ -200,7 +200,60 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-
+  /candidate/{candidateIdentifier}/status:
+    put:
+      parameters:
+        - in: path
+          name: candidateIdentifier
+          description: The identifer of the candidate
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalStatusRequest'
+      description: 'Update Candidate Approval Status '
+      security:
+        - CognitoUserPool: [
+          'https://api.nva.unit.no/scopes/backend',
+          'https://api.nva.unit.no/scopes/frontend',
+          'aws.cognito.signin.user.admin',
+        ]
+      x-amazon-apigateway-request-validator: validate_body
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateNviCandidateStatusHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        '200':
+          description: "Approvalstatus updated"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NviCandidateResponse"
+        '401':
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '404':
+          description: "Not found - period to update does not exist"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '500':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
 components:
   schemas:
     Filter:
@@ -283,7 +336,7 @@ components:
               approvalStatus:
                 type: string
 
-    FetchNviCandidateResponse:
+    NviCandidateResponse:
       type: object
       properties:
         id:
@@ -294,6 +347,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ApprovalStatus'
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/InstitutionPoints'
         notes:
           type: array
           items:
@@ -305,7 +362,7 @@ components:
           $ref: '#/components/schemas/Id'
         status:
           type: string
-          enum: ['Approved','Pending','Rejected']
+          enum: [ 'Approved','Pending','Rejected' ]
         finalizedBy:
           $ref: '#/components/schemas/Username'
         finalizedDate:
@@ -358,6 +415,21 @@ components:
         type:
           type: string
           description: A URI describing the error and mitigations, in generic cases, this is about:blank
+    InstitutionPoints:
+      type: object
+      properties:
+        institutionId:
+          $ref: '#/components/schemas/Id'
+        points:
+          type: number
+    ApprovalStatusRequest:
+      type: object
+      properties:
+        institutionId:
+          $ref: '#/components/schemas/Id'
+        status:
+          type: string
+          enum: [ 'Approved','Pending','Rejected' ]
   securitySchemes:
     CognitoUserPool:
       type: apiKey
