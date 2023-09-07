@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.Date;
-import no.sikt.nva.nvi.common.model.business.NviPeriod;
+import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
@@ -56,12 +56,12 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
     }
 
     private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
-        return new HandlerRequestBuilder<NviPeriod>(JsonUtils.dtoObjectMapper).withBody(randomPeriod()).build();
+        return new HandlerRequestBuilder<DbNviPeriod>(JsonUtils.dtoObjectMapper).withBody(randomPeriod()).build();
     }
 
-    private InputStream createRequest(NviPeriod period) throws JsonProcessingException {
+    private InputStream createRequest(DbNviPeriod period) throws JsonProcessingException {
         var customerId = randomUri();
-        return new HandlerRequestBuilder<NviPeriod>(JsonUtils.dtoObjectMapper)
+        return new HandlerRequestBuilder<DbNviPeriod>(JsonUtils.dtoObjectMapper)
                    .withBody(period)
                    .withCurrentCustomer(customerId)
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_PERIODS.name())
@@ -69,10 +69,10 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private NviPeriod randomPeriod() {
-        return new NviPeriod.Builder()
-                   .withReportingDate(new Date(2050, 03, 25).toInstant())
-                   .withPublishingYear("2023")
+    private DbNviPeriod randomPeriod() {
+        return DbNviPeriod.builder()
+                   .reportingDate(new Date(2050, 03, 25).toInstant())
+                   .publishingYear("2023")
                    .build();
     }
 }

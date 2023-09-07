@@ -28,8 +28,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
-import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
-import no.sikt.nva.nvi.common.model.business.Status;
+import no.sikt.nva.nvi.common.db.Candidate;
+import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.Approval;
@@ -72,7 +73,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldAddDocumentToIndexWhenIncomingEventIsInsert() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        var persistedCandidate = randomCandidateWithIdentifier();
+        var persistedCandidate = randomCandidate();
         when(nviService.findById(any())).thenReturn(Optional.of(persistedCandidate));
         handler.handleRequest(createEvent(INSERT, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
         var document = openSearchClient.getDocuments().get(0);
@@ -84,7 +85,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldUpdateExistingIndexDocumentWhenIncomingEventIsModify() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        var persistedCandidate = randomCandidateWithIdentifier();
+        var persistedCandidate = randomCandidate();
         when(nviService.findById(any())).thenReturn(Optional.of(persistedCandidate));
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
         var document = openSearchClient.getDocuments().get(0);
@@ -96,7 +97,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldRemoveFromIndexWhenIncomingEventIsRemove() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
+        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate()));
 
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordNotApplicable.json")), CONTEXT);
 
@@ -106,7 +107,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldDoNothingWhenIncomingEventIsRemove() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
+        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate()));
 
         handler.handleRequest(createEvent(REMOVE, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
 
@@ -116,7 +117,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldDoNothingWhenConsumedRecordIsNotCandidate() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidateWithIdentifier()));
+        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate()));
 
         handler.handleRequest(createEvent(REMOVE, toRecord("dynamoDbUniqueEntryEvent.json")), CONTEXT);
 
@@ -173,21 +174,21 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .withNewImage(Map.of(randomString(), new AttributeValue(randomString())));
     }
 
-    private static CandidateWithIdentifier randomCandidateWithIdentifier() {
-        var candidate = randomCandidateBuilder().withApprovalStatuses(List.of(getApprovalStatus())).build();
-        return new CandidateWithIdentifier(candidate, randomUUID());
+    private static Candidate randomCandidate() {
+        var candidate = randomCandidateBuilder();
+        return new Candidate(randomUUID(),candidate.build(),  List.of(getApprovalStatus()));
     }
 
-    private static no.sikt.nva.nvi.common.model.business.ApprovalStatus getApprovalStatus() {
-        return no.sikt.nva.nvi.common.model.business.ApprovalStatus.builder()
-                   .withInstitutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
-                   .withStatus(Status.PENDING).build();
+    private static DbApprovalStatus getApprovalStatus() {
+        return DbApprovalStatus.builder()
+                   .institutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
+                   .status(DbStatus.PENDING).build();
     }
 
-    private NviCandidateIndexDocument constructExpectedDocument(CandidateWithIdentifier candidateWithIdentifier) {
+    private NviCandidateIndexDocument constructExpectedDocument(Candidate candidate) {
         return new NviCandidateIndexDocument.Builder()
                    .withContext(URI.create("https://bibsysdev.github.io/src/nvi-context.json"))
-                   .withIdentifier(candidateWithIdentifier.identifier().toString())
+                   .withIdentifier(candidate.identifier().toString())
                    .withApprovals(constructExpectedApprovals())
                    .withPublicationDetails(constructPublicationDetails())
                    .withNumberOfApprovals(1)
