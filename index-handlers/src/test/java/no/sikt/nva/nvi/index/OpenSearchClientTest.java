@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_COLLABORATION_AGG;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
@@ -46,6 +47,7 @@ import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
+import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
 import no.unit.nva.commons.json.JsonUtils;
@@ -212,7 +214,7 @@ public class OpenSearchClientTest {
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
         var approvals = randomApprovalList();
         return new NviCandidateIndexDocument(randomUri(), randomString(), randomPublicationDetails(),
-                                             approvals, approvals.size());
+                                             approvals, approvals.size(), TestUtils.randomBigDecimal());
     }
 
     private static List<Approval> randomApprovalList() {

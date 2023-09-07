@@ -202,8 +202,15 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .withIdentifier(candidate.identifier().toString())
                    .withApprovals(constructExpectedApprovals())
                    .withPublicationDetails(constructPublicationDetails())
-                   .withNumberOfApprovals(1)
+                   .withNumberOfApprovals(candidate.approvalStatuses().size())
+                   .withPoints(sumPoint(candidate.candidate().points()))
                    .build();
+    }
+
+    private BigDecimal sumPoint(List<DbInstitutionPoints> points) {
+        return points.stream().map(DbInstitutionPoints::points)
+                   .reduce(BigDecimal.ZERO, BigDecimal::add)
+                   .setScale(1, RoundingMode.HALF_UP);
     }
 
     private static class FakeSearchClient implements SearchClient<NviCandidateIndexDocument> {
