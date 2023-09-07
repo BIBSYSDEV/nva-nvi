@@ -1,8 +1,10 @@
 package no.sikt.nva.nvi.rest;
 
+import static no.sikt.nva.nvi.rest.model.NviPeriodDto.INVALID_REPORTING_DATE_MESSAGE;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
@@ -13,8 +15,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.Date;
-import no.sikt.nva.nvi.common.model.business.NviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.rest.model.NviPeriodDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -48,31 +50,44 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldReturnBadRequestWhenReportingDateIsNull() throws IOException {
+        var period = new NviPeriodDto("2023", null);
+        handler.handleRequest(createRequest(period), output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+        assertThat(response.getBody(), containsString(INVALID_REPORTING_DATE_MESSAGE));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenReportingDateIsInvalid() throws IOException {
+        var period = new NviPeriodDto("2023","invalid");
+        handler.handleRequest(createRequest(period), output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+        assertThat(response.getBody(), containsString(INVALID_REPORTING_DATE_MESSAGE));
+    }
+
+    @Test
     void shouldCreateNviPeriod() throws IOException {
-        var period = randomPeriod();
+        var period = validPeriod();
         handler.handleRequest(createRequest(period), output, context);
         var persistedPeriod = nviService.getPeriod("2023");
         assertThat(period.publishingYear(), is(equalTo(persistedPeriod.publishingYear())));
     }
 
-    private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
-        return new HandlerRequestBuilder<NviPeriod>(JsonUtils.dtoObjectMapper).withBody(randomPeriod()).build();
+    private static NviPeriodDto validPeriod() {
+        return new NviPeriodDto("2023", new Date(2050, 03, 25).toInstant().toString());
     }
 
-    private InputStream createRequest(NviPeriod period) throws JsonProcessingException {
+    private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
+        return new HandlerRequestBuilder<NviPeriodDto>(JsonUtils.dtoObjectMapper).withBody(validPeriod()).build();
+    }
+
+    private InputStream createRequest(NviPeriodDto period) throws JsonProcessingException {
         var customerId = randomUri();
-        return new HandlerRequestBuilder<NviPeriod>(JsonUtils.dtoObjectMapper)
+        return new HandlerRequestBuilder<NviPeriodDto>(JsonUtils.dtoObjectMapper)
                    .withBody(period)
                    .withCurrentCustomer(customerId)
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_PERIODS.name())
                    .withUserName(randomString())
-                   .build();
-    }
-
-    private NviPeriod randomPeriod() {
-        return new NviPeriod.Builder()
-                   .withReportingDate(new Date(2050, 03, 25).toInstant())
-                   .withPublishingYear("2023")
                    .build();
     }
 }

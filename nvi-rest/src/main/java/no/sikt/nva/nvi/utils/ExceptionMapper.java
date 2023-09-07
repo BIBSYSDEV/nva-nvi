@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.utils;
 import java.util.NoSuchElementException;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.BadMethodException;
+import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.ConflictException;
 import nva.commons.apigateway.exceptions.NotFoundException;
 import nva.commons.core.attempt.Failure;
@@ -26,6 +27,9 @@ public final class ExceptionMapper {
         }
         if (exception instanceof NullPointerException) {
             throw new RuntimeException(exception.getMessage());
+        }
+        if (exception instanceof BadRequestException) {
+            return new BadRequestException(failure.getException().getMessage(), failure.getException());
         } else {
             return (ApiGatewayException) exception;
         }

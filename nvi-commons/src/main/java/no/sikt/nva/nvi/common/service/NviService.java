@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
+import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.common.model.events.CandidateStatus.CANDIDATE;
 import java.math.BigDecimal;
@@ -32,6 +33,7 @@ public class NviService {
     public static final String INVALID_LENGTH_MESSAGE = "Provided period has invalid length!";
     public static final String PERIOD_NOT_NUMERIC_MESSAGE = "Period is not numeric!";
     public static final String NOT_SUPPORTED_REPORTING_DATE_MESSAGE = "Provided reporting date is not supported";
+    public static final String EMPTY_REPORTING_DATE_MESSAGE = "Reporting date can not be empty!";
     private final NviCandidateRepository nviCandidateRepository;
     private final NviPeriodRepository nviPeriodRepository;
 
@@ -174,6 +176,9 @@ public class NviService {
         }
         if (!isInteger(period.publishingYear())) {
             throw new BadRequestException(PERIOD_NOT_NUMERIC_MESSAGE);
+        }
+        if (isNull(period.reportingDate())) {
+           throw new BadRequestException(EMPTY_REPORTING_DATE_MESSAGE);
         }
         if (period.reportingDate().isBefore(Instant.now())) {
             throw new BadRequestException(NOT_SUPPORTED_REPORTING_DATE_MESSAGE);
