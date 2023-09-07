@@ -39,7 +39,6 @@ import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
-import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
@@ -96,9 +95,10 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldRemoveFromIndexWhenIncomingEventIsRemove() throws JsonProcessingException {
+    void shouldRemoveFromIndexWhenIncomingEventIsModifyAndCandidateIsNotApplicable() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate()));
+        var persistedCandidate = randomNonApplicableCandidate();
+        when(nviService.findById(any())).thenReturn(Optional.of(persistedCandidate));
 
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordNotApplicable.json")), CONTEXT);
 
@@ -181,13 +181,19 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     private static Candidate randomApplicableCandidate() {
-        return new Candidate(randomUUID(), TestUtils.randomApplicableCandidate(), List.of(getApprovalStatus()));
+        var applicableCandidate = randomCandidateBuilder().applicable(true).build();
+        return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()));
     }
 
     private static DbApprovalStatus getApprovalStatus() {
         return DbApprovalStatus.builder()
                    .institutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
                    .status(DbStatus.PENDING).build();
+    }
+
+    private Candidate randomNonApplicableCandidate() {
+        var nonApplicableCandidate = randomCandidateBuilder().applicable(false).build();
+        return new Candidate(randomUUID(), nonApplicableCandidate, List.of(getApprovalStatus()));
     }
 
     private NviCandidateIndexDocument constructExpectedDocument(Candidate candidate) {
