@@ -154,13 +154,6 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         return sqsEvent;
     }
 
-    private static List<InstitutionPoints> mapToInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
-        return institutionPoints.entrySet()
-                   .stream()
-                   .map(entry -> new InstitutionPoints(entry.getKey(), entry.getValue()))
-                   .toList();
-    }
-
     private SQSEvent createEvent(UUID identifier, List<Creator> verifiedCreators, String instanceType,
                                  Level randomLevel, PublicationDate publicationDate,
                                  Map<URI, BigDecimal> institutionPoints) {
@@ -174,6 +167,13 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                                           verifiedCreators))
                                .withInstitutionPoints(institutionPoints)
                                .build());
+    }
+
+    private static List<InstitutionPoints> mapToInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
+        return institutionPoints.entrySet()
+                   .stream()
+                   .map(entry -> new InstitutionPoints(entry.getKey(), entry.getValue()))
+                   .toList();
     }
 
     private Candidate createExpectedCandidate(UUID identifier, List<Creator> creators,

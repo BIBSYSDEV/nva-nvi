@@ -7,7 +7,6 @@ import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomPublicationDate;
 import static no.sikt.nva.nvi.test.TestUtils.toPublicationDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
-import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -18,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,8 +37,6 @@ import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.Creator
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import nva.commons.apigateway.exceptions.BadRequestException;
-import nva.commons.apigateway.exceptions.ConflictException;
-import nva.commons.apigateway.exceptions.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -184,19 +182,18 @@ public class NviServiceTest extends LocalDynamoTest {
         assertDoesNotThrow(() -> nviService.upsertCandidate(evaluatedCandidateDto));
     }
 
-    //TODO: Change test when nviService is implemented
     @Test
     void shouldCreateNviPeriod() throws BadRequestException {
-        var period = createPeriod("2014");
+        var period = createPeriod("2050");
         nviService.createPeriod(period);
         assertThat(nviService.getPeriod(period.publishingYear()), is(equalTo(period)));
     }
 
     @Test
-    void shouldUpdateNviPeriod() throws BadRequestException, ConflictException, NotFoundException {
+    void shouldUpdateNviPeriod() throws BadRequestException {
         var originalPeriod = createPeriod("2014");
         nviService.createPeriod(originalPeriod);
-        nviService.updatePeriod(originalPeriod.copy().withReportingDate(randomInstant()).build());
+        nviService.updatePeriod(originalPeriod.copy().withReportingDate(new Date(2060,03,25).toInstant()).build());
         var fetchedPeriod = nviService.getPeriod(originalPeriod.publishingYear());
         assertThat(fetchedPeriod, is(not(equalTo(originalPeriod))));
     }
@@ -214,9 +211,8 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     private static NviPeriod createPeriod(String publishingYear) {
-        var start = randomInstant();
         return new NviPeriod.Builder()
-                   .withReportingDate(start)
+                   .withReportingDate(new Date(2050,03,25).toInstant())
                    .withPublishingYear(publishingYear)
                    .withCreatedBy(randomUsername())
                    .build();
