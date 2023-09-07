@@ -4,6 +4,7 @@ import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.common.model.events.CandidateStatus.CANDIDATE;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,8 +24,6 @@ import no.sikt.nva.nvi.common.model.business.Status;
 import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import nva.commons.apigateway.exceptions.BadRequestException;
-import nva.commons.apigateway.exceptions.ConflictException;
-import nva.commons.apigateway.exceptions.NotFoundException;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -32,6 +31,7 @@ public class NviService {
 
     public static final String INVALID_LENGTH_MESSAGE = "Provided period has invalid length!";
     public static final String PERIOD_NOT_NUMERIC_MESSAGE = "Period is not numeric!";
+    public static final String NOT_SUPPORTED_REPORTING_DATE_MESSAGE = "Provided reporting date is not supported";
     private final NviCandidateRepository nviCandidateRepository;
     private final NviPeriodRepository nviPeriodRepository;
 
@@ -63,9 +63,16 @@ public class NviService {
         return nviPeriodRepository.save(period);
     }
 
-    public NviPeriod updatePeriod(NviPeriod period) throws NotFoundException, ConflictException, BadRequestException {
-        validatePeriod(period);
-        return nviPeriodRepository.save(period);
+    public NviPeriod updatePeriod(NviPeriod period) throws BadRequestException {
+        var nviPeriod = injectCreatedBy(period);
+        validatePeriod(nviPeriod);
+        return nviPeriodRepository.save(nviPeriod);
+    }
+
+    private NviPeriod injectCreatedBy(NviPeriod period) {
+        return period.copy()
+            .withCreatedBy(getPeriod(period.publishingYear()).createdBy())
+            .build();
     }
 
     public NviPeriod getPeriod(String publishingYear) {
@@ -167,6 +174,9 @@ public class NviService {
         }
         if (!isInteger(period.publishingYear())) {
             throw new BadRequestException(PERIOD_NOT_NUMERIC_MESSAGE);
+        }
+        if (period.reportingDate().isBefore(Instant.now())) {
+            throw new BadRequestException(NOT_SUPPORTED_REPORTING_DATE_MESSAGE);
         }
     }
 
