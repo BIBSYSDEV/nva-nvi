@@ -16,7 +16,8 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         String identifier,
                                         PublicationDetails publicationDetails,
                                         List<Approval> approvals,
-                                        int numberOfApprovals) {
+                                        int numberOfApprovals,
+                                        String points) {
 
     private static final String CONTEXT = "@context";
 
@@ -28,6 +29,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         private PublicationDetails publicationDetails;
         private List<Approval> approvals;
         private int numberOfApprovals;
+        private String points;
 
         public Builder withContext(URI context) {
             this.context = context;
@@ -54,9 +56,14 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             return this;
         }
 
+        public Builder withPoints(String points) {
+            this.points = points;
+            return this;
+        }
+
         public NviCandidateIndexDocument build() {
             return new NviCandidateIndexDocument(context, identifier, publicationDetails,
-                                                 approvals, numberOfApprovals);
+                                                 approvals, numberOfApprovals, points);
         }
     }
 }

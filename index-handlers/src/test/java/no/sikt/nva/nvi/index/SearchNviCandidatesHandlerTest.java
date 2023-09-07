@@ -193,7 +193,7 @@ public class SearchNviCandidatesHandlerTest {
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
         return new NviCandidateIndexDocument(randomUri(), randomString(),
-                                             randomPublicationDetails(), List.of(), 0);
+                                             randomPublicationDetails(), List.of(), 0, randomInteger().toString());
     }
 
     private static PublicationDetails randomPublicationDetails() {

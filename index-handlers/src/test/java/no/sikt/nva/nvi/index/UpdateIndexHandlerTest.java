@@ -7,6 +7,7 @@ import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -21,6 +22,7 @@ import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeVal
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.StreamRecord;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -29,6 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
+import no.sikt.nva.nvi.common.model.business.InstitutionPoints;
 import no.sikt.nva.nvi.common.model.business.Status;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.SearchClient;
@@ -45,7 +48,6 @@ import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
 class UpdateIndexHandlerTest extends LocalDynamoTest {
@@ -174,7 +176,10 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     private static CandidateWithIdentifier randomCandidateWithIdentifier() {
-        var candidate = randomCandidateBuilder().withApprovalStatuses(List.of(getApprovalStatus())).build();
+        var candidate = randomCandidateBuilder().withApprovalStatuses(List.of(getApprovalStatus()))
+                            .withPoints(List.of(new InstitutionPoints(randomUri(), BigDecimal.valueOf(2.22222)),
+                                                new InstitutionPoints(randomUri(), BigDecimal.valueOf(2.33333))))
+                            .build();
         return new CandidateWithIdentifier(candidate, randomUUID());
     }
 
@@ -191,6 +196,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .withApprovals(constructExpectedApprovals())
                    .withPublicationDetails(constructPublicationDetails())
                    .withNumberOfApprovals(1)
+                   .withPoints("4.6")
                    .build();
     }
 

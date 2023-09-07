@@ -20,6 +20,8 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
@@ -29,6 +31,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
+import no.sikt.nva.nvi.common.model.business.InstitutionPoints;
 import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contexts;
@@ -38,6 +41,7 @@ import no.sikt.nva.nvi.index.model.PublicationDetails;
 
 public final class NviCandidateIndexDocumentGenerator {
 
+    public static final int SINGLE_DECIMAL = 1;
 
     private NviCandidateIndexDocumentGenerator() {
     }
@@ -58,7 +62,16 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withApprovals(approvals)
                    .withPublicationDetails(extractPublicationDetails(resource))
                    .withNumberOfApprovals(approvals.size())
+                   .withPoints(sumPoints(candidateWithIdentifier.candidate().points()))
                    .build();
+    }
+
+    private static String sumPoints(List<InstitutionPoints> points) {
+        return points.stream()
+                   .map(InstitutionPoints::points)
+                   .reduce(BigDecimal.ZERO, BigDecimal::add)
+                   .setScale(SINGLE_DECIMAL, RoundingMode.HALF_UP)
+                   .toString();
     }
 
     private static List<Approval> createApprovals(
