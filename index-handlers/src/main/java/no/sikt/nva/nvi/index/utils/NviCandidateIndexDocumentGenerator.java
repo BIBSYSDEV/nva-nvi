@@ -66,12 +66,11 @@ public final class NviCandidateIndexDocumentGenerator {
                    .build();
     }
 
-    private static String sumPoints(List<InstitutionPoints> points) {
+    private static BigDecimal sumPoints(List<InstitutionPoints> points) {
         return points.stream()
                    .map(InstitutionPoints::points)
                    .reduce(BigDecimal.ZERO, BigDecimal::add)
-                   .setScale(SINGLE_DECIMAL, RoundingMode.HALF_UP)
-                   .toString();
+                   .setScale(SINGLE_DECIMAL, RoundingMode.HALF_UP);
     }
 
     private static List<Approval> createApprovals(

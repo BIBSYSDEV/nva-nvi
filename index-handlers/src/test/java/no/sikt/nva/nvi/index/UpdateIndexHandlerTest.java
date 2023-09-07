@@ -23,6 +23,7 @@ import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationTyp
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.StreamRecord;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -196,8 +197,14 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .withApprovals(constructExpectedApprovals())
                    .withPublicationDetails(constructPublicationDetails())
                    .withNumberOfApprovals(1)
-                   .withPoints("4.6")
+                   .withPoints(sumPoint(candidateWithIdentifier.candidate().points()))
                    .build();
+    }
+
+    private BigDecimal sumPoint(List<InstitutionPoints> points) {
+        return points.stream().map(InstitutionPoints::points)
+                   .reduce(BigDecimal.ZERO, BigDecimal::add)
+                   .setScale(1, RoundingMode.HALF_UP);
     }
 
     private static class FakeSearchClient implements SearchClient<NviCandidateIndexDocument> {

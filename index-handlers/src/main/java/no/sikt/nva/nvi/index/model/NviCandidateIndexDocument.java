@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import nva.commons.core.JacocoGenerated;
@@ -17,7 +18,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         PublicationDetails publicationDetails,
                                         List<Approval> approvals,
                                         int numberOfApprovals,
-                                        String points) {
+                                        BigDecimal points) {
 
     private static final String CONTEXT = "@context";
 
@@ -29,7 +30,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         private PublicationDetails publicationDetails;
         private List<Approval> approvals;
         private int numberOfApprovals;
-        private String points;
+        private BigDecimal points;
 
         public Builder withContext(URI context) {
             this.context = context;
@@ -56,7 +57,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             return this;
         }
 
-        public Builder withPoints(String points) {
+        public Builder withPoints(BigDecimal points) {
             this.points = points;
             return this;
         }

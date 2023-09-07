@@ -47,6 +47,7 @@ import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
+import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
 import no.unit.nva.commons.json.JsonUtils;
@@ -213,7 +214,7 @@ public class OpenSearchClientTest {
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
         var approvals = randomApprovalList();
         return new NviCandidateIndexDocument(randomUri(), randomString(), randomPublicationDetails(),
-                                             approvals, approvals.size(), randomInteger().toString());
+                                             approvals, approvals.size(), TestUtils.randomBigDecimal());
     }
 
     private static List<Approval> randomApprovalList() {

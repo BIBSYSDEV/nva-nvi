@@ -32,6 +32,7 @@ import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
+import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -193,7 +194,7 @@ public class SearchNviCandidatesHandlerTest {
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
         return new NviCandidateIndexDocument(randomUri(), randomString(),
-                                             randomPublicationDetails(), List.of(), 0, randomInteger().toString());
+                                             randomPublicationDetails(), List.of(), 0, TestUtils.randomBigDecimal());
     }
 
     private static PublicationDetails randomPublicationDetails() {
