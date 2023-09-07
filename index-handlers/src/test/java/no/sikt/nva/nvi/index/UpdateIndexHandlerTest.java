@@ -84,6 +84,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         assertThat(document, is(equalTo(expectedDocument)));
     }
 
+
     @Test
     void shouldUpdateExistingIndexDocumentWhenIncomingEventIsModifyAndCandidateIsApplicable()
         throws JsonProcessingException {

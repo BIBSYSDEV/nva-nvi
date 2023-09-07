@@ -14,15 +14,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.Date;
-import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
-import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.rest.model.NviPeriodDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
-import nva.commons.apigateway.exceptions.BadRequestException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
@@ -64,17 +62,17 @@ public class UpdateNviPeriodHandlerTest extends LocalDynamoTest {
     @Test
     void shouldUpdateNviPeriodSuccessfully()
         throws IOException {
-        var persistedPeriod = nviService.createPeriod(randomPeriod());
+        var persistedPeriod = nviService.createPeriod(randomPeriod().toNviPeriod());
         var newValue = persistedPeriod.copy().reportingDate(new Date(2050, 0, 25).toInstant()).build();
-        handler.handleRequest(createRequest(newValue), output, context);
+        handler.handleRequest(createRequest(NviPeriodDto.fromNviPeriod(newValue)), output, context);
         var updatedPeriod = nviService.getPeriod(persistedPeriod.publishingYear());
 
         assertThat(persistedPeriod.reportingDate(), is(not(equalTo(updatedPeriod.reportingDate()))));
     }
 
-    private InputStream createRequest(DbNviPeriod period) throws JsonProcessingException {
+    private InputStream createRequest(NviPeriodDto period) throws JsonProcessingException {
         var customerId = randomUri();
-        return new HandlerRequestBuilder<DbNviPeriod>(JsonUtils.dtoObjectMapper).withBody(randomPeriod())
+        return new HandlerRequestBuilder<NviPeriodDto>(JsonUtils.dtoObjectMapper).withBody(randomPeriod())
                    .withCurrentCustomer(customerId)
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_PERIODS.name())
                    .withUserName(randomString())
@@ -83,14 +81,10 @@ public class UpdateNviPeriodHandlerTest extends LocalDynamoTest {
     }
 
     private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
-        return new HandlerRequestBuilder<DbNviPeriod>(JsonUtils.dtoObjectMapper).withBody(randomPeriod()).build();
+        return new HandlerRequestBuilder<NviPeriodDto>(JsonUtils.dtoObjectMapper).withBody(randomPeriod()).build();
     }
 
-    private DbNviPeriod randomPeriod() {
-        return DbNviPeriod.builder()
-                   .reportingDate(new Date(2050, 03, 25).toInstant())
-                   .publishingYear(String.valueOf(2023))
-                   .createdBy(new DbUsername(randomString()))
-                   .build();
+    private NviPeriodDto randomPeriod() {
+        return new NviPeriodDto("2023", new Date(2050, 03, 25).toInstant().toString());
     }
 }
