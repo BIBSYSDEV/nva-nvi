@@ -26,8 +26,8 @@ class NviPeriodRepositoryTest extends LocalDynamoTest {
         var user1 = TestUtils.randomUsername();
         var user2 = TestUtils.randomUsername();
 
-        var nviPeriod1 = randomNviPeriodBuilder().withPublishingYear(year).withModifiedBy(user1).build();
-        var nviPeriod2 = randomNviPeriodBuilder().withPublishingYear(year).withModifiedBy(user2).build();
+        var nviPeriod1 = randomNviPeriodBuilder().publishingYear(year).modifiedBy(user1).build();
+        var nviPeriod2 = randomNviPeriodBuilder().publishingYear(year).modifiedBy(user2).build();
         nviPeriodRepository.save(nviPeriod1);
         nviPeriodRepository.save(nviPeriod2);
         var tableItemCount = scanDB().count();

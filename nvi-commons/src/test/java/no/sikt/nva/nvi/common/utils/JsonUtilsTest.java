@@ -6,6 +6,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Test;
 
@@ -23,6 +24,20 @@ class JsonUtilsTest {
     void shouldReturnNullIfJsonPointerPointsToMissingNode() {
         var fieldName = "fieldName";
         var randomJsonNode = objectMapper.createObjectNode();
+        assertThat(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + fieldName), nullValue());
+    }
+
+    @Test
+    void shouldReturnNullIfJsonPointerPointsToNull() {
+        var fieldName = "fieldName";
+        var randomJsonNode = objectMapper.createObjectNode().set(fieldName, (JsonNode) null);
+        assertThat(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + fieldName), nullValue());
+    }
+
+    @Test
+    void shouldReturnNullIfJsonPointerPointsToJsonNode() {
+        var fieldName = "fieldName";
+        var randomJsonNode = objectMapper.createObjectNode().set(fieldName, objectMapper.createObjectNode());
         assertThat(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + fieldName), nullValue());
     }
 

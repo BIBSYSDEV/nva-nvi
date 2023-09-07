@@ -7,8 +7,10 @@ dependencies {
     implementation libs.nva.commons.apigateway
     implementation libs.nva.commons.core
     implementation libs.nva.json
+    implementation libs.jackson.databind
     implementation libs.nva.commons.auth
     implementation libs.jackson.databind
+    implementation libs.aws.sdk2.dynamodb
     implementation libs.aws.sdk2.dynamodb
     implementation libs.aws.sdk2.dynamodbenhanced
 
@@ -24,5 +26,9 @@ dependencies {
 
 test {
     environment("ALLOWED_ORIGIN", "*")
+    environment "API_HOST", "example.org"
+    environment("SEARCH_INFRASTRUCTURE_API_HOST", "localhost")
+    environment("SEARCH_INFRASTRUCTURE_AUTH_URI", "localhost")
+    environment("SEARCH_INFRASTRUCTURE_API_URI", "localhost")
     environment("NVI_TABLE_NAME", "some-table")
 }

@@ -5,9 +5,11 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_PUBLISH
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_COUNTRY_CODE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_INSTANCE_TYPE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLISHER;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ROLE_TYPE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
@@ -24,6 +26,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +35,8 @@ public final class PointCalculator {
 
     public static final String ERROR_MSG_EXTRACT_PUBLICATION_CONTEXT = "Could not extract publication channel for "
                                                                        + "instanceType {}, candidate: {}";
+    public static final String COUNTRY_CODE_NORWAY = "NO";
+    public static final String ROLE_CREATOR = "Creator";
     private static final Logger LOGGER = LoggerFactory.getLogger(PointCalculator.class);
     private static final int SCALE = 10;
     private static final int RESULT_SCALE = 4;
@@ -73,18 +79,15 @@ public final class PointCalculator {
                 JOURNAL, Map.of(
                     LEVEL_ONE, BigDecimal.valueOf(1),
                     LEVEL_TWO, BigDecimal.valueOf(3))));
-    private static final boolean HARDCODED_INTERNATIONAL_COLLABORATION_BOOLEAN_TO_BE_REPLACED = false;
 
     private PointCalculator() {
     }
 
     public static Map<URI, BigDecimal> calculatePoints(JsonNode jsonNode,
                                                        Map<URI, List<URI>> nviCreatorsWithInstitutionIds) {
-        //TODO: set isInternationalCollaboration when Cristin proxy api has implemented land code
-        var isInternationalCollaboration = HARDCODED_INTERNATIONAL_COLLABORATION_BOOLEAN_TO_BE_REPLACED;
         return calculatePoints(calculateInstanceTypeAndLevelPoints(jsonNode),
                                countCreatorShares(jsonNode),
-                               isInternationalCollaboration,
+                               isInternationalCollaboration(jsonNode),
                                countInstitutionCreatorShares(nviCreatorsWithInstitutionIds));
     }
 
@@ -126,6 +129,31 @@ public final class PointCalculator {
         return INSTANCE_TYPE_AND_LEVEL_POINT_MAP.get(instanceType).get(channelType).get(level);
     }
 
+    private static boolean isInternationalCollaboration(JsonNode jsonNode) {
+        return getJsonNodeStream(jsonNode, JSON_PTR_CONTRIBUTOR)
+                   .filter(PointCalculator::isCreator)
+                   .flatMap(PointCalculator::extractAffiliations)
+                   .map(PointCalculator::extractCountryCode)
+                   .filter(Objects::nonNull)
+                   .anyMatch(PointCalculator::isInternationalCountryCode);
+    }
+
+    private static String extractCountryCode(JsonNode affiliationNode) {
+        return extractJsonNodeTextValue(affiliationNode, JSON_PTR_COUNTRY_CODE);
+    }
+
+    private static Stream<JsonNode> extractAffiliations(JsonNode contributorNode) {
+        return getJsonNodeStream(contributorNode, JSON_PTR_AFFILIATIONS);
+    }
+
+    private static boolean isCreator(JsonNode contributorNode) {
+        return ROLE_CREATOR.equals(extractJsonNodeTextValue(contributorNode, JSON_PTR_ROLE_TYPE));
+    }
+
+    private static boolean isInternationalCountryCode(String countryCode) {
+        return !COUNTRY_CODE_NORWAY.equals(countryCode);
+    }
+
     private static Map<URI, Long> countInstitutionCreatorShares(Map<URI, List<URI>> nviCreatorsWithInstitutions) {
         return nviCreatorsWithInstitutions.entrySet()
                    .stream()
@@ -158,6 +186,7 @@ public final class PointCalculator {
 
     private static int countCreatorShares(JsonNode jsonNode) {
         return streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR))
+                   .filter(PointCalculator::isCreator)
                    .flatMap(contributor -> streamNode(contributor.at(JSON_PTR_AFFILIATIONS)))
                    .map(node -> 1)
                    .reduce(0, Integer::sum);
@@ -194,6 +223,10 @@ public final class PointCalculator {
         } else {
             return jsonNode.at(JSON_PTR_PUBLISHER).toString();
         }
+    }
+
+    private static Stream<JsonNode> getJsonNodeStream(JsonNode jsonNode, String jsonPtr) {
+        return StreamSupport.stream(jsonNode.at(jsonPtr).spliterator(), false);
     }
 
     private record ChannelLevel(String type, String level) {
