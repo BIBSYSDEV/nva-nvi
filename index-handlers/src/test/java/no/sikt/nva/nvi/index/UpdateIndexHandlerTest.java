@@ -39,6 +39,7 @@ import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
@@ -46,7 +47,6 @@ import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
 class UpdateIndexHandlerTest extends LocalDynamoTest {
@@ -71,9 +71,9 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldAddDocumentToIndexWhenIncomingEventIsInsert() throws JsonProcessingException {
+    void shouldAddDocumentToIndexWhenIncomingEventIsInsertAndCandidateIsApplicable() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        var persistedCandidate = randomCandidate();
+        var persistedCandidate = randomApplicableCandidate();
         when(nviService.findById(any())).thenReturn(Optional.of(persistedCandidate));
         handler.handleRequest(createEvent(INSERT, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
         var document = openSearchClient.getDocuments().get(0);
@@ -83,9 +83,10 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldUpdateExistingIndexDocumentWhenIncomingEventIsModify() throws JsonProcessingException {
+    void shouldUpdateExistingIndexDocumentWhenIncomingEventIsModifyAndCandidateIsApplicable()
+        throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        var persistedCandidate = randomCandidate();
+        var persistedCandidate = randomApplicableCandidate();
         when(nviService.findById(any())).thenReturn(Optional.of(persistedCandidate));
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
         var document = openSearchClient.getDocuments().get(0);
@@ -176,7 +177,11 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
 
     private static Candidate randomCandidate() {
         var candidate = randomCandidateBuilder();
-        return new Candidate(randomUUID(),candidate.build(),  List.of(getApprovalStatus()));
+        return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()));
+    }
+
+    private static Candidate randomApplicableCandidate() {
+        return new Candidate(randomUUID(), TestUtils.randomApplicableCandidate(), List.of(getApprovalStatus()));
     }
 
     private static DbApprovalStatus getApprovalStatus() {

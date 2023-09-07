@@ -86,21 +86,18 @@ public final class TestUtils {
                    .build();
     }
 
+    public static DbCandidate randomApplicableCandidate() {
+        return randomCandidateBuilder()
+                   .applicable(true)
+                   .build();
+    }
+
     public static DbNviPeriod.Builder randomNviPeriodBuilder() {
         return DbNviPeriod.builder()
                    .createdBy(randomUsername())
                    .modifiedBy(randomUsername())
                    .reportingDate(getNowWithMillisecondAccuracy())
                    .publishingYear(randomYear());
-    }
-
-    public static DbNviPeriod randomNviPeriod() {
-        return randomNviPeriodBuilder()
-                   .build();
-    }
-
-    public static DbApprovalStatus randomApprovalStatus() {
-        return new DbApprovalStatus(randomUri(), randomElement(DbStatus.values()), randomUsername(), Instant.EPOCH);
     }
 
     public static DbUsername randomUsername() {
