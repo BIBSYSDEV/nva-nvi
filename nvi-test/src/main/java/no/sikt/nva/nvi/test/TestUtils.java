@@ -63,11 +63,11 @@ public final class TestUtils {
         return START_DATE.plusDays(randomDays);
     }
 
-    public static DbCandidate.Builder randomCandidateBuilder() {
+    public static DbCandidate.Builder randomCandidateBuilder(boolean applicable) {
         return DbCandidate.builder()
                    .publicationId(randomUri())
                    .publicationBucketUri(randomUri())
-                   .applicable(randomBoolean())
+                   .applicable(applicable)
                    .instanceType(randomString())
                    .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
                    .level(randomElement(DbLevel.values()))
@@ -82,7 +82,7 @@ public final class TestUtils {
     }
 
     public static DbCandidate randomCandidate() {
-        return randomCandidateBuilder()
+        return randomCandidateBuilder(true)
                    .build();
     }
 

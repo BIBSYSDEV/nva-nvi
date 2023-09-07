@@ -46,7 +46,6 @@ import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
 class UpdateIndexHandlerTest extends LocalDynamoTest {
@@ -73,7 +72,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldAddDocumentToIndexWhenIncomingEventIsInsert() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        var persistedCandidate = randomCandidate();
+        var persistedCandidate = randomCandidate(true);
         when(nviService.findById(any())).thenReturn(Optional.of(persistedCandidate));
         handler.handleRequest(createEvent(INSERT, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
         var document = openSearchClient.getDocuments().get(0);
@@ -82,10 +81,12 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         assertThat(document, is(equalTo(expectedDocument)));
     }
 
+
+
     @Test
     void shouldUpdateExistingIndexDocumentWhenIncomingEventIsModify() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        var persistedCandidate = randomCandidate();
+        var persistedCandidate = randomCandidate(true);
         when(nviService.findById(any())).thenReturn(Optional.of(persistedCandidate));
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
         var document = openSearchClient.getDocuments().get(0);
@@ -97,7 +98,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldRemoveFromIndexWhenIncomingEventIsRemove() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate()));
+        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate(false)));
 
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordNotApplicable.json")), CONTEXT);
 
@@ -107,7 +108,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldDoNothingWhenIncomingEventIsRemove() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate()));
+        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate(true)));
 
         handler.handleRequest(createEvent(REMOVE, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
 
@@ -117,7 +118,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldDoNothingWhenConsumedRecordIsNotCandidate() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate()));
+        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate(true)));
 
         handler.handleRequest(createEvent(REMOVE, toRecord("dynamoDbUniqueEntryEvent.json")), CONTEXT);
 
@@ -174,8 +175,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .withNewImage(Map.of(randomString(), new AttributeValue(randomString())));
     }
 
-    private static Candidate randomCandidate() {
-        var candidate = randomCandidateBuilder();
+    private static Candidate randomCandidate(boolean applicable) {
+        var candidate = randomCandidateBuilder(applicable);
         return new Candidate(randomUUID(),candidate.build(),  List.of(getApprovalStatus()));
     }
 
