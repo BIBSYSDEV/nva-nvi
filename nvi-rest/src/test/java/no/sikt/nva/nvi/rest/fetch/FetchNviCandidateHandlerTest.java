@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.fetch;
+package no.sikt.nva.nvi.rest.fetch;
 
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.PARAM_CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;

@@ -16,9 +16,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.time.Clock;
+import java.time.Instant;
 import no.sikt.nva.nvi.common.model.business.NviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.NviPeriodDto;
+import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -30,7 +33,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
-public class UpdateNviPeriodHandlerTest {
+public class UpdateNviPeriodHandlerTest extends LocalDynamoTest {
 
     private Context context;
     private ByteArrayOutputStream output;
@@ -41,7 +44,7 @@ public class UpdateNviPeriodHandlerTest {
     void init() {
         output = new ByteArrayOutputStream();
         context = mock(Context.class);
-        nviService = mock(NviService.class);
+        nviService = new NviService((initializeTestDatabase()));;
         handler = new UpdateNviPeriodHandler(nviService);
     }
 
@@ -75,8 +78,8 @@ public class UpdateNviPeriodHandlerTest {
 
     @Test
     void shouldUpdateNviPeriodSuccessfully()
-        throws IOException, ConflictException, NotFoundException, BadRequestException {
-        when(nviService.updatePeriod(any())).thenReturn(randomPeriod());
+        throws IOException, BadRequestException {
+        var persistedPeriod = nviService.createPeriod(randomPeriod());
         handler.handleRequest(createRequest(), output, context);
         var response = GatewayResponse.fromOutputStream(output, NviPeriodDto.class);
 
@@ -98,10 +101,9 @@ public class UpdateNviPeriodHandlerTest {
     }
 
     private NviPeriod randomPeriod() {
-        var start = randomInstant();
         return new NviPeriod.Builder()
-                   .withReportingDate(start)
-                   .withPublishingYear(String.valueOf(randomInteger(9999)))
+                   .withReportingDate(Instant.now(Clock.systemDefaultZone()))
+                   .withPublishingYear(String.valueOf(2023))
                    .build();
     }
 }

@@ -340,7 +340,7 @@ Resources:
         ApiEvent:
           Type: Api
           Properties:
-            Path: /nvi-period
+            Path: /period
             Method: put
             RestApiId: !Ref ScientificIndexApi
 
