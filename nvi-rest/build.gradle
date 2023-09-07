@@ -11,10 +11,17 @@ dependencies {
     implementation libs.nva.commons.auth
     implementation libs.jackson.databind
     implementation libs.aws.sdk2.dynamodb
+    implementation libs.aws.sdk2.dynamodb
+    implementation libs.aws.sdk2.dynamodbenhanced
 
     testImplementation libs.nva.testutils
     testImplementation libs.bundles.testing
     testImplementation project(':nvi-test')
+
+    testImplementation(group: 'com.amazonaws', name: 'DynamoDBLocal', version: '1.19.0') {
+        exclude group: 'com.amazonaws', module: 'aws-java-sdk-dynamodb'
+        exclude group: 'com.amazonaws', module: 'aws-java-sdk-core'
+    }
 }
 
 test {

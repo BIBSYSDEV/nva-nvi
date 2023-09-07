@@ -10,11 +10,20 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodRepository;
-import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.model.DbCandidate;
-import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
-import no.sikt.nva.nvi.common.db.model.DbStatus;
+import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
+import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
+import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.model.business.Creator;
+import no.sikt.nva.nvi.common.model.business.InstitutionPoints;
+import no.sikt.nva.nvi.common.model.business.Level;
+import no.sikt.nva.nvi.common.model.business.NviPeriod;
+import no.sikt.nva.nvi.common.model.business.PublicationDate;
+import no.sikt.nva.nvi.common.model.business.Status;
+import no.sikt.nva.nvi.common.model.events.CandidateEvaluatedMessage;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
+import nva.commons.apigateway.exceptions.BadRequestException;
+import nva.commons.apigateway.exceptions.ConflictException;
+import nva.commons.apigateway.exceptions.NotFoundException;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -22,6 +31,7 @@ public class NviService {
 
     public static final String INVALID_LENGTH_MESSAGE = "Provided period has invalid length!";
     public static final String PERIOD_NOT_NUMERIC_MESSAGE = "Period is not numeric!";
+    public static final String NOT_SUPPORTED_REPORTING_DATE_MESSAGE = "Provided reporting date is not supported";
     private final NviCandidateRepository nviCandidateRepository;
     private final NviPeriodRepository nviPeriodRepository;
 
@@ -51,8 +61,15 @@ public class NviService {
     }
 
     public DbNviPeriod updatePeriod(DbNviPeriod period) {
-        validatePeriod(period);
-        return nviPeriodRepository.save(period);
+        var nviPeriod = injectCreatedBy(period);
+        validatePeriod(nviPeriod);
+        return nviPeriodRepository.save(nviPeriod);
+    }
+
+    private NviPeriod injectCreatedBy(NviPeriod period) {
+        return period.copy()
+            .withCreatedBy(getPeriod(period.publishingYear()).createdBy())
+            .build();
     }
 
     public DbNviPeriod getPeriod(String publishingYear) {
@@ -162,6 +179,9 @@ public class NviService {
         }
         if (!isInteger(period.publishingYear())) {
             throw new IllegalArgumentException(PERIOD_NOT_NUMERIC_MESSAGE);
+        }
+        if (period.reportingDate().isBefore(Instant.now())) {
+            throw new BadRequestException(NOT_SUPPORTED_REPORTING_DATE_MESSAGE);
         }
     }
 }

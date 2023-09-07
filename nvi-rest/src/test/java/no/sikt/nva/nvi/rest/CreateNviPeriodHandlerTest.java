@@ -17,12 +17,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.time.Period;
-import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
+import no.sikt.nva.nvi.common.model.business.NviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
+import nva.commons.apigateway.exceptions.BadRequestException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
@@ -62,21 +63,21 @@ public class CreateNviPeriodHandlerTest {
     //TODO: Assert persisted period when nviService is implemented
     @Test
     void shouldCreateNviPeriod() throws IOException {
-        when(nviService.createPeriod(any())).thenReturn(randomPeriod());
-        handler.handleRequest(createRequest(), output, context);
-        var response = GatewayResponse.fromOutputStream(output, Period.class);
 
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CREATED)));
+        var period = randomPeriod();
+        handler.handleRequest(createRequest(period), output, context);
+        var persistedPeriod = nviService.getPeriod("2023");
+        assertThat(period.publishingYear(), is(equalTo(persistedPeriod.publishingYear())));
     }
 
     private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
         return new HandlerRequestBuilder<DbNviPeriod>(JsonUtils.dtoObjectMapper).withBody(randomPeriod()).build();
     }
 
-    private InputStream createRequest() throws JsonProcessingException {
+    private InputStream createRequest(DbNviPeriod period) throws JsonProcessingException {
         var customerId = randomUri();
         return new HandlerRequestBuilder<DbNviPeriod>(JsonUtils.dtoObjectMapper)
-                   .withBody(randomPeriod())
+                   .withBody(period)
                    .withCurrentCustomer(customerId)
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_PERIODS.name())
                    .withUserName(randomString())
