@@ -132,10 +132,18 @@ public final class PointCalculator {
     private static boolean isInternationalCollaboration(JsonNode jsonNode) {
         return getJsonNodeStream(jsonNode, JSON_PTR_CONTRIBUTOR)
                    .filter(PointCalculator::isCreator)
-                   .flatMap(contributorNode -> getJsonNodeStream(contributorNode, JSON_PTR_AFFILIATIONS))
-                   .map(affiliationNode -> extractJsonNodeTextValue(affiliationNode, JSON_PTR_COUNTRY_CODE))
+                   .flatMap(PointCalculator::extractAffiliations)
+                   .map(PointCalculator::extractCountryCode)
                    .filter(Objects::nonNull)
                    .anyMatch(PointCalculator::isInternationalCountryCode);
+    }
+
+    private static String extractCountryCode(JsonNode affiliationNode) {
+        return extractJsonNodeTextValue(affiliationNode, JSON_PTR_COUNTRY_CODE);
+    }
+
+    private static Stream<JsonNode> extractAffiliations(JsonNode contributorNode) {
+        return getJsonNodeStream(contributorNode, JSON_PTR_AFFILIATIONS);
     }
 
     private static boolean isCreator(JsonNode contributorNode) {
