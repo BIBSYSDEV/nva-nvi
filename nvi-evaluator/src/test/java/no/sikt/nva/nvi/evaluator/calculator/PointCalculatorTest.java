@@ -38,6 +38,7 @@ class PointCalculatorTest {
     private static final String IDENTITY = "identity";
     private static final String VERIFICATION_STATUS = "verificationStatus";
     private static final String CONTRIBUTORS = "contributors";
+    public static final String SOME_OTHER_ROLE = "SomeOtherRole";
 
     @ParameterizedTest(name = "Should calculate points correctly single contributor affiliated with a single "
                               + "institution. No international collaboration.")
@@ -114,7 +115,24 @@ class PointCalculatorTest {
                                                       ROLE_CREATOR),
                                    getContributorNode(randomUri(), true,
                                                       Map.of(randomUri(), SOME_INTERNATIONAL_COUNTRY_CODE),
-                                                      "SomeOtherRole")),
+                                                      SOME_OTHER_ROLE)),
+            createJournalReference("AcademicArticle", "1"));
+
+        var institutionPoints = calculatePoints(expandedResource, Map.of(creatorId, List.of(institutionId)));
+
+        assertThat(institutionPoints.get(institutionId), is(equalTo(bd("1"))));
+    }
+
+    @Test
+    void shouldNotCountCreatorSharesForNonCreators() {
+        var creatorId = randomUri();
+        var institutionId = randomUri();
+        var expandedResource = createExpandedResource(
+            randomUri(),
+            createContributorNodes(getContributorNode(creatorId, true, Map.of(institutionId, COUNTRY_CODE_NO),
+                                                      ROLE_CREATOR),
+                                   getContributorNode(randomUri(), true, Map.of(randomUri(), COUNTRY_CODE_NO),
+                                                      SOME_OTHER_ROLE)),
             createJournalReference("AcademicArticle", "1"));
 
         var institutionPoints = calculatePoints(expandedResource, Map.of(creatorId, List.of(institutionId)));
