@@ -103,6 +103,7 @@ public class NviService {
     private static DbApprovalStatus resetStatus(DbApprovalStatus oldApprovalStatus) {
         return oldApprovalStatus.copy()
                    .status(DbStatus.PENDING)
+                   .assignee(oldApprovalStatus.assignee())
                    .finalizedBy(null)
                    .finalizedDate(null)
                    .build();
@@ -113,6 +114,7 @@ public class NviService {
         return oldApprovalStatus.copy()
                    .status(newApprovalStatus.status())
                    .finalizedBy(newApprovalStatus.finalizedBy())
+                   .assignee(newApprovalStatus.assignee())
                    .finalizedDate(Instant.now())
                    .build();
     }
@@ -138,10 +140,14 @@ public class NviService {
     @JacocoGenerated // bug in jacoco report that is unable to exhaust the switch. Should be fixed in version 0.8.11
     private DbApprovalStatus toUpdatedApprovalStatus(DbApprovalStatus oldApprovalStatus,
                                                      DbApprovalStatus newApprovalStatus) {
-        return switch (newApprovalStatus.status()) {
-            case APPROVED, REJECTED -> updateStatus(oldApprovalStatus, newApprovalStatus);
-            case PENDING -> resetStatus(oldApprovalStatus);
-        };
+        if(oldApprovalStatus.status().equals(newApprovalStatus.status())) {
+            return updateStatus(oldApprovalStatus, newApprovalStatus);
+        } else {
+            return switch (newApprovalStatus.status()) {
+                case APPROVED, REJECTED -> updateStatus(oldApprovalStatus, newApprovalStatus);
+                case PENDING -> resetStatus(oldApprovalStatus);
+            };
+        }
     }
 
     private Optional<Candidate> createCandidate(DbCandidate candidate) {

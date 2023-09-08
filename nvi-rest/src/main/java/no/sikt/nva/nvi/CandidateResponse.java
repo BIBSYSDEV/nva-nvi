@@ -60,7 +60,8 @@ public record CandidateResponse(UUID id,
 
     private static ApprovalStatus mapToApprovalStatus(
         DbApprovalStatus approvalStatus) {
-        return new ApprovalStatus(approvalStatus.institutionId(), approvalStatus.status(), approvalStatus.finalizedBy(),
+        return new ApprovalStatus(approvalStatus.institutionId(), approvalStatus.status(),
+                                  approvalStatus.assignee(), approvalStatus.finalizedBy(),
                                   approvalStatus.finalizedDate());
     }
 

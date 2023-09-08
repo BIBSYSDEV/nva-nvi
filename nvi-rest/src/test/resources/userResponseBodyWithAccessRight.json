@@ -1,0 +1,21 @@
+{
+  "roles": [
+    {
+      "rolename": "Creator",
+      "accessRights": [
+        "MANAGE_OWN_PROJECTS"
+      ],
+      "type": "Role"
+    },
+    {
+      "rolename": "App-admin",
+      "accessRights": [
+        "MANAGE_NVI_PERIODS",
+        "MANAGE_NVI_CANDIDATE",
+        "ADMINISTRATE_APPLICATION",
+        "PROCESS_IMPORT_CANDIDATE"
+      ],
+      "type": "Role"
+    }
+  ]
+}
