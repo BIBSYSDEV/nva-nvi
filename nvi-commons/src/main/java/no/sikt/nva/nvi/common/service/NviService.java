@@ -140,7 +140,7 @@ public class NviService {
     @JacocoGenerated // bug in jacoco report that is unable to exhaust the switch. Should be fixed in version 0.8.11
     private DbApprovalStatus toUpdatedApprovalStatus(DbApprovalStatus oldApprovalStatus,
                                                      DbApprovalStatus newApprovalStatus) {
-        if(oldApprovalStatus.status().equals(newApprovalStatus.status())) {
+        if (oldApprovalStatus.status().equals(newApprovalStatus.status())) {
             return updateStatus(oldApprovalStatus, newApprovalStatus);
         } else {
             return switch (newApprovalStatus.status()) {

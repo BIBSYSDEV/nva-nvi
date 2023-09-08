@@ -431,6 +431,7 @@ Resources:
           ALLOWED_ORIGIN: '*'
           BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
           BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
+          COGNITO_HOST: !Ref CognitoAuthorizationUri
           API_HOST: !Ref ApiDomain
       Events:
         GetEvent:
