@@ -50,11 +50,22 @@ public final class PaginatedResultConverter {
             size,
             extractTotalNumberOfHits(searchResponse),
             extractsHits(searchResponse),
-            Map.of(QUERY_PARAM_SEARCH_TERM, searchTerm, QUERY_PARAM_FILTER, filter),
+            getQueryParameters(searchTerm, filter),
             extractAggregations(searchResponse));
 
         LOGGER.info("Returning paginatedSearchResult with id: {}", paginatedSearchResult.getId().toString());
         return paginatedSearchResult;
+    }
+
+    private static Map<String, String> getQueryParameters(String searchTerm, String filter) {
+        return isNotEmpty(filter)
+                   ? Map.of(QUERY_PARAM_SEARCH_TERM, searchTerm,
+                            QUERY_PARAM_FILTER, filter)
+                   : Map.of(QUERY_PARAM_SEARCH_TERM, searchTerm);
+    }
+
+    private static boolean isNotEmpty(String filter) {
+        return !filter.isEmpty();
     }
 
     private static int extractTotalNumberOfHits(SearchResponse<NviCandidateIndexDocument> searchResponse) {
