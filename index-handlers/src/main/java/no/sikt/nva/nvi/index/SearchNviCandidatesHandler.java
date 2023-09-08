@@ -19,6 +19,7 @@ public class SearchNviCandidatesHandler
 
     public static final String QUERY_PARAM_SEARCH_TERM = "query";
     public static final String FILTER_QUERY_PARAM = "filter";
+    public static final String DEFAULT_FILTER = StringUtils.EMPTY_STRING;
     private static final String QUERY_SIZE_PARAM = "size";
     private static final String QUERY_OFFSET_PARAM = "offset";
     private static final int DEFAULT_QUERY_SIZE = 10;
@@ -76,7 +77,7 @@ public class SearchNviCandidatesHandler
 
     private static String getFilter(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
-                   .getOrDefault(FILTER_QUERY_PARAM, StringUtils.EMPTY_STRING);
+                   .getOrDefault(FILTER_QUERY_PARAM, DEFAULT_FILTER);
     }
 }
 

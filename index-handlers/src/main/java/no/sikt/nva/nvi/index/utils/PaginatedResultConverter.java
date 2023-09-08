@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 public final class PaginatedResultConverter {
 
     public static final Environment ENVIRONMENT = new Environment();
-    private static final Logger LOGGER = LoggerFactory.getLogger(PaginatedSearchResult.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PaginatedResultConverter.class);
     private static final String WORD_ENDING_WITH_HASHTAG_REGEX = "[A-za-z0-9]*#";
     private static final Map<String, String> AGGREGATION_FIELDS_TO_CHANGE = Map.of(
         "doc_count_error_upper_bound", "docCountErrorUpperBound",
