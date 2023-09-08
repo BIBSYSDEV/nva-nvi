@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_FILTER;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_SEARCH_TERM;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -32,7 +33,6 @@ public final class PaginatedResultConverter {
         "doc_count", "docCount");
     private static final String HOST = ENVIRONMENT.readEnv("API_HOST");
     private static final String CUSTOM_DOMAIN_BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
-    public static final String QUERY_PARAM_FILTER = "filter";
 
     private PaginatedResultConverter() {
 
