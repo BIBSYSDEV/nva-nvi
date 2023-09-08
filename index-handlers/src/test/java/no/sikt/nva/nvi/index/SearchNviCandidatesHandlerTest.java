@@ -40,6 +40,7 @@ import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
 import nva.commons.core.StringUtils;
 import nva.commons.core.paths.UriWrapper;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch._types.ShardStatistics;
@@ -63,6 +64,7 @@ public class SearchNviCandidatesHandlerTest {
     private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
     private static final String CUSTOM_DOMAIN_BASE_PATH = ENVIRONMENT.readEnv(
         "CUSTOM_DOMAIN_BASE_PATH");
+    private static final String CANDIDATE_PATH = "candidate";
     private static final String QUERY_PARAM_QUERY = "query";
     private static final String QUERY_PARAM_OFFSET = "offset";
     private static final String QUERY_PARAM_SIZE = "size";
@@ -112,21 +114,58 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
-    void shouldReturnPaginatedSearchResultWithId() throws IOException {
-        when(openSearchClient.search(any(), eq(DEFAULT_FILTER), any(), any(), eq(DEFAULT_OFFSET_SIZE),
-                                     eq(DEFAULT_QUERY_SIZE)))
-            .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
-        handler.handleRequest(request(DEFAULT_SEARCH_TERM), output, context);
+    void shouldReturnPaginatedSearchResultWithDefaultOffsetAndSizeAndQueryIfNotGiven() throws IOException {
+        mockOpenSearchClient();
+        handler.handleRequest(requestWithoutQueryParameters(), output, context);
+        var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
+        var actualId = paginatedSearchResult.getId().toString();
+        assertThat(actualId,
+                   containsString(QUERY_PARAM_SIZE + "=" + DEFAULT_QUERY_SIZE));
+        assertThat(actualId,
+                   containsString(QUERY_PARAM_OFFSET + "=" + DEFAULT_OFFSET_SIZE));
+        assertThat(actualId,
+                   containsString(QUERY_PARAM_QUERY + "=" + DEFAULT_SEARCH_TERM));
+    }
+
+    @Test
+    void shouldReturnPaginatedSearchResultWithCorrectBaseUriInId() throws IOException {
+        mockOpenSearchClient();
+        handler.handleRequest(requestWithoutQueryParameters(), output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
 
-        assertThat(paginatedSearchResult.getId().toString(), containsString(QUERY_PARAM_FILTER + "=" + DEFAULT_FILTER));
-        assertThat(paginatedSearchResult.getId().toString(),
-                   containsString(QUERY_PARAM_SIZE + "=" + DEFAULT_QUERY_SIZE));
-        assertThat(paginatedSearchResult.getId().toString(),
-                   containsString(QUERY_PARAM_OFFSET + "=" + DEFAULT_OFFSET_SIZE));
-        assertThat(paginatedSearchResult.getId().toString(),
-                   containsString(QUERY_PARAM_QUERY + "=" + DEFAULT_SEARCH_TERM));
+        var actualId = paginatedSearchResult.getId().toString();
+        var expectedBaseUri = constructBasePath().toString();
+
+        assertThat(actualId, containsString(expectedBaseUri));
+    }
+
+    @Test
+    void shouldReturnPaginatedSearchResultWithoutQueryParamFilterInIdIfNotGiven() throws IOException {
+        mockOpenSearchClient();
+        handler.handleRequest(requestWithoutQueryParameters(), output, context);
+        var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
+
+        var actualId = paginatedSearchResult.getId().toString();
+
+        assertThat(actualId, Matchers.not(containsString(QUERY_PARAM_FILTER)));
+    }
+
+    @Test
+    void shouldReturnPaginatedSearchResultWithCorrectQueryParamsFilterAndQueryInIdIfGiven() throws IOException {
+        mockOpenSearchClient();
+        var randomFilter = randomString();
+        var randomQuery = randomString();
+        handler.handleRequest(requestWithQueryAndFilter(randomQuery, randomFilter), output, context);
+        var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
+
+        var actualId = paginatedSearchResult.getId().toString();
+
+        assertThat(actualId, containsString(QUERY_PARAM_FILTER + "=" + randomFilter));
+        assertThat(actualId, containsString(QUERY_PARAM_QUERY + "=" + randomQuery));
     }
 
     @Test
@@ -157,6 +196,11 @@ public class SearchNviCandidatesHandlerTest {
                    is(equalTo(HttpURLConnection.HTTP_INTERNAL_ERROR)));
     }
 
+    private static void mockOpenSearchClient() throws IOException {
+        when(openSearchClient.search(any(), any(), any(), any(), eq(DEFAULT_OFFSET_SIZE), eq(DEFAULT_QUERY_SIZE)))
+            .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
+    }
+
     private static SearchResponse<NviCandidateIndexDocument> createSearchResponse(NviCandidateIndexDocument document) {
         return new Builder<NviCandidateIndexDocument>().hits(constructHitsMetadata(List.of(document)))
                    .took(10)
@@ -174,16 +218,6 @@ public class SearchNviCandidatesHandlerTest {
                    .shards(new ShardStatistics.Builder().failed(0).successful(1).total(total).build())
                    .aggregations(aggregateName, new Aggregate(new FilterAggregate.Builder().docCount(docCount).build()))
                    .build();
-    }
-
-    private static URI constructExpectedUri(int offsetSize, int size, String searchTerm, String filter) {
-        return UriWrapper.fromHost(API_HOST)
-                   .addChild(CUSTOM_DOMAIN_BASE_PATH)
-                   .addQueryParameter(QUERY_PARAM_QUERY, searchTerm)
-                   .addQueryParameter(QUERY_PARAM_FILTER, filter)
-                   .addQueryParameter(QUERY_PARAM_OFFSET, String.valueOf(offsetSize))
-                   .addQueryParameter(QUERY_PARAM_SIZE, String.valueOf(size))
-                   .getUri();
     }
 
     private static HitsMetadata<NviCandidateIndexDocument> constructHitsMetadata(
@@ -212,6 +246,10 @@ public class SearchNviCandidatesHandlerTest {
         return new PublicationDetails(randomString(), randomString(), randomString(), randomString(), List.of());
     }
 
+    private URI constructBasePath() {
+        return UriWrapper.fromHost(API_HOST).addChild(CUSTOM_DOMAIN_BASE_PATH).addChild(CANDIDATE_PATH).getUri();
+    }
+
     private List<NviCandidateIndexDocument> generateNumberOfIndexDocuments(int number) {
         return IntStream.range(0, number).boxed().map(i -> singleNviCandidateIndexDocument()).toList();
     }
@@ -220,9 +258,25 @@ public class SearchNviCandidatesHandlerTest {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
                    .withTopLevelCristinOrgId(randomUri())
                    .withUserName(randomString())
-                   .withQueryParameters(Map.of("query", searchTerm,
-                                               "offset", String.valueOf(DEFAULT_OFFSET_SIZE),
-                                               "size", String.valueOf(DEFAULT_QUERY_SIZE)))
+                   .withQueryParameters(Map.of(QUERY_PARAM_QUERY, searchTerm,
+                                               QUERY_PARAM_OFFSET, String.valueOf(DEFAULT_OFFSET_SIZE),
+                                               QUERY_PARAM_SIZE, String.valueOf(DEFAULT_QUERY_SIZE)))
+                   .build();
+    }
+
+    private InputStream requestWithQueryAndFilter(String searchTerm, String filter) throws JsonProcessingException {
+        return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
+                   .withTopLevelCristinOrgId(randomUri())
+                   .withUserName(randomString())
+                   .withQueryParameters(Map.of(QUERY_PARAM_QUERY, searchTerm,
+                                               QUERY_PARAM_FILTER, filter))
+                   .build();
+    }
+
+    private InputStream requestWithoutQueryParameters() throws JsonProcessingException {
+        return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
+                   .withTopLevelCristinOrgId(randomUri())
+                   .withUserName(randomString())
                    .build();
     }
 }

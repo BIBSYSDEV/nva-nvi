@@ -45,10 +45,10 @@ public class SearchNviCandidatesHandler
 
         var offset = extractQueryParamOffsetOrDefault(requestInfo);
         var size = extractQueryParamSizeOrDefault(requestInfo);
+        var filter = extractQueryParamFilterOrDefault(requestInfo);
+        var searchTerm = extractQueryParamSearchTermOrDefault(requestInfo);
         var customer = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         var username = requestInfo.getUserName();
-        var filter = getFilter(requestInfo);
-        var searchTerm = getSearchTerm(requestInfo);
 
         return attempt(() -> openSearchClient.search(searchTerm, filter, username, customer, offset, size))
                    .map(searchResponse -> toPaginatedResult(searchResponse, searchTerm, filter, offset, size))
@@ -70,12 +70,12 @@ public class SearchNviCandidatesHandler
                    .orElse(DEFAULT_OFFSET_SIZE);
     }
 
-    private static String getSearchTerm(RequestInfo requestInfo) {
+    private static String extractQueryParamSearchTermOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
                    .getOrDefault(QUERY_PARAM_SEARCH_TERM, SEARCH_ALL_DOCUMENTS_DEFAULT_QUERY);
     }
 
-    private static String getFilter(RequestInfo requestInfo) {
+    private static String extractQueryParamFilterOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
                    .getOrDefault(QUERY_PARAM_FILTER, DEFAULT_FILTER);
     }

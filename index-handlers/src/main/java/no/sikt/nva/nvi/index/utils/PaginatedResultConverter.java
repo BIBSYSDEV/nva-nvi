@@ -24,15 +24,16 @@ import org.slf4j.LoggerFactory;
 
 public final class PaginatedResultConverter {
 
-    public static final Environment ENVIRONMENT = new Environment();
     private static final Logger LOGGER = LoggerFactory.getLogger(PaginatedResultConverter.class);
+    private static final Environment ENVIRONMENT = new Environment();
+    private static final String HOST = ENVIRONMENT.readEnv("API_HOST");
+    private static final String CUSTOM_DOMAIN_BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
+    private static final String CANDIDATE_PATH = "candidate";
     private static final String WORD_ENDING_WITH_HASHTAG_REGEX = "[A-za-z0-9]*#";
     private static final Map<String, String> AGGREGATION_FIELDS_TO_CHANGE = Map.of(
         "doc_count_error_upper_bound", "docCountErrorUpperBound",
         "sum_other_doc_count", "sumOtherDocCount",
         "doc_count", "docCount");
-    private static final String HOST = ENVIRONMENT.readEnv("API_HOST");
-    private static final String CUSTOM_DOMAIN_BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
 
     private PaginatedResultConverter() {
 
@@ -49,11 +50,22 @@ public final class PaginatedResultConverter {
             size,
             extractTotalNumberOfHits(searchResponse),
             extractsHits(searchResponse),
-            Map.of(QUERY_PARAM_SEARCH_TERM, searchTerm, QUERY_PARAM_FILTER, filter),
+            getQueryParameters(searchTerm, filter),
             extractAggregations(searchResponse));
 
         LOGGER.info("Returning paginatedSearchResult with id: {}", paginatedSearchResult.getId().toString());
         return paginatedSearchResult;
+    }
+
+    private static Map<String, String> getQueryParameters(String searchTerm, String filter) {
+        return isNotEmpty(filter)
+                   ? Map.of(QUERY_PARAM_SEARCH_TERM, searchTerm,
+                            QUERY_PARAM_FILTER, filter)
+                   : Map.of(QUERY_PARAM_SEARCH_TERM, searchTerm);
+    }
+
+    private static boolean isNotEmpty(String filter) {
+        return !filter.isEmpty();
     }
 
     private static int extractTotalNumberOfHits(SearchResponse<NviCandidateIndexDocument> searchResponse) {
@@ -66,7 +78,7 @@ public final class PaginatedResultConverter {
     }
 
     private static URI constructBaseUri() {
-        return UriWrapper.fromHost(HOST).addChild(CUSTOM_DOMAIN_BASE_PATH).getUri();
+        return UriWrapper.fromHost(HOST).addChild(CUSTOM_DOMAIN_BASE_PATH).addChild(CANDIDATE_PATH).getUri();
     }
 
     private static JsonNode extractAggregations(SearchResponse<NviCandidateIndexDocument> searchResponse) {
