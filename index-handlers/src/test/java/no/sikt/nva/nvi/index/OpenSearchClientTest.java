@@ -11,7 +11,6 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_COLLABORATION_AGG;
-import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
@@ -51,6 +50,7 @@ import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
 import no.unit.nva.commons.json.JsonUtils;
+import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import org.apache.http.HttpHost;
 import org.junit.jupiter.api.AfterAll;
@@ -68,13 +68,13 @@ public class OpenSearchClientTest {
 
     public static final String JSON_POINTER_FILTER = "/filter#";
     public static final String JSON_POINTER_DOC_COUNT = "/doc_count";
+    public static final String NO_FILTER = StringUtils.EMPTY_STRING;
     private static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:2.0.0";
     private static final URI CUSTOMER = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     private static final String USERNAME = "user1";
     private static final OpensearchContainer container = new OpensearchContainer(OPEN_SEARCH_IMAGE);
     private static final int DEFAULT_QUERY_SIZE = 10;
     private static final int DEFAULT_OFFSET_SIZE = 0;
-    public static final String NO_FILTER = null;
     private static RestClient restClient;
     private static OpenSearchClient openSearchClient;
 
@@ -160,7 +160,6 @@ public class OpenSearchClientTest {
 
         assertThat(docCount, is(equalTo(entry.getValue())));
     }
-
 
     @ParameterizedTest
     @MethodSource("filterNameProvider")
@@ -258,18 +257,19 @@ public class OpenSearchClientTest {
     }
 
     private static Stream<Entry<String, Integer>> filterNameProvider() {
-        return Map.of(PENDING_AGG, 2,
-                      PENDING_COLLABORATION_AGG, 1,
-                      ASSIGNED_AGG, 2,
-                      ASSIGNED_COLLABORATION_AGG, 1,
-                      APPROVED_AGG, 2,
-                      APPROVED_COLLABORATION_AGG, 1,
-                      REJECTED_AGG, 2,
-                      REJECTED_COLLABORATION_AGG, 1,
-                      ASSIGNMENTS_AGG, 4,
-                      "unknownFilter", 8)
-                   .entrySet()
-                   .stream();
+        var map = new HashMap<String, Integer>();
+        map.put(PENDING_AGG, 2);
+        map.put(PENDING_COLLABORATION_AGG, 1);
+        map.put(ASSIGNED_AGG, 2);
+        map.put(ASSIGNED_COLLABORATION_AGG, 1);
+        map.put(APPROVED_AGG, 2);
+        map.put(APPROVED_COLLABORATION_AGG, 1);
+        map.put(REJECTED_AGG, 2);
+        map.put(REJECTED_COLLABORATION_AGG, 1);
+        map.put(ASSIGNMENTS_AGG, 4);
+        map.put("unknownFilter", 8);
+        map.put(StringUtils.EMPTY_STRING, 8);
+        return map.entrySet().stream();
     }
 
     public static final class FakeCachedJwtProvider {

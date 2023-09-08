@@ -12,18 +12,18 @@ import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.StringUtils;
 
 public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
-
+    public static final String QUERY_PARAM_SEARCH_TERM = "query";
+    public static final String FILTER_QUERY_PARAM = "filter";
     private static final String QUERY_SIZE_PARAM = "size";
     private static final String QUERY_OFFSET_PARAM = "offset";
     private static final int DEFAULT_QUERY_SIZE = 10;
     private static final int DEFAULT_OFFSET_SIZE = 0;
-    public static final String QUERY_PATH_PARAM = "query";
     private static final String SEARCH_ALL_DOCUMENTS_DEFAULT_QUERY = "*";
-    public static final String FILTER_QUERY_PARAM = "filter";
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
 
     @JacocoGenerated
@@ -50,7 +50,7 @@ public class SearchNviCandidatesHandler
         var searchTerm = getSearchTerm(requestInfo);
 
         return attempt(() -> openSearchClient.search(searchTerm, filter, username, customer, offset, size))
-                   .map(searchResponse -> toPaginatedResult(searchResponse, searchTerm, offset, size))
+                   .map(searchResponse -> toPaginatedResult(searchResponse, searchTerm, filter, offset, size))
                    .orElseThrow();
     }
 
@@ -69,16 +69,14 @@ public class SearchNviCandidatesHandler
                    .orElse(DEFAULT_OFFSET_SIZE);
     }
 
-
-
     private static String getSearchTerm(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
-                   .getOrDefault(QUERY_PATH_PARAM, SEARCH_ALL_DOCUMENTS_DEFAULT_QUERY);
+                   .getOrDefault(QUERY_PARAM_SEARCH_TERM, SEARCH_ALL_DOCUMENTS_DEFAULT_QUERY);
     }
 
     private static String getFilter(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
-                   .getOrDefault(FILTER_QUERY_PARAM, SEARCH_ALL_DOCUMENTS_DEFAULT_QUERY);
+                   .getOrDefault(FILTER_QUERY_PARAM, StringUtils.EMPTY_STRING);
     }
 }
 
