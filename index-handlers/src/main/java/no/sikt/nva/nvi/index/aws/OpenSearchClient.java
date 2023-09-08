@@ -75,15 +75,24 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     @Override
     public void addDocumentToIndex(NviCandidateIndexDocument indexDocument) {
         if (!indexExists()) {
+            LOGGER.info("Creating index");
             createIndex();
         }
         attempt(() -> client.withTransportOptions(getOptions()).index(constructIndexRequest(indexDocument)))
+            .map(indexResponse -> {
+                LOGGER.info("Adding document to index: {}", indexDocument.identifier());
+                return indexDocument;
+            })
             .orElseThrow();
     }
 
     @Override
     public void removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) {
         attempt(() -> client.withTransportOptions(getOptions()).delete(contructDeleteRequest(indexDocument)))
+            .map(deleteResponse -> {
+                LOGGER.info("Removing document from index: {}", indexDocument.identifier());
+                return deleteResponse;
+            })
             .orElseThrow();
     }
 
