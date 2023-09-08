@@ -6,10 +6,10 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -38,6 +38,7 @@ import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
+import nva.commons.core.StringUtils;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,6 +57,8 @@ import org.zalando.problem.Problem;
 @Testcontainers
 public class SearchNviCandidatesHandlerTest {
 
+    private static final String DEFAULT_FILTER = StringUtils.EMPTY_STRING;
+    private static final String QUERY_PARAM_FILTER = "filter";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
     private static final String CUSTOM_DOMAIN_BASE_PATH = ENVIRONMENT.readEnv(
@@ -67,7 +70,8 @@ public class SearchNviCandidatesHandlerTest {
     private static final int DEFAULT_QUERY_SIZE = 10;
     private static final int DEFAULT_OFFSET_SIZE = 0;
     private static final TypeReference<PaginatedSearchResult<NviCandidateIndexDocument>> TYPE_REF =
-        new TypeReference<>() {};
+        new TypeReference<>() {
+        };
     private static SearchClient<NviCandidateIndexDocument> openSearchClient;
     private static SearchNviCandidatesHandler handler;
     private static ByteArrayOutputStream output;
@@ -109,14 +113,20 @@ public class SearchNviCandidatesHandlerTest {
 
     @Test
     void shouldReturnPaginatedSearchResultWithId() throws IOException {
-        when(openSearchClient.search(any(), any(), any(), any(), eq(DEFAULT_OFFSET_SIZE), eq(DEFAULT_QUERY_SIZE)))
+        when(openSearchClient.search(any(), eq(DEFAULT_FILTER), any(), any(), eq(DEFAULT_OFFSET_SIZE),
+                                     eq(DEFAULT_QUERY_SIZE)))
             .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
-        handler.handleRequest(request("*"), output, context);
+        handler.handleRequest(request(DEFAULT_SEARCH_TERM), output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
 
-        var expectedId = constructExpectedUri(DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE, DEFAULT_SEARCH_TERM);
-        assertEquals(expectedId, paginatedSearchResult.getId());
+        assertThat(paginatedSearchResult.getId().toString(), containsString(QUERY_PARAM_FILTER + "=" + DEFAULT_FILTER));
+        assertThat(paginatedSearchResult.getId().toString(),
+                   containsString(QUERY_PARAM_SIZE + "=" + DEFAULT_QUERY_SIZE));
+        assertThat(paginatedSearchResult.getId().toString(),
+                   containsString(QUERY_PARAM_OFFSET + "=" + DEFAULT_OFFSET_SIZE));
+        assertThat(paginatedSearchResult.getId().toString(),
+                   containsString(QUERY_PARAM_QUERY + "=" + DEFAULT_SEARCH_TERM));
     }
 
     @Test
@@ -166,10 +176,11 @@ public class SearchNviCandidatesHandlerTest {
                    .build();
     }
 
-    private static URI constructExpectedUri(int offsetSize, int size, String searchTerm) {
+    private static URI constructExpectedUri(int offsetSize, int size, String searchTerm, String filter) {
         return UriWrapper.fromHost(API_HOST)
                    .addChild(CUSTOM_DOMAIN_BASE_PATH)
                    .addQueryParameter(QUERY_PARAM_QUERY, searchTerm)
+                   .addQueryParameter(QUERY_PARAM_FILTER, filter)
                    .addQueryParameter(QUERY_PARAM_OFFSET, String.valueOf(offsetSize))
                    .addQueryParameter(QUERY_PARAM_SIZE, String.valueOf(size))
                    .getUri();

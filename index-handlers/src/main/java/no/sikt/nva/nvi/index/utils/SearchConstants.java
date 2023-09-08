@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.index.utils;
 
-import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.index.Aggregations.assignmentsQuery;
 import static no.sikt.nva.nvi.index.Aggregations.containsPendingStatusQuery;
 import static no.sikt.nva.nvi.index.Aggregations.multipleApprovalsQuery;
@@ -21,7 +20,7 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
 
 public final class SearchConstants {
 
-    public static final String PENDING_AGG  = "pending";
+    public static final String PENDING_AGG = "pending";
     public static final String PENDING_COLLABORATION_AGG = "pendingCollaboration";
     public static final String ASSIGNED_AGG = "assigned";
     public static final String ASSIGNED_COLLABORATION_AGG = "assignedCollaboration";
@@ -47,9 +46,17 @@ public final class SearchConstants {
 
     public static Query constructQuery(String searchTerm, String filter, String username, String customer) {
         var query = searchTermToQuery(searchTerm);
-        return nonNull(filter)
+        return isNotEmpty(filter)
                    ? constructQueryWithFilter(filter, username, customer, query)
                    : mustMatch(searchTermToQuery(searchTerm));
+    }
+
+    public static TypeMapping mappings() {
+        return new TypeMapping.Builder().properties(mappingProperties()).build();
+    }
+
+    private static boolean isNotEmpty(String filter) {
+        return !filter.isEmpty();
     }
 
     private static Query constructQueryWithFilter(String filter, String username, String customer, Query query) {
@@ -88,10 +95,6 @@ public final class SearchConstants {
 
             default -> mustMatch(searchTermToQuery("*"));
         };
-    }
-
-    public static TypeMapping mappings() {
-        return new TypeMapping.Builder().properties(mappingProperties()).build();
     }
 
     private static Query searchTermToQuery(String searchTerm) {
