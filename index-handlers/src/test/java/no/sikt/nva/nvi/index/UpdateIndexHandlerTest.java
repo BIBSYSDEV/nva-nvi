@@ -54,7 +54,6 @@ import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -155,7 +154,6 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         assertThat(document, is(equalTo(expectedDocument)));
     }
 
-    @NotNull
     private static Candidate createCandidateWithPublicationDate(DbPublicationDate date) {
         return new Candidate(UUID.randomUUID(), randomCandidateBuilder()
                                                     .creators(Collections.emptyList())
