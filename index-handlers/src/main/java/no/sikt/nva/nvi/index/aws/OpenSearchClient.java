@@ -83,7 +83,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
                 LOGGER.info("Adding document to index: {}", indexDocument.identifier());
                 return indexDocument;
             })
-            .orElseThrow();
+            .orElseThrow(failure -> handleFailure("Failed to add/update document from index", failure.getException()));
     }
 
     @Override
@@ -93,7 +93,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
                 LOGGER.info("Removing document from index: {}", indexDocument.identifier());
                 return deleteResponse;
             })
-            .orElseThrow();
+            .orElseThrow(failure -> handleFailure("Failed to remove document from index", failure.getException()));
     }
 
     @Override

@@ -109,7 +109,8 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         attempt(candidate::candidate)
             .map(DbCandidate::publicationId)
             .map(UpdateIndexHandler::toIndexDocumentWithId)
-            .forEach(openSearchClient::removeDocumentFromIndex);
+            .forEach(openSearchClient::removeDocumentFromIndex)
+            .orElseThrow();
     }
 
     private void addDocumentToIndex(Candidate candidate) {
@@ -118,6 +119,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
             .map(UpdateIndexHandler::extractBucketUri)
             .map(storageReader::read)
             .map(blob -> generateDocument(blob, candidate))
-            .forEach(openSearchClient::addDocumentToIndex);
+            .forEach(openSearchClient::addDocumentToIndex)
+            .orElseThrow();
     }
 }
