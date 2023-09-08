@@ -27,11 +27,11 @@ public final class ExceptionMapper {
         if (exception instanceof IllegalStateException) {
             return new ConflictException("Conflict occurred!");
         }
-        if(exception instanceof ForbiddenException){
+        if (exception instanceof ForbiddenException) {
             return new ForbiddenException();
         }
         if (exception instanceof UnauthorizedException) {
-            return (UnauthorizedException)exception;
+            return (UnauthorizedException) exception;
         }
         return new BadGatewayException(exception.getMessage());
     }
