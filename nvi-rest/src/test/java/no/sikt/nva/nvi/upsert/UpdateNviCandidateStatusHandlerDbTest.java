@@ -94,6 +94,7 @@ public class UpdateNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
                    .withPathParameters(Map.of("candidateIdentifier", body.candidateId().toString()))
                    .withBody(body)
                    .withCurrentCustomer(customerId)
+                   .withTopLevelCristinOrgId(customerId)
                    //TODO CHANGE TO CORRECT ACCESS RIGHT
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE.name())
                    .withUserName(randomString())

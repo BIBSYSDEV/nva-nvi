@@ -27,6 +27,8 @@ import nva.commons.core.JacocoGenerated;
 
 public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatusRequest, CandidateResponse> {
 
+    public static final String UNAUTHORIZED_MESSAGE = "Not allowed to change status for "
+                                                      + "different institution";
     private final NviService nviService;
 
     @JacocoGenerated
@@ -43,7 +45,7 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
     protected CandidateResponse processInput(NviStatusRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
-        var currentCustomer = requestInfo.getCurrentCustomer();
+        var currentCustomer = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         verifyRequesteeIsCorrectCustomer(input.institutionId(), currentCustomer);
 
         return attempt(() -> toStatus(input, getUsername(requestInfo)))
@@ -54,15 +56,15 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
                    .orElseThrow(ExceptionMapper::map);
     }
 
+    @Override
+    protected Integer getSuccessStatusCode(NviStatusRequest input, CandidateResponse output) {
+        return HTTP_OK;
+    }
+
     private void verifyRequesteeIsCorrectCustomer(URI institutionId, URI currentCustomerId) throws ForbiddenException {
         if (!institutionId.toString().equals(currentCustomerId.toString())) {
             throw new ForbiddenException();
         }
-    }
-
-    @Override
-    protected Integer getSuccessStatusCode(NviStatusRequest input, CandidateResponse output) {
-        return HTTP_OK;
     }
 
     private DbApprovalStatus toStatus(NviStatusRequest input, DbUsername username) {

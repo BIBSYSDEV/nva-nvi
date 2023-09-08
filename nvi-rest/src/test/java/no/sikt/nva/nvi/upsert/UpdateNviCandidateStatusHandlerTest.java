@@ -133,6 +133,7 @@ class UpdateNviCandidateStatusHandlerTest {
                    .withBody(body)
                    .withCurrentCustomer(customerId)
                    .withPathParameters(Map.of("candidateIdentifier", body.candidateId().toString()))
+                   .withTopLevelCristinOrgId(customerId)
                    //TODO CHANGE TO CORRECT ACCESS RIGHT
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE.name())
                    .withUserName(randomString())
