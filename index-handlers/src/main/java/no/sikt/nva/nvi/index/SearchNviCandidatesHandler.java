@@ -17,9 +17,9 @@ import nva.commons.core.StringUtils;
 public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
-    public static final String QUERY_PARAM_SEARCH_TERM = "query";
-    public static final String FILTER_QUERY_PARAM = "filter";
-    public static final String DEFAULT_FILTER = StringUtils.EMPTY_STRING;
+    private static final String QUERY_PARAM_SEARCH_TERM = "query";
+    private static final String FILTER_QUERY_PARAM = "filter";
+    private static final String DEFAULT_FILTER = StringUtils.EMPTY_STRING;
     private static final String QUERY_SIZE_PARAM = "size";
     private static final String QUERY_OFFSET_PARAM = "offset";
     private static final int DEFAULT_QUERY_SIZE = 10;
