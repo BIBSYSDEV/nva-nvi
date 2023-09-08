@@ -141,13 +141,22 @@ public class NviService {
     private DbApprovalStatus toUpdatedApprovalStatus(DbApprovalStatus oldApprovalStatus,
                                                      DbApprovalStatus newApprovalStatus) {
         if (oldApprovalStatus.status().equals(newApprovalStatus.status())) {
-            return updateStatus(oldApprovalStatus, newApprovalStatus);
+            return updateAssignee(oldApprovalStatus, newApprovalStatus);
         } else {
             return switch (newApprovalStatus.status()) {
                 case APPROVED, REJECTED -> updateStatus(oldApprovalStatus, newApprovalStatus);
                 case PENDING -> resetStatus(oldApprovalStatus);
             };
         }
+    }
+
+    private DbApprovalStatus updateAssignee(DbApprovalStatus oldApprovalStatus, DbApprovalStatus newApprovalStatus) {
+        return oldApprovalStatus.copy()
+                   .status(newApprovalStatus.status())
+                   .finalizedBy(null)
+                   .assignee(newApprovalStatus.assignee())
+                   .finalizedDate(null)
+                   .build();
     }
 
     private Optional<Candidate> createCandidate(DbCandidate candidate) {

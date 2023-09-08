@@ -33,6 +33,7 @@ import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contexts;
@@ -41,8 +42,6 @@ import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 
 public final class NviCandidateIndexDocumentGenerator {
-
-    public static final int SINGLE_DECIMAL = 1;
 
     private NviCandidateIndexDocumentGenerator() {
     }
@@ -85,7 +84,15 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withId(approval.institutionId().toString())
                    .withLabels(Map.of())
                    .withApprovalStatus(ApprovalStatus.fromValue(approval.status().getValue()))
+                   .withAssignee(extractAssignee(approval))
                    .build();
+    }
+
+    private static String extractAssignee(DbApprovalStatus approval) {
+        return Optional.of(approval)
+                   .map(DbApprovalStatus::assignee)
+                   .map(DbUsername::value)
+                   .orElse(null);
     }
 
     private static Approval expandApprovals(JsonNode resource,
