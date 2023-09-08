@@ -27,8 +27,6 @@ import org.slf4j.LoggerFactory;
 
 public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
-    public static final String DOCUMENT_ADDED_MESSAGE = "Attempting to add/update document with identifier {}";
-    public static final String DOCUMENT_REMOVED_MESSAGE = "Attempting to remove document with identifier {}";
     private static final String CANDIDATE_TYPE = "CANDIDATE";
     private static final String PRIMARY_KEY_DELIMITER = "#";
     private static final String IDENTIFIER = "identifier";
@@ -107,7 +105,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     private void removeDocumentFromIndex(Candidate candidate) {
-        LOGGER.info(DOCUMENT_REMOVED_MESSAGE, candidate.identifier().toString());
+        LOGGER.info("Attempting to remove document with identifier {}", candidate.identifier().toString());
         attempt(candidate::candidate)
             .map(DbCandidate::publicationId)
             .map(UpdateIndexHandler::toIndexDocumentWithId)
@@ -115,11 +113,11 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     private void addDocumentToIndex(Candidate candidate) {
+        LOGGER.info("Attempting to add/update document with identifier {}", candidate.identifier().toString());
         attempt(candidate::candidate)
             .map(UpdateIndexHandler::extractBucketUri)
             .map(storageReader::read)
             .map(blob -> generateDocument(blob, candidate))
             .forEach(openSearchClient::addDocumentToIndex);
-        LOGGER.info(DOCUMENT_ADDED_MESSAGE, candidate.identifier().toString());
     }
 }
