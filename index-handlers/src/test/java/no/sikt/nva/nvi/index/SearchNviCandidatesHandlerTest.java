@@ -63,6 +63,7 @@ public class SearchNviCandidatesHandlerTest {
     private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
     private static final String CUSTOM_DOMAIN_BASE_PATH = ENVIRONMENT.readEnv(
         "CUSTOM_DOMAIN_BASE_PATH");
+    private static final String CANDIDATE_PATH = "candidate";
     private static final String QUERY_PARAM_QUERY = "query";
     private static final String QUERY_PARAM_OFFSET = "offset";
     private static final String QUERY_PARAM_SIZE = "size";
@@ -120,12 +121,16 @@ public class SearchNviCandidatesHandlerTest {
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
 
-        assertThat(paginatedSearchResult.getId().toString(), containsString(QUERY_PARAM_FILTER + "=" + DEFAULT_FILTER));
-        assertThat(paginatedSearchResult.getId().toString(),
+        var actualId = paginatedSearchResult.getId().toString();
+        var expectedBaseUri = constructBasePath().toString();
+
+        assertThat(actualId, containsString(expectedBaseUri));
+        assertThat(actualId, containsString(QUERY_PARAM_FILTER + "=" + DEFAULT_FILTER));
+        assertThat(actualId,
                    containsString(QUERY_PARAM_SIZE + "=" + DEFAULT_QUERY_SIZE));
-        assertThat(paginatedSearchResult.getId().toString(),
+        assertThat(actualId,
                    containsString(QUERY_PARAM_OFFSET + "=" + DEFAULT_OFFSET_SIZE));
-        assertThat(paginatedSearchResult.getId().toString(),
+        assertThat(actualId,
                    containsString(QUERY_PARAM_QUERY + "=" + DEFAULT_SEARCH_TERM));
     }
 
@@ -176,16 +181,6 @@ public class SearchNviCandidatesHandlerTest {
                    .build();
     }
 
-    private static URI constructExpectedUri(int offsetSize, int size, String searchTerm, String filter) {
-        return UriWrapper.fromHost(API_HOST)
-                   .addChild(CUSTOM_DOMAIN_BASE_PATH)
-                   .addQueryParameter(QUERY_PARAM_QUERY, searchTerm)
-                   .addQueryParameter(QUERY_PARAM_FILTER, filter)
-                   .addQueryParameter(QUERY_PARAM_OFFSET, String.valueOf(offsetSize))
-                   .addQueryParameter(QUERY_PARAM_SIZE, String.valueOf(size))
-                   .getUri();
-    }
-
     private static HitsMetadata<NviCandidateIndexDocument> constructHitsMetadata(
         List<NviCandidateIndexDocument> document) {
         return new HitsMetadata.Builder<NviCandidateIndexDocument>()
@@ -210,6 +205,10 @@ public class SearchNviCandidatesHandlerTest {
 
     private static PublicationDetails randomPublicationDetails() {
         return new PublicationDetails(randomString(), randomString(), randomString(), randomString(), List.of());
+    }
+
+    private URI constructBasePath() {
+        return UriWrapper.fromHost(API_HOST).addChild(CUSTOM_DOMAIN_BASE_PATH).addChild(CANDIDATE_PATH).getUri();
     }
 
     private List<NviCandidateIndexDocument> generateNumberOfIndexDocuments(int number) {
