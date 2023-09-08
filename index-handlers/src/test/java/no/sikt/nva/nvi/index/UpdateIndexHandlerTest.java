@@ -4,6 +4,7 @@ import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.Opera
 import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType.MODIFY;
 import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType.REMOVE;
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.index.utils.ExpandedResourceGenerator.createExpandedResource;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -26,13 +27,18 @@ import java.math.RoundingMode;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.SearchClient;
@@ -40,6 +46,7 @@ import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument.Builder;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
@@ -47,8 +54,11 @@ import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
 class UpdateIndexHandlerTest extends LocalDynamoTest {
@@ -57,6 +67,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     public static final String CANDIDATE = IoUtils.stringFromResources(Path.of("candidate.json"));
     public static final String INSTITUTION_ID_FROM_EVENT = "https://api.dev.nva.aws.unit"
                                                            + ".no/cristin/organization/20754.0.0.0";
+    public static final URI CANDIDATE_CONTEXT = URI.create("https://bibsysdev.github.io/src/nvi-context.json");
     private UpdateIndexHandler handler;
     private TestAppender appender;
     private StorageReader<URI> storageReader;
@@ -83,7 +94,6 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
 
         assertThat(document, is(equalTo(expectedDocument)));
     }
-
 
     @Test
     void shouldUpdateExistingIndexDocumentWhenIncomingEventIsModifyAndCandidateIsApplicable()
@@ -127,6 +137,63 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         handler.handleRequest(createEvent(REMOVE, toRecord("dynamoDbUniqueEntryEvent.json")), CONTEXT);
 
         assertThat(appender.getMessages(), containsString(StringUtils.EMPTY_STRING));
+    }
+
+    @ParameterizedTest
+    @MethodSource("publicationDates")
+    void shouldAddDocumentToIndexWhenNviCandidateExistsInResourcesStorageWithDifferentDateFormats(
+        DbPublicationDate date) throws JsonProcessingException {
+        var candidate = createCandidateWithPublicationDate(date);
+        var expectedDocument = constructExpectedIndexDocument(date, candidate);
+        when(storageReader.read(any())).thenReturn(createExpandedResource(expectedDocument));
+        when(nviService.findById(any())).thenReturn(Optional.of(candidate));
+
+        handler.handleRequest(createEvent(INSERT, createDynamoDbRecord(candidate)), CONTEXT);
+
+        var document = openSearchClient.getDocuments().get(0);
+
+        assertThat(document, is(equalTo(expectedDocument)));
+    }
+
+    @NotNull
+    private static Candidate createCandidateWithPublicationDate(DbPublicationDate date) {
+        return new Candidate(UUID.randomUUID(), randomCandidateBuilder()
+                                                    .creators(Collections.emptyList())
+                                                    .publicationDate(date).build(),
+                             Collections.emptyList());
+    }
+
+    private static NviCandidateIndexDocument constructExpectedIndexDocument(DbPublicationDate date,
+                                                                            Candidate candidate) {
+        return new Builder()
+                   .withContext(CANDIDATE_CONTEXT)
+                   .withIdentifier(candidate.identifier().toString())
+                   .withApprovals(Collections.emptyList())
+                   .withPoints(sumPoints(candidate.candidate().points()))
+                   .withNumberOfApprovals(candidate.approvalStatuses().size())
+                   .withPublicationDetails(new PublicationDetails(candidate.candidate().publicationId().toString(),
+                                                                  candidate.candidate().instanceType(),
+                                                                  randomString(),
+                                                                  getExpectedPublicationDate(date),
+                                                                  Collections.emptyList()))
+                   .build();
+    }
+
+    private static BigDecimal sumPoints(List<DbInstitutionPoints> points) {
+        return points.stream().map(DbInstitutionPoints::points)
+                   .reduce(BigDecimal.ZERO, BigDecimal::add)
+                   .setScale(1, RoundingMode.HALF_UP);
+    }
+
+    private static String getExpectedPublicationDate(DbPublicationDate date) {
+        return Objects.nonNull(date.month()) && Objects.nonNull(date.day())
+                   ? date.year() + "-" + date.month() + "-" + date.day()
+                   : date.year();
+    }
+
+    private static Stream<DbPublicationDate> publicationDates() {
+        return Stream.of(new DbPublicationDate("2023", null, null),
+                         new DbPublicationDate("2023", "01", "03"));
     }
 
     private static List<Approval> constructExpectedApprovals() {
@@ -193,6 +260,13 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         return DbApprovalStatus.builder()
                    .institutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
                    .status(DbStatus.PENDING).build();
+    }
+
+    private DynamodbStreamRecord createDynamoDbRecord(Candidate candidate) throws JsonProcessingException {
+        return JsonUtils.dtoObjectMapper.readValue(IoUtils.stringFromResources(Path.of("genericDynamoDbRecord.json"))
+                                                       .replace("__REPLACE_IDENTIFIER__",
+                                                                candidate.identifier().toString()),
+                                                   DynamodbStreamRecord.class);
     }
 
     private Candidate randomNonApplicableCandidate() {
