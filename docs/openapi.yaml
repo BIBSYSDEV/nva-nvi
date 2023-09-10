@@ -493,7 +493,6 @@ components:
           type: string
       required:
         - institutionId
-        - assignee
   securitySchemes:
     CognitoUserPool:
       type: apiKey

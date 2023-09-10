@@ -8,6 +8,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -22,6 +23,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
+import no.sikt.nva.nvi.common.db.Candidate;
+import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.ApprovalDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -112,6 +115,30 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
         assertThat(newAssignee, is(equalTo(assignee)));
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
+    }
+
+    @Test
+    void shouldRemoveAssignee() throws IOException {
+        mockUserApiResponse("userResponseBodyWithAccessRight.json");
+        var candidate = nviService.upsertCandidate(randomApplicableCandidateBuilder()).orElseThrow();
+        persistRandomAssignee(candidate);
+        var approvalToUpdate = candidate.approvalStatuses().get(0);
+        var requestBody = new ApprovalDto(null, approvalToUpdate.institutionId());
+        var request = createRequest(candidate.identifier(), requestBody, randomString());
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
+        var candidateResponse = response.getBodyObject(CandidateResponse.class);
+        var approvalStatus = candidateResponse.approvalStatuses().get(0);
+
+        assertThat(approvalStatus.assignee(), is(nullValue()));
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
+    }
+
+    private void persistRandomAssignee(Candidate candidate) {
+        nviService.updateApprovalStatus(candidate.identifier(),
+                                        candidate.approvalStatuses().get(0).copy()
+                                            .assignee(new DbUsername(randomString()))
+                                            .build());
     }
 
     private void mockUserApiResponse(String responseFile) {

@@ -154,7 +154,7 @@ public class NviService {
         return oldApprovalStatus.copy()
                    .status(newApprovalStatus.status())
                    .finalizedBy(null)
-                   .assignee(newApprovalStatus.assignee())
+                   .assignee(Optional.of(newApprovalStatus).map(DbApprovalStatus::assignee).orElse(null))
                    .finalizedDate(null)
                    .build();
     }
