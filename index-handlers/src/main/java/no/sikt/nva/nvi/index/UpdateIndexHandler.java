@@ -32,6 +32,7 @@ import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@JacocoGenerated
 public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
     private static final String CANDIDATE_TYPE = "CANDIDATE";
@@ -45,7 +46,6 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     private final StorageReader<URI> storageReader;
     private final NviService nviService;
 
-    @JacocoGenerated
     public UpdateIndexHandler() {
         this(new S3StorageReader(EXPANDED_RESOURCES_BUCKET), defaultOpenSearchClient(), defaultNviService());
     }
@@ -59,6 +59,9 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     public Void handleRequest(DynamodbEvent event, Context context) {
+        LOGGER.info("Event: {}", attempt(() -> JsonUtils.dtoObjectMapper.writeValueAsString(event)));
+        LOGGER.info("Record: {}",
+                    attempt(() -> JsonUtils.dtoObjectMapper.writeValueAsString(event.getRecords().get(0))));
         event.getRecords().stream()
             .filter(this::isUpdate)
             .filter(this::isCandidateOrApproval)
@@ -108,7 +111,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     private void updateIndex(DynamodbStreamRecord record) {
         var candidate = nviService.findById(extractIdentifierFromOldImage(record)).orElseThrow();
         if (isApproval(record)) {
-           updateDocumentApprovals(record, candidate.identifier());
+            updateDocumentApprovals(record, candidate.identifier());
         }
         if (isApplicable(candidate)) {
             addDocumentToIndex(candidate);
@@ -174,7 +177,6 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
     private boolean isUpdate(DynamodbStreamRecord record) {
         var eventType = getEventType(record);
-        LOGGER.info("Handling NVI DB Event: {} for {}", eventType, extractIdentifierFromOldImage(record));
         return OperationType.INSERT.equals(eventType) || OperationType.MODIFY.equals(eventType);
     }
 
