@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.upsert;
+package no.sikt.nva.nvi.rest.upsert;
 
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;

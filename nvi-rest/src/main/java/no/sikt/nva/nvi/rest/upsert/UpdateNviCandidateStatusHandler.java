@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.upsert;
+package no.sikt.nva.nvi.rest.upsert;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
@@ -68,7 +68,8 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
     }
 
     private DbApprovalStatus toStatus(NviStatusRequest input, DbUsername username) {
-        return new DbApprovalStatus(input.institutionId(), mapStatus(input.status()), username, Instant.now());
+        return new DbApprovalStatus(input.institutionId(), mapStatus(input.status()),
+                                    username, username, Instant.now());
     }
 
     // New switch return syntax isn't fullfilling the 100% coverage because of a bug.

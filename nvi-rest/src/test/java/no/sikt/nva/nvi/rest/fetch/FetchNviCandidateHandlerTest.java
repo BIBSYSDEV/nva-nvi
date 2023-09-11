@@ -110,7 +110,9 @@ class FetchNviCandidateHandlerTest {
         return approvalStatuses.stream()
                    .map(approvalStatus -> new ApprovalStatus(
                        approvalStatus.institutionId(),
-                       approvalStatus.status(), approvalStatus.finalizedBy(),
+                       approvalStatus.status(),
+                       approvalStatus.assignee(),
+                       approvalStatus.finalizedBy(),
                        approvalStatus.finalizedDate()))
                    .toList();
     }

@@ -11,6 +11,7 @@ import no.sikt.nva.nvi.common.db.model.DbUsername;
 @JsonSerialize
 public record ApprovalStatus(URI institutionId,
                              DbStatus status,
+                             DbUsername assignee,
                              DbUsername finalizedBy,
                              Instant finalizedDate) {
 
@@ -22,6 +23,7 @@ public record ApprovalStatus(URI institutionId,
 
         private URI institutionId;
         private DbStatus status;
+        private DbUsername assignee;
         private DbUsername finalizedBy;
         private Instant finalizedDate;
 
@@ -38,6 +40,11 @@ public record ApprovalStatus(URI institutionId,
             return this;
         }
 
+        public Builder withAssignee(DbUsername assignee) {
+            this.assignee = assignee;
+            return this;
+        }
+
         public Builder withFinalizedBy(DbUsername finalizedBy) {
             this.finalizedBy = finalizedBy;
             return this;
@@ -49,7 +56,7 @@ public record ApprovalStatus(URI institutionId,
         }
 
         public ApprovalStatus build() {
-            return new ApprovalStatus(institutionId, status, finalizedBy, finalizedDate);
+            return new ApprovalStatus(institutionId, status, assignee, finalizedBy, finalizedDate);
         }
     }
 }

@@ -75,6 +75,21 @@ public final class TestUtils {
                    .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))));
     }
 
+    public static DbCandidate randomApplicableCandidateBuilder() {
+        return DbCandidate.builder()
+                   .publicationId(randomUri())
+                   .publicationBucketUri(randomUri())
+                   .applicable(true)
+                   .instanceType(randomString())
+                   .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
+                   .level(randomElement(DbLevel.values()))
+                   .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
+                   .internationalCollaboration(randomBoolean())
+                   .creatorCount(randomInteger())
+                   .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))))
+                   .build();
+    }
+
     public static String randomYear() {
         return String.valueOf(randomInteger(3000));
     }
