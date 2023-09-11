@@ -94,7 +94,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldUpdateAssignee() throws IOException {
+    void shouldUpdateAssigneeWhenAssigneeIsNotPresent() throws IOException {
         mockUserApiResponse("userResponseBodyWithAccessRight.json");
         var candidate = nviService.upsertCandidate(randomApplicableCandidateBuilder()).orElseThrow();
         var assignee = randomString();
@@ -107,7 +107,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldRemoveAssignee() throws IOException {
+    void shouldRemoveAssigneeWhenAssigneeIsPresent() throws IOException {
         mockUserApiResponse("userResponseBodyWithAccessRight.json");
         var candidate = nviService.upsertCandidate(randomApplicableCandidateBuilder()).orElseThrow();
         updateAssignee(candidate);
