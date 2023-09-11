@@ -10,7 +10,6 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType;
-import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
@@ -21,6 +20,7 @@ import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.Approval;
+import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.Environment;
@@ -36,12 +36,13 @@ import org.slf4j.LoggerFactory;
 public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
     private static final String CANDIDATE_TYPE = "CANDIDATE";
-    private static final String APPROVAL_TYPE = "APPROVAL";
+    private static final String APPROVAL_TYPE = "APPROVAL_STATUS";
     private static final String PRIMARY_KEY_DELIMITER = "#";
     private static final String IDENTIFIER = "identifier";
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateIndexHandler.class);
     private static final Environment ENVIRONMENT = new Environment();
     private static final String EXPANDED_RESOURCES_BUCKET = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
+    public static final String APPROVAL_UPDATED_MESSAGE = "Approval has been updated";
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
     private final StorageReader<URI> storageReader;
     private final NviService nviService;
@@ -113,7 +114,12 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         var candidate = nviService.findById(extractIdentifierFromOldImage(record)).orElseThrow();
         if (isApproval(record)) {
             updateDocumentApprovals(record, candidate.identifier());
+        } else {
+            updateDocument(candidate);
         }
+    }
+
+    private void updateDocument(Candidate candidate) {
         if (isApplicable(candidate)) {
             addDocumentToIndex(candidate);
         } else {
@@ -132,6 +138,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
                 .map(document -> updateApprovals(document, record))
                 .forEach(openSearchClient::addDocumentToIndex)
                 .orElseThrow();
+            LOGGER.info(APPROVAL_UPDATED_MESSAGE);
         }
     }
 
@@ -160,8 +167,11 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     private static Approval extractApprovalFromRecord(DynamodbStreamRecord record) {
-        return attempt(() -> JsonUtils.dtoObjectMapper.readValue(record.getDynamodb().getNewImage().get("data").getS(),
-                                                                 Approval.class)).orElseThrow();
+        var approvalMap = record.getDynamodb().getNewImage().get("data").getM();
+        return new Approval.Builder()
+                   .withAssignee(approvalMap.get("assignee").getM().get("value").getS())
+                   .withApprovalStatus(ApprovalStatus.fromValue(approvalMap.get("status").getS()))
+                   .build();
     }
 
     private static boolean isSameApproval(Approval approval, DynamodbStreamRecord record) {
@@ -169,7 +179,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     private static String extractApprovalId(DynamodbStreamRecord record) {
-        return record.getDynamodb().getNewImage().get(SORT_KEY).toString().split("#")[1];
+        return record.getDynamodb().getNewImage().get("data").getM().get("institutionId").getS();
     }
 
     private static boolean containsSingleHit(SearchResponse<NviCandidateIndexDocument> searchResponse) {

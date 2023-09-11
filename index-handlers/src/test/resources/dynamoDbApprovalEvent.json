@@ -1,0 +1,92 @@
+{
+  "eventID": "3308f20dcb21a05eb22fce08d39c6425",
+  "eventName": "MODIFY",
+  "eventVersion": "1.1",
+  "eventSource": "aws:dynamodb",
+  "awsRegion": "eu-west-1",
+  "dynamodb": {
+    "approximateCreationDateTime": "2023-09-11T13:40:55.000+00:00",
+    "keys": {
+      "PrimaryKeyRangeKey": {
+        "s": "APPROVAL_STATUS#https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+      },
+      "PrimaryKeyHashKey": {
+        "s": "CANDIDATE#eebeeed0-4553-4f38-8168-890d7318e6e5"
+      }
+    },
+    "newImage": {
+      "identifier": {
+        "s": "eebeeed0-4553-4f38-8168-890d7318e6e5"
+      },
+      "data": {
+        "m": {
+          "finalizedBy": {
+            "null": true
+          },
+          "finalizedDate": {
+            "null": true
+          },
+          "institutionId": {
+            "s": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+          },
+          "assignee": {
+            "m": {
+              "value": {
+                "s": "1136326@20754.0.0.0"
+              }
+            }
+          },
+          "status": {
+            "s": "PENDING"
+          }
+        }
+      },
+      "PrimaryKeyHashKey": {
+        "s": "CANDIDATE#eebeeed0-4553-4f38-8168-890d7318e6e5"
+      },
+      "PrimaryKeyRangeKey": {
+        "s": "APPROVAL_STATUS#https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+      },
+      "type": {
+        "s": "APPROVAL_STATUS"
+      }
+    },
+    "oldImage": {
+      "identifier": {
+        "s": "eebeeed0-4553-4f38-8168-890d7318e6e5"
+      },
+      "data": {
+        "m": {
+          "finalizedBy": {
+            "null": true
+          },
+          "finalizedDate": {
+            "null": true
+          },
+          "institutionId": {
+            "s": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+          },
+          "assignee": {
+            "null": true
+          },
+          "status": {
+            "s": "PENDING"
+          }
+        }
+      },
+      "PrimaryKeyHashKey": {
+        "s": "CANDIDATE#eebeeed0-4553-4f38-8168-890d7318e6e5"
+      },
+      "PrimaryKeyRangeKey": {
+        "s": "APPROVAL_STATUS#https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+      },
+      "type": {
+        "s": "APPROVAL_STATUS"
+      }
+    },
+    "sequenceNumber": "1000000000062731359090",
+    "sizeBytes": 914,
+    "streamViewType": "NEW_AND_OLD_IMAGES"
+  },
+  "eventSourceARN": "arn:aws:dynamodb:eu-west-1:884807050265:table/nva-nvi-master-pipelines-NvaNvi-1LZJ4B13FNYPO-nva-nvi/stream/2023-09-11T13:06:31.237"
+}

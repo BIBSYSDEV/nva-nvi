@@ -4,6 +4,7 @@ import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.Opera
 import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType.MODIFY;
 import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType.REMOVE;
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.index.UpdateIndexHandler.APPROVAL_UPDATED_MESSAGE;
 import static no.sikt.nva.nvi.index.utils.ExpandedResourceGenerator.createExpandedResource;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
@@ -58,7 +59,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opensearch.client.opensearch._types.ShardStatistics;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.core.search.HitsMetadata;
+import org.opensearch.client.opensearch.core.search.TotalHits;
+import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 
 class UpdateIndexHandlerTest extends LocalDynamoTest {
 
@@ -136,6 +142,16 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         handler.handleRequest(createEvent(REMOVE, toRecord("dynamoDbUniqueEntryEvent.json")), CONTEXT);
 
         assertThat(appender.getMessages(), containsString(StringUtils.EMPTY_STRING));
+    }
+
+    @Test
+    void shouldUpdateDocumentWithNewApprovalWhenIncomingEventIsApproval() throws JsonProcessingException {
+        when(storageReader.read(any())).thenReturn(CANDIDATE);
+        var candidate = randomCandidate();
+        when(nviService.findById(any())).thenReturn(Optional.of(candidate));
+        handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbApprovalEvent.json")), CONTEXT);
+
+        assertThat(appender.getMessages(), containsString(APPROVAL_UPDATED_MESSAGE));
     }
 
     @ParameterizedTest
@@ -316,7 +332,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
 
         @Override
         public SearchResponse<NviCandidateIndexDocument> searchDocumentById(String id) {
-            return null;
+            return searchResponse(id);
         }
 
         @Override
@@ -326,6 +342,40 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
 
         public List<NviCandidateIndexDocument> getDocuments() {
             return documents;
+        }
+
+        private SearchResponse<NviCandidateIndexDocument> searchResponse(String identifier) {
+            var document = new NviCandidateIndexDocument.Builder()
+                               .withIdentifier(identifier)
+                               .withApprovals(List.of(approval()))
+                               .build();
+            return new SearchResponse.Builder<NviCandidateIndexDocument>()
+                       .took(1)
+                       .timedOut(false)
+                       .shards(getShardStatistics())
+                       .hits(getNviCandidateIndexDocumentHitsMetadata(identifier, document)).build();
+        }
+
+        private static ShardStatistics getShardStatistics() {
+            return new ShardStatistics.Builder().failed(0).successful(1).total(1).build();
+        }
+
+        private static HitsMetadata<NviCandidateIndexDocument> getNviCandidateIndexDocumentHitsMetadata(
+            String identifier, NviCandidateIndexDocument document) {
+            return new HitsMetadata.Builder<NviCandidateIndexDocument>().total(new TotalHits.Builder().relation(
+                    TotalHitsRelation.Eq).value(1).build())
+                       .hits(List.of(new Hit.Builder<NviCandidateIndexDocument>().source(document)
+                                         .index(randomString())
+                                         .id(identifier)
+                                         .build()))
+                       .build();
+        }
+
+        private Approval approval() {
+            return new Approval.Builder()
+                       .withId("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0")
+                       .withApprovalStatus(ApprovalStatus.PENDING)
+                       .build();
         }
     }
 }
