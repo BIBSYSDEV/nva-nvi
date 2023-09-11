@@ -322,6 +322,27 @@ Resources:
             Method: post
             RestApiId: !Ref ScientificIndexApi
 
+  FetchNviPeriodsHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.fetch.FetchNviPeriodsHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+          API_HOST: !Ref ApiDomain
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /period
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+
   UpdateNviPeriodHandler:
     Type: AWS::Serverless::Function
     Properties:

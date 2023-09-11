@@ -55,6 +55,40 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
+    get:
+      description: 'Get Nvi Periods'
+      security:
+        - CognitoUserPool: [
+          'https://api.nva.unit.no/scopes/backend',
+          'https://api.nva.unit.no/scopes/frontend',
+          'aws.cognito.signin.user.admin',
+        ]
+      x-amazon-apigateway-request-validator: validate_body
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviPeriodsHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        '200':
+          description: "Periods fetched"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NviPeriods"
+        '401':
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '500':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
     put:
       requestBody:
         required: true
@@ -278,6 +312,10 @@ components:
       required:
         - publishingYear
         - reportingDate
+    NviPeriods:
+      type: array
+      items:
+        $ref: '#/components/schemas/NviPeriod'
     CandidateSearchResponse:
       type: object
       properties:
