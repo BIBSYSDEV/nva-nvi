@@ -84,9 +84,13 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
 
     private static DbApprovalStatus getApprovalStatus(Candidate candidate, ApprovalDto input) {
         return candidate.approvalStatuses().stream()
-                   .filter(approval -> approval.institutionId().equals(input.institutionId()))
+                   .filter(approval -> getApprovalByInstutionId(input, approval.institutionId()))
                    .findFirst()
                    .orElseThrow();
+    }
+
+    private static boolean getApprovalByInstutionId(ApprovalDto input, URI institutionId) {
+        return institutionId.equals(input.institutionId());
     }
 
     private void validateRequest(ApprovalDto input, RequestInfo requestInfo) throws UnauthorizedException {
@@ -97,7 +101,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
 
     private void assigneeHasAccessRight(String assignee) throws UnauthorizedException {
         var user = fetchUser(assignee);
-        if (!hasAccessRight(user)) {
+        if (!hasManageNviCandidateAccessRight(user)) {
             throw new UnauthorizedException();
         }
     }
@@ -108,7 +112,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
         }
     }
 
-    private boolean hasAccessRight(User user) {
+    private boolean hasManageNviCandidateAccessRight(User user) {
         return user.roles().stream()
                    .map(Role::accessRights)
                    .flatMap(List::stream)

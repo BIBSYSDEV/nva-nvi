@@ -109,8 +109,8 @@ public class NviService {
                    .build();
     }
 
-    private static DbApprovalStatus updateStatus(DbApprovalStatus oldApprovalStatus,
-                                                 DbApprovalStatus newApprovalStatus) {
+    private static DbApprovalStatus finalizeStatus(DbApprovalStatus oldApprovalStatus,
+                                                   DbApprovalStatus newApprovalStatus) {
         return oldApprovalStatus.copy()
                    .status(newApprovalStatus.status())
                    .finalizedBy(newApprovalStatus.finalizedBy())
@@ -137,17 +137,25 @@ public class NviService {
         return !isExistingCandidate(dbCandidate.publicationId()) && dbCandidate.applicable();
     }
 
-    @JacocoGenerated // bug in jacoco report that is unable to exhaust the switch. Should be fixed in version 0.8.11
     private DbApprovalStatus toUpdatedApprovalStatus(DbApprovalStatus oldApprovalStatus,
                                                      DbApprovalStatus newApprovalStatus) {
-        if (oldApprovalStatus.status().equals(newApprovalStatus.status())) {
+        if (updateIsAssignee(oldApprovalStatus, newApprovalStatus)) {
             return updateAssignee(oldApprovalStatus, newApprovalStatus);
         } else {
-            return switch (newApprovalStatus.status()) {
-                case APPROVED, REJECTED -> updateStatus(oldApprovalStatus, newApprovalStatus);
-                case PENDING -> resetStatus(oldApprovalStatus);
-            };
+            return updateStatus(oldApprovalStatus, newApprovalStatus);
         }
+    }
+
+    private static DbApprovalStatus updateStatus(DbApprovalStatus oldApprovalStatus,
+                                                        DbApprovalStatus newApprovalStatus) {
+        return switch (newApprovalStatus.status()) {
+            case APPROVED, REJECTED -> finalizeStatus(oldApprovalStatus, newApprovalStatus);
+            case PENDING -> resetStatus(oldApprovalStatus);
+        };
+    }
+
+    private static boolean updateIsAssignee(DbApprovalStatus oldApprovalStatus, DbApprovalStatus newApprovalStatus) {
+        return oldApprovalStatus.status().equals(newApprovalStatus.status());
     }
 
     private DbApprovalStatus updateAssignee(DbApprovalStatus oldApprovalStatus, DbApprovalStatus newApprovalStatus) {

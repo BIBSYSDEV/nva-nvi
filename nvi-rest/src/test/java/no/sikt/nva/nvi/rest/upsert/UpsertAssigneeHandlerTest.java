@@ -21,7 +21,6 @@ import java.net.HttpURLConnection;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
@@ -76,11 +75,8 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     void shouldReturnUnauthorizedWhenAssigningToUserWithoutAccessRight() throws IOException {
         mockUserApiResponse("userResponseBodyWithoutAccessRight.json");
         var candidate = nviService.upsertCandidate(randomApplicableCandidateBuilder()).orElseThrow();
-        var approvalToUpdate = candidate.approvalStatuses().get(0);
         var assignee = randomString();
-        var requestBody = new ApprovalDto(assignee, approvalToUpdate.institutionId());
-        var request = createRequest(candidate.identifier(), requestBody, assignee);
-        handler.handleRequest(request, output, context);
+        handler.handleRequest(createRequest(candidate, assignee), output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
 
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -89,12 +85,9 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnNotFoundWhenCandidateDoesNotExist() throws IOException {
         mockUserApiResponse("userResponseBodyWithAccessRight.json");
-        var candidate = nviService.upsertCandidate(randomApplicableCandidateBuilder()).orElseThrow();
-        var approvalToUpdate = candidate.approvalStatuses().get(0);
+        var candidate = nonExistingCandidate();
         var assignee = randomString();
-        var requestBody = new ApprovalDto(assignee, approvalToUpdate.institutionId());
-        var request = createRequest(randomUUID(), requestBody, assignee);
-        handler.handleRequest(request, output, context);
+        handler.handleRequest(createRequest(candidate, assignee), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_NOT_FOUND)));
@@ -104,16 +97,12 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     void shouldUpdateAssignee() throws IOException {
         mockUserApiResponse("userResponseBodyWithAccessRight.json");
         var candidate = nviService.upsertCandidate(randomApplicableCandidateBuilder()).orElseThrow();
-        var approvalToUpdate = candidate.approvalStatuses().get(0);
         var assignee = randomString();
-        var requestBody = new ApprovalDto(assignee, approvalToUpdate.institutionId());
-        var request = createRequest(candidate.identifier(), requestBody, assignee);
-        handler.handleRequest(request, output, context);
+        handler.handleRequest(createRequest(candidate, assignee), output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
-        var candidateResponse = response.getBodyObject(CandidateResponse.class);
-        var newAssignee = candidateResponse.approvalStatuses().get(0).assignee().value();
 
-        assertThat(newAssignee, is(equalTo(assignee)));
+        assertThat(response.getBodyObject(CandidateResponse.class).approvalStatuses().get(0).assignee().value(),
+                   is(equalTo(assignee)));
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
     }
 
@@ -122,16 +111,17 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         mockUserApiResponse("userResponseBodyWithAccessRight.json");
         var candidate = nviService.upsertCandidate(randomApplicableCandidateBuilder()).orElseThrow();
         persistRandomAssignee(candidate);
-        var approvalToUpdate = candidate.approvalStatuses().get(0);
-        var requestBody = new ApprovalDto(null, approvalToUpdate.institutionId());
-        var request = createRequest(candidate.identifier(), requestBody, randomString());
-        handler.handleRequest(request, output, context);
+        handler.handleRequest(createRequest(candidate, null), output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
-        var candidateResponse = response.getBodyObject(CandidateResponse.class);
-        var approvalStatus = candidateResponse.approvalStatuses().get(0);
 
-        assertThat(approvalStatus.assignee(), is(nullValue()));
+        assertThat(response.getBodyObject(CandidateResponse.class).approvalStatuses().get(0).assignee(),
+                   is(nullValue()));
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
+    }
+
+    private Candidate nonExistingCandidate() {
+        var candidate = nviService.upsertCandidate(randomApplicableCandidateBuilder()).orElseThrow();
+        return new Candidate(randomUUID(), candidate.candidate(), candidate.approvalStatuses());
     }
 
     private void persistRandomAssignee(Candidate candidate) {
@@ -146,17 +136,19 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
             .thenReturn(Optional.ofNullable(IoUtils.stringFromResources(Path.of(responseFile))));
     }
 
-    private InputStream createRequest(UUID candidate, ApprovalDto assigneeRequest, String assignee)
+    private InputStream createRequest(Candidate candidate, String newAssignee)
         throws JsonProcessingException {
+        var approvalToUpdate = candidate.approvalStatuses().get(0);
+        var requestBody = new ApprovalDto(newAssignee, approvalToUpdate.institutionId());
         var customerId = randomUri();
         return new HandlerRequestBuilder<ApprovalDto>(JsonUtils.dtoObjectMapper)
                    .withBody(randomAssigneeRequest())
                    .withCurrentCustomer(customerId)
-                   .withTopLevelCristinOrgId(assigneeRequest.institutionId())
+                   .withTopLevelCristinOrgId(requestBody.institutionId())
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE.name())
-                   .withUserName(assignee)
-                   .withBody(assigneeRequest)
-                   .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidate.toString()))
+                   .withUserName(randomString())
+                   .withBody(requestBody)
+                   .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidate.identifier().toString()))
                    .build();
     }
 
