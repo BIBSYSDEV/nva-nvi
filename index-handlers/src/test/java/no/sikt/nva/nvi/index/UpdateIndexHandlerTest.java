@@ -56,6 +56,8 @@ import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
 class UpdateIndexHandlerTest extends LocalDynamoTest {
@@ -152,8 +154,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     private static Candidate createApplicableCandidateWithPublicationDate(DbPublicationDate date) {
-        return new Candidate(UUID.randomUUID(), randomCandidateBuilder()
-                                                    .applicable(true)
+        return new Candidate(UUID.randomUUID(), randomCandidateBuilder(true)
                                                     .creators(Collections.emptyList())
                                                     .publicationDate(date).build(),
                              Collections.emptyList());
@@ -253,7 +254,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     private static Candidate randomApplicableCandidate() {
-        var applicableCandidate = randomCandidateBuilder().applicable(true).build();
+        var applicableCandidate = randomCandidateBuilder(true).build();
         return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()));
     }
 
@@ -271,7 +272,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     private Candidate randomNonApplicableCandidate() {
-        var nonApplicableCandidate = randomCandidateBuilder().applicable(false).build();
+        var nonApplicableCandidate = randomCandidateBuilder(false).build();
         return new Candidate(randomUUID(), nonApplicableCandidate, List.of(getApprovalStatus()));
     }
 
