@@ -142,7 +142,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @MethodSource("publicationDates")
     void shouldAddDocumentToIndexWhenNviCandidateExistsInResourcesStorageWithDifferentDateFormats(
         DbPublicationDate date) throws JsonProcessingException {
-        var candidate = createCandidateWithPublicationDate(date);
+        var candidate = createApplicableCandidateWithPublicationDate(date);
         var expectedDocument = constructExpectedIndexDocument(date, candidate);
         when(storageReader.read(any())).thenReturn(createExpandedResource(expectedDocument));
         when(nviService.findById(any())).thenReturn(Optional.of(candidate));
@@ -154,8 +154,9 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         assertThat(document, is(equalTo(expectedDocument)));
     }
 
-    private static Candidate createCandidateWithPublicationDate(DbPublicationDate date) {
+    private static Candidate createApplicableCandidateWithPublicationDate(DbPublicationDate date) {
         return new Candidate(UUID.randomUUID(), randomCandidateBuilder()
+                                                    .applicable(true)
                                                     .creators(Collections.emptyList())
                                                     .publicationDate(date).build(),
                              Collections.emptyList());
