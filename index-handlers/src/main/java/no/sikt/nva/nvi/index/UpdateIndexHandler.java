@@ -59,9 +59,10 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     public Void handleRequest(DynamodbEvent event, Context context) {
-        LOGGER.info("Event: {}", attempt(() -> JsonUtils.dtoObjectMapper.writeValueAsString(event)));
+        LOGGER.info("Event: {}", attempt(() -> JsonUtils.dtoObjectMapper.writeValueAsString(event)).orElseThrow());
         LOGGER.info("Record: {}",
-                    attempt(() -> JsonUtils.dtoObjectMapper.writeValueAsString(event.getRecords().get(0))));
+                    attempt(() -> JsonUtils.dtoObjectMapper
+                                      .writeValueAsString(event.getRecords().get(0))).orElseThrow());
         event.getRecords().stream()
             .filter(this::isUpdate)
             .filter(this::isCandidateOrApproval)

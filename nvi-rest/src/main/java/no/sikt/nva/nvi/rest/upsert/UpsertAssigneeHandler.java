@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest.upsert;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.service.NviService.defaultNviService;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -96,7 +97,9 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
     private void validateRequest(ApprovalDto input, RequestInfo requestInfo) throws UnauthorizedException {
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
         hasSameCustomer(input, requestInfo);
-        assigneeHasAccessRight(input.assignee());
+        if (nonNull(input.assignee())) {
+            assigneeHasAccessRight(input.assignee());
+        }
     }
 
     private void assigneeHasAccessRight(String assignee) throws UnauthorizedException {
