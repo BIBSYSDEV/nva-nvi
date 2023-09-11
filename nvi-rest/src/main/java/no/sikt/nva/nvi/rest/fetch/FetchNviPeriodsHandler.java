@@ -13,10 +13,17 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.core.JacocoGenerated;
 
 public class FetchNviPeriodsHandler extends ApiGatewayHandler<Void, NviPeriodsResponse> {
 
     private final NviService nviService;
+
+    @JacocoGenerated
+    public FetchNviPeriodsHandler() {
+        super(Void.class);
+        this.nviService = NviService.defaultNviService();
+    }
 
     public FetchNviPeriodsHandler(NviService nviService) {
         super(Void.class);
