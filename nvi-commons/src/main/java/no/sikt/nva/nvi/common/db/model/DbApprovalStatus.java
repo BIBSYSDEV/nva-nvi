@@ -8,6 +8,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmut
 @DynamoDbImmutable(builder = DbApprovalStatus.Builder.class)
 public record DbApprovalStatus(URI institutionId,
                                DbStatus status,
+                               DbUsername assignee,
                                DbUsername finalizedBy,
                                Instant finalizedDate) {
 
@@ -20,6 +21,7 @@ public record DbApprovalStatus(URI institutionId,
         return builder()
                    .institutionId(institutionId)
                    .status(status)
+                   .assignee(assignee)
                    .finalizedBy(finalizedBy)
                    .finalizedDate(finalizedDate);
     }
@@ -28,6 +30,7 @@ public record DbApprovalStatus(URI institutionId,
 
         private URI builderInstitutionId;
         private DbStatus builderStatus;
+        private DbUsername builderAssignee;
         private DbUsername builderFinalizedBy;
         private Instant builderFinalizedDate;
 
@@ -44,6 +47,11 @@ public record DbApprovalStatus(URI institutionId,
             return this;
         }
 
+        public Builder assignee(DbUsername assignee) {
+            this.builderAssignee = assignee;
+            return this;
+        }
+
         public Builder finalizedBy(DbUsername finalizedBy) {
             this.builderFinalizedBy = finalizedBy;
             return this;
@@ -55,7 +63,8 @@ public record DbApprovalStatus(URI institutionId,
         }
 
         public DbApprovalStatus build() {
-            return new DbApprovalStatus(builderInstitutionId, builderStatus, builderFinalizedBy, builderFinalizedDate);
+            return new DbApprovalStatus(builderInstitutionId, builderStatus, builderAssignee,
+                                        builderFinalizedBy, builderFinalizedDate);
         }
     }
 }

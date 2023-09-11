@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.upsert;
+package no.sikt.nva.nvi.rest.upsert;
 
 import static java.util.Collections.emptyList;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
@@ -111,6 +111,7 @@ class UpdateNviCandidateStatusHandlerTest {
                        List.of(ApprovalStatus.builder()
                                    .withInstitutionId(nviStatusRequest.institutionId())
                                    .withStatus(status)
+                                   .withAssignee(new DbUsername(approvalStatus.assignee().value()))
                                    .withFinalizedBy(new DbUsername(approvalStatus.finalizedBy().value()))
                                    .withFinalizedDate(approvalStatus.finalizedDate())
                                    .build()))
@@ -121,6 +122,7 @@ class UpdateNviCandidateStatusHandlerTest {
 
     private static Candidate mockServiceResponse(NviStatusRequest nviStatusRequest,
                                                  DbStatus status) {
+        var username = new DbUsername(randomString());
         return new Candidate(
             nviStatusRequest.candidateId(),
             DbCandidate.builder()
@@ -129,7 +131,8 @@ class UpdateNviCandidateStatusHandlerTest {
                 .build(),
             List.of(new DbApprovalStatus(nviStatusRequest.institutionId(),
                                          status,
-                                         new DbUsername(randomString()),
+                                         username,
+                                         username,
                                          Instant.now())));
     }
 
