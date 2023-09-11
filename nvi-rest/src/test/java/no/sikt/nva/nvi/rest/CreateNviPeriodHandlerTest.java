@@ -13,8 +13,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.Date;
-import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.rest.model.NviPeriodDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -48,6 +48,15 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldReturnBadRequestWhenInvalidReportingDate() throws IOException {
+        var period = new NviPeriodDto("2023", "invalidValue");
+        handler.handleRequest(createRequest(period), output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+    }
+
+    @Test
     void shouldCreateNviPeriod() throws IOException {
         var period = randomPeriod();
         handler.handleRequest(createRequest(period), output, context);
@@ -56,12 +65,12 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
     }
 
     private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
-        return new HandlerRequestBuilder<DbNviPeriod>(JsonUtils.dtoObjectMapper).withBody(randomPeriod()).build();
+        return new HandlerRequestBuilder<NviPeriodDto>(JsonUtils.dtoObjectMapper).withBody(randomPeriod()).build();
     }
 
-    private InputStream createRequest(DbNviPeriod period) throws JsonProcessingException {
+    private InputStream createRequest(NviPeriodDto period) throws JsonProcessingException {
         var customerId = randomUri();
-        return new HandlerRequestBuilder<DbNviPeriod>(JsonUtils.dtoObjectMapper)
+        return new HandlerRequestBuilder<NviPeriodDto>(JsonUtils.dtoObjectMapper)
                    .withBody(period)
                    .withCurrentCustomer(customerId)
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_PERIODS.name())
@@ -69,10 +78,7 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private DbNviPeriod randomPeriod() {
-        return DbNviPeriod.builder()
-                   .reportingDate(new Date(2050, 03, 25).toInstant())
-                   .publishingYear("2023")
-                   .build();
+    private NviPeriodDto randomPeriod() {
+        return new NviPeriodDto("2023", new Date(2050, 03, 25).toInstant().toString());
     }
 }

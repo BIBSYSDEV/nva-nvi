@@ -75,16 +75,25 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     @Override
     public void addDocumentToIndex(NviCandidateIndexDocument indexDocument) {
         if (!indexExists()) {
+            LOGGER.info("Creating index");
             createIndex();
         }
         attempt(() -> client.withTransportOptions(getOptions()).index(constructIndexRequest(indexDocument)))
-            .orElseThrow();
+            .map(indexResponse -> {
+                LOGGER.info("Adding document to index: {}", indexDocument.identifier());
+                return indexDocument;
+            })
+            .orElseThrow(failure -> handleFailure("Failed to add/update document from index", failure.getException()));
     }
 
     @Override
     public void removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) {
         attempt(() -> client.withTransportOptions(getOptions()).delete(contructDeleteRequest(indexDocument)))
-            .orElseThrow();
+            .map(deleteResponse -> {
+                LOGGER.info("Removing document from index: {}", indexDocument.identifier());
+                return deleteResponse;
+            })
+            .orElseThrow(failure -> handleFailure("Failed to remove document from index", failure.getException()));
     }
 
     @Override
@@ -95,6 +104,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
                                                             int offset,
                                                             int size)
         throws IOException {
+        logSearchRequest(searchTerm, filter, username, customer, offset, size);
         return client.withTransportOptions(getOptions())
                    .search(constructSearchRequest(searchTerm, filter, username, customer.toString(), offset, size),
                            NviCandidateIndexDocument.class);
@@ -105,6 +115,12 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         client.withTransportOptions(getOptions())
             .indices()
             .delete(new DeleteIndexRequest.Builder().index(NVI_CANDIDATES_INDEX).build());
+    }
+
+    private static void logSearchRequest(String searchTerm, String filter, String username, URI customer, int offset,
+                                         int size) {
+        LOGGER.info("Generating search request with searchTerm: {}, filter: {}, username: {}, customer: {}, offset: "
+                    + "{}, size: {}", searchTerm, filter, username, customer.toString(), offset, size);
     }
 
     private static DeleteRequest contructDeleteRequest(NviCandidateIndexDocument indexDocument) {

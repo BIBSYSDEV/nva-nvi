@@ -27,8 +27,6 @@ import org.slf4j.LoggerFactory;
 
 public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
-    public static final String DOCUMENT_ADDED_MESSAGE = "Document has been added/updated";
-    public static final String DOCUMENT_REMOVED_MESSAGE = "Document has been removed";
     private static final String CANDIDATE_TYPE = "CANDIDATE";
     private static final String PRIMARY_KEY_DELIMITER = "#";
     private static final String IDENTIFIER = "identifier";
@@ -102,24 +100,26 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
     private boolean isUpdate(DynamodbStreamRecord record) {
         var eventType = getEventType(record);
+        LOGGER.info("Handling NVI DB Event: {} for {}", eventType, extractIdentifierFromOldImage(record));
         return OperationType.INSERT.equals(eventType) || OperationType.MODIFY.equals(eventType);
     }
 
     private void removeDocumentFromIndex(Candidate candidate) {
+        LOGGER.info("Attempting to remove document with identifier {}", candidate.identifier().toString());
         attempt(candidate::candidate)
             .map(DbCandidate::publicationId)
             .map(UpdateIndexHandler::toIndexDocumentWithId)
-            .forEach(openSearchClient::removeDocumentFromIndex);
-
-        LOGGER.info(DOCUMENT_REMOVED_MESSAGE);
+            .forEach(openSearchClient::removeDocumentFromIndex)
+            .orElseThrow();
     }
 
     private void addDocumentToIndex(Candidate candidate) {
+        LOGGER.info("Attempting to add/update document with identifier {}", candidate.identifier().toString());
         attempt(candidate::candidate)
             .map(UpdateIndexHandler::extractBucketUri)
             .map(storageReader::read)
             .map(blob -> generateDocument(blob, candidate))
-            .forEach(openSearchClient::addDocumentToIndex);
-        LOGGER.info(DOCUMENT_ADDED_MESSAGE);
+            .forEach(openSearchClient::addDocumentToIndex)
+            .orElseThrow();
     }
 }
