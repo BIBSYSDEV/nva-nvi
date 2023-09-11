@@ -110,7 +110,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     void shouldRemoveAssignee() throws IOException {
         mockUserApiResponse("userResponseBodyWithAccessRight.json");
         var candidate = nviService.upsertCandidate(randomApplicableCandidateBuilder()).orElseThrow();
-        persistRandomAssignee(candidate);
+        updateAssignee(candidate);
         handler.handleRequest(createRequest(candidate, null), output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
 
@@ -124,7 +124,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         return new Candidate(randomUUID(), candidate.candidate(), candidate.approvalStatuses());
     }
 
-    private void persistRandomAssignee(Candidate candidate) {
+    private void updateAssignee(Candidate candidate) {
         nviService.updateApprovalStatus(candidate.identifier(),
                                         candidate.approvalStatuses().get(0).copy()
                                             .assignee(new DbUsername(randomString()))
