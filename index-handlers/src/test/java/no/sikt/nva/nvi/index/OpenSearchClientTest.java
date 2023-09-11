@@ -53,6 +53,8 @@ import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import org.apache.http.HttpHost;
+import org.checkerframework.checker.units.qual.A;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -180,6 +182,23 @@ public class OpenSearchClientTest {
                                     DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
 
         assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));
+    }
+
+    @Test
+    void shouldReturnDocumentWhenSearchingById()
+        throws IOException, InterruptedException {
+        var documentIdentifier = "someRandomIdentifier1";
+        addDocumentsToIndex(documentFromString("document_pending.json"),
+                            singleNviCandidateIndexDocument().copy()
+                                .withApprovals(List.of(approvalWithId(documentIdentifier))).build());
+        var searchResponse =
+            openSearchClient.searchDocumentById(documentIdentifier);
+
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+    }
+
+    private static Approval approvalWithId(String documentIdentifier) {
+        return new Approval(documentIdentifier, Map.of(), ApprovalStatus.APPROVED, null);
     }
 
     private static int getDocCount(SearchResponse<NviCandidateIndexDocument> response, String aggregationName) {

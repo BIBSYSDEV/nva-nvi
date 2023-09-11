@@ -26,6 +26,7 @@ import org.apache.http.HttpHost;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
 import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -45,6 +46,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     private static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchClient.class);
     private static final String ERROR_MSG_CREATE_INDEX = "Error while creating index: " + NVI_CANDIDATES_INDEX;
+    public static final String IDENTIFIER = "identifier";
     private final org.opensearch.client.opensearch.OpenSearchClient client;
     private final CachedValueProvider<DecodedJWT> cachedJwtProvider;
 
@@ -108,6 +110,12 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         return client.withTransportOptions(getOptions())
                    .search(constructSearchRequest(searchTerm, filter, username, customer.toString(), offset, size),
                            NviCandidateIndexDocument.class);
+    }
+
+    @Override
+    public SearchResponse<NviCandidateIndexDocument> searchDocumentById(String id) throws IOException {
+        return client.withTransportOptions(getOptions())
+                   .search(constructSearchRequest(id), NviCandidateIndexDocument.class);
     }
 
     @Override
@@ -187,6 +195,13 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
                    .aggregations(Aggregations.generateAggregations(username, customer))
                    .from(offset)
                    .size(size)
+                   .build();
+    }
+
+    private static SearchRequest constructSearchRequest(String id) {
+        return new SearchRequest.Builder()
+                   .index(NVI_CANDIDATES_INDEX)
+                   .query(new QueryStringQuery.Builder().fields(IDENTIFIER).query(id).build()._toQuery())
                    .build();
     }
 }

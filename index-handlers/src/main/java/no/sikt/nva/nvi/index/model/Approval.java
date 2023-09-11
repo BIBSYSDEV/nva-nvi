@@ -13,6 +13,14 @@ public record Approval(String id,
                        ApprovalStatus approvalStatus,
                        String assignee) {
 
+    public Builder copy() {
+        return new Builder()
+                   .withId(id)
+                   .withAssignee(assignee)
+                   .withLabels(labels)
+                   .withApprovalStatus(approvalStatus);
+    }
+
     public static final class Builder {
 
         private String id;

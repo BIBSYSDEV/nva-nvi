@@ -315,6 +315,11 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         }
 
         @Override
+        public SearchResponse<NviCandidateIndexDocument> searchDocumentById(String id) {
+            return null;
+        }
+
+        @Override
         public void deleteIndex() {
 
         }
