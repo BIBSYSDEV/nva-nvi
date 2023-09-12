@@ -174,7 +174,7 @@ public class NviServiceTest extends LocalDynamoTest {
                                                         randomLevel, publicationDate,
                                                         institutionPoints, false);
 
-        Optional<Candidate> candidate = nviService.upsertCandidate(expectedCandidate);
+        var candidate = nviService.upsertCandidate(expectedCandidate);
 
         assertThat(candidate, is(Optional.empty()));
     }
