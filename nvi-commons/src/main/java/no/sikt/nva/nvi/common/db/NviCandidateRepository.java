@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
+import no.sikt.nva.nvi.common.db.model.DbNote;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
@@ -27,6 +28,7 @@ public class NviCandidateRepository extends DynamoRepository {
     private final DynamoDbTable<CandidateUniquenessEntryDao> uniquenessTable;
     private final DynamoDbIndex<CandidateDao> publicationIdIndex;
     private final DynamoDbTable<ApprovalStatusDao> approvalStatusTable;
+    private final DynamoDbTable<NoteDao> noteTable;
 
     public NviCandidateRepository(DynamoDbClient client) {
         super(client);
@@ -34,6 +36,7 @@ public class NviCandidateRepository extends DynamoRepository {
         this.uniquenessTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(CandidateUniquenessEntryDao.class));
         this.publicationIdIndex = this.candidateTable.index(SECONDARY_INDEX_PUBLICATION_ID);
         this.approvalStatusTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(ApprovalStatusDao.class));
+        this.noteTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(NoteDao.class));
     }
 
     public Candidate create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
@@ -46,7 +49,7 @@ public class NviCandidateRepository extends DynamoRepository {
         var candidateObj = candidateTable.getItem(candidate);
 
         return new Candidate(candidateObj.identifier(), candidateObj.candidate(),
-                             getApprovalStatuses(approvalStatusTable, candidateObj.identifier()),List.of());
+                             getApprovalStatuses(approvalStatusTable, candidateObj.identifier()), List.of());
     }
 
     public Candidate update(UUID identifier, DbCandidate dbCandidate,
@@ -58,7 +61,7 @@ public class NviCandidateRepository extends DynamoRepository {
         approvalStatuses.forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
         // Maybe we need to remove the rows first, but preferably override
         client.transactWriteItems(transaction.build());
-        return new Candidate(identifier, dbCandidate, approvalStatusList,List.of());
+        return new Candidate(identifier, dbCandidate, approvalStatusList, List.of());
     }
 
     public Optional<Candidate> findById(UUID id) {
@@ -66,7 +69,7 @@ public class NviCandidateRepository extends DynamoRepository {
         var fetched = this.candidateTable.getItem(queryObj);
         return Optional.ofNullable(fetched).map(
             candidateDao -> new Candidate(id, candidateDao.candidate(), getApprovalStatuses(approvalStatusTable, id),
-                                          List.of())
+                                          getNotes(id))
         );
     }
 
@@ -74,7 +77,7 @@ public class NviCandidateRepository extends DynamoRepository {
         var candidateDao = this.candidateTable.getItem(candidateKey(id));
         var approvalStatus = getApprovalStatuses(approvalStatusTable, id);
 
-        return new Candidate(id, candidateDao.candidate(), approvalStatus,List.of());
+        return new Candidate(id, candidateDao.candidate(), approvalStatus, List.of());
     }
 
     public Optional<Candidate> findByPublicationId(URI publicationId) {
@@ -91,7 +94,7 @@ public class NviCandidateRepository extends DynamoRepository {
                    .map(
                        candidateDao -> new Candidate(candidateDao.identifier(), candidateDao.candidate(),
                                                      getApprovalStatuses(approvalStatusTable,
-                                                                         candidateDao.identifier()),List.of()))
+                                                                         candidateDao.identifier()), List.of()))
                    .findFirst();
     }
 
@@ -110,6 +113,15 @@ public class NviCandidateRepository extends DynamoRepository {
     public void updateApprovalStatus(UUID identifier, DbApprovalStatus newStatus) {
         var insert = new ApprovalStatusDao(identifier, newStatus);
         approvalStatusTable.updateItem(insert);
+    }
+
+    public boolean exists(UUID identifier) {
+        var optCandidate = findById(identifier);
+        return optCandidate.isPresent();
+    }
+
+    public void save(UUID identifier, DbNote dbNote) {
+        noteTable.putItem(NoteDao.builder().identifier(identifier).note(dbNote).build());
     }
 
     private static Key candidateKey(UUID id) {
@@ -131,6 +143,14 @@ public class NviCandidateRepository extends DynamoRepository {
                    .item(insert)
                    .conditionExpression(uniquePrimaryKeysExpression())
                    .build();
+    }
+
+    private List<DbNote> getNotes(UUID id) {
+        return noteTable.query(queryCandidateParts(id, NoteDao.TYPE))
+                   .items()
+                   .stream()
+                   .map(NoteDao::note)
+                   .toList();
     }
 
     private List<DbApprovalStatus> getApprovalStatuses(DynamoDbTable<ApprovalStatusDao> approvalStatusTable,

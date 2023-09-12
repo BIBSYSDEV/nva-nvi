@@ -13,8 +13,10 @@ import no.sikt.nva.nvi.common.db.NviPeriodRepository;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
+import no.sikt.nva.nvi.common.db.model.DbUsername;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -78,8 +80,11 @@ public class NviService {
     }
 
     public Candidate createNote(UUID identifier, String note, String user) {
-
-        return null;
+        DbNote dbNote = new DbNote(UUID.randomUUID(), new DbUsername(user), note, Instant.now());
+        if (nviCandidateRepository.exists(identifier)) {
+            nviCandidateRepository.save(identifier, dbNote);
+        }
+        return nviCandidateRepository.findById(identifier).orElseThrow();
     }
 
     private static boolean isInteger(String value) {

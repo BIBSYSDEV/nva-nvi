@@ -10,6 +10,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -271,6 +272,31 @@ public class NviServiceTest extends LocalDynamoTest {
                                       fullCandidate.approvalStatuses());
         var candidate1 = nviCandidateRepository.findById(fullCandidate.identifier());
         assertThat(candidate1.get().candidate(), is(not(fullCandidate.candidate())));
+    }
+
+    @Test
+    void shouldCreateNote() {
+        var publicationIdentifier = UUID.randomUUID();
+        var institutionUri = randomUri();
+        var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
+        List<DbApprovalStatus> dbApprobalStatus = List.of(createDbApprobalStatus(institutionUri));
+        var fullCandidate = nviCandidateRepository.create(candidateData,
+                                                          dbApprobalStatus);
+        Candidate candidateWithNote = nviService.createNote(fullCandidate.identifier(), randomString(), randomString());
+        assertThat(candidateWithNote.notes(), hasSize(1));
+    }
+
+    @Test
+    void shouldAddMultipleNotes() {
+        var publicationIdentifier = UUID.randomUUID();
+        var institutionUri = randomUri();
+        var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
+        List<DbApprovalStatus> dbApprobalStatus = List.of(createDbApprobalStatus(institutionUri));
+        var fullCandidate = nviCandidateRepository.create(candidateData,
+                                                          dbApprobalStatus);
+        nviService.createNote(fullCandidate.identifier(), randomString(), randomString());
+        Candidate candidateWithNote = nviService.createNote(fullCandidate.identifier(), randomString(), randomString());
+        assertThat(candidateWithNote.notes(), hasSize(2));
     }
 
     private static DbApprovalStatus createDbApprobalStatus(URI institutionUri) {

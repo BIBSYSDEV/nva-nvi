@@ -291,3 +291,7 @@ gradle-app.setting
 
 # Ignore Gradle build output directory
 build
+docs/*.png
+docs/*.puml
+docs/*.sql
+docs/*.json
