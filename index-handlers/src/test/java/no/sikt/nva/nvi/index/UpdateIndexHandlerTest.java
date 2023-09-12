@@ -110,8 +110,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldRemoveFromIndexWhenIncomingEventIsModifyAndCandidateIsNotApplicable() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        var persistedCandidate = randomNonApplicableCandidate();
-        when(nviService.findById(any())).thenReturn(Optional.of(persistedCandidate));
+        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate(false)));
 
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordNotApplicable.json")), CONTEXT);
 
@@ -155,11 +154,9 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     private static Candidate createApplicableCandidateWithPublicationDate(DbPublicationDate date) {
-        return new Candidate(UUID.randomUUID(), randomCandidateBuilder()
-                                                    .applicable(true)
+        return new Candidate(UUID.randomUUID(), randomCandidateBuilder(true)
                                                     .creators(Collections.emptyList())
                                                     .publicationDate(date).build(),
-                             Collections.emptyList(),
                              Collections.emptyList());
     }
 
@@ -247,13 +244,18 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     private static Candidate randomCandidate() {
-        var candidate = randomCandidateBuilder();
-        return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()), Collections.emptyList());
+        var candidate = randomCandidateBuilder(true);
+        return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()));
+    }
+
+    private static Candidate randomCandidate(boolean applicable) {
+        var candidate = randomCandidateBuilder(applicable);
+        return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()));
     }
 
     private static Candidate randomApplicableCandidate() {
-        var applicableCandidate = randomCandidateBuilder().applicable(true).build();
-        return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()), Collections.emptyList());
+        var applicableCandidate = randomCandidateBuilder(true).build();
+        return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()));
     }
 
     private static DbApprovalStatus getApprovalStatus() {
@@ -270,8 +272,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     private Candidate randomNonApplicableCandidate() {
-        var nonApplicableCandidate = randomCandidateBuilder().applicable(false).build();
-        return new Candidate(randomUUID(), nonApplicableCandidate, List.of(getApprovalStatus()), Collections.emptyList());
+        var nonApplicableCandidate = randomCandidateBuilder(false).build();
+        return new Candidate(randomUUID(), nonApplicableCandidate, List.of(getApprovalStatus()));
     }
 
     private NviCandidateIndexDocument constructExpectedDocument(Candidate candidate) {
