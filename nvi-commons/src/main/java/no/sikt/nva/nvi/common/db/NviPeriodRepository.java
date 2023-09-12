@@ -6,14 +6,16 @@ import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
-import software.amazon.awssdk.enhanced.dynamodb.Expression;
+import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.internal.conditional.BeginsWithConditional;
+import software.amazon.awssdk.enhanced.dynamodb.internal.conditional.SingleKeyItemConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
-import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 public class NviPeriodRepository extends DynamoRepository {
 
+    public static final String PERIOD = "PERIOD";
     private final DynamoDbTable<NviPeriodDao> nviPeriodTable;
 
     public NviPeriodRepository(DynamoDbClient client) {
@@ -37,18 +39,17 @@ public class NviPeriodRepository extends DynamoRepository {
     }
 
     public List<DbNviPeriod> getPeriods() {
-        var expression = Expression.builder()
-                             .expression("begins_with(#a, :b)")
-                             .putExpressionName("#a", "PrimaryKeyHashKey")
-                             .putExpressionValue(":b", AttributeValue.fromS("PERIOD"))
-                             .build();
-        var scanEnhancedRequest = ScanEnhancedRequest.builder()
-                                      .filterExpression(expression)
-                                      .build();
-        return this.nviPeriodTable.scan(scanEnhancedRequest).stream()
+        return this.nviPeriodTable.query(beginsWithPeriodQuery()).stream()
                    .map(Page::items)
                    .flatMap(Collection::stream)
                    .map(NviPeriodDao::nviPeriod)
                    .toList();
+    }
+
+    private static BeginsWithConditional beginsWithPeriodQuery() {
+        return new BeginsWithConditional(Key.builder()
+                                             .partitionValue(PERIOD)
+                                             .sortValue(PERIOD)
+                                             .build());
     }
 }
