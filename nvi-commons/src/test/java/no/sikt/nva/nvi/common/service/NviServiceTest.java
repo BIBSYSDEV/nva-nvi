@@ -277,7 +277,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var institutionUri = randomUri();
         var candidateData = createDbCandidate(identifier, institutionUri);
-        List<DbApprovalStatus> dbApprobalStatus = List.of(createDbApprovalStatus(institutionUri));
+        var dbApprobalStatus = List.of(createDbApprovalStatus(institutionUri));
         var fullCandidate = nviCandidateRepository.create(candidateData,
                                                           dbApprobalStatus);
         var updatedCandidate = createDbCandidate(identifier, institutionUri);
