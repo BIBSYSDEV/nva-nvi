@@ -14,6 +14,7 @@ import no.sikt.nva.nvi.common.db.NviPeriodRepository;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
 import nva.commons.core.JacocoGenerated;
@@ -78,6 +79,18 @@ public class NviService {
 
     public Optional<Candidate> findByPublicationId(URI publicationId) {
         return nviCandidateRepository.findByPublicationId(publicationId);
+    }
+
+    public Candidate createNote(UUID identifier, DbNote dbNote) {
+        if (nviCandidateRepository.exists(identifier)) {
+            nviCandidateRepository.saveNote(identifier, dbNote);
+        }
+        return nviCandidateRepository.findById(identifier).orElseThrow();
+    }
+
+    public Candidate deleteNote(UUID candidateIdentifier, UUID noteIdentifier) {
+        nviCandidateRepository.deleteNote(candidateIdentifier, noteIdentifier);
+        return nviCandidateRepository.findById(candidateIdentifier).orElseThrow();
     }
 
     private static boolean isInteger(String value) {

@@ -27,8 +27,6 @@ import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.NviApprovalStatus;
-import no.sikt.nva.nvi.rest.NviStatusRequest;
 import no.sikt.nva.nvi.rest.fetch.ApprovalStatus;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -128,7 +126,8 @@ class UpdateNviCandidateStatusHandlerTest {
                                          status,
                                          username,
                                          username,
-                                         Instant.now())));
+                                         Instant.now())),
+            emptyList());
     }
 
     private static InputStream createRequest(NviStatusRequest body, URI customerId) throws JsonProcessingException {

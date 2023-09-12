@@ -125,7 +125,7 @@ class FetchNviCandidateHandlerTest {
     }
 
     private static Candidate getCandidate(UUID id, DbCandidate candidate, List<DbApprovalStatus> approvalStatusList) {
-        return new Candidate(id, candidate, approvalStatusList);
+        return new Candidate(id, candidate, approvalStatusList,List.of());
     }
 
     private GatewayResponse<CandidateResponse> getGatewayResponse()

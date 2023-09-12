@@ -43,6 +43,7 @@ import no.sikt.nva.nvi.index.model.PublicationDetails;
 
 public final class NviCandidateIndexDocumentGenerator {
 
+
     private NviCandidateIndexDocumentGenerator() {
     }
 

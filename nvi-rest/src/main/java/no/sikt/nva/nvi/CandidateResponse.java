@@ -10,6 +10,7 @@ import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.rest.fetch.ApprovalStatus;
 import no.sikt.nva.nvi.rest.fetch.InstitutionPoints;
 import no.sikt.nva.nvi.rest.fetch.Note;
@@ -28,10 +29,17 @@ public record CandidateResponse(UUID id,
                    .withPublicationId(candidate.candidate().publicationId())
                    .withApprovalStatuses(mapToApprovalStatus(candidate))
                    .withPoints(mapToInstitutionPoints(candidate.candidate()))
-                   .withNotes(List.of())
+                   .withNotes(mapToNotes(candidate.notes()))
                    .build();
     }
 
+    private static List<Note> mapToNotes(List<DbNote> dbNotes) {
+        return dbNotes.stream().map(CandidateResponse::mapToNote).toList();
+    }
+
+    private static Note mapToNote(DbNote dbNote) {
+        return new Note(dbNote.user(), dbNote.text(), dbNote.createdDate());
+    }
 
     private static List<InstitutionPoints> mapToInstitutionPoints(DbCandidate candidate) {
         return candidate.points()

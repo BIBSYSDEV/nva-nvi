@@ -171,6 +171,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                                     .applicable(true)
                                                     .creators(Collections.emptyList())
                                                     .publicationDate(date).build(),
+                             Collections.emptyList(),
                              Collections.emptyList());
     }
 
@@ -209,11 +210,13 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
 
     private static List<Approval> constructExpectedApprovals(Candidate candidate) {
         return candidate.approvalStatuses().stream()
-            .map(approval -> new Approval(approval.institutionId().toString(), getLabels(),
-                                          ApprovalStatus.fromValue(approval.status().getValue()),
-                                          Optional.of(approval).map(DbApprovalStatus::assignee).map(DbUsername::value)
-                                              .orElse(null)))
-            .toList();
+                   .map(approval -> new Approval(approval.institutionId().toString(), getLabels(),
+                                                 ApprovalStatus.fromValue(approval.status().getValue()),
+                                                 Optional.of(approval)
+                                                     .map(DbApprovalStatus::assignee)
+                                                     .map(DbUsername::value)
+                                                     .orElse(null)))
+                   .toList();
     }
 
     private static Map<String, String> getLabels() {
@@ -265,17 +268,18 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
 
     private static Candidate randomCandidate(boolean applicable) {
         var candidate = TestUtils.randomCandidateBuilder(applicable);
-        return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()));
+        return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()), Collections.emptyList());
     }
 
     private static Candidate randomApplicableCandidate() {
         var applicableCandidate = TestUtils.randomCandidateBuilder(true).build();
-        return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()));
+        return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()), Collections.emptyList());
     }
 
     private static Candidate applicableAssignedCandidate() {
         var applicableCandidate = TestUtils.randomCandidateBuilder(true).build();
-        return new Candidate(randomUUID(), applicableCandidate, List.of(approvalWithAssignee()));
+        return new Candidate(randomUUID(), applicableCandidate, List.of(approvalWithAssignee()),
+                             Collections.emptyList());
     }
 
     private static DbApprovalStatus getApprovalStatus() {
@@ -347,6 +351,5 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         public List<NviCandidateIndexDocument> getDocuments() {
             return documents;
         }
-
     }
 }
