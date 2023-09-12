@@ -5,7 +5,6 @@ import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.Opera
 import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType.REMOVE;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.index.utils.ExpandedResourceGenerator.createExpandedResource;
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -50,12 +49,12 @@ import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument.Builder;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -169,7 +168,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     private static Candidate createApplicableCandidateWithPublicationDate(DbPublicationDate date) {
-        return new Candidate(UUID.randomUUID(), randomCandidateBuilder()
+        return new Candidate(UUID.randomUUID(), TestUtils.randomCandidateBuilder()
                                                     .applicable(true)
                                                     .creators(Collections.emptyList())
                                                     .publicationDate(date).build(),
@@ -266,17 +265,17 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     private static Candidate randomCandidate() {
-        var candidate = randomCandidateBuilder();
+        var candidate = TestUtils.randomCandidateBuilder();
         return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()));
     }
 
     private static Candidate randomApplicableCandidate() {
-        var applicableCandidate = randomCandidateBuilder().applicable(true).build();
+        var applicableCandidate = TestUtils.randomCandidateBuilder().applicable(true).build();
         return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()));
     }
 
     private static Candidate applicableAssignedCandidate() {
-        var applicableCandidate = randomCandidateBuilder().applicable(true).build();
+        var applicableCandidate = TestUtils.randomCandidateBuilder().applicable(true).build();
         return new Candidate(randomUUID(), applicableCandidate, List.of(approvalWithAssignee()));
     }
 
@@ -301,7 +300,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     private Candidate randomNonApplicableCandidate() {
-        var nonApplicableCandidate = randomCandidateBuilder().applicable(false).build();
+        var nonApplicableCandidate = TestUtils.randomCandidateBuilder().applicable(false).build();
         return new Candidate(randomUUID(), nonApplicableCandidate, List.of(getApprovalStatus()));
     }
 
