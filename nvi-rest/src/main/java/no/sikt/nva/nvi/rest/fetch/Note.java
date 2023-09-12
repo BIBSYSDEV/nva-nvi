@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.fetch;
+package no.sikt.nva.nvi.rest.fetch;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -8,6 +8,7 @@ import nva.commons.core.JacocoGenerated;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
+@JacocoGenerated // TODO not in use yet
 public record Note(DbUsername user,
                    String text,
                    Instant createdDate) {

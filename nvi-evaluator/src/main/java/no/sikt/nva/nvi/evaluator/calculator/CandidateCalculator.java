@@ -78,10 +78,7 @@ public class CandidateCalculator {
     private static final String ACADEMIC_CHAPTER = "AcademicChapter";
     private static final String ACADEMIC_ARTICLE = "AcademicArticle";
     private static final String ACADEMIC_LITERATURE_REVIEW = "AcademicLiteratureReview";
-    private static final String NVI_YEAR = "2023";
-    private static final String NVI_YEAR_REPLACE_STRING = "__NVI_YEAR__";
-    private static final String NVI_SPARQL = IoUtils.stringFromResources(Path.of("sparql/nvi.sparql"))
-                                                 .replace(NVI_YEAR_REPLACE_STRING, NVI_YEAR);
+    private static final String NVI_SPARQL = IoUtils.stringFromResources(Path.of("sparql/nvi.sparql"));
     private static final String API_HOST = new Environment().readEnv("API_HOST");
     private final AuthorizedBackendUriRetriever uriRetriever;
 

@@ -36,7 +36,7 @@ public final class Aggregations {
 
     private static final CharSequence JSON_PATH_DELIMITER = ".";
     public static final String COMPLETED_AGGREGATION_AGG = "completed";
-    public static final String TOTAL_COUNT_AGGREGATION_AGG = "total_count";
+    public static final String TOTAL_COUNT_AGGREGATION_AGG = "totalCount";
     public static final int MULTIPLE = 2;
 
     private Aggregations() {

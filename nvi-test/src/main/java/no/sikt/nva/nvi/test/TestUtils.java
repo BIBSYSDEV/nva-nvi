@@ -14,15 +14,17 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.model.DbCreator;
-import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.model.DbCandidate;
-import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.model.DbLevel;
-import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
-import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.model.DbStatus;
-import no.sikt.nva.nvi.common.db.model.DbUsername;
+import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
+import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.model.business.Creator;
+import no.sikt.nva.nvi.common.model.business.InstitutionPoints;
+import no.sikt.nva.nvi.common.model.business.Level;
+import no.sikt.nva.nvi.common.model.business.Note;
+import no.sikt.nva.nvi.common.model.business.NviPeriod;
+import no.sikt.nva.nvi.common.model.business.PublicationDate;
+import no.sikt.nva.nvi.common.model.business.Status;
+import no.sikt.nva.nvi.common.model.business.Username;
+import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
 import nva.commons.core.paths.UriWrapper;
 
 public final class TestUtils {
@@ -41,8 +43,8 @@ public final class TestUtils {
     public static DbPublicationDate randomPublicationDate() {
         var randomDate = randomLocalDate();
         return new DbPublicationDate(String.valueOf(randomDate.getYear()),
-                                                    String.valueOf(randomDate.getMonthValue()),
-                                                    String.valueOf(randomDate.getDayOfMonth()));
+                                     String.valueOf(randomDate.getMonthValue()),
+                                     String.valueOf(randomDate.getDayOfMonth()));
     }
 
     public static URI generateS3BucketUri(UUID identifier) {
@@ -77,6 +79,21 @@ public final class TestUtils {
                    .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))));
     }
 
+    public static DbCandidate randomApplicableCandidateBuilder() {
+        return DbCandidate.builder()
+                   .publicationId(randomUri())
+                   .publicationBucketUri(randomUri())
+                   .applicable(true)
+                   .instanceType(randomString())
+                   .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
+                   .level(randomElement(DbLevel.values()))
+                   .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
+                   .internationalCollaboration(randomBoolean())
+                   .creatorCount(randomInteger())
+                   .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))))
+                   .build();
+    }
+
     public static String randomYear() {
         return String.valueOf(randomInteger(3000));
     }
@@ -92,6 +109,8 @@ public final class TestUtils {
                    .modifiedBy(randomUsername())
                    .reportingDate(getNowWithMillisecondAccuracy())
                    .publishingYear(randomYear());
+
+
     }
 
     public static DbNviPeriod randomNviPeriod() {

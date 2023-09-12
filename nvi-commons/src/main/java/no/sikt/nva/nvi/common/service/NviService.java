@@ -10,6 +10,7 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodRepository;
+
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
@@ -53,8 +54,9 @@ public class NviService {
     }
 
     public DbNviPeriod updatePeriod(DbNviPeriod period) {
-        validatePeriod(period);
-        return nviPeriodRepository.save(period);
+        var nviPeriod = injectCreatedBy(period);
+        validatePeriod(nviPeriod);
+        return nviPeriodRepository.save(nviPeriod);
     }
 
     public DbNviPeriod getPeriod(String publishingYear) {
@@ -109,17 +111,25 @@ public class NviService {
     private static DbApprovalStatus resetStatus(DbApprovalStatus oldApprovalStatus) {
         return oldApprovalStatus.copy()
                    .status(DbStatus.PENDING)
+                   .assignee(oldApprovalStatus.assignee())
                    .finalizedBy(null)
                    .finalizedDate(null)
                    .build();
     }
 
-    private static DbApprovalStatus updateStatus(DbApprovalStatus oldApprovalStatus,
-                                                 DbApprovalStatus newApprovalStatus) {
+    private static DbApprovalStatus finalizeStatus(DbApprovalStatus oldApprovalStatus,
+                                                   DbApprovalStatus newApprovalStatus) {
         return oldApprovalStatus.copy()
                    .status(newApprovalStatus.status())
                    .finalizedBy(newApprovalStatus.finalizedBy())
+                   .assignee(newApprovalStatus.assignee())
                    .finalizedDate(Instant.now())
+                   .build();
+    }
+
+    private DbNviPeriod injectCreatedBy(DbNviPeriod period) {
+        return period.copy()
+                   .createdBy(getPeriod(period.publishingYear()).createdBy())
                    .build();
     }
 
@@ -135,13 +145,34 @@ public class NviService {
         return !isExistingCandidate(dbCandidate.publicationId()) && dbCandidate.applicable();
     }
 
-    @JacocoGenerated // bug in jacoco report that is unable to exhaust the switch. Should be fixed in version 0.8.11
     private DbApprovalStatus toUpdatedApprovalStatus(DbApprovalStatus oldApprovalStatus,
                                                      DbApprovalStatus newApprovalStatus) {
+        if (updateIsAssignee(oldApprovalStatus, newApprovalStatus)) {
+            return updateAssignee(oldApprovalStatus, newApprovalStatus);
+        } else {
+            return updateStatus(oldApprovalStatus, newApprovalStatus);
+        }
+    }
+
+    private static DbApprovalStatus updateStatus(DbApprovalStatus oldApprovalStatus,
+                                                        DbApprovalStatus newApprovalStatus) {
         return switch (newApprovalStatus.status()) {
-            case APPROVED, REJECTED -> updateStatus(oldApprovalStatus, newApprovalStatus);
+            case APPROVED, REJECTED -> finalizeStatus(oldApprovalStatus, newApprovalStatus);
             case PENDING -> resetStatus(oldApprovalStatus);
         };
+    }
+
+    private static boolean updateIsAssignee(DbApprovalStatus oldApprovalStatus, DbApprovalStatus newApprovalStatus) {
+        return oldApprovalStatus.status().equals(newApprovalStatus.status());
+    }
+
+    private DbApprovalStatus updateAssignee(DbApprovalStatus oldApprovalStatus, DbApprovalStatus newApprovalStatus) {
+        return oldApprovalStatus.copy()
+                   .status(newApprovalStatus.status())
+                   .finalizedBy(null)
+                   .assignee(Optional.of(newApprovalStatus).map(DbApprovalStatus::assignee).orElse(null))
+                   .finalizedDate(null)
+                   .build();
     }
 
     private Optional<Candidate> createCandidate(DbCandidate candidate) {
@@ -171,6 +202,9 @@ public class NviService {
         }
         if (!isInteger(period.publishingYear())) {
             throw new IllegalArgumentException(PERIOD_NOT_NUMERIC_MESSAGE);
+        }
+        if (period.reportingDate().isBefore(Instant.now())) {
+            throw new IllegalArgumentException(NOT_SUPPORTED_REPORTING_DATE_MESSAGE);
         }
     }
 }

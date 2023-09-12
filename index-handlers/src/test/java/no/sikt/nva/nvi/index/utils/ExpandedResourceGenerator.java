@@ -7,14 +7,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
-import nva.commons.core.paths.UriWrapper;
 
 public class ExpandedResourceGenerator {
 
-    public static String createExpandedResource(NviCandidateIndexDocument document, String host) {
+    public static String createExpandedResource(NviCandidateIndexDocument document) {
         var root = objectMapper.createObjectNode();
 
-        root.put("id", UriWrapper.fromUri(host).addChild(document.identifier().toString()).toString());
+        root.put("id", document.publicationDetails().id());
 
         var entityDescription = objectMapper.createObjectNode();
 
@@ -22,7 +21,7 @@ public class ExpandedResourceGenerator {
 
         entityDescription.set("contributors", contributors);
 
-        entityDescription.put("mainTitle", document.publicationDetails().type());
+        entityDescription.put("mainTitle", document.publicationDetails().title());
 
         var publicationDate = createAndPopulatePublicationDate(document);
 
@@ -39,7 +38,7 @@ public class ExpandedResourceGenerator {
 
         root.set("entityDescription", entityDescription);
 
-        root.put("identifier", document.identifier().toString());
+        root.put("identifier", document.identifier());
 
         var body = objectMapper.createObjectNode();
         body.set("body", root);

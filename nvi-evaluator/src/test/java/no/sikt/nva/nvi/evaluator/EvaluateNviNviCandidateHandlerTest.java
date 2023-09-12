@@ -54,6 +54,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
 class EvaluateNviNviCandidateHandlerTest {
 
+    public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private static final String CRISTIN_API_ORGANIZATION_RESPONSE_JSON = "cristinApiOrganizationResponse.json";
     private static final URI HARDCODED_CREATOR_ID = URI.create("https://api.dev.nva.aws.unit.no/cristin/person/997998");
     private static final String ACADEMIC_CHAPTER_PATH = "candidate_academicChapter.json";
@@ -157,7 +158,8 @@ class EvaluateNviNviCandidateHandlerTest {
         var message = sentMessages.get(0);
         var messageBody =
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicArticle", BigDecimal.valueOf(0.7071),
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicArticle",
+                                                                   BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE),
                                                                    fileUri);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
@@ -176,7 +178,9 @@ class EvaluateNviNviCandidateHandlerTest {
         var message = sentMessages.get(0);
         var messageBody =
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicArticle", BigDecimal.valueOf(0.5774),
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicArticle",
+                                                                   BigDecimal.valueOf(0.7071)
+                                                                       .setScale(SCALE, ROUNDING_MODE),
                                                                    fileUri);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
@@ -193,7 +197,9 @@ class EvaluateNviNviCandidateHandlerTest {
         var message = sentMessages.get(0);
         var messageBody =
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicChapter", BigDecimal.valueOf(0.7071),
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicChapter",
+                                                                   BigDecimal.valueOf(1)
+                                                                       .setScale(SCALE, ROUNDING_MODE),
                                                                    fileUri);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
@@ -210,7 +216,8 @@ class EvaluateNviNviCandidateHandlerTest {
         var message = sentMessages.get(0);
         var messageBody =
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicMonograph", BigDecimal.valueOf(3.5355),
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicMonograph",
+                                                                   BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE),
                                                                    fileUri);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
@@ -228,7 +235,7 @@ class EvaluateNviNviCandidateHandlerTest {
         var messageBody =
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicLiteratureReview",
-                                                                   BigDecimal.valueOf(0.7071),
+                                                                   BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE),
                                                                    fileUri);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
@@ -249,7 +256,7 @@ class EvaluateNviNviCandidateHandlerTest {
                 .orElseThrow();
         assertThat(body.institutionPoints(), notNullValue());
         assertThat(body.institutionPoints().get(CRISTIN_NVI_ORG_TOP_LEVEL_ID),
-                   is(equalTo(BigDecimal.valueOf(0.7071).setScale(4, RoundingMode.HALF_UP))));
+                   is(equalTo(BigDecimal.valueOf(1).setScale(4, RoundingMode.HALF_UP))));
     }
 
     @Test
@@ -352,30 +359,6 @@ class EvaluateNviNviCandidateHandlerTest {
     @Test
     void shouldCreateNonCandidateForMusicalArts() throws IOException {
         var path = "nonCandidate_musicalArts.json";
-        var content = IoUtils.inputStreamFromResources(path);
-        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        var candidate = getSingleCandidateResponse(sentMessages);
-        assertThat(candidate.status(), is(equalTo(CandidateStatus.NON_CANDIDATE)));
-    }
-
-    @Test
-    void shouldCreateNonCandidateEventWhenPublicationIsPublishedBeforeCurrentYear() throws IOException {
-        var path = "nonCandidate_publishedBeforeCurrentNviYear.json";
-        var content = IoUtils.inputStreamFromResources(path);
-        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        var candidate = getSingleCandidateResponse(sentMessages);
-        assertThat(candidate.status(), is(equalTo(CandidateStatus.NON_CANDIDATE)));
-    }
-
-    @Test
-    void shouldCreateNonCandidateEventWhenPublicationIsPublishedAfterCurrentYear() throws IOException {
-        var path = "nonCandidate_publishedAfterCurrentNviYear.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
         var event = createS3Event(fileUri);

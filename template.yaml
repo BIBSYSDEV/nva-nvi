@@ -301,11 +301,10 @@ Resources:
           Properties:
             Queue: !GetAtt NewCandidateQueue.Arn
 
-  #Add table name to env variables and remove comment when table is implemented
   CreateNviPeriodHandler:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: index-handlers
+      CodeUri: nvi-rest
       Handler: no.sikt.nva.nvi.rest.CreateNviPeriodHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
@@ -316,18 +315,17 @@ Resources:
           ALLOWED_ORIGIN: '*'
           API_HOST: !Ref ApiDomain
       Events:
-        GetEvent:
+        ApiEvent:
           Type: Api
           Properties:
             Path: /period
             Method: post
             RestApiId: !Ref ScientificIndexApi
 
-  #Add table name to env variables and remove comment when table is implemented
   UpdateNviPeriodHandler:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: index-handlers
+      CodeUri: nvi-rest
       Handler: no.sikt.nva.nvi.rest.UpdateNviPeriodHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
@@ -338,10 +336,10 @@ Resources:
           ALLOWED_ORIGIN: '*'
           API_HOST: !Ref ApiDomain
       Events:
-        GetEvent:
+        ApiEvent:
           Type: Api
           Properties:
-            Path: /nvi-period
+            Path: /period
             Method: put
             RestApiId: !Ref ScientificIndexApi
 
@@ -381,7 +379,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: nvi-rest
-      Handler: no.sikt.nva.nvi.fetch.FetchNviCandidateHandler::handleRequest
+      Handler: no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
       MemorySize: 1536
@@ -402,7 +400,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: nvi-rest
-      Handler: no.sikt.nva.nvi.upsert.UpdateNviCandidateStatusHandler::handleRequest
+      Handler: no.sikt.nva.nvi.rest.upsert.UpdateNviCandidateStatusHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
       MemorySize: 1536
@@ -416,6 +414,30 @@ Resources:
           Type: Api
           Properties:
             Path: /candidate/{candidateIdentifier}/status
+            Method: put
+            RestApiId: !Ref ScientificIndexApi
+
+  UpsertAssigneeHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.upsert.UpsertAssigneeHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
+          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
+          COGNITO_HOST: !Ref CognitoAuthorizationUri
+          API_HOST: !Ref ApiDomain
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /candidate/{candidateIdentifier}/assignee
             Method: put
             RestApiId: !Ref ScientificIndexApi
 

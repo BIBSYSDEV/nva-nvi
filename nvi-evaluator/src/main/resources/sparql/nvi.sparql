@@ -9,10 +9,6 @@ ASK WHERE {
                nva:status nva:PUBLISHED ;
                (<>|!<>)+/nva:publicationInstance/rdf:type ?approvedType .
 
-
-  ?publicationDate a nva:PublicationDate ;
-                   nva:year "__NVI_YEAR__" .
-
   {
       SELECT ?level WHERE {
         VALUES ?channelType { nva:Publisher  nva:Series   nva:Journal }
