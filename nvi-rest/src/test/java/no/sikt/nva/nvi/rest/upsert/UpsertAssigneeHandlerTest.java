@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.CandidateResponse;
@@ -121,7 +122,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
     private Candidate nonExistingCandidate() {
         var candidate = nviService.upsertCandidate(randomApplicableCandidateBuilder()).orElseThrow();
-        return new Candidate(randomUUID(), candidate.candidate(), candidate.approvalStatuses());
+        return new Candidate(randomUUID(), candidate.candidate(), candidate.approvalStatuses(), Collections.emptyList());
     }
 
     private void updateAssignee(Candidate candidate) {

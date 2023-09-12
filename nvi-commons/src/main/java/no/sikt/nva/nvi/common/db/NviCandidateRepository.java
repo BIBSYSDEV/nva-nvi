@@ -9,8 +9,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
-import no.sikt.nva.nvi.common.model.business.Candidate;
+import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.model.DbCandidate;
+import no.sikt.nva.nvi.common.db.model.DbNote;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
@@ -123,6 +124,11 @@ public class NviCandidateRepository extends DynamoRepository {
                               .identifier(candidateIdentifier)
                               .note(dbNote)
                               .build());
+    }
+
+    public void deleteNote(UUID candidateIdentifier, UUID noteIdentifier) {
+        noteTable.deleteItem(Key.builder().partitionValue(CandidateDao.pk0(candidateIdentifier.toString()))
+                                 .sortValue(NoteDao.sk0(noteIdentifier.toString())).build());
     }
 
     private static Key candidateKey(UUID id) {

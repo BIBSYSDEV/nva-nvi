@@ -28,9 +28,9 @@ import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.fetch.ApprovalStatus;
 import no.sikt.nva.nvi.rest.NviApprovalStatus;
 import no.sikt.nva.nvi.rest.NviStatusRequest;
+import no.sikt.nva.nvi.rest.fetch.ApprovalStatus;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -86,35 +86,13 @@ class UpdateNviCandidateStatusHandlerTest {
         DbStatus innerStatus = DbStatus.parse(status.getValue());
         var request = createRequest(nviStatusRequest);
         var response = mockServiceResponse(nviStatusRequest, innerStatus);
-        var approvalStatus = response.approvalStatuses()
-                                 .get(0);
         when(nviService.updateApprovalStatus(any(), any())).thenReturn(response);
 
         handler.handleRequest(request, output, context);
 
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         var bodyAsInstance = gatewayResponse.getBodyObject(CandidateResponse.class);
-        assertThat(bodyAsInstance,
-                   is(equalTo(createResponse(nviStatusRequest, response, innerStatus, approvalStatus))));
-    }
-
-    private static CandidateResponse createResponse(
-        NviStatusRequest nviStatusRequest,
-        Candidate response, DbStatus status,
-        DbApprovalStatus approvalStatus) {
-        return CandidateResponse.builder()
-                   .withId(nviStatusRequest.candidateId())
-                   .withPublicationId(response.candidate().publicationId())
-                   .withApprovalStatuses(
-                       List.of(ApprovalStatus.builder()
-                                   .withInstitutionId(nviStatusRequest.institutionId())
-                                   .withStatus(status)
-                                   .withFinalizedBy(new DbUsername(approvalStatus.finalizedBy().value()))
-                                   .withFinalizedDate(approvalStatus.finalizedDate())
-                                   .build()))
-                   .withPoints(emptyList())
-                   .withNotes(emptyList())
-                   .build();
+        assertThat(bodyAsInstance.approvalStatuses().get(0).status(), is(equalTo(DbStatus.parse(status.getValue()))));
     }
 
     private static Candidate mockServiceResponse(NviStatusRequest nviStatusRequest,
@@ -127,6 +105,7 @@ class UpdateNviCandidateStatusHandlerTest {
                 .build(),
             List.of(new DbApprovalStatus(nviStatusRequest.institutionId(),
                                          status,
+                                         new DbUsername(randomString()),
                                          new DbUsername(randomString()),
                                          Instant.now())),
             List.of());

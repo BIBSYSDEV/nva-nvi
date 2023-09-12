@@ -11,9 +11,9 @@ import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbNote;
-import no.sikt.nva.nvi.fetch.ApprovalStatus;
-import no.sikt.nva.nvi.fetch.InstitutionPoints;
-import no.sikt.nva.nvi.fetch.Note;
+import no.sikt.nva.nvi.rest.fetch.ApprovalStatus;
+import no.sikt.nva.nvi.rest.fetch.InstitutionPoints;
+import no.sikt.nva.nvi.rest.fetch.Note;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize

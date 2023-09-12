@@ -14,17 +14,15 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.model.business.ApprovalStatus;
-import no.sikt.nva.nvi.common.model.business.Candidate;
-import no.sikt.nva.nvi.common.model.business.Creator;
-import no.sikt.nva.nvi.common.model.business.InstitutionPoints;
-import no.sikt.nva.nvi.common.model.business.Level;
-import no.sikt.nva.nvi.common.model.business.Note;
-import no.sikt.nva.nvi.common.model.business.NviPeriod;
-import no.sikt.nva.nvi.common.model.business.PublicationDate;
-import no.sikt.nva.nvi.common.model.business.Status;
-import no.sikt.nva.nvi.common.model.business.Username;
-import no.sikt.nva.nvi.common.model.events.NviCandidate.CandidateDetails;
+import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.model.DbCandidate;
+import no.sikt.nva.nvi.common.db.model.DbCreator;
+import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.DbLevel;
+import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.model.DbStatus;
+import no.sikt.nva.nvi.common.db.model.DbUsername;
 import nva.commons.core.paths.UriWrapper;
 
 public final class TestUtils {
@@ -109,8 +107,6 @@ public final class TestUtils {
                    .modifiedBy(randomUsername())
                    .reportingDate(getNowWithMillisecondAccuracy())
                    .publishingYear(randomYear());
-
-
     }
 
     public static DbNviPeriod randomNviPeriod() {
@@ -119,7 +115,8 @@ public final class TestUtils {
     }
 
     public static DbApprovalStatus randomApprovalStatus() {
-        return new DbApprovalStatus(randomUri(), randomElement(DbStatus.values()), randomUsername(), Instant.EPOCH);
+        return new DbApprovalStatus(randomUri(), randomElement(DbStatus.values()), randomUsername(), randomUsername(),
+                                    Instant.EPOCH);
     }
 
     public static DbUsername randomUsername() {

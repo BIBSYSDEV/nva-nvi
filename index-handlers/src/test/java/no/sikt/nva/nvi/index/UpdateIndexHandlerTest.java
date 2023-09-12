@@ -35,8 +35,11 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.StorageReader;
-import no.sikt.nva.nvi.common.model.CandidateWithIdentifier;
-import no.sikt.nva.nvi.common.model.business.Status;
+import no.sikt.nva.nvi.common.db.Candidate;
+import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.Approval;
@@ -156,6 +159,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                                     .applicable(true)
                                                     .creators(Collections.emptyList())
                                                     .publicationDate(date).build(),
+                             Collections.emptyList(),
                              Collections.emptyList());
     }
 
@@ -244,12 +248,12 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
 
     private static Candidate randomCandidate() {
         var candidate = randomCandidateBuilder();
-        return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()));
+        return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()), Collections.emptyList());
     }
 
     private static Candidate randomApplicableCandidate() {
         var applicableCandidate = randomCandidateBuilder().applicable(true).build();
-        return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()));
+        return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()), Collections.emptyList());
     }
 
     private static DbApprovalStatus getApprovalStatus() {
@@ -267,7 +271,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
 
     private Candidate randomNonApplicableCandidate() {
         var nonApplicableCandidate = randomCandidateBuilder().applicable(false).build();
-        return new Candidate(randomUUID(), nonApplicableCandidate, List.of(getApprovalStatus()));
+        return new Candidate(randomUUID(), nonApplicableCandidate, List.of(getApprovalStatus()), Collections.emptyList());
     }
 
     private NviCandidateIndexDocument constructExpectedDocument(Candidate candidate) {

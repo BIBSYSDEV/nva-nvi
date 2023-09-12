@@ -17,7 +17,6 @@ import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
-import no.sikt.nva.nvi.common.db.model.DbUsername;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -25,6 +24,7 @@ public class NviService {
 
     public static final String INVALID_LENGTH_MESSAGE = "Provided period has invalid length!";
     public static final String PERIOD_NOT_NUMERIC_MESSAGE = "Period is not numeric!";
+    public static final String NOT_SUPPORTED_REPORTING_DATE_MESSAGE = "Provided reporting date is not supported";
     private final NviCandidateRepository nviCandidateRepository;
     private final NviPeriodRepository nviPeriodRepository;
 
@@ -86,6 +86,11 @@ public class NviService {
             nviCandidateRepository.saveNote(identifier, dbNote);
         }
         return nviCandidateRepository.findById(identifier).orElseThrow();
+    }
+
+    public Candidate deleteNote(UUID candidateIdentifier, UUID noteIdentifier) {
+        nviCandidateRepository.deleteNote(candidateIdentifier, noteIdentifier);
+        return nviCandidateRepository.findById(candidateIdentifier).orElseThrow();
     }
 
     private static boolean isInteger(String value) {

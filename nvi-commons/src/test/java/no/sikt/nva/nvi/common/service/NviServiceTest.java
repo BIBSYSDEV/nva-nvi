@@ -16,6 +16,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -27,6 +29,7 @@ import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbCreator;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbLevel;
+import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
@@ -245,7 +248,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var institutionUri = randomUri();
         var fullCandidate = nviCandidateRepository.create(createDbCandidate(identifier, institutionUri),
-                                                          List.of(createDbApprobalStatus(institutionUri)));
+                                                          List.of(createDbApprovalStatus(institutionUri)));
 
         var response = nviService.updateApprovalStatus(fullCandidate.identifier(),
                                                        createApprovalStatus(status, institutionUri));
@@ -259,7 +262,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var institutionUri = randomUri();
         var fullCandidate = nviCandidateRepository.create(createDbCandidate(identifier, institutionUri),
-                                                          List.of(createDbApprobalStatus(institutionUri)));
+                                                          List.of(createDbApprovalStatus(institutionUri)));
 
         var response = nviService.updateApprovalStatus(fullCandidate.identifier(),
                                                        createApprovalStatus(DbStatus.APPROVED, institutionUri));
@@ -274,7 +277,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var institutionUri = randomUri();
         var candidateData = createDbCandidate(identifier, institutionUri);
-        List<DbApprovalStatus> dbApprobalStatus = List.of(createDbApprobalStatus(institutionUri));
+        List<DbApprovalStatus> dbApprobalStatus = List.of(createDbApprovalStatus(institutionUri));
         var fullCandidate = nviCandidateRepository.create(candidateData,
                                                           dbApprobalStatus);
         var updatedCandidate = createDbCandidate(identifier, institutionUri);
@@ -282,6 +285,22 @@ public class NviServiceTest extends LocalDynamoTest {
                                       fullCandidate.approvalStatuses());
         var candidate1 = nviCandidateRepository.findById(fullCandidate.identifier());
         assertThat(candidate1.get().candidate(), is(not(fullCandidate.candidate())));
+    }
+
+    @Test
+    void shouldBeAbleToDeleteNote() {
+        var publicationIdentifier = UUID.randomUUID();
+        var institutionUri = randomUri();
+        var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
+        var dbApprobalStatus = List.of(createDbApprovalStatus(institutionUri));
+        var fullCandidate = nviCandidateRepository.create(candidateData,
+                                                          dbApprobalStatus);
+        var dbNote = new DbNote(UUID.randomUUID(), randomUsername(), randomString(), Instant.now());
+        nviService.createNote(fullCandidate.identifier(), dbNote);
+        dbNote = new DbNote(UUID.randomUUID(), randomUsername(), randomString(), Instant.now());
+        var candidateWith2Notes = nviService.createNote(fullCandidate.identifier(), dbNote);
+        var candidateWith1Note = nviService.deleteNote(candidateWith2Notes.identifier(), dbNote.noteId());
+        assertThat(candidateWith1Note.notes(), hasSize(1));
     }
 
     private static DbNviPeriod createPeriod(String publishingYear) {
@@ -292,7 +311,7 @@ public class NviServiceTest extends LocalDynamoTest {
                    .build();
     }
 
-    private static DbApprovalStatus createDbApprobalStatus(URI institutionUri) {
+    private static DbApprovalStatus createDbApprovalStatus(URI institutionUri) {
         return DbApprovalStatus.builder()
                    .institutionId(institutionUri)
                    .status(DbStatus.APPROVED)

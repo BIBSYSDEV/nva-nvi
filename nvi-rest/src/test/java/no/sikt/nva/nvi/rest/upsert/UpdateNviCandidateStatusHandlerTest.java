@@ -133,7 +133,8 @@ class UpdateNviCandidateStatusHandlerTest {
                                          status,
                                          username,
                                          username,
-                                         Instant.now())));
+                                         Instant.now())),
+            emptyList());
     }
 
     private InputStream createRequest(NviStatusRequest body) throws JsonProcessingException {

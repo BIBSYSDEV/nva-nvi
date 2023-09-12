@@ -85,8 +85,6 @@ public final class PointCalculator {
 
     public static Map<URI, BigDecimal> calculatePoints(JsonNode jsonNode,
                                                        Map<URI, List<URI>> nviCreatorsWithInstitutionIds) {
-        //TODO: set isInternationalCollaboration when Cristin proxy api has implemented land code
-        var isInternationalCollaboration = HARDCODED_INTERNATIONAL_COLLABORATION_BOOLEAN_TO_BE_REPLACED;
         return calculatePoints(calculateInstanceTypeAndLevelPoints(jsonNode),
                                countCreatorShares(jsonNode),
                                isInternationalCollaboration(jsonNode),
