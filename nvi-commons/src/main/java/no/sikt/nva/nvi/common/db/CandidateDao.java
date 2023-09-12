@@ -1,12 +1,12 @@
 package no.sikt.nva.nvi.common.db;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_RANGE_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
-import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import nva.commons.core.JacocoGenerated;
@@ -27,7 +27,7 @@ public record CandidateDao(
     public static final String TYPE = "CANDIDATE";
 
     @DynamoDbIgnore
-    public static String pk0(String identifier) {
+    public static String createPartitionKey(String identifier) {
         return String.join(FIELD_DELIMITER, TYPE, identifier);
     }
 
@@ -39,7 +39,7 @@ public record CandidateDao(
     @DynamoDbPartitionKey
     @DynamoDbAttribute(HASH_KEY)
     public String primaryKeyHashKey() {
-        return pk0(identifier.toString());
+        return createPartitionKey(identifier.toString());
     }
 
     @Override

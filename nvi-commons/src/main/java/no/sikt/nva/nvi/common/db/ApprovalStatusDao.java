@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.common.db;
 
+import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
-import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import nva.commons.core.JacocoGenerated;
@@ -12,15 +12,13 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbParti
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
 @DynamoDbImmutable(builder = ApprovalStatusDao.Builder.class)
-public record ApprovalStatusDao(
-
-    UUID identifier,
-    @DynamoDbAttribute(DATA_FIELD) DbApprovalStatus approvalStatus
+public record ApprovalStatusDao(UUID identifier,
+                                @DynamoDbAttribute(DATA_FIELD) DbApprovalStatus approvalStatus
 ) implements DynamoEntryWithRangeKey {
 
     public static final String TYPE = "APPROVAL_STATUS";
 
-    public static String sk0(String institutionUri) {
+    public static String createSortKey(String institutionUri) {
         return String.join(FIELD_DELIMITER, TYPE, institutionUri);
     }
 
@@ -32,14 +30,14 @@ public record ApprovalStatusDao(
     @DynamoDbPartitionKey
     @DynamoDbAttribute(HASH_KEY)
     public String primaryKeyHashKey() {
-        return CandidateDao.pk0(identifier.toString());
+        return CandidateDao.createPartitionKey(identifier.toString());
     }
 
     @Override
     @DynamoDbSortKey
     @DynamoDbAttribute(SORT_KEY)
     public String primaryKeyRangeKey() {
-        return sk0(approvalStatus.institutionId().toString());
+        return createSortKey(approvalStatus.institutionId().toString());
     }
 
     @Override

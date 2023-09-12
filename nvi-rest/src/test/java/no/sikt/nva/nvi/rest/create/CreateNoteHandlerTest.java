@@ -58,7 +58,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldAddNoteToCandidate() throws IOException {
+    void shouldAddNoteToCandidateWhenNoteIsValid() throws IOException {
         var theNote = "The note";
         DbCandidate dbCandidate = randomCandidate();
         Candidate candidate = nviCandidateRepository.create(dbCandidate, List.of(randomApprovalStatus()));

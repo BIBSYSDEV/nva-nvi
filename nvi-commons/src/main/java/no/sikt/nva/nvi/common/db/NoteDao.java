@@ -19,7 +19,7 @@ public record NoteDao(UUID identifier,
 
     public static final String TYPE = "NOTE";
 
-    public static String sk0(String skId) {
+    public static String createSortKey(String skId) {
         return String.join(FIELD_DELIMITER, TYPE, skId);
     }
 
@@ -31,14 +31,14 @@ public record NoteDao(UUID identifier,
     @DynamoDbPartitionKey
     @DynamoDbAttribute(HASH_KEY)
     public String primaryKeyHashKey() {
-        return CandidateDao.pk0(identifier.toString());
+        return CandidateDao.createPartitionKey(identifier.toString());
     }
 
     @Override
     @DynamoDbSortKey
     @DynamoDbAttribute(SORT_KEY)
     public String primaryKeyRangeKey() {
-        return sk0(note.noteId().toString());
+        return createSortKey(note.noteId().toString());
     }
 
     @Override

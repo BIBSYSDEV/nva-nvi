@@ -101,15 +101,20 @@ class UpdateNviCandidateStatusHandlerTest {
                    .withId(nviStatusRequest.candidateId())
                    .withPublicationId(response.candidate().publicationId())
                    .withApprovalStatuses(
-                       List.of(ApprovalStatus.builder()
-                                   .withInstitutionId(nviStatusRequest.institutionId())
-                                   .withStatus(status)
-                                   .withAssignee(new DbUsername(approvalStatus.assignee().value()))
-                                   .withFinalizedBy(new DbUsername(approvalStatus.finalizedBy().value()))
-                                   .withFinalizedDate(approvalStatus.finalizedDate())
-                                   .build()))
+                       List.of(createApprovalStatus(nviStatusRequest, status, approvalStatus)))
                    .withPoints(emptyList())
                    .withNotes(emptyList())
+                   .build();
+    }
+
+    private static ApprovalStatus createApprovalStatus(NviStatusRequest nviStatusRequest, DbStatus status,
+                                                       DbApprovalStatus approvalStatus) {
+        return ApprovalStatus.builder()
+                   .withInstitutionId(nviStatusRequest.institutionId())
+                   .withStatus(status)
+                   .withAssignee(new DbUsername(approvalStatus.assignee().value()))
+                   .withFinalizedBy(new DbUsername(approvalStatus.finalizedBy().value()))
+                   .withFinalizedDate(approvalStatus.finalizedDate())
                    .build();
     }
 

@@ -25,7 +25,6 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
-
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbCreator;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
@@ -40,7 +39,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import no.sikt.nva.nvi.common.db.Candidate;
 
 public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
@@ -48,12 +46,6 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
     NviCandidateRepository nviCandidateRepository;
     private UpsertNviCandidateHandler handler;
-
-    private static DbPublicationDate toPublicationDate(CandidateDetails.PublicationDate publicationDate) {
-        return new DbPublicationDate(publicationDate.year(),
-                                     publicationDate.month(),
-                                     publicationDate.day());
-    }
 
     @BeforeEach
     void setup() {
@@ -102,6 +94,12 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                    .map(Candidate::candidate);
 
         assertThat(fetchedCandidate.orElseThrow(), is(equalTo(expectedCandidate)));
+    }
+
+    private static DbPublicationDate toPublicationDate(CandidateDetails.PublicationDate publicationDate) {
+        return new DbPublicationDate(publicationDate.year(),
+                                     publicationDate.month(),
+                                     publicationDate.day());
     }
 
     private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
@@ -177,8 +175,11 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         return sqsEvent;
     }
 
-    private SQSEvent createEvent(UUID identifier, List<Creator> verifiedCreators, String instanceType,
-                                 DbLevel randomLevel, PublicationDate publicationDate,
+    private SQSEvent createEvent(UUID identifier,
+                                 List<Creator> verifiedCreators,
+                                 String instanceType,
+                                 DbLevel randomLevel,
+                                 PublicationDate publicationDate,
                                  Map<URI, BigDecimal> institutionPoints) {
         return createEvent(CandidateEvaluatedMessage.builder()
                                .withStatus(CandidateStatus.CANDIDATE)
@@ -192,9 +193,11 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                .build());
     }
 
-    private DbCandidate createExpectedCandidate(UUID identifier, List<Creator> creators,
+    private DbCandidate createExpectedCandidate(UUID identifier,
+                                                List<Creator> creators,
                                                 String instanceType,
-                                                DbLevel level, PublicationDate publicationDate,
+                                                DbLevel level,
+                                                PublicationDate publicationDate,
                                                 Map<URI, BigDecimal> institutionPoints) {
         return DbCandidate.builder()
                    .publicationBucketUri(generateS3BucketUri(identifier))

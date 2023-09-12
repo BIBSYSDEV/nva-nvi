@@ -95,6 +95,20 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
         assertThat(body.notes(), hasSize(0));
     }
 
+    @Test
+    void shouldReturnNotFoundWhenNoteDoesntExist() throws IOException {
+        var dbCandidate = randomCandidate();
+        var user = randomUsername();
+        var candidate = nviCandidateRepository.create(dbCandidate, List.of());
+        var req = createRequest(candidate.identifier(),
+                                UUID.randomUUID(),
+                                randomString())
+                      .build();
+        handler.handleRequest(req, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_NOT_FOUND)));
+    }
+
     private static HandlerRequestBuilder<NviNoteRequest> createRequestWithoutAccessRights(URI customerId,
                                                                                           String candidateId,
                                                                                           String noteId,

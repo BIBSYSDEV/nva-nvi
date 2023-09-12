@@ -288,10 +288,9 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldBeAbleToAddNotes() {
-        var publicationIdentifier = UUID.randomUUID();
+    void shouldBeAbleToAddNotesWheNoteIsValid() {
         var institutionUri = randomUri();
-        var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
+        var candidateData = createDbCandidate(UUID.randomUUID(), institutionUri);
         var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
         var fullCandidate = nviCandidateRepository.create(candidateData,
                                                           dbApprovalStatus);
@@ -301,7 +300,7 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldBeAbleToAddMultipleNotes() {
+    void shouldBeAbleToAddMultipleNotesWhenNotesExist() {
         var publicationIdentifier = UUID.randomUUID();
         var institutionUri = randomUri();
         var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
@@ -347,8 +346,15 @@ public class NviServiceTest extends LocalDynamoTest {
         var user = randomUsername();
         dbNote = DbNote.builder().user(user).text(randomString()).build();
         var candidateWith2Notes = nviService.createNote(fullCandidate.identifier(), dbNote);
+        var noteIdentifier =
+            candidateWith2Notes.notes()
+                .stream()
+                .filter(n -> n.user().value().equals(user.value()))
+                .findFirst()
+                .map(DbNote::noteId)
+                .orElseThrow();
         var candidateWith1Note = nviService.deleteNote(candidateWith2Notes.identifier(),
-                                                       candidateWith2Notes.notes().get(0).noteId(),
+                                                       noteIdentifier,
                                                        user.value());
         assertThat(candidateWith1Note.notes(), hasSize(1));
     }
