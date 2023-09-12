@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.rest;
+package no.sikt.nva.nvi.rest.create;
 
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -23,6 +23,8 @@ import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.rest.create.CreateNotesHandler;
+import no.sikt.nva.nvi.rest.create.NviNotesRequest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;

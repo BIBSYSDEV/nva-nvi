@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.rest;
+package no.sikt.nva.nvi.rest.create;
 
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.PARAM_CANDIDATE_IDENTIFIER;

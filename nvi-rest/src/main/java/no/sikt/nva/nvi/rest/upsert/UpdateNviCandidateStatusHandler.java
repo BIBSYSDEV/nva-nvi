@@ -14,8 +14,6 @@ import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.NviApprovalStatus;
-import no.sikt.nva.nvi.rest.NviStatusRequest;
 import no.sikt.nva.nvi.rest.utils.RequestUtil;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
 import nva.commons.apigateway.AccessRight;
@@ -27,8 +25,6 @@ import nva.commons.core.JacocoGenerated;
 
 public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatusRequest, CandidateResponse> {
 
-    public static final String UNAUTHORIZED_MESSAGE = "Not allowed to change status for "
-                                                      + "different institution";
     private final NviService nviService;
 
     @JacocoGenerated
