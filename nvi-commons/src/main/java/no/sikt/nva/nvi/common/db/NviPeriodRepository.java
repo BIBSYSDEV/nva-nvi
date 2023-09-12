@@ -38,14 +38,13 @@ public class NviPeriodRepository extends DynamoRepository {
 
     public List<DbNviPeriod> getPeriods() {
         var expression = Expression.builder()
-                             .expression("#a = :b")
-                             .putExpressionName("#a", "type")
+                             .expression("begins_with(#a, :b)")
+                             .putExpressionName("#a", "PrimaryKeyHashKey")
                              .putExpressionValue(":b", AttributeValue.fromS("PERIOD"))
                              .build();
         var scanEnhancedRequest = ScanEnhancedRequest.builder()
                                       .filterExpression(expression)
                                       .build();
-
         return this.nviPeriodTable.scan(scanEnhancedRequest).stream()
                    .map(Page::items)
                    .flatMap(Collection::stream)
