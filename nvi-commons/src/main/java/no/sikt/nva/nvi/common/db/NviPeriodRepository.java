@@ -7,8 +7,11 @@ import java.util.Objects;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
+import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 public class NviPeriodRepository extends DynamoRepository {
 
@@ -35,11 +38,19 @@ public class NviPeriodRepository extends DynamoRepository {
     }
 
     public List<DbNviPeriod> getPeriods() {
-        return this.nviPeriodTable.scan().stream()
+        var expression = Expression.builder()
+                             .expression("#a = :b")
+                             .putExpressionName("#a", "type")
+                             .putExpressionValue(":b", AttributeValue.fromS("PERIOD"))
+                             .build();
+        var scanEnhancedRequest = ScanEnhancedRequest.builder()
+                                      .filterExpression(expression)
+                                      .build();
+
+        return this.nviPeriodTable.scan(scanEnhancedRequest).stream()
                    .map(Page::items)
                    .flatMap(Collection::stream)
                    .map(NviPeriodDao::nviPeriod)
-                   .filter(Objects::nonNull)
                    .toList();
     }
 }
