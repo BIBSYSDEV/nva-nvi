@@ -308,6 +308,59 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /candidate/{candidateIdentifier}/note:
+    post:
+      parameters:
+        - in: path
+          name: candidateIdentifier
+          description: The identifier of the candidate
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNoteRequest'
+      security:
+        - CognitoUserPool: [
+          'https://api.nva.unit.no/scopes/backend',
+          'https://api.nva.unit.no/scopes/frontend',
+          'aws.cognito.signin.user.admin',
+        ]
+      x-amazon-apigateway-request-validator: validate_body
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateNotesHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        '200':
+          description: "Note added"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NviCandidateResponse"
+        '401':
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '404':
+          description: "Not found - candidate to update does not exist"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '500':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
 
 components:
   schemas:
@@ -494,6 +547,11 @@ components:
           type: string
       required:
         - institutionId
+    CreateNoteRequest:
+      type: object
+      properties:
+        text:
+          type: string
   securitySchemes:
     CognitoUserPool:
       type: apiKey

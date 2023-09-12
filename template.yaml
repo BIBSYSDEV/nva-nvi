@@ -441,6 +441,29 @@ Resources:
             Method: put
             RestApiId: !Ref ScientificIndexApi
 
+  CreateNotesHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.CreateNotesHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
+          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
+          COGNITO_HOST: !Ref CognitoAuthorizationUri
+          API_HOST: !Ref ApiDomain
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /candidate/{candidateIdentifier}/note
+            Method: post
+            RestApiId: !Ref ScientificIndexApi
+
   #============================= Database =========================================================
   NvaNviTable:
     Type: AWS::DynamoDB::Table
