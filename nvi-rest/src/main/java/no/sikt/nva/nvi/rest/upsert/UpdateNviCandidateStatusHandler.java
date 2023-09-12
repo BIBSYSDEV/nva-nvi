@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.PARAM_CANDIDAT
 import static no.sikt.nva.nvi.rest.utils.RequestUtil.getUsername;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
+import java.net.URI;
 import java.time.Instant;
 import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
@@ -21,10 +22,13 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.apigateway.exceptions.ForbiddenException;
 import nva.commons.core.JacocoGenerated;
 
 public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatusRequest, CandidateResponse> {
 
+    public static final String UNAUTHORIZED_MESSAGE = "Not allowed to change status for "
+                                                      + "different institution";
     private final NviService nviService;
 
     @JacocoGenerated
@@ -41,6 +45,8 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
     protected CandidateResponse processInput(NviStatusRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
+        var currentCustomer = requestInfo.getTopLevelOrgCristinId().orElseThrow();
+        verifyRequesteeIsCorrectCustomer(input.institutionId(), currentCustomer);
 
         return attempt(() -> toStatus(input, getUsername(requestInfo)))
                    .map(approvalStatus -> nviService.updateApprovalStatus(
@@ -53,6 +59,12 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
     @Override
     protected Integer getSuccessStatusCode(NviStatusRequest input, CandidateResponse output) {
         return HTTP_OK;
+    }
+
+    private void verifyRequesteeIsCorrectCustomer(URI institutionId, URI currentCustomerId) throws ForbiddenException {
+        if (!institutionId.toString().equals(currentCustomerId.toString())) {
+            throw new ForbiddenException();
+        }
     }
 
     private DbApprovalStatus toStatus(NviStatusRequest input, DbUsername username) {

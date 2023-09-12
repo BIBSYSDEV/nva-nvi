@@ -26,8 +26,8 @@ class NviCandidateRepositoryTest extends LocalDynamoTest {
     @Test
     public void shouldThrowExceptionWhenAttemptingToSaveCandidateWithExistingPublicationId() {
         var publicationId = randomUri();
-        var candidate1 = randomCandidateBuilder().publicationId(publicationId).build();
-        var candidate2 = randomCandidateBuilder().publicationId(publicationId).build();
+        var candidate1 = randomCandidateBuilder(true).publicationId(publicationId).build();
+        var candidate2 = randomCandidateBuilder(true).publicationId(publicationId).build();
         nviCandidateRepository.create(candidate1, List.of());
         assertThrows(RuntimeException.class, () -> nviCandidateRepository.create(candidate2, List.of()));
         assertThat(scanDB().count(), is(equalTo(2)));

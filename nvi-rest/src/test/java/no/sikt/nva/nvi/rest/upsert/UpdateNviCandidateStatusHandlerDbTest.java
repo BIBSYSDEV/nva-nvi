@@ -66,7 +66,7 @@ public class UpdateNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
                                                                   .build()));
 
         var req = new NviStatusRequest(candidate.identifier(), institutionId, status);
-        var request = createRequest(req);
+        var request = createRequest(req, institutionId);
         handler.handleRequest(request, output, context);
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         var bodyAsInstance = gatewayResponse.getBodyObject(CandidateResponse.class);
@@ -89,12 +89,12 @@ public class UpdateNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
                    .build();
     }
 
-    private InputStream createRequest(NviStatusRequest body) throws JsonProcessingException {
-        var customerId = randomUri();
+    private InputStream createRequest(NviStatusRequest body, URI customerId) throws JsonProcessingException {
         return new HandlerRequestBuilder<NviStatusRequest>(JsonUtils.dtoObjectMapper)
                    .withPathParameters(Map.of("candidateIdentifier", body.candidateId().toString()))
                    .withBody(body)
                    .withCurrentCustomer(customerId)
+                   .withTopLevelCristinOrgId(customerId)
                    //TODO CHANGE TO CORRECT ACCESS RIGHT
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE.name())
                    .withUserName(randomString())

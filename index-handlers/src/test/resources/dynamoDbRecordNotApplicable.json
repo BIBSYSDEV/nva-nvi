@@ -23,7 +23,7 @@
       },
       "data": {
         "m": {
-          "isInternationalCollaboration": {
+          "internationalCollaboration": {
             "bool": false
           },
           "level": {
@@ -50,7 +50,7 @@
           "instanceType": {
             "s": "AcademicArticle"
           },
-          "isApplicable": {
+          "applicable": {
             "bool": false
           },
           "creatorCount": {
