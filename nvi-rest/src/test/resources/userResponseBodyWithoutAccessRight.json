@@ -1,0 +1,19 @@
+{
+  "roles": [
+    {
+      "rolename": "Creator",
+      "accessRights": [
+        "MANAGE_OWN_PROJECTS"
+      ],
+      "type": "Role"
+    },
+    {
+      "rolename": "App-admin",
+      "accessRights": [
+        "ADMINISTRATE_APPLICATION",
+        "PROCESS_IMPORT_CANDIDATE"
+      ],
+      "type": "Role"
+    }
+  ]
+}

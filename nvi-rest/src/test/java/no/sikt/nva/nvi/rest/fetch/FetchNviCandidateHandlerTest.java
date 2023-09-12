@@ -76,7 +76,7 @@ class FetchNviCandidateHandlerTest {
     @Test
     void shouldHandleNullNotes() throws IOException {
         var candidateId = UUID.randomUUID();
-        var candidate = getCandidate(candidateId, randomCandidateBuilder().build(), List.of());
+        var candidate = getCandidate(candidateId, randomCandidateBuilder(true).build(), List.of());
         when(service.findById(candidateId)).thenReturn(Optional.of(candidate));
         var input = getInput(candidateId);
         handler.handleRequest(input, output, CONTEXT);
@@ -110,7 +110,9 @@ class FetchNviCandidateHandlerTest {
         return approvalStatuses.stream()
                    .map(approvalStatus -> new ApprovalStatus(
                        approvalStatus.institutionId(),
-                       approvalStatus.status(), approvalStatus.finalizedBy(),
+                       approvalStatus.status(),
+                       approvalStatus.assignee(),
+                       approvalStatus.finalizedBy(),
                        approvalStatus.finalizedDate()))
                    .toList();
     }
@@ -123,7 +125,7 @@ class FetchNviCandidateHandlerTest {
     }
 
     private static Candidate getCandidate(UUID id, DbCandidate candidate, List<DbApprovalStatus> approvalStatusList) {
-        return new Candidate(id, candidate, approvalStatusList);
+        return new Candidate(id, candidate, approvalStatusList,List.of());
     }
 
     private GatewayResponse<CandidateResponse> getGatewayResponse()

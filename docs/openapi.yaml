@@ -239,7 +239,7 @@ paths:
       parameters:
         - in: path
           name: candidateIdentifier
-          description: The identifer of the candidate
+          description: The identifier of the candidate
           required: true
           schema:
             type: string
@@ -265,7 +265,7 @@ paths:
         type: AWS_PROXY
       responses:
         '200':
-          description: "Approvalstatus updated"
+          description: "Approval status updated"
           content:
             application/json:
               schema:
@@ -277,7 +277,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
         '404':
-          description: "Not found - period to update does not exist"
+          description: "Not found - approval to update does not exist"
           content:
             application/json:
               schema:
@@ -288,6 +288,114 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /candidate/{candidateIdentifier}/assignee:
+    put:
+      parameters:
+        - in: path
+          name: candidateIdentifier
+          description: The identifier of the candidate
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssigneeRequest'
+      description: 'Update Candidate Assignee'
+      security:
+        - CognitoUserPool: [
+          'https://api.nva.unit.no/scopes/backend',
+          'https://api.nva.unit.no/scopes/frontend',
+          'aws.cognito.signin.user.admin',
+        ]
+      x-amazon-apigateway-request-validator: validate_body
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpsertAssigneeHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        '200':
+          description: "Assignee updated"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NviCandidateResponse"
+        '401':
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '404':
+          description: "Not found - candidate to update does not exist"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '500':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /candidate/{candidateIdentifier}/note:
+    post:
+      parameters:
+        - in: path
+          name: candidateIdentifier
+          description: The identifier of the candidate
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNoteRequest'
+      security:
+        - CognitoUserPool: [
+          'https://api.nva.unit.no/scopes/backend',
+          'https://api.nva.unit.no/scopes/frontend',
+          'aws.cognito.signin.user.admin',
+        ]
+      x-amazon-apigateway-request-validator: validate_body
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateNoteHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        '200':
+          description: "Note added"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NviCandidateResponse"
+        '401':
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '404':
+          description: "Not found - candidate to update does not exist"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '500':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
 components:
   schemas:
     Filter:
@@ -468,6 +576,20 @@ components:
         status:
           type: string
           enum: [ 'Approved','Pending','Rejected' ]
+    AssigneeRequest:
+      type: object
+      properties:
+        institutionId:
+          $ref: '#/components/schemas/Id'
+        assignee:
+          type: string
+      required:
+        - institutionId
+    CreateNoteRequest:
+      type: object
+      properties:
+        text:
+          type: string
   securitySchemes:
     CognitoUserPool:
       type: apiKey

@@ -421,7 +421,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: nvi-rest
-      Handler: no.sikt.nva.nvi.upsert.UpdateNviCandidateStatusHandler::handleRequest
+      Handler: no.sikt.nva.nvi.rest.upsert.UpdateNviCandidateStatusHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
       MemorySize: 1536
@@ -436,6 +436,53 @@ Resources:
           Properties:
             Path: /candidate/{candidateIdentifier}/status
             Method: put
+            RestApiId: !Ref ScientificIndexApi
+
+  UpsertAssigneeHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.upsert.UpsertAssigneeHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
+          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
+          COGNITO_HOST: !Ref CognitoAuthorizationUri
+          API_HOST: !Ref ApiDomain
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /candidate/{candidateIdentifier}/assignee
+            Method: put
+            RestApiId: !Ref ScientificIndexApi
+
+  CreateNoteHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.create.CreateNoteHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
+          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
+          COGNITO_HOST: !Ref CognitoAuthorizationUri
+          API_HOST: !Ref ApiDomain
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /candidate/{candidateIdentifier}/note
+            Method: post
             RestApiId: !Ref ScientificIndexApi
 
   #============================= Database =========================================================

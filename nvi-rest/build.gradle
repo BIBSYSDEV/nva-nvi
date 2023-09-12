@@ -30,5 +30,7 @@ test {
     environment("SEARCH_INFRASTRUCTURE_API_HOST", "localhost")
     environment("SEARCH_INFRASTRUCTURE_AUTH_URI", "localhost")
     environment("SEARCH_INFRASTRUCTURE_API_URI", "localhost")
+    environment "BACKEND_CLIENT_AUTH_URL", "My url"
+    environment "BACKEND_CLIENT_SECRET_NAME", "My secret name"
     environment("NVI_TABLE_NAME", "some-table")
 }

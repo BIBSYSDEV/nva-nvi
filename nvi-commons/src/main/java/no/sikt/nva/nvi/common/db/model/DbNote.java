@@ -1,44 +1,53 @@
 package no.sikt.nva.nvi.common.db.model;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
+import java.util.UUID;
 import nva.commons.core.JacocoGenerated;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
-@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-@JsonSerialize
-@JacocoGenerated //TODO use later :)
-public record DbNote(DbUsername user,
+@DynamoDbImmutable(builder = DbNote.Builder.class)
+public record DbNote(UUID noteId,
+                     DbUsername user,
                      String text,
                      Instant createdDate) {
+
+    public static Builder builder() {
+        return new Builder();
+    }
 
     @JacocoGenerated //TODO use later :)
     public static final class Builder {
 
-        private DbUsername user;
-        private String text;
-        private Instant createdDate;
+        private UUID builderNoteId;
+        private DbUsername builderUser;
+        private String builderText;
+        private Instant builderCreatedDate;
 
         public Builder() {
         }
 
-        public Builder withUser(DbUsername user) {
-            this.user = user;
+        public Builder noteId(UUID noteId) {
+            this.builderNoteId = noteId;
             return this;
         }
 
-        public Builder withText(String text) {
-            this.text = text;
+        public Builder user(DbUsername user) {
+            this.builderUser = user;
             return this;
         }
 
-        public Builder withCreatedDate(Instant createdDate) {
-            this.createdDate = createdDate;
+        public Builder text(String text) {
+            this.builderText = text;
+            return this;
+        }
+
+        public Builder createdDate(Instant createdDate) {
+            this.builderCreatedDate = createdDate;
             return this;
         }
 
         public DbNote build() {
-            return new DbNote(user, text, createdDate);
+            return new DbNote(builderNoteId, builderUser, builderText, builderCreatedDate);
         }
     }
 }

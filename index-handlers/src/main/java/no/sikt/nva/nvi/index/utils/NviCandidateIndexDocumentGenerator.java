@@ -33,6 +33,7 @@ import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contexts;
@@ -42,16 +43,15 @@ import no.sikt.nva.nvi.index.model.PublicationDetails;
 
 public final class NviCandidateIndexDocumentGenerator {
 
-    public static final int SINGLE_DECIMAL = 1;
 
     private NviCandidateIndexDocumentGenerator() {
     }
 
     public static NviCandidateIndexDocument generateDocument(
         String resource, Candidate candidate) {
-        return createNviCandidateIndexDocument(attempt(() -> dtoObjectMapper.readTree(resource))
-                                                   .map(root -> root.at("/body")).orElseThrow(),
-                                               candidate);
+        return createNviCandidateIndexDocument(
+            attempt(() -> dtoObjectMapper.readTree(resource)).map(root -> root.at("/body")).orElseThrow(),
+            candidate);
     }
 
     private static NviCandidateIndexDocument createNviCandidateIndexDocument(
@@ -85,7 +85,15 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withId(approval.institutionId().toString())
                    .withLabels(Map.of())
                    .withApprovalStatus(ApprovalStatus.fromValue(approval.status().getValue()))
+                   .withAssignee(extractAssignee(approval))
                    .build();
+    }
+
+    private static String extractAssignee(DbApprovalStatus approval) {
+        return Optional.of(approval)
+                   .map(DbApprovalStatus::assignee)
+                   .map(DbUsername::value)
+                   .orElse(null);
     }
 
     private static Approval expandApprovals(JsonNode resource,
@@ -105,6 +113,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withId(extractId(affiliation))
                    .withLabels(convertToMap(affiliation.at(JSON_PTR_LABELS)))
                    .withApprovalStatus(approval.approvalStatus())
+                   .withAssignee(approval.assignee())
                    .build();
     }
 
@@ -165,7 +174,7 @@ public final class NviCandidateIndexDocumentGenerator {
         var month = publicationDateNode.at(JSON_PTR_MONTH);
         var day = publicationDateNode.at(JSON_PTR_DAY);
 
-        return Optional.of(LocalDate.of(year.asInt(), month.asInt(), day.asInt()).toString())
-                   .orElse(year.textValue());
+        return attempt(() -> LocalDate.of(year.asInt(), month.asInt(), day.asInt()).toString()).orElse(
+            failure -> year.textValue());
     }
 }

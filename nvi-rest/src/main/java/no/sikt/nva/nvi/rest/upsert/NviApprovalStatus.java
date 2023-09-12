@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.rest;
+package no.sikt.nva.nvi.rest.upsert;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;

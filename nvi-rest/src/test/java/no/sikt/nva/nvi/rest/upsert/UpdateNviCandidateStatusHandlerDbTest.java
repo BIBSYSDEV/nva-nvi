@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.upsert;
+package no.sikt.nva.nvi.rest.upsert;
 
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -23,8 +23,6 @@ import no.sikt.nva.nvi.common.db.model.DbLevel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.NviApprovalStatus;
-import no.sikt.nva.nvi.rest.NviStatusRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -66,7 +64,7 @@ public class UpdateNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
                                                                   .build()));
 
         var req = new NviStatusRequest(candidate.identifier(), institutionId, status);
-        var request = createRequest(req);
+        var request = createRequest(req, institutionId);
         handler.handleRequest(request, output, context);
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         var bodyAsInstance = gatewayResponse.getBodyObject(CandidateResponse.class);
@@ -89,12 +87,12 @@ public class UpdateNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
                    .build();
     }
 
-    private InputStream createRequest(NviStatusRequest body) throws JsonProcessingException {
-        var customerId = randomUri();
+    private InputStream createRequest(NviStatusRequest body, URI customerId) throws JsonProcessingException {
         return new HandlerRequestBuilder<NviStatusRequest>(JsonUtils.dtoObjectMapper)
                    .withPathParameters(Map.of("candidateIdentifier", body.candidateId().toString()))
                    .withBody(body)
                    .withCurrentCustomer(customerId)
+                   .withTopLevelCristinOrgId(customerId)
                    //TODO CHANGE TO CORRECT ACCESS RIGHT
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE.name())
                    .withUserName(randomString())

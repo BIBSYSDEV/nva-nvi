@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.rest;
+package no.sikt.nva.nvi.rest.upsert;
 
 import java.net.URI;
 import java.util.UUID;

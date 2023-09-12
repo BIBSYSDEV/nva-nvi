@@ -14,12 +14,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbCreator;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbLevel;
 import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
 import nva.commons.core.paths.UriWrapper;
 
@@ -61,11 +63,11 @@ public final class TestUtils {
         return START_DATE.plusDays(randomDays);
     }
 
-    public static DbCandidate.Builder randomCandidateBuilder() {
+    public static DbCandidate.Builder randomCandidateBuilder(boolean applicable) {
         return DbCandidate.builder()
                    .publicationId(randomUri())
                    .publicationBucketUri(randomUri())
-                   .applicable(randomBoolean())
+                   .applicable(applicable)
                    .instanceType(randomString())
                    .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
                    .level(randomElement(DbLevel.values()))
@@ -75,12 +77,27 @@ public final class TestUtils {
                    .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))));
     }
 
+    public static DbCandidate randomApplicableCandidateBuilder() {
+        return DbCandidate.builder()
+                   .publicationId(randomUri())
+                   .publicationBucketUri(randomUri())
+                   .applicable(true)
+                   .instanceType(randomString())
+                   .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
+                   .level(randomElement(DbLevel.values()))
+                   .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
+                   .internationalCollaboration(randomBoolean())
+                   .creatorCount(randomInteger())
+                   .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))))
+                   .build();
+    }
+
     public static String randomYear() {
         return String.valueOf(randomInteger(3000));
     }
 
     public static DbCandidate randomCandidate() {
-        return randomCandidateBuilder()
+        return randomCandidateBuilder(true)
                    .build();
     }
 
@@ -90,6 +107,16 @@ public final class TestUtils {
                    .modifiedBy(randomUsername())
                    .reportingDate(getNowWithMillisecondAccuracy())
                    .publishingYear(randomYear());
+    }
+
+    public static DbNviPeriod randomNviPeriod() {
+        return randomNviPeriodBuilder()
+                   .build();
+    }
+
+    public static DbApprovalStatus randomApprovalStatus() {
+        return new DbApprovalStatus(randomUri(), randomElement(DbStatus.values()), randomUsername(), randomUsername(),
+                                    Instant.EPOCH);
     }
 
     public static DbUsername randomUsername() {

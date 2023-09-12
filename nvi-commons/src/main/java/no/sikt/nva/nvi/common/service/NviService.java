@@ -14,6 +14,7 @@ import no.sikt.nva.nvi.common.db.NviPeriodRepository;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
 import nva.commons.core.JacocoGenerated;
@@ -84,6 +85,18 @@ public class NviService {
         return nviCandidateRepository.findByPublicationId(publicationId);
     }
 
+    public Candidate createNote(UUID identifier, DbNote dbNote) {
+        if (nviCandidateRepository.exists(identifier)) {
+            nviCandidateRepository.saveNote(identifier, dbNote);
+        }
+        return nviCandidateRepository.findById(identifier).orElseThrow();
+    }
+
+    public Candidate deleteNote(UUID candidateIdentifier, UUID noteIdentifier) {
+        nviCandidateRepository.deleteNote(candidateIdentifier, noteIdentifier);
+        return nviCandidateRepository.findById(candidateIdentifier).orElseThrow();
+    }
+
     private static boolean isInteger(String value) {
         return attempt(() -> Integer.parseInt(value))
                    .map(ignore -> true)
@@ -107,16 +120,18 @@ public class NviService {
     private static DbApprovalStatus resetStatus(DbApprovalStatus oldApprovalStatus) {
         return oldApprovalStatus.copy()
                    .status(DbStatus.PENDING)
+                   .assignee(oldApprovalStatus.assignee())
                    .finalizedBy(null)
                    .finalizedDate(null)
                    .build();
     }
 
-    private static DbApprovalStatus updateStatus(DbApprovalStatus oldApprovalStatus,
-                                                 DbApprovalStatus newApprovalStatus) {
+    private static DbApprovalStatus finalizeStatus(DbApprovalStatus oldApprovalStatus,
+                                                   DbApprovalStatus newApprovalStatus) {
         return oldApprovalStatus.copy()
                    .status(newApprovalStatus.status())
                    .finalizedBy(newApprovalStatus.finalizedBy())
+                   .assignee(newApprovalStatus.assignee())
                    .finalizedDate(Instant.now())
                    .build();
     }
@@ -139,13 +154,34 @@ public class NviService {
         return !isExistingCandidate(dbCandidate.publicationId()) && dbCandidate.applicable();
     }
 
-    @JacocoGenerated // bug in jacoco report that is unable to exhaust the switch. Should be fixed in version 0.8.11
     private DbApprovalStatus toUpdatedApprovalStatus(DbApprovalStatus oldApprovalStatus,
                                                      DbApprovalStatus newApprovalStatus) {
+        if (updateIsAssignee(oldApprovalStatus, newApprovalStatus)) {
+            return updateAssignee(oldApprovalStatus, newApprovalStatus);
+        } else {
+            return updateStatus(oldApprovalStatus, newApprovalStatus);
+        }
+    }
+
+    private static DbApprovalStatus updateStatus(DbApprovalStatus oldApprovalStatus,
+                                                        DbApprovalStatus newApprovalStatus) {
         return switch (newApprovalStatus.status()) {
-            case APPROVED, REJECTED -> updateStatus(oldApprovalStatus, newApprovalStatus);
+            case APPROVED, REJECTED -> finalizeStatus(oldApprovalStatus, newApprovalStatus);
             case PENDING -> resetStatus(oldApprovalStatus);
         };
+    }
+
+    private static boolean updateIsAssignee(DbApprovalStatus oldApprovalStatus, DbApprovalStatus newApprovalStatus) {
+        return oldApprovalStatus.status().equals(newApprovalStatus.status());
+    }
+
+    private DbApprovalStatus updateAssignee(DbApprovalStatus oldApprovalStatus, DbApprovalStatus newApprovalStatus) {
+        return oldApprovalStatus.copy()
+                   .status(newApprovalStatus.status())
+                   .finalizedBy(null)
+                   .assignee(Optional.of(newApprovalStatus).map(DbApprovalStatus::assignee).orElse(null))
+                   .finalizedDate(null)
+                   .build();
     }
 
     private Optional<Candidate> createCandidate(DbCandidate candidate) {

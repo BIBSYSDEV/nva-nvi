@@ -30,6 +30,7 @@ import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbCreator;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbLevel;
+import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
@@ -175,7 +176,7 @@ public class NviServiceTest extends LocalDynamoTest {
                                                         randomLevel, publicationDate,
                                                         institutionPoints, false);
 
-        Optional<Candidate> candidate = nviService.upsertCandidate(expectedCandidate);
+        var candidate = nviService.upsertCandidate(expectedCandidate);
 
         assertThat(candidate, is(Optional.empty()));
     }
@@ -248,7 +249,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var institutionUri = randomUri();
         var fullCandidate = nviCandidateRepository.create(createDbCandidate(identifier, institutionUri),
-                                                          List.of(createDbApprobalStatus(institutionUri)));
+                                                          List.of(createDbApprovalStatus(institutionUri)));
 
         var response = nviService.updateApprovalStatus(fullCandidate.identifier(),
                                                        createApprovalStatus(status, institutionUri));
@@ -262,7 +263,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var institutionUri = randomUri();
         var fullCandidate = nviCandidateRepository.create(createDbCandidate(identifier, institutionUri),
-                                                          List.of(createDbApprobalStatus(institutionUri)));
+                                                          List.of(createDbApprovalStatus(institutionUri)));
 
         var response = nviService.updateApprovalStatus(fullCandidate.identifier(),
                                                        createApprovalStatus(DbStatus.APPROVED, institutionUri));
@@ -277,7 +278,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var institutionUri = randomUri();
         var candidateData = createDbCandidate(identifier, institutionUri);
-        List<DbApprovalStatus> dbApprovalStatus = List.of(createDbApprobalStatus(institutionUri));
+        var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
         var fullCandidate = nviCandidateRepository.create(candidateData,
                                                           dbApprovalStatus);
         var updatedCandidate = createDbCandidate(identifier, institutionUri);
@@ -285,6 +286,51 @@ public class NviServiceTest extends LocalDynamoTest {
                                       fullCandidate.approvalStatuses());
         var candidate1 = nviCandidateRepository.findById(fullCandidate.identifier());
         assertThat(candidate1.get().candidate(), is(not(fullCandidate.candidate())));
+    }
+
+    @Test
+    void shouldBeAbleToAddNotes() {
+        var publicationIdentifier = UUID.randomUUID();
+        var institutionUri = randomUri();
+        var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
+        var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
+        var fullCandidate = nviCandidateRepository.create(candidateData,
+                                                          dbApprovalStatus);
+        var dbNote = new DbNote(UUID.randomUUID(), randomUsername(), randomString(), Instant.now());
+        var candidate = nviService.createNote(fullCandidate.identifier(), dbNote);
+        assertThat(candidate.notes(), hasSize(1));
+    }
+
+    @Test
+    void shouldBeAbleToAddMultipleNotes() {
+        var publicationIdentifier = UUID.randomUUID();
+        var institutionUri = randomUri();
+        var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
+        var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
+        var fullCandidate = nviCandidateRepository.create(candidateData,
+                                                          dbApprovalStatus);
+        var dbNote = new DbNote(UUID.randomUUID(), randomUsername(), randomString(), Instant.now());
+        nviService.createNote(fullCandidate.identifier(), dbNote);
+        dbNote = new DbNote(UUID.randomUUID(), randomUsername(), randomString(), Instant.now());
+        var candidate = nviService.createNote(fullCandidate.identifier(), dbNote);
+        assertThat(candidate.notes(), hasSize(2));
+    }
+
+    @Test
+    void shouldBeAbleToDeleteNote() {
+        var publicationIdentifier = UUID.randomUUID();
+        var institutionUri = randomUri();
+        var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
+        var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
+        var fullCandidate = nviCandidateRepository.create(candidateData,
+                                                          dbApprovalStatus);
+        var dbNote = DbNote.builder().user(randomUsername()).text(randomString()).build();
+        nviService.createNote(fullCandidate.identifier(), dbNote);
+        dbNote = DbNote.builder().user(randomUsername()).text(randomString()).build();
+        var candidateWith2Notes = nviService.createNote(fullCandidate.identifier(), dbNote);
+        var candidateWith1Note = nviService.deleteNote(candidateWith2Notes.identifier(),
+                                                       candidateWith2Notes.notes().get(0).noteId());
+        assertThat(candidateWith1Note.notes(), hasSize(1));
     }
 
     @Test
@@ -304,7 +350,7 @@ public class NviServiceTest extends LocalDynamoTest {
                    .build();
     }
 
-    private static DbApprovalStatus createDbApprobalStatus(URI institutionUri) {
+    private static DbApprovalStatus createDbApprovalStatus(URI institutionUri) {
         return DbApprovalStatus.builder()
                    .institutionId(institutionUri)
                    .status(DbStatus.APPROVED)
