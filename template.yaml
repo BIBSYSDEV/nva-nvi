@@ -441,7 +441,7 @@ Resources:
             Method: put
             RestApiId: !Ref ScientificIndexApi
 
-  CreateNotesHandler:
+  CreateNoteHandler:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: nvi-rest
