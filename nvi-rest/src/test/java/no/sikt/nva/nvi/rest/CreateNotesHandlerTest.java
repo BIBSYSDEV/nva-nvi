@@ -64,8 +64,8 @@ public class CreateNotesHandlerTest {
                 .points(List.of())
                 .build(),
             List.of(DbApprovalStatus.builder().build()),
-            List.of(DbNote.builder().withText(theNote).build()));
-        when(service.createNote(any(), any(), any())).thenReturn(candidate);
+            List.of(DbNote.builder().text(theNote).build()));
+        when(service.createNote(any(), any())).thenReturn(candidate);
 
         handler.handleRequest(createRequest(identifier, new NviNotesRequest(theNote)), output, context);
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);

@@ -176,7 +176,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
 
     private static Candidate randomCandidate() {
         var candidate = randomCandidateBuilder();
-        return new Candidate(randomUUID(),candidate.build(),  List.of(getApprovalStatus()));
+        return new Candidate(randomUUID(),candidate.build(),  List.of(getApprovalStatus()), List.of());
     }
 
     private static DbApprovalStatus getApprovalStatus() {

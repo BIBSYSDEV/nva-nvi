@@ -116,12 +116,14 @@ public class NviCandidateRepository extends DynamoRepository {
     }
 
     public boolean exists(UUID identifier) {
-        var optCandidate = findById(identifier);
-        return optCandidate.isPresent();
+        return findById(identifier).isPresent();
     }
 
-    public void save(UUID identifier, DbNote dbNote) {
-        noteTable.putItem(NoteDao.builder().identifier(identifier).note(dbNote).build());
+    public void saveNote(UUID candidateIdentifier, DbNote dbNote) {
+        noteTable.putItem(NoteDao.builder()
+                              .identifier(candidateIdentifier)
+                              .note(dbNote)
+                              .build());
     }
 
     private static Key candidateKey(UUID id) {

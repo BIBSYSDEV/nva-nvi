@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.upsert;
 
 import static java.util.Collections.emptyList;
-import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -99,7 +98,6 @@ class UpdateNviCandidateStatusHandlerTest {
                    is(equalTo(createResponse(nviStatusRequest, response, innerStatus, approvalStatus))));
     }
 
-
     private static CandidateResponse createResponse(
         NviStatusRequest nviStatusRequest,
         Candidate response, DbStatus status,
@@ -130,8 +128,8 @@ class UpdateNviCandidateStatusHandlerTest {
             List.of(new DbApprovalStatus(nviStatusRequest.institutionId(),
                                          status,
                                          new DbUsername(randomString()),
-                                         Instant.now()))
-        ,List.of());
+                                         Instant.now())),
+            List.of());
     }
 
     private InputStream createRequest(NviStatusRequest body) throws JsonProcessingException {

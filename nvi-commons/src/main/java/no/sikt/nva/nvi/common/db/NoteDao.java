@@ -12,10 +12,11 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbParti
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
 @DynamoDbImmutable(builder = NoteDao.Builder.class)
-public record NoteDao (
-    UUID identifier,
-    @DynamoDbAttribute(DATA_FIELD)
-    DbNote note) implements DynamoEntryWithRangeKey{
+public record NoteDao(UUID identifier,
+                      @DynamoDbAttribute(DATA_FIELD)
+                      DbNote note
+) implements DynamoEntryWithRangeKey {
+
     public static final String TYPE = "NOTE";
 
     public static String sk0(String skId) {

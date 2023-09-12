@@ -79,10 +79,9 @@ public class NviService {
         return nviCandidateRepository.findByPublicationId(publicationId);
     }
 
-    public Candidate createNote(UUID identifier, String note, String user) {
-        DbNote dbNote = new DbNote(UUID.randomUUID(), new DbUsername(user), note, Instant.now());
+    public Candidate createNote(UUID identifier, DbNote dbNote) {
         if (nviCandidateRepository.exists(identifier)) {
-            nviCandidateRepository.save(identifier, dbNote);
+            nviCandidateRepository.saveNote(identifier, dbNote);
         }
         return nviCandidateRepository.findById(identifier).orElseThrow();
     }
