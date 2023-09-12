@@ -8,9 +8,7 @@ import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.internal.conditional.BeginsWithConditional;
-import software.amazon.awssdk.enhanced.dynamodb.internal.conditional.SingleKeyItemConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public class NviPeriodRepository extends DynamoRepository {
