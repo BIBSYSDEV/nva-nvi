@@ -218,7 +218,6 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
             .toList();
     }
 
-    @NotNull
     private static Map<String, String> getLabels() {
         return Map.of("nb", "Sikt – Kunnskapssektorens tjenesteleverandør",
                       "en", "Sikt - Norwegian Agency for Shared Services in Education and Research");

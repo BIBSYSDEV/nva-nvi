@@ -22,16 +22,6 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
 
     private static final String CONTEXT = "@context";
 
-    public Builder copy() {
-        return new Builder()
-                   .withIdentifier(identifier)
-                   .withApprovals(approvals)
-                   .withPublicationDetails(publicationDetails)
-                   .withContext(context)
-                   .withPoints(points)
-                   .withNumberOfApprovals(numberOfApprovals);
-    }
-
     @JacocoGenerated
     public static class Builder {
 

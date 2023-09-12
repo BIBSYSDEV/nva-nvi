@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.index.aws;
 
 import java.io.IOException;
 import java.net.URI;
-import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
 public interface SearchClient<T> {
