@@ -288,13 +288,41 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldBeAbleToAddNotes() {
+        var publicationIdentifier = UUID.randomUUID();
+        var institutionUri = randomUri();
+        var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
+        var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
+        var fullCandidate = nviCandidateRepository.create(candidateData,
+                                                          dbApprovalStatus);
+        var dbNote = new DbNote(UUID.randomUUID(), randomUsername(), randomString(), Instant.now());
+        var candidate = nviService.createNote(fullCandidate.identifier(), dbNote);
+        assertThat(candidate.notes(), hasSize(1));
+    }
+
+    @Test
+    void shouldBeAbleToAdd2Notes() {
+        var publicationIdentifier = UUID.randomUUID();
+        var institutionUri = randomUri();
+        var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
+        var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
+        var fullCandidate = nviCandidateRepository.create(candidateData,
+                                                          dbApprovalStatus);
+        var dbNote = new DbNote(UUID.randomUUID(), randomUsername(), randomString(), Instant.now());
+        nviService.createNote(fullCandidate.identifier(), dbNote);
+        dbNote = new DbNote(UUID.randomUUID(), randomUsername(), randomString(), Instant.now());
+        var candidate = nviService.createNote(fullCandidate.identifier(), dbNote);
+        assertThat(candidate.notes(), hasSize(2));
+    }
+
+    @Test
     void shouldBeAbleToDeleteNote() {
         var publicationIdentifier = UUID.randomUUID();
         var institutionUri = randomUri();
         var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
-        var dbApprobalStatus = List.of(createDbApprovalStatus(institutionUri));
+        var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
         var fullCandidate = nviCandidateRepository.create(candidateData,
-                                                          dbApprobalStatus);
+                                                          dbApprovalStatus);
         var dbNote = new DbNote(UUID.randomUUID(), randomUsername(), randomString(), Instant.now());
         nviService.createNote(fullCandidate.identifier(), dbNote);
         dbNote = new DbNote(UUID.randomUUID(), randomUsername(), randomString(), Instant.now());
