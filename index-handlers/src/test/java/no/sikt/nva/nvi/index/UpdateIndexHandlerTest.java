@@ -111,8 +111,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldRemoveFromIndexWhenIncomingEventIsModifyAndCandidateIsNotApplicable() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        var persistedCandidate = randomNonApplicableCandidate();
-        when(nviService.findById(any())).thenReturn(Optional.of(persistedCandidate));
+        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate(false)));
 
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordNotApplicable.json")), CONTEXT);
 
@@ -122,7 +121,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldDoNothingWhenIncomingEventIsRemove() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate()));
+        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate(false)));
 
         handler.handleRequest(createEvent(REMOVE, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
 
@@ -132,7 +131,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldDoNothingWhenConsumedRecordIsNotCandidate() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate()));
+        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate(true)));
 
         handler.handleRequest(createEvent(REMOVE, toRecord("dynamoDbUniqueEntryEvent.json")), CONTEXT);
 
@@ -168,7 +167,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     private static Candidate createApplicableCandidateWithPublicationDate(DbPublicationDate date) {
-        return new Candidate(UUID.randomUUID(), TestUtils.randomCandidateBuilder()
+        return new Candidate(UUID.randomUUID(), TestUtils.randomCandidateBuilder(true)
                                                     .applicable(true)
                                                     .creators(Collections.emptyList())
                                                     .publicationDate(date).build(),
@@ -264,18 +263,18 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .withNewImage(Map.of(randomString(), new AttributeValue(randomString())));
     }
 
-    private static Candidate randomCandidate() {
-        var candidate = TestUtils.randomCandidateBuilder();
+    private static Candidate randomCandidate(boolean applicable) {
+        var candidate = TestUtils.randomCandidateBuilder(applicable);
         return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()));
     }
 
     private static Candidate randomApplicableCandidate() {
-        var applicableCandidate = TestUtils.randomCandidateBuilder().applicable(true).build();
+        var applicableCandidate = TestUtils.randomCandidateBuilder(true).build();
         return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()));
     }
 
     private static Candidate applicableAssignedCandidate() {
-        var applicableCandidate = TestUtils.randomCandidateBuilder().applicable(true).build();
+        var applicableCandidate = TestUtils.randomCandidateBuilder(true).build();
         return new Candidate(randomUUID(), applicableCandidate, List.of(approvalWithAssignee()));
     }
 
@@ -297,11 +296,6 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                                        .replace("__REPLACE_IDENTIFIER__",
                                                                 candidate.identifier().toString()),
                                                    DynamodbStreamRecord.class);
-    }
-
-    private Candidate randomNonApplicableCandidate() {
-        var nonApplicableCandidate = TestUtils.randomCandidateBuilder().applicable(false).build();
-        return new Candidate(randomUUID(), nonApplicableCandidate, List.of(getApprovalStatus()));
     }
 
     private NviCandidateIndexDocument constructExpectedDocument(Candidate candidate) {

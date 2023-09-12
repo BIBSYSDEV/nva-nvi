@@ -76,7 +76,7 @@ class FetchNviCandidateHandlerTest {
     @Test
     void shouldHandleNullNotes() throws IOException {
         var candidateId = UUID.randomUUID();
-        var candidate = getCandidate(candidateId, randomCandidateBuilder().build(), List.of());
+        var candidate = getCandidate(candidateId, randomCandidateBuilder(true).build(), List.of());
         when(service.findById(candidateId)).thenReturn(Optional.of(candidate));
         var input = getInput(candidateId);
         handler.handleRequest(input, output, CONTEXT);
