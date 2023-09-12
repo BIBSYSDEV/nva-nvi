@@ -157,6 +157,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         return new Candidate(UUID.randomUUID(), randomCandidateBuilder(true)
                                                     .creators(Collections.emptyList())
                                                     .publicationDate(date).build(),
+                             Collections.emptyList(),
                              Collections.emptyList());
     }
 
@@ -245,17 +246,17 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
 
     private static Candidate randomCandidate() {
         var candidate = randomCandidateBuilder(true);
-        return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()));
+        return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()), Collections.emptyList());
     }
 
     private static Candidate randomCandidate(boolean applicable) {
         var candidate = randomCandidateBuilder(applicable);
-        return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()));
+        return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()),Collections.emptyList());
     }
 
     private static Candidate randomApplicableCandidate() {
         var applicableCandidate = randomCandidateBuilder(true).build();
-        return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()));
+        return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()),Collections.emptyList());
     }
 
     private static DbApprovalStatus getApprovalStatus() {
@@ -269,11 +270,6 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                                        .replace("__REPLACE_IDENTIFIER__",
                                                                 candidate.identifier().toString()),
                                                    DynamodbStreamRecord.class);
-    }
-
-    private Candidate randomNonApplicableCandidate() {
-        var nonApplicableCandidate = randomCandidateBuilder(false).build();
-        return new Candidate(randomUUID(), nonApplicableCandidate, List.of(getApprovalStatus()));
     }
 
     private NviCandidateIndexDocument constructExpectedDocument(Candidate candidate) {
