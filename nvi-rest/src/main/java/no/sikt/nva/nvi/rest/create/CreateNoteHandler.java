@@ -17,16 +17,16 @@ import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.JacocoGenerated;
 
-public class CreateNotesHandler extends ApiGatewayHandler<NviNotesRequest, CandidateResponse> {
+public class CreateNoteHandler extends ApiGatewayHandler<NviNotesRequest, CandidateResponse> {
 
     private final NviService service;
 
     @JacocoGenerated
-    public CreateNotesHandler() {
+    public CreateNoteHandler() {
         this(new NviService(defaultDynamoClient()));
     }
 
-    public CreateNotesHandler(NviService service) {
+    public CreateNoteHandler(NviService service) {
         super(NviNotesRequest.class);
         this.service = service;
     }
@@ -49,10 +49,8 @@ public class CreateNotesHandler extends ApiGatewayHandler<NviNotesRequest, Candi
 
     private static DbNote getNote(NviNotesRequest input, DbUsername username) {
         return DbNote.builder()
-                   .noteId(UUID.randomUUID())
                    .text(input.note())
                    .user(new DbUsername(username.value()))
-                   .createdDate(Instant.now())
                    .build();
     }
 }

@@ -445,7 +445,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: nvi-rest
-      Handler: no.sikt.nva.nvi.rest.CreateNotesHandler::handleRequest
+      Handler: no.sikt.nva.nvi.rest.create.CreateNoteHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
       MemorySize: 1536

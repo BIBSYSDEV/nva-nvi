@@ -301,7 +301,7 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldBeAbleToAdd2Notes() {
+    void shouldBeAbleToAddMultipleNotes() {
         var publicationIdentifier = UUID.randomUUID();
         var institutionUri = randomUri();
         var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
@@ -323,11 +323,12 @@ public class NviServiceTest extends LocalDynamoTest {
         var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
         var fullCandidate = nviCandidateRepository.create(candidateData,
                                                           dbApprovalStatus);
-        var dbNote = new DbNote(UUID.randomUUID(), randomUsername(), randomString(), Instant.now());
+        var dbNote = DbNote.builder().user(randomUsername()).text(randomString()).build();
         nviService.createNote(fullCandidate.identifier(), dbNote);
-        dbNote = new DbNote(UUID.randomUUID(), randomUsername(), randomString(), Instant.now());
+        dbNote = DbNote.builder().user(randomUsername()).text(randomString()).build();
         var candidateWith2Notes = nviService.createNote(fullCandidate.identifier(), dbNote);
-        var candidateWith1Note = nviService.deleteNote(candidateWith2Notes.identifier(), dbNote.noteId());
+        var candidateWith1Note = nviService.deleteNote(candidateWith2Notes.identifier(),
+                                                       candidateWith2Notes.notes().get(0).noteId());
         assertThat(candidateWith1Note.notes(), hasSize(1));
     }
 

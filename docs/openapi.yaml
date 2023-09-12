@@ -332,7 +332,7 @@ paths:
       x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateNotesHandler.Arn}:live/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateNoteHandler.Arn}:live/invocations
         responses: { }
         httpMethod: POST
         type: AWS_PROXY

@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static software.amazon.awssdk.enhanced.dynamodb.TableSchema.fromImmutableClass;
 import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.sortBeginsWith;
 import java.net.URI;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -122,7 +123,12 @@ public class NviCandidateRepository extends DynamoRepository {
     public void saveNote(UUID candidateIdentifier, DbNote dbNote) {
         noteTable.putItem(NoteDao.builder()
                               .identifier(candidateIdentifier)
-                              .note(dbNote)
+                              .note(DbNote.builder()
+                                        .noteId(UUID.randomUUID())
+                                        .text(dbNote.text())
+                                        .user(dbNote.user())
+                                        .createdDate(Instant.now())
+                                        .build())
                               .build());
     }
 

@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.rest.upsert;
 
 import static java.util.UUID.randomUUID;
-import static no.sikt.nva.nvi.test.TestUtils.randomApplicableCandidateBuilder;
 import static no.sikt.nva.nvi.rest.upsert.UpsertAssigneeHandler.CANDIDATE_IDENTIFIER;
+import static no.sikt.nva.nvi.test.TestUtils.randomApplicableCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,7 +39,6 @@ import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
 public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
-
 
     private Context context;
     private ByteArrayOutputStream output;
@@ -122,7 +121,8 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
     private Candidate nonExistingCandidate() {
         var candidate = nviService.upsertCandidate(randomApplicableCandidateBuilder()).orElseThrow();
-        return new Candidate(randomUUID(), candidate.candidate(), candidate.approvalStatuses(), Collections.emptyList());
+        return new Candidate(randomUUID(), candidate.candidate(), candidate.approvalStatuses(),
+                             Collections.emptyList());
     }
 
     private void updateAssignee(Candidate candidate) {

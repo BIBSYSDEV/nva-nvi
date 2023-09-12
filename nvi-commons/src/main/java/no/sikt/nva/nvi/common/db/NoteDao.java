@@ -50,8 +50,11 @@ public record NoteDao(UUID identifier,
 
     public static final class Builder {
 
-        private UUID identifier;
-        private DbNote note;
+        // Becasue of codacy the variable name has to be different than the setMethod
+        // And because of @DynamoDbImmutable the methods must have the same name as the getters
+        // And in records that obj.identifer() not obj.getIdentifier()
+        private UUID builderIdentifier;
+        private DbNote builderNote;
 
         private Builder() {
         }
@@ -72,17 +75,17 @@ public record NoteDao(UUID identifier,
         }
 
         public Builder identifier(UUID identifier) {
-            this.identifier = identifier;
+            this.builderIdentifier = identifier;
             return this;
         }
 
         public Builder note(DbNote note) {
-            this.note = note;
+            this.builderNote = note;
             return this;
         }
 
         public NoteDao build() {
-            return new NoteDao(identifier, note);
+            return new NoteDao(builderIdentifier, builderNote);
         }
     }
 }
