@@ -62,15 +62,15 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         var theNote = "The note";
         DbCandidate dbCandidate = randomCandidate();
         Candidate candidate = nviCandidateRepository.create(dbCandidate, List.of(randomApprovalStatus()));
-        handler.handleRequest(createRequest(candidate.identifier(), new NviNotesRequest(theNote)), output, context);
+        handler.handleRequest(createRequest(candidate.identifier(), new NviNoteRequest(theNote)), output, context);
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         var body = gatewayResponse.getBodyObject(CandidateResponse.class);
         assertThat(body.notes().get(0).text(), is(equalTo(theNote)));
     }
 
-    private InputStream createRequest(UUID identifier, NviNotesRequest body) throws JsonProcessingException {
+    private InputStream createRequest(UUID identifier, NviNoteRequest body) throws JsonProcessingException {
         var customerId = randomUri();
-        return new HandlerRequestBuilder<NviNotesRequest>(JsonUtils.dtoObjectMapper)
+        return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper)
                    .withBody(body)
                    .withCurrentCustomer(customerId)
                    .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
@@ -79,11 +79,11 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private NviNotesRequest randomNote() {
-        return new NviNotesRequest(randomString());
+    private NviNoteRequest randomNote() {
+        return new NviNoteRequest(randomString());
     }
 
-    private InputStream createRequestWithoutAccessRights(NviNotesRequest request) throws JsonProcessingException {
-        return new HandlerRequestBuilder<NviNotesRequest>(JsonUtils.dtoObjectMapper).withBody(request).build();
+    private InputStream createRequestWithoutAccessRights(NviNoteRequest request) throws JsonProcessingException {
+        return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper).withBody(request).build();
     }
 }

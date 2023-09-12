@@ -316,7 +316,7 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldBeAbleToDeleteNote() {
+    void shouldBeNotAbleToDeleteNoteWhenYouDidntCreateIt() {
         var publicationIdentifier = UUID.randomUUID();
         var institutionUri = randomUri();
         var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
@@ -327,8 +327,29 @@ public class NviServiceTest extends LocalDynamoTest {
         nviService.createNote(fullCandidate.identifier(), dbNote);
         dbNote = DbNote.builder().user(randomUsername()).text(randomString()).build();
         var candidateWith2Notes = nviService.createNote(fullCandidate.identifier(), dbNote);
+        assertThrows(IllegalArgumentException.class, () -> nviService.deleteNote(candidateWith2Notes.identifier(),
+                                                                                 candidateWith2Notes.notes()
+                                                                                     .get(0)
+                                                                                     .noteId(), randomString()));
+        assertThat(nviService.findById(fullCandidate.identifier()).get().notes(), hasSize(2));
+    }
+
+    @Test
+    void shouldBeAbleToDeleteNoteWhenYouCreatedIt() {
+        var publicationIdentifier = UUID.randomUUID();
+        var institutionUri = randomUri();
+        var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
+        var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
+        var fullCandidate = nviCandidateRepository.create(candidateData,
+                                                          dbApprovalStatus);
+        var dbNote = DbNote.builder().user(randomUsername()).text(randomString()).build();
+        nviService.createNote(fullCandidate.identifier(), dbNote);
+        var user = randomUsername();
+        dbNote = DbNote.builder().user(user).text(randomString()).build();
+        var candidateWith2Notes = nviService.createNote(fullCandidate.identifier(), dbNote);
         var candidateWith1Note = nviService.deleteNote(candidateWith2Notes.identifier(),
-                                                       candidateWith2Notes.notes().get(0).noteId());
+                                                       candidateWith2Notes.notes().get(0).noteId(),
+                                                       user.value());
         assertThat(candidateWith1Note.notes(), hasSize(1));
     }
 

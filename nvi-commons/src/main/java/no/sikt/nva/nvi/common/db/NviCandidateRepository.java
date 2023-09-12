@@ -137,6 +137,14 @@ public class NviCandidateRepository extends DynamoRepository {
                                  .sortValue(NoteDao.sk0(noteIdentifier.toString())).build());
     }
 
+    public DbNote getNoteById(UUID candidateIdentifier, UUID noteIdentifier) {
+        return noteTable.getItem(Key.builder()
+                                     .partitionValue(CandidateDao.pk0(candidateIdentifier.toString()))
+                                     .sortValue(NoteDao.sk0(noteIdentifier.toString()))
+                                     .build())
+                   .note();
+    }
+
     private static Key candidateKey(UUID id) {
         return Key.builder()
                    .partitionValue(CandidateDao.pk0(id.toString()))
