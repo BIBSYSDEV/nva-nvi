@@ -112,6 +112,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withId(extractId(affiliation))
                    .withLabels(convertToMap(affiliation.at(JSON_PTR_LABELS)))
                    .withApprovalStatus(approval.approvalStatus())
+                   .withAssignee(approval.assignee())
                    .build();
     }
 

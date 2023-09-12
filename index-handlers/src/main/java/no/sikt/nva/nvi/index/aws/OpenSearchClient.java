@@ -26,7 +26,6 @@ import org.apache.http.HttpHost;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
-import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
 import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -112,12 +111,6 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     @Override
-    public SearchResponse<NviCandidateIndexDocument> searchDocumentById(String id) throws IOException {
-        return client.withTransportOptions(getOptions())
-                   .search(constructSearchRequest(id), NviCandidateIndexDocument.class);
-    }
-
-    @Override
     public void deleteIndex() throws IOException {
         client.withTransportOptions(getOptions())
             .indices()
@@ -194,13 +187,6 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
                    .aggregations(Aggregations.generateAggregations(username, customer))
                    .from(offset)
                    .size(size)
-                   .build();
-    }
-
-    private static SearchRequest constructSearchRequest(String id) {
-        return new SearchRequest.Builder()
-                   .index(NVI_CANDIDATES_INDEX)
-                   .query(new QueryStringQuery.Builder().fields("identifier").query(id).build()._toQuery())
                    .build();
     }
 }

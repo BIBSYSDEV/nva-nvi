@@ -16,5 +16,4 @@ public interface SearchClient<T> {
 
     void deleteIndex() throws IOException;
 
-    SearchResponse<T> searchDocumentById(String id) throws IOException;
 }

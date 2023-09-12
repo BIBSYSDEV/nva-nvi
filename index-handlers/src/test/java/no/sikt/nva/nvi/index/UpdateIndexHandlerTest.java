@@ -4,7 +4,6 @@ import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.Opera
 import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType.MODIFY;
 import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType.REMOVE;
 import static java.util.UUID.randomUUID;
-import static no.sikt.nva.nvi.index.UpdateIndexHandler.APPROVAL_UPDATED_MESSAGE;
 import static no.sikt.nva.nvi.index.utils.ExpandedResourceGenerator.createExpandedResource;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
@@ -41,6 +40,7 @@ import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
+import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.Approval;
@@ -55,16 +55,12 @@ import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.opensearch.client.opensearch._types.ShardStatistics;
 import org.opensearch.client.opensearch.core.SearchResponse;
-import org.opensearch.client.opensearch.core.search.Hit;
-import org.opensearch.client.opensearch.core.search.HitsMetadata;
-import org.opensearch.client.opensearch.core.search.TotalHits;
-import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 
 class UpdateIndexHandlerTest extends LocalDynamoTest {
 
@@ -147,11 +143,13 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldUpdateDocumentWithNewApprovalWhenIncomingEventIsApproval() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        var candidate = randomCandidate();
+        var candidate = applicableAssignedCandidate();
         when(nviService.findById(any())).thenReturn(Optional.of(candidate));
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbApprovalEvent.json")), CONTEXT);
+        var expectedDocument = constructExpectedDocument(candidate);
+        var document = openSearchClient.getDocuments().get(0);
 
-        assertThat(appender.getMessages(), containsString(APPROVAL_UPDATED_MESSAGE));
+        assertThat(document, is(equalTo(expectedDocument)));
     }
 
     @ParameterizedTest
@@ -211,12 +209,19 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                          new DbPublicationDate("2023", "01", "03"));
     }
 
-    private static List<Approval> constructExpectedApprovals() {
-        return List.of(new Approval(
-            "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
-            Map.of("nb", "Sikt – Kunnskapssektorens tjenesteleverandør",
-                   "en", "Sikt - Norwegian Agency for Shared Services in Education and Research"),
-            ApprovalStatus.PENDING, null));
+    private static List<Approval> constructExpectedApprovals(Candidate candidate) {
+        return candidate.approvalStatuses().stream()
+            .map(approval -> new Approval(approval.institutionId().toString(), getLabels(),
+                                          ApprovalStatus.fromValue(approval.status().getValue()),
+                                          Optional.of(approval).map(DbApprovalStatus::assignee).map(DbUsername::value)
+                                              .orElse(null)))
+            .toList();
+    }
+
+    @NotNull
+    private static Map<String, String> getLabels() {
+        return Map.of("nb", "Sikt – Kunnskapssektorens tjenesteleverandør",
+                      "en", "Sikt - Norwegian Agency for Shared Services in Education and Research");
     }
 
     private static PublicationDetails constructPublicationDetails() {
@@ -271,9 +276,21 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()));
     }
 
+    private static Candidate applicableAssignedCandidate() {
+        var applicableCandidate = randomCandidateBuilder().applicable(true).build();
+        return new Candidate(randomUUID(), applicableCandidate, List.of(approvalWithAssignee()));
+    }
+
     private static DbApprovalStatus getApprovalStatus() {
         return DbApprovalStatus.builder()
                    .institutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
+                   .status(DbStatus.PENDING).build();
+    }
+
+    private static DbApprovalStatus approvalWithAssignee() {
+        return DbApprovalStatus.builder()
+                   .institutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
+                   .assignee(new DbUsername(randomString()))
                    .status(DbStatus.PENDING).build();
     }
 
@@ -293,7 +310,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         return new NviCandidateIndexDocument.Builder()
                    .withContext(URI.create("https://bibsysdev.github.io/src/nvi-context.json"))
                    .withIdentifier(candidate.identifier().toString())
-                   .withApprovals(constructExpectedApprovals())
+                   .withApprovals(constructExpectedApprovals(candidate))
                    .withPublicationDetails(constructPublicationDetails())
                    .withNumberOfApprovals(candidate.approvalStatuses().size())
                    .withPoints(sumPoint(candidate.candidate().points()))
@@ -331,11 +348,6 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         }
 
         @Override
-        public SearchResponse<NviCandidateIndexDocument> searchDocumentById(String id) {
-            return searchResponse(id);
-        }
-
-        @Override
         public void deleteIndex() {
 
         }
@@ -344,38 +356,5 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
             return documents;
         }
 
-        private SearchResponse<NviCandidateIndexDocument> searchResponse(String identifier) {
-            var document = new NviCandidateIndexDocument.Builder()
-                               .withIdentifier(identifier)
-                               .withApprovals(List.of(approval()))
-                               .build();
-            return new SearchResponse.Builder<NviCandidateIndexDocument>()
-                       .took(1)
-                       .timedOut(false)
-                       .shards(getShardStatistics())
-                       .hits(getNviCandidateIndexDocumentHitsMetadata(identifier, document)).build();
-        }
-
-        private static ShardStatistics getShardStatistics() {
-            return new ShardStatistics.Builder().failed(0).successful(1).total(1).build();
-        }
-
-        private static HitsMetadata<NviCandidateIndexDocument> getNviCandidateIndexDocumentHitsMetadata(
-            String identifier, NviCandidateIndexDocument document) {
-            return new HitsMetadata.Builder<NviCandidateIndexDocument>().total(new TotalHits.Builder().relation(
-                    TotalHitsRelation.Eq).value(1).build())
-                       .hits(List.of(new Hit.Builder<NviCandidateIndexDocument>().source(document)
-                                         .index(randomString())
-                                         .id(identifier)
-                                         .build()))
-                       .build();
-        }
-
-        private Approval approval() {
-            return new Approval.Builder()
-                       .withId("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0")
-                       .withApprovalStatus(ApprovalStatus.PENDING)
-                       .build();
-        }
     }
 }
