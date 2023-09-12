@@ -64,6 +64,10 @@ public class NviService {
         return nviPeriodRepository.findByPublishingYear(publishingYear).orElseThrow();
     }
 
+    public List<DbNviPeriod> getPeriods() {
+        return nviPeriodRepository.getPeriods();
+    }
+
     public Candidate updateApprovalStatus(UUID identifier, DbApprovalStatus newStatus) {
         var approvalByIdAndInstitutionId =
             nviCandidateRepository.findApprovalByIdAndInstitutionId(identifier, newStatus.institutionId())

@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.service;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomPublicationDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -277,9 +278,9 @@ public class NviServiceTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var institutionUri = randomUri();
         var candidateData = createDbCandidate(identifier, institutionUri);
-        var dbApprobalStatus = List.of(createDbApprovalStatus(institutionUri));
+        var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
         var fullCandidate = nviCandidateRepository.create(candidateData,
-                                                          dbApprobalStatus);
+                                                          dbApprovalStatus);
         var updatedCandidate = createDbCandidate(identifier, institutionUri);
         nviCandidateRepository.update(fullCandidate.identifier(), updatedCandidate,
                                       fullCandidate.approvalStatuses());
@@ -330,6 +331,15 @@ public class NviServiceTest extends LocalDynamoTest {
         var candidateWith1Note = nviService.deleteNote(candidateWith2Notes.identifier(),
                                                        candidateWith2Notes.notes().get(0).noteId());
         assertThat(candidateWith1Note.notes(), hasSize(1));
+    }
+
+    @Test
+    void shouldReturnPeriodsOnlyWhenFetchingPeriods() {
+        nviService.upsertCandidate(randomCandidate());
+        nviService.createPeriod(createPeriod("2100"));
+        nviService.createPeriod(createPeriod("2101"));
+        var periods = nviService.getPeriods();
+        assertThat(periods, hasSize(2));
     }
 
     private static DbNviPeriod createPeriod(String publishingYear) {
