@@ -5,7 +5,6 @@ import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.Opera
 import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType.REMOVE;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.index.utils.ExpandedResourceGenerator.createExpandedResource;
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -40,6 +39,7 @@ import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
+import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.Approval;
@@ -49,6 +49,7 @@ import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument.Builder;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
@@ -120,7 +121,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldDoNothingWhenIncomingEventIsRemove() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate()));
+        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate(false)));
 
         handler.handleRequest(createEvent(REMOVE, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
 
@@ -130,11 +131,23 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldDoNothingWhenConsumedRecordIsNotCandidate() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate()));
+        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate(true)));
 
         handler.handleRequest(createEvent(REMOVE, toRecord("dynamoDbUniqueEntryEvent.json")), CONTEXT);
 
         assertThat(appender.getMessages(), containsString(StringUtils.EMPTY_STRING));
+    }
+
+    @Test
+    void shouldUpdateDocumentWithNewApprovalWhenIncomingEventIsApproval() throws JsonProcessingException {
+        when(storageReader.read(any())).thenReturn(CANDIDATE);
+        var candidate = applicableAssignedCandidate();
+        when(nviService.findById(any())).thenReturn(Optional.of(candidate));
+        handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbApprovalEvent.json")), CONTEXT);
+        var expectedDocument = constructExpectedDocument(candidate);
+        var document = openSearchClient.getDocuments().get(0);
+
+        assertThat(document, is(equalTo(expectedDocument)));
     }
 
     @ParameterizedTest
@@ -154,7 +167,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     private static Candidate createApplicableCandidateWithPublicationDate(DbPublicationDate date) {
-        return new Candidate(UUID.randomUUID(), randomCandidateBuilder(true)
+        return new Candidate(UUID.randomUUID(), TestUtils.randomCandidateBuilder(true)
+                                                    .applicable(true)
                                                     .creators(Collections.emptyList())
                                                     .publicationDate(date).build(),
                              Collections.emptyList(),
@@ -194,12 +208,18 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                          new DbPublicationDate("2023", "01", "03"));
     }
 
-    private static List<Approval> constructExpectedApprovals() {
-        return List.of(new Approval(
-            "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
-            Map.of("nb", "Sikt – Kunnskapssektorens tjenesteleverandør",
-                   "en", "Sikt - Norwegian Agency for Shared Services in Education and Research"),
-            ApprovalStatus.PENDING, null));
+    private static List<Approval> constructExpectedApprovals(Candidate candidate) {
+        return candidate.approvalStatuses().stream()
+            .map(approval -> new Approval(approval.institutionId().toString(), getLabels(),
+                                          ApprovalStatus.fromValue(approval.status().getValue()),
+                                          Optional.of(approval).map(DbApprovalStatus::assignee).map(DbUsername::value)
+                                              .orElse(null)))
+            .toList();
+    }
+
+    private static Map<String, String> getLabels() {
+        return Map.of("nb", "Sikt – Kunnskapssektorens tjenesteleverandør",
+                      "en", "Sikt - Norwegian Agency for Shared Services in Education and Research");
     }
 
     private static PublicationDetails constructPublicationDetails() {
@@ -244,24 +264,31 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .withNewImage(Map.of(randomString(), new AttributeValue(randomString())));
     }
 
-    private static Candidate randomCandidate() {
-        var candidate = randomCandidateBuilder(true);
-        return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()), Collections.emptyList());
-    }
-
     private static Candidate randomCandidate(boolean applicable) {
-        var candidate = randomCandidateBuilder(applicable);
+        var candidate = TestUtils.randomCandidateBuilder(applicable);
         return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()),Collections.emptyList());
     }
 
     private static Candidate randomApplicableCandidate() {
-        var applicableCandidate = randomCandidateBuilder(true).build();
+        var applicableCandidate = TestUtils.randomCandidateBuilder(true).build();
         return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()),Collections.emptyList());
+    }
+
+    private static Candidate applicableAssignedCandidate() {
+        var applicableCandidate = TestUtils.randomCandidateBuilder(true).build();
+        return new Candidate(randomUUID(), applicableCandidate, List.of(approvalWithAssignee()),Collections.emptyList());
     }
 
     private static DbApprovalStatus getApprovalStatus() {
         return DbApprovalStatus.builder()
                    .institutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
+                   .status(DbStatus.PENDING).build();
+    }
+
+    private static DbApprovalStatus approvalWithAssignee() {
+        return DbApprovalStatus.builder()
+                   .institutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
+                   .assignee(new DbUsername(randomString()))
                    .status(DbStatus.PENDING).build();
     }
 
@@ -276,7 +303,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         return new NviCandidateIndexDocument.Builder()
                    .withContext(URI.create("https://bibsysdev.github.io/src/nvi-context.json"))
                    .withIdentifier(candidate.identifier().toString())
-                   .withApprovals(constructExpectedApprovals())
+                   .withApprovals(constructExpectedApprovals(candidate))
                    .withPublicationDetails(constructPublicationDetails())
                    .withNumberOfApprovals(candidate.approvalStatuses().size())
                    .withPoints(sumPoint(candidate.candidate().points()))
@@ -321,5 +348,6 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         public List<NviCandidateIndexDocument> getDocuments() {
             return documents;
         }
+
     }
 }

@@ -25,9 +25,11 @@ import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@JacocoGenerated
 public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
     private static final String CANDIDATE_TYPE = "CANDIDATE";
+    private static final String APPROVAL_TYPE = "APPROVAL_STATUS";
     private static final String PRIMARY_KEY_DELIMITER = "#";
     private static final String IDENTIFIER = "identifier";
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateIndexHandler.class);
@@ -37,7 +39,6 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     private final StorageReader<URI> storageReader;
     private final NviService nviService;
 
-    @JacocoGenerated
     public UpdateIndexHandler() {
         this(new S3StorageReader(EXPANDED_RESOURCES_BUCKET), defaultOpenSearchClient(), defaultNviService());
     }
@@ -52,8 +53,8 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
     public Void handleRequest(DynamodbEvent event, Context context) {
         event.getRecords().stream()
-            .filter(this::isCandidate)
             .filter(this::isUpdate)
+            .filter(this::isCandidateOrApproval)
             .forEach(this::updateIndex);
 
         return null;
@@ -85,7 +86,15 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         return candidate.candidate().applicable();
     }
 
-    private boolean isCandidate(DynamodbStreamRecord record) {
+    private boolean isCandidateOrApproval(DynamodbStreamRecord record) {
+        return isCandidate(record) || isApproval(record);
+    }
+
+    private static boolean isApproval(DynamodbStreamRecord record) {
+        return APPROVAL_TYPE.equals(extractRecordType(record));
+    }
+
+    private static boolean isCandidate(DynamodbStreamRecord record) {
         return CANDIDATE_TYPE.equals(extractRecordType(record));
     }
 
@@ -100,7 +109,6 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
     private boolean isUpdate(DynamodbStreamRecord record) {
         var eventType = getEventType(record);
-        LOGGER.info("Handling NVI DB Event: {} for {}", eventType, extractIdentifierFromOldImage(record));
         return OperationType.INSERT.equals(eventType) || OperationType.MODIFY.equals(eventType);
     }
 

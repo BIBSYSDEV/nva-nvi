@@ -14,4 +14,5 @@ public interface SearchClient<T> {
         throws IOException;
 
     void deleteIndex() throws IOException;
+
 }
