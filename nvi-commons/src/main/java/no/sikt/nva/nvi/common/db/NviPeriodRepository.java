@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.common.db;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
