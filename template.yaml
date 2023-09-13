@@ -441,7 +441,7 @@ Resources:
             Method: put
             RestApiId: !Ref ScientificIndexApi
 
-  CreateNotesHandler:
+  CreateNoteHandler:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: nvi-rest
@@ -462,6 +462,28 @@ Resources:
           Properties:
             Path: /candidate/{candidateIdentifier}/note
             Method: post
+            RestApiId: !Ref ScientificIndexApi
+  RemoveNoteHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.remove.RemoveNoteHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
+          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
+          COGNITO_HOST: !Ref CognitoAuthorizationUri
+          API_HOST: !Ref ApiDomain
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /candidate/{candidateIdentifier}/note/{noteIdentifier}
+            Method: delete
             RestApiId: !Ref ScientificIndexApi
 
   #============================= Database =========================================================
