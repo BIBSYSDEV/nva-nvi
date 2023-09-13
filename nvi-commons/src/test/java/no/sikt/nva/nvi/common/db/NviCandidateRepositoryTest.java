@@ -39,7 +39,7 @@ class NviCandidateRepositoryTest extends LocalDynamoTest {
         var created = nviCandidateRepository.create(originalCandidate, List.of());
         var newCandidate = originalCandidate.copy().publicationBucketUri(randomUri()).build();
         nviCandidateRepository.update(created.identifier(),newCandidate,List.of());
-        var fetched = nviCandidateRepository.findById(created.identifier()).get().candidate();
+        var fetched = nviCandidateRepository.findCandidateById(created.identifier()).get().candidate();
 
         assertThat(scanDB().count(), is(equalTo(2)));
         assertThat(fetched, is(not(equalTo(originalCandidate))));

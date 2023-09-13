@@ -35,14 +35,14 @@ public record NviPeriodDao(
     @DynamoDbPartitionKey
     @DynamoDbAttribute(HASH_KEY)
     public String primaryKeyHashKey() {
-        return String.join(DynamoEntryWithRangeKey.FIELD_DELIMITER, TYPE, identifier);
+        return TYPE;
     }
 
     @Override
     @DynamoDbSortKey
     @DynamoDbAttribute(SORT_KEY)
     public String primaryKeyRangeKey() {
-        return primaryKeyHashKey();
+        return String.join(DynamoEntryWithRangeKey.FIELD_DELIMITER, TYPE, identifier);
     }
 
     @Override

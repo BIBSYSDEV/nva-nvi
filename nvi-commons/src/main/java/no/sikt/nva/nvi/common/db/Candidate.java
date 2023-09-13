@@ -13,4 +13,38 @@ public record Candidate(
     List<DbNote> notes
 ) {
 
+    public static final class Builder {
+
+        private UUID identifier;
+        private DbCandidate candidate;
+        private List<DbApprovalStatus> approvalStatuses;
+        private List<DbNote> notes;
+
+        public Builder() {
+        }
+
+        public Builder withIdentifier(UUID identifier) {
+            this.identifier = identifier;
+            return this;
+        }
+
+        public Builder withCandidate(DbCandidate candidate) {
+            this.candidate = candidate;
+            return this;
+        }
+
+        public Builder withApprovalStatuses(List<DbApprovalStatus> approvalStatuses) {
+            this.approvalStatuses = approvalStatuses;
+            return this;
+        }
+
+        public Builder withNotes(List<DbNote> notes) {
+            this.notes = notes;
+            return this;
+        }
+
+        public Candidate build() {
+            return new Candidate(identifier, candidate, approvalStatuses, notes);
+        }
+    }
 }

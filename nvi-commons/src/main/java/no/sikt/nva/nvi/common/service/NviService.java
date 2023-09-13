@@ -63,17 +63,21 @@ public class NviService {
         return nviPeriodRepository.findByPublishingYear(publishingYear).orElseThrow();
     }
 
+    public List<DbNviPeriod> getPeriods() {
+        return nviPeriodRepository.getPeriods();
+    }
+
     public Candidate updateApprovalStatus(UUID identifier, DbApprovalStatus newStatus) {
         var approvalByIdAndInstitutionId =
             nviCandidateRepository.findApprovalByIdAndInstitutionId(identifier, newStatus.institutionId())
                 .map(oldStatus -> toUpdatedApprovalStatus(oldStatus, newStatus))
                 .orElseThrow();
         nviCandidateRepository.updateApprovalStatus(identifier, approvalByIdAndInstitutionId);
-        return nviCandidateRepository.getById(identifier);
+        return nviCandidateRepository.getCandidateById(identifier);
     }
 
     public Optional<Candidate> findById(UUID uuid) {
-        return nviCandidateRepository.findById(uuid);
+        return nviCandidateRepository.findCandidateById(uuid);
     }
 
     public Optional<Candidate> findByPublicationId(URI publicationId) {
@@ -84,16 +88,20 @@ public class NviService {
         if (nviCandidateRepository.exists(identifier)) {
             nviCandidateRepository.saveNote(identifier, dbNote);
         }
-        return nviCandidateRepository.findById(identifier).orElseThrow();
+        return nviCandidateRepository.findCandidateById(identifier).orElseThrow();
     }
 
-    public Candidate deleteNote(UUID candidateIdentifier, UUID noteIdentifier, String username) {
+    public Candidate deleteNote(UUID candidateIdentifier, UUID noteIdentifier, String requestUsername) {
         DbNote note = nviCandidateRepository.getNoteById(candidateIdentifier, noteIdentifier);
-        if (note.user().value().equals(username)) {
+        if (isNoteOwner(requestUsername, note)) {
             nviCandidateRepository.deleteNote(candidateIdentifier, noteIdentifier);
-            return nviCandidateRepository.findById(candidateIdentifier).orElseThrow();
+            return nviCandidateRepository.findCandidateById(candidateIdentifier).orElseThrow();
         }
         throw new IllegalArgumentException("User not allowed to remove others note.");
+    }
+
+    private static boolean isNoteOwner(String requestUsername, DbNote note) {
+        return note.user().value().equals(requestUsername);
     }
 
     private static boolean isInteger(String value) {
@@ -106,14 +114,17 @@ public class NviService {
         return period.publishingYear().length() != 4;
     }
 
-    private static List<DbApprovalStatus> generatePendingApprovalStatuses(
-        List<DbInstitutionPoints> institutionPointsList) {
-        return institutionPointsList.stream()
-                   .map(institutionPoints -> DbApprovalStatus.builder()
-                                                 .status(DbStatus.PENDING)
-                                                 .institutionId(institutionPoints.institutionId())
-                                                 .build())
+    private static List<DbApprovalStatus> generatePendingApprovalStatuses(List<DbInstitutionPoints> institutionPoints) {
+        return institutionPoints.stream()
+                   .map(NviService::toPendingApprovalStatus)
                    .toList();
+    }
+
+    private static DbApprovalStatus toPendingApprovalStatus(DbInstitutionPoints institutionPoints) {
+        return DbApprovalStatus.builder()
+                   .status(DbStatus.PENDING)
+                   .institutionId(institutionPoints.institutionId())
+                   .build();
     }
 
     private static DbApprovalStatus resetStatus(DbApprovalStatus oldApprovalStatus) {

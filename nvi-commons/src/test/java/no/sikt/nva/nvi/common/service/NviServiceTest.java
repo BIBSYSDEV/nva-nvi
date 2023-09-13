@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.service;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomPublicationDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -17,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -277,13 +279,13 @@ public class NviServiceTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var institutionUri = randomUri();
         var candidateData = createDbCandidate(identifier, institutionUri);
-        var dbApprobalStatus = List.of(createDbApprovalStatus(institutionUri));
+        var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
         var fullCandidate = nviCandidateRepository.create(candidateData,
-                                                          dbApprobalStatus);
+                                                          dbApprovalStatus);
         var updatedCandidate = createDbCandidate(identifier, institutionUri);
         nviCandidateRepository.update(fullCandidate.identifier(), updatedCandidate,
                                       fullCandidate.approvalStatuses());
-        var candidate1 = nviCandidateRepository.findById(fullCandidate.identifier());
+        var candidate1 = nviCandidateRepository.findCandidateById(fullCandidate.identifier());
         assertThat(candidate1.get().candidate(), is(not(fullCandidate.candidate())));
     }
 
@@ -301,9 +303,9 @@ public class NviServiceTest extends LocalDynamoTest {
 
     @Test
     void shouldBeAbleToAddMultipleNotesWhenNotesExist() {
-        var publicationIdentifier = UUID.randomUUID();
+        var candidateIdentifier = UUID.randomUUID();
         var institutionUri = randomUri();
-        var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
+        var candidateData = createDbCandidate(candidateIdentifier, institutionUri);
         var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
         var fullCandidate = nviCandidateRepository.create(candidateData,
                                                           dbApprovalStatus);
@@ -316,9 +318,9 @@ public class NviServiceTest extends LocalDynamoTest {
 
     @Test
     void shouldBeNotAbleToDeleteNoteWhenYouDidntCreateIt() {
-        var publicationIdentifier = UUID.randomUUID();
+        var candidateIdentifier = UUID.randomUUID();
         var institutionUri = randomUri();
-        var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
+        var candidateData = createDbCandidate(candidateIdentifier, institutionUri);
         var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
         var fullCandidate = nviCandidateRepository.create(candidateData,
                                                           dbApprovalStatus);
@@ -335,9 +337,9 @@ public class NviServiceTest extends LocalDynamoTest {
 
     @Test
     void shouldBeAbleToDeleteNoteWhenYouCreatedIt() {
-        var publicationIdentifier = UUID.randomUUID();
+        var candidateIdentifier = UUID.randomUUID();
         var institutionUri = randomUri();
-        var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
+        var candidateData = createDbCandidate(candidateIdentifier, institutionUri);
         var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
         var fullCandidate = nviCandidateRepository.create(candidateData,
                                                           dbApprovalStatus);
@@ -357,6 +359,32 @@ public class NviServiceTest extends LocalDynamoTest {
                                                        noteIdentifier,
                                                        user.value());
         assertThat(candidateWith1Note.notes(), hasSize(1));
+    }
+
+    @Test
+    void shouldReturnPeriodsOnlyWhenFetchingPeriods() {
+        nviService.upsertCandidate(randomCandidate());
+        nviService.createPeriod(createPeriod("2100"));
+        nviService.createPeriod(createPeriod("2101"));
+        var periods = nviService.getPeriods();
+        assertThat(periods, hasSize(2));
+    }
+
+    @Test
+    void shouldResetApprovalsButKeepNotesWhenUpdatingExistingCandidate() {
+        var candidate = nviService.upsertCandidate(randomCandidate());
+        var createdNotes = nviService.createNote(candidate.orElseThrow().identifier(), randomDbNote()).notes();
+        var creators = candidate.get().candidate().creators();
+        var updatedCreators = new ArrayList<>(creators);
+        updatedCreators.add(new DbCreator(randomUri(), List.of(randomUri())));
+        var updatedCandidate = candidate.get().candidate().copy().creators(updatedCreators).build();
+        var persistedCandidate = nviService.upsertCandidate(updatedCandidate);
+        var actualNotes = persistedCandidate.orElseThrow().notes();
+        assertThat(actualNotes, is(equalTo(createdNotes)));
+    }
+
+    private static DbNote randomDbNote() {
+        return DbNote.builder().text(randomString()).user(randomUsername()).build();
     }
 
     private static DbNviPeriod createPeriod(String publishingYear) {

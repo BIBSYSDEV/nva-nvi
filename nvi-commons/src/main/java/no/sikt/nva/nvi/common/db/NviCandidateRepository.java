@@ -48,120 +48,115 @@ public class NviCandidateRepository extends DynamoRepository {
         var transactionBuilder = buildTransaction(approvalStatuses, candidate, identifier, uniqueness);
 
         this.client.transactWriteItems(transactionBuilder.build());
-        var candidateObj = candidateTable.getItem(candidate);
-
-        return new Candidate(candidateObj.identifier(), candidateObj.candidate(),
-                             getApprovalStatuses(approvalStatusTable, candidateObj.identifier()), List.of());
+        var candidateDao = candidateTable.getItem(candidate);
+        return toCandidate(candidateDao);
     }
 
-    public Candidate update(UUID identifier, DbCandidate dbCandidate,
-                            List<DbApprovalStatus> approvalStatusList) {
+    public Candidate update(UUID identifier, DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatusList) {
         var candidate = CandidateDao.builder().identifier(identifier).candidate(dbCandidate).build();
-        var approvalStatuses = approvalStatusList.stream().map(a -> new ApprovalStatusDao(identifier, a)).toList();
+        var approvalStatuses = approvalStatusList.stream().map(approval -> approval.toDao(identifier)).toList();
         var transaction = TransactWriteItemsEnhancedRequest.builder();
         transaction.addPutItem(candidateTable, candidate);
         approvalStatuses.forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
         // Maybe we need to remove the rows first, but preferably override
         client.transactWriteItems(transaction.build());
-        return new Candidate(identifier, dbCandidate, approvalStatusList, List.of());
+        return new Candidate.Builder().withIdentifier(identifier)
+                   .withCandidate(dbCandidate)
+                   .withApprovalStatuses(approvalStatusList)
+                   .withNotes(getNotes(identifier))
+                   .build();
     }
 
-    public Optional<Candidate> findById(UUID id) {
-        var queryObj = new CandidateDao(id, DbCandidate.builder().build());
-        var fetched = this.candidateTable.getItem(queryObj);
-        return Optional.ofNullable(fetched).map(
-            candidateDao -> new Candidate(id, candidateDao.candidate(), getApprovalStatuses(approvalStatusTable, id),
-                                          getNotes(id))
-        );
+    public Optional<Candidate> findCandidateById(UUID candidateIdentifier) {
+        return Optional.of(new CandidateDao(candidateIdentifier, DbCandidate.builder().build()))
+                   .map(candidateTable::getItem)
+                   .map(this::toCandidate);
     }
 
-    public Candidate getById(UUID id) {
-        var candidateDao = this.candidateTable.getItem(candidateKey(id));
-        var approvalStatus = getApprovalStatuses(approvalStatusTable, id);
-
-        return new Candidate(id, candidateDao.candidate(), approvalStatus, List.of());
+    public Candidate getCandidateById(UUID candidateIdentifier) {
+        return toCandidate(this.candidateTable.getItem(candidateKey(candidateIdentifier)));
     }
 
     public Optional<Candidate> findByPublicationId(URI publicationId) {
-        var query = QueryConditional.keyEqualTo(Key.builder()
-                                                    .partitionValue(publicationId.toString())
-                                                    .sortValue(publicationId.toString())
-                                                    .build());
-
-        var result = this.publicationIdIndex.query(query);
-
-        return result.stream()
-                   .map(Page::items)
-                   .flatMap(Collection::stream)
-                   .map(
-                       candidateDao -> new Candidate(candidateDao.identifier(), candidateDao.candidate(),
-                                                     getApprovalStatuses(approvalStatusTable,
-                                                                         candidateDao.identifier()), List.of()))
-                   .findFirst();
+        var candidateByPublicationIdQuery = findCandidateByPublicationIdQuery(publicationId);
+        var result = this.publicationIdIndex.query(candidateByPublicationIdQuery);
+        return result.stream().map(Page::items).flatMap(Collection::stream).map(this::toCandidate).findFirst();
     }
 
     public Optional<DbApprovalStatus> findApprovalByIdAndInstitutionId(UUID identifier, URI uri) {
-        var query = QueryConditional.keyEqualTo(
-            Key.builder().partitionValue(CandidateDao.createPartitionKey(identifier.toString()))
-                .sortValue(ApprovalStatusDao.createSortKey(uri.toString())).build()
-        );
+        var query = findApprovalByCandidateIdAndInstitutionId(identifier, uri);
         var result = approvalStatusTable.query(query);
-        return result.items()
-                   .stream()
-                   .map(ApprovalStatusDao::approvalStatus)
-                   .findFirst();
+        return result.items().stream().map(ApprovalStatusDao::approvalStatus).findFirst();
     }
 
-    public void updateApprovalStatus(UUID identifier, DbApprovalStatus newStatus) {
-        var insert = new ApprovalStatusDao(identifier, newStatus);
-        approvalStatusTable.updateItem(insert);
+    public void updateApprovalStatus(UUID identifier, DbApprovalStatus newApproval) {
+        approvalStatusTable.updateItem(newApproval.toDao(identifier));
     }
 
     public boolean exists(UUID identifier) {
-        return findById(identifier).isPresent();
+        return findCandidateById(identifier).isPresent();
     }
 
     public void saveNote(UUID candidateIdentifier, DbNote dbNote) {
-        noteTable.putItem(NoteDao.builder()
-                              .identifier(candidateIdentifier)
-                              .note(DbNote.builder()
-                                        .noteId(UUID.randomUUID())
-                                        .text(dbNote.text())
-                                        .user(dbNote.user())
-                                        .createdDate(Instant.now())
-                                        .build())
-                              .build());
+        noteTable.putItem(newNoteDao(candidateIdentifier, dbNote));
+    }
+
+    private static NoteDao newNoteDao(UUID candidateIdentifier, DbNote dbNote) {
+        return NoteDao.builder()
+                   .identifier(candidateIdentifier)
+                   .note(newDbNote(dbNote))
+                   .build();
+    }
+
+    private static DbNote newDbNote(DbNote dbNote) {
+        return DbNote.builder()
+                   .noteId(UUID.randomUUID())
+                   .text(dbNote.text())
+                   .user(dbNote.user())
+                   .createdDate(Instant.now())
+                   .build();
     }
 
     public void deleteNote(UUID candidateIdentifier, UUID noteIdentifier) {
-        noteTable.deleteItem(
-            Key.builder().partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
-                .sortValue(NoteDao.createSortKey(noteIdentifier.toString())).build());
+        noteTable.deleteItem(noteKey(candidateIdentifier, noteIdentifier));
     }
 
     public DbNote getNoteById(UUID candidateIdentifier, UUID noteIdentifier) {
-        return Optional.ofNullable(noteTable.getItem(Key.builder()
-                                                         .partitionValue(
-                                                             CandidateDao.createPartitionKey(
-                                                                 candidateIdentifier.toString()))
-                                                         .sortValue(NoteDao.createSortKey(noteIdentifier.toString()))
-                                                         .build()))
+        return Optional.of(noteKey(candidateIdentifier, noteIdentifier))
+                   .map(noteTable::getItem)
                    .map(NoteDao::note)
                    .orElseThrow(NoSuchElementException::new);
     }
 
-    private static Key candidateKey(UUID id) {
+    private static QueryConditional findCandidateByPublicationIdQuery(URI publicationId) {
+        return QueryConditional.keyEqualTo(
+            Key.builder().partitionValue(publicationId.toString()).sortValue(publicationId.toString()).build());
+    }
+
+    private static QueryConditional findApprovalByCandidateIdAndInstitutionId(UUID identifier, URI uri) {
+        return QueryConditional.keyEqualTo(Key.builder()
+                                               .partitionValue(CandidateDao.createPartitionKey(identifier.toString()))
+                                               .sortValue(ApprovalStatusDao.createSortKey(uri.toString()))
+                                               .build());
+    }
+
+    private static Key noteKey(UUID candidateIdentifier, UUID noteIdentifier) {
         return Key.builder()
-                   .partitionValue(CandidateDao.createPartitionKey(id.toString()))
-                   .sortValue(CandidateDao.createPartitionKey(id.toString()))
+                   .partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
+                   .sortValue(NoteDao.createSortKey(noteIdentifier.toString()))
+                   .build();
+    }
+
+    private static Key candidateKey(UUID candidateIdentifier) {
+        return Key.builder()
+                   .partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
+                   .sortValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
                    .build();
     }
 
     private static QueryConditional queryCandidateParts(UUID id, String type) {
-        return sortBeginsWith(Key.builder()
-                                  .partitionValue(CandidateDao.createPartitionKey(id.toString()))
-                                  .sortValue(type)
-                                  .build());
+        return sortBeginsWith(
+            Key.builder().partitionValue(CandidateDao.createPartitionKey(id.toString())).sortValue(type).build());
     }
 
     private static <T> TransactPutItemEnhancedRequest<T> insertTransaction(T insert, Class<T> clazz) {
@@ -171,8 +166,16 @@ public class NviCandidateRepository extends DynamoRepository {
                    .build();
     }
 
-    private List<DbNote> getNotes(UUID id) {
-        return noteTable.query(queryCandidateParts(id, NoteDao.TYPE))
+    private Candidate toCandidate(CandidateDao candidateDao) {
+        return new Candidate.Builder().withIdentifier(candidateDao.identifier())
+                   .withCandidate(candidateDao.candidate())
+                   .withApprovalStatuses(getApprovalStatuses(approvalStatusTable, candidateDao.identifier()))
+                   .withNotes(getNotes(candidateDao.identifier()))
+                   .build();
+    }
+
+    private List<DbNote> getNotes(UUID candidateIdentifier) {
+        return noteTable.query(queryCandidateParts(candidateIdentifier, NoteDao.TYPE))
                    .items()
                    .stream()
                    .map(NoteDao::note)
@@ -181,8 +184,7 @@ public class NviCandidateRepository extends DynamoRepository {
 
     private List<DbApprovalStatus> getApprovalStatuses(DynamoDbTable<ApprovalStatusDao> approvalStatusTable,
                                                        UUID identifier) {
-        return approvalStatusTable.query(
-                queryCandidateParts(identifier, ApprovalStatusDao.TYPE))
+        return approvalStatusTable.query(queryCandidateParts(identifier, ApprovalStatusDao.TYPE))
                    .items()
                    .stream()
                    .map(ApprovalStatusDao::approvalStatus)
@@ -195,11 +197,10 @@ public class NviCandidateRepository extends DynamoRepository {
 
         transactionBuilder.addPutItem(this.candidateTable, insertTransaction(candidate, CandidateDao.class));
 
-        approvalStatuses
-            .stream()
-            .map(as -> new ApprovalStatusDao(identifier, as))
-            .forEach(as -> transactionBuilder.addPutItem(this.approvalStatusTable,
-                                                         insertTransaction(as, ApprovalStatusDao.class)));
+        approvalStatuses.stream()
+            .map(approval -> approval.toDao(identifier))
+            .forEach(approval -> transactionBuilder.addPutItem(this.approvalStatusTable,
+                                                               insertTransaction(approval, ApprovalStatusDao.class)));
         transactionBuilder.addPutItem(this.uniquenessTable,
                                       insertTransaction(uniqueness, CandidateUniquenessEntryDao.class));
         return transactionBuilder;

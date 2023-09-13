@@ -55,6 +55,40 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
+    get:
+      description: 'Get Nvi Periods'
+      security:
+        - CognitoUserPool: [
+          'https://api.nva.unit.no/scopes/backend',
+          'https://api.nva.unit.no/scopes/frontend',
+          'aws.cognito.signin.user.admin',
+        ]
+      x-amazon-apigateway-request-validator: validate_body
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviPeriodsHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        '200':
+          description: "Periods fetched"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NviPeriods"
+        '401':
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '500':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
     put:
       requestBody:
         required: true
@@ -361,6 +395,59 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /candidate/{candidateIdentifier}/note/{noteIdentifier}:
+    delete:
+      parameters:
+        - in: path
+          name: candidateIdentifier
+          description: The identifier of the candidate
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: noteIdentifier
+          description: The identifier of the note
+          required: true
+          schema:
+            type: string
+      security:
+        - CognitoUserPool: [
+          'https://api.nva.unit.no/scopes/backend',
+          'https://api.nva.unit.no/scopes/frontend',
+          'aws.cognito.signin.user.admin',
+        ]
+      x-amazon-apigateway-request-validator: validate_body
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RemoveNoteHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        '200':
+          description: "Note deleted"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NviCandidateResponse"
+        '401':
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '404':
+          description: "Not found - candidate to update does not exist"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '500':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
 
 components:
   schemas:
@@ -386,6 +473,10 @@ components:
       required:
         - publishingYear
         - reportingDate
+    NviPeriods:
+      type: array
+      items:
+        $ref: '#/components/schemas/NviPeriod'
     CandidateSearchResponse:
       type: object
       properties:
