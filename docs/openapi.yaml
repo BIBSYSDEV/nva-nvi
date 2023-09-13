@@ -361,7 +361,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-  /candidate/{candidateIdentifer}/note/{noteIdentifier}:
+  /candidate/{candidateIdentifier}/note/{noteIdentifier}:
     delete:
       parameters:
         - in: path
