@@ -8,6 +8,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
@@ -101,8 +102,8 @@ public class NviCandidateRepository extends DynamoRepository {
 
     public Optional<DbApprovalStatus> findApprovalByIdAndInstitutionId(UUID identifier, URI uri) {
         var query = QueryConditional.keyEqualTo(
-            Key.builder().partitionValue(CandidateDao.pk0(identifier.toString()))
-                .sortValue(ApprovalStatusDao.sk0(uri.toString())).build()
+            Key.builder().partitionValue(CandidateDao.createPartitionKey(identifier.toString()))
+                .sortValue(ApprovalStatusDao.createSortKey(uri.toString())).build()
         );
         var result = approvalStatusTable.query(query);
         return result.items()
@@ -133,20 +134,32 @@ public class NviCandidateRepository extends DynamoRepository {
     }
 
     public void deleteNote(UUID candidateIdentifier, UUID noteIdentifier) {
-        noteTable.deleteItem(Key.builder().partitionValue(CandidateDao.pk0(candidateIdentifier.toString()))
-                                 .sortValue(NoteDao.sk0(noteIdentifier.toString())).build());
+        noteTable.deleteItem(
+            Key.builder().partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
+                .sortValue(NoteDao.createSortKey(noteIdentifier.toString())).build());
+    }
+
+    public DbNote getNoteById(UUID candidateIdentifier, UUID noteIdentifier) {
+        return Optional.ofNullable(noteTable.getItem(Key.builder()
+                                                         .partitionValue(
+                                                             CandidateDao.createPartitionKey(
+                                                                 candidateIdentifier.toString()))
+                                                         .sortValue(NoteDao.createSortKey(noteIdentifier.toString()))
+                                                         .build()))
+                   .map(NoteDao::note)
+                   .orElseThrow(NoSuchElementException::new);
     }
 
     private static Key candidateKey(UUID id) {
         return Key.builder()
-                   .partitionValue(CandidateDao.pk0(id.toString()))
-                   .sortValue(CandidateDao.pk0(id.toString()))
+                   .partitionValue(CandidateDao.createPartitionKey(id.toString()))
+                   .sortValue(CandidateDao.createPartitionKey(id.toString()))
                    .build();
     }
 
     private static QueryConditional queryCandidateParts(UUID id, String type) {
         return sortBeginsWith(Key.builder()
-                                  .partitionValue(CandidateDao.pk0(id.toString()))
+                                  .partitionValue(CandidateDao.createPartitionKey(id.toString()))
                                   .sortValue(type)
                                   .build());
     }

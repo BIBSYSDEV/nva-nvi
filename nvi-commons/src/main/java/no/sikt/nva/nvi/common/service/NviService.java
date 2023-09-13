@@ -10,7 +10,6 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodRepository;
-
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
@@ -92,9 +91,17 @@ public class NviService {
         return nviCandidateRepository.findById(identifier).orElseThrow();
     }
 
-    public Candidate deleteNote(UUID candidateIdentifier, UUID noteIdentifier) {
-        nviCandidateRepository.deleteNote(candidateIdentifier, noteIdentifier);
-        return nviCandidateRepository.findById(candidateIdentifier).orElseThrow();
+    public Candidate deleteNote(UUID candidateIdentifier, UUID noteIdentifier, String requestUsername) {
+        DbNote note = nviCandidateRepository.getNoteById(candidateIdentifier, noteIdentifier);
+        if (isNoteOwner(requestUsername, note)) {
+            nviCandidateRepository.deleteNote(candidateIdentifier, noteIdentifier);
+            return nviCandidateRepository.findById(candidateIdentifier).orElseThrow();
+        }
+        throw new IllegalArgumentException("User not allowed to remove others note.");
+    }
+
+    private static boolean isNoteOwner(String requestUsername, DbNote note) {
+        return note.user().value().equals(requestUsername);
     }
 
     private static boolean isInteger(String value) {
@@ -136,6 +143,18 @@ public class NviService {
                    .build();
     }
 
+    private static DbApprovalStatus updateStatus(DbApprovalStatus oldApprovalStatus,
+                                                 DbApprovalStatus newApprovalStatus) {
+        return switch (newApprovalStatus.status()) {
+            case APPROVED, REJECTED -> finalizeStatus(oldApprovalStatus, newApprovalStatus);
+            case PENDING -> resetStatus(oldApprovalStatus);
+        };
+    }
+
+    private static boolean updateIsAssignee(DbApprovalStatus oldApprovalStatus, DbApprovalStatus newApprovalStatus) {
+        return oldApprovalStatus.status().equals(newApprovalStatus.status());
+    }
+
     private DbNviPeriod injectCreatedBy(DbNviPeriod period) {
         return period.copy()
                    .createdBy(getPeriod(period.publishingYear()).createdBy())
@@ -161,18 +180,6 @@ public class NviService {
         } else {
             return updateStatus(oldApprovalStatus, newApprovalStatus);
         }
-    }
-
-    private static DbApprovalStatus updateStatus(DbApprovalStatus oldApprovalStatus,
-                                                        DbApprovalStatus newApprovalStatus) {
-        return switch (newApprovalStatus.status()) {
-            case APPROVED, REJECTED -> finalizeStatus(oldApprovalStatus, newApprovalStatus);
-            case PENDING -> resetStatus(oldApprovalStatus);
-        };
-    }
-
-    private static boolean updateIsAssignee(DbApprovalStatus oldApprovalStatus, DbApprovalStatus newApprovalStatus) {
-        return oldApprovalStatus.status().equals(newApprovalStatus.status());
     }
 
     private DbApprovalStatus updateAssignee(DbApprovalStatus oldApprovalStatus, DbApprovalStatus newApprovalStatus) {

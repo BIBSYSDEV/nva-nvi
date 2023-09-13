@@ -16,7 +16,7 @@ import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.JacocoGenerated;
 
-public class CreateNoteHandler extends ApiGatewayHandler<NviNotesRequest, CandidateResponse> {
+public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, CandidateResponse> {
 
     private final NviService service;
 
@@ -26,12 +26,12 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNotesRequest, Candid
     }
 
     public CreateNoteHandler(NviService service) {
-        super(NviNotesRequest.class);
+        super(NviNoteRequest.class);
         this.service = service;
     }
 
     @Override
-    protected CandidateResponse processInput(NviNotesRequest input, RequestInfo requestInfo, Context context)
+    protected CandidateResponse processInput(NviNoteRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
         var username = RequestUtil.getUsername(requestInfo);
@@ -42,11 +42,11 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNotesRequest, Candid
     }
 
     @Override
-    protected Integer getSuccessStatusCode(NviNotesRequest input, CandidateResponse output) {
+    protected Integer getSuccessStatusCode(NviNoteRequest input, CandidateResponse output) {
         return HttpURLConnection.HTTP_OK;
     }
 
-    private static DbNote getNote(NviNotesRequest input, DbUsername username) {
+    private static DbNote getNote(NviNoteRequest input, DbUsername username) {
         return DbNote.builder()
                    .text(input.note())
                    .user(new DbUsername(username.value()))
