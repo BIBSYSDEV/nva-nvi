@@ -67,10 +67,10 @@ public class NviServiceTest extends LocalDynamoTest {
         var candidate = createExpectedCandidate(identifier, verifiedCreators, instanceType,
                                                 randomLevel, publicationDate, institutionPoints, true);
 
-        var createdCandidate = nviService.upsertCandidate(candidate).get();
+        var createdCandidate = nviService.upsertCandidate(candidate).orElseThrow();
         var createdCandidateId = createdCandidate.identifier();
 
-        var fetchedCandidate = nviService.findById(createdCandidateId).get().candidate();
+        var fetchedCandidate = nviService.findById(createdCandidateId).orElseThrow().candidate();
 
         assertThat(fetchedCandidate, is(equalTo(candidate)));
     }
@@ -94,13 +94,13 @@ public class NviServiceTest extends LocalDynamoTest {
                                                        randomLevel, publicationDate,
                                                        institutionPoints, true);
 
-        var originalUpserted = nviService.upsertCandidate(expectedCandidate).get();
-        var updatedUpserted = nviService.upsertCandidate(updatedCandidate).get();
+        var originalUpserted = nviService.upsertCandidate(expectedCandidate).orElseThrow();
+        var updatedUpserted = nviService.upsertCandidate(updatedCandidate).orElseThrow();
         assertThat(updatedUpserted, is(not(equalTo(originalUpserted))));
 
         var createdCandidateId = originalUpserted.identifier();
 
-        var fetchedCandidate = nviService.findById(createdCandidateId).get().candidate();
+        var fetchedCandidate = nviService.findById(createdCandidateId).orElseThrow().candidate();
 
         assertThat(fetchedCandidate, is(equalTo(updatedCandidate)));
     }
@@ -117,9 +117,10 @@ public class NviServiceTest extends LocalDynamoTest {
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType,
                                                         randomLevel, publicationDate,
                                                         institutionPoints, true);
-        nviService.upsertCandidate(expectedCandidate).get().identifier();
+        nviService.upsertCandidate(expectedCandidate);
 
-        var fetchedCandidate = nviService.findByPublicationId(generatePublicationId(identifier)).get().candidate();
+        var fetchedCandidate = nviService.findByPublicationId(generatePublicationId(identifier))
+                                   .orElseThrow().candidate();
 
         assertThat(fetchedCandidate, is(equalTo(expectedCandidate)));
     }
@@ -136,7 +137,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType,
                                                         randomLevel, publicationDate,
                                                         institutionPoints, true);
-        nviService.upsertCandidate(expectedCandidate).get().identifier();
+        nviService.upsertCandidate(expectedCandidate);
 
         var items = scanDB().items().size();
 
@@ -161,7 +162,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var fetchedCandidate = nviCandidateRepository.findByPublicationId(generatePublicationId(identifier)).map(
             Candidate::candidate);
 
-        assertThat(fetchedCandidate.get(), is(equalTo(expectedCandidate)));
+        assertThat(fetchedCandidate.orElseThrow(), is(equalTo(expectedCandidate)));
     }
 
     @Test
@@ -286,7 +287,7 @@ public class NviServiceTest extends LocalDynamoTest {
         nviCandidateRepository.update(fullCandidate.identifier(), updatedCandidate,
                                       fullCandidate.approvalStatuses());
         var candidate1 = nviCandidateRepository.findCandidateById(fullCandidate.identifier());
-        assertThat(candidate1.get().candidate(), is(not(fullCandidate.candidate())));
+        assertThat(candidate1.orElseThrow().candidate(), is(not(fullCandidate.candidate())));
     }
 
     @Test
@@ -332,7 +333,7 @@ public class NviServiceTest extends LocalDynamoTest {
                                                                                  candidateWith2Notes.notes()
                                                                                      .get(0)
                                                                                      .noteId(), randomString()));
-        assertThat(nviService.findById(fullCandidate.identifier()).get().notes(), hasSize(2));
+        assertThat(nviService.findById(fullCandidate.identifier()).orElseThrow().notes(), hasSize(2));
     }
 
     @Test
@@ -374,13 +375,16 @@ public class NviServiceTest extends LocalDynamoTest {
     void shouldResetApprovalsButKeepNotesWhenUpdatingExistingCandidate() {
         var candidate = nviService.upsertCandidate(randomCandidate());
         var createdNotes = nviService.createNote(candidate.orElseThrow().identifier(), randomDbNote()).notes();
-        var creators = candidate.get().candidate().creators();
-        var updatedCreators = new ArrayList<>(creators);
-        updatedCreators.add(new DbCreator(randomUri(), List.of(randomUri())));
-        var updatedCandidate = candidate.get().candidate().copy().creators(updatedCreators).build();
-        var persistedCandidate = nviService.upsertCandidate(updatedCandidate);
+        var persistedCandidate = nviService.upsertCandidate(updateCandidate(candidate.orElseThrow()));
         var actualNotes = persistedCandidate.orElseThrow().notes();
         assertThat(actualNotes, is(equalTo(createdNotes)));
+    }
+
+    private static DbCandidate updateCandidate(Candidate candidate) {
+        var creators = candidate.candidate().creators();
+        var updatedCreators = new ArrayList<>(creators);
+        updatedCreators.add(new DbCreator(randomUri(), List.of(randomUri())));
+        return candidate.candidate().copy().creators(updatedCreators).build();
     }
 
     private static DbNote randomDbNote() {
