@@ -78,15 +78,19 @@ public class NviCandidateRepository extends DynamoRepository {
     }
 
     public Optional<Candidate> findByPublicationId(URI publicationId) {
-        var candidateByPublicationIdQuery = findCandidateByPublicationIdQuery(publicationId);
-        var result = this.publicationIdIndex.query(candidateByPublicationIdQuery);
-        return result.stream().map(Page::items).flatMap(Collection::stream).map(this::toCandidate).findFirst();
+        return this.publicationIdIndex.query(findCandidateByPublicationIdQuery(publicationId)).stream()
+                   .map(Page::items)
+                   .flatMap(Collection::stream)
+                   .map(this::toCandidate)
+                   .findFirst();
     }
 
     public Optional<DbApprovalStatus> findApprovalByIdAndInstitutionId(UUID identifier, URI uri) {
-        var query = findApprovalByCandidateIdAndInstitutionId(identifier, uri);
-        var result = approvalStatusTable.query(query);
-        return result.items().stream().map(ApprovalStatusDao::approvalStatus).findFirst();
+        return approvalStatusTable.query(findApprovalByCandidateIdAndInstitutionId(identifier, uri))
+                   .items()
+                   .stream()
+                   .map(ApprovalStatusDao::approvalStatus)
+                   .findFirst();
     }
 
     public void updateApprovalStatus(UUID identifier, DbApprovalStatus newApproval) {
@@ -129,15 +133,22 @@ public class NviCandidateRepository extends DynamoRepository {
     }
 
     private static QueryConditional findCandidateByPublicationIdQuery(URI publicationId) {
-        return QueryConditional.keyEqualTo(
-            Key.builder().partitionValue(publicationId.toString()).sortValue(publicationId.toString()).build());
+        return QueryConditional.keyEqualTo(candidateByPublicationIdKey(publicationId));
+    }
+
+    private static Key candidateByPublicationIdKey(URI publicationId) {
+        return Key.builder().partitionValue(publicationId.toString()).sortValue(publicationId.toString()).build();
     }
 
     private static QueryConditional findApprovalByCandidateIdAndInstitutionId(UUID identifier, URI uri) {
-        return QueryConditional.keyEqualTo(Key.builder()
-                                               .partitionValue(CandidateDao.createPartitionKey(identifier.toString()))
-                                               .sortValue(ApprovalStatusDao.createSortKey(uri.toString()))
-                                               .build());
+        return QueryConditional.keyEqualTo(approvalByCandidateIdAndInstitutionIdKey(identifier, uri));
+    }
+
+    private static Key approvalByCandidateIdAndInstitutionIdKey(UUID identifier, URI uri) {
+        return Key.builder()
+                   .partitionValue(CandidateDao.createPartitionKey(identifier.toString()))
+                   .sortValue(ApprovalStatusDao.createSortKey(uri.toString()))
+                   .build();
     }
 
     private static Key noteKey(UUID candidateIdentifier, UUID noteIdentifier) {
