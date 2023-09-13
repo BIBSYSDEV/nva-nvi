@@ -87,13 +87,17 @@ public class NviService {
         return nviCandidateRepository.findById(identifier).orElseThrow();
     }
 
-    public Candidate deleteNote(UUID candidateIdentifier, UUID noteIdentifier, String username) {
+    public Candidate deleteNote(UUID candidateIdentifier, UUID noteIdentifier, String requestUsername) {
         DbNote note = nviCandidateRepository.getNoteById(candidateIdentifier, noteIdentifier);
-        if (note.user().value().equals(username)) {
+        if (isNoteOwner(requestUsername, note)) {
             nviCandidateRepository.deleteNote(candidateIdentifier, noteIdentifier);
             return nviCandidateRepository.findById(candidateIdentifier).orElseThrow();
         }
         throw new IllegalArgumentException("User not allowed to remove others note.");
+    }
+
+    private static boolean isNoteOwner(String requestUsername, DbNote note) {
+        return note.user().value().equals(requestUsername);
     }
 
     private static boolean isInteger(String value) {

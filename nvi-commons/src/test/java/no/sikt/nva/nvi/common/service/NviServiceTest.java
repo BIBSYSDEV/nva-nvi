@@ -301,9 +301,9 @@ public class NviServiceTest extends LocalDynamoTest {
 
     @Test
     void shouldBeAbleToAddMultipleNotesWhenNotesExist() {
-        var publicationIdentifier = UUID.randomUUID();
+        var candidateIdentifier = UUID.randomUUID();
         var institutionUri = randomUri();
-        var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
+        var candidateData = createDbCandidate(candidateIdentifier, institutionUri);
         var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
         var fullCandidate = nviCandidateRepository.create(candidateData,
                                                           dbApprovalStatus);
@@ -316,9 +316,9 @@ public class NviServiceTest extends LocalDynamoTest {
 
     @Test
     void shouldBeNotAbleToDeleteNoteWhenYouDidntCreateIt() {
-        var publicationIdentifier = UUID.randomUUID();
+        var candidateIdentifier = UUID.randomUUID();
         var institutionUri = randomUri();
-        var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
+        var candidateData = createDbCandidate(candidateIdentifier, institutionUri);
         var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
         var fullCandidate = nviCandidateRepository.create(candidateData,
                                                           dbApprovalStatus);
@@ -335,9 +335,9 @@ public class NviServiceTest extends LocalDynamoTest {
 
     @Test
     void shouldBeAbleToDeleteNoteWhenYouCreatedIt() {
-        var publicationIdentifier = UUID.randomUUID();
+        var candidateIdentifier = UUID.randomUUID();
         var institutionUri = randomUri();
-        var candidateData = createDbCandidate(publicationIdentifier, institutionUri);
+        var candidateData = createDbCandidate(candidateIdentifier, institutionUri);
         var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
         var fullCandidate = nviCandidateRepository.create(candidateData,
                                                           dbApprovalStatus);
