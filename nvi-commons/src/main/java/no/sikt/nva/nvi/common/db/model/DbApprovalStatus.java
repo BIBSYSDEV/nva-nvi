@@ -2,6 +2,8 @@ package no.sikt.nva.nvi.common.db.model;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.UUID;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
@@ -14,6 +16,11 @@ public record DbApprovalStatus(URI institutionId,
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    @DynamoDbIgnore
+    public ApprovalStatusDao toDao(UUID candidateIdentifier) {
+        return new ApprovalStatusDao(candidateIdentifier, this);
     }
 
     @DynamoDbIgnore
