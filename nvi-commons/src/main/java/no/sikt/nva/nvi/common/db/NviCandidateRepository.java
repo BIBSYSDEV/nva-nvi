@@ -17,7 +17,6 @@ import no.sikt.nva.nvi.common.db.model.DbNote;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
-import software.amazon.awssdk.enhanced.dynamodb.model.DeleteItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactPutItemEnhancedRequest;
@@ -106,11 +105,19 @@ public class NviCandidateRepository extends DynamoRepository {
         noteTable.putItem(newNoteDao(candidateIdentifier, dbNote));
     }
 
-    public Candidate deleteCandidate(DbCandidate dbCandidate) {
-        var request = DeleteItemEnhancedRequest.builder()
-                          .key(candidateByPublicationIdKey(dbCandidate.publicationId()))
-                          .build();
-        return toCandidate(candidateTable.deleteItemWithResponse(request).attributes());
+    public Candidate updateCandidateAndRemoveApprovals(UUID identifier, DbCandidate dbCandidate,
+                                                       List<DbApprovalStatus> approvals) {
+        var candidate = CandidateDao.builder().identifier(identifier).candidate(dbCandidate).build();
+        var approvalStatuses = approvals.stream().map(approval -> approval.toDao(identifier)).toList();
+        var transaction = TransactWriteItemsEnhancedRequest.builder();
+        transaction.addPutItem(candidateTable, candidate);
+        approvalStatuses.forEach(approvalStatus -> transaction.addDeleteItem(approvalStatusTable, approvalStatus));
+        client.transactWriteItems(transaction.build());
+        return new Candidate.Builder().withIdentifier(identifier)
+                   .withCandidate(dbCandidate)
+                   .withApprovalStatuses(approvals)
+                   .withNotes(getNotes(identifier))
+                   .build();
     }
 
     private static NoteDao newNoteDao(UUID candidateIdentifier, DbNote dbNote) {

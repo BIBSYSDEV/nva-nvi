@@ -39,33 +39,20 @@ public class NviService {
 
     @JacocoGenerated //TODO Temporary for coverage
     public Optional<Candidate> upsertCandidate(DbCandidate dbCandidate) {
-        var existingCandidate = nviCandidateRepository.findByPublicationId(dbCandidate.publicationId());
-        if (isNewCandidate(dbCandidate, existingCandidate)) {
+        if (isNewCandidate(dbCandidate)) {
             return createCandidate(dbCandidate);
         }
-        if (isExistingCandidate(dbCandidate, existingCandidate)) {
+        if (isExistingCandidate(dbCandidate)) {
             return updateCandidate(dbCandidate);
         }
-        if (shouldBeDeleted(dbCandidate, existingCandidate)) {
-            return deleteCandidate(dbCandidate);
+        if (shouldBeDeleted(dbCandidate)) {
+            return updateCandidateToNotApplicable(dbCandidate);
         }
         return Optional.empty();
     }
 
-    private Optional<Candidate> deleteCandidate(DbCandidate dbCandidate) {
-        return Optional.of(nviCandidateRepository.deleteCandidate(dbCandidate));
-    }
-
-    private static boolean shouldBeDeleted(DbCandidate dbCandidate, Optional<Candidate> existingCandidate) {
-        return existingCandidate.isPresent() && !dbCandidate.applicable();
-    }
-
-    private static boolean isExistingCandidate(DbCandidate dbCandidate, Optional<Candidate> existingCandidate) {
-        return existingCandidate.isPresent() && dbCandidate.applicable();
-    }
-
-    private static boolean isNewCandidate(DbCandidate dbCandidate, Optional<Candidate> existingCandidate) {
-        return existingCandidate.isEmpty() && dbCandidate.applicable();
+    private boolean shouldBeDeleted(DbCandidate dbCandidate) {
+        return isExistingCandidate(dbCandidate.publicationId()) && !dbCandidate.applicable();
     }
 
     public DbNviPeriod createPeriod(DbNviPeriod period) {
@@ -225,15 +212,24 @@ public class NviService {
 
     private Optional<Candidate> updateCandidate(DbCandidate dbCandidate) {
         var existingCandidate = findByPublicationId(dbCandidate.publicationId()).orElseThrow();
-        //TODO: Reset NVI Candidates here. See https://unit.atlassian.net/browse/NP-45113;
-        return Optional.of(updateCandidate(existingCandidate.identifier(),
-                                           dbCandidate,
-                                           generatePendingApprovalStatuses(
-                                               dbCandidate.points())));
+        return Optional.of(updateCandidate(existingCandidate.identifier(), dbCandidate,
+                                           generatePendingApprovalStatuses(dbCandidate.points())));
     }
 
     private Candidate updateCandidate(UUID identifier, DbCandidate candidate, List<DbApprovalStatus> approvalStatuses) {
         return nviCandidateRepository.update(identifier, candidate, approvalStatuses);
+    }
+
+    private Optional<Candidate> updateCandidateToNotApplicable(DbCandidate dbCandidate) {
+        var existingCandidate = findByPublicationId(dbCandidate.publicationId()).orElseThrow();
+        return Optional.of(updateCandidateAndRemoveApprovals(existingCandidate.identifier(), dbCandidate,
+                                                             generatePendingApprovalStatuses(dbCandidate.points())));
+    }
+
+
+    private Candidate updateCandidateAndRemoveApprovals(UUID identifier, DbCandidate candidate,
+                                       List<DbApprovalStatus> approvalStatuses) {
+        return nviCandidateRepository.updateCandidateAndRemoveApprovals(identifier, candidate, approvalStatuses);
     }
 
     private void validatePeriod(DbNviPeriod period) {

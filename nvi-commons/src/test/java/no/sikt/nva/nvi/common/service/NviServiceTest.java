@@ -9,6 +9,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -198,7 +199,6 @@ public class NviServiceTest extends LocalDynamoTest {
         assertDoesNotThrow(() -> nviService.upsertCandidate(expectedCandidate));
     }
 
-    //TODO: Change test when nviService is implemented
     @Test
     void shouldCreateNviPeriod() {
         var period = createPeriod("2050");
@@ -381,12 +381,13 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldDeleteExistingCandidateWhenCandidateIsNoLongerApplicable() {
+    void shouldUpdateCandidateAndRemoveApprovalsWhenCandidateIsNoLongerApplicable() {
         var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
         var notApplicableCandidate = candidate.candidate().copy().applicable(false).build();
         nviService.upsertCandidate(notApplicableCandidate);
         var persistedCandidate = nviService.findCandidateById(candidate.identifier());
-        assertThat(persistedCandidate, is(Optional.empty()));
+        assertThat(persistedCandidate.orElseThrow().candidate().applicable(), is(false));
+        assertThat(persistedCandidate.orElseThrow().approvalStatuses(), is(empty()));
     }
 
     private static DbCandidate updateCandidate(Candidate candidate) {
