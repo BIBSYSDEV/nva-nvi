@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.events;
+package no.sikt.nva.nvi.events.model;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Map;
+import no.sikt.nva.nvi.events.CandidateDetails;
+import no.sikt.nva.nvi.events.CandidateStatus;
 
 @JsonAutoDetect(fieldVisibility = Visibility.ANY)
 @JsonSerialize

@@ -8,24 +8,33 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbNote;
+import no.sikt.nva.nvi.common.model.ListingResult;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactPutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest.Builder;
+import software.amazon.awssdk.enhanced.dynamodb.model.WriteBatch;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 public class NviCandidateRepository extends DynamoRepository {
 
+    public static final int BATCH_SIZE = 25;
     private final DynamoDbTable<CandidateDao> candidateTable;
     private final DynamoDbTable<CandidateUniquenessEntryDao> uniquenessTable;
     private final DynamoDbIndex<CandidateDao> publicationIdIndex;
@@ -39,6 +48,55 @@ public class NviCandidateRepository extends DynamoRepository {
         this.publicationIdIndex = this.candidateTable.index(SECONDARY_INDEX_PUBLICATION_ID);
         this.approvalStatusTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(ApprovalStatusDao.class));
         this.noteTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(NoteDao.class));
+    }
+
+    public ListingResult refresh(int pageSize, Map<String, AttributeValue> startMarker) {
+        var results = this.candidateTable.scan(createScanRequest(pageSize, startMarker))
+                          .items().stream().toList();
+        var s = IntStream.range(0, (results.size() + BATCH_SIZE - 1) / BATCH_SIZE)
+                    .mapToObj(i -> results.subList(i * BATCH_SIZE, Math.min((i + 1) * BATCH_SIZE, results.size())))
+                    .map(this::toBatchRequest)
+                    .map(client::batchWriteItem)
+                    .toList();
+        return ListingResult.builder()
+                   .withDatabaseEntries(results)
+                   .withTruncated(false)
+                   .withStartMarker(Map.of())
+                   .build();
+    }
+
+    private BatchWriteItemEnhancedRequest toBatchRequest(List<CandidateDao> results) {
+        return BatchWriteItemEnhancedRequest.builder()
+                   .writeBatches(toWriteBatches(results))
+                   .build();
+    }
+
+    private Collection<WriteBatch> toWriteBatches(List<CandidateDao> results) {
+        return results.stream().map(this::toWriteBatch).toList();
+    }
+
+    private WriteBatch toWriteBatch(CandidateDao dao) {
+        return WriteBatch.builder(CandidateDao.class)
+                   .mappedTableResource(this.candidateTable)
+                   .addPutItem(dao)
+                   .build();
+    }
+
+    private ScanEnhancedRequest createScanRequest(int pageSize, Map<String, AttributeValue> startMarker) {
+        return ScanEnhancedRequest.builder()
+                   .limit(pageSize)
+                   .exclusiveStartKey(startMarker)
+                   .filterExpression(filterExpressionToScanCandidates())
+                   .build();
+    }
+
+    private static Expression filterExpressionToScanCandidates() {
+        return Expression.builder()
+                   .expression("begins_with (#PK, :CANDIDATE) and begins_with (#RK, :CANDIDATE)")
+                   .expressionNames(Map.of("#PK", "PrimaryKeyHashKey",
+                                           "#RK", "PrimaryKeyRangeKey"))
+                   .expressionValues(Map.of(":CANDIDATE", AttributeValue.fromS("CANDIDATE")))
+                   .build();
     }
 
     public Candidate create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {

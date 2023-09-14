@@ -5,6 +5,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.Candidate;
@@ -16,8 +17,10 @@ import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
+import no.sikt.nva.nvi.common.model.ListingResult;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 public class NviService {
 
@@ -98,6 +101,10 @@ public class NviService {
             return nviCandidateRepository.findCandidateById(candidateIdentifier).orElseThrow();
         }
         throw new IllegalArgumentException("User not allowed to remove others note.");
+    }
+
+    public ListingResult refresh(int pageSize, Map<String, AttributeValue> startMarker) {
+        return nviCandidateRepository.refresh(pageSize, startMarker);
     }
 
     private static boolean isNoteOwner(String requestUsername, DbNote note) {

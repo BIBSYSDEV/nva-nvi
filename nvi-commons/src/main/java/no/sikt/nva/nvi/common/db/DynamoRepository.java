@@ -24,7 +24,6 @@ public class DynamoRepository {
         this.client = DynamoDbEnhancedClient.builder().dynamoDbClient(client).build();
     }
 
-
     private static String keyNotExistsCondition() {
         return String.format("attribute_not_exists(%s) AND attribute_not_exists(%s)",
                              PARTITION_KEY_NAME_PLACEHOLDER, SORT_KEY_NAME_PLACEHOLDER);
