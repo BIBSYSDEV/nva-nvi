@@ -39,12 +39,33 @@ public class NviService {
 
     @JacocoGenerated //TODO Temporary for coverage
     public Optional<Candidate> upsertCandidate(DbCandidate dbCandidate) {
-        if (isNewCandidate(dbCandidate)) {
+        var existingCandidate = nviCandidateRepository.findByPublicationId(dbCandidate.publicationId());
+        if (isNewCandidate(dbCandidate, existingCandidate)) {
             return createCandidate(dbCandidate);
-        } else if (isExistingCandidate(dbCandidate)) {
+        }
+        if (isExistingCandidate(dbCandidate, existingCandidate)) {
             return updateCandidate(dbCandidate);
         }
+        if (shouldBeDeleted(dbCandidate, existingCandidate)) {
+            return deleteCandidate(dbCandidate);
+        }
         return Optional.empty();
+    }
+
+    private Optional<Candidate> deleteCandidate(DbCandidate dbCandidate) {
+        return Optional.of(nviCandidateRepository.deleteCandidate(dbCandidate));
+    }
+
+    private static boolean shouldBeDeleted(DbCandidate dbCandidate, Optional<Candidate> existingCandidate) {
+        return existingCandidate.isPresent() && !dbCandidate.applicable();
+    }
+
+    private static boolean isExistingCandidate(DbCandidate dbCandidate, Optional<Candidate> existingCandidate) {
+        return existingCandidate.isPresent() && dbCandidate.applicable();
+    }
+
+    private static boolean isNewCandidate(DbCandidate dbCandidate, Optional<Candidate> existingCandidate) {
+        return existingCandidate.isEmpty() && dbCandidate.applicable();
     }
 
     public DbNviPeriod createPeriod(DbNviPeriod period) {
@@ -76,7 +97,7 @@ public class NviService {
         return nviCandidateRepository.getCandidateById(identifier);
     }
 
-    public Optional<Candidate> findById(UUID uuid) {
+    public Optional<Candidate> findCandidateById(UUID uuid) {
         return nviCandidateRepository.findCandidateById(uuid);
     }
 

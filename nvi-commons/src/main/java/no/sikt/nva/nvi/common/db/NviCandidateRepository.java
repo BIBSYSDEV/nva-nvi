@@ -17,6 +17,7 @@ import no.sikt.nva.nvi.common.db.model.DbNote;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.model.DeleteItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactPutItemEnhancedRequest;
@@ -103,6 +104,13 @@ public class NviCandidateRepository extends DynamoRepository {
 
     public void saveNote(UUID candidateIdentifier, DbNote dbNote) {
         noteTable.putItem(newNoteDao(candidateIdentifier, dbNote));
+    }
+
+    public Candidate deleteCandidate(DbCandidate dbCandidate) {
+        var request = DeleteItemEnhancedRequest.builder()
+                          .key(candidateByPublicationIdKey(dbCandidate.publicationId()))
+                          .build();
+        return toCandidate(candidateTable.deleteItemWithResponse(request).attributes());
     }
 
     private static NoteDao newNoteDao(UUID candidateIdentifier, DbNote dbNote) {
