@@ -47,8 +47,6 @@ import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument.Builder;
-import no.sikt.nva.nvi.index.model.Publication;
-import no.sikt.nva.nvi.index.model.Publication.Organization;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
@@ -100,7 +98,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldAddDocumentToIndexWhenIncomingEventIsInsertAndCandidateIsApplicableAndTopLevelOrgsIsAList() throws JsonProcessingException {
+    void shouldAddDocumentToIndexWhenIncomingEventIsInsertAndCandidateIsApplicableAndTopLevelOrgsIsAList()
+        throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE_WITH_TOP_LEVEL_ORGS_AS_LIST);
         var persistedCandidate = randomApplicableCandidate();
         when(nviService.findById(any())).thenReturn(Optional.of(persistedCandidate));

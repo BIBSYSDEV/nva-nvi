@@ -13,13 +13,13 @@ import java.util.List;
 import java.util.Map;
 import no.unit.nva.commons.json.JsonUtils;
 
-public class Publication {
+public class ExpandedResource {
 
     public static final String TOP_LEVEL_ORGANIZATION = "topLevelOrganization";
     private final List<Organization> topLevelOrganization;
 
     @JsonCreator
-    public Publication(@JsonProperty(TOP_LEVEL_ORGANIZATION) Object topLevelOrganization)
+    public ExpandedResource(@JsonProperty(TOP_LEVEL_ORGANIZATION) Object topLevelOrganization)
         throws JsonProcessingException {
         var string = dtoObjectMapper.writeValueAsString(topLevelOrganization);
         if (topLevelOrganization instanceof Map) {

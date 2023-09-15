@@ -16,7 +16,6 @@ import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -38,8 +37,8 @@ import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contexts;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.index.model.Publication;
-import no.sikt.nva.nvi.index.model.Publication.Organization;
+import no.sikt.nva.nvi.index.model.ExpandedResource;
+import no.sikt.nva.nvi.index.model.ExpandedResource.Organization;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 
 public final class NviCandidateIndexDocumentGenerator {
@@ -106,7 +105,8 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private static List<Organization> getTopLevelOrgs(String s) {
-        return attempt(() -> dtoObjectMapper.readValue(s, Publication.class)).orElseThrow().getTopLevelOrganization();
+        return attempt(() -> dtoObjectMapper.readValue(s, ExpandedResource.class)).orElseThrow()
+                   .getTopLevelOrganization();
     }
 
     private static Approval createApproval(Organization topLevelOrg,
