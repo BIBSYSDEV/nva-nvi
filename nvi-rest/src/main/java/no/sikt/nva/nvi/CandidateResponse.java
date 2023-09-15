@@ -1,8 +1,11 @@
 package no.sikt.nva.nvi;
 
+import static java.util.Objects.nonNull;
+import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -11,9 +14,11 @@ import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbNote;
+import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.fetch.ApprovalStatus;
 import no.sikt.nva.nvi.rest.fetch.InstitutionPoints;
 import no.sikt.nva.nvi.rest.fetch.Note;
+import no.sikt.nva.nvi.rest.model.ReportStatus;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -21,16 +26,26 @@ public record CandidateResponse(UUID id,
                                 URI publicationId,
                                 List<ApprovalStatus> approvalStatuses,
                                 List<InstitutionPoints> points,
-                                List<Note> notes) {
+                                List<Note> notes,
+                                String reportStatus) {
 
-    public static CandidateResponse fromCandidate(Candidate candidate) {
+    public static CandidateResponse fromCandidate(Candidate candidate, NviService service) {
         return CandidateResponse.builder()
                    .withId(candidate.identifier())
                    .withPublicationId(candidate.candidate().publicationId())
                    .withApprovalStatuses(mapToApprovalStatus(candidate))
                    .withPoints(mapToInstitutionPoints(candidate.candidate()))
                    .withNotes(mapToNotes(candidate.notes()))
+                   .withReportStatus(getReportStatus(candidate, service))
                    .build();
+    }
+
+    private static String getReportStatus(Candidate candidate, NviService service) {
+        var period = attempt(() -> service.getPeriod(candidate.candidate().publicationDate().year()))
+                         .orElse(failure -> null);
+        return nonNull(period) && Instant.now().isBefore(period.reportingDate())
+                   ? ReportStatus.REPORTABLE.getValue()
+                   : ReportStatus.NOT_REPORTABLE.getValue();
     }
 
     private static List<Note> mapToNotes(List<DbNote> dbNotes) {
@@ -80,6 +95,7 @@ public record CandidateResponse(UUID id,
         private List<ApprovalStatus> approvalStatuses = new ArrayList<>();
         private List<InstitutionPoints> points = new ArrayList<>();
         private List<Note> notes = new ArrayList<>();
+        private String reportStatus;
 
         private Builder() {
         }
@@ -109,8 +125,13 @@ public record CandidateResponse(UUID id,
             return this;
         }
 
+        public Builder withReportStatus(String reportStatus) {
+            this.reportStatus = reportStatus;
+            return this;
+        }
+
         public CandidateResponse build() {
-            return new CandidateResponse(id, publicationId, approvalStatuses, points, notes);
+            return new CandidateResponse(id, publicationId, approvalStatuses, points, notes, reportStatus);
         }
     }
 }

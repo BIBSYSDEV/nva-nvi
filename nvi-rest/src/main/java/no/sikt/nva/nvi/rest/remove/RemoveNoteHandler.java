@@ -45,7 +45,7 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateResponse
         return attempt(() -> service.deleteNote(UUID.fromString(candidateIdentifier),
                                                 UUID.fromString(noteIdentifier),
                                                 username.value()))
-                   .map(CandidateResponse::fromCandidate)
+                   .map(candidate -> CandidateResponse.fromCandidate(candidate, service))
                    .orElseThrow(handleFailure());
     }
 

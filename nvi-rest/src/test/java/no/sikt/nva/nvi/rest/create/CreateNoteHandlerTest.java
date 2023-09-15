@@ -2,25 +2,31 @@ package no.sikt.nva.nvi.rest.create;
 
 import static no.sikt.nva.nvi.test.TestUtils.randomApprovalStatus;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.randomUsername;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
+import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
@@ -66,6 +72,28 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         var body = gatewayResponse.getBodyObject(CandidateResponse.class);
         assertThat(body.notes().get(0).text(), is(equalTo(theNote)));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenCreatingNoteAfterReportingPeriodHasBeenClosed()
+        throws IOException {
+        var theNote = "The note";
+        var reportingYear = "2100";
+        mockPeriod(reportingYear);
+        var request = createRequest(UUID.randomUUID(), new NviNoteRequest(theNote));
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+    }
+
+    private void mockPeriod(String reportingYear) {
+        service = mock(NviService.class);
+        when(service.getPeriod(any()))
+            .thenReturn(new DbNviPeriod(reportingYear, Instant.now(), randomUsername(), randomUsername()));
+        when(service.findById(any()))
+            .thenReturn(Optional.of(new Candidate(UUID.randomUUID(), randomCandidate(), List.of(), List.of())));
+        handler = new CreateNoteHandler(service);
     }
 
     private InputStream createRequest(UUID identifier, NviNoteRequest body) throws JsonProcessingException {

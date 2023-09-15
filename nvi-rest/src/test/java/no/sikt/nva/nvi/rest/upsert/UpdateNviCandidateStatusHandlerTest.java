@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.rest.upsert;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -19,15 +20,19 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
+import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.fetch.ApprovalStatus;
+import no.sikt.nva.nvi.rest.model.ReportStatus;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -56,7 +61,8 @@ class UpdateNviCandidateStatusHandlerTest {
 
     @Test
     void shouldReturnUnauthorizedWhenMissingAccessRights() throws IOException {
-        handler.handleRequest(createRequestWithoutAccessRights(randomStatusRequest()), output, context);
+        when(nviService.findById(any())).thenReturn(candidateWithPublicationDate(randomString()));
+        handler.handleRequest(createRequestWithoutAccessRights(randomStatusRequest(randomUri())), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -70,27 +76,51 @@ class UpdateNviCandidateStatusHandlerTest {
         var innerStatus = DbStatus.parse(status.getValue());
         var request = createRequest(nviStatusRequest, institutionId);
         var response = mockServiceResponse(nviStatusRequest, innerStatus);
-        var approvalStatus = response.approvalStatuses()
-                                 .get(0);
         when(nviService.updateApprovalStatus(any(), any())).thenReturn(response);
-
+        when(nviService.findById(any())).thenReturn(candidateWithPublicationDate(randomString()));
         handler.handleRequest(request, output, context);
 
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         var bodyAsInstance = gatewayResponse.getBodyObject(CandidateResponse.class);
+        var approvalStatus = response.approvalStatuses().get(0);
         assertThat(bodyAsInstance,
                    is(equalTo(createResponse(nviStatusRequest, response, innerStatus, approvalStatus))));
     }
 
     @Test
     void shouldBeForbiddenToChangeStatusOfOtherInstitution() throws IOException {
-
-        var body = randomStatusRequest();
+        when(nviService.findById(any())).thenReturn(candidateWithPublicationDate(randomString()));
+        var body = randomStatusRequest(randomUri());
         var request = createRequest(body, randomUri());
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_FORBIDDEN)));
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_FORBIDDEN)));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenUpdatingStatusAfterReportingPeriodHasBeenClosed()
+        throws IOException {
+        var reportingYear = "2100";
+        var institutionId = randomUri();
+        when(nviService.findById(any())).thenReturn(candidateWithPublicationDate(reportingYear));
+        when(nviService.getPeriod(any())).thenReturn(getDbNviPeriod(reportingYear));
+        handler.handleRequest(createRequest(randomStatusRequest(institutionId), institutionId), output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+    }
+
+    private static DbNviPeriod getDbNviPeriod(String reportingYear) {
+        return new DbNviPeriod(reportingYear, Instant.now(), new DbUsername(randomString()),
+                               new DbUsername(randomString()));
+    }
+
+    private static Optional<Candidate> candidateWithPublicationDate(String reportingYear) {
+        var candidate = randomCandidate().copy()
+                                .publicationDate(DbPublicationDate.builder().year(reportingYear).build())
+                                .build();
+        return Optional.of(new Candidate(UUID.randomUUID(), candidate, List.of(), List.of()));
     }
 
     private static CandidateResponse createResponse(
@@ -104,6 +134,7 @@ class UpdateNviCandidateStatusHandlerTest {
                        List.of(createApprovalStatus(nviStatusRequest, status, approvalStatus)))
                    .withPoints(emptyList())
                    .withNotes(emptyList())
+                   .withReportStatus(ReportStatus.NOT_REPORTABLE.getValue())
                    .build();
     }
 
@@ -154,12 +185,13 @@ class UpdateNviCandidateStatusHandlerTest {
     private InputStream createRequestWithoutAccessRights(NviStatusRequest body) throws JsonProcessingException {
         return new HandlerRequestBuilder<NviStatusRequest>(JsonUtils.dtoObjectMapper)
                    .withBody(body)
+                   .withPathParameters(Map.of("candidateIdentifier", UUID.randomUUID().toString()))
                    .build();
     }
 
-    private NviStatusRequest randomStatusRequest() {
+    private NviStatusRequest randomStatusRequest(URI institutionId) {
         return new NviStatusRequest(UUID.randomUUID(),
-                                    randomUri(),
+                                    institutionId,
                                     NviApprovalStatus.APPROVED);
     }
 }

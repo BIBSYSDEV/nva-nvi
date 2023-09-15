@@ -6,7 +6,6 @@ import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.PARAM_CANDIDAT
 import static no.sikt.nva.nvi.rest.utils.RequestUtil.getUsername;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
-import java.net.URI;
 import java.time.Instant;
 import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
@@ -20,7 +19,10 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.ForbiddenException;
+import nva.commons.apigateway.exceptions.NotFoundException;
+import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
 
 public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatusRequest, CandidateResponse> {
@@ -40,27 +42,24 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
     @Override
     protected CandidateResponse processInput(NviStatusRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-        RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
-        var currentCustomer = requestInfo.getTopLevelOrgCristinId().orElseThrow();
-        verifyRequesteeIsCorrectCustomer(input.institutionId(), currentCustomer);
-
+        validateRequest(requestInfo, input);
+        var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(PARAM_CANDIDATE_IDENTIFIER));
         return attempt(() -> toStatus(input, getUsername(requestInfo)))
-                   .map(approvalStatus -> nviService.updateApprovalStatus(
-                       UUID.fromString(requestInfo.getPathParameter(PARAM_CANDIDATE_IDENTIFIER)),
-                       approvalStatus))
-                   .map(CandidateResponse::fromCandidate)
+                   .map(approvalStatus -> nviService.updateApprovalStatus(candidateIdentifier, approvalStatus))
+                   .map(candidate -> CandidateResponse.fromCandidate(candidate, nviService))
                    .orElseThrow(ExceptionMapper::map);
+    }
+
+    private void validateRequest(RequestInfo requestInfo, NviStatusRequest input)
+        throws UnauthorizedException, ForbiddenException, BadRequestException, NotFoundException {
+        RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
+        RequestUtil.validateCustomer(requestInfo, input.institutionId());
+        RequestUtil.validatePeriod(requestInfo, nviService);
     }
 
     @Override
     protected Integer getSuccessStatusCode(NviStatusRequest input, CandidateResponse output) {
         return HTTP_OK;
-    }
-
-    private void verifyRequesteeIsCorrectCustomer(URI institutionId, URI currentCustomerId) throws ForbiddenException {
-        if (!institutionId.toString().equals(currentCustomerId.toString())) {
-            throw new ForbiddenException();
-        }
     }
 
     private DbApprovalStatus toStatus(NviStatusRequest input, DbUsername username) {

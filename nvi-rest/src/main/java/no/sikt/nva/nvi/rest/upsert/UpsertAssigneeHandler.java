@@ -26,6 +26,8 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.apigateway.exceptions.BadRequestException;
+import nva.commons.apigateway.exceptions.ForbiddenException;
 import nva.commons.apigateway.exceptions.NotFoundException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
@@ -42,7 +44,6 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
     public static final String USERS_ROLES_PATH_PARAM = "users-roles";
     public static final String USERS_PATH_PARAM = "users";
     public static final String CONTENT_TYPE = "application/json";
-    public static final String CANDIDATE_NOT_FOUND_MESSAGE = "Candidate to update does not exist";
     private final RawContentRetriever uriRetriever;
     private final NviService nviService;
 
@@ -66,9 +67,9 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
         return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER))
                    .map(UUID::fromString)
                    .map(nviService::findById)
-                   .map(optional -> optional.orElseThrow(() -> new NotFoundException(CANDIDATE_NOT_FOUND_MESSAGE)))
+                   .map(Optional::orElseThrow)
                    .map(candidate -> updateApprovalStatus(input, candidate))
-                   .map(CandidateResponse::fromCandidate)
+                   .map(candidate1 -> CandidateResponse.fromCandidate(candidate1, nviService))
                    .orElseThrow(ExceptionMapper::map);
     }
 
@@ -85,18 +86,20 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
 
     private static DbApprovalStatus getApprovalStatus(Candidate candidate, ApprovalDto input) {
         return candidate.approvalStatuses().stream()
-                   .filter(approval -> getApprovalByInstutionId(input, approval.institutionId()))
+                   .filter(approval -> getApprovalByInstitutionId(input, approval.institutionId()))
                    .findFirst()
                    .orElseThrow();
     }
 
-    private static boolean getApprovalByInstutionId(ApprovalDto input, URI institutionId) {
+    private static boolean getApprovalByInstitutionId(ApprovalDto input, URI institutionId) {
         return institutionId.equals(input.institutionId());
     }
 
-    private void validateRequest(ApprovalDto input, RequestInfo requestInfo) throws UnauthorizedException {
+    private void validateRequest(ApprovalDto input, RequestInfo requestInfo)
+        throws UnauthorizedException, ForbiddenException, BadRequestException, NotFoundException {
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
-        hasSameCustomer(input, requestInfo);
+        RequestUtil.validateCustomer(requestInfo, input.institutionId());
+        RequestUtil.validatePeriod(requestInfo, nviService);
         if (nonNull(input.assignee())) {
             assigneeHasAccessRight(input.assignee());
         }
@@ -105,12 +108,6 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
     private void assigneeHasAccessRight(String assignee) throws UnauthorizedException {
         var user = fetchUser(assignee);
         if (!hasManageNviCandidateAccessRight(user)) {
-            throw new UnauthorizedException();
-        }
-    }
-
-    private static void hasSameCustomer(ApprovalDto input, RequestInfo requestInfo) throws UnauthorizedException {
-        if (!input.institutionId().equals(requestInfo.getTopLevelOrgCristinId().orElseThrow())) {
             throw new UnauthorizedException();
         }
     }

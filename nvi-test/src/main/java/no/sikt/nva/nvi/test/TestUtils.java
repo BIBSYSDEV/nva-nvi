@@ -77,7 +77,7 @@ public final class TestUtils {
                    .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))));
     }
 
-    public static DbCandidate randomApplicableCandidateBuilder() {
+    public static DbCandidate randomApplicableCandidate() {
         return DbCandidate.builder()
                    .publicationId(randomUri())
                    .publicationBucketUri(randomUri())
@@ -107,11 +107,6 @@ public final class TestUtils {
                    .modifiedBy(randomUsername())
                    .reportingDate(getNowWithMillisecondAccuracy())
                    .publishingYear(randomYear());
-    }
-
-    public static DbNviPeriod randomNviPeriod() {
-        return randomNviPeriodBuilder()
-                   .build();
     }
 
     public static DbApprovalStatus randomApprovalStatus() {

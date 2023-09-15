@@ -14,6 +14,9 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.apigateway.exceptions.BadRequestException;
+import nva.commons.apigateway.exceptions.NotFoundException;
+import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
 
 public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, CandidateResponse> {
@@ -33,12 +36,18 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
     @Override
     protected CandidateResponse processInput(NviNoteRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-        RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
+        validateRequest(requestInfo);
         var username = RequestUtil.getUsername(requestInfo);
         var candidateIdentifier = requestInfo.getPathParameter(PARAM_CANDIDATE_IDENTIFIER);
 
         var candidate = service.createNote(UUID.fromString(candidateIdentifier), getNote(input, username));
-        return CandidateResponse.fromCandidate(candidate);
+        return CandidateResponse.fromCandidate(candidate, service);
+    }
+
+    private void validateRequest(RequestInfo requestInfo)
+        throws UnauthorizedException, BadRequestException, NotFoundException {
+        RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
+        RequestUtil.validatePeriod(requestInfo, service);
     }
 
     @Override
