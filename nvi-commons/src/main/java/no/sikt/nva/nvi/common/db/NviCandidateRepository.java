@@ -43,7 +43,7 @@ public class NviCandidateRepository extends DynamoRepository {
 
     public Candidate create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
         var identifier = UUID.randomUUID();
-        var candidate = new CandidateDao(identifier, dbCandidate);
+        var candidate = constructCandidate(identifier, dbCandidate);
         var uniqueness = new CandidateUniquenessEntryDao(dbCandidate.publicationId().toString());
         var transactionBuilder = buildTransaction(approvalStatuses, candidate, identifier, uniqueness);
 
@@ -53,12 +53,11 @@ public class NviCandidateRepository extends DynamoRepository {
     }
 
     public Candidate update(UUID identifier, DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatusList) {
-        var candidate = CandidateDao.builder().identifier(identifier).candidate(dbCandidate).build();
+        var candidate = constructCandidate(identifier, dbCandidate);
         var approvalStatuses = approvalStatusList.stream().map(approval -> approval.toDao(identifier)).toList();
         var transaction = TransactWriteItemsEnhancedRequest.builder();
         transaction.addPutItem(candidateTable, candidate);
         approvalStatuses.forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
-        // Maybe we need to remove the rows first, but preferably override
         client.transactWriteItems(transaction.build());
         return new Candidate.Builder().withIdentifier(identifier)
                    .withCandidate(dbCandidate)
@@ -107,17 +106,26 @@ public class NviCandidateRepository extends DynamoRepository {
 
     public Candidate updateCandidateAndRemoveApprovals(UUID identifier, DbCandidate dbCandidate,
                                                        List<DbApprovalStatus> approvals) {
-        var candidate = CandidateDao.builder().identifier(identifier).candidate(dbCandidate).build();
-        var approvalStatuses = approvals.stream().map(approval -> approval.toDao(identifier)).toList();
-        var transaction = TransactWriteItemsEnhancedRequest.builder();
-        transaction.addPutItem(candidateTable, candidate);
-        approvalStatuses.forEach(approvalStatus -> transaction.addDeleteItem(approvalStatusTable, approvalStatus));
+        var candidate = constructCandidate(identifier, dbCandidate);
+        var transaction = constructTransaction(approvals, candidate);
         client.transactWriteItems(transaction.build());
         return new Candidate.Builder().withIdentifier(identifier)
                    .withCandidate(dbCandidate)
                    .withApprovalStatuses(approvals)
                    .withNotes(getNotes(identifier))
                    .build();
+    }
+
+    private Builder constructTransaction(List<DbApprovalStatus> approvals, CandidateDao candidate) {
+        var approvalStatuses = approvals.stream().map(approval -> approval.toDao(candidate.identifier())).toList();
+        var transaction = TransactWriteItemsEnhancedRequest.builder();
+        transaction.addPutItem(candidateTable, candidate);
+        approvalStatuses.forEach(approvalStatus -> transaction.addDeleteItem(approvalStatusTable, approvalStatus));
+        return transaction;
+    }
+
+    private static CandidateDao constructCandidate(UUID identifier, DbCandidate dbCandidate) {
+        return CandidateDao.builder().identifier(identifier).candidate(dbCandidate).build();
     }
 
     private static NoteDao newNoteDao(UUID candidateIdentifier, DbNote dbNote) {
