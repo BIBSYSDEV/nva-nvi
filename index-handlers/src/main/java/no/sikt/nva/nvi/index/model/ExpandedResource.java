@@ -37,13 +37,16 @@ public class ExpandedResource {
 
     public static class Organization {
 
+        public static final String ID = "id";
+        public static final String LABELS = "labels";
+        public static final String HAS_PART = "hasPart";
         private final String id;
         private final List<Organization> affiliations;
         private final Map<String, String> labels;
 
         @JsonCreator
-        private Organization(@JsonProperty("id") String id, @JsonProperty("hasPart") List<Organization> affiliations,
-                             @JsonProperty("labels") Map<String, String> labels) {
+        private Organization(@JsonProperty(ID) String id, @JsonProperty(HAS_PART) List<Organization> affiliations,
+                             @JsonProperty(LABELS) Map<String, String> labels) {
             this.id = id;
             this.affiliations = affiliations;
             this.labels = labels;

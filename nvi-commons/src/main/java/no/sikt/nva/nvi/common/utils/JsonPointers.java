@@ -2,8 +2,7 @@ package no.sikt.nva.nvi.common.utils;
 
 public final class JsonPointers {
 
-    public static final String JSON_PTR_TOP_LEVEL_ORG = "/topLevelOrganization";
-    public static final String JSON_PTR_HAS_PART = "/hasPart";
+
     public static final String JSON_PTR_CONTRIBUTOR = "/entityDescription/contributors";
     public static final String JSON_PTR_AFFILIATIONS = "/affiliations";
     public static final String JSON_PTR_ID = "/id";
@@ -36,7 +35,6 @@ public final class JsonPointers {
     public static final String JSON_PTR_YEAR = "/year";
     public static final String JSON_PTR_MONTH = "/month";
     public static final String JSON_PTR_DAY = "/day";
-    public static final String JSON_PTR_LABELS = "/labels";
     public static final String JSON_PTR_IDENTITY = "/identity";
     public static final String JSON_PTR_ROLE_TYPE = "/role/type";
     public static final String JSON_PTR_NAME = "/name";
