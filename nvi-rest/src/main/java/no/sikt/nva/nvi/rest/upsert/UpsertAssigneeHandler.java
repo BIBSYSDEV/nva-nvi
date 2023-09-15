@@ -65,7 +65,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
         validateRequest(input, requestInfo);
         return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER))
                    .map(UUID::fromString)
-                   .map(nviService::findById)
+                   .map(nviService::findCandidateById)
                    .map(optional -> optional.orElseThrow(() -> new NotFoundException(CANDIDATE_NOT_FOUND_MESSAGE)))
                    .map(candidate -> updateApprovalStatus(input, candidate))
                    .map(CandidateResponse::fromCandidate)

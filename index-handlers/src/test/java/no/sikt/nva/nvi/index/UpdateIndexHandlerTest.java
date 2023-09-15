@@ -87,7 +87,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     void shouldAddDocumentToIndexWhenIncomingEventIsInsertAndCandidateIsApplicable() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
         var persistedCandidate = randomApplicableCandidate();
-        when(nviService.findById(any())).thenReturn(Optional.of(persistedCandidate));
+        when(nviService.findCandidateById(any())).thenReturn(Optional.of(persistedCandidate));
         handler.handleRequest(createEvent(INSERT, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
         var document = openSearchClient.getDocuments().get(0);
         var expectedDocument = constructExpectedDocument(persistedCandidate);
@@ -100,7 +100,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
         var persistedCandidate = randomApplicableCandidate();
-        when(nviService.findById(any())).thenReturn(Optional.of(persistedCandidate));
+        when(nviService.findCandidateById(any())).thenReturn(Optional.of(persistedCandidate));
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
         var document = openSearchClient.getDocuments().get(0);
         var expectedDocument = constructExpectedDocument(persistedCandidate);
@@ -111,7 +111,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldRemoveFromIndexWhenIncomingEventIsModifyAndCandidateIsNotApplicable() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate(false)));
+        when(nviService.findCandidateById(any())).thenReturn(Optional.of(randomCandidate(false)));
 
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordNotApplicable.json")), CONTEXT);
 
@@ -121,7 +121,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldDoNothingWhenIncomingEventIsRemove() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate(false)));
+        when(nviService.findCandidateById(any())).thenReturn(Optional.of(randomCandidate(false)));
 
         handler.handleRequest(createEvent(REMOVE, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
 
@@ -131,7 +131,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldDoNothingWhenConsumedRecordIsNotCandidate() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(nviService.findById(any())).thenReturn(Optional.of(randomCandidate(true)));
+        when(nviService.findCandidateById(any())).thenReturn(Optional.of(randomCandidate(true)));
 
         handler.handleRequest(createEvent(REMOVE, toRecord("dynamoDbUniqueEntryEvent.json")), CONTEXT);
 
@@ -142,7 +142,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     void shouldUpdateDocumentWithNewApprovalWhenIncomingEventIsApproval() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
         var candidate = applicableAssignedCandidate();
-        when(nviService.findById(any())).thenReturn(Optional.of(candidate));
+        when(nviService.findCandidateById(any())).thenReturn(Optional.of(candidate));
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbApprovalEvent.json")), CONTEXT);
         var expectedDocument = constructExpectedDocument(candidate);
         var document = openSearchClient.getDocuments().get(0);
@@ -157,7 +157,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         var candidate = createApplicableCandidateWithPublicationDate(date);
         var expectedDocument = constructExpectedIndexDocument(date, candidate);
         when(storageReader.read(any())).thenReturn(createExpandedResource(expectedDocument));
-        when(nviService.findById(any())).thenReturn(Optional.of(candidate));
+        when(nviService.findCandidateById(any())).thenReturn(Optional.of(candidate));
 
         handler.handleRequest(createEvent(INSERT, createDynamoDbRecord(candidate)), CONTEXT);
 

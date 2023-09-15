@@ -50,7 +50,7 @@ class FetchNviCandidateHandlerTest {
 
         var candidateIdentifier = UUID.randomUUID();
         var input = getInput(candidateIdentifier);
-        when(service.findById(candidateIdentifier)).thenReturn(Optional.empty());
+        when(service.findCandidateById(candidateIdentifier)).thenReturn(Optional.empty());
         handler.handleRequest(input, output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
 
@@ -61,7 +61,7 @@ class FetchNviCandidateHandlerTest {
     void shouldReturnValidCandidateIfExists() throws IOException {
         var candidateId = UUID.randomUUID();
         var candidateWithIdentifier = getCandidate(candidateId, randomCandidate(), List.of());
-        when(service.findById(candidateId)).thenReturn(Optional.of(candidateWithIdentifier));
+        when(service.findCandidateById(candidateId)).thenReturn(Optional.of(candidateWithIdentifier));
         var input = getInput(candidateId);
         handler.handleRequest(input, output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
@@ -77,7 +77,7 @@ class FetchNviCandidateHandlerTest {
     void shouldHandleNullNotes() throws IOException {
         var candidateId = UUID.randomUUID();
         var candidate = getCandidate(candidateId, randomCandidateBuilder(true).build(), List.of());
-        when(service.findById(candidateId)).thenReturn(Optional.of(candidate));
+        when(service.findCandidateById(candidateId)).thenReturn(Optional.of(candidate));
         var input = getInput(candidateId);
         handler.handleRequest(input, output, CONTEXT);
         var gatewayResponse = getGatewayResponse();

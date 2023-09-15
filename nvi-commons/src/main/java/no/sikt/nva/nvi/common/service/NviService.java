@@ -41,10 +41,18 @@ public class NviService {
     public Optional<Candidate> upsertCandidate(DbCandidate dbCandidate) {
         if (isNewCandidate(dbCandidate)) {
             return createCandidate(dbCandidate);
-        } else if (isExistingCandidate(dbCandidate)) {
+        }
+        if (isExistingCandidate(dbCandidate)) {
             return updateCandidate(dbCandidate);
         }
+        if (shouldBeDeleted(dbCandidate)) {
+            return updateCandidateToNotApplicable(dbCandidate);
+        }
         return Optional.empty();
+    }
+
+    private boolean shouldBeDeleted(DbCandidate dbCandidate) {
+        return isExistingCandidate(dbCandidate.publicationId()) && !dbCandidate.applicable();
     }
 
     public DbNviPeriod createPeriod(DbNviPeriod period) {
@@ -76,7 +84,7 @@ public class NviService {
         return nviCandidateRepository.getCandidateById(identifier);
     }
 
-    public Optional<Candidate> findById(UUID uuid) {
+    public Optional<Candidate> findCandidateById(UUID uuid) {
         return nviCandidateRepository.findCandidateById(uuid);
     }
 
@@ -204,15 +212,24 @@ public class NviService {
 
     private Optional<Candidate> updateCandidate(DbCandidate dbCandidate) {
         var existingCandidate = findByPublicationId(dbCandidate.publicationId()).orElseThrow();
-        //TODO: Reset NVI Candidates here. See https://unit.atlassian.net/browse/NP-45113;
-        return Optional.of(updateCandidate(existingCandidate.identifier(),
-                                           dbCandidate,
-                                           generatePendingApprovalStatuses(
-                                               dbCandidate.points())));
+        return Optional.of(updateCandidate(existingCandidate.identifier(), dbCandidate,
+                                           generatePendingApprovalStatuses(dbCandidate.points())));
     }
 
     private Candidate updateCandidate(UUID identifier, DbCandidate candidate, List<DbApprovalStatus> approvalStatuses) {
         return nviCandidateRepository.update(identifier, candidate, approvalStatuses);
+    }
+
+    private Optional<Candidate> updateCandidateToNotApplicable(DbCandidate dbCandidate) {
+        var existingCandidate = findByPublicationId(dbCandidate.publicationId()).orElseThrow();
+        return Optional.of(updateCandidateRemovingApprovals(existingCandidate.identifier(), dbCandidate,
+                                                            generatePendingApprovalStatuses(dbCandidate.points())));
+    }
+
+
+    private Candidate updateCandidateRemovingApprovals(UUID identifier, DbCandidate candidate,
+                                                       List<DbApprovalStatus> approvalStatuses) {
+        return nviCandidateRepository.updateCandidateRemovingApprovals(identifier, candidate, approvalStatuses);
     }
 
     private void validatePeriod(DbNviPeriod period) {
