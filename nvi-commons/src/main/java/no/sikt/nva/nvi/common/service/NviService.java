@@ -222,14 +222,14 @@ public class NviService {
 
     private Optional<Candidate> updateCandidateToNotApplicable(DbCandidate dbCandidate) {
         var existingCandidate = findByPublicationId(dbCandidate.publicationId()).orElseThrow();
-        return Optional.of(updateCandidateAndRemoveApprovals(existingCandidate.identifier(), dbCandidate,
-                                                             generatePendingApprovalStatuses(dbCandidate.points())));
+        return Optional.of(updateCandidateRemovingApprovals(existingCandidate.identifier(), dbCandidate,
+                                                            generatePendingApprovalStatuses(dbCandidate.points())));
     }
 
 
-    private Candidate updateCandidateAndRemoveApprovals(UUID identifier, DbCandidate candidate,
-                                       List<DbApprovalStatus> approvalStatuses) {
-        return nviCandidateRepository.updateCandidateAndRemoveApprovals(identifier, candidate, approvalStatuses);
+    private Candidate updateCandidateRemovingApprovals(UUID identifier, DbCandidate candidate,
+                                                       List<DbApprovalStatus> approvalStatuses) {
+        return nviCandidateRepository.updateCandidateRemovingApprovals(identifier, candidate, approvalStatuses);
     }
 
     private void validatePeriod(DbNviPeriod period) {

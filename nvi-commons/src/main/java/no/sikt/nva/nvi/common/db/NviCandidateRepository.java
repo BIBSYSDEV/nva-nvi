@@ -104,8 +104,8 @@ public class NviCandidateRepository extends DynamoRepository {
         noteTable.putItem(newNoteDao(candidateIdentifier, dbNote));
     }
 
-    public Candidate updateCandidateAndRemoveApprovals(UUID identifier, DbCandidate dbCandidate,
-                                                       List<DbApprovalStatus> approvals) {
+    public Candidate updateCandidateRemovingApprovals(UUID identifier, DbCandidate dbCandidate,
+                                                      List<DbApprovalStatus> approvals) {
         var candidate = constructCandidate(identifier, dbCandidate);
         var transaction = constructTransaction(approvals, candidate);
         client.transactWriteItems(transaction.build());

@@ -381,7 +381,7 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldUpdateCandidateAndRemoveApprovalsWhenCandidateIsNoLongerApplicable() {
+    void shouldUpdateCandidateRemovingApprovalsWhenCandidateIsNoLongerApplicable() {
         var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
         var notApplicableCandidate = candidate.candidate().copy().applicable(false).build();
         nviService.upsertCandidate(notApplicableCandidate);
