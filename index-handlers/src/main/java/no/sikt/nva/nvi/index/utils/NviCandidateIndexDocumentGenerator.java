@@ -1,13 +1,11 @@
 package no.sikt.nva.nvi.index.utils;
 
-import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_DAY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_IDENTITY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_INSTANCE_TYPE;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_LABELS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MAIN_TITLE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MONTH;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_NAME;
@@ -34,11 +32,14 @@ import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
+import no.sikt.nva.nvi.common.utils.JsonPointers;
 import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contexts;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.Publication;
+import no.sikt.nva.nvi.index.model.Publication.Organization;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 
 public final class NviCandidateIndexDocumentGenerator {
@@ -50,8 +51,8 @@ public final class NviCandidateIndexDocumentGenerator {
     public static NviCandidateIndexDocument generateDocument(
         String resource, Candidate candidate) {
         return createNviCandidateIndexDocument(
-            attempt(() -> dtoObjectMapper.readTree(resource)).map(root -> root.at("/body")).orElseThrow(),
-            candidate);
+            attempt(() -> dtoObjectMapper.readTree(resource)).map(root -> root.at(JsonPointers.JSON_PTR_BODY))
+                .orElseThrow(), candidate);
     }
 
     private static NviCandidateIndexDocument createNviCandidateIndexDocument(
@@ -96,22 +97,23 @@ public final class NviCandidateIndexDocumentGenerator {
                    .orElse(null);
     }
 
-    private static Approval expandApprovals(JsonNode resource,
-                                            Approval approval) {
-        return getJsonNodeStream(resource, JSON_PTR_CONTRIBUTOR)
-                   .flatMap(contributor -> getJsonNodeStream(contributor, JSON_PTR_AFFILIATIONS))
-                   .filter(affiliation -> nonNull(affiliation.at(JSON_PTR_ID)))
-                   .filter(affiliation -> extractId(affiliation).equals(approval.id()))
-                   .findFirst()
-                   .map(node -> createApproval(node, approval))
-                   .orElse(null);
+    private static Approval expandApprovals(JsonNode resource, Approval approval) {
+        List<Organization> topLevelOrgs = getTopLevelOrgs(resource.toString());
+        var topLevelOrg = topLevelOrgs.stream()
+            .filter(topLevelOrganizations -> topLevelOrganizations.hasAffiliation(approval.id()))
+            .findFirst().orElseThrow();
+        return createApproval(topLevelOrg, approval);
     }
 
-    private static Approval createApproval(JsonNode affiliation,
+    private static List<Organization> getTopLevelOrgs(String s) {
+        return attempt(() -> dtoObjectMapper.readValue(s, Publication.class)).orElseThrow().getTopLevelOrganization();
+    }
+
+    private static Approval createApproval(Organization topLevelOrg,
                                            Approval approval) {
         return new Approval.Builder()
-                   .withId(extractId(affiliation))
-                   .withLabels(convertToMap(affiliation.at(JSON_PTR_LABELS)))
+                   .withId(topLevelOrg.getId())
+                   .withLabels(topLevelOrg.getLabels())
                    .withApprovalStatus(approval.approvalStatus())
                    .withAssignee(approval.assignee())
                    .build();
@@ -162,11 +164,6 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static Stream<JsonNode> getJsonNodeStream(JsonNode jsonNode, String jsonPtr) {
         return StreamSupport.stream(jsonNode.at(jsonPtr).spliterator(), false);
-    }
-
-    private static Map<String, String> convertToMap(JsonNode node) {
-        return dtoObjectMapper.convertValue(node, new TypeReference<>() {
-        });
     }
 
     private static String formatPublicationDate(JsonNode publicationDateNode) {

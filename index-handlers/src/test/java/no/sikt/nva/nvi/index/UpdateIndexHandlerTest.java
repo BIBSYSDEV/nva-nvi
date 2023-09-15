@@ -47,6 +47,8 @@ import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument.Builder;
+import no.sikt.nva.nvi.index.model.Publication;
+import no.sikt.nva.nvi.index.model.Publication.Organization;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
@@ -65,6 +67,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
 
     public static final Context CONTEXT = mock(Context.class);
     public static final String CANDIDATE = IoUtils.stringFromResources(Path.of("candidate.json"));
+    public static final String CANDIDATE_WITH_TOP_LEVEL_ORGS_AS_LIST =
+        IoUtils.stringFromResources(Path.of("candidateV2.json"));
     public static final String INSTITUTION_ID_FROM_EVENT = "https://api.dev.nva.aws.unit"
                                                            + ".no/cristin/organization/20754.0.0.0";
     public static final URI CANDIDATE_CONTEXT = URI.create("https://bibsysdev.github.io/src/nvi-context.json");
@@ -86,6 +90,18 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldAddDocumentToIndexWhenIncomingEventIsInsertAndCandidateIsApplicable() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
+        var persistedCandidate = randomApplicableCandidate();
+        when(nviService.findById(any())).thenReturn(Optional.of(persistedCandidate));
+        handler.handleRequest(createEvent(INSERT, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
+        var document = openSearchClient.getDocuments().get(0);
+        var expectedDocument = constructExpectedDocument(persistedCandidate);
+
+        assertThat(document, is(equalTo(expectedDocument)));
+    }
+
+    @Test
+    void shouldAddDocumentToIndexWhenIncomingEventIsInsertAndCandidateIsApplicableAndTopLevelOrgsIsAList() throws JsonProcessingException {
+        when(storageReader.read(any())).thenReturn(CANDIDATE_WITH_TOP_LEVEL_ORGS_AS_LIST);
         var persistedCandidate = randomApplicableCandidate();
         when(nviService.findById(any())).thenReturn(Optional.of(persistedCandidate));
         handler.handleRequest(createEvent(INSERT, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
