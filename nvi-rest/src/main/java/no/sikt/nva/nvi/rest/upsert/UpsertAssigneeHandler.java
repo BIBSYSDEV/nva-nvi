@@ -69,7 +69,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
                    .map(nviService::findById)
                    .map(Optional::orElseThrow)
                    .map(candidate -> updateApprovalStatus(input, candidate))
-                   .map(candidate1 -> CandidateResponse.fromCandidate(candidate1, nviService))
+                   .map(candidate -> CandidateResponse.fromCandidate(candidate, nviService))
                    .orElseThrow(ExceptionMapper::map);
     }
 

@@ -64,10 +64,7 @@ public final class RequestUtil {
     }
 
     private static boolean periodIsClosed(DbNviPeriod period) {
-        if (!nonNull(period)) {
-            return false;
-        }
-        return period.reportingDate().isBefore(Instant.now());
+        return nonNull(period) && period.reportingDate().isBefore(Instant.now());
     }
 
     public static void validateCustomer(RequestInfo requestInfo, URI currentCustomer) throws ForbiddenException {
