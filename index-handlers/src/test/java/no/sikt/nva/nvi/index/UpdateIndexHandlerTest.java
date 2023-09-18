@@ -102,7 +102,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE_WITH_TOP_LEVEL_ORGS_AS_LIST);
         var persistedCandidate = randomApplicableCandidate();
-        when(nviService.findById(any())).thenReturn(Optional.of(persistedCandidate));
+        when(nviService.findCandidateById(any())).thenReturn(Optional.of(persistedCandidate));
         handler.handleRequest(createEvent(INSERT, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
         var document = openSearchClient.getDocuments().get(0);
         var expectedDocument = constructExpectedDocument(persistedCandidate);
