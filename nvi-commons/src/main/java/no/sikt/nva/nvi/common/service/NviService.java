@@ -51,10 +51,6 @@ public class NviService {
         return Optional.empty();
     }
 
-    private boolean shouldBeDeleted(DbCandidate dbCandidate) {
-        return isExistingCandidate(dbCandidate.publicationId()) && !dbCandidate.applicable();
-    }
-
     public DbNviPeriod createPeriod(DbNviPeriod period) {
         validatePeriod(period);
         return nviPeriodRepository.save(period);
@@ -141,29 +137,47 @@ public class NviService {
                    .assignee(oldApprovalStatus.assignee())
                    .finalizedBy(null)
                    .finalizedDate(null)
+                   .reason(null)
                    .build();
     }
 
-    private static DbApprovalStatus finalizeStatus(DbApprovalStatus oldApprovalStatus,
-                                                   DbApprovalStatus newApprovalStatus) {
+    private static DbApprovalStatus approveStatus(DbApprovalStatus oldApprovalStatus,
+                                                  DbApprovalStatus newApprovalStatus) {
         return oldApprovalStatus.copy()
                    .status(newApprovalStatus.status())
                    .finalizedBy(newApprovalStatus.finalizedBy())
                    .assignee(newApprovalStatus.assignee())
                    .finalizedDate(Instant.now())
+                   .reason(null)
+                   .build();
+    }
+
+    private static DbApprovalStatus rejectStatus(DbApprovalStatus oldApprovalStatus,
+                                                 DbApprovalStatus newApprovalStatus) {
+        return oldApprovalStatus.copy()
+                   .status(newApprovalStatus.status())
+                   .finalizedBy(newApprovalStatus.finalizedBy())
+                   .assignee(newApprovalStatus.assignee())
+                   .finalizedDate(Instant.now())
+                   .reason(newApprovalStatus.reason())
                    .build();
     }
 
     private static DbApprovalStatus updateStatus(DbApprovalStatus oldApprovalStatus,
                                                  DbApprovalStatus newApprovalStatus) {
         return switch (newApprovalStatus.status()) {
-            case APPROVED, REJECTED -> finalizeStatus(oldApprovalStatus, newApprovalStatus);
+            case APPROVED -> approveStatus(oldApprovalStatus, newApprovalStatus);
+            case REJECTED -> rejectStatus(oldApprovalStatus, newApprovalStatus);
             case PENDING -> resetStatus(oldApprovalStatus);
         };
     }
 
     private static boolean updateIsAssignee(DbApprovalStatus oldApprovalStatus, DbApprovalStatus newApprovalStatus) {
         return oldApprovalStatus.status().equals(newApprovalStatus.status());
+    }
+
+    private boolean shouldBeDeleted(DbCandidate dbCandidate) {
+        return isExistingCandidate(dbCandidate.publicationId()) && !dbCandidate.applicable();
     }
 
     private DbNviPeriod injectCreatedBy(DbNviPeriod period) {
@@ -225,7 +239,6 @@ public class NviService {
         return Optional.of(updateCandidateRemovingApprovals(existingCandidate.identifier(), dbCandidate,
                                                             generatePendingApprovalStatuses(dbCandidate.points())));
     }
-
 
     private Candidate updateCandidateRemovingApprovals(UUID identifier, DbCandidate candidate,
                                                        List<DbApprovalStatus> approvalStatuses) {

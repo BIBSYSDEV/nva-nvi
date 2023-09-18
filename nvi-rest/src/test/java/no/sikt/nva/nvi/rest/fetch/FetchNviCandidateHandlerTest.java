@@ -113,7 +113,8 @@ class FetchNviCandidateHandlerTest {
                        approvalStatus.status(),
                        approvalStatus.assignee(),
                        approvalStatus.finalizedBy(),
-                       approvalStatus.finalizedDate()))
+                       approvalStatus.finalizedDate(),
+                       approvalStatus.reason()))
                    .toList();
     }
 
@@ -125,7 +126,7 @@ class FetchNviCandidateHandlerTest {
     }
 
     private static Candidate getCandidate(UUID id, DbCandidate candidate, List<DbApprovalStatus> approvalStatusList) {
-        return new Candidate(id, candidate, approvalStatusList,List.of());
+        return new Candidate(id, candidate, approvalStatusList, List.of());
     }
 
     private GatewayResponse<CandidateResponse> getGatewayResponse()

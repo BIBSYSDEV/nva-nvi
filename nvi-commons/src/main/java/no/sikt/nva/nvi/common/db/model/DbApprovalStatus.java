@@ -12,7 +12,8 @@ public record DbApprovalStatus(URI institutionId,
                                DbStatus status,
                                DbUsername assignee,
                                DbUsername finalizedBy,
-                               Instant finalizedDate) {
+                               Instant finalizedDate,
+                               String reason) {
 
     public static Builder builder() {
         return new Builder();
@@ -30,7 +31,8 @@ public record DbApprovalStatus(URI institutionId,
                    .status(status)
                    .assignee(assignee)
                    .finalizedBy(finalizedBy)
-                   .finalizedDate(finalizedDate);
+                   .finalizedDate(finalizedDate)
+                   .reason(reason);
     }
 
     public static final class Builder {
@@ -40,6 +42,7 @@ public record DbApprovalStatus(URI institutionId,
         private DbUsername builderAssignee;
         private DbUsername builderFinalizedBy;
         private Instant builderFinalizedDate;
+        private String builderReason;
 
         private Builder() {
         }
@@ -69,9 +72,14 @@ public record DbApprovalStatus(URI institutionId,
             return this;
         }
 
+        public Builder reason(String reason) {
+            this.builderReason = reason;
+            return this;
+        }
+
         public DbApprovalStatus build() {
             return new DbApprovalStatus(builderInstitutionId, builderStatus, builderAssignee,
-                                        builderFinalizedBy, builderFinalizedDate);
+                                        builderFinalizedBy, builderFinalizedDate, builderReason);
         }
     }
 }

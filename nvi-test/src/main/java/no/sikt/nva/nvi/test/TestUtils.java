@@ -116,7 +116,7 @@ public final class TestUtils {
 
     public static DbApprovalStatus randomApprovalStatus() {
         return new DbApprovalStatus(randomUri(), randomElement(DbStatus.values()), randomUsername(), randomUsername(),
-                                    Instant.EPOCH);
+                                    Instant.EPOCH, randomString());
     }
 
     public static DbUsername randomUsername() {

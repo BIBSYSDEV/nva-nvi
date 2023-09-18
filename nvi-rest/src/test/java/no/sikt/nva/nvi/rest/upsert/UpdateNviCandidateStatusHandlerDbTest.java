@@ -5,12 +5,14 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +30,12 @@ import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.zalando.problem.Problem;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public class UpdateNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
@@ -63,12 +68,72 @@ public class UpdateNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
                                                                   .status(DbStatus.PENDING)
                                                                   .build()));
 
-        var req = new NviStatusRequest(candidate.identifier(), institutionId, status);
+        var req = new NviStatusRequest(candidate.identifier(), institutionId, status, randomString());
         var request = createRequest(req, institutionId);
         handler.handleRequest(request, output, context);
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         var bodyAsInstance = gatewayResponse.getBodyObject(CandidateResponse.class);
         assertThat(bodyAsInstance.approvalStatuses().get(0).status().getValue(), is(equalTo(status.getValue())));
+    }
+
+    @Test
+    void shouldRequireMessageWhenRejecting() throws IOException {
+        var institutionId = randomUri();
+        var dbCandidate = createCandidate(institutionId);
+        var candidate = nviCandidateRepository.create(dbCandidate,
+                                                      List.of(DbApprovalStatus.builder()
+                                                                  .institutionId(institutionId)
+                                                                  .status(DbStatus.PENDING)
+                                                                  .build()));
+
+        var req = new NviStatusRequest(candidate.identifier(), institutionId, NviApprovalStatus.REJECTED, "Denied!");
+        var request = createRequest(req, institutionId);
+        handler.handleRequest(request, output, context);
+        var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
+        var bodyAsInstance = gatewayResponse.getBodyObject(CandidateResponse.class);
+        assertThat(bodyAsInstance.approvalStatuses().get(0).status(), is(equalTo(DbStatus.REJECTED)));
+        assertThat(bodyAsInstance.approvalStatuses().get(0).reason(), is(equalTo("Denied!")));
+    }
+
+    @Test
+    void shouldFailWhenRequireMessageIsMissing() throws IOException {
+        var institutionId = randomUri();
+        var dbCandidate = createCandidate(institutionId);
+        var candidate = nviCandidateRepository.create(dbCandidate,
+                                                      List.of(DbApprovalStatus.builder()
+                                                                  .institutionId(institutionId)
+                                                                  .status(DbStatus.PENDING)
+                                                                  .build()));
+
+        var req = new NviStatusRequest(candidate.identifier(), institutionId, NviApprovalStatus.REJECTED, null);
+        var request = createRequest(req, institutionId);
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+    }
+
+    @Test
+    void shouldRemoveReasonWhenChangingAwayFromRejectedStatus() throws IOException {
+        var institutionId = randomUri();
+        var dbCandidate = createCandidate(institutionId);
+        var candidate = nviCandidateRepository.create(dbCandidate,
+                                                      List.of(DbApprovalStatus.builder()
+                                                                  .institutionId(institutionId)
+                                                                  .status(DbStatus.REJECTED)
+                                                                  .reason("I made a mistake")
+                                                                  .build()));
+
+        var req = new NviStatusRequest(candidate.identifier(),
+                                       institutionId,
+                                       NviApprovalStatus.APPROVED,
+                                       "This will be ignored");
+        var request = createRequest(req, institutionId);
+        handler.handleRequest(request, output, context);
+        var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
+        var bodyAsInstance = gatewayResponse.getBodyObject(CandidateResponse.class);
+        assertThat(bodyAsInstance.approvalStatuses().get(0).status(), is(equalTo(DbStatus.APPROVED)));
+        assertThat(bodyAsInstance.approvalStatuses().get(0).reason(), is(nullValue()));
     }
 
     private static DbCandidate createCandidate(URI institutionId) {

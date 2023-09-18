@@ -33,6 +33,10 @@ public record CandidateResponse(UUID id,
                    .build();
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     private static List<Note> mapToNotes(List<DbNote> dbNotes) {
         return dbNotes.stream().map(CandidateResponse::mapToNote).toList();
     }
@@ -48,15 +52,10 @@ public record CandidateResponse(UUID id,
                    .toList();
     }
 
-
     private static InstitutionPoints mapToInstitutionPoint(
         DbInstitutionPoints institutionPoints) {
         return new InstitutionPoints(institutionPoints.institutionId(),
                                      institutionPoints.points());
-    }
-
-    public static Builder builder() {
-        return new Builder();
     }
 
     private static List<ApprovalStatus> mapToApprovalStatus(Candidate candidate) {
@@ -68,9 +67,12 @@ public record CandidateResponse(UUID id,
 
     private static ApprovalStatus mapToApprovalStatus(
         DbApprovalStatus approvalStatus) {
-        return new ApprovalStatus(approvalStatus.institutionId(), approvalStatus.status(),
-                                  approvalStatus.assignee(), approvalStatus.finalizedBy(),
-                                  approvalStatus.finalizedDate());
+        return new ApprovalStatus(approvalStatus.institutionId(),
+                                  approvalStatus.status(),
+                                  approvalStatus.assignee(),
+                                  approvalStatus.finalizedBy(),
+                                  approvalStatus.finalizedDate(),
+                                  approvalStatus.reason());
     }
 
     public static final class Builder {

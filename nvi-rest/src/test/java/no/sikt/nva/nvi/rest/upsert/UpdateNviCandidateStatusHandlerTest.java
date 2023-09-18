@@ -66,7 +66,7 @@ class UpdateNviCandidateStatusHandlerTest {
     @EnumSource(NviApprovalStatus.class)
     void shouldReturnCandidateResponseWhenSuccessful(NviApprovalStatus status) throws IOException {
         URI institutionId = randomUri();
-        var nviStatusRequest = new NviStatusRequest(UUID.randomUUID(), institutionId, status);
+        var nviStatusRequest = new NviStatusRequest(UUID.randomUUID(), institutionId, status, "Denied!");
         var innerStatus = DbStatus.parse(status.getValue());
         var request = createRequest(nviStatusRequest, institutionId);
         var response = mockServiceResponse(nviStatusRequest, innerStatus);
@@ -131,7 +131,8 @@ class UpdateNviCandidateStatusHandlerTest {
                                          status,
                                          username,
                                          username,
-                                         Instant.now())),
+                                         Instant.now(),
+                                         randomString())),
             emptyList());
     }
 
@@ -160,6 +161,6 @@ class UpdateNviCandidateStatusHandlerTest {
     private NviStatusRequest randomStatusRequest() {
         return new NviStatusRequest(UUID.randomUUID(),
                                     randomUri(),
-                                    NviApprovalStatus.APPROVED);
+                                    NviApprovalStatus.APPROVED, "Denied!");
     }
 }

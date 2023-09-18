@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public record NviStatusRequest(UUID candidateId,
                                URI institutionId,
-                               NviApprovalStatus status) {
+                               NviApprovalStatus status,
+                               String reason) {
 
 }

@@ -20,6 +20,7 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.ForbiddenException;
 import nva.commons.core.JacocoGenerated;
 
@@ -43,6 +44,7 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
         var currentCustomer = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         verifyRequesteeIsCorrectCustomer(input.institutionId(), currentCustomer);
+        verifyHasReasonWhenRejecting(input);
 
         return attempt(() -> toStatus(input, getUsername(requestInfo)))
                    .map(approvalStatus -> nviService.updateApprovalStatus(
@@ -57,6 +59,12 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
         return HTTP_OK;
     }
 
+    private void verifyHasReasonWhenRejecting(NviStatusRequest input) throws BadRequestException {
+        if (input.status() == NviApprovalStatus.REJECTED && input.reason() == null) {
+            throw new BadRequestException("Missing reason for rejection");
+        }
+    }
+
     private void verifyRequesteeIsCorrectCustomer(URI institutionId, URI currentCustomerId) throws ForbiddenException {
         if (!institutionId.toString().equals(currentCustomerId.toString())) {
             throw new ForbiddenException();
@@ -65,7 +73,7 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
 
     private DbApprovalStatus toStatus(NviStatusRequest input, DbUsername username) {
         return new DbApprovalStatus(input.institutionId(), mapStatus(input.status()),
-                                    username, username, Instant.now());
+                                    username, username, Instant.now(), input.reason());
     }
 
     // New switch return syntax isn't fullfilling the 100% coverage because of a bug.
