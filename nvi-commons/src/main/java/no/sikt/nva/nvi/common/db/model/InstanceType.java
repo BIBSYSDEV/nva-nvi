@@ -24,8 +24,8 @@ public enum InstanceType {
                    .orElse(NON_CANDIDATE);
     }
 
-    @JacocoGenerated
     @JsonCreator
+    @JacocoGenerated
     public String getValue() {
         return value;
     }

@@ -159,6 +159,7 @@ public class NviService {
                    .build();
     }
 
+
     private static DbApprovalStatus updateStatus(DbApprovalStatus oldApprovalStatus,
                                                  DbApprovalStatus newApprovalStatus) {
         return switch (newApprovalStatus.status()) {
@@ -211,6 +212,10 @@ public class NviService {
         return Optional.of(createCandidate(candidate, generatePendingApprovalStatuses(candidate.points())));
     }
 
+    private Candidate createCandidate(DbCandidate candidate, List<DbApprovalStatus> approvalStatuses) {
+        return nviCandidateRepository.create(candidate, approvalStatuses);
+    }
+
     private static void validateCandidate(DbCandidate candidate) {
         attempt(() -> {
             Objects.requireNonNull(candidate.publicationBucketUri());
@@ -222,10 +227,6 @@ public class NviService {
             Objects.requireNonNull(candidate.publicationDate());
             return candidate;
         }).orElseThrow(failure -> new InvalidNviCandidateException(INVALID_CANDIDATE_MESSAGE));
-    }
-
-    private Candidate createCandidate(DbCandidate candidate, List<DbApprovalStatus> approvalStatuses) {
-        return nviCandidateRepository.create(candidate, approvalStatuses);
     }
 
     private Optional<Candidate> updateCandidate(DbCandidate dbCandidate) {
