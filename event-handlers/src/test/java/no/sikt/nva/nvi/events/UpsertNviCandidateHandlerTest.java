@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomInstanceType;
+import static no.sikt.nva.nvi.test.TestUtils.randomInstanceTypeExcluding;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
@@ -79,7 +80,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var institutionId = randomUri();
         var creators = List.of(new Creator(randomUri(), List.of(institutionId)));
-        var instanceType = randomInstanceType();
+        var instanceType = randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE);
         var randomLevel = randomElement(DbLevel.values());
         var publicationDate = randomPublicationDate();
         var institutionPoints = Map.of(institutionId, randomBigDecimal());
