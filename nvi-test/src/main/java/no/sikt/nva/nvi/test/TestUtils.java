@@ -11,6 +11,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -23,6 +24,7 @@ import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
+import no.sikt.nva.nvi.common.db.model.InstanceType;
 import nva.commons.core.paths.UriWrapper;
 
 public final class TestUtils {
@@ -68,7 +70,7 @@ public final class TestUtils {
                    .publicationId(randomUri())
                    .publicationBucketUri(randomUri())
                    .applicable(applicable)
-                   .instanceType(randomString())
+                   .instanceType(randomInstanceType())
                    .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
                    .level(randomElement(DbLevel.values()))
                    .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
@@ -77,12 +79,23 @@ public final class TestUtils {
                    .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))));
     }
 
+    public static InstanceType randomInstanceType() {
+        var instanceTypes = Arrays.stream(InstanceType.values()).toList();
+        return instanceTypes.get(new Random().nextInt(instanceTypes.size()));
+    }
+
+    public static InstanceType randomInstanceTypeExcluding(InstanceType instanceType) {
+        var instanceTypes = Arrays.stream(InstanceType.values())
+                                .filter(type -> !type.equals(instanceType)).toList();
+        return instanceTypes.get(new Random().nextInt(instanceTypes.size()));
+    }
+
     public static DbCandidate randomApplicableCandidateBuilder() {
         return DbCandidate.builder()
                    .publicationId(randomUri())
                    .publicationBucketUri(randomUri())
                    .applicable(true)
-                   .instanceType(randomString())
+                   .instanceType(randomInstanceType())
                    .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
                    .level(randomElement(DbLevel.values()))
                    .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))

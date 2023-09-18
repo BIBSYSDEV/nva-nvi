@@ -10,7 +10,7 @@ public record DbCandidate(
     URI publicationId,
     URI publicationBucketUri,
     boolean applicable,
-    String instanceType,
+    InstanceType instanceType,
     DbLevel level,
     DbPublicationDate publicationDate,
     boolean internationalCollaboration,
@@ -35,8 +35,7 @@ public record DbCandidate(
                    .internationalCollaboration(internationalCollaboration)
                    .creatorCount(creatorCount)
                    .creators(creators)
-                   .points(points)
-            ;
+                   .points(points);
     }
 
     public static final class Builder {
@@ -44,7 +43,7 @@ public record DbCandidate(
         private URI builderPublicationId;
         private URI builderPublicationBucketUri;
         private boolean builderApplicable;
-        private String builderInstanceType;
+        private InstanceType builderInstanceType;
         private DbLevel builderLevel;
         private DbPublicationDate builderPublicationDate;
         private boolean builderInternationalCollaboration;
@@ -70,7 +69,7 @@ public record DbCandidate(
             return this;
         }
 
-        public Builder instanceType(String instanceType) {
+        public Builder instanceType(InstanceType instanceType) {
             this.builderInstanceType = instanceType;
             return this;
         }

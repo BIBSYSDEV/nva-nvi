@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.service.NviService.defaultNviService;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
@@ -12,12 +13,17 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbCreator;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbLevel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.model.InstanceType;
+import no.sikt.nva.nvi.events.model.InvalidNviMessageException;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.events.CandidateDetails.Creator;
+import no.sikt.nva.nvi.events.CandidateDetails.PublicationDate;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +31,7 @@ import org.slf4j.LoggerFactory;
 public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UpsertNviCandidateHandler.class);
+    public static final String INVALID_NVI_CANDIDATE_MESSAGE = "Invalid nvi candidate message";
     private final NviService nviService;
 
     @JacocoGenerated
@@ -43,28 +50,9 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
             .map(SQSMessage::getBody)
             .map(this::parseBody)
             .filter(Objects::nonNull)
-            .map(this::validate)
-            .filter(Objects::nonNull)
             .forEach(this::upsertNviCandidate);
 
         return null;
-    }
-
-    private static CandidateEvaluatedMessage validateRequiredFields(CandidateEvaluatedMessage request) {
-        Objects.requireNonNull(request.publicationBucketUri());
-        Objects.requireNonNull(request.status());
-        Objects.requireNonNull(request.institutionPoints());
-        validateRequiredCandidateDetails(request.candidateDetails());
-        return request;
-    }
-
-    private static void validateRequiredCandidateDetails(CandidateDetails candidateDetails) {
-        Objects.requireNonNull(candidateDetails);
-        Objects.requireNonNull(candidateDetails.publicationId());
-        Objects.requireNonNull(candidateDetails.instanceType());
-        Objects.requireNonNull(candidateDetails.publicationDate());
-        Objects.requireNonNull(candidateDetails.level());
-        Objects.requireNonNull(candidateDetails.verifiedCreators());
     }
 
     private static DbCandidate toDbCandidate(CandidateEvaluatedMessage message) {
@@ -74,28 +62,54 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
                    .applicable(isNviCandidate(message))
                    .creators(mapToVerifiedCreators(message.candidateDetails().verifiedCreators()))
                    .level(DbLevel.parse(message.candidateDetails().level()))
-                   .instanceType(message.candidateDetails().instanceType())
-                   .publicationDate(mapToPublicationDate(message.candidateDetails()
-                                                             .publicationDate()))
+                   .instanceType(InstanceType.parse(message.candidateDetails().instanceType()))
+                   .publicationDate(mapToPublicationDate(message.candidateDetails().publicationDate()))
                    .points(mapToInstitutionPoints(message.institutionPoints()))
                    .build();
     }
 
     private static List<DbInstitutionPoints> mapToInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
+        return isNotEmpty(institutionPoints)
+                   ? convertToPoints(institutionPoints)
+                   : List.of();
+    }
+
+    private static List<DbInstitutionPoints> convertToPoints(Map<URI, BigDecimal> institutionPoints) {
         return institutionPoints.entrySet().stream()
                    .map(entry -> new DbInstitutionPoints(entry.getKey(), entry.getValue())).toList();
     }
 
+    private static boolean isNotEmpty(Map<URI, BigDecimal> institutionPoints) {
+        return nonNull(institutionPoints) && !institutionPoints.isEmpty();
+    }
+
     private static DbPublicationDate mapToPublicationDate(CandidateDetails.PublicationDate publicationDate) {
-        return new DbPublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
+        return Optional.ofNullable(publicationDate)
+                   .map(UpsertNviCandidateHandler::toPublicationDate)
+                   .orElse(null);
+    }
+
+    private static DbPublicationDate toPublicationDate(PublicationDate publicationDate1) {
+        return new DbPublicationDate(publicationDate1.year(), publicationDate1.month(), publicationDate1.day());
     }
 
     private static List<DbCreator> mapToVerifiedCreators(List<CandidateDetails.Creator> creators) {
-        return creators.stream()
-                   .map(
-                       verifiedCreatorDto -> new DbCreator(verifiedCreatorDto.id(),
-                                                           verifiedCreatorDto.nviInstitutions()))
-                   .toList();
+        return isNotEmpty(creators)
+                   ? convertToCreators(creators)
+                   : List.of();
+    }
+
+    private static List<DbCreator> convertToCreators(List<Creator> creators) {
+        return creators.stream().map(UpsertNviCandidateHandler::toCreator).toList();
+    }
+
+    private static boolean isNotEmpty(List<Creator> creators) {
+        return nonNull(creators) && !creators.isEmpty();
+    }
+
+    private static DbCreator toCreator(Creator verifiedCreatorDto) {
+        return new DbCreator(verifiedCreatorDto.id(),
+                             verifiedCreatorDto.nviInstitutions());
     }
 
     private static boolean isNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
@@ -103,7 +117,16 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
     }
 
     private void upsertNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
+        validateMessage(evaluatedCandidate);
         nviService.upsertCandidate(toDbCandidate(evaluatedCandidate));
+    }
+
+    private static void validateMessage(CandidateEvaluatedMessage message) {
+        attempt(() -> {
+            Objects.requireNonNull(message.publicationBucketUri());
+            Objects.requireNonNull(message.candidateDetails().publicationId());
+            return message;
+                }).orElseThrow(failure -> new InvalidNviMessageException(INVALID_NVI_CANDIDATE_MESSAGE));
     }
 
     private CandidateEvaluatedMessage parseBody(String body) {
@@ -112,13 +135,6 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
                        logInvalidMessageBody(body);
                        return null;
                    });
-    }
-
-    private CandidateEvaluatedMessage validate(CandidateEvaluatedMessage request) {
-        return attempt(() -> validateRequiredFields(request)).orElse(failure -> {
-            logInvalidMessageBody(request.toString());
-            return null;
-        });
     }
 
     private void logInvalidMessageBody(String body) {

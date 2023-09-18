@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest.upsert;
 
+import static no.sikt.nva.nvi.test.TestUtils.randomInstanceType;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -81,7 +82,7 @@ public class UpdateNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
                        new DbPublicationDate("2023", "01", "01"))
                    .creators(List.of(new DbCreator(randomUri(), List.of(institutionId))))
                    .creatorCount(1)
-                   .instanceType("AcademicArticle")
+                   .instanceType(randomInstanceType())
                    .applicable(true)
                    .points(List.of())
                    .build();
