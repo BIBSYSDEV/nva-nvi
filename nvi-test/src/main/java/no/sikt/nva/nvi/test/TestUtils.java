@@ -70,7 +70,7 @@ public final class TestUtils {
                    .publicationId(randomUri())
                    .publicationBucketUri(randomUri())
                    .applicable(applicable)
-                   .instanceType(randomInstanceType())
+                   .instanceType(randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE))
                    .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
                    .level(randomElement(DbLevel.values()))
                    .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))

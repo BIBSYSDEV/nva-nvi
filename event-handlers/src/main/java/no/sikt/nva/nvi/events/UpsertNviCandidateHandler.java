@@ -20,10 +20,10 @@ import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbLevel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
-import no.sikt.nva.nvi.events.model.InvalidNviMessageException;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.events.CandidateDetails.Creator;
 import no.sikt.nva.nvi.events.CandidateDetails.PublicationDate;
+import no.sikt.nva.nvi.events.model.InvalidNviMessageException;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,6 +83,10 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         return nonNull(institutionPoints) && !institutionPoints.isEmpty();
     }
 
+    private static boolean isNotEmpty(List<Creator> creators) {
+        return nonNull(creators) && !creators.isEmpty();
+    }
+
     private static DbPublicationDate mapToPublicationDate(CandidateDetails.PublicationDate publicationDate) {
         return Optional.ofNullable(publicationDate)
                    .map(UpsertNviCandidateHandler::toPublicationDate)
@@ -103,17 +107,13 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         return creators.stream().map(UpsertNviCandidateHandler::toCreator).toList();
     }
 
-    private static boolean isNotEmpty(List<Creator> creators) {
-        return nonNull(creators) && !creators.isEmpty();
-    }
-
     private static DbCreator toCreator(Creator verifiedCreatorDto) {
         return new DbCreator(verifiedCreatorDto.id(),
                              verifiedCreatorDto.nviInstitutions());
     }
 
     private static boolean isNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-        return CandidateStatus.CANDIDATE == evaluatedCandidate.status();
+        return CandidateStatus.CANDIDATE.equals(evaluatedCandidate.status());
     }
 
     private void upsertNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
@@ -126,7 +126,7 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
             Objects.requireNonNull(message.publicationBucketUri());
             Objects.requireNonNull(message.candidateDetails().publicationId());
             return message;
-                }).orElseThrow(failure -> new InvalidNviMessageException(INVALID_NVI_CANDIDATE_MESSAGE));
+        }).orElseThrow(failure -> new InvalidNviMessageException(INVALID_NVI_CANDIDATE_MESSAGE));
     }
 
     private CandidateEvaluatedMessage parseBody(String body) {

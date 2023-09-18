@@ -18,7 +18,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import com.amazonaws.auth.SdkClock.Instance;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
@@ -86,7 +85,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var bucketIdentifier = UUID.randomUUID();
         var institutionId = randomUri();
         var verifiedCreators = List.of(new DbCreator(randomUri(), List.of(institutionId)));
-        var instanceType = randomInstanceType();
+        var instanceType = randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE);
         var randomLevel = randomElement(DbLevel.values());
         var publicationDate = randomPublicationDate();
         var institutionPoints = Map.of(institutionId, randomBigDecimal());
@@ -116,7 +115,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var institutionId = randomUri();
         var verifiedCreators = List.of(new DbCreator(randomUri(), List.of(institutionId)));
-        var instanceType = randomInstanceType();
+        var instanceType = randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE);
         var randomLevel = randomElement(DbLevel.values());
         var publicationDate = randomPublicationDate();
         var institutionPoints = Map.of(institutionId, randomBigDecimal());
@@ -136,7 +135,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var institutionId = randomUri();
         var verifiedCreators = List.of(new DbCreator(randomUri(), List.of(institutionId)));
-        var instanceType = randomInstanceType();
+        var instanceType = randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE);
         var randomLevel = randomElement(DbLevel.values());
         var publicationDate = randomPublicationDate();
         var institutionPoints = Map.of(institutionId, randomBigDecimal());
@@ -155,7 +154,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var institutionId = randomUri();
         var verifiedCreators = List.of(new DbCreator(randomUri(), List.of(institutionId)));
-        var instanceType = randomInstanceType();
+        var instanceType = randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE);
         var randomLevel = randomElement(DbLevel.values());
         var publicationDate = randomPublicationDate();
         var institutionPoints = Map.of(institutionId, randomBigDecimal());
@@ -176,7 +175,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var institutionId = randomUri();
         var verifiedCreators = List.of(new DbCreator(randomUri(), List.of(institutionId)));
-        var instanceType = randomInstanceType();
+        var instanceType = randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE);
         var randomLevel = randomElement(DbLevel.values());
         var publicationDate = randomPublicationDate();
         var institutionPoints = Map.of(institutionId, randomBigDecimal());
@@ -194,7 +193,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var verifiedCreators = List.of(new DbCreator(randomUri(), List.of(randomUri())),
                                        new DbCreator(randomUri(), List.of()));
-        var instanceType = randomInstanceType();
+        var instanceType = randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE);
         var randomLevel = randomElement(DbLevel.values());
         var publicationDate = new DbPublicationDate(null, null, "2022");
         var expectedCandidate = createExpectedCandidate(identifier, verifiedCreators, instanceType,
@@ -399,6 +398,13 @@ public class NviServiceTest extends LocalDynamoTest {
     void shouldThrowInvalidNviCandidateExceptionWhenNviCandidateIsMissingMandatoryFields() {
         var candidate = randomCandidate().copy().publicationDate(null).build();
         assertThrows(InvalidNviCandidateException.class, () -> nviService.upsertCandidate(candidate));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenCreatingCandidateWithUndefinedInstanceType() {
+        var candidate = randomCandidate().copy().instanceType(InstanceType.parse("asd")).build();
+        assertThrows(InvalidNviCandidateException.class, () -> nviService.upsertCandidate(candidate));
+
     }
 
     private static DbCandidate updateCandidate(Candidate candidate) {

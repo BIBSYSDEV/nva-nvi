@@ -17,6 +17,7 @@ import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
+import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -218,15 +219,21 @@ public class NviService {
 
     private static void validateCandidate(DbCandidate candidate) {
         attempt(() -> {
+            assertIsCandidate(candidate);
             Objects.requireNonNull(candidate.publicationBucketUri());
             Objects.requireNonNull(candidate.points());
-            Objects.requireNonNull(candidate.instanceType());
             Objects.requireNonNull(candidate.publicationId());
             Objects.requireNonNull(candidate.creators());
             Objects.requireNonNull(candidate.level());
             Objects.requireNonNull(candidate.publicationDate());
             return candidate;
         }).orElseThrow(failure -> new InvalidNviCandidateException(INVALID_CANDIDATE_MESSAGE));
+    }
+
+    private static void assertIsCandidate(DbCandidate candidate) {
+        if (InstanceType.NON_CANDIDATE.equals(candidate.instanceType())) {
+            throw new InvalidNviCandidateException("Can not update invalid candidate");
+        }
     }
 
     private Optional<Candidate> updateCandidate(DbCandidate dbCandidate) {

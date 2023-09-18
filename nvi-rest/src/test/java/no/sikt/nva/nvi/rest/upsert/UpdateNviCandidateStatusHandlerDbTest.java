@@ -70,6 +70,7 @@ public class UpdateNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         var bodyAsInstance = gatewayResponse.getBodyObject(CandidateResponse.class);
         assertThat(bodyAsInstance.approvalStatuses().get(0).status().getValue(), is(equalTo(status.getValue())));
+
     }
 
     private static DbCandidate createCandidate(URI institutionId) {
