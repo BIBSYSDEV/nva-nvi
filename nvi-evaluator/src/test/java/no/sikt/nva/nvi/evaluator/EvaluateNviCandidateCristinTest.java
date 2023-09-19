@@ -84,8 +84,7 @@ public class EvaluateNviCandidateCristinTest {
         handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicArticle.json"), output, context);
         var message = sqsClient.getSentMessages().get(0);
         var body =
-            attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class))
-                .orElseThrow();
+            attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
         assertThat(body.institutionPoints().get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(BigDecimal.valueOf(0.8165))));
         assertThat(body.institutionPoints().get(ST_OLAVS_TOP_LEVEL_ORG_ID), is(equalTo(BigDecimal.valueOf(0.5774))));
     }
@@ -98,8 +97,7 @@ public class EvaluateNviCandidateCristinTest {
     private InputStream setUpS3Event(String path) throws IOException {
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createS3Event(fileUri);
-        return event;
+        return createS3Event(fileUri);
     }
 
     private void mockCristinApiResponsesForAllSubUnits() {
