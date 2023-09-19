@@ -47,6 +47,8 @@ public class EvaluateNviCandidateCristinTest {
         ("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"));
     public static final URI ST_OLAVS_TOP_LEVEL_ORG_ID = URI.create(
         "https://api.sandbox.nva.aws.unit.no/cristin/organization/1920.0.0.0");
+    public static final URI UIO_TOP_LEVEL_ORG_ID = URI.create(
+        "https://api.sandbox.nva.aws.unit.no/cristin/organization/185.90.0.0");
     private static final String BUCKET_NAME = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
     private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
     private static final String CUSTOMER_API_NVI_RESPONSE = "{" + "\"nviInstitution\" : \"true\"" + "}";
@@ -87,6 +89,19 @@ public class EvaluateNviCandidateCristinTest {
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
         assertThat(body.institutionPoints().get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(BigDecimal.valueOf(0.8165))));
         assertThat(body.institutionPoints().get(ST_OLAVS_TOP_LEVEL_ORG_ID), is(equalTo(BigDecimal.valueOf(0.5774))));
+    }
+
+    @Test
+    void shouldCalculatePointsOnValidCristinImportAcademicMonographFrom2022() throws IOException {
+        mockCristinApiForSubUnit(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/185.15.13.55"),
+                                 UIO_TOP_LEVEL_ORG_ID);
+        mockCustomerApi(UIO_TOP_LEVEL_ORG_ID);
+
+        handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicMonograph.json"), output, context);
+        var message = sqsClient.getSentMessages().get(0);
+        var body =
+            attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
+        assertThat(body.institutionPoints().get(UIO_TOP_LEVEL_ORG_ID), is(equalTo(BigDecimal.valueOf(3.7528))));
     }
 
     private static URI createCustomerApiUri(String institutionId) {

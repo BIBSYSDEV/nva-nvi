@@ -221,10 +221,7 @@
             "npiDomain": "Matematikk",
             "language": "http://lexvo.org/id/iso639-3/und",
             "id": "https://api.sandbox.nva.aws.unit.no/publication-channels/journal/438178/2022",
-            "type": [
-              "Journal",
-              "Series"
-            ],
+            "type": "Series",
             "printIssn": "0303-1179"
           },
           "publisher": {
@@ -295,6 +292,7 @@
           },
           "identity": {
             "verificationStatus": "Verified",
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/person/3",
             "name": "Paul Arne Østvær",
             "type": "Identity"
           },
