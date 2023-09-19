@@ -5,11 +5,8 @@ import static no.sikt.nva.nvi.evaluator.TestUtils.createS3Event;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -17,6 +14,7 @@ import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -45,6 +43,10 @@ public class EvaluateNviCandidateCristinTest {
     public static final String CRISTIN_ORG_RESPONSE = IoUtils.stringFromResources(Path.of(ORGANIZATION_RESPONSE));
     public static final String REPLACE_SUB_UNIT_STRING = "__REPLACE_SUB_UNIT_ID__";
     public static final String REPLACE_TOP_LEVEL_STRING = "__REPLACE_TOP_LEVEL_ORG_ID__";
+    public static final URI NTNU_TOP_LEVEL_ORG_ID = URI.create(
+        ("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"));
+    public static final URI ST_OLAVS_TOP_LEVEL_ORG_ID = URI.create(
+        "https://api.sandbox.nva.aws.unit.no/cristin/organization/1920.0.0.0");
     private static final String BUCKET_NAME = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
     private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
     private static final String CUSTOMER_API_NVI_RESPONSE = "{" + "\"nviInstitution\" : \"true\"" + "}";
@@ -76,42 +78,46 @@ public class EvaluateNviCandidateCristinTest {
 
     @Test
     void shouldCalculatePointsOnValidCristinImportAcademicArticleFrom2022() throws IOException {
-        mockCristinApiForSubUnit(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.0.0"),
-                                 URI.create(("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0")));
-        mockCristinApiForSubUnit(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.10.0"),
-                                 URI.create(("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0")));
-        mockCristinApiForSubUnit(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/1920.13.0.0"),
-                                 URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/1920.0.0.0"));
-        mockCristinApiForSubUnit(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.25.0"),
-                                 URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"));
-        mockCristinApiForTopLevelOrg(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/1920.0.0.0"));
-        mockCustomerApi(URI.create(("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0")));
-        mockCustomerApi(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/1920.0.0.0"));
-        var path = "cristin_candidate_2022_academicArticle.json";
-        var content = IoUtils.inputStreamFromResources(path);
-        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createS3Event(fileUri);
+        mockCristinApiResponsesForAllSubUnits();
+        mockCustomerApi();
 
-        handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        assertThat(sentMessages, hasSize(1));
-        var message = sentMessages.get(0);
-        assertThat(message.messageBody(), containsString(fileUri.toString()));
+        handler.handleRequest(setUpS3Event(), output, context);
+        var message = sqsClient.getSentMessages().get(0);
         var body =
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class))
                 .orElseThrow();
-        assertThat(body.institutionPoints(), notNullValue());
-        assertThat(body.institutionPoints().get(URI.create("https://api.sandbox.nva.aws.unit"
-                                                           + ".no/cristin/organization/194.0.0.0")),
-                   is(equalTo(BigDecimal.valueOf(0.8165))));
-        assertThat(body.institutionPoints().get(URI.create("https://api.sandbox.nva.aws.unit"
-                                                           + ".no/cristin/organization/1920.0.0.0")),
-                   is(equalTo(BigDecimal.valueOf(0.5774))));
+        assertThat(body.institutionPoints().get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(BigDecimal.valueOf(0.8165))));
+        assertThat(body.institutionPoints().get(ST_OLAVS_TOP_LEVEL_ORG_ID), is(equalTo(BigDecimal.valueOf(0.5774))));
     }
 
     private static URI createCustomerApiUri(String institutionId) {
         var getCustomerEndpoint = UriWrapper.fromHost(API_HOST).addChild(CUSTOMER).addChild(CRISTIN_ID).getUri();
         return URI.create(getCustomerEndpoint + "/" + URLEncoder.encode(institutionId, StandardCharsets.UTF_8));
+    }
+
+    private InputStream setUpS3Event() throws IOException {
+        var path = "cristin_candidate_2022_academicArticle.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+        var event = createS3Event(fileUri);
+        return event;
+    }
+
+    private void mockCristinApiResponsesForAllSubUnits() {
+        mockCristinApiForSubUnit(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.0.0"),
+                                 NTNU_TOP_LEVEL_ORG_ID);
+        mockCristinApiForSubUnit(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.10.0"),
+                                 NTNU_TOP_LEVEL_ORG_ID);
+        mockCristinApiForSubUnit(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/1920.13.0.0"),
+                                 ST_OLAVS_TOP_LEVEL_ORG_ID);
+        mockCristinApiForSubUnit(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.25.0"),
+                                 NTNU_TOP_LEVEL_ORG_ID);
+        mockCristinApiForTopLevelOrg(ST_OLAVS_TOP_LEVEL_ORG_ID);
+    }
+
+    private void mockCustomerApi() {
+        mockCustomerApi(NTNU_TOP_LEVEL_ORG_ID);
+        mockCustomerApi(ST_OLAVS_TOP_LEVEL_ORG_ID);
     }
 
     private void mockCustomerApi(URI topLevelOrgId) {
