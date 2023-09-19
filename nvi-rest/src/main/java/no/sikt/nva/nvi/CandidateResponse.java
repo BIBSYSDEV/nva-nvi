@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi;
 
-import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
