@@ -14,20 +14,12 @@ import no.unit.nva.events.models.EventReference;
 
 public final class TestUtils {
 
-    private TestUtils(){
+    private TestUtils() {
 
     }
 
     public static InputStream createS3Event(URI uri) throws IOException {
         return createEventInputStream(new EventReference("", uri));
-    }
-
-    private static InputStream createEventInputStream(EventReference eventReference) throws IOException {
-        var detail = new AwsEventBridgeDetail<EventReference>();
-        detail.setResponsePayload(eventReference);
-        var event = new AwsEventBridgeEvent<AwsEventBridgeDetail<EventReference>>();
-        event.setDetail(detail);
-        return new ByteArrayInputStream(dtoObjectMapper.writeValueAsBytes(event));
     }
 
     @SuppressWarnings("unchecked")
@@ -38,4 +30,11 @@ public final class TestUtils {
         return response;
     }
 
+    private static InputStream createEventInputStream(EventReference eventReference) throws IOException {
+        var detail = new AwsEventBridgeDetail<EventReference>();
+        detail.setResponsePayload(eventReference);
+        var event = new AwsEventBridgeEvent<AwsEventBridgeDetail<EventReference>>();
+        event.setDetail(detail);
+        return new ByteArrayInputStream(dtoObjectMapper.writeValueAsBytes(event));
+    }
 }
