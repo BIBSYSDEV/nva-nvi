@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
+import no.sikt.nva.nvi.common.model.ReportStatus;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -378,6 +380,19 @@ public class NviServiceTest extends LocalDynamoTest {
         var persistedCandidate = nviService.upsertCandidate(updateCandidate(candidate.orElseThrow()));
         var actualNotes = persistedCandidate.orElseThrow().notes();
         assertThat(actualNotes, is(equalTo(createdNotes)));
+    }
+
+    @Test
+    void shouldReturnCandidateWithReportableStatusWhenNviPeriodIsOpen() {
+        var calendar = Calendar.getInstance();
+        calendar.add(Calendar.MINUTE, 10);
+        var publishingYear = String.valueOf(Calendar.getInstance().getWeekYear());
+        nviService.createPeriod(DbNviPeriod.builder().publishingYear(publishingYear).reportingDate(calendar.toInstant())
+                                        .build());
+        var candidate = randomCandidate().copy().publicationDate(DbPublicationDate.builder()
+                                                                     .year(publishingYear).build()).build();
+        var persistedCandidate = nviService.upsertCandidate(candidate);
+        assertThat(persistedCandidate.orElseThrow().reportStatus(), is(equalTo(ReportStatus.REPORTABLE)));
     }
 
     private static DbCandidate updateCandidate(Candidate candidate) {

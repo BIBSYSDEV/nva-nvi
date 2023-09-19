@@ -46,7 +46,7 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(PARAM_CANDIDATE_IDENTIFIER));
         return attempt(() -> toStatus(input, getUsername(requestInfo)))
                    .map(approvalStatus -> nviService.updateApprovalStatus(candidateIdentifier, approvalStatus))
-                   .map(candidate -> CandidateResponse.fromCandidate(candidate, nviService))
+                   .map(CandidateResponse::fromCandidate)
                    .orElseThrow(ExceptionMapper::map);
     }
 

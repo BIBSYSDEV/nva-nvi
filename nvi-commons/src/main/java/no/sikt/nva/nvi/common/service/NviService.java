@@ -1,10 +1,13 @@
 package no.sikt.nva.nvi.common.service;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static nva.commons.core.attempt.Try.attempt;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.Candidate;
@@ -16,6 +19,7 @@ import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
+import no.sikt.nva.nvi.common.model.ReportStatus;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -73,29 +77,34 @@ public class NviService {
                 .map(oldStatus -> toUpdatedApprovalStatus(oldStatus, newStatus))
                 .orElseThrow();
         nviCandidateRepository.updateApprovalStatus(identifier, approvalByIdAndInstitutionId);
-        return nviCandidateRepository.getCandidateById(identifier);
+        var candidate = nviCandidateRepository.getCandidateById(identifier);
+        return candidate.copy().withReportStatus(getReportStatus(candidate)).build();
     }
 
     public Optional<Candidate> findById(UUID uuid) {
-        return nviCandidateRepository.findCandidateById(uuid);
+        return nviCandidateRepository.findCandidateById(uuid)
+                   .map(value -> value.copy().withReportStatus(getReportStatus(value)).build());
     }
 
     public Optional<Candidate> findByPublicationId(URI publicationId) {
-        return nviCandidateRepository.findByPublicationId(publicationId);
+        var candidate = nviCandidateRepository.findByPublicationId(publicationId);
+        return candidate.map(value -> value.copy().withReportStatus(getReportStatus(value)).build());
     }
 
     public Candidate createNote(UUID identifier, DbNote dbNote) {
         if (nviCandidateRepository.exists(identifier)) {
             nviCandidateRepository.saveNote(identifier, dbNote);
         }
-        return nviCandidateRepository.findCandidateById(identifier).orElseThrow();
+        var candidate = nviCandidateRepository.findCandidateById(identifier).orElseThrow();
+        return candidate.copy().withReportStatus(getReportStatus(candidate)).build();
     }
 
     public Candidate deleteNote(UUID candidateIdentifier, UUID noteIdentifier, String requestUsername) {
         DbNote note = nviCandidateRepository.getNoteById(candidateIdentifier, noteIdentifier);
         if (isNoteOwner(requestUsername, note)) {
             nviCandidateRepository.deleteNote(candidateIdentifier, noteIdentifier);
-            return nviCandidateRepository.findCandidateById(candidateIdentifier).orElseThrow();
+            var candidate = nviCandidateRepository.findCandidateById(candidateIdentifier).orElseThrow();
+            return candidate.copy().withReportStatus(getReportStatus(candidate)).build();
         }
         throw new IllegalArgumentException("User not allowed to remove others note.");
     }
@@ -194,21 +203,34 @@ public class NviService {
                    .build();
     }
 
-    private Optional<Candidate> createCandidate(DbCandidate candidate) {
-        return Optional.of(createCandidate(candidate, generatePendingApprovalStatuses(candidate.points())));
+    private Optional<Candidate> createCandidate(DbCandidate dbCandidate) {
+        var candidate = createCandidate(dbCandidate, generatePendingApprovalStatuses(dbCandidate.points()));
+        return Optional.of(candidate.copy().withReportStatus(getReportStatus(candidate)).build());
     }
 
-    private Candidate createCandidate(DbCandidate candidate, List<DbApprovalStatus> approvalStatuses) {
-        return nviCandidateRepository.create(candidate, approvalStatuses);
+    private Candidate createCandidate(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
+        var candidate = nviCandidateRepository.create(dbCandidate, approvalStatuses);
+        return candidate.copy().withReportStatus(getReportStatus(candidate)).build();
+    }
+
+    private ReportStatus getReportStatus(Candidate candidate) {
+        var period = nviPeriodRepository.findByPublishingYear(candidate.candidate().publicationDate().year());
+        return period.isEmpty() || isClosed(period.get())
+                   ? ReportStatus.NOT_REPORTABLE
+                   : ReportStatus.REPORTABLE;
+
+    }
+
+    private boolean isClosed(DbNviPeriod dbNviPeriod) {
+        return dbNviPeriod.reportingDate().isBefore(Instant.now());
     }
 
     private Optional<Candidate> updateCandidate(DbCandidate dbCandidate) {
         var existingCandidate = findByPublicationId(dbCandidate.publicationId()).orElseThrow();
         //TODO: Reset NVI Candidates here. See https://unit.atlassian.net/browse/NP-45113;
-        return Optional.of(updateCandidate(existingCandidate.identifier(),
-                                           dbCandidate,
-                                           generatePendingApprovalStatuses(
-                                               dbCandidate.points())));
+        var updatedCandidate = updateCandidate(existingCandidate.identifier(), dbCandidate,
+                                          generatePendingApprovalStatuses(dbCandidate.points()));
+        return Optional.of(updatedCandidate.copy().withReportStatus(getReportStatus(updatedCandidate)).build());
     }
 
     private Candidate updateCandidate(UUID identifier, DbCandidate candidate, List<DbApprovalStatus> approvalStatuses) {

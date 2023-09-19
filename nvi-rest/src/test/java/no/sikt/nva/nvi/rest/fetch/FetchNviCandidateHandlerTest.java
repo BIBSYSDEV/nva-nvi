@@ -21,8 +21,8 @@ import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.model.ReportStatus;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.model.ReportStatus;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.ContentType;
@@ -127,7 +127,7 @@ class FetchNviCandidateHandlerTest {
     }
 
     private static Candidate getCandidate(UUID id, DbCandidate candidate, List<DbApprovalStatus> approvalStatusList) {
-        return new Candidate(id, candidate, approvalStatusList,List.of());
+        return new Candidate(id, candidate, approvalStatusList, List.of(), ReportStatus.NOT_REPORTABLE);
     }
 
     private GatewayResponse<CandidateResponse> getGatewayResponse()

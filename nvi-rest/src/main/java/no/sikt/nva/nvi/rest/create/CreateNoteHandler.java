@@ -41,7 +41,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         var candidateIdentifier = requestInfo.getPathParameter(PARAM_CANDIDATE_IDENTIFIER);
 
         var candidate = service.createNote(UUID.fromString(candidateIdentifier), getNote(input, username));
-        return CandidateResponse.fromCandidate(candidate, service);
+        return CandidateResponse.fromCandidate(candidate);
     }
 
     private void validateRequest(RequestInfo requestInfo)

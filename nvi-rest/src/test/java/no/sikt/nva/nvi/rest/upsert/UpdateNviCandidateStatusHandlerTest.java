@@ -30,9 +30,9 @@ import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
+import no.sikt.nva.nvi.common.model.ReportStatus;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.fetch.ApprovalStatus;
-import no.sikt.nva.nvi.rest.model.ReportStatus;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -120,7 +120,8 @@ class UpdateNviCandidateStatusHandlerTest {
         var candidate = randomCandidate().copy()
                                 .publicationDate(DbPublicationDate.builder().year(reportingYear).build())
                                 .build();
-        return Optional.of(new Candidate(UUID.randomUUID(), candidate, List.of(), List.of()));
+        return Optional.of(new Candidate(UUID.randomUUID(), candidate, List.of(), List.of(),
+                                         ReportStatus.NOT_REPORTABLE));
     }
 
     private static CandidateResponse createResponse(
@@ -163,7 +164,8 @@ class UpdateNviCandidateStatusHandlerTest {
                                          username,
                                          username,
                                          Instant.now())),
-            emptyList());
+            emptyList(),
+            no.sikt.nva.nvi.common.model.ReportStatus.NOT_REPORTABLE);
     }
 
     private static InputStream createRequest(NviStatusRequest body, URI customerId) throws JsonProcessingException {
