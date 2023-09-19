@@ -61,7 +61,7 @@ class UpdateNviCandidateStatusHandlerTest {
 
     @Test
     void shouldReturnUnauthorizedWhenMissingAccessRights() throws IOException {
-        when(nviService.findById(any())).thenReturn(candidateWithPublicationDate(randomString()));
+        when(nviService.findCandidateById(any())).thenReturn(candidateWithPublicationDate(randomString()));
         handler.handleRequest(createRequestWithoutAccessRights(randomStatusRequest(randomUri())), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -77,7 +77,7 @@ class UpdateNviCandidateStatusHandlerTest {
         var request = createRequest(nviStatusRequest, institutionId);
         var response = mockServiceResponse(nviStatusRequest, innerStatus);
         when(nviService.updateApprovalStatus(any(), any())).thenReturn(response);
-        when(nviService.findById(any())).thenReturn(candidateWithPublicationDate(randomString()));
+        when(nviService.findCandidateById(any())).thenReturn(candidateWithPublicationDate(randomString()));
         handler.handleRequest(request, output, context);
 
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
@@ -89,7 +89,7 @@ class UpdateNviCandidateStatusHandlerTest {
 
     @Test
     void shouldBeForbiddenToChangeStatusOfOtherInstitution() throws IOException {
-        when(nviService.findById(any())).thenReturn(candidateWithPublicationDate(randomString()));
+        when(nviService.findCandidateById(any())).thenReturn(candidateWithPublicationDate(randomString()));
         var body = randomStatusRequest(randomUri());
         var request = createRequest(body, randomUri());
         handler.handleRequest(request, output, context);
@@ -103,7 +103,7 @@ class UpdateNviCandidateStatusHandlerTest {
         throws IOException {
         var reportingYear = "2100";
         var institutionId = randomUri();
-        when(nviService.findById(any())).thenReturn(candidateWithPublicationDate(reportingYear));
+        when(nviService.findCandidateById(any())).thenReturn(candidateWithPublicationDate(reportingYear));
         when(nviService.getPeriod(any())).thenReturn(getDbNviPeriod(reportingYear));
         handler.handleRequest(createRequest(randomStatusRequest(institutionId), institutionId), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);

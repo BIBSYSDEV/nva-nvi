@@ -52,7 +52,7 @@ public final class RequestUtil {
 
     private static String fetchPublicationDate(NviService nviService, String candidateIdentifier)
         throws NotFoundException {
-        return nviService.findById(UUID.fromString(candidateIdentifier))
+        return nviService.findCandidateById(UUID.fromString(candidateIdentifier))
                    .map(Candidate::candidate)
                    .map(DbCandidate::publicationDate)
                    .map(DbPublicationDate::year)

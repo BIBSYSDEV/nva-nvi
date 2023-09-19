@@ -9,6 +9,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -72,7 +73,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var createdCandidate = nviService.upsertCandidate(candidate).orElseThrow();
         var createdCandidateId = createdCandidate.identifier();
 
-        var fetchedCandidate = nviService.findById(createdCandidateId).orElseThrow().candidate();
+        var fetchedCandidate = nviService.findCandidateById(createdCandidateId).orElseThrow().candidate();
 
         assertThat(fetchedCandidate, is(equalTo(candidate)));
     }
@@ -102,7 +103,7 @@ public class NviServiceTest extends LocalDynamoTest {
 
         var createdCandidateId = originalUpserted.identifier();
 
-        var fetchedCandidate = nviService.findById(createdCandidateId).orElseThrow().candidate();
+        var fetchedCandidate = nviService.findCandidateById(createdCandidateId).orElseThrow().candidate();
 
         assertThat(fetchedCandidate, is(equalTo(updatedCandidate)));
     }
@@ -200,7 +201,6 @@ public class NviServiceTest extends LocalDynamoTest {
         assertDoesNotThrow(() -> nviService.upsertCandidate(expectedCandidate));
     }
 
-    //TODO: Change test when nviService is implemented
     @Test
     void shouldCreateNviPeriod() {
         var period = createPeriod("2050");
@@ -335,7 +335,7 @@ public class NviServiceTest extends LocalDynamoTest {
                                                                                  candidateWith2Notes.notes()
                                                                                      .get(0)
                                                                                      .noteId(), randomString()));
-        assertThat(nviService.findById(fullCandidate.identifier()).orElseThrow().notes(), hasSize(2));
+        assertThat(nviService.findCandidateById(fullCandidate.identifier()).orElseThrow().notes(), hasSize(2));
     }
 
     @Test
@@ -380,6 +380,16 @@ public class NviServiceTest extends LocalDynamoTest {
         var persistedCandidate = nviService.upsertCandidate(updateCandidate(candidate.orElseThrow()));
         var actualNotes = persistedCandidate.orElseThrow().notes();
         assertThat(actualNotes, is(equalTo(createdNotes)));
+    }
+
+    @Test
+    void shouldUpdateCandidateRemovingApprovalsWhenCandidateIsNoLongerApplicable() {
+        var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
+        var notApplicableCandidate = candidate.candidate().copy().applicable(false).build();
+        nviService.upsertCandidate(notApplicableCandidate);
+        var persistedCandidate = nviService.findCandidateById(candidate.identifier());
+        assertThat(persistedCandidate.orElseThrow().candidate().applicable(), is(false));
+        assertThat(persistedCandidate.orElseThrow().approvalStatuses(), is(empty()));
     }
 
     @Test

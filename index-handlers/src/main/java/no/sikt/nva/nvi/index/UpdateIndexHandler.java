@@ -99,7 +99,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     private void updateIndex(DynamodbStreamRecord record) {
-        var candidate = nviService.findById(extractIdentifierFromOldImage(record)).orElseThrow();
+        var candidate = nviService.findCandidateById(extractIdentifierFromOldImage(record)).orElseThrow();
         if (isApplicable(candidate)) {
             addDocumentToIndex(candidate);
         } else {

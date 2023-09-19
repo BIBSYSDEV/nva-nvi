@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.rest.upsert;
 
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.service.NviService.defaultNviService;
+import static no.sikt.nva.nvi.rest.utils.RequestUtil.CANDIDATE_NOT_FOUND_MESSAGE;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
@@ -66,7 +67,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
         validateRequest(input, requestInfo);
         return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER))
                    .map(UUID::fromString)
-                   .map(nviService::findById)
+                   .map(nviService::findCandidateById)
                    .map(Optional::orElseThrow)
                    .map(candidate -> updateApprovalStatus(input, candidate))
                    .map(CandidateResponse::fromCandidate)

@@ -92,7 +92,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         service = mock(NviService.class);
         when(service.getPeriod(any()))
             .thenReturn(new DbNviPeriod(reportingYear, Instant.now(), randomUsername(), randomUsername()));
-        when(service.findById(any()))
+        when(service.findCandidateById(any()))
             .thenReturn(Optional.of(new Candidate(UUID.randomUUID(), randomCandidate(), List.of(), List.of(),
                                                   ReportStatus.NOT_REPORTABLE)));
         handler = new CreateNoteHandler(service);

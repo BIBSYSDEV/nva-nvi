@@ -160,7 +160,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         nviService = mock(NviService.class);
         when(nviService.getPeriod(any()))
             .thenReturn(new DbNviPeriod(reportingYear, Instant.now(), randomUsername(), randomUsername()));
-        when(nviService.findById(any()))
+        when(nviService.findCandidateById(any()))
             .thenReturn(Optional.of(candidate));
         handler = new UpsertAssigneeHandler(nviService, uriRetriever);
     }
