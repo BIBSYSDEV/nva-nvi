@@ -102,7 +102,6 @@ class UpdateNviCandidateStatusHandlerTest {
                    .withPublicationId(response.candidate().publicationId())
                    .withApprovalStatuses(
                        List.of(createApprovalStatus(nviStatusRequest, status, approvalStatus)))
-                   .withPoints(emptyList())
                    .withNotes(emptyList())
                    .build();
     }
