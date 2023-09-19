@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.rest.upsert;
 
 import static java.util.Collections.emptyList;
+import static java.util.UUID.randomUUID;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -66,27 +67,29 @@ class UpdateNviCandidateStatusHandlerTest {
     @EnumSource(NviApprovalStatus.class)
     void shouldReturnCandidateResponseWhenSuccessful(NviApprovalStatus status) throws IOException {
         URI institutionId = randomUri();
-        var nviStatusRequest = new NviStatusRequest(UUID.randomUUID(), institutionId, status);
+        var nviStatusRequest = new NviStatusRequest(institutionId, status);
         var innerStatus = DbStatus.parse(status.getValue());
-        var request = createRequest(nviStatusRequest, institutionId);
-        var response = mockServiceResponse(nviStatusRequest, innerStatus);
+        var candidateIdentifier = randomUUID();
+        var request = createRequest(nviStatusRequest, institutionId, candidateIdentifier);
+        var response = mockServiceResponse(nviStatusRequest, innerStatus, candidateIdentifier);
         var approvalStatus = response.approvalStatuses()
                                  .get(0);
         when(nviService.updateApprovalStatus(any(), any())).thenReturn(response);
 
         handler.handleRequest(request, output, context);
 
-        var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
+        var gatewayResponse =
+            GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         var bodyAsInstance = gatewayResponse.getBodyObject(CandidateResponse.class);
         assertThat(bodyAsInstance,
-                   is(equalTo(createResponse(nviStatusRequest, response, innerStatus, approvalStatus))));
+                   is(equalTo(createResponse(nviStatusRequest, response, innerStatus,
+                                             approvalStatus, candidateIdentifier))));
     }
 
     @Test
     void shouldBeForbiddenToChangeStatusOfOtherInstitution() throws IOException {
-
         var body = randomStatusRequest();
-        var request = createRequest(body, randomUri());
+        var request = createRequest(body, randomUri(), randomUUID());
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -96,9 +99,9 @@ class UpdateNviCandidateStatusHandlerTest {
     private static CandidateResponse createResponse(
         NviStatusRequest nviStatusRequest,
         Candidate response, DbStatus status,
-        DbApprovalStatus approvalStatus) {
+        DbApprovalStatus approvalStatus, UUID candidateIdentifier) {
         return CandidateResponse.builder()
-                   .withId(nviStatusRequest.candidateId())
+                   .withId(candidateIdentifier)
                    .withPublicationId(response.candidate().publicationId())
                    .withApprovalStatuses(
                        List.of(createApprovalStatus(nviStatusRequest, status, approvalStatus)))
@@ -119,10 +122,10 @@ class UpdateNviCandidateStatusHandlerTest {
     }
 
     private static Candidate mockServiceResponse(NviStatusRequest nviStatusRequest,
-                                                 DbStatus status) {
+                                                 DbStatus status, UUID candidateIdentifier) {
         var username = new DbUsername(randomString());
         return new Candidate(
-            nviStatusRequest.candidateId(),
+            candidateIdentifier,
             DbCandidate.builder()
                 .publicationId(nviStatusRequest.institutionId())
                 .points(emptyList())
@@ -135,20 +138,17 @@ class UpdateNviCandidateStatusHandlerTest {
             emptyList());
     }
 
-    private static InputStream createRequest(NviStatusRequest body, URI customerId) throws JsonProcessingException {
+    private static InputStream createRequest(NviStatusRequest body, URI customerId, UUID candidateIdentifier)
+        throws JsonProcessingException {
         return new HandlerRequestBuilder<NviStatusRequest>(JsonUtils.dtoObjectMapper)
                    .withBody(body)
                    .withCurrentCustomer(customerId)
-                   .withPathParameters(Map.of("candidateIdentifier", body.candidateId().toString()))
+                   .withPathParameters(Map.of("candidateIdentifier", candidateIdentifier.toString()))
                    .withTopLevelCristinOrgId(customerId)
                    //TODO CHANGE TO CORRECT ACCESS RIGHT
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE.name())
                    .withUserName(randomString())
                    .build();
-    }
-
-    private InputStream createRequest(NviStatusRequest body) throws JsonProcessingException {
-        return createRequest(body, randomUri());
     }
 
     private InputStream createRequestWithoutAccessRights(NviStatusRequest body) throws JsonProcessingException {
@@ -158,8 +158,6 @@ class UpdateNviCandidateStatusHandlerTest {
     }
 
     private NviStatusRequest randomStatusRequest() {
-        return new NviStatusRequest(UUID.randomUUID(),
-                                    randomUri(),
-                                    NviApprovalStatus.APPROVED);
+        return new NviStatusRequest(randomUri(), NviApprovalStatus.APPROVED);
     }
 }

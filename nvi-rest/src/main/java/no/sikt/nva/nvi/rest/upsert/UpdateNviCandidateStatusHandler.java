@@ -41,13 +41,10 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
     protected CandidateResponse processInput(NviStatusRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
-        var currentCustomer = requestInfo.getTopLevelOrgCristinId().orElseThrow();
-        verifyRequesteeIsCorrectCustomer(input.institutionId(), currentCustomer);
-
+        verifyRequesteeIsCorrectCustomer(input.institutionId(), requestInfo.getTopLevelOrgCristinId().orElseThrow());
+        var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(PARAM_CANDIDATE_IDENTIFIER));
         return attempt(() -> toStatus(input, getUsername(requestInfo)))
-                   .map(approvalStatus -> nviService.updateApprovalStatus(
-                       UUID.fromString(requestInfo.getPathParameter(PARAM_CANDIDATE_IDENTIFIER)),
-                       approvalStatus))
+                   .map(approvalStatus -> nviService.updateApprovalStatus(candidateIdentifier, approvalStatus))
                    .map(CandidateResponse::fromCandidate)
                    .orElseThrow(ExceptionMapper::map);
     }
@@ -64,8 +61,13 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
     }
 
     private DbApprovalStatus toStatus(NviStatusRequest input, DbUsername username) {
-        return new DbApprovalStatus(input.institutionId(), mapStatus(input.status()),
-                                    username, username, Instant.now());
+        return DbApprovalStatus.builder()
+                   .institutionId(input.institutionId())
+                   .status(mapStatus(input.status()))
+                   .finalizedBy(username)
+                   .assignee(username)
+                   .finalizedDate(Instant.now())
+                   .build();
     }
 
     // New switch return syntax isn't fullfilling the 100% coverage because of a bug.

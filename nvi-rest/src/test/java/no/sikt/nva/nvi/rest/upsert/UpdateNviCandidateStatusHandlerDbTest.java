@@ -14,7 +14,9 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
+import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
@@ -29,6 +31,7 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -63,12 +66,42 @@ public class UpdateNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
                                                                   .status(DbStatus.PENDING)
                                                                   .build()));
 
-        var req = new NviStatusRequest(candidate.identifier(), institutionId, status);
-        var request = createRequest(req, institutionId);
+        var req = new NviStatusRequest(institutionId, status);
+        var request = createRequest(req, institutionId, candidate.identifier());
         handler.handleRequest(request, output, context);
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         var bodyAsInstance = gatewayResponse.getBodyObject(CandidateResponse.class);
         assertThat(bodyAsInstance.approvalStatuses().get(0).status().getValue(), is(equalTo(status.getValue())));
+    }
+
+    @Test
+    void shouldUpdateRejectedApprovalToPending() throws IOException {
+        var institutionId = randomUri();
+        var dbCandidate = createCandidate(institutionId);
+        var candidate = nviCandidateRepository.create(dbCandidate,
+                                                      List.of(DbApprovalStatus.builder()
+                                                                  .institutionId(institutionId)
+                                                                  .status(DbStatus.PENDING)
+                                                                  .build()));
+        nviService.updateApprovalStatus(candidate.identifier(), rejectedApproval(candidate));
+        var request = createRequest(createRequestBody(institutionId, NviApprovalStatus.PENDING),
+                                    institutionId,
+                                    candidate.identifier());
+        handler.handleRequest(request, output, context);
+        var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
+        var bodyAsInstance = gatewayResponse.getBodyObject(CandidateResponse.class);
+        assertThat(bodyAsInstance.approvalStatuses().get(0).status().getValue(),
+                   is(equalTo(NviApprovalStatus.PENDING.getValue())));
+    }
+
+    private static NviStatusRequest createRequestBody(URI institutionId, NviApprovalStatus approvalStatus) {
+        return new NviStatusRequest(institutionId, approvalStatus);
+    }
+
+    private static DbApprovalStatus rejectedApproval(Candidate candidate) {
+        return candidate.approvalStatuses().get(0).copy()
+                   .status(DbStatus.REJECTED)
+                   .build();
     }
 
     private static DbCandidate createCandidate(URI institutionId) {
@@ -77,8 +110,7 @@ public class UpdateNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
                    .level(DbLevel.LEVEL_ONE)
                    .internationalCollaboration(false)
                    .publicationBucketUri(randomUri())
-                   .publicationDate(
-                       new DbPublicationDate("2023", "01", "01"))
+                   .publicationDate(new DbPublicationDate("2023", "01", "01"))
                    .creators(List.of(new DbCreator(randomUri(), List.of(institutionId))))
                    .creatorCount(1)
                    .instanceType("AcademicArticle")
@@ -87,9 +119,10 @@ public class UpdateNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
                    .build();
     }
 
-    private InputStream createRequest(NviStatusRequest body, URI customerId) throws JsonProcessingException {
+    private InputStream createRequest(NviStatusRequest body, URI customerId, UUID candidateIdentifier)
+        throws JsonProcessingException {
         return new HandlerRequestBuilder<NviStatusRequest>(JsonUtils.dtoObjectMapper)
-                   .withPathParameters(Map.of("candidateIdentifier", body.candidateId().toString()))
+                   .withPathParameters(Map.of("candidateIdentifier", candidateIdentifier.toString()))
                    .withBody(body)
                    .withCurrentCustomer(customerId)
                    .withTopLevelCristinOrgId(customerId)
