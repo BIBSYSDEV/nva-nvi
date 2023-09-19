@@ -1,0 +1,2005 @@
+{
+  "body": {
+    "identifier": "018a82c13bfa-33a5aab7-5d70-4273-a764-e2f427b903a4",
+    "nviType": "NonNviCandidate",
+    "modelVersion": "0.20.39",
+    "resourceOwner": {
+      "owner": "sintef@7401.0.0.0",
+      "ownerAffiliation": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.0.0.0"
+    },
+    "type": "Publication",
+    "@context": {
+      "manifestations": {
+        "@id": "manifestation",
+        "@container": "@set"
+      },
+      "musicalWorks": {
+        "@id": "musicalWork",
+        "@container": "@set"
+      },
+      "outputs": {
+        "@id": "output",
+        "@container": "@set"
+      },
+      "isbnList": {
+        "@id": "isbn",
+        "@container": "@set"
+      },
+      "projects": {
+        "@id": "project",
+        "@container": "@set"
+      },
+      "Film": "https://nva.sikt.no/ontology/publication#Film",
+      "NARA": "https://nva.sikt.no/ontology/approvals-body#NARA",
+      "approvedBy": {
+        "@type": "@vocab",
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/approvals-body#"
+        }
+      },
+      "ShortFilm": "https://nva.sikt.no/ontology/publication#ShortFilm",
+      "language": {
+        "@type": "@id"
+      },
+      "source": {
+        "@type": "@id"
+      },
+      "associatedArtifacts": {
+        "@id": "associatedArtifact",
+        "@container": "@set"
+      },
+      "type": "@type",
+      "NonNviCandidate": "https://nva.sikt.no/ontology/publication#NonNviCandidate",
+      "approvals": {
+        "@id": "approval",
+        "@container": "@set"
+      },
+      "additionalIdentifiers": {
+        "@id": "additionalIdentifier",
+        "@container": "@set"
+      },
+      "from": {
+        "@type": "xsd:dateTime"
+      },
+      "id": "@id",
+      "ownerAffiliation": {
+        "@type": "@id"
+      },
+      "InteractiveFilm": "https://nva.sikt.no/ontology/publication#InteractiveFilm",
+      "activeFrom": {
+        "@type": "xsd:dateTime"
+      },
+      "hasPart": "https://bibsysdev.github.io/src/organization-ontology.ttl#hasPart",
+      "handle": {
+        "@type": "@id"
+      },
+      "labels": {
+        "@id": "label",
+        "@container": "@language"
+      },
+      "tags": {
+        "@id": "tag",
+        "@container": "@set"
+      },
+      "metadataSource": {
+        "@type": "@id"
+      },
+      "compliesWith": {
+        "@id": "compliesWith",
+        "@container": "@set"
+      },
+      "modifiedDate": {
+        "@type": "xsd:dateTime"
+      },
+      "referencedBy": {
+        "@id": "referencedBy",
+        "@container": "@set"
+      },
+      "SerialFilmProduction": "https://nva.sikt.no/ontology/publication#SerialFilmProduction",
+      "doi": {
+        "@type": "@id"
+      },
+      "status": {
+        "@type": "@vocab",
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/publication#"
+        }
+      },
+      "architectureOutput": {
+        "@id": "architectureOutput",
+        "@container": "@set"
+      },
+      "@vocab": "https://nva.sikt.no/ontology/publication#",
+      "nviType": {
+        "@type": "@vocab",
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/publication#"
+        }
+      },
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "link": {
+        "@type": "@id"
+      },
+      "affiliations": {
+        "@id": "affiliation",
+        "@container": "@set"
+      },
+      "AugmentedVirtualRealityFilm": "https://nva.sikt.no/ontology/publication#AugmentedVirtualRealityFilm",
+      "fundings": {
+        "@id": "funding",
+        "@container": "@set"
+      },
+      "nameType": {
+        "@type": "@vocab",
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/publication#"
+        }
+      },
+      "related": {
+        "@id": "related",
+        "@container": "@set"
+      },
+      "countryCode": {
+        "@id": "https://bibsysdev.github.io/src/organization-ontology.ttl#country"
+      },
+      "publicationContextUris": {
+        "@container": "@set"
+      },
+      "alternativeTitles": {
+        "@id": "alternativeTitle",
+        "@container": "@language"
+      },
+      "approvalStatus": {
+        "@type": "@vocab",
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/publication#"
+        }
+      },
+      "DIRHEALTH": "https://nva.sikt.no/ontology/approvals-body#DIRHEALTH",
+      "NMA": "https://nva.sikt.no/ontology/approvals-body#NMA",
+      "subjects": {
+        "@type": "@id",
+        "@id": "subject",
+        "@container": "@set"
+      },
+      "activeTo": {
+        "@type": "xsd:dateTime"
+      },
+      "embargoDate": {
+        "@type": "xsd:dateTime"
+      },
+      "indexedDate": {
+        "@type": "xsd:dateTime"
+      },
+      "NviCandidate": "https://nva.sikt.no/ontology/publication#NviCandidate",
+      "createdDate": {
+        "@type": "xsd:dateTime"
+      },
+      "trackList": {
+        "@id": "trackList",
+        "@container": "@set"
+      },
+      "REK": "https://nva.sikt.no/ontology/approvals-body#REK",
+      "concertProgramme": {
+        "@id": "concertProgramme",
+        "@container": "@set"
+      },
+      "venues": {
+        "@id": "venue",
+        "@container": "@set"
+      },
+      "contributors": {
+        "@id": "contributor",
+        "@container": "@set"
+      },
+      "publishedDate": {
+        "@type": "xsd:dateTime"
+      },
+      "to": {
+        "@type": "xsd:dateTime"
+      }
+    },
+    "entityDescription": {
+      "reference": {
+        "type": "Reference",
+        "publicationInstance": {
+          "pages": {
+            "type": "Range"
+          },
+          "type": "AcademicChapter"
+        },
+        "publicationContext": {
+          "entityDescription": {
+            "reference": {
+              "type": "Reference",
+              "publicationContext": {
+                "isbnList": [
+                  "9781665456807"
+                ],
+                "publisher": {
+                  "valid": true,
+                  "identifier": "19108",
+                  "level": "1",
+                  "name": "IEEE conference proceedings",
+                  "active": true,
+                  "id": "https://api.sandbox.nva.aws.unit.no/publication-channels/publisher/19108/2022",
+                  "type": "Publisher"
+                },
+                "type": "Book"
+              }
+            },
+            "mainTitle": "2022 IEEE International Symposium on Safety, Security, and Rescue Robotics (SSRR)",
+            "contributors": [
+              {
+                "identity": {
+                  "name": "Unknown Unknown",
+                  "type": "Identity"
+                },
+                "type": "Contributor"
+              }
+            ],
+            "type": "EntityDescription"
+          },
+          "id": "https://api.sandbox.nva.aws.unit.no/publication/018a842b7a74-81693caf-a900-4f5a-86b9-6ed46d97c351",
+          "type": "Anthology"
+        }
+      },
+      "mainTitle": "Sniffer. a protein-based advanced VOC sensor for victim search",
+      "alternativeAbstracts": {},
+      "language": "http://lexvo.org/id/iso639-3/eng",
+      "contributors": [
+        {
+          "sequence": 6,
+          "role": {
+            "type": "Creator"
+          },
+          "identity": {
+            "verificationStatus": "NotVerified",
+            "name": "Krishna Persaud",
+            "type": "Identity"
+          },
+          "correspondingAuthor": false,
+          "affiliations": [
+            {
+              "countryCode": "NO",
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/0.0.0.0",
+              "type": "Organization",
+              "labels": {
+                "nb": "Ukjent",
+                "en": "Unknown"
+              }
+            }
+          ],
+          "type": "Contributor"
+        },
+        {
+          "sequence": 5,
+          "role": {
+            "type": "Creator"
+          },
+          "identity": {
+            "verificationStatus": "Verified",
+            "name": "Terje Mugaas",
+            "type": "Identity"
+          },
+          "correspondingAuthor": false,
+          "affiliations": [
+            {
+              "countryCode": "NO",
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.26.0",
+              "type": "Organization",
+              "labels": {
+                "nb": "Mathematics and Cybernetics",
+                "en": "Mathematics and Cybernetics"
+              }
+            },
+            {
+              "countryCode": "NO",
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0",
+              "type": "Organization",
+              "labels": {
+                "nn": "Noregs teknisk-naturvitskaplege universitet",
+                "nb": "Norges teknisk-naturvitenskapelige universitet",
+                "en": "Norwegian University of Science and Technology"
+              }
+            }
+          ],
+          "type": "Contributor"
+        },
+        {
+          "sequence": 0,
+          "role": {
+            "type": "Creator"
+          },
+          "identity": {
+            "verificationStatus": "NotVerified",
+            "name": "Emmanuel Scorsone",
+            "type": "Identity"
+          },
+          "correspondingAuthor": false,
+          "affiliations": [
+            {
+              "countryCode": "NO",
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/0.0.0.0",
+              "type": "Organization",
+              "labels": {
+                "nb": "Ukjent",
+                "en": "Unknown"
+              }
+            }
+          ],
+          "type": "Contributor"
+        },
+        {
+          "sequence": 2,
+          "role": {
+            "type": "Creator"
+          },
+          "identity": {
+            "verificationStatus": "NotVerified",
+            "name": "David Fraser",
+            "type": "Identity"
+          },
+          "correspondingAuthor": false,
+          "affiliations": [
+            {
+              "countryCode": "NO",
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/0.0.0.0",
+              "type": "Organization",
+              "labels": {
+                "nb": "Ukjent",
+                "en": "Unknown"
+              }
+            }
+          ],
+          "type": "Contributor"
+        },
+        {
+          "sequence": 3,
+          "role": {
+            "type": "Creator"
+          },
+          "identity": {
+            "verificationStatus": "NotVerified",
+            "name": "Khasim Cali",
+            "type": "Identity"
+          },
+          "correspondingAuthor": false,
+          "affiliations": [
+            {
+              "countryCode": "NO",
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/0.0.0.0",
+              "type": "Organization",
+              "labels": {
+                "nb": "Ukjent",
+                "en": "Unknown"
+              }
+            }
+          ],
+          "type": "Contributor"
+        },
+        {
+          "sequence": 1,
+          "role": {
+            "type": "Creator"
+          },
+          "identity": {
+            "verificationStatus": "NotVerified",
+            "name": "Jocelyn Boutzen",
+            "type": "Identity"
+          },
+          "correspondingAuthor": false,
+          "affiliations": [
+            {
+              "countryCode": "NO",
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/0.0.0.0",
+              "type": "Organization",
+              "labels": {
+                "nb": "Ukjent",
+                "en": "Unknown"
+              }
+            }
+          ],
+          "type": "Contributor"
+        },
+        {
+          "sequence": 4,
+          "role": {
+            "type": "Creator"
+          },
+          "identity": {
+            "verificationStatus": "Verified",
+            "name": "Giancarlo Marafioti",
+            "type": "Identity"
+          },
+          "correspondingAuthor": false,
+          "affiliations": [
+            {
+              "countryCode": "NO",
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.26.0",
+              "type": "Organization",
+              "labels": {
+                "nb": "Mathematics and Cybernetics",
+                "en": "Mathematics and Cybernetics"
+              }
+            },
+            {
+              "countryCode": "NO",
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0",
+              "type": "Organization",
+              "labels": {
+                "nn": "Noregs teknisk-naturvitskaplege universitet",
+                "nb": "Norges teknisk-naturvitenskapelige universitet",
+                "en": "Norwegian University of Science and Technology"
+              }
+            }
+          ],
+          "type": "Contributor"
+        }
+      ],
+      "type": "EntityDescription",
+      "publicationDate": {
+        "year": "2022",
+        "type": "PublicationDate"
+      }
+    },
+    "createdDate": "2023-04-12T00:00:00Z",
+    "publicationContextUris": [],
+    "modifiedDate": "2023-09-18T09:58:02.538608956Z",
+    "additionalIdentifiers": [
+      {
+        "sourceName": "Cristin",
+        "type": "AdditionalIdentifier",
+        "value": "2140169"
+      }
+    ],
+    "publisher": {
+      "id": "https://api.sandbox.nva.aws.unit.no/customer/f54c8aa9-073a-46a1-8f7c-dde66c853934",
+      "type": "Organization"
+    },
+    "id": "https://api.sandbox.nva.aws.unit.no/publication/018a82c13bfa-33a5aab7-5d70-4273-a764-e2f427b903a4",
+    "publishedDate": "2023-04-12T00:00:00Z",
+    "status": "PUBLISHED",
+    "topLevelOrganization": [
+      {
+        "countryCode": "NO",
+        "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/0.0.0.0",
+        "type": "Organization",
+        "labels": {
+          "nb": "Ukjent",
+          "en": "Unknown"
+        }
+      },
+      {
+        "hasPart": [
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "VM",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"
+            },
+            "hasPart": [
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "VM-IAK",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.31.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.31.5.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for arkeologi og kulturhistorie",
+                  "en": "Department of Archaeology and Cultural History"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "VM-SF",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.31.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.31.15.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Seksjon for formidling",
+                  "en": "Department of Public Outreach and Exhibitions"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "VM-ADM",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.31.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.31.1.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Vitenskapsmuseet administrasjon",
+                  "en": "Museum administration"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "VM-INH",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.31.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.31.10.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for naturhistorie",
+                  "en": "Department of Natural History"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "VM-ND",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.31.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.31.15.15",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Nasjonallaboratoriene for datering",
+                  "en": "National Laboratory for Age Determination"
+                }
+              }
+            ],
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.31.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "NTNU Vitenskapsmuseet",
+              "en": "NTNU University Museum"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "NV",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"
+            },
+            "hasPart": [
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "NV-FELLES",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.50.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Felles forskningsinfrastruktur",
+                  "en": "Research Infrastructure"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "NV-IKJ",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.25.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for kjemi",
+                  "en": "Department of Chemistry"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "NV-IBA",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.45.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for biologiske fag Ålesund",
+                  "en": "Department of Biological Sciences Ålesund"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "NV-IKP",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.30.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for kjemisk prosessteknologi",
+                  "en": "Department of Chemical Engineering"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "NV-IFY",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.20.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for fysikk",
+                  "en": "Department of Physics"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "NV-ADM",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.1.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "NV fakultetsadministrasjon",
+                  "en": "NV Faculty Administration"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "NV-IBF",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.40.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for bioingeniørfag",
+                  "en": "Department of Biomedical Laboratory Science"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "NV-IBI",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.10.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for biologi",
+                  "en": "Department of Biology"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "NV-IMA",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.35.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for materialteknologi",
+                  "en": "Department of Materials Science and Engineering"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "NV-IBT",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.15.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for bioteknologi og matvitenskap",
+                  "en": "Department of Biotechnology and Food Science"
+                }
+              }
+            ],
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.66.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "Fakultet for naturvitenskap",
+              "en": "Faculty of Natural Sciences"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "UTD",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"
+            },
+            "hasPart": {
+              "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "UTD-UB",
+              "partOf": {
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.14.0.0"
+              },
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.14.30.0",
+              "type": "Organization",
+              "labels": {
+                "nb": "NTNU Universitetsbiblioteket",
+                "en": "NTNU University Library"
+              }
+            },
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.14.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "Prorektor for utdanning",
+              "en": "Pro-Rector for Education"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "OD",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"
+            },
+            "hasPart": {
+              "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "OD-KOMM",
+              "partOf": {
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.16.0.0"
+              },
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.16.90.0",
+              "type": "Organization",
+              "labels": {
+                "nb": "Kommunikasjonsavdelingen",
+                "en": "Communication Division"
+              }
+            },
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.16.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "Organisasjonsdirektør",
+              "en": "Director, Organization"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IE",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"
+            },
+            "hasPart": [
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IE-IEL",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.20.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for elkraftteknikk",
+                  "en": "Department of Electric Power Engineering"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IE-ITK",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.25.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for teknisk kybernetikk",
+                  "en": "Department of Engineering Cybernetics"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IE-ADM",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.0.0"
+                },
+                "hasPart": {
+                  "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IE-ADM-NSR",
+                  "partOf": {
+                    "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.1.0"
+                  },
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.1.20",
+                  "type": "Organization",
+                  "labels": {
+                    "nb": "Nasjonalt senter for realfagsrekruttering",
+                    "en": "The National Centre for Science Recruitment"
+                  }
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.1.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "IE fakultetsadministrasjon",
+                  "en": "IE Faculty Administration"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IE-IDI",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.10.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for datateknologi og informatikk",
+                  "en": "Department of Computer Science"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IE-IMF",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.15.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for matematiske fag",
+                  "en": "Department of Mathematical Sciences"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IE-IIK",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.30.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for informasjonssikkerhet og kommunikasjonsteknologi",
+                  "en": "Department of Information Security and Communication Technology"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IE-IIR",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.55.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for IKT og realfag",
+                  "en": "Department of ICT and Natural Sciences"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IE-IES",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.35.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for elektroniske systemer",
+                  "en": "Department of Electronic Systems"
+                }
+              }
+            ],
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "Fakultet for informasjonsteknologi og elektroteknikk",
+              "en": "Faculty of Information Technology and Electrical Engineering"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "NY",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"
+            },
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.17.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "Prorektor for nyskaping",
+              "en": "Pro-Rector for Innovation"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "RE",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"
+            },
+            "hasPart": {
+              "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "RE-REK",
+              "partOf": {
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.12.0.0"
+              },
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.12.1.0",
+              "type": "Organization",
+              "labels": {
+                "nb": "Rektor og styre",
+                "en": "Rector and Board"
+              }
+            },
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.12.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "Rektor",
+              "en": "Rector"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "FO",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"
+            },
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.13.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "Prorektor for forskning",
+              "en": "Pro-Rector for Research"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "AD",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"
+            },
+            "hasPart": [
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "AD-ADM",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.61.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.61.1.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "AD fakultetsadministrasjon",
+                  "en": "AD Faculty Administration"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "AD-IAP",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.61.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.61.50.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for arkitektur og planlegging",
+                  "en": "Department of Architecture and Planning"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "AD-IAT",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.61.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.61.55.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for arkitektur og teknologi",
+                  "en": "Department of Architecture and Technology"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "AD-ID",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.61.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.61.45.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for design",
+                  "en": "Department of Design"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "AD-KIT",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.61.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.61.30.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Kunstakademiet i Trondheim",
+                  "en": "Trondheim Academy of Fine Art"
+                }
+              }
+            ],
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.61.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "Fakultet for arkitektur og design",
+              "en": "Faculty of Architecture and Design"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "SU",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"
+            },
+            "hasPart": [
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "SU-IPS",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.40.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for psykologi",
+                  "en": "Department of Psychology"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "SU-ISS",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.25.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for sosiologi og statsvitenskap",
+                  "en": "Department of Sociology and Political Science"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "SU-SA",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.45.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for sosialantropologi",
+                  "en": "Department of Social Anthropology"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "SU-ILU",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.0.0"
+                },
+                "hasPart": [
+                  {
+                    "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "SU-ILU-NSM",
+                    "partOf": {
+                      "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.80.0"
+                    },
+                    "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.80.30",
+                    "type": "Organization",
+                    "labels": {
+                      "nb": "Nasjonalt senter for matematikk i opplæringen",
+                      "en": "Norwegian Centre for Mathematics Education"
+                    }
+                  },
+                  {
+                    "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "SU-ILU-NSS",
+                    "partOf": {
+                      "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.80.0"
+                    },
+                    "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.80.40",
+                    "type": "Organization",
+                    "labels": {
+                      "nb": "Nasjonalt senter for skriveopplæring og skriveforsking",
+                      "en": "The Norwegian Centre for Writing Education and Research (The Writing Centre)"
+                    }
+                  }
+                ],
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.80.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for lærerutdanning",
+                  "en": "Department of Teacher Education"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "SU-ADM",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.1.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "SU fakultetsadministrasjon",
+                  "en": "SU Faculty Administration"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "SU-IPL",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.70.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for pedagogikk og livslang læring",
+                  "en": "Department of Education and Lifelong Learning"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "SU-ISA",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.90.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for sosialt arbeid",
+                  "en": "Department of Social Work"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "SU-IGE",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.10.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for geografi",
+                  "en": "Department of Geography"
+                }
+              }
+            ],
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.67.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "Fakultet for samfunns- og utdanningsvitenskap",
+              "en": "Faculty of Social and Educational Sciences"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "HF",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"
+            },
+            "hasPart": [
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "HF-KULT",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.62.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.62.40.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for tverrfaglige kulturstudier",
+                  "en": "Department of Interdisciplinary Studies of Culture"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "HF-IFR",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.62.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.62.70.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for filosofi og religionsvitenskap",
+                  "en": "Department of Philosophy and Religious Studies"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "HF-ISL",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.62.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.62.60.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for språk og litteratur",
+                  "en": "Department of Language and Literature"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "HF-IKM",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.62.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.62.35.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for kunst- og medievitenskap",
+                  "en": "Department of Art and Media Studies"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "HF-ADM",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.62.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.62.1.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "HF fakultetsadministrasjon",
+                  "en": "HF faculty administration"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "HF-IMU",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.62.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.62.45.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for musikk",
+                  "en": "Department of Music"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "HF-IHS",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.62.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.62.65.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for historiske studier",
+                  "en": "Department of Historical Studies"
+                }
+              }
+            ],
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.62.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "Det humanistiske fakultet",
+              "en": "Faculty of Humanities"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MH",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"
+            },
+            "hasPart": [
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MH-ISB",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.25.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for sirkulasjon og bildediagnostikk",
+                  "en": "Department of Circulation and Medical Imaging"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MH-IHG",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.0.0"
+                },
+                "hasPart": {
+                  "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MH-IHG-OMS",
+                  "partOf": {
+                    "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.70.0"
+                  },
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.70.20",
+                  "type": "Organization",
+                  "labels": {
+                    "nb": "Senter for omsorgsforskning",
+                    "en": "Center for Care Research"
+                  }
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.70.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for helsevitenskap Gjøvik",
+                  "en": "Department of Health Sciences Gjøvik"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MH-KIN",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.60.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Kavliinstitutt for nevrovitenskap",
+                  "en": "Kavli Institute for Systems Neuroscience"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MH-IKOM",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.15.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for klinisk og molekylær medisin",
+                  "en": "Department of Clinical and Molecular Medicine"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MH-IPH",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.0.0"
+                },
+                "hasPart": [
+                  {
+                    "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MH-IPH-NAK",
+                    "partOf": {
+                      "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.35.0"
+                    },
+                    "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.35.20",
+                    "type": "Organization",
+                    "labels": {
+                      "nb": "Nasjonalt kompetansemiljø om utviklingshemming (NAKU)",
+                      "en": "The National Institute on Intellectual Disability and Community"
+                    }
+                  },
+                  {
+                    "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MH-IPH-RKB",
+                    "partOf": {
+                      "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.35.0"
+                    },
+                    "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.35.5",
+                    "type": "Organization",
+                    "labels": {
+                      "nb": "RKBU Midt-Norge - Regionalt kunnskapssenter for barn og unge - psykisk helse og barnevern",
+                      "en": "Regional Centre for Child and Youth Mental Health and Child Welfare"
+                    }
+                  }
+                ],
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.35.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for psykisk helse",
+                  "en": "Department of Mental Health"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MH-INB",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.30.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for nevromedisin og bevegelsesvitenskap",
+                  "en": "Department of Neuromedicine and Movement Science"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MH-IHA",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.80.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for helsevitenskap Ålesund",
+                  "en": "Department of Health Sciences Ålesund"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MH-ISM",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.0.0"
+                },
+                "hasPart": [
+                  {
+                    "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MH-ISM-HUN",
+                    "partOf": {
+                      "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.20.0"
+                    },
+                    "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.20.15",
+                    "type": "Organization",
+                    "labels": {
+                      "nb": "Helseundersøkelsen i Nord-Trøndelag",
+                      "en": "The Nord-Trøndelag Health Study"
+                    }
+                  },
+                  {
+                    "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "AFE",
+                    "partOf": {
+                      "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.20.0"
+                    },
+                    "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.20.10",
+                    "type": "Organization",
+                    "labels": {
+                      "nb": "Allmennmedisinsk forskningsenhet i Trondheim"
+                    }
+                  }
+                ],
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.20.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for samfunnsmedisin og sykepleie",
+                  "en": "Department of Public Health and Nursing"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MH-ADM",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.1.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "MH fakultetsadministrasjon",
+                  "en": "MH Faculty Administration"
+                }
+              }
+            ],
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "Fakultet for medisin og helsevitenskap",
+              "en": "Faculty of Medicine and Health Sciences"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IV",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"
+            },
+            "hasPart": [
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IV-IBM",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.91.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for bygg- og miljøteknikk",
+                  "en": "Department of Civil and Environmental Engineering"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IV-IVB",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.94.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for vareproduksjon og byggteknikk",
+                  "en": "Department of Manufacturing and Civil Engineering"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IV-IGP",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.90.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for geovitenskap og petroleum",
+                  "en": "Department of Geoscience and Petroleum"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IV-IMT",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.20.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for marin teknikk",
+                  "en": "Department of Marine Technology"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IV-ADM",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.1.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "IV fakultetsadministrasjon",
+                  "en": "IV Faculty Administration"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IV-KT",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.45.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for konstruksjonsteknikk",
+                  "en": "Department of Structural Engineering"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "AMOS",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.80.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Senter for autonome marine operasjoner og systemer",
+                  "en": "Centre for autonomous marine operations and systems"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IV-MTP",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.92.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for maskinteknikk og produksjon",
+                  "en": "Department of Mechanical and Industrial Engineering"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IV-EPT",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.25.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for energi- og prosessteknikk",
+                  "en": "Department of Energy and Process Engineering"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IV-IHB",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.93.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for havromsoperasjoner og byggteknikk",
+                  "en": "Department of Ocean Operations and Civil Engineering"
+                }
+              }
+            ],
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "Fakultet for ingeniørvitenskap",
+              "en": "Faculty of Engineering"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "OK",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"
+            },
+            "hasPart": [
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "OK-IOT",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.60.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.60.25.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for industriell økonomi og teknologiledelse",
+                  "en": "Department of Industrial Economics and Technology Management"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "OK-ADM",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.60.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.60.1.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "ØK fakultetsadministrasjon",
+                  "en": "Economics and Management Faculty Administration"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "OK-HHS",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.60.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.60.10.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "NTNU Handelshøyskolen",
+                  "en": "NTNU Business School"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "OK-IIF",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.60.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.60.15.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for internasjonal forretningsdrift",
+                  "en": "Department of International Business"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "OK-ISO",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.60.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.60.20.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Institutt for samfunnsøkonomi",
+                  "en": "Department of Economics"
+                }
+              }
+            ],
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.60.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "Fakultet for økonomi",
+              "en": "Faculty of Economics and Management"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "KD-ENHETER",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"
+            },
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.35.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "Enheter under Kunnskapdepartementet og Utdanningdirektoratet"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "OE",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"
+            },
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.15.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "Økonomi- og eiendomsdirektør",
+              "en": "Director of Finance and Property"
+            }
+          }
+        ],
+        "countryCode": "NO",
+        "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0",
+        "type": "Organization",
+        "labels": {
+          "nn": "Noregs teknisk-naturvitskaplege universitet",
+          "nb": "Norges teknisk-naturvitenskapelige universitet",
+          "en": "Norwegian University of Science and Technology"
+        }
+      },
+      {
+        "hasPart": [
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "STAB",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.0.0.0"
+            },
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.1.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "SINTEF Konsernstab",
+              "en": "SINTEF Group Head Office"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "COMMUNITY",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.0.0.0"
+            },
+            "hasPart": [
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "BYGINST",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.20.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Bygninger og installasjoner",
+                  "en": "Architectural Engineering"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MOB",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.70.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Mobilitet og samfunnsøkonomi",
+                  "en": "Mobility and Economics"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "KS",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.50.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Kunnskapsformidling",
+                  "en": "Science Communication"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "STAB-COMM",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.10.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Stab Community",
+                  "en": "Staff Community"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "SC",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.60.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "SINTEF Certification",
+                  "en": "SINTEF Certification"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "INFRA",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.30.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Infrastruktur",
+                  "en": "Infrastructure"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "ARKBYG",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.40.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Arkitektur, byggematerialer og konstruksjoner",
+                  "en": "Architecture, Materials and Structures"
+                }
+              }
+            ],
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "SINTEF Community",
+              "en": "SINTEF Community"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "IKT",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.0.0.0"
+            },
+            "hasPart": [
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MATH",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.0.0"
+                },
+                "countryCode": "NO",
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.26.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Mathematics and Cybernetics",
+                  "en": "Mathematics and Cybernetics"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MIKRO-NANO",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.31.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Microsystems and Nanotechnology",
+                  "en": "Microsystems and Nanotechnology"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "NETTBAS",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.12.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Software and Service Innovation",
+                  "en": "Software and Service Innovation"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "SMARTSENS",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.33.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Smart Sensor Systems",
+                  "en": "Smart Sensor Systems"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "TEKNO",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.30.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Teknologiledelse",
+                  "en": "Technology Management"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "KOMM-SYS",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.22.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Connectivity Technologies and Platforms",
+                  "en": "Connectivity Technologies and Platforms"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "STAB-IKT",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.91.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Management and Staff",
+                  "en": "Management and Staff"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "HELSE",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.25.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Helse",
+                  "en": "Health Research"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "SYSTEMUTV",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.13.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Software Engineering, Safety and Security",
+                  "en": "Software Engineering, Safety and Security"
+                }
+              }
+            ],
+            "countryCode": "NO",
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "SINTEF Digital",
+              "en": "SINTEF Digital"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MK",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.0.0.0"
+            },
+            "hasPart": [
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "INDUSTRIADM",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.80.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.80.99.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Industri - Administrasjon",
+                  "en": "Industry - Administration"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "INDPROS",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.80.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.80.63.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Metallproduksjon og prosessering",
+                  "en": "Metal Production and Processing"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "MATRNANO",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.80.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.80.64.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Materialer og nanoteknologi",
+                  "en": "Materials and Nanotechnology"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "PROSESSTEKN",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.80.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.80.40.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Prosessteknologi",
+                  "en": "Process Technology"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "BÆRENE",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.80.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.80.62.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Bærekraftig energiteknologi",
+                  "en": "Sustainable Energy Technology"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "PETRO",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.80.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.80.7.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Petroleum",
+                  "en": "Petroleum"
+                }
+              },
+              {
+                "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "BIOTEK-NANO",
+                "partOf": {
+                  "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.80.0.0"
+                },
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.80.1.0",
+                "type": "Organization",
+                "labels": {
+                  "nb": "Bioteknologi og nanomedisin",
+                  "en": "Biotechnology and Nanomedicine"
+                }
+              }
+            ],
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.80.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "SINTEF Industri",
+              "en": "SINTEF Industry"
+            }
+          },
+          {
+            "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "EIENDOM",
+            "partOf": {
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.0.0.0"
+            },
+            "hasPart": {
+              "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "EIENDOMADM",
+              "partOf": {
+                "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.2.0.0"
+              },
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.2.1.0",
+              "type": "Organization",
+              "labels": {
+                "nb": "Eiendom administrasjon",
+                "en": "Property Management"
+              }
+            },
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.2.0.0",
+            "type": "Organization",
+            "labels": {
+              "nb": "SINTEF Eiendom",
+              "en": "SINTEF Property Management"
+            }
+          }
+        ],
+        "countryCode": "NO",
+        "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.0.0.0",
+        "type": "Organization",
+        "labels": {
+          "nn": "SINTEF AS",
+          "nb": "SINTEF AS",
+          "en": "SINTEF"
+        }
+      }
+    ]
+  }
+}
