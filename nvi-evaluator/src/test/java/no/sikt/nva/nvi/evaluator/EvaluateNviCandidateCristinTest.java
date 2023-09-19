@@ -104,6 +104,19 @@ public class EvaluateNviCandidateCristinTest {
         assertThat(body.institutionPoints().get(UIO_TOP_LEVEL_ORG_ID), is(equalTo(BigDecimal.valueOf(3.7528))));
     }
 
+    @Test
+    void shouldCalculatePointsOnValidCristinImportLiteratureReviewFrom2022() throws IOException {
+        mockCristinApiForSubUnit(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.15.0"),
+                                 NTNU_TOP_LEVEL_ORG_ID);
+        mockCustomerApi(NTNU_TOP_LEVEL_ORG_ID);
+
+        handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicLiteratureReview.json"), output, context);
+        var message = sqsClient.getSentMessages().get(0);
+        var body =
+            attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
+        assertThat(body.institutionPoints().get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(BigDecimal.valueOf(1.5922))));
+    }
+
     private static URI createCustomerApiUri(String institutionId) {
         var getCustomerEndpoint = UriWrapper.fromHost(API_HOST).addChild(CUSTOMER).addChild(CRISTIN_ID).getUri();
         return URI.create(getCustomerEndpoint + "/" + URLEncoder.encode(institutionId, StandardCharsets.UTF_8));

@@ -264,6 +264,7 @@
           },
           "identity": {
             "verificationStatus": "Verified",
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/person/3",
             "name": "Maren Mynarek",
             "type": "Identity"
           },
