@@ -16,6 +16,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -38,17 +39,21 @@ import org.junit.jupiter.api.Test;
 
 public class EvaluateNviCandidateCristinTest {
 
-    public static final Environment ENVIRONMENT = new Environment();
-    public static final String ORGANIZATION_RESPONSE = "generalCristinApiSubUnitOrganizationResponse.json";
-    public static final String CRISTIN_ORG_RESPONSE = IoUtils.stringFromResources(Path.of(ORGANIZATION_RESPONSE));
-    public static final String REPLACE_SUB_UNIT_STRING = "__REPLACE_SUB_UNIT_ID__";
-    public static final String REPLACE_TOP_LEVEL_STRING = "__REPLACE_TOP_LEVEL_ORG_ID__";
-    public static final URI NTNU_TOP_LEVEL_ORG_ID = URI.create(
+    private static final Environment ENVIRONMENT = new Environment();
+    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
+    private static final int SCALE = 4;
+    private static final String ORGANIZATION_RESPONSE = "generalCristinApiSubUnitOrganizationResponse.json";
+    private static final String CRISTIN_ORG_RESPONSE = IoUtils.stringFromResources(Path.of(ORGANIZATION_RESPONSE));
+    private static final String REPLACE_SUB_UNIT_STRING = "__REPLACE_SUB_UNIT_ID__";
+    private static final String REPLACE_TOP_LEVEL_STRING = "__REPLACE_TOP_LEVEL_ORG_ID__";
+    private static final URI NTNU_TOP_LEVEL_ORG_ID = URI.create(
         ("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"));
-    public static final URI ST_OLAVS_TOP_LEVEL_ORG_ID = URI.create(
+    private static final URI ST_OLAVS_TOP_LEVEL_ORG_ID = URI.create(
         "https://api.sandbox.nva.aws.unit.no/cristin/organization/1920.0.0.0");
-    public static final URI UIO_TOP_LEVEL_ORG_ID = URI.create(
+    private static final URI UIO_TOP_LEVEL_ORG_ID = URI.create(
         "https://api.sandbox.nva.aws.unit.no/cristin/organization/185.90.0.0");
+    private static final URI SINTEF_TOP_LEVEL_ORG_ID = URI.create(
+        "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.0.0.0");
     private static final String BUCKET_NAME = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
     private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
     private static final String CUSTOMER_API_NVI_RESPONSE = "{" + "\"nviInstitution\" : \"true\"" + "}";
@@ -80,15 +85,15 @@ public class EvaluateNviCandidateCristinTest {
 
     @Test
     void shouldCalculatePointsOnValidCristinImportAcademicArticleFrom2022() throws IOException {
-        mockCristinApiResponsesForAllSubUnits();
+        mockCristinApiResponsesForAllSubUnitsInAcademicArticle();
         mockCustomerApi();
 
         handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicArticle.json"), output, context);
         var message = sqsClient.getSentMessages().get(0);
         var body =
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
-        assertThat(body.institutionPoints().get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(BigDecimal.valueOf(0.8165))));
-        assertThat(body.institutionPoints().get(ST_OLAVS_TOP_LEVEL_ORG_ID), is(equalTo(BigDecimal.valueOf(0.5774))));
+        assertThat(body.institutionPoints().get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8165))));
+        assertThat(body.institutionPoints().get(ST_OLAVS_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5774))));
     }
 
     @Test
@@ -101,7 +106,7 @@ public class EvaluateNviCandidateCristinTest {
         var message = sqsClient.getSentMessages().get(0);
         var body =
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
-        assertThat(body.institutionPoints().get(UIO_TOP_LEVEL_ORG_ID), is(equalTo(BigDecimal.valueOf(3.7528))));
+        assertThat(body.institutionPoints().get(UIO_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(3.7528))));
     }
 
     @Test
@@ -114,12 +119,39 @@ public class EvaluateNviCandidateCristinTest {
         var message = sqsClient.getSentMessages().get(0);
         var body =
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
-        assertThat(body.institutionPoints().get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(BigDecimal.valueOf(1.5922))));
+        assertThat(body.institutionPoints().get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(1.5922))));
+    }
+
+    @Test
+    void shouldCalculatePointsOnValidCristinImportAcademicChapterFrom2022() throws IOException {
+        mockCristinApiResponsesForAllSubUnitsInAcademicChapter();
+        mockCustomerApi(NTNU_TOP_LEVEL_ORG_ID);
+        mockCustomerApi(SINTEF_TOP_LEVEL_ORG_ID);
+
+        handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicChapter.json"), output, context);
+        var message = sqsClient.getSentMessages().get(0);
+        var body =
+            attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
+        assertThat(body.institutionPoints().get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8660))));
+        assertThat(body.institutionPoints().get(SINTEF_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5000))));
+    }
+
+    private static BigDecimal scaledBigDecimal(double val) {
+        return BigDecimal.valueOf(val).setScale(SCALE, ROUNDING_MODE);
     }
 
     private static URI createCustomerApiUri(String institutionId) {
         var getCustomerEndpoint = UriWrapper.fromHost(API_HOST).addChild(CUSTOMER).addChild(CRISTIN_ID).getUri();
         return URI.create(getCustomerEndpoint + "/" + URLEncoder.encode(institutionId, StandardCharsets.UTF_8));
+    }
+
+    private void mockCristinApiResponsesForAllSubUnitsInAcademicChapter() {
+        mockCristinApiForSubUnit(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.94.0"),
+                                 NTNU_TOP_LEVEL_ORG_ID);
+        mockCristinApiForSubUnit(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.45.0"),
+                                 NTNU_TOP_LEVEL_ORG_ID);
+        mockCristinApiForSubUnit(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.40.0"),
+                                 SINTEF_TOP_LEVEL_ORG_ID);
     }
 
     private InputStream setUpS3Event(String path) throws IOException {
@@ -128,7 +160,7 @@ public class EvaluateNviCandidateCristinTest {
         return createS3Event(fileUri);
     }
 
-    private void mockCristinApiResponsesForAllSubUnits() {
+    private void mockCristinApiResponsesForAllSubUnitsInAcademicArticle() {
         mockCristinApiForSubUnit(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.0.0"),
                                  NTNU_TOP_LEVEL_ORG_ID);
         mockCristinApiForSubUnit(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.63.10.0"),

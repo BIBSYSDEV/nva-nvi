@@ -1,11 +1,10 @@
 {
   "body": {
-    "identifier": "018a82c13bfa-33a5aab7-5d70-4273-a764-e2f427b903a4",
-    "nviType": "NonNviCandidate",
+    "identifier": "018a852f0fa9-ef3bc1bf-1727-4344-9dcd-bc2b4867b9ff",
     "modelVersion": "0.20.39",
     "resourceOwner": {
-      "owner": "sintef@7401.0.0.0",
-      "ownerAffiliation": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.0.0.0"
+      "owner": "ntnu@194.0.0.0",
+      "ownerAffiliation": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"
     },
     "type": "Publication",
     "@context": {
@@ -204,7 +203,9 @@
         "type": "Reference",
         "publicationInstance": {
           "pages": {
-            "type": "Range"
+            "end": "482",
+            "type": "Range",
+            "begin": "474"
           },
           "type": "AcademicChapter"
         },
@@ -214,25 +215,44 @@
               "type": "Reference",
               "publicationContext": {
                 "isbnList": [
-                  "9781665456807"
+                  "9782940643158"
                 ],
+                "series": {
+                  "identifier": "496929",
+                  "publisherId": "https://api.sandbox.nva.aws.unit.no/publication-channels/publisher/26266/2022",
+                  "website": {
+                    "id": "https://www.fib-international.org/publications/fib-proceedings.html"
+                  },
+                  "level": "1",
+                  "name": "Proceedings of the fib Symposium",
+                  "active": true,
+                  "npiDomain": "Konstruksjonsfag",
+                  "language": "http://lexvo.org/id/iso639-3/eng",
+                  "id": "https://api.sandbox.nva.aws.unit.no/publication-channels/journal/496929/2022",
+                  "type": "Series",
+                  "onlineIssn": "2617-4820"
+                },
                 "publisher": {
                   "valid": true,
-                  "identifier": "19108",
-                  "level": "1",
-                  "name": "IEEE conference proceedings",
-                  "active": true,
-                  "id": "https://api.sandbox.nva.aws.unit.no/publication-channels/publisher/19108/2022",
-                  "type": "Publisher"
+                  "name": "fib",
+                  "type": "UnconfirmedPublisher"
                 },
-                "type": "Book"
+                "type": "Book",
+                "seriesNumber": "Issue:6"
               }
             },
-            "mainTitle": "2022 IEEE International Symposium on Safety, Security, and Rescue Robotics (SSRR)",
+            "mainTitle": "Proceedings of the 6th fib International Congress, June 12-16, 2022, Oslo, Norway",
             "contributors": [
               {
                 "identity": {
-                  "name": "Unknown Unknown",
+                  "name": "S. Stokkeland",
+                  "type": "Identity"
+                },
+                "type": "Contributor"
+              },
+              {
+                "identity": {
+                  "name": "H.C. Braarud",
                   "type": "Identity"
                 },
                 "type": "Contributor"
@@ -240,163 +260,35 @@
             ],
             "type": "EntityDescription"
           },
-          "id": "https://api.sandbox.nva.aws.unit.no/publication/018a842b7a74-81693caf-a900-4f5a-86b9-6ed46d97c351",
+          "id": "https://api.sandbox.nva.aws.unit.no/publication/018a74731a7e-7c87392c-0780-417f-8abb-5f2c6c47b591",
           "type": "Anthology"
         }
       },
-      "mainTitle": "Sniffer. a protein-based advanced VOC sensor for victim search",
+      "mainTitle": "Characterization of air void system in fresh and hardened fly ash concrete by AVA, Image Analysis, and CT scanning",
       "alternativeAbstracts": {},
       "language": "http://lexvo.org/id/iso639-3/eng",
+      "abstract": "Air entrainment protects concrete against internal cracking in both frost- and salt frost testing. There are several ways to identify requirements to air content and as well as to the air void system for the concrete to be frost durable, and there are different ways to document it. Investigating the potential of high-volume fly ash concrete to withstand the most severe frost and salt frost tests, air void stability in fresh concrete, and air void structure in fresh and hardened concrete were studied using the Air Void Analyzer (AVA), Image Analysis (IMA) of polished sections. In addition, one 100 by 100 by 20 mm polished section used for IMA was cut into 30 mm cubes and scanned using a Zeiss Metrotom 1500 CT scanner. We observed that air void spacing by the image analysis on hardened concrete was quite similar to spacing in fresh concrete, even though considerably fewer voids smaller than around 100 microns were detected in fresh concrete. CT data showed a good correlation to the IMA data, though CT gives the fine air voids somewhat higher surface area despite having a slightly coarser size distribution < 1 mm.",
       "contributors": [
-        {
-          "sequence": 6,
-          "role": {
-            "type": "Creator"
-          },
-          "identity": {
-            "verificationStatus": "NotVerified",
-            "name": "Krishna Persaud",
-            "type": "Identity"
-          },
-          "correspondingAuthor": false,
-          "affiliations": [
-            {
-              "countryCode": "NO",
-              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/0.0.0.0",
-              "type": "Organization",
-              "labels": {
-                "nb": "Ukjent",
-                "en": "Unknown"
-              }
-            }
-          ],
-          "type": "Contributor"
-        },
-        {
-          "sequence": 5,
-          "role": {
-            "type": "Creator"
-          },
-          "identity": {
-            "verificationStatus": "Verified",
-            "name": "Terje Mugaas",
-            "type": "Identity"
-          },
-          "correspondingAuthor": false,
-          "affiliations": [
-            {
-              "countryCode": "NO",
-              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.26.0",
-              "type": "Organization",
-              "labels": {
-                "nb": "Mathematics and Cybernetics",
-                "en": "Mathematics and Cybernetics"
-              }
-            },
-            {
-              "countryCode": "NO",
-              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0",
-              "type": "Organization",
-              "labels": {
-                "nn": "Noregs teknisk-naturvitskaplege universitet",
-                "nb": "Norges teknisk-naturvitenskapelige universitet",
-                "en": "Norwegian University of Science and Technology"
-              }
-            }
-          ],
-          "type": "Contributor"
-        },
-        {
-          "sequence": 0,
-          "role": {
-            "type": "Creator"
-          },
-          "identity": {
-            "verificationStatus": "NotVerified",
-            "name": "Emmanuel Scorsone",
-            "type": "Identity"
-          },
-          "correspondingAuthor": false,
-          "affiliations": [
-            {
-              "countryCode": "NO",
-              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/0.0.0.0",
-              "type": "Organization",
-              "labels": {
-                "nb": "Ukjent",
-                "en": "Unknown"
-              }
-            }
-          ],
-          "type": "Contributor"
-        },
-        {
-          "sequence": 2,
-          "role": {
-            "type": "Creator"
-          },
-          "identity": {
-            "verificationStatus": "NotVerified",
-            "name": "David Fraser",
-            "type": "Identity"
-          },
-          "correspondingAuthor": false,
-          "affiliations": [
-            {
-              "countryCode": "NO",
-              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/0.0.0.0",
-              "type": "Organization",
-              "labels": {
-                "nb": "Ukjent",
-                "en": "Unknown"
-              }
-            }
-          ],
-          "type": "Contributor"
-        },
         {
           "sequence": 3,
           "role": {
             "type": "Creator"
           },
           "identity": {
-            "verificationStatus": "NotVerified",
-            "name": "Khasim Cali",
+            "verificationStatus": "Verified",
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/person/3",
+            "name": "Pål Erik Endrerud",
             "type": "Identity"
           },
           "correspondingAuthor": false,
           "affiliations": [
             {
               "countryCode": "NO",
-              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/0.0.0.0",
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.94.0",
               "type": "Organization",
               "labels": {
-                "nb": "Ukjent",
-                "en": "Unknown"
-              }
-            }
-          ],
-          "type": "Contributor"
-        },
-        {
-          "sequence": 1,
-          "role": {
-            "type": "Creator"
-          },
-          "identity": {
-            "verificationStatus": "NotVerified",
-            "name": "Jocelyn Boutzen",
-            "type": "Identity"
-          },
-          "correspondingAuthor": false,
-          "affiliations": [
-            {
-              "countryCode": "NO",
-              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/0.0.0.0",
-              "type": "Organization",
-              "labels": {
-                "nb": "Ukjent",
-                "en": "Unknown"
+                "nb": "Institutt for vareproduksjon og byggteknikk",
+                "en": "Department of Manufacturing and Civil Engineering"
               }
             }
           ],
@@ -409,28 +301,69 @@
           },
           "identity": {
             "verificationStatus": "Verified",
-            "name": "Giancarlo Marafioti",
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/person/4",
+            "name": "Stefan Jacobsen",
             "type": "Identity"
           },
           "correspondingAuthor": false,
           "affiliations": [
             {
               "countryCode": "NO",
-              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.26.0",
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.45.0",
               "type": "Organization",
               "labels": {
-                "nb": "Mathematics and Cybernetics",
-                "en": "Mathematics and Cybernetics"
+                "nb": "Institutt for konstruksjonsteknikk",
+                "en": "Department of Structural Engineering"
               }
-            },
+            }
+          ],
+          "type": "Contributor"
+        },
+        {
+          "sequence": 2,
+          "role": {
+            "type": "Creator"
+          },
+          "identity": {
+            "verificationStatus": "Verified",
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/person/2",
+            "name": "Iman Asadi",
+            "type": "Identity"
+          },
+          "correspondingAuthor": false,
+          "affiliations": [
             {
               "countryCode": "NO",
-              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0",
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.45.0",
               "type": "Organization",
               "labels": {
-                "nn": "Noregs teknisk-naturvitskaplege universitet",
-                "nb": "Norges teknisk-naturvitenskapelige universitet",
-                "en": "Norwegian University of Science and Technology"
+                "nb": "Institutt for konstruksjonsteknikk",
+                "en": "Department of Structural Engineering"
+              }
+            }
+          ],
+          "type": "Contributor"
+        },
+        {
+          "sequence": 1,
+          "role": {
+            "type": "Creator"
+          },
+          "identity": {
+            "verificationStatus": "Verified",
+            "id": "https://api.sandbox.nva.aws.unit.no/cristin/person/1",
+            "name": "Andrei Shpak",
+            "type": "Identity"
+          },
+          "correspondingAuthor": false,
+          "affiliations": [
+            {
+              "countryCode": "NO",
+              "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.40.0",
+              "type": "Organization",
+              "labels": {
+                "nb": "Arkitektur, byggematerialer og konstruksjoner",
+                "en": "Architecture, Materials and Structures"
               }
             }
           ],
@@ -443,33 +376,24 @@
         "type": "PublicationDate"
       }
     },
-    "createdDate": "2023-04-12T00:00:00Z",
+    "createdDate": "2022-11-08T00:00:00Z",
     "publicationContextUris": [],
-    "modifiedDate": "2023-09-18T09:58:02.538608956Z",
+    "modifiedDate": "2023-09-18T10:04:35.706126520Z",
     "additionalIdentifiers": [
       {
         "sourceName": "Cristin",
         "type": "AdditionalIdentifier",
-        "value": "2140169"
+        "value": "2070628"
       }
     ],
     "publisher": {
       "id": "https://api.sandbox.nva.aws.unit.no/customer/f54c8aa9-073a-46a1-8f7c-dde66c853934",
       "type": "Organization"
     },
-    "id": "https://api.sandbox.nva.aws.unit.no/publication/018a82c13bfa-33a5aab7-5d70-4273-a764-e2f427b903a4",
-    "publishedDate": "2023-04-12T00:00:00Z",
+    "id": "https://api.sandbox.nva.aws.unit.no/publication/018a852f0fa9-ef3bc1bf-1727-4344-9dcd-bc2b4867b9ff",
+    "publishedDate": "2022-11-08T00:00:00Z",
     "status": "PUBLISHED",
     "topLevelOrganization": [
-      {
-        "countryCode": "NO",
-        "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/0.0.0.0",
-        "type": "Organization",
-        "labels": {
-          "nb": "Ukjent",
-          "en": "Unknown"
-        }
-      },
       {
         "hasPart": [
           {
@@ -1414,6 +1338,7 @@
                 "partOf": {
                   "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.0.0"
                 },
+                "countryCode": "NO",
                 "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.94.0",
                 "type": "Organization",
                 "labels": {
@@ -1462,6 +1387,7 @@
                 "partOf": {
                   "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.0.0"
                 },
+                "countryCode": "NO",
                 "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.45.0",
                 "type": "Organization",
                 "labels": {
@@ -1518,6 +1444,7 @@
                 }
               }
             ],
+            "countryCode": "NO",
             "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.64.0.0",
             "type": "Organization",
             "labels": {
@@ -1729,6 +1656,7 @@
                 "partOf": {
                   "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.0.0"
                 },
+                "countryCode": "NO",
                 "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.40.0",
                 "type": "Organization",
                 "labels": {
@@ -1737,6 +1665,7 @@
                 }
               }
             ],
+            "countryCode": "NO",
             "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.30.0.0",
             "type": "Organization",
             "labels": {
@@ -1755,7 +1684,6 @@
                 "partOf": {
                   "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.0.0"
                 },
-                "countryCode": "NO",
                 "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.26.0",
                 "type": "Organization",
                 "labels": {
@@ -1860,7 +1788,6 @@
                 }
               }
             ],
-            "countryCode": "NO",
             "id": "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.90.0.0",
             "type": "Organization",
             "labels": {
