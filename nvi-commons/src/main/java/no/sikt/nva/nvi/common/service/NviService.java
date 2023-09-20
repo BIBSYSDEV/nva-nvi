@@ -89,17 +89,17 @@ public class NviService {
                 .orElseThrow();
         nviCandidateRepository.updateApprovalStatus(identifier, approvalByIdAndInstitutionId);
         var candidate = nviCandidateRepository.getCandidateById(identifier);
-        return candidate.copy().withReportStatus(getReportStatus(candidate)).build();
+        return candidate.copy().withPeriodStatus(getReportStatus(candidate)).build();
     }
 
     public Optional<Candidate> findCandidateById(UUID uuid) {
         return nviCandidateRepository.findCandidateById(uuid)
-                   .map(value -> value.copy().withReportStatus(getReportStatus(value)).build());
+                   .map(value -> value.copy().withPeriodStatus(getReportStatus(value)).build());
     }
 
     public Optional<Candidate> findByPublicationId(URI publicationId) {
         var candidate = nviCandidateRepository.findByPublicationId(publicationId);
-        return candidate.map(value -> value.copy().withReportStatus(getReportStatus(value)).build());
+        return candidate.map(value -> value.copy().withPeriodStatus(getReportStatus(value)).build());
     }
 
     public Candidate createNote(UUID identifier, DbNote dbNote) {
@@ -107,7 +107,7 @@ public class NviService {
             nviCandidateRepository.saveNote(identifier, dbNote);
         }
         var candidate = nviCandidateRepository.findCandidateById(identifier).orElseThrow();
-        return candidate.copy().withReportStatus(getReportStatus(candidate)).build();
+        return candidate.copy().withPeriodStatus(getReportStatus(candidate)).build();
     }
 
     public Candidate deleteNote(UUID candidateIdentifier, UUID noteIdentifier, String requestUsername) {
@@ -115,7 +115,7 @@ public class NviService {
         if (isNoteOwner(requestUsername, note)) {
             nviCandidateRepository.deleteNote(candidateIdentifier, noteIdentifier);
             var candidate = nviCandidateRepository.findCandidateById(candidateIdentifier).orElseThrow();
-            return candidate.copy().withReportStatus(getReportStatus(candidate)).build();
+            return candidate.copy().withPeriodStatus(getReportStatus(candidate)).build();
         }
         throw new IllegalArgumentException("User not allowed to remove others note.");
     }
@@ -216,12 +216,12 @@ public class NviService {
 
     private Optional<Candidate> createCandidate(DbCandidate dbCandidate) {
         var candidate = createCandidate(dbCandidate, generatePendingApprovalStatuses(dbCandidate.points()));
-        return Optional.of(candidate.copy().withReportStatus(getReportStatus(candidate)).build());
+        return Optional.of(candidate.copy().withPeriodStatus(getReportStatus(candidate)).build());
     }
 
     private Candidate createCandidate(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
         var candidate = nviCandidateRepository.create(dbCandidate, approvalStatuses);
-        return candidate.copy().withReportStatus(getReportStatus(candidate)).build();
+        return candidate.copy().withPeriodStatus(getReportStatus(candidate)).build();
     }
 
     private PeriodStatus getReportStatus(Candidate candidate) {
@@ -263,7 +263,7 @@ public class NviService {
         var existingCandidate = findByPublicationId(dbCandidate.publicationId()).orElseThrow();
         var updatedCandidate = updateCandidate(existingCandidate.identifier(), dbCandidate,
                                                generatePendingApprovalStatuses(dbCandidate.points()));
-        return Optional.of(updatedCandidate.copy().withReportStatus(getReportStatus(updatedCandidate)).build());
+        return Optional.of(updatedCandidate.copy().withPeriodStatus(getReportStatus(updatedCandidate)).build());
     }
 
     private Candidate updateCandidate(UUID identifier, DbCandidate candidate, List<DbApprovalStatus> approvalStatuses) {

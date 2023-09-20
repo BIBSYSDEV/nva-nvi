@@ -21,7 +21,7 @@ public record Candidate(
                    .withCandidate(candidate)
                    .withIdentifier(identifier)
                    .withApprovalStatuses(approvalStatuses)
-                   .withReportStatus(periodStatus);
+                   .withPeriodStatus(periodStatus);
     }
 
     public static final class Builder {
@@ -55,7 +55,7 @@ public record Candidate(
             return this;
         }
 
-        public Builder withReportStatus(PeriodStatus periodStatus) {
+        public Builder withPeriodStatus(PeriodStatus periodStatus) {
             this.periodStatus = periodStatus;
             return this;
         }
