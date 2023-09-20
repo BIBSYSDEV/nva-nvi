@@ -109,8 +109,8 @@ public record CandidateResponse(UUID id,
             return this;
         }
 
-        public Builder withPeriodStatus(PeriodStatus reportStatus) {
-            this.periodStatus = reportStatus;
+        public Builder withPeriodStatus(PeriodStatus periodStatus) {
+            this.periodStatus = periodStatus;
             return this;
         }
 
