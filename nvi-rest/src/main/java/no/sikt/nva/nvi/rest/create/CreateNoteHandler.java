@@ -4,6 +4,7 @@ import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.PARAM_CANDIDATE_IDENTIFIER;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
+import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.db.model.DbNote;
@@ -14,10 +15,12 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.core.JacocoGenerated;
 
 public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, CandidateResponse> {
 
+    public static final String INVALID_REQUEST_ERROR = "Request body must contain text field.";
     private final NviService service;
 
     @JacocoGenerated
@@ -37,6 +40,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         var username = RequestUtil.getUsername(requestInfo);
         var candidateIdentifier = requestInfo.getPathParameter(PARAM_CANDIDATE_IDENTIFIER);
 
+        validate(input);
         var candidate = service.createNote(UUID.fromString(candidateIdentifier), getNote(input, username));
         return CandidateResponse.fromCandidate(candidate);
     }
@@ -51,5 +55,11 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
                    .text(input.text())
                    .user(new DbUsername(username.value()))
                    .build();
+    }
+
+    private void validate(NviNoteRequest input) throws BadRequestException {
+        if (Objects.isNull(input.text())) {
+            throw new BadRequestException(INVALID_REQUEST_ERROR);
+        }
     }
 }

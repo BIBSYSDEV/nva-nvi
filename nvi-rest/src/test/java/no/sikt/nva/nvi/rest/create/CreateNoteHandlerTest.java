@@ -55,6 +55,18 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldReturnBadRequestIfCreateNoteRequestInValid() throws IOException {
+        var invalidRequestBody = JsonUtils.dtoObjectMapper.writeValueAsString(
+            Map.of("someInvalidInputField", randomString()));
+        var request = createRequest(UUID.randomUUID(), invalidRequestBody, randomString());
+
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+    }
+
+    @Test
     void shouldAddNoteToCandidateWhenNoteIsValid() throws IOException {
         var candidate = nviCandidateRepository.create(randomCandidate(), List.of(randomApprovalStatus()));
         var theNote = "The note";
@@ -73,6 +85,18 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         throws JsonProcessingException {
         var customerId = randomUri();
         return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper)
+                   .withBody(body)
+                   .withCurrentCustomer(customerId)
+                   .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
+                   .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE.name())
+                   .withUserName(userName)
+                   .build();
+    }
+
+    private InputStream createRequest(UUID identifier, String body, String userName)
+        throws JsonProcessingException {
+        var customerId = randomUri();
+        return new HandlerRequestBuilder<String>(JsonUtils.dtoObjectMapper)
                    .withBody(body)
                    .withCurrentCustomer(customerId)
                    .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
