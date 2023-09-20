@@ -11,6 +11,7 @@ import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbNote;
+import no.sikt.nva.nvi.common.model.PeriodStatus;
 import no.sikt.nva.nvi.rest.fetch.ApprovalStatus;
 import no.sikt.nva.nvi.rest.fetch.InstitutionPoints;
 import no.sikt.nva.nvi.rest.fetch.Note;
@@ -22,7 +23,7 @@ public record CandidateResponse(UUID id,
                                 List<ApprovalStatus> approvalStatuses,
                                 List<InstitutionPoints> points,
                                 List<Note> notes,
-                                String reportStatus) {
+                                PeriodStatus periodStatus) {
 
     public static CandidateResponse fromCandidate(Candidate candidate) {
         return CandidateResponse.builder()
@@ -31,7 +32,7 @@ public record CandidateResponse(UUID id,
                    .withApprovalStatuses(mapToApprovalStatus(candidate))
                    .withPoints(mapToInstitutionPoints(candidate.candidate()))
                    .withNotes(mapToNotes(candidate.notes()))
-                   .withReportStatus(candidate.reportStatus().getValue())
+                   .withPeriodStatus(candidate.periodStatus())
                    .build();
     }
 
@@ -82,7 +83,7 @@ public record CandidateResponse(UUID id,
         private List<ApprovalStatus> approvalStatuses = new ArrayList<>();
         private List<InstitutionPoints> points = new ArrayList<>();
         private List<Note> notes = new ArrayList<>();
-        private String reportStatus;
+        private PeriodStatus periodStatus;
 
         private Builder() {
         }
@@ -112,13 +113,13 @@ public record CandidateResponse(UUID id,
             return this;
         }
 
-        public Builder withReportStatus(String reportStatus) {
-            this.reportStatus = reportStatus;
+        public Builder withPeriodStatus(PeriodStatus reportStatus) {
+            this.periodStatus = reportStatus;
             return this;
         }
 
         public CandidateResponse build() {
-            return new CandidateResponse(id, publicationId, approvalStatuses, points, notes, reportStatus);
+            return new CandidateResponse(id, publicationId, approvalStatuses, points, notes, periodStatus);
         }
     }
 }

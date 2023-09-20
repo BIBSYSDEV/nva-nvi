@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomPublicationDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -16,6 +17,10 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
@@ -28,6 +33,7 @@ import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
+import no.sikt.nva.nvi.common.db.NviPeriodRepository;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbCreator;
@@ -38,7 +44,8 @@ import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
-import no.sikt.nva.nvi.common.model.ReportStatus;
+import no.sikt.nva.nvi.common.model.PeriodStatus;
+import no.sikt.nva.nvi.common.model.PeriodStatus.Status;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +55,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 public class NviServiceTest extends LocalDynamoTest {
 
     private NviService nviService;
-
     private NviCandidateRepository nviCandidateRepository;
 
     @BeforeEach
@@ -393,16 +399,44 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldReturnCandidateWithReportableStatusWhenNviPeriodIsOpen() {
+    void shouldReturnCandidateWithPeriodStatusOpenWhenNviPeriodIsOpen() {
         var calendar = Calendar.getInstance();
         calendar.add(Calendar.MINUTE, 10);
         var publishingYear = String.valueOf(Calendar.getInstance().getWeekYear());
-        nviService.createPeriod(DbNviPeriod.builder().publishingYear(publishingYear).reportingDate(calendar.toInstant())
-                                        .build());
-        var candidate = randomCandidate().copy().publicationDate(DbPublicationDate.builder()
-                                                                     .year(publishingYear).build()).build();
+        var period = nviService.createPeriod(DbNviPeriod.builder()
+                                                 .publishingYear(publishingYear)
+                                                 .reportingDate(calendar.toInstant()).build());
+        var candidate = candidateWithPublicationDate(publishingYear);
         var persistedCandidate = nviService.upsertCandidate(candidate);
-        assertThat(persistedCandidate.orElseThrow().reportStatus(), is(equalTo(ReportStatus.REPORTABLE)));
+
+        assertThat(persistedCandidate.orElseThrow().periodStatus().status(),
+                   is(equalTo(PeriodStatus.Status.OPEN_PERIOD)));
+        assertThat(persistedCandidate.orElseThrow().periodStatus().periodClosesAt(),
+                   is(equalTo(period.reportingDate())));
+    }
+
+    private static DbCandidate candidateWithPublicationDate(String publishingYear) {
+        return randomCandidate().copy().publicationDate(DbPublicationDate.builder()
+                                                            .year(publishingYear).build()).build();
+    }
+
+    @Test
+    void shouldReturnCandidateWithPeriodStatusClosedWhenNviPeriodIsClosed() {
+        var publishingYear = String.valueOf(Calendar.getInstance().getWeekYear());
+        var nviPeriodRepository = mock(NviPeriodRepository.class);
+        var period = closedPeriodWithPublishingYear(publishingYear);
+        var nviService = new NviService(localDynamo, nviPeriodRepository);
+        when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
+        var persistedCandidate =
+            nviService.upsertCandidate(candidateWithPublicationDate(publishingYear));
+
+        assertThat(persistedCandidate.orElseThrow().periodStatus().status(), is(equalTo(Status.CLOSED_PERIOD)));
+    }
+
+    private static DbNviPeriod closedPeriodWithPublishingYear(String publishingYear) {
+        return DbNviPeriod.builder()
+                   .publishingYear(publishingYear)
+                   .reportingDate(Instant.now()).build();
     }
 
     private static DbCandidate updateCandidate(Candidate candidate) {

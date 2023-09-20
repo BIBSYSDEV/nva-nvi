@@ -16,7 +16,8 @@ import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
-import no.sikt.nva.nvi.common.model.ReportStatus;
+import no.sikt.nva.nvi.common.model.PeriodStatus;
+import no.sikt.nva.nvi.common.model.PeriodStatus.Status;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -31,6 +32,11 @@ public class NviService {
     public NviService(DynamoDbClient dynamoDbClient) {
         this.nviCandidateRepository = new NviCandidateRepository(dynamoDbClient);
         this.nviPeriodRepository = new NviPeriodRepository(dynamoDbClient);
+    }
+
+    public NviService(DynamoDbClient dynamoDbClient, NviPeriodRepository nviPeriodRepository) {
+        this.nviCandidateRepository = new NviCandidateRepository(dynamoDbClient);
+        this.nviPeriodRepository = nviPeriodRepository;
     }
 
     @JacocoGenerated
@@ -218,12 +224,35 @@ public class NviService {
         return candidate.copy().withReportStatus(getReportStatus(candidate)).build();
     }
 
-    private ReportStatus getReportStatus(Candidate candidate) {
-        var period = nviPeriodRepository.findByPublishingYear(candidate.candidate().publicationDate().year());
-        return period.isEmpty() || isClosed(period.get())
-                   ? ReportStatus.NOT_REPORTABLE
-                   : ReportStatus.REPORTABLE;
+    private PeriodStatus getReportStatus(Candidate candidate) {
+        var period =
+            nviPeriodRepository.findByPublishingYear(candidate.candidate().publicationDate().year());
+        if (period.isEmpty()) {
+            return periodStatusNotPresent();
+        }
+        if (isClosed(period.get())) {
+            return closedPeriodStatusFrom(period.get());
+        } else {
+            return openPeriodStatusFrom(period.get());
+        }
+    }
 
+    private static PeriodStatus periodStatusNotPresent() {
+        return PeriodStatus.builder().withStatus(Status.NO_PERIOD).build();
+    }
+
+    private static PeriodStatus closedPeriodStatusFrom(DbNviPeriod period) {
+        return PeriodStatus.builder()
+                   .withStatus(Status.CLOSED_PERIOD)
+                   .withPeriodClosesAt(period.reportingDate())
+                   .build();
+    }
+
+    private static PeriodStatus openPeriodStatusFrom(DbNviPeriod period) {
+        return PeriodStatus.builder()
+                   .withStatus(Status.OPEN_PERIOD)
+                   .withPeriodClosesAt(period.reportingDate())
+                   .build();
     }
 
     private boolean isClosed(DbNviPeriod dbNviPeriod) {

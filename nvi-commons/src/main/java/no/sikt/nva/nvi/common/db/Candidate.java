@@ -5,14 +5,14 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbNote;
-import no.sikt.nva.nvi.common.model.ReportStatus;
+import no.sikt.nva.nvi.common.model.PeriodStatus;
 
 public record Candidate(
     UUID identifier,
     DbCandidate candidate,
     List<DbApprovalStatus> approvalStatuses,
     List<DbNote> notes,
-    ReportStatus reportStatus
+    PeriodStatus periodStatus
 ) {
 
     public Builder copy() {
@@ -21,7 +21,7 @@ public record Candidate(
                    .withCandidate(candidate)
                    .withIdentifier(identifier)
                    .withApprovalStatuses(approvalStatuses)
-                   .withReportStatus(reportStatus);
+                   .withReportStatus(periodStatus);
     }
 
     public static final class Builder {
@@ -30,7 +30,7 @@ public record Candidate(
         private DbCandidate candidate;
         private List<DbApprovalStatus> approvalStatuses;
         private List<DbNote> notes;
-        private ReportStatus reportStatus;
+        private PeriodStatus periodStatus;
 
         public Builder() {
         }
@@ -55,13 +55,13 @@ public record Candidate(
             return this;
         }
 
-        public Builder withReportStatus(ReportStatus reportStatus) {
-            this.reportStatus = reportStatus;
+        public Builder withReportStatus(PeriodStatus periodStatus) {
+            this.periodStatus = periodStatus;
             return this;
         }
 
         public Candidate build() {
-            return new Candidate(identifier, candidate, approvalStatuses, notes, reportStatus);
+            return new Candidate(identifier, candidate, approvalStatuses, notes, periodStatus);
         }
     }
 }

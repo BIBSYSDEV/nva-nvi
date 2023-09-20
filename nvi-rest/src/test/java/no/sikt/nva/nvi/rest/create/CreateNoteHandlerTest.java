@@ -27,7 +27,8 @@ import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
-import no.sikt.nva.nvi.common.model.ReportStatus;
+import no.sikt.nva.nvi.common.model.PeriodStatus;
+import no.sikt.nva.nvi.common.model.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
@@ -94,7 +95,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
             .thenReturn(new DbNviPeriod(reportingYear, Instant.now(), randomUsername(), randomUsername()));
         when(service.findCandidateById(any()))
             .thenReturn(Optional.of(new Candidate(UUID.randomUUID(), randomCandidate(), List.of(), List.of(),
-                                                  ReportStatus.NOT_REPORTABLE)));
+                                                  new PeriodStatus(null, Status.NO_PERIOD))));
         handler = new CreateNoteHandler(service);
     }
 

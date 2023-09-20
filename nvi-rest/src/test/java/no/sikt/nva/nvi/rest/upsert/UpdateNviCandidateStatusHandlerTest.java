@@ -30,7 +30,8 @@ import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
-import no.sikt.nva.nvi.common.model.ReportStatus;
+import no.sikt.nva.nvi.common.model.PeriodStatus;
+import no.sikt.nva.nvi.common.model.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.fetch.ApprovalStatus;
 import no.unit.nva.commons.json.JsonUtils;
@@ -121,7 +122,7 @@ class UpdateNviCandidateStatusHandlerTest {
                                 .publicationDate(DbPublicationDate.builder().year(reportingYear).build())
                                 .build();
         return Optional.of(new Candidate(UUID.randomUUID(), candidate, List.of(), List.of(),
-                                         ReportStatus.NOT_REPORTABLE));
+                                         new PeriodStatus(null, Status.NO_PERIOD)));
     }
 
     private static CandidateResponse createResponse(
@@ -135,7 +136,7 @@ class UpdateNviCandidateStatusHandlerTest {
                        List.of(createApprovalStatus(nviStatusRequest, status, approvalStatus)))
                    .withPoints(emptyList())
                    .withNotes(emptyList())
-                   .withReportStatus(ReportStatus.NOT_REPORTABLE.getValue())
+                   .withPeriodStatus(new PeriodStatus(null, Status.NO_PERIOD))
                    .build();
     }
 
@@ -165,7 +166,7 @@ class UpdateNviCandidateStatusHandlerTest {
                                          username,
                                          Instant.now())),
             emptyList(),
-            no.sikt.nva.nvi.common.model.ReportStatus.NOT_REPORTABLE);
+            new PeriodStatus(null, Status.NO_PERIOD));
     }
 
     private static InputStream createRequest(NviStatusRequest body, URI customerId) throws JsonProcessingException {

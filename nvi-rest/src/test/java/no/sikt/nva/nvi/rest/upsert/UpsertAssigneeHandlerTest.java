@@ -34,7 +34,8 @@ import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
-import no.sikt.nva.nvi.common.model.ReportStatus;
+import no.sikt.nva.nvi.common.model.PeriodStatus;
+import no.sikt.nva.nvi.common.model.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.ApprovalDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -147,7 +148,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         throws IOException {
         var reportingYear = "2100";
         var candidate = new Candidate(randomUUID(), randomCandidate(), List.of(randomApprovalStatus()), List.of(),
-                                      ReportStatus.NOT_REPORTABLE);
+                                      new PeriodStatus(null, Status.NO_PERIOD));
         mockPeriod(reportingYear, candidate);
         var request = createRequest(candidate, null);
         handler.handleRequest(request, output, context);
@@ -168,7 +169,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     private Candidate nonExistingCandidate() {
         var candidate = nviService.upsertCandidate(randomApplicableCandidate()).orElseThrow();
         return new Candidate(randomUUID(), candidate.candidate(), candidate.approvalStatuses(),
-                             Collections.emptyList(), ReportStatus.NOT_REPORTABLE);
+                             Collections.emptyList(), new PeriodStatus(null, Status.NO_PERIOD));
     }
 
     private void updateAssignee(Candidate candidate) {

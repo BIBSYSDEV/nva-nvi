@@ -23,7 +23,7 @@ import nva.commons.core.JacocoGenerated;
 public final class RequestUtil {
 
     public static final String REPORTING_PERIOD_CLOSED_MESSAGE =
-        "Can not update approval, reporting period is already closed";
+        "Can not update approval, reporting period is already closed or not created yet";
     public static final String CANDIDATE_NOT_FOUND_MESSAGE = "Candidate to update does not exist";
     public static final String PARAM_CANDIDATE_IDENTIFIER = "candidateIdentifier";
 
