@@ -37,7 +37,7 @@ import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class EvaluateNviCandidateCristinTest {
+public class EvaluateNviCandidateTestWithCristinData {
 
     private static final Environment ENVIRONMENT = new Environment();
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
@@ -84,54 +84,46 @@ public class EvaluateNviCandidateCristinTest {
     }
 
     @Test
-    void shouldCalculatePointsOnValidCristinImportAcademicArticleFrom2022() throws IOException {
+    void shouldReturnSamePointsAsPointsCalculatedByCristinForAcademicArticleFrom2022() throws IOException {
         mockCristinApiResponsesForAllSubUnitsInAcademicArticle();
         mockCustomerApi();
 
         handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicArticle.json"), output, context);
-        var message = sqsClient.getSentMessages().get(0);
-        var body =
-            attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
+        var body = getCandidateEvaluatedMessage();
         assertThat(body.institutionPoints().get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8165))));
         assertThat(body.institutionPoints().get(ST_OLAVS_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5774))));
     }
 
     @Test
-    void shouldCalculatePointsOnValidCristinImportAcademicMonographFrom2022() throws IOException {
+    void shouldReturnSamePointsAsPointsCalculatedByCristinForAcademicMonographFrom2022() throws IOException {
         mockCristinApiForSubUnit(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/185.15.13.55"),
                                  UIO_TOP_LEVEL_ORG_ID);
         mockCustomerApi(UIO_TOP_LEVEL_ORG_ID);
 
         handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicMonograph.json"), output, context);
-        var message = sqsClient.getSentMessages().get(0);
-        var body =
-            attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
+        var body = getCandidateEvaluatedMessage();
         assertThat(body.institutionPoints().get(UIO_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(3.7528))));
     }
 
     @Test
-    void shouldCalculatePointsOnValidCristinImportLiteratureReviewFrom2022() throws IOException {
+    void shouldReturnSamePointsAsPointsCalculatedByCristinForLiteratureReviewFrom2022() throws IOException {
         mockCristinApiForSubUnit(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.15.0"),
                                  NTNU_TOP_LEVEL_ORG_ID);
         mockCustomerApi(NTNU_TOP_LEVEL_ORG_ID);
 
         handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicLiteratureReview.json"), output, context);
-        var message = sqsClient.getSentMessages().get(0);
-        var body =
-            attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
+        var body = getCandidateEvaluatedMessage();
         assertThat(body.institutionPoints().get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(1.5922))));
     }
 
     @Test
-    void shouldCalculatePointsOnValidCristinImportAcademicChapterFrom2022() throws IOException {
+    void shouldReturnSamePointsAsPointsCalculatedByCristinForAcademicChapterFrom2022() throws IOException {
         mockCristinApiResponsesForAllSubUnitsInAcademicChapter();
         mockCustomerApi(NTNU_TOP_LEVEL_ORG_ID);
         mockCustomerApi(SINTEF_TOP_LEVEL_ORG_ID);
 
         handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicChapter.json"), output, context);
-        var message = sqsClient.getSentMessages().get(0);
-        var body =
-            attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
+        var body = getCandidateEvaluatedMessage();
         assertThat(body.institutionPoints().get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8660))));
         assertThat(body.institutionPoints().get(SINTEF_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5000))));
     }
@@ -143,6 +135,12 @@ public class EvaluateNviCandidateCristinTest {
     private static URI createCustomerApiUri(String institutionId) {
         var getCustomerEndpoint = UriWrapper.fromHost(API_HOST).addChild(CUSTOMER).addChild(CRISTIN_ID).getUri();
         return URI.create(getCustomerEndpoint + "/" + URLEncoder.encode(institutionId, StandardCharsets.UTF_8));
+    }
+
+    private CandidateEvaluatedMessage getCandidateEvaluatedMessage() {
+        var message = sqsClient.getSentMessages().get(0);
+        return attempt(
+            () -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
     }
 
     private void mockCristinApiResponsesForAllSubUnitsInAcademicChapter() {

@@ -49,7 +49,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
-class EvaluateNviNviCandidateHandlerTest {
+class EvaluateNviCandidateHandlerTest {
 
     public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private static final String CRISTIN_API_ORGANIZATION_RESPONSE_JSON = "cristinApiOrganizationResponse.json";
@@ -471,7 +471,7 @@ class EvaluateNviNviCandidateHandlerTest {
     private static CandidateDetails createExpectedCandidateDetails(String instanceType) {
         return new CandidateDetails(HARDCODED_PUBLICATION_ID, instanceType, "1",
                                     new PublicationDate(null, null, "2023"),
-                                    List.of(new Creator(EvaluateNviNviCandidateHandlerTest.HARDCODED_CREATOR_ID,
+                                    List.of(new Creator(EvaluateNviCandidateHandlerTest.HARDCODED_CREATOR_ID,
                                                         List.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID))));
     }
 
