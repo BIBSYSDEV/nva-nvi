@@ -470,6 +470,7 @@ Resources:
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
       MemorySize: 1536
+      AutoPublishAlias: live
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -493,6 +494,7 @@ Resources:
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
       MemorySize: 1536
+      AutoPublishAlias: live
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
