@@ -11,9 +11,11 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbCreator;
@@ -85,10 +87,24 @@ public final class TestUtils {
                    .instanceType(randomString())
                    .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
                    .level(randomElement(DbLevel.values()))
-                   .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
+                   .publicationDate(publicationDateWithYear())
                    .internationalCollaboration(randomBoolean())
                    .creatorCount(randomInteger())
                    .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))))
+                   .build();
+    }
+
+    private static DbPublicationDate publicationDateWithYear() {
+        return new DbPublicationDate(String.valueOf(Calendar.getInstance().getWeekYear())
+            , randomString(), randomString());
+    }
+
+    public static DbNviPeriod periodFromCandidate(Candidate candidate) {
+        var calendar = Calendar.getInstance();
+        calendar.add(Calendar.MINUTE, 10);
+        return DbNviPeriod.builder()
+                   .publishingYear(candidate.candidate().publicationDate().year())
+                   .reportingDate(calendar.toInstant())
                    .build();
     }
 

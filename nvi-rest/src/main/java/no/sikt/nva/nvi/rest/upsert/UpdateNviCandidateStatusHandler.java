@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.common.service.NviService;
@@ -21,7 +22,6 @@ import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.ForbiddenException;
-import nva.commons.apigateway.exceptions.NotFoundException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
 
@@ -42,19 +42,21 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
     @Override
     protected CandidateResponse processInput(NviStatusRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-        validateRequest(requestInfo, input);
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(PARAM_CANDIDATE_IDENTIFIER));
+        var candidate = nviService.findCandidateById(candidateIdentifier).orElseThrow();
+        var period = nviService.getPeriod(candidate.candidate().publicationDate().year());
+        validateRequest(requestInfo, input, period);
         return attempt(() -> toStatus(input, getUsername(requestInfo)))
                    .map(approvalStatus -> nviService.updateApprovalStatus(candidateIdentifier, approvalStatus))
                    .map(CandidateResponse::fromCandidate)
                    .orElseThrow(ExceptionMapper::map);
     }
 
-    private void validateRequest(RequestInfo requestInfo, NviStatusRequest input)
-        throws UnauthorizedException, ForbiddenException, BadRequestException, NotFoundException {
+    private void validateRequest(RequestInfo requestInfo, NviStatusRequest input, DbNviPeriod period)
+        throws UnauthorizedException, ForbiddenException, BadRequestException {
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
         RequestUtil.validateCustomer(requestInfo, input.institutionId());
-        RequestUtil.validatePeriod(requestInfo, nviService);
+        RequestUtil.validatePeriod(period);
     }
 
     @Override

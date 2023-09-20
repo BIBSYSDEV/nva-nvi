@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.rest.upsert;
 
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.service.NviService.defaultNviService;
-import static no.sikt.nva.nvi.rest.utils.RequestUtil.CANDIDATE_NOT_FOUND_MESSAGE;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
@@ -13,6 +12,7 @@ import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.ApprovalDto;
@@ -64,14 +64,17 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
     @Override
     protected CandidateResponse processInput(ApprovalDto input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-        validateRequest(input, requestInfo);
-        return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER))
-                   .map(UUID::fromString)
-                   .map(nviService::findCandidateById)
-                   .map(Optional::orElseThrow)
-                   .map(candidate -> updateApprovalStatus(input, candidate))
+        var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
+        var candidate = nviService.findCandidateById(candidateIdentifier).orElseThrow();
+        var period = nviService.getPeriod(getPublicationYear(candidate));
+        validateRequest(input, requestInfo, period);
+        return attempt(() -> updateApprovalStatus(input, candidate))
                    .map(CandidateResponse::fromCandidate)
                    .orElseThrow(ExceptionMapper::map);
+    }
+
+    private static String getPublicationYear(Candidate candidate) {
+        return candidate.candidate().publicationDate().year();
     }
 
     private Candidate updateApprovalStatus(ApprovalDto input, Candidate candidate) {
@@ -96,11 +99,11 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
         return institutionId.equals(input.institutionId());
     }
 
-    private void validateRequest(ApprovalDto input, RequestInfo requestInfo)
+    private void validateRequest(ApprovalDto input, RequestInfo requestInfo, DbNviPeriod period)
         throws UnauthorizedException, ForbiddenException, BadRequestException, NotFoundException {
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
         RequestUtil.validateCustomer(requestInfo, input.institutionId());
-        RequestUtil.validatePeriod(requestInfo, nviService);
+        RequestUtil.validatePeriod(period);
         if (nonNull(input.assignee())) {
             assigneeHasAccessRight(input.assignee());
         }

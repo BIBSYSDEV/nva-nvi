@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest.upsert;
 
+import static no.sikt.nva.nvi.test.TestUtils.periodFromCandidate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -62,9 +63,9 @@ public class UpdateNviCandidateStatusHandlerDbTest extends LocalDynamoTest {
                                                                   .institutionId(institutionId)
                                                                   .status(DbStatus.PENDING)
                                                                   .build()));
-
-        var req = new NviStatusRequest(candidate.identifier(), institutionId, status);
-        var request = createRequest(req, institutionId);
+        nviService.createPeriod(periodFromCandidate(candidate));
+        var requestBody = new NviStatusRequest(candidate.identifier(), institutionId, status);
+        var request = createRequest(requestBody, institutionId);
         handler.handleRequest(request, output, context);
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         var bodyAsInstance = gatewayResponse.getBodyObject(CandidateResponse.class);

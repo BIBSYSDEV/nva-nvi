@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.rest.create;
 
+import static no.sikt.nva.nvi.test.TestUtils.periodFromCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.randomApplicableCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomApprovalStatus;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomUsername;
@@ -18,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.time.Instant;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,7 +47,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
     private Context context;
     private ByteArrayOutputStream output;
     private CreateNoteHandler handler;
-    private NviService service;
+    private NviService nviService;
     private NviCandidateRepository nviCandidateRepository;
 
     @BeforeEach
@@ -53,13 +56,15 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         context = mock(Context.class);
         localDynamo = initializeTestDatabase();
         nviCandidateRepository = new NviCandidateRepository(localDynamo);
-        service = new NviService(localDynamo);
-        handler = new CreateNoteHandler(service);
+        nviService = new NviService(localDynamo);
+        handler = new CreateNoteHandler(nviService);
     }
 
     @Test
     void shouldReturnUnauthorizedWhenMissingAccessRights() throws IOException {
-        handler.handleRequest(createRequestWithoutAccessRights(randomNote()), output, context);
+        var candidate = nviService.upsertCandidate(randomApplicableCandidate()).orElseThrow();
+        nviService.createPeriod(periodFromCandidate(candidate));
+        handler.handleRequest(createRequestWithoutAccessRights(randomNote(), candidate), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -68,8 +73,9 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
     @Test
     void shouldAddNoteToCandidateWhenNoteIsValid() throws IOException {
         var theNote = "The note";
-        DbCandidate dbCandidate = randomCandidate();
-        Candidate candidate = nviCandidateRepository.create(dbCandidate, List.of(randomApprovalStatus()));
+        var dbCandidate = randomApplicableCandidate();
+        var candidate = nviCandidateRepository.create(dbCandidate, List.of(randomApprovalStatus()));
+        nviService.createPeriod(periodFromCandidate(candidate));
         handler.handleRequest(createRequest(candidate.identifier(), new NviNoteRequest(theNote)), output, context);
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         var body = gatewayResponse.getBodyObject(CandidateResponse.class);
@@ -90,13 +96,13 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
     }
 
     private void mockPeriod(String reportingYear) {
-        service = mock(NviService.class);
-        when(service.getPeriod(any()))
+        nviService = mock(NviService.class);
+        when(nviService.getPeriod(any()))
             .thenReturn(new DbNviPeriod(reportingYear, Instant.now(), randomUsername(), randomUsername()));
-        when(service.findCandidateById(any()))
+        when(nviService.findCandidateById(any()))
             .thenReturn(Optional.of(new Candidate(UUID.randomUUID(), randomCandidate(), List.of(), List.of(),
                                                   new PeriodStatus(null, Status.NO_PERIOD))));
-        handler = new CreateNoteHandler(service);
+        handler = new CreateNoteHandler(nviService);
     }
 
     private InputStream createRequest(UUID identifier, NviNoteRequest body) throws JsonProcessingException {
@@ -114,7 +120,9 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         return new NviNoteRequest(randomString());
     }
 
-    private InputStream createRequestWithoutAccessRights(NviNoteRequest request) throws JsonProcessingException {
-        return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper).withBody(request).build();
+    private InputStream createRequestWithoutAccessRights(NviNoteRequest request, Candidate candidate) throws JsonProcessingException {
+        return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper)
+                   .withPathParameters(Map.of("candidateIdentifier", candidate.identifier().toString()))
+                   .withBody(request).build();
     }
 }
