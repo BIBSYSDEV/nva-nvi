@@ -12,6 +12,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -93,31 +94,37 @@ class FetchNviCandidateHandlerTest {
     private static CandidateResponse getExpectedResponse(Candidate candidate) {
         return new CandidateResponse(candidate.identifier(),
                                      candidate.candidate().publicationId(),
-                                     getApprovalStatuses(candidate.approvalStatuses()),
-                                     mapToInstitutionPoints(candidate.candidate().points()),
+                                     getApprovalStatuses(candidate.approvalStatuses(), candidate.candidate().points()),
                                      List.of(),
                                      new PeriodStatus(null, Status.NO_PERIOD)
         );
     }
 
-    private static List<InstitutionPoints> mapToInstitutionPoints(
-        List<DbInstitutionPoints> points) {
-        return points
-                   .stream()
-                   .map(institutionPoint -> new InstitutionPoints(
-                       institutionPoint.institutionId(), institutionPoint.points()))
-                   .toList();
-    }
-
-    private static List<ApprovalStatus> getApprovalStatuses(List<DbApprovalStatus> approvalStatuses) {
+    private static List<ApprovalStatus> getApprovalStatuses(List<DbApprovalStatus> approvalStatuses,
+                                                            List<DbInstitutionPoints> points) {
         return approvalStatuses.stream()
                    .map(approvalStatus -> new ApprovalStatus(
                        approvalStatus.institutionId(),
                        approvalStatus.status(),
+                       getPointsForApprovalStatus(points, approvalStatus),
                        approvalStatus.assignee(),
                        approvalStatus.finalizedBy(),
                        approvalStatus.finalizedDate()))
                    .toList();
+    }
+
+    private static BigDecimal getPointsForApprovalStatus(List<DbInstitutionPoints> points,
+                                                         DbApprovalStatus approvalStatus) {
+        return points.stream()
+                   .filter(institutionPoints -> isForSameInstitution(approvalStatus, institutionPoints))
+                   .map(DbInstitutionPoints::points)
+                   .findFirst()
+                   .orElseThrow();
+    }
+
+    private static boolean isForSameInstitution(DbApprovalStatus approvalStatus,
+                                                DbInstitutionPoints institutionPoints) {
+        return institutionPoints.institutionId().equals(approvalStatus.institutionId());
     }
 
     private static InputStream getInput(UUID publicationId) throws JsonProcessingException {
