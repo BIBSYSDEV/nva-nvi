@@ -42,7 +42,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         context = mock(Context.class);
         localDynamo = initializeTestDatabase();
         nviCandidateRepository = new NviCandidateRepository(localDynamo);
-        NviService service = new NviService(localDynamo);
+        var service = new NviService(localDynamo);
         handler = new CreateNoteHandler(service);
     }
 
