@@ -120,7 +120,8 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         return new NviNoteRequest(randomString());
     }
 
-    private InputStream createRequestWithoutAccessRights(NviNoteRequest request, Candidate candidate) throws JsonProcessingException {
+    private InputStream createRequestWithoutAccessRights(NviNoteRequest request, Candidate candidate)
+        throws JsonProcessingException {
         return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper)
                    .withPathParameters(Map.of("candidateIdentifier", candidate.identifier().toString()))
                    .withBody(request).build();

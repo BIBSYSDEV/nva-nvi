@@ -48,7 +48,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
     }
 
     private void validateRequest(RequestInfo requestInfo, DbNviPeriod period)
-        throws UnauthorizedException, BadRequestException{
+        throws UnauthorizedException, BadRequestException {
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
         RequestUtil.validatePeriod(period);
     }

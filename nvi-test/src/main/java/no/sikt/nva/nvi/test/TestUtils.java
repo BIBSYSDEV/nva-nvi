@@ -95,8 +95,8 @@ public final class TestUtils {
     }
 
     private static DbPublicationDate publicationDateWithYear() {
-        return new DbPublicationDate(String.valueOf(Calendar.getInstance().getWeekYear())
-            , randomString(), randomString());
+        return new DbPublicationDate(String.valueOf(Calendar.getInstance().getWeekYear()),
+                                     randomString(), randomString());
     }
 
     public static DbNviPeriod periodFromCandidate(Candidate candidate) {
