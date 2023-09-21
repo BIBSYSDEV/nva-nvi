@@ -71,7 +71,7 @@ public class EvaluateNviCandidateTestWithCristinData {
         var s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, BUCKET_NAME);
         sqsClient = new FakeSqsClient();
-        SqsMessageClient queueClient = new SqsMessageClient(sqsClient);
+        var queueClient = new SqsMessageClient(sqsClient);
         var secretsManagerClient = new FakeSecretsManagerClient();
         var credentials = new BackendClientCredentials("id", "secret");
         secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
