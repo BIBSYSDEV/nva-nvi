@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.evaluator;
 
+import static no.sikt.nva.nvi.evaluator.TestUtils.createResponse;
+import static no.sikt.nva.nvi.evaluator.TestUtils.createS3Event;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
@@ -16,10 +18,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
@@ -37,9 +37,6 @@ import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails.Creator;
 import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails.PublicationDate;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
-import no.unit.nva.events.models.AwsEventBridgeDetail;
-import no.unit.nva.events.models.AwsEventBridgeEvent;
-import no.unit.nva.events.models.EventReference;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import no.unit.nva.stubs.FakeSecretsManagerClient;
@@ -52,7 +49,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
-class EvaluateNviNviCandidateHandlerTest {
+class EvaluateNviCandidateHandlerTest {
 
     public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private static final String CRISTIN_API_ORGANIZATION_RESPONSE_JSON = "cristinApiOrganizationResponse.json";
@@ -474,7 +471,7 @@ class EvaluateNviNviCandidateHandlerTest {
     private static CandidateDetails createExpectedCandidateDetails(String instanceType) {
         return new CandidateDetails(HARDCODED_PUBLICATION_ID, instanceType, "1",
                                     new PublicationDate(null, null, "2023"),
-                                    List.of(new Creator(EvaluateNviNviCandidateHandlerTest.HARDCODED_CREATOR_ID,
+                                    List.of(new Creator(EvaluateNviCandidateHandlerTest.HARDCODED_CREATOR_ID,
                                                         List.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID))));
     }
 
@@ -515,25 +512,5 @@ class EvaluateNviNviCandidateHandlerTest {
             Optional.of(cristinOrgResponse));
         when(uriRetriever.fetchResponse(eq(CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL), any())).thenReturn(Optional.of(
             httpResponse));
-    }
-
-    private InputStream createEventInputStream(EventReference eventReference) throws IOException {
-        var detail = new AwsEventBridgeDetail<EventReference>();
-        detail.setResponsePayload(eventReference);
-        var event = new AwsEventBridgeEvent<AwsEventBridgeDetail<EventReference>>();
-        event.setDetail(detail);
-        return new ByteArrayInputStream(dtoObjectMapper.writeValueAsBytes(event));
-    }
-
-    private InputStream createS3Event(URI uri) throws IOException {
-        return createEventInputStream(new EventReference("", uri));
-    }
-
-    @SuppressWarnings("unchecked")
-    private HttpResponse<String> createResponse(int status, String body) {
-        var response = (HttpResponse<String>) mock(HttpResponse.class);
-        when(response.statusCode()).thenReturn(status);
-        when(response.body()).thenReturn(body);
-        return response;
     }
 }
