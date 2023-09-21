@@ -55,7 +55,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldReturnBadRequestIfCreateNoteRequestInValid() throws IOException {
+    void shouldReturnBadRequestIfCreateNoteRequestIsInvalid() throws IOException {
         var invalidRequestBody = JsonUtils.dtoObjectMapper.writeValueAsString(
             Map.of("someInvalidInputField", randomString()));
         var request = createRequest(UUID.randomUUID(), invalidRequestBody, randomString());
