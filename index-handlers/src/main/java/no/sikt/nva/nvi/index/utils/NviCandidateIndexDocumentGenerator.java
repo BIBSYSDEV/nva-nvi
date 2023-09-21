@@ -23,7 +23,6 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -36,9 +35,9 @@ import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contexts;
 import no.sikt.nva.nvi.index.model.Contributor;
-import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.ExpandedResource;
 import no.sikt.nva.nvi.index.model.ExpandedResource.Organization;
+import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 
 public final class NviCandidateIndexDocumentGenerator {
@@ -75,15 +74,22 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static List<Approval> createApprovals(JsonNode resource, List<DbApprovalStatus> approvals) {
         return approvals.stream()
-                   .map(approval -> expandApprovals(resource, toApproval(approval)))
-                   .filter(Objects::nonNull)
+                   .map(approval -> toApproval(resource, approval))
                    .toList();
     }
 
-    private static Approval toApproval(DbApprovalStatus approval) {
+    private static Map<String, String> extractLabel(JsonNode resource, DbApprovalStatus approval) {
+        return getTopLevelOrgs(resource.toString()).stream()
+                   .filter(organization -> organization.hasAffiliation(approval.institutionId().toString()))
+                   .findFirst()
+                   .orElseThrow()
+                   .getLabels();
+    }
+
+    private static Approval toApproval(JsonNode resource, DbApprovalStatus approval) {
         return new Approval.Builder()
                    .withId(approval.institutionId().toString())
-                   .withLabels(Map.of())
+                   .withLabels(extractLabel(resource, approval))
                    .withApprovalStatus(ApprovalStatus.fromValue(approval.status().getValue()))
                    .withAssignee(extractAssignee(approval))
                    .build();
@@ -96,27 +102,9 @@ public final class NviCandidateIndexDocumentGenerator {
                    .orElse(null);
     }
 
-    private static Approval expandApprovals(JsonNode resource, Approval approval) {
-        List<Organization> topLevelOrgs = getTopLevelOrgs(resource.toString());
-        var topLevelOrg = topLevelOrgs.stream()
-            .filter(topLevelOrganizations -> topLevelOrganizations.hasAffiliation(approval.id()))
-            .findFirst().orElseThrow();
-        return createApproval(topLevelOrg, approval);
-    }
-
     private static List<Organization> getTopLevelOrgs(String s) {
         return attempt(() -> dtoObjectMapper.readValue(s, ExpandedResource.class)).orElseThrow()
                    .getTopLevelOrganization();
-    }
-
-    private static Approval createApproval(Organization topLevelOrg,
-                                           Approval approval) {
-        return new Approval.Builder()
-                   .withId(topLevelOrg.getId())
-                   .withLabels(topLevelOrg.getLabels())
-                   .withApprovalStatus(approval.approvalStatus())
-                   .withAssignee(approval.assignee())
-                   .build();
     }
 
     private static PublicationDetails extractPublicationDetails(JsonNode resource) {
