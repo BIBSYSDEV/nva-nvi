@@ -42,8 +42,8 @@ import no.sikt.nva.nvi.index.model.PublicationDetails;
 
 public final class NviCandidateIndexDocumentGenerator {
 
-    public static final int POINTS_SCALE = 4;
-    public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
+    private static final int POINTS_SCALE = 4;
+    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
 
     private NviCandidateIndexDocumentGenerator() {
     }
