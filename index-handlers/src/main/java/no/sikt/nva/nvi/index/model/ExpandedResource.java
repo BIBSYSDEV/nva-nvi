@@ -15,20 +15,12 @@ import no.unit.nva.commons.json.JsonUtils;
 
 public class ExpandedResource {
 
-    public static final String TOP_LEVEL_ORGANIZATION = "topLevelOrganization";
+    public static final String TOP_LEVEL_ORGANIZATION = "topLevelOrganizations";
     private final List<Organization> topLevelOrganization;
 
     @JsonCreator
-    public ExpandedResource(@JsonProperty(TOP_LEVEL_ORGANIZATION) Object topLevelOrganization)
-        throws JsonProcessingException {
-        var string = dtoObjectMapper.writeValueAsString(topLevelOrganization);
-        if (topLevelOrganization instanceof Map) {
-            var organizations = JsonUtils.dtoObjectMapper.readValue(string, Organization.class);
-            this.topLevelOrganization = List.of(organizations);
-        } else {
-            var organizations = JsonUtils.dtoObjectMapper.readValue(string, Organization[].class);
-            this.topLevelOrganization = Arrays.stream(organizations).toList();
-        }
+    public ExpandedResource(@JsonProperty(TOP_LEVEL_ORGANIZATION) List<Organization> topLevelOrganizations) {
+        this.topLevelOrganization = topLevelOrganizations;
     }
 
     public List<Organization> getTopLevelOrganization() {
@@ -45,11 +37,18 @@ public class ExpandedResource {
         private final Map<String, String> labels;
 
         @JsonCreator
-        private Organization(@JsonProperty(ID) String id, @JsonProperty(HAS_PART) List<Organization> affiliations,
-                             @JsonProperty(LABELS) Map<String, String> labels) {
+        private Organization(@JsonProperty(ID) String id, @JsonProperty(HAS_PART) Object affiliations,
+                             @JsonProperty(LABELS) Map<String, String> labels) throws JsonProcessingException {
             this.id = id;
-            this.affiliations = affiliations;
             this.labels = labels;
+            var string = dtoObjectMapper.writeValueAsString(affiliations);
+            if (affiliations instanceof Map) {
+                var organizations = JsonUtils.dtoObjectMapper.readValue(string, Organization.class);
+                this.affiliations = List.of(organizations);
+            } else {
+                var organizations = JsonUtils.dtoObjectMapper.readValue(string, Organization[].class);
+                this.affiliations = nonNull(affiliations) ? Arrays.stream(organizations).toList() : List.of();
+            }
         }
 
         @JsonIgnore
