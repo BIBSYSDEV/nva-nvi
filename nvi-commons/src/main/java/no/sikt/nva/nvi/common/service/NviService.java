@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static nva.commons.core.attempt.Try.attempt;
 import java.net.URI;
@@ -103,11 +104,24 @@ public class NviService {
     }
 
     public Candidate createNote(UUID identifier, DbNote dbNote) {
+        var candidate = nviCandidateRepository.findCandidateById(identifier).orElseThrow();
+        var period = nviPeriodRepository.findByPublishingYear(candidate.candidate().publicationDate().year())
+                         .orElse(null);
+        validateUpdate(candidate, period);
         if (nviCandidateRepository.exists(identifier)) {
             nviCandidateRepository.saveNote(identifier, dbNote);
         }
-        var candidate = nviCandidateRepository.findCandidateById(identifier).orElseThrow();
         return candidate.copy().withPeriodStatus(getPeriodStatus(candidate)).build();
+    }
+
+    private void validateUpdate(Candidate candidate, DbNviPeriod period) {
+            if(periodIsNotOpenOrClosed(period)) {
+                throw new BadRequestException(REPORTING_PERIOD_CLOSED_MESSAGE);
+            }
+    }
+
+    private static boolean periodIsNotOpenOrClosed(DbNviPeriod period) {
+        return nonNull(period) && period.reportingDate().isBefore(Instant.now());
     }
 
     public Candidate deleteNote(UUID candidateIdentifier, UUID noteIdentifier, String requestUsername) {
