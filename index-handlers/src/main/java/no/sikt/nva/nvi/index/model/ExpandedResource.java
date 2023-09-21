@@ -45,11 +45,18 @@ public class ExpandedResource {
         private final Map<String, String> labels;
 
         @JsonCreator
-        private Organization(@JsonProperty(ID) String id, @JsonProperty(HAS_PART) List<Organization> affiliations,
-                             @JsonProperty(LABELS) Map<String, String> labels) {
+        private Organization(@JsonProperty(ID) String id, @JsonProperty(HAS_PART) Object affiliations,
+                             @JsonProperty(LABELS) Map<String, String> labels) throws JsonProcessingException {
             this.id = id;
-            this.affiliations = affiliations;
             this.labels = labels;
+            var string = dtoObjectMapper.writeValueAsString(affiliations);
+            if (affiliations instanceof Map) {
+                var organizations = JsonUtils.dtoObjectMapper.readValue(string, Organization.class);
+                this.affiliations = List.of(organizations);
+            } else {
+                var organizations = JsonUtils.dtoObjectMapper.readValue(string, Organization[].class);
+                this.affiliations = nonNull(affiliations) ? Arrays.stream(organizations).toList() : List.of();
+            }
         }
 
         @JsonIgnore

@@ -316,6 +316,18 @@
                 "partOf": {
                   "id": "https://api.dev.nva.aws.unit.no/cristin/organization/185.34.15.0"
                 },
+                "hasPart": {
+                  "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.12.1.0",
+                  "type": "Organization",
+                  "https://bibsysdev.github.io/src/organization-ontology.ttl#acronym": "RE-REK",
+                  "labels": {
+                    "nb": "Rektor og styre",
+                    "en": "Rector and Board"
+                  },
+                  "partOf": {
+                    "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.12.0.0"
+                  }
+                },
                 "id": "https://api.dev.nva.aws.unit.no/cristin/organization/185.34.15.7",
                 "type": "Organization",
                 "labels": {
