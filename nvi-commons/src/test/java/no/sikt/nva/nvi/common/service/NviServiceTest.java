@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.service;
 
-import static java.util.Objects.isNull;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.db.model.DbStatus.APPROVED;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
@@ -323,7 +322,8 @@ public class NviServiceTest extends LocalDynamoTest {
         dbNote = DbNote.builder().user(user).text(randomString()).build();
         var candidateWith2Notes = nviService.createNote(fullCandidate.identifier(), dbNote);
         var noteIdentifier = getNoteIdentifier(candidateWith2Notes, user);
-        var candidateWith1Note = nviService.deleteNote(candidateWith2Notes.identifier(), noteIdentifier, user.getValue());
+        var candidateWith1Note = nviService.deleteNote(candidateWith2Notes.identifier(), noteIdentifier,
+                                                       user.getValue());
         assertThat(candidateWith1Note.notes(), hasSize(1));
     }
 
@@ -421,18 +421,6 @@ public class NviServiceTest extends LocalDynamoTest {
                    .orElseThrow();
     }
 
-    private static DbApprovalStatus createDbApprovalStatus(UUID identifier, DbStatus status, URI institutionUri,
-                                                           String assignee, String finalizedBy, Instant finalizedDate) {
-        return DbApprovalStatus.builder()
-                   .institutionId(institutionUri)
-                   .status(status)
-                   .candidateIdentifier(identifier)
-                   .assignee(isNull(assignee) ? null : DbUsername.fromString(assignee))
-                   .finalizedBy(isNull(finalizedBy) ? null : DbUsername.fromString(finalizedBy))
-                   .finalizedDate(finalizedDate)
-                   .build();
-    }
-
     private static DbCandidate updateCandidate(Candidate candidate) {
         var creators = candidate.candidate().creators();
         var updatedCreators = new ArrayList<>(creators);
@@ -490,14 +478,14 @@ public class NviServiceTest extends LocalDynamoTest {
         return approval.update(nviService, new UpdateAssigneeRequest(DbUsername.fromString(assignee)));
     }
 
-    private DbApprovalStatus updateApproval(Candidate existingCandidate, DbStatus status) {
-        return nviService.updateApproval(existingCandidate.identifier(),
-                                         getSingleApproval(existingCandidate).copy().status(status).build());
-    }
-
     private void updateAssignee(DbApprovalStatus existingApprovalStatus) {
         nviService.updateApproval(existingApprovalStatus.candidateIdentifier(),
                                   existingApprovalStatus.copy().assignee(randomUsername()).build());
+    }
+
+    private void updateApproval(Candidate existingCandidate, DbStatus status) {
+        nviService.updateApproval(existingCandidate.identifier(),
+                                  getSingleApproval(existingCandidate).copy().status(status).build());
     }
 
     private DbCandidate createExpectedCandidate(UUID identifier, List<DbCreator> creators, String instanceType,

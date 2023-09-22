@@ -129,8 +129,8 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
         }
 
         public DbApprovalStatus build() {
-            return new DbApprovalStatus(builderInstitutionId, builderCandidateIdentifier, builderStatus, builderAssignee,
-                                        builderFinalizedBy, builderFinalizedDate);
+            return new DbApprovalStatus(builderInstitutionId, builderCandidateIdentifier, builderStatus,
+                                        builderAssignee, builderFinalizedBy, builderFinalizedDate);
         }
     }
 }
