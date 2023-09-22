@@ -470,6 +470,7 @@ Resources:
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
       MemorySize: 1536
+      AutoPublishAlias: live
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -484,6 +485,7 @@ Resources:
             Path: /candidate/{candidateIdentifier}/note
             Method: post
             RestApiId: !Ref ScientificIndexApi
+
   RemoveNoteHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -492,6 +494,7 @@ Resources:
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
       MemorySize: 1536
+      AutoPublishAlias: live
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'

@@ -13,7 +13,7 @@ public final class RequestUtil {
     }
 
     public static DbUsername getUsername(RequestInfo requestInfo) throws UnauthorizedException {
-        return new DbUsername(requestInfo.getUserName());
+        return DbUsername.fromString(requestInfo.getUserName());
     }
 
     public static void hasAccessRight(RequestInfo requestInfo, AccessRight accessRight) throws UnauthorizedException {

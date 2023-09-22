@@ -57,10 +57,6 @@ public class NviService {
         return Optional.empty();
     }
 
-    private boolean shouldBeDeleted(DbCandidate dbCandidate) {
-        return isExistingCandidate(dbCandidate.publicationId()) && !dbCandidate.applicable();
-    }
-
     public DbNviPeriod createPeriod(DbNviPeriod period) {
         validatePeriod(period);
         return nviPeriodRepository.save(period);
@@ -81,13 +77,13 @@ public class NviService {
         return nviPeriodRepository.getPeriods();
     }
 
-    public Candidate updateApprovalStatus(UUID identifier, DbApprovalStatus newStatus) {
-        var approvalByIdAndInstitutionId =
-            nviCandidateRepository.findApprovalByIdAndInstitutionId(identifier, newStatus.institutionId())
-                .map(oldStatus -> toUpdatedApprovalStatus(oldStatus, newStatus))
-                .orElseThrow();
-        nviCandidateRepository.updateApprovalStatus(identifier, approvalByIdAndInstitutionId);
-        return nviCandidateRepository.getCandidateById(identifier);
+    public DbApprovalStatus updateApproval(UUID candidateIdentifier, DbApprovalStatus newApproval) {
+        return nviCandidateRepository.updateApprovalStatus(candidateIdentifier, newApproval);
+    }
+
+    public DbApprovalStatus findApprovalStatus(URI institutionId, UUID candidateIdentifier) {
+        return nviCandidateRepository.findApprovalByIdAndInstitutionId(candidateIdentifier, institutionId)
+                   .orElseThrow();
     }
 
     public Optional<Candidate> findCandidateById(UUID uuid) {
@@ -115,13 +111,11 @@ public class NviService {
     }
 
     private static boolean isNoteOwner(String requestUsername, DbNote note) {
-        return note.user().value().equals(requestUsername);
+        return note.user().getValue().equals(requestUsername);
     }
 
     private static boolean isInteger(String value) {
-        return attempt(() -> Integer.parseInt(value))
-                   .map(ignore -> true)
-                   .orElse((ignore) -> false);
+        return attempt(() -> Integer.parseInt(value)).map(ignore -> true).orElse((ignore) -> false);
     }
 
     private static boolean hasInvalidLength(DbNviPeriod period) {
@@ -129,9 +123,7 @@ public class NviService {
     }
 
     private static List<DbApprovalStatus> generatePendingApprovalStatuses(List<DbInstitutionPoints> institutionPoints) {
-        return institutionPoints.stream()
-                   .map(NviService::toPendingApprovalStatus)
-                   .toList();
+        return institutionPoints.stream().map(NviService::toPendingApprovalStatus).toList();
     }
 
     private static DbApprovalStatus toPendingApprovalStatus(DbInstitutionPoints institutionPoints) {
@@ -141,42 +133,12 @@ public class NviService {
                    .build();
     }
 
-    private static DbApprovalStatus resetStatus(DbApprovalStatus oldApprovalStatus) {
-        return oldApprovalStatus.copy()
-                   .status(DbStatus.PENDING)
-                   .assignee(oldApprovalStatus.assignee())
-                   .finalizedBy(null)
-                   .finalizedDate(null)
-                   .build();
-    }
-
-    private static DbApprovalStatus finalizeStatus(DbApprovalStatus oldApprovalStatus,
-                                                   DbApprovalStatus newApprovalStatus) {
-        return oldApprovalStatus.copy()
-                   .status(newApprovalStatus.status())
-                   .finalizedBy(newApprovalStatus.finalizedBy())
-                   .assignee(newApprovalStatus.assignee())
-                   .finalizedDate(Instant.now())
-                   .build();
-    }
-
-
-    private static DbApprovalStatus updateStatus(DbApprovalStatus oldApprovalStatus,
-                                                 DbApprovalStatus newApprovalStatus) {
-        return switch (newApprovalStatus.status()) {
-            case APPROVED, REJECTED -> finalizeStatus(oldApprovalStatus, newApprovalStatus);
-            case PENDING -> resetStatus(oldApprovalStatus);
-        };
-    }
-
-    private static boolean updateIsAssignee(DbApprovalStatus oldApprovalStatus, DbApprovalStatus newApprovalStatus) {
-        return oldApprovalStatus.status().equals(newApprovalStatus.status());
+    private boolean shouldBeDeleted(DbCandidate dbCandidate) {
+        return isExistingCandidate(dbCandidate.publicationId()) && !dbCandidate.applicable();
     }
 
     private DbNviPeriod injectCreatedBy(DbNviPeriod period) {
-        return period.copy()
-                   .createdBy(getPeriod(period.publishingYear()).createdBy())
-                   .build();
+        return period.copy().createdBy(getPeriod(period.publishingYear()).createdBy()).build();
     }
 
     private boolean isExistingCandidate(DbCandidate dbCandidate) {
@@ -189,24 +151,6 @@ public class NviService {
 
     private boolean isNewCandidate(DbCandidate dbCandidate) {
         return !isExistingCandidate(dbCandidate.publicationId()) && dbCandidate.applicable();
-    }
-
-    private DbApprovalStatus toUpdatedApprovalStatus(DbApprovalStatus oldApprovalStatus,
-                                                     DbApprovalStatus newApprovalStatus) {
-        if (updateIsAssignee(oldApprovalStatus, newApprovalStatus)) {
-            return updateAssignee(oldApprovalStatus, newApprovalStatus);
-        } else {
-            return updateStatus(oldApprovalStatus, newApprovalStatus);
-        }
-    }
-
-    private DbApprovalStatus updateAssignee(DbApprovalStatus oldApprovalStatus, DbApprovalStatus newApprovalStatus) {
-        return oldApprovalStatus.copy()
-                   .status(newApprovalStatus.status())
-                   .finalizedBy(null)
-                   .assignee(Optional.of(newApprovalStatus).map(DbApprovalStatus::assignee).orElse(null))
-                   .finalizedDate(null)
-                   .build();
     }
 
     private Optional<Candidate> createCandidate(DbCandidate candidate) {
@@ -251,7 +195,6 @@ public class NviService {
         return Optional.of(updateCandidateRemovingApprovals(existingCandidate.identifier(), dbCandidate,
                                                             generatePendingApprovalStatuses(dbCandidate.points())));
     }
-
 
     private Candidate updateCandidateRemovingApprovals(UUID identifier, DbCandidate candidate,
                                                        List<DbApprovalStatus> approvalStatuses) {

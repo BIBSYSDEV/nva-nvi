@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.rest.upsert;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
-import no.sikt.nva.nvi.common.db.model.DbStatus;
 import nva.commons.core.JacocoGenerated;
 
 @JacocoGenerated
@@ -19,9 +18,8 @@ public enum NviApprovalStatus {
     }
 
     @JsonCreator
-    public static DbStatus parse(String value) {
-        return Arrays
-                   .stream(DbStatus.values())
+    public static NviApprovalStatus parse(String value) {
+        return Arrays.stream(NviApprovalStatus.values())
                    .filter(status -> status.getValue().equalsIgnoreCase(value))
                    .findFirst()
                    .orElseThrow();

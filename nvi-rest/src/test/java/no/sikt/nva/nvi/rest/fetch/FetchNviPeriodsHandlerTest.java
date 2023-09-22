@@ -83,7 +83,7 @@ public class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
         return DbNviPeriod.builder()
                    .publishingYear(publishingYear)
                    .reportingDate(new Date(2050, 0, 25).toInstant())
-                   .createdBy(new DbUsername(randomString()))
+                   .createdBy(DbUsername.fromString(randomString()))
                    .build();
     }
 }

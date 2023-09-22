@@ -35,7 +35,7 @@ dependencies {
 }
 test {
     useJUnitPlatform()
-    environment "EXPANDED_RESOURCES_BUCKET", "My Bucketses"
+    environment "EXPANDED_RESOURCES_BUCKET", "ignoredBucket"
     environment "CANDIDATE_QUEUE_NAME", "My Queueses"
     environment "CANDIDATE_DLQ_NAME", "My Deadeses"
     environment "BACKEND_CLIENT_AUTH_URL", "My url"
