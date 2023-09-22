@@ -12,7 +12,6 @@ import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.ApprovalDto;
 import no.sikt.nva.nvi.rest.model.User;
@@ -26,7 +25,6 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
-import nva.commons.apigateway.exceptions.NotFoundException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -42,7 +40,6 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
     public static final String USERS_ROLES_PATH_PARAM = "users-roles";
     public static final String USERS_PATH_PARAM = "users";
     public static final String CONTENT_TYPE = "application/json";
-    public static final String CANDIDATE_NOT_FOUND_MESSAGE = "Candidate to update does not exist";
     private final RawContentRetriever uriRetriever;
     private final NviService nviService;
 
@@ -63,35 +60,48 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
     protected CandidateResponse processInput(ApprovalDto input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         validateRequest(input, requestInfo);
-        return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER))
-                   .map(UUID::fromString)
-                   .map(nviService::findCandidateById)
-                   .map(optional -> optional.orElseThrow(() -> new NotFoundException(CANDIDATE_NOT_FOUND_MESSAGE)))
-                   .map(candidate -> updateApprovalStatus(input, candidate))
+        var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
+        return attempt(() -> toApprovalStatus(input, candidateIdentifier))
+                   .map(this::fetchApprovalStatus)
+                   .map(dbApprovalStatus -> updateApprovalStatus(input, dbApprovalStatus))
+                   .map(this::fetchCandidate)
+                   .map(Optional::orElseThrow)
                    .map(CandidateResponse::fromCandidate)
                    .orElseThrow(ExceptionMapper::map);
     }
 
-    private Candidate updateApprovalStatus(ApprovalDto input, Candidate candidate) {
-        return nviService.updateApprovalStatus(candidate.identifier(), injectAssignee(candidate, input));
+    private Optional<Candidate> fetchCandidate(DbApprovalStatus dbApprovalStatus) {
+        return nviService.findCandidateById(dbApprovalStatus.candidateIdentifier());
     }
 
-    private DbApprovalStatus injectAssignee(Candidate candidate, ApprovalDto input) {
-        return getApprovalStatus(candidate, input).copy()
-                   .assignee(new DbUsername(input.assignee()))
+    private DbApprovalStatus updateApprovalStatus(ApprovalDto input, DbApprovalStatus dbApprovalStatus) {
+        return dbApprovalStatus.update(nviService, input.toUpdateRequest());
+    }
+
+    private DbApprovalStatus fetchApprovalStatus(DbApprovalStatus dbApprovalStatus) {
+        return dbApprovalStatus.fetch(nviService);
+    }
+
+    @Override
+    protected Integer getSuccessStatusCode(ApprovalDto input, CandidateResponse output) {
+        return HttpURLConnection.HTTP_OK;
+    }
+
+    private static void hasSameCustomer(ApprovalDto input, RequestInfo requestInfo) throws UnauthorizedException {
+        if (!input.institutionId().equals(requestInfo.getTopLevelOrgCristinId().orElseThrow())) {
+            throw new UnauthorizedException();
+        }
+    }
+
+    private static User toUser(String body) {
+        return attempt(() -> JsonUtils.dtoObjectMapper.readValue(body, User.class)).orElseThrow();
+    }
+
+    private DbApprovalStatus toApprovalStatus(ApprovalDto input, UUID candidateIdentifier) {
+        return DbApprovalStatus.builder()
+                   .institutionId(input.institutionId())
+                   .candidateIdentifier(candidateIdentifier)
                    .build();
-
-    }
-
-    private static DbApprovalStatus getApprovalStatus(Candidate candidate, ApprovalDto input) {
-        return candidate.approvalStatuses().stream()
-                   .filter(approval -> getApprovalByInstutionId(input, approval.institutionId()))
-                   .findFirst()
-                   .orElseThrow();
-    }
-
-    private static boolean getApprovalByInstutionId(ApprovalDto input, URI institutionId) {
-        return institutionId.equals(input.institutionId());
     }
 
     private void validateRequest(ApprovalDto input, RequestInfo requestInfo) throws UnauthorizedException {
@@ -109,29 +119,19 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
         }
     }
 
-    private static void hasSameCustomer(ApprovalDto input, RequestInfo requestInfo) throws UnauthorizedException {
-        if (!input.institutionId().equals(requestInfo.getTopLevelOrgCristinId().orElseThrow())) {
-            throw new UnauthorizedException();
-        }
-    }
-
     private boolean hasManageNviCandidateAccessRight(User user) {
-        return user.roles().stream()
+        return user.roles()
+                   .stream()
                    .map(Role::accessRights)
                    .flatMap(List::stream)
                    .anyMatch(accessRights -> accessRights.name().equals(AccessRight.MANAGE_NVI_CANDIDATE.name()));
     }
 
     private User fetchUser(String assignee) {
-        return attempt(() -> constructFetchUserUri(assignee))
-                   .map(uri -> uriRetriever.getRawContent(uri, CONTENT_TYPE))
+        return attempt(() -> constructFetchUserUri(assignee)).map(uri -> uriRetriever.getRawContent(uri, CONTENT_TYPE))
                    .map(Optional::orElseThrow)
                    .map(UpsertAssigneeHandler::toUser)
                    .orElseThrow();
-    }
-
-    private static User toUser(String body) {
-        return attempt(() -> JsonUtils.dtoObjectMapper.readValue(body, User.class)).orElseThrow();
     }
 
     private URI constructFetchUserUri(String assignee) {
@@ -140,10 +140,5 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
                    .addChild(USERS_PATH_PARAM)
                    .addChild(assignee)
                    .getUri();
-    }
-
-    @Override
-    protected Integer getSuccessStatusCode(ApprovalDto input, CandidateResponse output) {
-        return HttpURLConnection.HTTP_OK;
     }
 }

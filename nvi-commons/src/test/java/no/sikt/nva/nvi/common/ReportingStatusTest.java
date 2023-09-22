@@ -36,8 +36,8 @@ public record ReportingStatusTest() {
     private static DbNviPeriod randomPeriod() {
         return DbNviPeriod.builder().publishingYear(randomString())
                                       .reportingDate(randomInstant())
-                                      .createdBy(new DbUsername(randomString()))
-                                      .modifiedBy(new DbUsername(randomString()))
+                                      .createdBy(DbUsername.fromString(randomString()))
+                                      .modifiedBy(DbUsername.fromString(randomString()))
                                       .build();
     }
 

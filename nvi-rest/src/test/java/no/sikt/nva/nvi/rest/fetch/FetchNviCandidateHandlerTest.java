@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.rest.fetch;
 
-import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.PARAM_CANDIDATE_IDENTIFIER;
+import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -23,6 +23,7 @@ import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.ContentType;
@@ -102,7 +103,7 @@ class FetchNviCandidateHandlerTest {
         return approvalStatuses.stream()
                    .map(approvalStatus -> new ApprovalStatus(
                        approvalStatus.institutionId(),
-                       approvalStatus.status(),
+                       NviApprovalStatus.parse(approvalStatus.status().getValue()),
                        getPointsForApprovalStatus(points, approvalStatus),
                        approvalStatus.assignee(),
                        approvalStatus.finalizedBy(),
@@ -127,7 +128,7 @@ class FetchNviCandidateHandlerTest {
     private static InputStream getInput(UUID publicationId) throws JsonProcessingException {
         return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
                    .withHeaders(Map.of(HttpHeader.ACCEPT.asString(), ContentType.APPLICATION_JSON.getMimeType()))
-                   .withPathParameters(Map.of(PARAM_CANDIDATE_IDENTIFIER, publicationId.toString()))
+                   .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, publicationId.toString()))
                    .build();
     }
 

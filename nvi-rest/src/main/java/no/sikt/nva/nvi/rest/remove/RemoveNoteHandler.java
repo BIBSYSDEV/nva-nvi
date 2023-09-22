@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.rest.remove;
 
-import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.PARAM_CANDIDATE_IDENTIFIER;
+import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
@@ -40,11 +40,11 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateResponse
 
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
         var username = RequestUtil.getUsername(requestInfo);
-        var candidateIdentifier = requestInfo.getPathParameter(PARAM_CANDIDATE_IDENTIFIER);
+        var candidateIdentifier = requestInfo.getPathParameter(CANDIDATE_IDENTIFIER);
         var noteIdentifier = requestInfo.getPathParameter(PARAM_NOTE_IDENTIFIER);
         return attempt(() -> service.deleteNote(UUID.fromString(candidateIdentifier),
                                                 UUID.fromString(noteIdentifier),
-                                                username.value()))
+                                                username.getValue()))
                    .map(CandidateResponse::fromCandidate)
                    .orElseThrow(handleFailure());
     }

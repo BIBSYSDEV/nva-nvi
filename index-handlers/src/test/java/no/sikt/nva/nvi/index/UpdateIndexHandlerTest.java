@@ -217,7 +217,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                                  ApprovalStatus.fromValue(approval.status().getValue()),
                                                  Optional.of(approval)
                                                      .map(DbApprovalStatus::assignee)
-                                                     .map(DbUsername::value)
+                                                     .map(DbUsername::getValue)
                                                      .orElse(null)))
                    .toList();
     }
@@ -294,7 +294,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private static DbApprovalStatus approvalWithAssignee() {
         return DbApprovalStatus.builder()
                    .institutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
-                   .assignee(new DbUsername(randomString()))
+                   .assignee(DbUsername.fromString(randomString()))
                    .status(DbStatus.PENDING).build();
     }
 

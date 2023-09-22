@@ -13,6 +13,7 @@ import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.rest.fetch.ApprovalStatus;
 import no.sikt.nva.nvi.rest.fetch.Note;
+import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -39,7 +40,7 @@ public record CandidateResponse(UUID id,
     }
 
     private static Note mapToNote(DbNote dbNote) {
-        return new Note(dbNote.user().value(), dbNote.text(), dbNote.createdDate());
+        return new Note(dbNote.user().getValue(), dbNote.text(), dbNote.createdDate());
     }
 
     private static List<ApprovalStatus> mapToApprovalStatus(Candidate candidate) {
@@ -53,7 +54,7 @@ public record CandidateResponse(UUID id,
                                                       List<DbInstitutionPoints> institutionPoints) {
         return ApprovalStatus.builder()
                    .withInstitutionId(approvalStatus.institutionId())
-                   .withStatus(approvalStatus.status())
+                   .withStatus(NviApprovalStatus.parse(approvalStatus.status().getValue()))
                    .withPoints(getPointsForApprovalStatus(institutionPoints, approvalStatus))
                    .withAssignee(approvalStatus.assignee())
                    .withFinalizedBy(approvalStatus.finalizedBy())

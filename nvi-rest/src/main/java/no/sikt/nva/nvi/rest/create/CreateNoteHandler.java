@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.rest.create;
 
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
-import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.PARAM_CANDIDATE_IDENTIFIER;
+import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.util.Objects;
@@ -38,7 +38,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         throws ApiGatewayException {
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
         var username = RequestUtil.getUsername(requestInfo);
-        var candidateIdentifier = requestInfo.getPathParameter(PARAM_CANDIDATE_IDENTIFIER);
+        var candidateIdentifier = requestInfo.getPathParameter(CANDIDATE_IDENTIFIER);
 
         validate(input);
         var candidate = service.createNote(UUID.fromString(candidateIdentifier), getNote(input, username));
@@ -53,7 +53,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
     private static DbNote getNote(NviNoteRequest input, DbUsername username) {
         return DbNote.builder()
                    .text(input.text())
-                   .user(new DbUsername(username.value()))
+                   .user(DbUsername.fromString(username.getValue()))
                    .build();
     }
 
