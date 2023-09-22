@@ -146,11 +146,11 @@ paths:
       description: 'Search for scientific index candidates'
       parameters:
         - in: query
-          name: query
-          description: 'Term to search for in candidates'
+          name: institutions
+          description: 'Only return candidates in given institutions'
           required: false
           schema:
-            type: string
+            type: array
         - in: query
           name: offset
           schema:

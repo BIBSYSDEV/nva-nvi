@@ -4,7 +4,9 @@ import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient
 import static no.sikt.nva.nvi.index.utils.PaginatedResultConverter.toPaginatedResult;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
+import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
@@ -17,7 +19,7 @@ import nva.commons.core.StringUtils;
 public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
-    public static final String QUERY_PARAM_SEARCH_TERM = "query";
+    public static final String QUERY_PARAM_INSTITUTIONS = "institutions";
     public static final String QUERY_PARAM_FILTER = "filter";
     private static final String DEFAULT_FILTER = StringUtils.EMPTY_STRING;
     private static final String QUERY_SIZE_PARAM = "size";
@@ -46,12 +48,12 @@ public class SearchNviCandidatesHandler
         var offset = extractQueryParamOffsetOrDefault(requestInfo);
         var size = extractQueryParamSizeOrDefault(requestInfo);
         var filter = extractQueryParamFilterOrDefault(requestInfo);
-        var searchTerm = extractQueryParamSearchTermOrDefault(requestInfo);
+        var institutions = extractQueryParamInstitutionsOrDefault(requestInfo);
         var customer = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         var username = requestInfo.getUserName();
 
-        return attempt(() -> openSearchClient.search(searchTerm, filter, username, customer, offset, size))
-                   .map(searchResponse -> toPaginatedResult(searchResponse, searchTerm, filter, offset, size))
+        return attempt(() -> openSearchClient.search(institutions, filter, username, customer, offset, size))
+                   .map(searchResponse -> toPaginatedResult(searchResponse, institutions, filter, offset, size))
                    .orElseThrow();
     }
 
@@ -70,9 +72,9 @@ public class SearchNviCandidatesHandler
                    .orElse(DEFAULT_OFFSET_SIZE);
     }
 
-    private static String extractQueryParamSearchTermOrDefault(RequestInfo requestInfo) {
+    private static String extractQueryParamInstitutionsOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
-                   .getOrDefault(QUERY_PARAM_SEARCH_TERM, SEARCH_ALL_DOCUMENTS_DEFAULT_QUERY);
+                   .getOrDefault(QUERY_PARAM_INSTITUTIONS, null);
     }
 
     private static String extractQueryParamFilterOrDefault(RequestInfo requestInfo) {

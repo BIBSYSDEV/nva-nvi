@@ -97,17 +97,25 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     @Override
-    public SearchResponse<NviCandidateIndexDocument> search(String searchTerm,
+    public SearchResponse<NviCandidateIndexDocument> search(String institutions,
                                                             String filter,
                                                             String username,
                                                             URI customer,
                                                             int offset,
                                                             int size)
         throws IOException {
-        logSearchRequest(searchTerm, filter, username, customer, offset, size);
-        return client.withTransportOptions(getOptions())
-                   .search(constructSearchRequest(searchTerm, filter, username, customer.toString(), offset, size),
-                           NviCandidateIndexDocument.class);
+        logSearchRequest(institutions, filter, username, customer, offset, size);
+        try {
+            return client.withTransportOptions(getOptions())
+                       .search(constructSearchRequest(institutions, filter, username, customer.toString(), offset, size),
+                               NviCandidateIndexDocument.class);
+        } catch (Exception e) {
+            LOGGER.error("Error while searching for candidates", e);
+            throw e;
+        }
+
+
+
     }
 
     @Override
@@ -179,11 +187,12 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         return new RuntimeException(exception.getMessage());
     }
 
-    private SearchRequest constructSearchRequest(String searchTerm, String filter, String username, String customer,
+    private SearchRequest constructSearchRequest(String institutions, String filter, String username, String customer,
                                                  int offset, int size) {
+        var query = SearchConstants.constructQuery(institutions, filter, username, customer);
         return new SearchRequest.Builder()
                    .index(NVI_CANDIDATES_INDEX)
-                   .query(SearchConstants.constructQuery(searchTerm, filter, username, customer))
+                   .query(query)
                    .aggregations(Aggregations.generateAggregations(username, customer))
                    .from(offset)
                    .size(size)

@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.utils;
 
 import static no.sikt.nva.nvi.index.Aggregations.assignmentsQuery;
 import static no.sikt.nva.nvi.index.Aggregations.containsPendingStatusQuery;
+import static no.sikt.nva.nvi.index.Aggregations.contributorQuery;
 import static no.sikt.nva.nvi.index.Aggregations.multipleApprovalsQuery;
 import static no.sikt.nva.nvi.index.Aggregations.mustMatch;
 import static no.sikt.nva.nvi.index.Aggregations.statusQuery;
@@ -10,12 +11,15 @@ import static no.sikt.nva.nvi.index.model.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.REJECTED;
 import java.util.Map;
+import java.util.Objects;
 import nva.commons.core.Environment;
+import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.mapping.KeywordProperty;
 import org.opensearch.client.opensearch._types.mapping.NestedProperty;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
 
 public final class SearchConstants {
@@ -44,11 +48,15 @@ public final class SearchConstants {
 
     }
 
-    public static Query constructQuery(String searchTerm, String filter, String username, String customer) {
-        var query = searchTermToQuery(searchTerm);
+    public static Query constructQuery(String institutions, String filter, String username, String customer) {
+        var institutionQuery = Objects.nonNull(institutions) ? createInstitutionQuery(institutions) : createMatchAllQuery();
         return isNotEmpty(filter)
-                   ? constructQueryWithFilter(filter, username, customer, query)
-                   : mustMatch(searchTermToQuery(searchTerm));
+                   ? constructQueryWithFilter(filter, username, customer, institutionQuery)
+                   : mustMatch(institutionQuery);
+    }
+
+    private static Query createMatchAllQuery() {
+        return QueryBuilders.matchAll().build()._toQuery();
     }
 
     public static TypeMapping mappings() {
@@ -93,18 +101,34 @@ public final class SearchConstants {
 
             case ASSIGNMENTS_AGG -> mustMatch(assignmentsQuery(username, customer));
 
-            default -> mustMatch(searchTermToQuery("*"));
+            default -> throw new IllegalStateException("unknown filter " + filter);
         };
     }
 
-    private static Query searchTermToQuery(String searchTerm) {
-        return new QueryStringQuery.Builder().query(searchTerm).build()._toQuery();
+    private static Query createInstitutionQuery(String institutions) {
+        var institutionsList = institutions.split(",");
+        return contributorQuery(institutionsList[0]);
+
+        /*
+        var termQuery = QueryBuilders.term().field("contributors.affiliations.keyword").value(FieldValue.of(institutionsList[0])).build();
+        var query = QueryBuilders.bool().must(
+            termQuery._toQuery()
+            ).build();
+
+
+        return query._toQuery(); */
     }
 
     private static Map<String, Property> mappingProperties() {
-        return Map.of(APPROVALS, new Property.Builder().nested(approvalsNestedProperty()).build());
+        return Map.of(
+            "publicationDetails.contributors", new Property.Builder().nested(contributorsNestedProperty()).build(),
+            APPROVALS, new Property.Builder().nested(approvalsNestedProperty()).build()
+        );
     }
 
+    private static NestedProperty contributorsNestedProperty() {
+        return new NestedProperty.Builder().includeInParent(true).properties(contributorsProperties()).build();
+    }
     private static NestedProperty approvalsNestedProperty() {
         return new NestedProperty.Builder().includeInParent(true).properties(approvalProperties()).build();
     }
@@ -119,6 +143,10 @@ public final class SearchConstants {
 
     private static Map<String, Property> approvalProperties() {
         return Map.of(ID, keywordProperty(), ASSIGNEE, keywordProperty(), APPROVAL_STATUS, keywordProperty());
+    }
+
+    private static Map<String, Property> contributorsProperties() {
+        return Map.of(ID, keywordProperty(), "name", keywordProperty(), "affiliations", keywordProperty());
     }
 
     private static Property keywordProperty() {
