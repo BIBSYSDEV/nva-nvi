@@ -43,13 +43,25 @@ public class NviCandidateRepository extends DynamoRepository {
 
     public Candidate create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
         var identifier = UUID.randomUUID();
+        var approvalStatusesWithCandidateIdentifiers =
+            injectCandidateIdentifier(approvalStatuses, identifier);
         var candidate = constructCandidate(identifier, dbCandidate);
         var uniqueness = new CandidateUniquenessEntryDao(dbCandidate.publicationId().toString());
-        var transactionBuilder = buildTransaction(approvalStatuses, candidate, identifier, uniqueness);
+        var transactionBuilder = buildTransaction(approvalStatusesWithCandidateIdentifiers, candidate,
+                                                  identifier, uniqueness);
 
         this.client.transactWriteItems(transactionBuilder.build());
         var candidateDao = candidateTable.getItem(candidate);
         return toCandidate(candidateDao);
+    }
+
+    private List<DbApprovalStatus> injectCandidateIdentifier(List<DbApprovalStatus> approvalStatuses, UUID identifier) {
+        return approvalStatuses.stream()
+                   .map(approvalStatus -> injectCandidateIdentifier(identifier, approvalStatus)).toList();
+    }
+
+    private DbApprovalStatus injectCandidateIdentifier(UUID identifier, DbApprovalStatus approvalStatus) {
+        return approvalStatus.copy().candidateIdentifier(identifier).build();
     }
 
     public Candidate update(UUID identifier, DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatusList) {
@@ -72,10 +84,6 @@ public class NviCandidateRepository extends DynamoRepository {
                    .map(this::toCandidate);
     }
 
-    public Candidate getCandidateById(UUID candidateIdentifier) {
-        return toCandidate(this.candidateTable.getItem(candidateKey(candidateIdentifier)));
-    }
-
     public Optional<Candidate> findByPublicationId(URI publicationId) {
         return this.publicationIdIndex.query(findCandidateByPublicationIdQuery(publicationId)).stream()
                    .map(Page::items)
@@ -92,8 +100,8 @@ public class NviCandidateRepository extends DynamoRepository {
                    .findFirst();
     }
 
-    public void updateApprovalStatus(UUID identifier, DbApprovalStatus newApproval) {
-        approvalStatusTable.updateItem(newApproval.toDao(identifier));
+    public DbApprovalStatus updateApprovalStatus(UUID identifier, DbApprovalStatus newApproval) {
+        return approvalStatusTable.updateItem(newApproval.toDao(identifier)).approvalStatus();
     }
 
     public boolean exists(UUID identifier) {
@@ -178,13 +186,6 @@ public class NviCandidateRepository extends DynamoRepository {
         return Key.builder()
                    .partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
                    .sortValue(NoteDao.createSortKey(noteIdentifier.toString()))
-                   .build();
-    }
-
-    private static Key candidateKey(UUID candidateIdentifier) {
-        return Key.builder()
-                   .partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
-                   .sortValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
                    .build();
     }
 

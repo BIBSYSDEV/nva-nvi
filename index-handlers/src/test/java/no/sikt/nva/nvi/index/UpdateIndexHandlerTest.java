@@ -292,7 +292,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private static DbApprovalStatus approvalWithAssignee() {
         return DbApprovalStatus.builder()
                    .institutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
-                   .assignee(new DbUsername(randomString()))
+                   .assignee(DbUsername.fromString(randomString()))
                    .status(DbStatus.PENDING).build();
     }
 

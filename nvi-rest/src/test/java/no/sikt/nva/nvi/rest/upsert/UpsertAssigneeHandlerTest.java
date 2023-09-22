@@ -17,6 +17,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -24,8 +25,13 @@ import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.db.Candidate;
+import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
+import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
+import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.rest.fetch.ApprovalStatus;
 import no.sikt.nva.nvi.rest.model.ApprovalDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
@@ -110,7 +116,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     void shouldRemoveAssigneeWhenAssigneeIsPresent() throws IOException {
         mockUserApiResponse("userResponseBodyWithAccessRight.json");
         var candidate = nviService.upsertCandidate(randomApplicableCandidateBuilder()).orElseThrow();
-        updateAssignee(candidate);
+        removeAssignee(candidate);
         handler.handleRequest(createRequest(candidate, null), output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
 
@@ -119,31 +125,66 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
     }
 
+    @Test
+    void shouldUpdateAssigneeWhenExistingApprovalIsFinalized() throws IOException {
+        mockUserApiResponse("userResponseBodyWithAccessRight.json");
+        var newAssignee = randomString();
+        var candidate = candidateWithFinalizedApproval(newAssignee);
+        handler.handleRequest(createRequest(candidate, newAssignee), output, context);
+        var response =
+            GatewayResponse.fromOutputStream(output, CandidateResponse.class);
+
+        assertThat(response.getBodyObject(CandidateResponse.class).approvalStatuses().get(0).assignee(),
+                   is(equalTo(DbUsername.fromString(newAssignee))));
+    }
+
+    private void removeAssignee(Candidate candidate) {
+        candidate.approvalStatuses().get(0).update(nviService, new UpdateAssigneeRequest(null));
+    }
+
+    private Candidate candidateWithFinalizedApproval(String newAssignee) {
+        var candidate = nviService.upsertCandidate(randomApplicableCandidateBuilder()).orElseThrow();
+        candidate.approvalStatuses().get(0).update(nviService, new UpdateStatusRequest(DbStatus.APPROVED, newAssignee));
+        return candidate;
+    }
+
+    private static BigDecimal extractPoints(Candidate candidate, DbApprovalStatus approval) {
+        return candidate.candidate()
+                   .points()
+                   .stream()
+                   .filter(point -> point.institutionId().equals(approval.institutionId()))
+                   .findFirst()
+                   .orElseThrow()
+                   .points();
+    }
+
+    private ApprovalStatus createExpectedApproval(Candidate candidate, String assignee) {
+        var approval = candidate.approvalStatuses().get(0);
+        return ApprovalStatus.builder()
+                   .withAssignee(DbUsername.fromString(assignee))
+                   .withFinalizedBy(approval.finalizedBy())
+                   .withStatus(NviApprovalStatus.parse(approval.status().getValue()))
+                   .withInstitutionId(approval.institutionId())
+                   .withPoints(extractPoints(candidate, approval))
+                   .build();
+    }
+
     private Candidate nonExistingCandidate() {
         var candidate = nviService.upsertCandidate(randomApplicableCandidateBuilder()).orElseThrow();
         return new Candidate(randomUUID(), candidate.candidate(), candidate.approvalStatuses(),
                              Collections.emptyList());
     }
 
-    private void updateAssignee(Candidate candidate) {
-        nviService.updateApprovalStatus(candidate.identifier(),
-                                        candidate.approvalStatuses().get(0).copy()
-                                            .assignee(new DbUsername(randomString()))
-                                            .build());
-    }
-
     private void mockUserApiResponse(String responseFile) {
-        when(uriRetriever.getRawContent(any(), any()))
-            .thenReturn(Optional.ofNullable(IoUtils.stringFromResources(Path.of(responseFile))));
+        when(uriRetriever.getRawContent(any(), any())).thenReturn(
+            Optional.ofNullable(IoUtils.stringFromResources(Path.of(responseFile))));
     }
 
-    private InputStream createRequest(Candidate candidate, String newAssignee)
-        throws JsonProcessingException {
+    private InputStream createRequest(Candidate candidate, String newAssignee) throws JsonProcessingException {
         var approvalToUpdate = candidate.approvalStatuses().get(0);
         var requestBody = new ApprovalDto(newAssignee, approvalToUpdate.institutionId());
         var customerId = randomUri();
-        return new HandlerRequestBuilder<ApprovalDto>(JsonUtils.dtoObjectMapper)
-                   .withBody(randomAssigneeRequest())
+        return new HandlerRequestBuilder<ApprovalDto>(JsonUtils.dtoObjectMapper).withBody(randomAssigneeRequest())
                    .withCurrentCustomer(customerId)
                    .withTopLevelCristinOrgId(requestBody.institutionId())
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE.name())
@@ -154,14 +195,12 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     }
 
     private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
-        return new HandlerRequestBuilder<ApprovalDto>(JsonUtils.dtoObjectMapper)
-                   .withBody(randomAssigneeRequest())
+        return new HandlerRequestBuilder<ApprovalDto>(JsonUtils.dtoObjectMapper).withBody(randomAssigneeRequest())
                    .build();
     }
 
     private InputStream createRequestWithDifferentInstitution() throws JsonProcessingException {
-        return new HandlerRequestBuilder<ApprovalDto>(JsonUtils.dtoObjectMapper)
-                   .withBody(randomAssigneeRequest())
+        return new HandlerRequestBuilder<ApprovalDto>(JsonUtils.dtoObjectMapper).withBody(randomAssigneeRequest())
                    .withCurrentCustomer(randomUri())
                    .build();
     }

@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.rest.remove;
 
-import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.PARAM_CANDIDATE_IDENTIFIER;
+import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.rest.remove.RemoveNoteHandler.PARAM_NOTE_IDENTIFIER;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomUsername;
@@ -114,7 +114,7 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
                                                                                           String noteId,
                                                                                           String userName) {
         return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dynamoObjectMapper)
-                   .withPathParameters(Map.of(PARAM_CANDIDATE_IDENTIFIER, candidateId,
+                   .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateId,
                                               PARAM_NOTE_IDENTIFIER, noteId))
                    .withCurrentCustomer(customerId)
                    .withUserName(userName);
