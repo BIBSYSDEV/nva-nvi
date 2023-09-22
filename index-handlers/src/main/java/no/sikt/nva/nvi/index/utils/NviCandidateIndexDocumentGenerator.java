@@ -42,6 +42,8 @@ import no.sikt.nva.nvi.index.model.PublicationDetails;
 
 public final class NviCandidateIndexDocumentGenerator {
 
+    private static final int POINTS_SCALE = 4;
+    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
 
     private NviCandidateIndexDocumentGenerator() {
     }
@@ -69,7 +71,7 @@ public final class NviCandidateIndexDocumentGenerator {
     private static BigDecimal sumPoints(List<DbInstitutionPoints> points) {
         return points.stream().map(DbInstitutionPoints::points)
                    .reduce(BigDecimal.ZERO, BigDecimal::add)
-                   .setScale(1, RoundingMode.HALF_UP);
+                   .setScale(POINTS_SCALE, ROUNDING_MODE);
     }
 
     private static List<Approval> createApprovals(JsonNode resource, List<DbApprovalStatus> approvals) {
