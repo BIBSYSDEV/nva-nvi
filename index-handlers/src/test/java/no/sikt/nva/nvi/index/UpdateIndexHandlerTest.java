@@ -187,7 +187,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .withPoints(sumPoints(candidate.candidate().points()))
                    .withNumberOfApprovals(candidate.approvalStatuses().size())
                    .withPublicationDetails(new PublicationDetails(candidate.candidate().publicationId().toString(),
-                                                                  candidate.candidate().instanceType(),
+                                                                  candidate.candidate().instanceType().getValue(),
                                                                   randomString(),
                                                                   getExpectedPublicationDate(date),
                                                                   Collections.emptyList()))

@@ -4,6 +4,7 @@ import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.rest.upsert.NviApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.rest.upsert.NviApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.randomInstanceTypeExcluding;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -29,6 +30,7 @@ import no.sikt.nva.nvi.common.db.model.DbCreator;
 import no.sikt.nva.nvi.common.db.model.DbLevel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
+import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -143,7 +145,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
                    .publicationDate(new DbPublicationDate("2023", "01", "01"))
                    .creators(List.of(new DbCreator(randomUri(), List.of(institutionId))))
                    .creatorCount(1)
-                   .instanceType("AcademicArticle")
+                   .instanceType(randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE))
                    .applicable(true)
                    .points(List.of())
                    .build();

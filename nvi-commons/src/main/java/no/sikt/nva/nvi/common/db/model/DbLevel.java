@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
 public enum DbLevel {
-    UNASSIGNED("Unassigned"), LEVEL_ONE("1"), LEVEL_TWO("2");
+    UNASSIGNED("Unassigned"), LEVEL_ONE("1"), LEVEL_TWO("2"), NON_CANDIDATE("NonCandidateLevel");
 
     @JsonValue
     private final String value;
@@ -21,7 +21,7 @@ public enum DbLevel {
                    .stream(DbLevel.values())
                    .filter(level -> level.getValue().equalsIgnoreCase(value))
                    .findFirst()
-                   .orElseThrow();
+                   .orElse(NON_CANDIDATE);
     }
 
     public String getValue() {
