@@ -7,7 +7,7 @@ import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
 @DynamoDbImmutable(builder = Builder.class)
-public class DbUsername {
+public final class DbUsername {
 
     @JsonValue
     private final String value;
@@ -25,7 +25,7 @@ public class DbUsername {
         return new Builder();
     }
 
-    public String value() {
+    public String getValue() {
         return value;
     }
 

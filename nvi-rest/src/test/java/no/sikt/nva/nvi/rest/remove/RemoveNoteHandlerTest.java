@@ -88,7 +88,7 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
                                                        .build());
         var req = createRequest(candidate.identifier(),
                                 candidateWithNote.notes().get(0).noteId(),
-                                user.value()).build();
+                                user.getValue()).build();
         handler.handleRequest(req, output, context);
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         var body = gatewayResponse.getBodyObject(CandidateResponse.class);

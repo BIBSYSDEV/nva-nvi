@@ -89,7 +89,7 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
     public static final class Builder {
 
         private URI builderInstitutionId;
-        private UUID candidateIdentifier;
+        private UUID builderCandidateIdentifier;
         private DbStatus builderStatus;
         private DbUsername builderAssignee;
         private DbUsername builderFinalizedBy;
@@ -124,12 +124,12 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
         }
 
         public Builder candidateIdentifier(UUID candidateIdentifier) {
-            this.candidateIdentifier = candidateIdentifier;
+            this.builderCandidateIdentifier = candidateIdentifier;
             return this;
         }
 
         public DbApprovalStatus build() {
-            return new DbApprovalStatus(builderInstitutionId, candidateIdentifier, builderStatus, builderAssignee,
+            return new DbApprovalStatus(builderInstitutionId, builderCandidateIdentifier, builderStatus, builderAssignee,
                                         builderFinalizedBy, builderFinalizedDate);
         }
     }

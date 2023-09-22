@@ -629,6 +629,8 @@ components:
         status:
           type: string
           enum: [ 'Approved','Pending','Rejected' ]
+      required:
+        - status
     AssigneeRequest:
       type: object
       properties:
@@ -638,6 +640,7 @@ components:
           type: string
       required:
         - institutionId
+        - assignee
     CreateNoteRequest:
       type: object
       properties:

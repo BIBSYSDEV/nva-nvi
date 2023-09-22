@@ -107,7 +107,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         handler.handleRequest(createRequest(candidate, assignee), output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
 
-        assertThat(response.getBodyObject(CandidateResponse.class).approvalStatuses().get(0).assignee().value(),
+        assertThat(response.getBodyObject(CandidateResponse.class).approvalStatuses().get(0).assignee().getValue(),
                    is(equalTo(assignee)));
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
     }

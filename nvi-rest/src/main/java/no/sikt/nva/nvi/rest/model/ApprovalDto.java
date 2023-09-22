@@ -8,6 +8,8 @@ import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 public record ApprovalDto(String assignee, URI institutionId) {
 
     public UpdateAssigneeRequest toUpdateRequest() {
-        return new UpdateAssigneeRequest(nonNull(assignee) ? DbUsername.fromString(assignee) : null);
+        return nonNull(assignee)
+                   ? new UpdateAssigneeRequest(DbUsername.fromString(assignee))
+                   : new UpdateAssigneeRequest(null);
     }
 }

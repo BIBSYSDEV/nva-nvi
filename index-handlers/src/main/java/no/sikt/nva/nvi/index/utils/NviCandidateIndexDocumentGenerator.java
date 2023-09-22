@@ -98,7 +98,7 @@ public final class NviCandidateIndexDocumentGenerator {
     private static String extractAssignee(DbApprovalStatus approval) {
         return Optional.of(approval)
                    .map(DbApprovalStatus::assignee)
-                   .map(DbUsername::value)
+                   .map(DbUsername::getValue)
                    .orElse(null);
     }
 

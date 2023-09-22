@@ -53,7 +53,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
     private static DbNote getNote(NviNoteRequest input, DbUsername username) {
         return DbNote.builder()
                    .text(input.text())
-                   .user(DbUsername.fromString(username.value()))
+                   .user(DbUsername.fromString(username.getValue()))
                    .build();
     }
 

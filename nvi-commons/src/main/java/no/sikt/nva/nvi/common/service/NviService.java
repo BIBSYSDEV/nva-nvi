@@ -105,7 +105,7 @@ public class NviService {
     }
 
     private static boolean isNoteOwner(String requestUsername, DbNote note) {
-        return note.user().value().equals(requestUsername);
+        return note.user().getValue().equals(requestUsername);
     }
 
     private static boolean isInteger(String value) {
