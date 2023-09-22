@@ -18,9 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
-import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
-import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
@@ -36,7 +34,6 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
     private Context context;
     private ByteArrayOutputStream output;
     private CreateNoteHandler handler;
-    private NviService service;
     private NviCandidateRepository nviCandidateRepository;
 
     @BeforeEach
@@ -45,7 +42,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         context = mock(Context.class);
         localDynamo = initializeTestDatabase();
         nviCandidateRepository = new NviCandidateRepository(localDynamo);
-        service = new NviService(localDynamo);
+        var service = new NviService(localDynamo);
         handler = new CreateNoteHandler(service);
     }
 
@@ -58,24 +55,53 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldAddNoteToCandidateWhenNoteIsValid() throws IOException {
-        var theNote = "The note";
-        DbCandidate dbCandidate = randomCandidate();
-        Candidate candidate = nviCandidateRepository.create(dbCandidate, List.of(randomApprovalStatus()));
-        handler.handleRequest(createRequest(candidate.identifier(), new NviNoteRequest(theNote)), output, context);
-        var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
-        var body = gatewayResponse.getBodyObject(CandidateResponse.class);
-        assertThat(body.notes().get(0).text(), is(equalTo(theNote)));
+    void shouldReturnBadRequestIfCreateNoteRequestIsInvalid() throws IOException {
+        var invalidRequestBody = JsonUtils.dtoObjectMapper.writeValueAsString(
+            Map.of("someInvalidInputField", randomString()));
+        var request = createRequest(UUID.randomUUID(), invalidRequestBody, randomString());
+
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
     }
 
-    private InputStream createRequest(UUID identifier, NviNoteRequest body) throws JsonProcessingException {
+    @Test
+    void shouldAddNoteToCandidateWhenNoteIsValid() throws IOException {
+        var candidate = nviCandidateRepository.create(randomCandidate(), List.of(randomApprovalStatus()));
+        var theNote = "The note";
+        var userName = randomString();
+
+        var request = createRequest(candidate.identifier(), new NviNoteRequest(theNote), userName);
+        handler.handleRequest(request, output, context);
+        var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
+        var actualNote = gatewayResponse.getBodyObject(CandidateResponse.class).notes().get(0);
+
+        assertThat(actualNote.text(), is(equalTo(theNote)));
+        assertThat(actualNote.user(), is(equalTo(userName)));
+    }
+
+    private InputStream createRequest(UUID identifier, NviNoteRequest body, String userName)
+        throws JsonProcessingException {
         var customerId = randomUri();
         return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper)
                    .withBody(body)
                    .withCurrentCustomer(customerId)
                    .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE.name())
-                   .withUserName(randomString())
+                   .withUserName(userName)
+                   .build();
+    }
+
+    private InputStream createRequest(UUID identifier, String body, String userName)
+        throws JsonProcessingException {
+        var customerId = randomUri();
+        return new HandlerRequestBuilder<String>(JsonUtils.dtoObjectMapper)
+                   .withBody(body)
+                   .withCurrentCustomer(customerId)
+                   .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
+                   .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE.name())
+                   .withUserName(userName)
                    .build();
     }
 

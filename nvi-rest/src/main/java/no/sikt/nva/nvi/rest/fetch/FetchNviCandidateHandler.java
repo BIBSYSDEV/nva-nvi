@@ -15,7 +15,7 @@ import nva.commons.core.JacocoGenerated;
 
 public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateResponse> {
 
-    public static final String PARAM_CANDIDATE_IDENTIFIER = "candidateIdentifier";
+    public static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
     private final NviService service;
 
     @JacocoGenerated
@@ -31,7 +31,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateR
     @Override
     protected CandidateResponse processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-        return attempt(() -> requestInfo.getPathParameter(PARAM_CANDIDATE_IDENTIFIER))
+        return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER))
                    .map(UUID::fromString)
                    .map(service::findCandidateById)
                    .map(Optional::orElseThrow)

@@ -63,13 +63,13 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 
 class UpdateIndexHandlerTest extends LocalDynamoTest {
 
-    public static final Context CONTEXT = mock(Context.class);
-    public static final String CANDIDATE = IoUtils.stringFromResources(Path.of("candidate.json"));
-    public static final String CANDIDATE_WITH_TOP_LEVEL_ORGS_AS_LIST =
-        IoUtils.stringFromResources(Path.of("candidateV2.json"));
-    public static final String INSTITUTION_ID_FROM_EVENT = "https://api.dev.nva.aws.unit"
-                                                           + ".no/cristin/organization/20754.0.0.0";
-    public static final URI CANDIDATE_CONTEXT = URI.create("https://bibsysdev.github.io/src/nvi-context.json");
+    private static final Context CONTEXT = mock(Context.class);
+    private static final String CANDIDATE = IoUtils.stringFromResources(Path.of("candidate.json"));
+    private static final String INSTITUTION_ID_FROM_EVENT = "https://api.dev.nva.aws.unit"
+                                                            + ".no/cristin/organization/20754.0.0.0";
+    private static final URI CANDIDATE_CONTEXT = URI.create("https://bibsysdev.github.io/src/nvi-context.json");
+    private static final int POINTS_SCALE = 4;
+    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private UpdateIndexHandler handler;
     private TestAppender appender;
     private StorageReader<URI> storageReader;
@@ -86,21 +86,9 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldAddDocumentToIndexWhenIncomingEventIsInsertAndCandidateIsApplicable() throws JsonProcessingException {
-        when(storageReader.read(any())).thenReturn(CANDIDATE);
-        var persistedCandidate = randomApplicableCandidate();
-        when(nviService.findCandidateById(any())).thenReturn(Optional.of(persistedCandidate));
-        handler.handleRequest(createEvent(INSERT, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
-        var document = openSearchClient.getDocuments().get(0);
-        var expectedDocument = constructExpectedDocument(persistedCandidate);
-
-        assertThat(document, is(equalTo(expectedDocument)));
-    }
-
-    @Test
     void shouldAddDocumentToIndexWhenIncomingEventIsInsertAndCandidateIsApplicableAndTopLevelOrgsIsAList()
         throws JsonProcessingException {
-        when(storageReader.read(any())).thenReturn(CANDIDATE_WITH_TOP_LEVEL_ORGS_AS_LIST);
+        when(storageReader.read(any())).thenReturn(CANDIDATE);
         var persistedCandidate = randomApplicableCandidate();
         when(nviService.findCandidateById(any())).thenReturn(Optional.of(persistedCandidate));
         handler.handleRequest(createEvent(INSERT, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
@@ -199,7 +187,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .withPoints(sumPoints(candidate.candidate().points()))
                    .withNumberOfApprovals(candidate.approvalStatuses().size())
                    .withPublicationDetails(new PublicationDetails(candidate.candidate().publicationId().toString(),
-                                                                  candidate.candidate().instanceType(),
+                                                                  candidate.candidate().instanceType().getValue(),
                                                                   randomString(),
                                                                   getExpectedPublicationDate(date),
                                                                   Collections.emptyList()))
@@ -209,7 +197,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private static BigDecimal sumPoints(List<DbInstitutionPoints> points) {
         return points.stream().map(DbInstitutionPoints::points)
                    .reduce(BigDecimal.ZERO, BigDecimal::add)
-                   .setScale(1, RoundingMode.HALF_UP);
+                   .setScale(POINTS_SCALE, ROUNDING_MODE);
     }
 
     private static String getExpectedPublicationDate(DbPublicationDate date) {
@@ -229,7 +217,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                                  ApprovalStatus.fromValue(approval.status().getValue()),
                                                  Optional.of(approval)
                                                      .map(DbApprovalStatus::assignee)
-                                                     .map(DbUsername::value)
+                                                     .map(DbUsername::getValue)
                                                      .orElse(null)))
                    .toList();
     }
@@ -306,7 +294,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private static DbApprovalStatus approvalWithAssignee() {
         return DbApprovalStatus.builder()
                    .institutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
-                   .assignee(new DbUsername(randomString()))
+                   .assignee(DbUsername.fromString(randomString()))
                    .status(DbStatus.PENDING).build();
     }
 
@@ -331,7 +319,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private BigDecimal sumPoint(List<DbInstitutionPoints> points) {
         return points.stream().map(DbInstitutionPoints::points)
                    .reduce(BigDecimal.ZERO, BigDecimal::add)
-                   .setScale(1, RoundingMode.HALF_UP);
+                   .setScale(POINTS_SCALE, ROUNDING_MODE);
     }
 
     private static class FakeSearchClient implements SearchClient<NviCandidateIndexDocument> {
