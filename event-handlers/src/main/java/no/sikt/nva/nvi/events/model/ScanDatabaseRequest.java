@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import no.unit.nva.commons.json.JsonSerializable;
 import no.unit.nva.commons.json.JsonUtils;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -18,7 +20,7 @@ public class ScanDatabaseRequest implements JsonSerializable {
     public static final int MAX_PAGE_SIZE = 1000;
     public static final String TOPIC = "topic";
     @JsonProperty(START_MARKER)
-    private final Map<String, AttributeValue> startMarker;
+    private final Map<String, String> startMarker;
     @JsonProperty(PAGE_SIZE)
     private final int pageSize;
     @JsonProperty(TOPIC)
@@ -26,7 +28,7 @@ public class ScanDatabaseRequest implements JsonSerializable {
 
     @JsonCreator
     public ScanDatabaseRequest(@JsonProperty(PAGE_SIZE) int pageSize,
-                               @JsonProperty(START_MARKER) Map<String, AttributeValue> startMarker,
+                               @JsonProperty(START_MARKER) Map<String, String> startMarker,
                                @JsonProperty(TOPIC) String topic) {
         this.pageSize = pageSize;
         this.startMarker = startMarker;
@@ -48,12 +50,16 @@ public class ScanDatabaseRequest implements JsonSerializable {
                    : DEFAULT_PAGE_SIZE;
     }
 
-    public Map<String, AttributeValue> getStartMarker() {
+    public Map<String, String> getStartMarker() {
         return startMarker;
     }
 
     public ScanDatabaseRequest newScanDatabaseRequest(Map<String, AttributeValue> newStartMarker) {
-        return new ScanDatabaseRequest(this.getPageSize(), newStartMarker, topic);
+        var start = newStartMarker != null ? new LinkedHashMap<>(newStartMarker.entrySet().stream().collect(
+            Collectors.toMap(Map.Entry::getKey,
+                             e -> e.getValue().s()))) : null;
+
+        return new ScanDatabaseRequest(this.getPageSize(), start, topic);
     }
 
     public PutEventsRequestEntry createNewEventEntry(

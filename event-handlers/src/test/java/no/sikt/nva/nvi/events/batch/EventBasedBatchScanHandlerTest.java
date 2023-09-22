@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.events.batch;
 
-import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -14,22 +14,32 @@ import java.io.InputStream;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
-import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.stubs.FakeEventBridgeClient;
 import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import com.amazonaws.services.lambda.runtime.Context;
 
 class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     
@@ -41,23 +51,24 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     private static final String NVI_TABLE_NAME = new Environment().readEnv("NVI_TABLE_NAME");
     private EventBasedBatchScanHandler handler;
     private ByteArrayOutputStream output;
-    private FakeContext context;
+    private Context context;
     private FakeEventBridgeClient eventBridgeClient;
     private Clock clock;
     private NviService nviService;
     private List<Map<String, AttributeValue>> scanningStartingPoints;
-    
+
     @BeforeEach
     public void init() {
         this.clock = Clock.systemDefaultZone();
         this.output = new ByteArrayOutputStream();
-        this.context = new FakeContext();
+        this.context = mock(Context.class);
+        when(context.getInvokedFunctionArn()).thenReturn(randomString());
         this.eventBridgeClient = new FakeEventBridgeClient();
         this.nviService = new NviService(initializeTestDatabase());
         this.handler = new EventBasedBatchScanHandler(nviService, eventBridgeClient);
         this.scanningStartingPoints = Collections.synchronizedList(new ArrayList<>());
     }
-    
+
     @Test
     void shouldUpdateDataEntriesWhenValidRequestIsReceived() {
         var candidate = nviService.upsertCandidate(randomCandidate());
@@ -69,12 +80,39 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     @Test
     void shouldNotGoIntoInfiniteLoop() {
         createRandomCandidates(1000);
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(ONE_ENTRY_PER_EVENT, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(ONE_ENTRY_PER_EVENT,
+                                                              new LinkedHashMap<>(START_FROM_BEGINNING.entrySet().stream().collect(
+                                                                  Collectors.toMap(Map.Entry::getKey,
+                                                                                   e -> e.getValue().s()))),
+                                                              TOPIC));
         while (thereAreMoreEventsInEventBridge()) {
             var currentRequest = consumeLatestEmittedEvent();
             handler.handleRequest(eventToInputStream(currentRequest), output, context);
         }
         assertThat(eventBridgeClient.getRequestEntries(), is(empty()));
+    }
+
+    @Test
+    void shouldIterateAllCandidates() {
+        createRandomCandidates(10);
+
+       try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(4, null, TOPIC));
+
+        while (thereAreMoreEventsInEventBridge()) {
+            var currentRequest = consumeLatestEmittedEvent();
+
+            handler.handleRequest(eventToInputStream(currentRequest), output, context);
+        }
+
+        //TODO: verify somehow that all candidates were iterated
+        //verify(db, times(4)).batchWriteItem((BatchWriteItemRequest) any());
+
     }
 
     private ScanDatabaseRequest consumeLatestEmittedEvent() {

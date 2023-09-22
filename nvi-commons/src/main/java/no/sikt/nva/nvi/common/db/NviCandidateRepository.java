@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static software.amazon.awssdk.enhanced.dynamodb.TableSchema.fromImmutableClass;
@@ -12,16 +13,20 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.common.model.ListingResult;
+import org.slf4j.Logger;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteItemEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteResult;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
@@ -50,19 +55,38 @@ public class NviCandidateRepository extends DynamoRepository {
         this.noteTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(NoteDao.class));
     }
 
-    public ListingResult refresh(int pageSize, Map<String, AttributeValue> startMarker) {
-        var results = this.candidateTable.scan(createScanRequest(pageSize, startMarker))
-                          .items().stream().toList();
-        var s = IntStream.range(0, (results.size() + BATCH_SIZE - 1) / BATCH_SIZE)
-                    .mapToObj(i -> results.subList(i * BATCH_SIZE, Math.min((i + 1) * BATCH_SIZE, results.size())))
-                    .map(this::toBatchRequest)
-                    .map(client::batchWriteItem)
-                    .toList();
-        return ListingResult.builder()
-                   .withDatabaseEntries(results)
-                   .withTruncated(false)
-                   .withStartMarker(Map.of())
-                   .build();
+    public <T> ListingResult<CandidateDao> refresh(int pageSize, Map<String,
+                                                      String> startMarker) {
+        var page = candidateTable.scan(createScanRequest(pageSize, startMarker))
+                             .stream()
+                             .limit(1)
+                             .findFirst();
+
+        var batchResults = Optional.of(getBatches(page.get().items(), BATCH_SIZE)
+                            .map(this::toBatchRequest)
+                            .map(client::batchWriteItem)
+                            .toList())
+                       .orElse(List.of());
+
+        return new ListingResult<>(thereAreMorePagesToScan(page.get()), page.get().lastEvaluatedKey(),
+                                   batchResults.size(),
+                                   batchResults.stream().mapToInt(a -> a.unprocessedPutItemsForTable(candidateTable).size()).sum(),
+                                   batchResults.stream().mapToInt(a -> a.unprocessedDeleteItemsForTable(candidateTable).size()).sum());
+    }
+
+    private int countSuccessfulWrites(BatchWriteResult batchWriteResult) {
+        return batchWriteResult.unprocessedPutItemsForTable(candidateTable).size();
+    }
+
+    private boolean thereAreMorePagesToScan(Page<CandidateDao> scanResult) {
+        return nonNull(scanResult.lastEvaluatedKey()) && !scanResult.lastEvaluatedKey().isEmpty();
+    }
+
+    private static <T> Stream<List<T>> getBatches(List<T> scanResult, int batchSize) {
+        var count = scanResult.size();
+        return IntStream.range(0, (count + batchSize - 1) / batchSize)
+                   .mapToObj(i -> scanResult.subList(i * batchSize, Math.min((i + 1) * batchSize,
+                                                                                     count)));
     }
 
     private BatchWriteItemEnhancedRequest toBatchRequest(List<CandidateDao> results) {
@@ -77,16 +101,18 @@ public class NviCandidateRepository extends DynamoRepository {
 
     private WriteBatch toWriteBatch(CandidateDao dao) {
         return WriteBatch.builder(CandidateDao.class)
-                   .mappedTableResource(this.candidateTable)
+                   .mappedTableResource(candidateTable)
                    .addPutItem(dao)
                    .build();
     }
 
-    private ScanEnhancedRequest createScanRequest(int pageSize, Map<String, AttributeValue> startMarker) {
+    private ScanEnhancedRequest createScanRequest(int pageSize, Map<String, String> startMarker) {
+        var start = startMarker!= null ? startMarker.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
+                                                      e -> AttributeValue.builder().s(e.getValue()).build())) : null;
         return ScanEnhancedRequest.builder()
-                   .limit(pageSize)
-                   .exclusiveStartKey(startMarker)
                    .filterExpression(filterExpressionToScanCandidates())
+                   .exclusiveStartKey(start)
+                   .limit(pageSize)
                    .build();
     }
 

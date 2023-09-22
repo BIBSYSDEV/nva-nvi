@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.events.batch;
 import static no.sikt.nva.nvi.common.service.NviService.defaultNviService;
 import static no.sikt.nva.nvi.events.batch.BatchScanStartHandler.EVENT_BUS_NAME;
 import com.amazonaws.services.lambda.runtime.Context;
-import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
@@ -39,11 +38,12 @@ public class EventBasedBatchScanHandler extends EventHandler<ScanDatabaseRequest
     @Override
     protected Void processInput(ScanDatabaseRequest input, AwsEventBridgeEvent<ScanDatabaseRequest> event,
                                 Context context) {
-        var batchResult = nviService.refresh(input.getPageSize(), input.getStartMarker());
         logger.info("Query starting point:" + input.getStartMarker());
-//        if (result.isTruncated()) {
-//            sendEventToInvokeNewRefreshRowVersionExecution(input, context, result);
-//        }
+        var batchResult = nviService.refresh(input.getPageSize(), input.getStartMarker());
+        logger.info("Batch result:" + batchResult);
+        if (batchResult.shouldContinueScan()) {
+            sendEventToInvokeNewRefreshRowVersionExecution(input, context, batchResult);
+        }
         return null;
     }
 
@@ -54,20 +54,20 @@ public class EventBasedBatchScanHandler extends EventHandler<ScanDatabaseRequest
                    .build();
     }
 
-//    private void sendEventToInvokeNewRefreshRowVersionExecution(ScanDatabaseRequest input,
-//                                                                Context context,
-//                                                                ListingResult<Candidate> result) {
-//        PutEventsRequestEntry newEvent = input
-//                                             .newScanDatabaseRequest(result.getStartMarker())
-//                                             .createNewEventEntry(EVENT_BUS_NAME, DETAIL_TYPE,
-//                                                                  context.getInvokedFunctionArn());
-//        sendEvent(newEvent);
-//    }
-//
-//    private void sendEvent(PutEventsRequestEntry putEventRequestEntry) {
-//        PutEventsRequest putEventRequest = PutEventsRequest.builder()
-//                                               .entries(putEventRequestEntry)
-//                                               .build();
-//        eventBridgeClient.putEvents(putEventRequest);
-//    }
+    private void sendEventToInvokeNewRefreshRowVersionExecution(ScanDatabaseRequest input,
+                                                                Context context,
+                                                                ListingResult result) {
+        PutEventsRequestEntry newEvent = input
+                                             .newScanDatabaseRequest(result.startMarker())
+                                             .createNewEventEntry(EVENT_BUS_NAME, DETAIL_TYPE,
+                                                                  context.getInvokedFunctionArn());
+        sendEvent(newEvent);
+    }
+
+    private void sendEvent(PutEventsRequestEntry putEventRequestEntry) {
+        PutEventsRequest putEventRequest = PutEventsRequest.builder()
+                                               .entries(putEventRequestEntry)
+                                               .build();
+        eventBridgeClient.putEvents(putEventRequest);
+    }
 }
