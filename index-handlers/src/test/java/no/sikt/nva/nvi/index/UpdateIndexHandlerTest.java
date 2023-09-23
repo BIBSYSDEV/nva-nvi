@@ -236,6 +236,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
             List.of(new Contributor.Builder()
                         .withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
                         .withName("Mona Ullah")
+                        .withRole("Creator")
                         .withAffiliations(List.of("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"))
                         .build()
             ));

@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MONTH;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_NAME;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ORCID;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_DATE;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ROLE_TYPE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_YEAR;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
@@ -126,6 +127,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withId(extractId(identity))
                    .withName(extractJsonNodeTextValue(identity, JSON_PTR_NAME))
                    .withOrcid(extractJsonNodeTextValue(identity, JSON_PTR_ORCID))
+                   .withRole(extractRoleType(contributor))
                    .withAffiliations(extractAffiliations(contributor))
                    .build();
     }
@@ -138,6 +140,10 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static String extractId(JsonNode resource) {
         return extractJsonNodeTextValue(resource, JSON_PTR_ID);
+    }
+
+    private static String extractRoleType(JsonNode resource) {
+        return extractJsonNodeTextValue(resource, JSON_PTR_ROLE_TYPE);
     }
 
     private static String extractPublicationDate(JsonNode resource) {

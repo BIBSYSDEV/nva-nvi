@@ -13,6 +13,8 @@ import static no.sikt.nva.nvi.index.model.ApprovalStatus.REJECTED;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import nva.commons.core.Environment;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.mapping.KeywordProperty;
@@ -50,10 +52,16 @@ public final class SearchConstants {
     }
 
     public static Query constructQuery(String institutions, String filter, String username, String customer) {
-        var institutionQuery = Objects.nonNull(institutions) ? createInstitutionQuery(institutions) : createMatchAllQuery();
-        return isNotEmpty(filter)
-                   ? constructQueryWithFilter(filter, username, customer, institutionQuery)
-                   : mustMatch(institutionQuery);
+        var institutionQuery = Objects.nonNull(institutions) ? createInstitutionQuery(institutions) : null;
+        var filterQuery = isNotEmpty(filter) ? constructQueryWithFilter(filter, username, customer) : null;
+
+        var appliedQueries =
+            Stream.of(institutionQuery, filterQuery)
+                .filter(Objects::nonNull).toList().toArray(Query[]::new);
+
+        return appliedQueries.length == 0 ?
+                   createMatchAllQuery() :
+                    mustMatch(appliedQueries);
     }
 
     private static Query createMatchAllQuery() {
@@ -68,35 +76,27 @@ public final class SearchConstants {
         return !filter.isEmpty();
     }
 
-    private static Query constructQueryWithFilter(String filter, String username, String customer, Query query) {
+    private static Query constructQueryWithFilter(String filter, String username, String customer) {
         return switch (filter) {
-            case PENDING_AGG -> mustMatch(query,
-                                          statusQueryWithAssignee(customer, PENDING, false));
+            case PENDING_AGG -> statusQueryWithAssignee(customer, PENDING, false);
 
-            case PENDING_COLLABORATION_AGG -> mustMatch(query,
-                                                        statusQueryWithAssignee(customer, PENDING, false),
+            case PENDING_COLLABORATION_AGG -> mustMatch(statusQueryWithAssignee(customer, PENDING, false),
                                                         multipleApprovalsQuery());
 
-            case ASSIGNED_AGG -> mustMatch(query,
-                                           statusQueryWithAssignee(customer, PENDING, true));
+            case ASSIGNED_AGG -> mustMatch(statusQueryWithAssignee(customer, PENDING, true));
 
-            case ASSIGNED_COLLABORATION_AGG -> mustMatch(query,
-                                                         statusQueryWithAssignee(customer, PENDING, true),
+            case ASSIGNED_COLLABORATION_AGG -> mustMatch(statusQueryWithAssignee(customer, PENDING, true),
                                                          multipleApprovalsQuery());
 
-            case APPROVED_AGG -> mustMatch(query,
-                                           statusQuery(customer, APPROVED));
+            case APPROVED_AGG -> mustMatch(statusQuery(customer, APPROVED));
 
-            case APPROVED_COLLABORATION_AGG -> mustMatch(query,
-                                                         statusQuery(customer, APPROVED),
+            case APPROVED_COLLABORATION_AGG -> mustMatch(statusQuery(customer, APPROVED),
                                                          containsPendingStatusQuery(),
                                                          multipleApprovalsQuery());
 
-            case REJECTED_AGG -> mustMatch(query,
-                                           statusQuery(customer, REJECTED));
+            case REJECTED_AGG -> mustMatch(statusQuery(customer, REJECTED));
 
-            case REJECTED_COLLABORATION_AGG -> mustMatch(query,
-                                                         statusQuery(customer, REJECTED),
+            case REJECTED_COLLABORATION_AGG -> mustMatch(statusQuery(customer, REJECTED),
                                                          containsPendingStatusQuery(),
                                                          multipleApprovalsQuery());
 
