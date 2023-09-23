@@ -147,10 +147,10 @@ paths:
       parameters:
         - in: query
           name: institutions
-          description: 'Only return candidates in given institutions'
+          description: 'Only return candidates in given institutions. Formated as a comma separated list of institution ids.'
           required: false
           schema:
-            type: array
+            type: string
         - in: query
           name: offset
           schema:
