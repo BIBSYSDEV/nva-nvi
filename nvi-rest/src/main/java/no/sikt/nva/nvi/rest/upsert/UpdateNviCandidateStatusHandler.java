@@ -7,11 +7,12 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.CandidateResponse;
+import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.utils.RequestUtil;
+import no.sikt.nva.nvi.utils.ExceptionMapper;
+import no.sikt.nva.nvi.utils.RequestUtil;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -46,7 +47,7 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
                    .map(this::fetchCandidate)
                    .map(Optional::orElseThrow)
                    .map(CandidateResponse::fromCandidate)
-                   .orElseThrow();
+                   .orElseThrow(ExceptionMapper::map);
     }
 
     @Override
