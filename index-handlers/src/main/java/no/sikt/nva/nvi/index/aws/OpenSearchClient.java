@@ -105,14 +105,9 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
                                                             int size)
         throws IOException {
         logSearchRequest(institutions, filter, username, customer, offset, size);
-        try {
-            return client.withTransportOptions(getOptions())
-                       .search(constructSearchRequest(institutions, filter, username, customer.toString(), offset, size),
-                               NviCandidateIndexDocument.class);
-        } catch (Exception e) {
-            LOGGER.error("Error while searching for candidates", e);
-            throw e;
-        }
+        return client.withTransportOptions(getOptions())
+                   .search(constructSearchRequest(institutions, filter, username, customer.toString(), offset, size),
+                           NviCandidateIndexDocument.class);
 
 
 

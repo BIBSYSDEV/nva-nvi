@@ -13,17 +13,14 @@ import static no.sikt.nva.nvi.index.model.ApprovalStatus.REJECTED;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import nva.commons.core.Environment;
-import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.mapping.KeywordProperty;
 import org.opensearch.client.opensearch._types.mapping.NestedProperty;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
-import org.opensearch.client.opensearch._types.query_dsl.QueryStringQuery;
 
 public final class SearchConstants {
 
@@ -41,6 +38,11 @@ public final class SearchConstants {
     public static final String NUMBER_OF_APPROVALS = "numberOfApprovals";
     public static final String APPROVALS = "approvals";
     public static final String APPROVAL_STATUS = "approvalStatus";
+    public static final String PUBLICATION_DETAILS = "publicationDetails";
+    public static final String CONTRIBUTORS = "contributors";
+    public static final String NAME = "name";
+    public static final String AFFILIATIONS = "affiliations";
+    public static final String ROLE = "role";
     public static final String NVI_CANDIDATES_INDEX = "nvi-candidates";
     public static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
     public static final Environment ENVIRONMENT = new Environment();
@@ -59,9 +61,9 @@ public final class SearchConstants {
             Stream.of(institutionQuery, filterQuery)
                 .filter(Objects::nonNull).toList().toArray(Query[]::new);
 
-        return appliedQueries.length == 0 ?
-                   createMatchAllQuery() :
-                    mustMatch(appliedQueries);
+        return appliedQueries.length == 0
+                   ? createMatchAllQuery()
+                   : mustMatch(appliedQueries);
     }
 
     private static Query createMatchAllQuery() {
@@ -111,8 +113,8 @@ public final class SearchConstants {
     }
 
     private static Map<String, Property> mappingProperties() {
-        return Map.of(
-            "publicationDetails.contributors", new Property.Builder().nested(contributorsNestedProperty()).build(),
+        return Map.of(String.join(".",PUBLICATION_DETAILS, CONTRIBUTORS),
+                      new Property.Builder().nested(contributorsNestedProperty()).build(),
             APPROVALS, new Property.Builder().nested(approvalsNestedProperty()).build()
         );
     }
@@ -120,6 +122,7 @@ public final class SearchConstants {
     private static NestedProperty contributorsNestedProperty() {
         return new NestedProperty.Builder().includeInParent(true).properties(contributorsProperties()).build();
     }
+
     private static NestedProperty approvalsNestedProperty() {
         return new NestedProperty.Builder().includeInParent(true).properties(approvalProperties()).build();
     }
@@ -137,7 +140,11 @@ public final class SearchConstants {
     }
 
     private static Map<String, Property> contributorsProperties() {
-        return Map.of(ID, keywordProperty(), "name", keywordProperty(), "affiliations", keywordProperty());
+        return Map.of(ID, keywordProperty(),
+                      NAME, keywordProperty(),
+                      AFFILIATIONS, keywordProperty(),
+                      ROLE, keywordProperty()
+        );
     }
 
     private static Property keywordProperty() {

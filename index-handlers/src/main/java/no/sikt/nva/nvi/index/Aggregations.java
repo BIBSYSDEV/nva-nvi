@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.REJECTED;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.AFFILIATIONS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVED_AGG;
@@ -11,12 +12,15 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNED_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNMENTS_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.CONTRIBUTORS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ID;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NUMBER_OF_APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DETAILS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.ROLE;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +46,7 @@ public final class Aggregations {
     public static final String COMPLETED_AGGREGATION_AGG = "completed";
     public static final String TOTAL_COUNT_AGGREGATION_AGG = "totalCount";
     public static final int MULTIPLE = 2;
+    public static final String CREATOR_ROLE = "Creator";
 
     private Aggregations() {
     }
@@ -93,10 +98,10 @@ public final class Aggregations {
     }
 
     public static Query contributorQuery(List<String> institutions) {
-        return nestedQuery("publicationDetails.contributors",
+        return nestedQuery(jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS),
                            QueryBuilders.bool().must(
-                               termsQuery(institutions, "publicationDetails.contributors.affiliations"),
-                               matchQuery("Creator", "publicationDetails.contributors.role")
+                               termsQuery(institutions, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS)),
+                               matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, ROLE))
                            ).build()._toQuery()
         );
     }

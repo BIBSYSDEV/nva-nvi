@@ -51,7 +51,6 @@ import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.StringUtils;
-import nva.commons.core.attempt.Try;
 import nva.commons.core.ioutils.IoUtils;
 import org.apache.http.HttpHost;
 import org.junit.jupiter.api.AfterAll;
@@ -65,8 +64,6 @@ import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.testcontainers.OpensearchContainer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class OpenSearchClientTest {
 

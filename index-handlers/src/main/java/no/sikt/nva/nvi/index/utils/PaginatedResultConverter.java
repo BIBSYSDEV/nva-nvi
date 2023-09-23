@@ -60,8 +60,12 @@ public final class PaginatedResultConverter {
 
     private static Map<String, String> getQueryParameters(String institutions, String filter) {
         var queryParams = new HashMap();
-        if (Objects.nonNull(institutions)) queryParams.put(QUERY_PARAM_INSTITUTIONS, institutions);
-        if (isNotEmpty(filter)) queryParams.put(QUERY_PARAM_FILTER, filter);
+        if (Objects.nonNull(institutions)) {
+            queryParams.put(QUERY_PARAM_INSTITUTIONS, institutions);
+        }
+        if (isNotEmpty(filter)) {
+            queryParams.put(QUERY_PARAM_FILTER, filter);
+        }
         return queryParams;
     }
 

@@ -4,9 +4,7 @@ import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient
 import static no.sikt.nva.nvi.index.utils.PaginatedResultConverter.toPaginatedResult;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
-import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.URI;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
