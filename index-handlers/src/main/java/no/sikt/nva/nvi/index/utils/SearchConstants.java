@@ -10,6 +10,7 @@ import static no.sikt.nva.nvi.index.Aggregations.statusQueryWithAssignee;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.REJECTED;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import nva.commons.core.Environment;
@@ -106,17 +107,7 @@ public final class SearchConstants {
     }
 
     private static Query createInstitutionQuery(String institutions) {
-        var institutionsList = institutions.split(",");
-        return contributorQuery(institutionsList[0]);
-
-        /*
-        var termQuery = QueryBuilders.term().field("contributors.affiliations.keyword").value(FieldValue.of(institutionsList[0])).build();
-        var query = QueryBuilders.bool().must(
-            termQuery._toQuery()
-            ).build();
-
-
-        return query._toQuery(); */
+        return contributorQuery(List.of(institutions.split(",")));
     }
 
     private static Map<String, Property> mappingProperties() {

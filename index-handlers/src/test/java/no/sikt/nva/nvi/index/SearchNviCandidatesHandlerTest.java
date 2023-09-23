@@ -162,12 +162,14 @@ public class SearchNviCandidatesHandlerTest {
         mockOpenSearchClient();
         var randomFilter = randomString();
         var randomInstitutions = List.of(randomString(), randomString());
-        handler.handleRequest(requestWithInstitutionsAndFilter( randomInstitutions, randomFilter), output, context);
+        handler.handleRequest(requestWithInstitutionsAndFilter(randomInstitutions, randomFilter), output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
 
         var actualId = paginatedSearchResult.getId().toString();
-        var expectedQuery = QUERY_PARAM_INSTITUTIONS + "=" + randomInstitutions.get(0) + "," + randomInstitutions.get(1);
+        var expectedQuery = QUERY_PARAM_INSTITUTIONS
+                            + "=" + randomInstitutions.get(0)
+                            + "," + randomInstitutions.get(1);
 
         assertThat(actualId, containsString(QUERY_PARAM_FILTER + "=" + randomFilter));
         assertThat(actualId, containsString(expectedQuery));
@@ -283,7 +285,8 @@ public class SearchNviCandidatesHandlerTest {
                    .build();
     }
 
-    private InputStream requestWithInstitutionsAndFilter(List<String> institutions, String filter) throws JsonProcessingException {
+    private InputStream requestWithInstitutionsAndFilter(List<String> institutions, String filter)
+        throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
                    .withTopLevelCristinOrgId(randomUri())
                    .withUserName(randomString())

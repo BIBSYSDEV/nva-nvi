@@ -233,12 +233,12 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
             "AcademicArticle",
             "Demo nvi candidate",
             "2023-06-04",
-            List.of(new Contributor(
-                "https://api.dev.nva.aws.unit.no/cristin/person/997998",
-                "Mona Ullah",
-                null,
-                List.of("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0")
-            )));
+            List.of(new Contributor.Builder()
+                        .withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
+                        .withName("Mona Ullah")
+                        .withAffiliations(List.of("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"))
+                        .build()
+            ));
     }
 
     private static DynamodbStreamRecord toRecord(String fileName) throws JsonProcessingException {

@@ -33,6 +33,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
+import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQueryField;
 
 public final class Aggregations {
@@ -91,26 +92,13 @@ public final class Aggregations {
                                : notExistsQuery(jsonPathOf(APPROVALS, ASSIGNEE)));
     }
 
-    public static Query contributorQuery(String institution) {
-        var list = List.of(institution).stream().map(FieldValue::of).toList();
+    public static Query contributorQuery(List<String> institutions) {
         return nestedQuery("publicationDetails.contributors",
                            QueryBuilders.bool().must(
-                               QueryBuilders.terms().field("publicationDetails.contributors.affiliations")
-                                   .terms(new TermsQueryField.Builder().value(list).build())
-                                   .build()._toQuery()
+                               termsQuery(institutions, "publicationDetails.contributors.affiliations"),
+                               matchQuery("Creator", "publicationDetails.contributors.role")
                            ).build()._toQuery()
-                           );
-        //return QueryBuilders.match().field("publicationDetails.title").query(FieldValue.of("Nvi kandidat")).build()
-        // ._toQuery();
-        //var termQuery = termQuery("10b6f194-3d39-4aae-a1fa-eee20bf39f31", jsonPathOf("identifier");
-
-        //return nestedQuery(APPROVALS, termQuery(PENDING.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)));
-        //return termQuery("Nvi kandidat", jsonPathOf("publicationDetails", "title"));
-        //return nestedQuery("publicationDetails",
-         //                  termQuery(institution, jsonPathOf("publicationDetails","title")));
-        //return nestedQuery("publicationDetails",
-          //                 termQuery(institution, jsonPathOf("publicationDetails","contributors", "affiliations")));
-
+        );
     }
 
     public static Query mustMatch(Query... queries) {
@@ -129,6 +117,14 @@ public final class Aggregations {
         return new TermQuery.Builder()
                    .value(new FieldValue.Builder().stringValue(value).build())
                    .field(field)
+                   .build()._toQuery();
+    }
+
+    public static Query termsQuery(List<String> values, String field) {
+        var termsFields = values.stream().map(FieldValue::of).toList();
+        return new TermsQuery.Builder()
+                   .field(field)
+                   .terms(new TermsQueryField.Builder().value(termsFields).build())
                    .build()._toQuery();
     }
 

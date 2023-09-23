@@ -9,6 +9,7 @@ import java.util.List;
 public record Contributor(String id,
                           String name,
                           String orcid,
+                          String role,
                           List<String> affiliations) {
 
     public static final class Builder {
@@ -16,6 +17,7 @@ public record Contributor(String id,
         private String id;
         private String name;
         private String orcid;
+        private String role;
         private List<String> affiliations;
 
         public Builder() {
@@ -36,13 +38,18 @@ public record Contributor(String id,
             return this;
         }
 
+        public Builder withRole(String role) {
+            this.role = role;
+            return this;
+        }
+
         public Builder withAffiliations(List<String> affiliations) {
             this.affiliations = affiliations;
             return this;
         }
 
         public Contributor build() {
-            return new Contributor(id, name, orcid, affiliations);
+            return new Contributor(id, name, orcid, role, affiliations);
         }
     }
 }

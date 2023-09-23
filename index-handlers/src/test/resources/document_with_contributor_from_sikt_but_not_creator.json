@@ -1,15 +1,15 @@
 {
     "@context" : "https://bibsysdev.github.io/src/nvi-context.json",
-    "identifier" : "27a0f52b-2d86-447d-a2cc-48ac4b8789dd",
+    "identifier" : "92935d68-dce7-4a16-a2a4-02b965e8fa22",
     "publicationDetails" : {
       "id" : "https://api.dev.nva.aws.unit.no/publication/018a03b59fd9-88b45d41-03e8-4feb-a3e5-3ad865aea1ca",
       "type" : "AcademicArticle",
       "title" : "Nvi kandidat",
       "publicationDate" : "2023-08-17",
       "contributors" : [ {
-        "id" : "https://api.dev.nva.aws.unit.no/cristin/person/1306838",
-        "name" : "Anette Olli Siiri",
-        "affiliations" : [ "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0" ],
+        "id" : "https://api.dev.nva.aws.unit.no/cristin/person/1136326",
+        "name" : "Kir Truhacev",
+        "affiliations" : [ "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0" ],
         "role" : "Editor"
       } ]
     },

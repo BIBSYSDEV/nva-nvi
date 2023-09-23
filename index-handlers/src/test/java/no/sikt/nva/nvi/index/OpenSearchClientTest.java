@@ -182,7 +182,8 @@ public class OpenSearchClientTest {
     void shouldReturnSearchResultsWithContributorOfSearchedInstitution()
         throws IOException, InterruptedException {
         addDocumentsToIndex(documentFromString("document_with_contributor_from_ntnu.json"),
-                            documentFromString("document_with_contributor_from_sikt.json")
+                            documentFromString("document_with_contributor_from_sikt.json"),
+                            documentFromString("document_with_contributor_from_sikt_but_not_creator.json")
         );
 
         var siktInstitutionId = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0";
