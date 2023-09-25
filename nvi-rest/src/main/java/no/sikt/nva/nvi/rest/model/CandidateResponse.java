@@ -56,6 +56,7 @@ public record CandidateResponse(UUID id, URI publicationId, List<ApprovalStatus>
                    .withAssignee(approvalStatus.assignee())
                    .withFinalizedBy(approvalStatus.finalizedBy())
                    .withFinalizedDate(approvalStatus.finalizedDate())
+                   .withReason(approvalStatus.reason())
                    .build();
     }
 

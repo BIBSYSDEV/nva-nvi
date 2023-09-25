@@ -3,12 +3,15 @@ package no.sikt.nva.nvi.rest.upsert;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.rest.upsert.NviApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.rest.upsert.NviApprovalStatus.PENDING;
+import static no.sikt.nva.nvi.rest.upsert.NviApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.test.TestUtils.nviServiceReturningClosedPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateWithPublicationYear;
 import static no.sikt.nva.nvi.test.TestUtils.randomInstanceTypeExcluding;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -53,17 +56,16 @@ import org.zalando.problem.Problem;
 
 public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
 
-    public static final int YEAR = Calendar.getInstance().getWeekYear();
+    private static final int YEAR = Calendar.getInstance().getWeekYear();
+    private static final String ERROR_MISSING_REJECTION_REASON = "Cannot reject approval status without reason";
     private UpdateNviCandidateStatusHandler handler;
     private NviService nviService;
     private Context context;
     private ByteArrayOutputStream output;
 
     public static Stream<Arguments> approvalStatusProvider() {
-        return Stream.of(Arguments.of(DbStatus.PENDING, DbStatus.REJECTED),
-                         Arguments.of(DbStatus.PENDING, DbStatus.APPROVED),
+        return Stream.of(Arguments.of(DbStatus.PENDING, DbStatus.APPROVED),
                          Arguments.of(DbStatus.APPROVED, DbStatus.PENDING),
-                         Arguments.of(DbStatus.APPROVED, DbStatus.REJECTED),
                          Arguments.of(DbStatus.REJECTED, DbStatus.PENDING),
                          Arguments.of(DbStatus.APPROVED, DbStatus.APPROVED));
     }
@@ -81,7 +83,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
         var assignee = randomString();
         var institutionId = candidate.approvalStatuses().get(0).institutionId();
-        var requestBody = new NviStatusRequest(candidate.identifier(), institutionId, APPROVED);
+        var requestBody = new NviStatusRequest(candidate.identifier(), institutionId, APPROVED, null);
         var request = createRequest(candidate.identifier(), institutionId, requestBody, assignee);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
@@ -95,7 +97,11 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldUpdateApprovalStatus(DbStatus oldStatus, DbStatus newStatus) throws IOException {
         var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
         var institutionId = candidate.approvalStatuses().get(0).institutionId();
-        candidate.approvalStatuses().get(0).update(nviService, new UpdateStatusRequest(oldStatus, randomString()));
+        candidate.approvalStatuses().get(0).update(nviService, UpdateStatusRequest.builder()
+                                                                   .withApprovalStatus(oldStatus)
+                                                                   .withUsername(randomString())
+                                                                   .withReason(randomString())
+                                                                   .build());
         var request = createRequest(candidate.identifier(), institutionId,
                                     NviApprovalStatus.parse(newStatus.getValue()));
         handler.handleRequest(request, output, context);
@@ -110,7 +116,11 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldResetFinalizedValuesWhenUpdatingStatusToPending(DbStatus oldStatus) throws IOException {
         var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
         var institutionId = candidate.approvalStatuses().get(0).institutionId();
-        candidate.approvalStatuses().get(0).update(nviService, new UpdateStatusRequest(oldStatus, randomString()));
+        candidate.approvalStatuses().get(0).update(nviService, UpdateStatusRequest.builder()
+                                                                   .withApprovalStatus(oldStatus)
+                                                                   .withUsername(randomString())
+                                                                   .withReason(randomString())
+                                                                   .build());
         var request = createRequest(candidate.identifier(), institutionId, PENDING);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
@@ -151,6 +161,38 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+    }
+
+    @Test
+    void shouldReturnBadRequestIfRejectionDoesNotContainReason() throws IOException {
+        var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
+        var institutionId = candidate.approvalStatuses().get(0).institutionId();
+        var requestBody = new NviStatusRequest(candidate.identifier(), institutionId, REJECTED, null);
+        var request = createRequest(candidate.identifier(), institutionId, requestBody, randomString());
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+        assertThat(response.getBody(), containsString(ERROR_MISSING_REJECTION_REASON));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = DbStatus.class, names = {"PENDING", "APPROVED"})
+    void shouldUpdateApprovalStatusToRejectedWithReason(DbStatus oldStatus) throws IOException {
+        var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
+        var institutionId = candidate.approvalStatuses().get(0).institutionId();
+        candidate.approvalStatuses().get(0).update(nviService, new UpdateStatusRequest(oldStatus, randomString(),
+                                                                                       null));
+        var newStatus = REJECTED;
+        var rejectionReason = randomString();
+        var request = createRejectionRequest(candidate.identifier(), institutionId, newStatus, rejectionReason);
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
+        var candidateResponse = response.getBodyObject(CandidateResponse.class);
+
+        var actualApprovalStatus = candidateResponse.approvalStatuses().get(0);
+        assertThat(actualApprovalStatus.status().getValue(), is(equalTo(newStatus.getValue())));
+        assertThat(actualApprovalStatus.reason(), is(equalTo(rejectionReason)));
     }
 
     private static DbCandidate createCandidate(URI institutionId) {
@@ -194,7 +236,14 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
 
     private InputStream createRequest(UUID candidateIdentifier, URI institutionId, NviApprovalStatus status)
         throws JsonProcessingException {
-        var requestBody = new NviStatusRequest(candidateIdentifier, institutionId, status);
+        var requestBody = new NviStatusRequest(candidateIdentifier, institutionId, status, null);
+        return createRequest(candidateIdentifier, institutionId, requestBody);
+    }
+
+    private InputStream createRejectionRequest(UUID candidateIdentifier, URI institutionId, NviApprovalStatus status,
+                                               String rejectionReason)
+        throws JsonProcessingException {
+        var requestBody = new NviStatusRequest(candidateIdentifier, institutionId, status, rejectionReason);
         return createRequest(candidateIdentifier, institutionId, requestBody);
     }
 
@@ -207,12 +256,12 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     }
 
     private NviStatusRequest randomStatusRequest() {
-        return new NviStatusRequest(randomUUID(), randomUri(), NviApprovalStatus.APPROVED);
+        return new NviStatusRequest(randomUUID(), randomUri(), NviApprovalStatus.APPROVED, null);
     }
 
     private InputStream createUnauthorizedRequest(UUID candidateIdentifier, URI institutionId)
         throws JsonProcessingException {
-        var requestBody = new NviStatusRequest(candidateIdentifier, randomUri(), NviApprovalStatus.PENDING);
+        var requestBody = new NviStatusRequest(candidateIdentifier, randomUri(), NviApprovalStatus.PENDING, null);
         return createRequest(candidateIdentifier, institutionId, requestBody);
     }
 }

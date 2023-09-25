@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.rest.upsert.UpsertAssigneeHandler.CANDIDATE_IDENTI
 import static no.sikt.nva.nvi.test.TestUtils.nviServiceReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomApplicableCandidateBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateWithPublicationYear;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidateWithPublicationYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -162,7 +163,10 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
     private Candidate candidateWithFinalizedApproval(String newAssignee) {
         var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
-        candidate.approvalStatuses().get(0).update(nviService, new UpdateStatusRequest(DbStatus.APPROVED, newAssignee));
+        candidate.approvalStatuses().get(0).update(nviService, UpdateStatusRequest.builder()
+                                                                   .withApprovalStatus(DbStatus.APPROVED)
+                                                                   .withUsername(newAssignee)
+                                                                   .build());
         return candidate;
     }
 

@@ -15,7 +15,8 @@ public record ApprovalStatus(URI institutionId,
                              BigDecimal points,
                              DbUsername assignee,
                              DbUsername finalizedBy,
-                             Instant finalizedDate) {
+                             Instant finalizedDate,
+                             String reason) {
 
     public static Builder builder() {
         return new Builder();
@@ -29,6 +30,7 @@ public record ApprovalStatus(URI institutionId,
         private DbUsername assignee;
         private DbUsername finalizedBy;
         private Instant finalizedDate;
+        private String reason;
 
         private Builder() {
         }
@@ -63,8 +65,13 @@ public record ApprovalStatus(URI institutionId,
             return this;
         }
 
+        public Builder withReason(String reason) {
+            this.reason = reason;
+            return this;
+        }
+
         public ApprovalStatus build() {
-            return new ApprovalStatus(institutionId, status, points, assignee, finalizedBy, finalizedDate);
+            return new ApprovalStatus(institutionId, status, points, assignee, finalizedBy, finalizedDate, reason);
         }
     }
 }

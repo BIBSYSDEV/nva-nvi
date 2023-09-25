@@ -22,7 +22,7 @@ public final class ExceptionMapper {
             logger.error("NotFoundException", exception);
             return new NotFoundException("Resource not found!");
         }
-        if (exception instanceof IllegalArgumentException) {
+        if (exception instanceof IllegalArgumentException || exception instanceof UnsupportedOperationException) {
             logger.error("IllegalArgumentException", exception);
             return new BadRequestException(exception.getMessage());
         }

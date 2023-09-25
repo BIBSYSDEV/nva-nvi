@@ -629,6 +629,10 @@ components:
         status:
           type: string
           enum: [ 'Approved','Pending','Rejected' ]
+        reason:
+          type: string
+          maxLength: 500
+          description: Required if status is updated to Rejected. Reason for rejection.
       required:
         - status
     AssigneeRequest:
