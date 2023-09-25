@@ -5,6 +5,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.Candidate;
@@ -16,6 +17,8 @@ import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
+import no.sikt.nva.nvi.common.db.model.InstanceType;
+import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -24,6 +27,7 @@ public class NviService {
     public static final String INVALID_LENGTH_MESSAGE = "Provided period has invalid length!";
     public static final String PERIOD_NOT_NUMERIC_MESSAGE = "Period is not numeric!";
     public static final String NOT_SUPPORTED_REPORTING_DATE_MESSAGE = "Provided reporting date is not supported";
+    public static final String INVALID_CANDIDATE_MESSAGE = "Candidate is missing mandatory fields";
     private final NviCandidateRepository nviCandidateRepository;
     private final NviPeriodRepository nviPeriodRepository;
 
@@ -40,9 +44,11 @@ public class NviService {
     @JacocoGenerated //TODO Temporary for coverage
     public Optional<Candidate> upsertCandidate(DbCandidate dbCandidate) {
         if (isNewCandidate(dbCandidate)) {
+            validateCandidate(dbCandidate);
             return createCandidate(dbCandidate);
         }
         if (isExistingCandidate(dbCandidate)) {
+            validateCandidate(dbCandidate);
             return updateCandidate(dbCandidate);
         }
         if (shouldBeDeleted(dbCandidate)) {
@@ -153,6 +159,25 @@ public class NviService {
 
     private Candidate createCandidate(DbCandidate candidate, List<DbApprovalStatus> approvalStatuses) {
         return nviCandidateRepository.create(candidate, approvalStatuses);
+    }
+
+    private static void validateCandidate(DbCandidate candidate) {
+        attempt(() -> {
+            assertIsCandidate(candidate);
+            Objects.requireNonNull(candidate.publicationBucketUri());
+            Objects.requireNonNull(candidate.points());
+            Objects.requireNonNull(candidate.publicationId());
+            Objects.requireNonNull(candidate.creators());
+            Objects.requireNonNull(candidate.level());
+            Objects.requireNonNull(candidate.publicationDate());
+            return candidate;
+        }).orElseThrow(failure -> new InvalidNviCandidateException(INVALID_CANDIDATE_MESSAGE));
+    }
+
+    private static void assertIsCandidate(DbCandidate candidate) {
+        if (InstanceType.NON_CANDIDATE.equals(candidate.instanceType())) {
+            throw new InvalidNviCandidateException("Can not update invalid candidate");
+        }
     }
 
     private Optional<Candidate> updateCandidate(DbCandidate dbCandidate) {
