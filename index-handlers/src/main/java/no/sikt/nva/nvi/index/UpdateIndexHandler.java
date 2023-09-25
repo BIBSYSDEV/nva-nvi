@@ -72,9 +72,9 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         return candidate.publicationBucketUri();
     }
 
-    private static NviCandidateIndexDocument toIndexDocumentWithId(URI uri) {
+    private static NviCandidateIndexDocument toIndexDocumentWithId(UUID candidateIdentifier) {
         return new NviCandidateIndexDocument.Builder()
-                   .withIdentifier(UriWrapper.fromUri(uri).getLastPathElement())
+                   .withIdentifier(candidateIdentifier.toString())
                    .build();
     }
 
@@ -114,8 +114,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
     private void removeDocumentFromIndex(Candidate candidate) {
         LOGGER.info("Attempting to remove document with identifier {}", candidate.identifier().toString());
-        attempt(candidate::candidate)
-            .map(DbCandidate::publicationId)
+        attempt(candidate::identifier)
             .map(UpdateIndexHandler::toIndexDocumentWithId)
             .forEach(openSearchClient::removeDocumentFromIndex)
             .orElseThrow();
