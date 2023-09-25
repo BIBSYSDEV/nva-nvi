@@ -62,15 +62,12 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
         }
     }
 
-    private static boolean isRejection(UpdateStatusRequest request) {
-        return DbStatus.REJECTED.equals(request.approvalStatus());
-    }
-
     @JacocoGenerated
     @DynamoDbIgnore
     private DbApprovalStatus updateStatus(NviService nviService, UpdateStatusRequest request) {
         return switch (request.approvalStatus()) {
-            case APPROVED, REJECTED -> finalizeStatus(nviService, request);
+            case APPROVED -> finalizeApprovedStatus(nviService, request);
+            case REJECTED -> finalizeRejectedStatus(nviService, request);
             case PENDING -> resetStatus(nviService);
         };
     }
@@ -81,11 +78,22 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
     }
 
     @DynamoDbIgnore
-    private DbApprovalStatus finalizeStatus(NviService nviService, UpdateStatusRequest request) {
+    private DbApprovalStatus finalizeApprovedStatus(NviService nviService, UpdateStatusRequest request) {
         var approval = this.fetch(nviService);
         var username = DbUsername.fromString(request.username());
-        boolean isRejectionRequest = isRejection(request);
-        if (isRejectionRequest && isNull(request.reason())) {
+        return approval.copy()
+                   .status(request.approvalStatus())
+                   .assignee(this.hasAssignee() ? this.assignee : username)
+                   .finalizedBy(username)
+                   .finalizedDate(Instant.now())
+                   .build();
+    }
+
+    @DynamoDbIgnore
+    private DbApprovalStatus finalizeRejectedStatus(NviService nviService, UpdateStatusRequest request) {
+        var approval = this.fetch(nviService);
+        var username = DbUsername.fromString(request.username());
+        if (isNull(request.reason())) {
             throw new UnsupportedOperationException("Cannot reject approval status without reason.");
         }
         return approval.copy()
@@ -93,7 +101,7 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
                    .assignee(this.hasAssignee() ? this.assignee : username)
                    .finalizedBy(username)
                    .finalizedDate(Instant.now())
-                   .reason(isRejectionRequest ? request.reason() : null)
+                   .reason(request.reason())
                    .build();
     }
 

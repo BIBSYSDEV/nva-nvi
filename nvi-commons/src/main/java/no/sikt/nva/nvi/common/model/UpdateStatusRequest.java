@@ -2,11 +2,14 @@ package no.sikt.nva.nvi.common.model;
 
 import no.sikt.nva.nvi.common.db.model.DbStatus;
 
-public record UpdateStatusRequest(DbStatus approvalStatus, String username, String reason) implements UpdateApprovalRequest {
+public record UpdateStatusRequest(DbStatus approvalStatus,
+                                  String username,
+                                  String reason) implements UpdateApprovalRequest {
 
     public static Builder builder() {
         return new Builder();
     }
+
     public static final class Builder {
 
         private DbStatus approvalStatus;
