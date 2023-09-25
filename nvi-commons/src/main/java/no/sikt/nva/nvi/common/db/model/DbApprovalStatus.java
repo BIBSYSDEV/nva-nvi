@@ -18,7 +18,8 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmut
 public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbStatus status, DbUsername assignee,
                                DbUsername finalizedBy, Instant finalizedDate, String reason) {
 
-    public static final String UNKNOWN_REQUEST_TYPE_MESSAGE = "Unknown request type";
+    private static final String UNKNOWN_REQUEST_TYPE_MESSAGE = "Unknown request type";
+    private static final String ERROR_MISSING_REJECTION_REASON = "Cannot reject approval status without reason.";
 
     public static Builder builder() {
         return new Builder();
@@ -94,7 +95,7 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
         var approval = this.fetch(nviService);
         var username = DbUsername.fromString(request.username());
         if (isNull(request.reason())) {
-            throw new UnsupportedOperationException("Cannot reject approval status without reason.");
+            throw new UnsupportedOperationException(ERROR_MISSING_REJECTION_REASON);
         }
         return approval.copy()
                    .status(request.approvalStatus())

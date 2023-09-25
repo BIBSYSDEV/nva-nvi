@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.test.TestUtils.randomInstanceTypeExcluding;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -55,7 +56,8 @@ import org.zalando.problem.Problem;
 
 public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
 
-    public static final int YEAR = Calendar.getInstance().getWeekYear();
+    private static final int YEAR = Calendar.getInstance().getWeekYear();
+    private static final String ERROR_MISSING_REJECTION_REASON = "Cannot reject approval status without reason";
     private UpdateNviCandidateStatusHandler handler;
     private NviService nviService;
     private Context context;
@@ -171,6 +173,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
         assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+        assertThat(response.getBody(), containsString(ERROR_MISSING_REJECTION_REASON));
     }
 
     @ParameterizedTest
