@@ -6,6 +6,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
+import no.sikt.nva.nvi.CandidateResponseMapper;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
 import nva.commons.apigateway.ApiGatewayHandler;
@@ -35,7 +36,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateR
                    .map(UUID::fromString)
                    .map(service::findCandidateById)
                    .map(Optional::orElseThrow)
-                   .map(CandidateResponse::fromCandidate)
+                   .map(CandidateResponseMapper::fromCandidate)
                    .orElseThrow(ExceptionMapper::map);
     }
 

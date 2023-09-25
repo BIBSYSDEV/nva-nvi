@@ -7,6 +7,7 @@ import java.net.HttpURLConnection;
 import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
+import no.sikt.nva.nvi.CandidateResponseMapper;
 import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.common.service.NviService;
@@ -42,7 +43,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
 
         validate(input);
         var candidate = service.createNote(UUID.fromString(candidateIdentifier), getNote(input, username));
-        return CandidateResponse.fromCandidate(candidate);
+        return CandidateResponseMapper.fromCandidate(candidate);
     }
 
     @Override

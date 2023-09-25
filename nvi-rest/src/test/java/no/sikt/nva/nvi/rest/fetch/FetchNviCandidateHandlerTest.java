@@ -13,6 +13,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,6 +27,7 @@ import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
+import nva.commons.core.paths.UriWrapper;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpStatus;
 import org.eclipse.jetty.http.HttpHeader;
@@ -69,7 +71,8 @@ class FetchNviCandidateHandlerTest {
         var gatewayResponse = getGatewayResponse();
         assertEquals(HttpStatus.SC_OK, gatewayResponse.getStatusCode());
         var bodyObject = gatewayResponse.getBodyObject(CandidateResponse.class);
-        assertEquals(bodyObject.id(), candidateId);
+        var candidateUri = getCandidateIdentifier(candidateId);
+        assertEquals(bodyObject.identifier(), candidateUri);
         var expectedResponse = getExpectedResponse(candidateWithIdentifier);
 
         assertEquals(bodyObject, expectedResponse);
@@ -91,11 +94,18 @@ class FetchNviCandidateHandlerTest {
     }
 
     private static CandidateResponse getExpectedResponse(Candidate candidate) {
-        return new CandidateResponse(candidate.identifier(),
+        return new CandidateResponse(getCandidateIdentifier(candidate.identifier()),
                                      candidate.candidate().publicationId(),
                                      getApprovalStatuses(candidate.approvalStatuses(), candidate.candidate().points()),
                                      List.of()
         );
+    }
+
+    private static URI getCandidateIdentifier(UUID identifier) {
+        return UriWrapper.fromHost("https://example.org")
+                   .addChild("scientific-index", "candidate")
+                   .addChild(identifier.toString())
+                   .getUri();
     }
 
     private static List<ApprovalStatus> getApprovalStatuses(List<DbApprovalStatus> approvalStatuses,

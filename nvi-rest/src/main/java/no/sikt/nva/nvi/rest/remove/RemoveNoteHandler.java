@@ -8,6 +8,7 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.function.Function;
 import no.sikt.nva.nvi.CandidateResponse;
+import no.sikt.nva.nvi.CandidateResponseMapper;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.utils.RequestUtil;
 import nva.commons.apigateway.AccessRight;
@@ -45,7 +46,7 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateResponse
         return attempt(() -> service.deleteNote(UUID.fromString(candidateIdentifier),
                                                 UUID.fromString(noteIdentifier),
                                                 username.getValue()))
-                   .map(CandidateResponse::fromCandidate)
+                   .map(CandidateResponseMapper::fromCandidate)
                    .orElseThrow(handleFailure());
     }
 

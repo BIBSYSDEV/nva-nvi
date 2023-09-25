@@ -8,6 +8,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.CandidateResponse;
+import no.sikt.nva.nvi.CandidateResponseMapper;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.service.NviService;
@@ -45,7 +46,7 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
                    .map(approval -> approval.update(nviService, input.toUpdateRequest(username)))
                    .map(this::fetchCandidate)
                    .map(Optional::orElseThrow)
-                   .map(CandidateResponse::fromCandidate)
+                   .map(CandidateResponseMapper::fromCandidate)
                    .orElseThrow();
     }
 
