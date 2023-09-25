@@ -2,6 +2,8 @@ package no.sikt.nva.nvi.common.db.model;
 
 import java.net.URI;
 import java.util.List;
+import software.amazon.awssdk.enhanced.dynamodb.EnumAttributeConverter;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
@@ -10,7 +12,7 @@ public record DbCandidate(
     URI publicationId,
     URI publicationBucketUri,
     boolean applicable,
-    InstanceType instanceType,
+    @DynamoDbConvertedBy(EnumAttributeConverter.class) InstanceType instanceType,
     DbLevel level,
     DbPublicationDate publicationDate,
     boolean internationalCollaboration,

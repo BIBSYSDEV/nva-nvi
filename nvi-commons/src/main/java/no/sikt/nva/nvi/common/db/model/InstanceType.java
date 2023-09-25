@@ -16,7 +16,6 @@ public enum InstanceType {
         this.value = value;
     }
 
-    @JacocoGenerated
     public static InstanceType parse(String value) {
         return Arrays.stream(InstanceType.values())
                    .filter(type -> type.getValue().equalsIgnoreCase(value))
@@ -25,7 +24,6 @@ public enum InstanceType {
     }
 
     @JsonCreator
-    @JacocoGenerated
     public String getValue() {
         return value;
     }
