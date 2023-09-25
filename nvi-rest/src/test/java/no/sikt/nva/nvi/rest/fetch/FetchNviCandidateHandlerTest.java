@@ -18,14 +18,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.rest.model.ApprovalStatus;
-import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.rest.model.ApprovalStatus;
+import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.rest.model.PeriodStatus;
 import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -38,8 +38,8 @@ import org.junit.jupiter.api.Test;
 
 class FetchNviCandidateHandlerTest {
 
-    private static final Context CONTEXT = mock(Context.class);
     public static final Instant NOW = Instant.now();
+    private static final Context CONTEXT = mock(Context.class);
     private ByteArrayOutputStream output;
     private FetchNviCandidateHandler handler;
     private NviService service;
@@ -104,7 +104,10 @@ class FetchNviCandidateHandlerTest {
     }
 
     private static no.sikt.nva.nvi.common.db.PeriodStatus expectedPeriodStatus() {
-        return no.sikt.nva.nvi.common.db.PeriodStatus.builder().withStatus(Status.OPEN_PERIOD).withPeriodClosesAt(NOW).build();
+        return no.sikt.nva.nvi.common.db.PeriodStatus.builder()
+                   .withStatus(Status.OPEN_PERIOD)
+                   .withPeriodClosesAt(NOW)
+                   .build();
     }
 
     private static List<ApprovalStatus> getApprovalStatuses(List<DbApprovalStatus> approvalStatuses,

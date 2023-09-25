@@ -80,9 +80,8 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
 
     @DynamoDbIgnore
     private DbApprovalStatus finalizeApprovedStatus(NviService nviService, UpdateStatusRequest request) {
-        var approval = this.fetch(nviService);
         var username = DbUsername.fromString(request.username());
-        return approval.copy()
+        return this.fetch(nviService).copy()
                    .status(request.approvalStatus())
                    .assignee(this.hasAssignee() ? this.assignee : username)
                    .finalizedBy(username)
@@ -92,12 +91,11 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
 
     @DynamoDbIgnore
     private DbApprovalStatus finalizeRejectedStatus(NviService nviService, UpdateStatusRequest request) {
-        var approval = this.fetch(nviService);
-        var username = DbUsername.fromString(request.username());
         if (isNull(request.reason())) {
             throw new UnsupportedOperationException(ERROR_MISSING_REJECTION_REASON);
         }
-        return approval.copy()
+        var username = DbUsername.fromString(request.username());
+        return this.fetch(nviService).copy()
                    .status(request.approvalStatus())
                    .assignee(this.hasAssignee() ? this.assignee : username)
                    .finalizedBy(username)
