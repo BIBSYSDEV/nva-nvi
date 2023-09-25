@@ -101,12 +101,6 @@ public final class TestUtils {
                    .build();
     }
 
-    public static DbCandidate randomCandidateWithInstitution(URI institutionId) {
-        return randomCandidateBuilder(true)
-                   .creators(List.of(new DbCreator(randomUri(), List.of(institutionId))))
-                   .build();
-    }
-
     public static DbNviPeriod.Builder randomNviPeriodBuilder() {
         return DbNviPeriod.builder()
                    .createdBy(randomUsername())
@@ -115,15 +109,11 @@ public final class TestUtils {
                    .publishingYear(randomYear());
     }
 
-    public static DbNviPeriod randomNviPeriod() {
-        return randomNviPeriodBuilder()
-                   .build();
-    }
-
     public static DbApprovalStatus randomApprovalStatus() {
         return new DbApprovalStatus(randomUri(), UUID.randomUUID(), randomElement(DbStatus.values()), randomUsername(),
                                     randomUsername(),
-                                    Instant.EPOCH);
+                                    Instant.EPOCH,
+                                    randomString());
     }
 
     public static DbUsername randomUsername() {

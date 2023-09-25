@@ -17,7 +17,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -25,13 +24,11 @@ import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.db.Candidate;
-import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.fetch.ApprovalStatus;
 import no.sikt.nva.nvi.rest.model.ApprovalDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
@@ -144,29 +141,11 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
     private Candidate candidateWithFinalizedApproval(String newAssignee) {
         var candidate = nviService.upsertCandidate(randomApplicableCandidateBuilder()).orElseThrow();
-        candidate.approvalStatuses().get(0).update(nviService, new UpdateStatusRequest(DbStatus.APPROVED, newAssignee));
+        candidate.approvalStatuses().get(0).update(nviService, UpdateStatusRequest.builder()
+                                                                   .withApprovalStatus(DbStatus.APPROVED)
+                                                                   .withUsername(newAssignee)
+                                                                   .build());
         return candidate;
-    }
-
-    private static BigDecimal extractPoints(Candidate candidate, DbApprovalStatus approval) {
-        return candidate.candidate()
-                   .points()
-                   .stream()
-                   .filter(point -> point.institutionId().equals(approval.institutionId()))
-                   .findFirst()
-                   .orElseThrow()
-                   .points();
-    }
-
-    private ApprovalStatus createExpectedApproval(Candidate candidate, String assignee) {
-        var approval = candidate.approvalStatuses().get(0);
-        return ApprovalStatus.builder()
-                   .withAssignee(DbUsername.fromString(assignee))
-                   .withFinalizedBy(approval.finalizedBy())
-                   .withStatus(NviApprovalStatus.parse(approval.status().getValue()))
-                   .withInstitutionId(approval.institutionId())
-                   .withPoints(extractPoints(candidate, approval))
-                   .build();
     }
 
     private Candidate nonExistingCandidate() {

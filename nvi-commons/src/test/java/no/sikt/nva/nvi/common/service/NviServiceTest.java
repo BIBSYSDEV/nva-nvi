@@ -48,6 +48,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class NviServiceTest extends LocalDynamoTest {
@@ -387,8 +388,27 @@ public class NviServiceTest extends LocalDynamoTest {
         var existingCandidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
         var approval = getSingleApproval(existingCandidate);
         updateApproval(existingCandidate, oldStatus);
-        var fetchedApproval = approval.update(nviService, new UpdateStatusRequest(newStatus, randomString()));
+        var fetchedApproval = approval.update(nviService, UpdateStatusRequest.builder()
+                                                              .withApprovalStatus(newStatus)
+                                                              .withReason(DbStatus.REJECTED.equals(newStatus)
+                                                                              ? randomString() : null)
+                                                              .withUsername(randomString())
+                                                              .build());
         assertThat(fetchedApproval.status(), is(equalTo(newStatus)));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = DbStatus.class, names = {"PENDING", "APPROVED"})
+    void shouldThrowUnsupportedOperationExceptionIfRejectingWithoutReason(DbStatus oldStatus) {
+        var existingCandidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
+        var approval = getSingleApproval(existingCandidate);
+        updateApproval(existingCandidate, oldStatus);
+        assertThrows(UnsupportedOperationException.class, () -> approval.update(nviService,
+                                                                                UpdateStatusRequest.builder()
+                                                                                    .withApprovalStatus(
+                                                                                        DbStatus.REJECTED)
+                                                                                    .withUsername(randomString())
+                                                                                    .build()));
     }
 
     @Test
@@ -397,7 +417,10 @@ public class NviServiceTest extends LocalDynamoTest {
         var approval = getSingleApproval(existingCandidate);
         var assignee = randomString();
         var assignedApproval = updateAssignee(approval, assignee);
-        var fetchedApproval = assignedApproval.update(nviService, new UpdateStatusRequest(APPROVED, randomString()));
+        var fetchedApproval = assignedApproval.update(nviService, UpdateStatusRequest.builder()
+                                                                      .withApprovalStatus(APPROVED)
+                                                                      .withUsername(randomString())
+                                                                      .build());
 
         assertThat(fetchedApproval.assignee().getValue(), is(equalTo(assignee)));
     }

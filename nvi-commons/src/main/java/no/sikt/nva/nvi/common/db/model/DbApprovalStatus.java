@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.db.model;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import java.net.URI;
 import java.time.Instant;
@@ -15,7 +16,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmut
 
 @DynamoDbImmutable(builder = DbApprovalStatus.Builder.class)
 public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbStatus status, DbUsername assignee,
-                               DbUsername finalizedBy, Instant finalizedDate) {
+                               DbUsername finalizedBy, Instant finalizedDate, String reason) {
 
     public static final String UNKNOWN_REQUEST_TYPE_MESSAGE = "Unknown request type";
 
@@ -35,7 +36,8 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
                    .status(status)
                    .assignee(assignee)
                    .finalizedBy(finalizedBy)
-                   .finalizedDate(finalizedDate);
+                   .finalizedDate(finalizedDate)
+                   .reason(reason);
     }
 
     @DynamoDbIgnore
@@ -64,7 +66,8 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
     @DynamoDbIgnore
     private DbApprovalStatus updateStatus(NviService nviService, UpdateStatusRequest request) {
         return switch (request.approvalStatus()) {
-            case APPROVED, REJECTED -> finalizeStatus(nviService, request);
+            case APPROVED -> finalizeApprovedStatus(nviService, request);
+            case REJECTED -> finalizeRejectedStatus(nviService, request);
             case PENDING -> resetStatus(nviService);
         };
     }
@@ -75,12 +78,28 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
     }
 
     @DynamoDbIgnore
-    private DbApprovalStatus finalizeStatus(NviService nviService, UpdateStatusRequest request) {
+    private DbApprovalStatus finalizeApprovedStatus(NviService nviService, UpdateStatusRequest request) {
         var approval = this.fetch(nviService);
         var username = DbUsername.fromString(request.username());
         return approval.copy()
                    .status(request.approvalStatus())
                    .finalizedBy(username)
+                   .assignee(this.hasAssignee() ? this.assignee : username)
+                   .finalizedDate(Instant.now())
+                   .build();
+    }
+
+    @DynamoDbIgnore
+    private DbApprovalStatus finalizeRejectedStatus(NviService nviService, UpdateStatusRequest request) {
+        var approval = this.fetch(nviService);
+        var username = DbUsername.fromString(request.username());
+        if(isNull(request.reason())) {
+            throw new UnsupportedOperationException("Cannot reject approval status without reason.");
+        }
+        return approval.copy()
+                   .status(request.approvalStatus())
+                   .finalizedBy(username)
+                   .reason(request.reason())
                    .assignee(this.hasAssignee() ? this.assignee : username)
                    .finalizedDate(Instant.now())
                    .build();
@@ -94,6 +113,7 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
         private DbUsername builderAssignee;
         private DbUsername builderFinalizedBy;
         private Instant builderFinalizedDate;
+        private String builderReason;
 
         private Builder() {
         }
@@ -128,9 +148,14 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
             return this;
         }
 
+        public Builder reason(String reason){
+            this.builderReason = reason;
+            return this;
+        }
+
         public DbApprovalStatus build() {
             return new DbApprovalStatus(builderInstitutionId, builderCandidateIdentifier, builderStatus,
-                                        builderAssignee, builderFinalizedBy, builderFinalizedDate);
+                                        builderAssignee, builderFinalizedBy, builderFinalizedDate, builderReason);
         }
     }
 }

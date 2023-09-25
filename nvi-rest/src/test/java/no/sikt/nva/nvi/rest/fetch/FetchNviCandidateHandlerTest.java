@@ -107,7 +107,8 @@ class FetchNviCandidateHandlerTest {
                        getPointsForApprovalStatus(points, approvalStatus),
                        approvalStatus.assignee(),
                        approvalStatus.finalizedBy(),
-                       approvalStatus.finalizedDate()))
+                       approvalStatus.finalizedDate(),
+                       approvalStatus.reason()))
                    .toList();
     }
 

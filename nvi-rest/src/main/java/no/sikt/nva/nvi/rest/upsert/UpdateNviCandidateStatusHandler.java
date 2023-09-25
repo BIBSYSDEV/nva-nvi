@@ -12,6 +12,7 @@ import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.utils.RequestUtil;
+import no.sikt.nva.nvi.utils.ExceptionMapper;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -46,7 +47,7 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
                    .map(this::fetchCandidate)
                    .map(Optional::orElseThrow)
                    .map(CandidateResponse::fromCandidate)
-                   .orElseThrow();
+                   .orElseThrow(ExceptionMapper::map);
     }
 
     @Override

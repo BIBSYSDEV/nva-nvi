@@ -17,7 +17,7 @@ public final class ExceptionMapper {
         if (exception instanceof NotFoundException || exception instanceof NoSuchElementException) {
             return new NotFoundException("Resource not found!");
         }
-        if (exception instanceof IllegalArgumentException) {
+        if (exception instanceof IllegalArgumentException || exception instanceof UnsupportedOperationException) {
             return new BadRequestException(exception.getMessage());
         }
         return new BadGatewayException(exception.getMessage());
