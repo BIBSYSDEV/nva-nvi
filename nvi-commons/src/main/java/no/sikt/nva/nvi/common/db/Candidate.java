@@ -8,6 +8,7 @@ import no.sikt.nva.nvi.common.db.model.DbNote;
 
 public record Candidate(
     UUID identifier,
+    UUID version,
     DbCandidate candidate,
     List<DbApprovalStatus> approvalStatuses,
     List<DbNote> notes
@@ -19,12 +20,18 @@ public record Candidate(
         private DbCandidate candidate;
         private List<DbApprovalStatus> approvalStatuses;
         private List<DbNote> notes;
+        private UUID version;
 
         public Builder() {
         }
 
         public Builder withIdentifier(UUID identifier) {
             this.identifier = identifier;
+            return this;
+        }
+
+        public Builder withVersion(UUID version) {
+            this.version = version;
             return this;
         }
 
@@ -44,7 +51,7 @@ public record Candidate(
         }
 
         public Candidate build() {
-            return new Candidate(identifier, candidate, approvalStatuses, notes);
+            return new Candidate(identifier, version, candidate, approvalStatuses, notes);
         }
     }
 }

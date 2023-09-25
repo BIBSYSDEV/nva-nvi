@@ -20,13 +20,11 @@ import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.common.model.ListingResult;
-import org.slf4j.Logger;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteItemEnhancedRequest;
-import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteResult;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
@@ -72,10 +70,6 @@ public class NviCandidateRepository extends DynamoRepository {
                                    batchResults.size(),
                                    batchResults.stream().mapToInt(a -> a.unprocessedPutItemsForTable(candidateTable).size()).sum(),
                                    batchResults.stream().mapToInt(a -> a.unprocessedDeleteItemsForTable(candidateTable).size()).sum());
-    }
-
-    private int countSuccessfulWrites(BatchWriteResult batchWriteResult) {
-        return batchWriteResult.unprocessedPutItemsForTable(candidateTable).size();
     }
 
     private boolean thereAreMorePagesToScan(Page<CandidateDao> scanResult) {
@@ -127,7 +121,10 @@ public class NviCandidateRepository extends DynamoRepository {
 
     public Candidate create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
         var identifier = UUID.randomUUID();
-        var candidate = new CandidateDao(identifier, dbCandidate);
+        var candidate = CandidateDao.builder()
+                            .identifier(identifier)
+                            .candidate(dbCandidate)
+                            .build();
         var uniqueness = new CandidateUniquenessEntryDao(dbCandidate.publicationId().toString());
         var transactionBuilder = buildTransaction(approvalStatuses, candidate, identifier, uniqueness);
 
@@ -145,6 +142,7 @@ public class NviCandidateRepository extends DynamoRepository {
         // Maybe we need to remove the rows first, but preferably override
         client.transactWriteItems(transaction.build());
         return new Candidate.Builder().withIdentifier(identifier)
+                   .withVersion(candidate.version())
                    .withCandidate(dbCandidate)
                    .withApprovalStatuses(approvalStatusList)
                    .withNotes(getNotes(identifier))
@@ -152,7 +150,7 @@ public class NviCandidateRepository extends DynamoRepository {
     }
 
     public Optional<Candidate> findCandidateById(UUID candidateIdentifier) {
-        return Optional.of(new CandidateDao(candidateIdentifier, DbCandidate.builder().build()))
+        return Optional.of(new CandidateDao(candidateIdentifier, DbCandidate.builder().build(), UUID.randomUUID()))
                    .map(candidateTable::getItem)
                    .map(this::toCandidate);
     }
@@ -263,6 +261,7 @@ public class NviCandidateRepository extends DynamoRepository {
 
     private Candidate toCandidate(CandidateDao candidateDao) {
         return new Candidate.Builder().withIdentifier(candidateDao.identifier())
+                   .withVersion(candidateDao.version())
                    .withCandidate(candidateDao.candidate())
                    .withApprovalStatuses(getApprovalStatuses(approvalStatusTable, candidateDao.identifier()))
                    .withNotes(getNotes(candidateDao.identifier()))

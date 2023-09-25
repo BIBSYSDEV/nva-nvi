@@ -21,8 +21,9 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 @DynamoDbImmutable(builder = CandidateDao.Builder.class)
 public record CandidateDao(
     UUID identifier,
-    @DynamoDbAttribute(DATA_FIELD) DbCandidate candidate
-) implements DynamoEntryWithRangeKey {
+    @DynamoDbAttribute(DATA_FIELD) DbCandidate candidate,
+    UUID version
+) implements DynamoEntryWithRangeKey, Dao {
 
     public static final String TYPE = "CANDIDATE";
 
@@ -70,6 +71,13 @@ public record CandidateDao(
         return nonNull(candidate.publicationId()) ? candidate.publicationId().toString() : null;
     }
 
+    @JacocoGenerated
+    @Override
+    @DynamoDbAttribute(VERSION_FIELD)
+    public UUID version() {
+        return version;
+    }
+
     public static final class Builder {
 
         private UUID builderIdentifier;
@@ -113,8 +121,12 @@ public record CandidateDao(
             return this;
         }
 
+        public Builder version(UUID noop) {
+            return this;
+        }
+
         public CandidateDao build() {
-            return new CandidateDao(builderIdentifier, builderCandidate);
+            return new CandidateDao(builderIdentifier, builderCandidate, UUID.randomUUID());
         }
     }
 }
