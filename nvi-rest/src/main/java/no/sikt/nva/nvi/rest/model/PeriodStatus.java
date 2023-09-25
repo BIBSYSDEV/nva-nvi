@@ -3,24 +3,23 @@ package no.sikt.nva.nvi.rest.model;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.db.PeriodStatus;
 import nva.commons.core.JacocoGenerated;
 
-public record PeriodStatusDto(Status status, String periodClosesAt) {
+public record PeriodStatus(Status status, String periodClosesAt) {
 
     public static Builder builder() {
         return new Builder();
     }
 
-    public static PeriodStatusDto fromPeriodStatus(PeriodStatus periodStatus) {
+    public static PeriodStatus fromPeriodStatus(no.sikt.nva.nvi.common.db.PeriodStatus periodStatus) {
         return builder().withStatus(Status.parse(periodStatus.status().getValue()))
                    .withPeriodClosesAt(toClosesAt(periodStatus))
                    .build();
     }
 
-    private static String toClosesAt(PeriodStatus periodStatus) {
+    private static String toClosesAt(no.sikt.nva.nvi.common.db.PeriodStatus periodStatus) {
         return Optional.of(periodStatus)
-                   .map(PeriodStatus::periodClosesAt)
+                   .map(no.sikt.nva.nvi.common.db.PeriodStatus::periodClosesAt)
                    .map(Object::toString)
                    .orElse(null);
     }
@@ -66,8 +65,8 @@ public record PeriodStatusDto(Status status, String periodClosesAt) {
             return this;
         }
 
-        public PeriodStatusDto build() {
-            return new PeriodStatusDto(status, periodClosesAt);
+        public PeriodStatus build() {
+            return new PeriodStatus(status, periodClosesAt);
         }
     }
 }

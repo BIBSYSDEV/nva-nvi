@@ -21,13 +21,12 @@ import java.util.UUID;
 import no.sikt.nva.nvi.rest.model.ApprovalStatus;
 import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.common.db.Candidate;
-import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.model.PeriodStatusDto;
+import no.sikt.nva.nvi.rest.model.PeriodStatus;
 import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
@@ -101,11 +100,11 @@ class FetchNviCandidateHandlerTest {
                                      candidate.candidate().publicationId(),
                                      getApprovalStatuses(candidate.approvalStatuses(), candidate.candidate().points()),
                                      List.of(),
-                                     PeriodStatusDto.fromPeriodStatus(expectedPeriodStatus()));
+                                     PeriodStatus.fromPeriodStatus(expectedPeriodStatus()));
     }
 
-    private static PeriodStatus expectedPeriodStatus() {
-        return PeriodStatus.builder().withStatus(Status.OPEN_PERIOD).withPeriodClosesAt(NOW).build();
+    private static no.sikt.nva.nvi.common.db.PeriodStatus expectedPeriodStatus() {
+        return no.sikt.nva.nvi.common.db.PeriodStatus.builder().withStatus(Status.OPEN_PERIOD).withPeriodClosesAt(NOW).build();
     }
 
     private static List<ApprovalStatus> getApprovalStatuses(List<DbApprovalStatus> approvalStatuses,
@@ -144,7 +143,7 @@ class FetchNviCandidateHandlerTest {
 
     private static Candidate getCandidate(UUID id, DbCandidate candidate, List<DbApprovalStatus> approvalStatusList) {
         return new Candidate(id, candidate, approvalStatusList, List.of(),
-                             new PeriodStatus(NOW, Status.OPEN_PERIOD));
+                             new no.sikt.nva.nvi.common.db.PeriodStatus(NOW, Status.OPEN_PERIOD));
     }
 
     private GatewayResponse<CandidateResponse> getGatewayResponse()

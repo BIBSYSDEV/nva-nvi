@@ -15,7 +15,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -115,8 +114,8 @@ public final class TestUtils {
     }
 
     public static DbCandidate randomCandidateWithPublicationYear(int year) {
-        return randomCandidateBuilder(true).publicationDate(
-            DbPublicationDate.builder().year(String.valueOf(year)).build()).build();
+        return randomCandidateBuilder(true)
+                   .publicationDate(DbPublicationDate.builder().year(String.valueOf(year)).build()).build();
     }
 
     public static DbNviPeriod.Builder randomNviPeriodBuilder() {
@@ -138,13 +137,11 @@ public final class TestUtils {
     }
 
     public static NviService nviServiceReturningOpenPeriod(DynamoDbClient client, int year) {
-        var calendar = Calendar.getInstance();
-        calendar.add(Calendar.MINUTE, 10);
         var nviPeriodRepository = mock(NviPeriodRepository.class);
         var nviService = new NviService(client, nviPeriodRepository);
         var period = DbNviPeriod.builder()
                          .publishingYear(String.valueOf(year))
-                         .reportingDate(calendar.toInstant())
+                         .reportingDate(Instant.now().plusSeconds(300))
                          .build();
         when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
         return nviService;

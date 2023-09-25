@@ -16,7 +16,7 @@ import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 public record CandidateResponse(UUID id, URI publicationId, List<ApprovalStatus> approvalStatuses, List<Note> notes,
-                                PeriodStatusDto periodStatus) {
+                                PeriodStatus periodStatus) {
 
     public static CandidateResponse fromCandidate(Candidate candidate) {
         return CandidateResponse.builder()
@@ -24,7 +24,7 @@ public record CandidateResponse(UUID id, URI publicationId, List<ApprovalStatus>
                    .withPublicationId(candidate.candidate().publicationId())
                    .withApprovalStatuses(mapToApprovalStatus(candidate))
                    .withNotes(mapToNotes(candidate.notes()))
-                   .withPeriodStatus(PeriodStatusDto.fromPeriodStatus(candidate.periodStatus()))
+                   .withPeriodStatus(PeriodStatus.fromPeriodStatus(candidate.periodStatus()))
                    .build();
     }
 
@@ -79,7 +79,7 @@ public record CandidateResponse(UUID id, URI publicationId, List<ApprovalStatus>
         private URI publicationId;
         private List<ApprovalStatus> approvalStatuses = new ArrayList<>();
         private List<Note> notes = new ArrayList<>();
-        private PeriodStatusDto periodStatus;
+        private PeriodStatus periodStatus;
 
         private Builder() {
         }
@@ -104,7 +104,7 @@ public record CandidateResponse(UUID id, URI publicationId, List<ApprovalStatus>
             return this;
         }
 
-        public Builder withPeriodStatus(PeriodStatusDto periodStatus) {
+        public Builder withPeriodStatus(PeriodStatus periodStatus) {
             this.periodStatus = periodStatus;
             return this;
         }
