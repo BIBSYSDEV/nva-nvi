@@ -3,7 +3,8 @@ package no.sikt.nva.nvi.rest.upsert;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.rest.upsert.NviApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.rest.upsert.NviApprovalStatus.PENDING;
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.nviServiceReturningClosedPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidateWithPublicationYear;
 import static no.sikt.nva.nvi.test.TestUtils.randomInstanceTypeExcluding;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -19,11 +20,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbCreator;
@@ -33,7 +34,9 @@ import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -50,6 +53,7 @@ import org.zalando.problem.Problem;
 
 public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
 
+    public static final int YEAR = Calendar.getInstance().getWeekYear();
     private UpdateNviCandidateStatusHandler handler;
     private NviService nviService;
     private Context context;
@@ -68,13 +72,13 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void setUp() {
         output = new ByteArrayOutputStream();
         context = mock(Context.class);
-        nviService = new NviService(initializeTestDatabase());
+        nviService = TestUtils.nviServiceReturningOpenPeriod(initializeTestDatabase(), YEAR);
         handler = new UpdateNviCandidateStatusHandler(nviService);
     }
 
     @Test
     void shouldUpdateAssigneeWhenFinalizingApprovalWithoutAssignee() throws IOException {
-        var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
+        var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
         var assignee = randomString();
         var institutionId = candidate.approvalStatuses().get(0).institutionId();
         var requestBody = new NviStatusRequest(candidate.identifier(), institutionId, APPROVED);
@@ -89,7 +93,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     @ParameterizedTest(name = "Should update from old status {0} to new status {1}")
     @MethodSource("approvalStatusProvider")
     void shouldUpdateApprovalStatus(DbStatus oldStatus, DbStatus newStatus) throws IOException {
-        var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
+        var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
         var institutionId = candidate.approvalStatuses().get(0).institutionId();
         candidate.approvalStatuses().get(0).update(nviService, new UpdateStatusRequest(oldStatus, randomString()));
         var request = createRequest(candidate.identifier(), institutionId,
@@ -104,7 +108,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     @ParameterizedTest
     @EnumSource(value = DbStatus.class, names = {"REJECTED", "APPROVED"})
     void shouldResetFinalizedValuesWhenUpdatingStatusToPending(DbStatus oldStatus) throws IOException {
-        var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
+        var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
         var institutionId = candidate.approvalStatuses().get(0).institutionId();
         candidate.approvalStatuses().get(0).update(nviService, new UpdateStatusRequest(oldStatus, randomString()));
         var request = createRequest(candidate.identifier(), institutionId, PENDING);
@@ -134,6 +138,19 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
         assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_FORBIDDEN)));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenUpdatingStatusAndReportingPeriodIsClosed() throws IOException {
+        var nviService = nviServiceReturningClosedPeriod(initializeTestDatabase(), YEAR);
+        var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
+        var institutionId = candidate.approvalStatuses().get(0).institutionId();
+        var handler = new UpdateNviCandidateStatusHandler(nviService);
+        var request = createRequest(candidate.identifier(), institutionId, PENDING);
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
     }
 
     private static DbCandidate createCandidate(URI institutionId) {

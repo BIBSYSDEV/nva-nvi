@@ -1,17 +1,31 @@
 package no.sikt.nva.nvi.common.db;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbNote;
+import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 
-public record Candidate(
-    UUID identifier,
-    DbCandidate candidate,
-    List<DbApprovalStatus> approvalStatuses,
-    List<DbNote> notes
-) {
+public record Candidate(UUID identifier, DbCandidate candidate, List<DbApprovalStatus> approvalStatuses,
+                        List<DbNote> notes, PeriodStatus periodStatus) {
+
+    public static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
+
+    public void isEditableForPeriod(DbNviPeriod period) {
+        if (period.reportingDate().isBefore(Instant.now())) {
+            throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
+        }
+    }
+
+    public Builder copy() {
+        return new Builder().withIdentifier(identifier)
+                   .withApprovalStatuses(approvalStatuses)
+                   .withNotes(notes)
+                   .withCandidate(candidate)
+                   .withPeriodStatus(periodStatus);
+    }
 
     public static final class Builder {
 
@@ -19,6 +33,7 @@ public record Candidate(
         private DbCandidate candidate;
         private List<DbApprovalStatus> approvalStatuses;
         private List<DbNote> notes;
+        private PeriodStatus periodStatus;
 
         public Builder() {
         }
@@ -43,8 +58,13 @@ public record Candidate(
             return this;
         }
 
+        public Builder withPeriodStatus(PeriodStatus periodStatus) {
+            this.periodStatus = periodStatus;
+            return this;
+        }
+
         public Candidate build() {
-            return new Candidate(identifier, candidate, approvalStatuses, notes);
+            return new Candidate(identifier, candidate, approvalStatuses, notes, periodStatus);
         }
     }
 }

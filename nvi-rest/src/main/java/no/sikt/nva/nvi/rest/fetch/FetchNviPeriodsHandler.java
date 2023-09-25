@@ -8,7 +8,7 @@ import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.NviPeriodDto;
 import no.sikt.nva.nvi.rest.model.NviPeriodsResponse;
-import no.sikt.nva.nvi.rest.utils.RequestUtil;
+import no.sikt.nva.nvi.utils.RequestUtil;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
