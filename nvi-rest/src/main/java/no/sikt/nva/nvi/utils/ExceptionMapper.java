@@ -20,6 +20,9 @@ public final class ExceptionMapper {
         if (exception instanceof IllegalArgumentException || exception instanceof UnsupportedOperationException) {
             return new BadRequestException(exception.getMessage());
         }
+        if (exception instanceof IllegalStateException) {
+            return new BadRequestException(exception.getMessage());
+        }
         return new BadGatewayException(exception.getMessage());
     }
 }

@@ -5,7 +5,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.CandidateResponse;
+import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
 import nva.commons.apigateway.ApiGatewayHandler;

@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.rest.utils;
+package no.sikt.nva.nvi.utils;
 
 import no.sikt.nva.nvi.common.db.model.DbUsername;
 import nva.commons.apigateway.AccessRight;
