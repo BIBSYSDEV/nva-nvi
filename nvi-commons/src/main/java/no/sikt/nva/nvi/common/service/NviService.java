@@ -20,7 +20,6 @@ import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 public class NviService {
 
@@ -103,7 +102,7 @@ public class NviService {
         throw new IllegalArgumentException("User not allowed to remove others note.");
     }
 
-    public ListingResult refresh(int pageSize, Map<String, AttributeValue> startMarker) {
+    public ListingResult refresh(int pageSize, Map<String, String> startMarker) {
         return nviCandidateRepository.refresh(pageSize, startMarker);
     }
 

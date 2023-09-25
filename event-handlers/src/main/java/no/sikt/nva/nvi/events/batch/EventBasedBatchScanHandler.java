@@ -39,6 +39,7 @@ public class EventBasedBatchScanHandler extends EventHandler<ScanDatabaseRequest
     protected Void processInput(ScanDatabaseRequest input, AwsEventBridgeEvent<ScanDatabaseRequest> event,
                                 Context context) {
         logger.info("Query starting point:" + input.getStartMarker());
+
         var batchResult = nviService.refresh(input.getPageSize(), input.getStartMarker());
         logger.info("Batch result:" + batchResult);
         if (batchResult.shouldContinueScan()) {
