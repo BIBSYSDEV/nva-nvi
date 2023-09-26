@@ -12,7 +12,7 @@ import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 
-public class CandidateResponseMapper {
+public final class CandidateResponseMapper {
 
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
