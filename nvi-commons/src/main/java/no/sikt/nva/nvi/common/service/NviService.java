@@ -11,11 +11,14 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodRepository;
+import no.sikt.nva.nvi.common.db.PeriodStatus;
+import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
@@ -34,6 +37,11 @@ public class NviService {
     public NviService(DynamoDbClient dynamoDbClient) {
         this.nviCandidateRepository = new NviCandidateRepository(dynamoDbClient);
         this.nviPeriodRepository = new NviPeriodRepository(dynamoDbClient);
+    }
+
+    public NviService(DynamoDbClient dynamoDbClient, NviPeriodRepository periodRepository) {
+        this.nviCandidateRepository = new NviCandidateRepository(dynamoDbClient);
+        this.nviPeriodRepository = periodRepository;
     }
 
     @JacocoGenerated
@@ -78,7 +86,14 @@ public class NviService {
     }
 
     public DbApprovalStatus updateApproval(UUID candidateIdentifier, DbApprovalStatus newApproval) {
+        candidateIsEditable(candidateIdentifier);
         return nviCandidateRepository.updateApprovalStatus(candidateIdentifier, newApproval);
+    }
+
+    private void candidateIsEditable(UUID candidateIdentifier) {
+        var candidate = findCandidateById(candidateIdentifier).orElseThrow();
+        var period = fetchPeriodForCandidate(candidate);
+        candidate.isEditableForPeriod(period);
     }
 
     public DbApprovalStatus findApprovalStatus(URI institutionId, UUID candidateIdentifier) {
@@ -87,25 +102,30 @@ public class NviService {
     }
 
     public Optional<Candidate> findCandidateById(UUID uuid) {
-        return nviCandidateRepository.findCandidateById(uuid);
+        return nviCandidateRepository.findCandidateById(uuid).map(this::injectPeriodStatus);
     }
 
     public Optional<Candidate> findByPublicationId(URI publicationId) {
-        return nviCandidateRepository.findByPublicationId(publicationId);
+        return nviCandidateRepository.findByPublicationId(publicationId).map(this::injectPeriodStatus);
     }
 
-    public Candidate createNote(UUID identifier, DbNote dbNote) {
-        if (nviCandidateRepository.exists(identifier)) {
-            nviCandidateRepository.saveNote(identifier, dbNote);
+    public Candidate createNote(UUID candidateIdentifier, DbNote dbNote) {
+        candidateIsEditable(candidateIdentifier);
+        if (nviCandidateRepository.exists(candidateIdentifier)) {
+            nviCandidateRepository.saveNote(candidateIdentifier, dbNote);
         }
-        return nviCandidateRepository.findCandidateById(identifier).orElseThrow();
+        return nviCandidateRepository.findCandidateById(candidateIdentifier)
+                   .map(this::injectPeriodStatus)
+                   .orElseThrow();
     }
 
-    public Candidate deleteNote(UUID candidateIdentifier, UUID noteIdentifier, String requestUsername) {
-        DbNote note = nviCandidateRepository.getNoteById(candidateIdentifier, noteIdentifier);
-        if (isNoteOwner(requestUsername, note)) {
+    public Candidate deleteNote(UUID candidateIdentifier, UUID noteIdentifier, String username) {
+        candidateIsEditable(candidateIdentifier);
+        var note = nviCandidateRepository.getNoteById(candidateIdentifier, noteIdentifier);
+        if (isNoteOwner(username, note)) {
             nviCandidateRepository.deleteNote(candidateIdentifier, noteIdentifier);
-            return nviCandidateRepository.findCandidateById(candidateIdentifier).orElseThrow();
+            return nviCandidateRepository.findCandidateById(candidateIdentifier)
+                       .map(this::injectPeriodStatus).orElseThrow();
         }
         throw new IllegalArgumentException("User not allowed to remove others note.");
     }
@@ -133,6 +153,42 @@ public class NviService {
                    .build();
     }
 
+    private static void validateCandidate(DbCandidate candidate) {
+        attempt(() -> {
+            assertIsCandidate(candidate);
+            Objects.requireNonNull(candidate.publicationBucketUri());
+            Objects.requireNonNull(candidate.points());
+            Objects.requireNonNull(candidate.publicationId());
+            Objects.requireNonNull(candidate.creators());
+            Objects.requireNonNull(candidate.level());
+            Objects.requireNonNull(candidate.publicationDate());
+            return candidate;
+        }).orElseThrow(failure -> new InvalidNviCandidateException(INVALID_CANDIDATE_MESSAGE));
+    }
+
+    private static void assertIsCandidate(DbCandidate candidate) {
+        if (InstanceType.NON_CANDIDATE.equals(candidate.instanceType())) {
+            throw new InvalidNviCandidateException("Can not update invalid candidate");
+        }
+    }
+
+    private Candidate injectPeriodStatus(Candidate candidate) {
+        return candidate.copy().withPeriodStatus(getPeriodStatus(candidate)).build();
+    }
+
+    private DbNviPeriod fetchPeriodForCandidate(Candidate candidate) {
+        return nviPeriodRepository.findByPublishingYear(candidate.candidate().publicationDate().year()).orElseThrow();
+    }
+
+    private PeriodStatus getPeriodStatus(Candidate candidate) {
+        return Optional.of(candidate.candidate())
+                   .map(DbCandidate::publicationDate)
+                   .map(DbPublicationDate::year)
+                   .flatMap(nviPeriodRepository::findByPublishingYear)
+                   .map(PeriodStatus::fromPeriod)
+                   .orElse(PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
+    }
+
     private boolean shouldBeDeleted(DbCandidate dbCandidate) {
         return isExistingCandidate(dbCandidate.publicationId()) && !dbCandidate.applicable();
     }
@@ -158,26 +214,8 @@ public class NviService {
     }
 
     private Candidate createCandidate(DbCandidate candidate, List<DbApprovalStatus> approvalStatuses) {
-        return nviCandidateRepository.create(candidate, approvalStatuses);
-    }
-
-    private static void validateCandidate(DbCandidate candidate) {
-        attempt(() -> {
-            assertIsCandidate(candidate);
-            Objects.requireNonNull(candidate.publicationBucketUri());
-            Objects.requireNonNull(candidate.points());
-            Objects.requireNonNull(candidate.publicationId());
-            Objects.requireNonNull(candidate.creators());
-            Objects.requireNonNull(candidate.level());
-            Objects.requireNonNull(candidate.publicationDate());
-            return candidate;
-        }).orElseThrow(failure -> new InvalidNviCandidateException(INVALID_CANDIDATE_MESSAGE));
-    }
-
-    private static void assertIsCandidate(DbCandidate candidate) {
-        if (InstanceType.NON_CANDIDATE.equals(candidate.instanceType())) {
-            throw new InvalidNviCandidateException("Can not update invalid candidate");
-        }
+        var persistedCandidate = nviCandidateRepository.create(candidate, approvalStatuses);
+        return persistedCandidate.copy().withPeriodStatus(getPeriodStatus(persistedCandidate)).build();
     }
 
     private Optional<Candidate> updateCandidate(DbCandidate dbCandidate) {

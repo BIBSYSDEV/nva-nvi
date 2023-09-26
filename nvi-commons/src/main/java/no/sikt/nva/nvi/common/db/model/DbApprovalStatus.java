@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.db.model;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import java.net.URI;
 import java.time.Instant;
@@ -15,9 +16,10 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmut
 
 @DynamoDbImmutable(builder = DbApprovalStatus.Builder.class)
 public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbStatus status, DbUsername assignee,
-                               DbUsername finalizedBy, Instant finalizedDate) {
+                               DbUsername finalizedBy, Instant finalizedDate, String reason) {
 
-    public static final String UNKNOWN_REQUEST_TYPE_MESSAGE = "Unknown request type";
+    private static final String UNKNOWN_REQUEST_TYPE_MESSAGE = "Unknown request type";
+    private static final String ERROR_MISSING_REJECTION_REASON = "Cannot reject approval status without reason.";
 
     public static Builder builder() {
         return new Builder();
@@ -35,7 +37,8 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
                    .status(status)
                    .assignee(assignee)
                    .finalizedBy(finalizedBy)
-                   .finalizedDate(finalizedDate);
+                   .finalizedDate(finalizedDate)
+                   .reason(reason);
     }
 
     @DynamoDbIgnore
@@ -64,7 +67,8 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
     @DynamoDbIgnore
     private DbApprovalStatus updateStatus(NviService nviService, UpdateStatusRequest request) {
         return switch (request.approvalStatus()) {
-            case APPROVED, REJECTED -> finalizeStatus(nviService, request);
+            case APPROVED -> finalizeApprovedStatus(nviService, request);
+            case REJECTED -> finalizeRejectedStatus(nviService, request);
             case PENDING -> resetStatus(nviService);
         };
     }
@@ -75,14 +79,28 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
     }
 
     @DynamoDbIgnore
-    private DbApprovalStatus finalizeStatus(NviService nviService, UpdateStatusRequest request) {
-        var approval = this.fetch(nviService);
+    private DbApprovalStatus finalizeApprovedStatus(NviService nviService, UpdateStatusRequest request) {
         var username = DbUsername.fromString(request.username());
-        return approval.copy()
+        return this.fetch(nviService).copy()
                    .status(request.approvalStatus())
-                   .finalizedBy(username)
                    .assignee(this.hasAssignee() ? this.assignee : username)
+                   .finalizedBy(username)
                    .finalizedDate(Instant.now())
+                   .build();
+    }
+
+    @DynamoDbIgnore
+    private DbApprovalStatus finalizeRejectedStatus(NviService nviService, UpdateStatusRequest request) {
+        if (isNull(request.reason())) {
+            throw new UnsupportedOperationException(ERROR_MISSING_REJECTION_REASON);
+        }
+        var username = DbUsername.fromString(request.username());
+        return this.fetch(nviService).copy()
+                   .status(request.approvalStatus())
+                   .assignee(this.hasAssignee() ? this.assignee : username)
+                   .finalizedBy(username)
+                   .finalizedDate(Instant.now())
+                   .reason(request.reason())
                    .build();
     }
 
@@ -94,6 +112,7 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
         private DbUsername builderAssignee;
         private DbUsername builderFinalizedBy;
         private Instant builderFinalizedDate;
+        private String builderReason;
 
         private Builder() {
         }
@@ -128,9 +147,14 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
             return this;
         }
 
+        public Builder reason(String reason) {
+            this.builderReason = reason;
+            return this;
+        }
+
         public DbApprovalStatus build() {
             return new DbApprovalStatus(builderInstitutionId, builderCandidateIdentifier, builderStatus,
-                                        builderAssignee, builderFinalizedBy, builderFinalizedDate);
+                                        builderAssignee, builderFinalizedBy, builderFinalizedDate, builderReason);
         }
     }
 }

@@ -9,12 +9,14 @@ import java.util.UUID;
 import java.util.function.Function;
 import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.CandidateResponseMapper;
+import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.utils.RequestUtil;
+import no.sikt.nva.nvi.utils.RequestUtil;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.NotFoundException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
@@ -63,6 +65,9 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateResponse
             }
             if (exception instanceof IllegalArgumentException) {
                 return new UnauthorizedException(exception.getMessage());
+            }
+            if (exception instanceof IllegalStateException) {
+                return new BadRequestException(exception.getMessage());
             }
             return (ApiGatewayException) exception;
         };

@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,6 +36,8 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.Candidate;
+import no.sikt.nva.nvi.common.db.PeriodStatus;
+import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
@@ -175,7 +178,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                                     .creators(Collections.emptyList())
                                                     .publicationDate(date).build(),
                              Collections.emptyList(),
-                             Collections.emptyList());
+                             Collections.emptyList(),
+                             new PeriodStatus(Instant.now(), Status.OPEN_PERIOD));
     }
 
     private static NviCandidateIndexDocument constructExpectedIndexDocument(DbPublicationDate date,
@@ -271,18 +275,20 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
 
     private static Candidate randomCandidate(boolean applicable) {
         var candidate = TestUtils.randomCandidateBuilder(applicable);
-        return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()), Collections.emptyList());
+        return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()), Collections.emptyList(),
+                             new PeriodStatus(Instant.now(), Status.OPEN_PERIOD));
     }
 
     private static Candidate randomApplicableCandidate() {
         var applicableCandidate = TestUtils.randomCandidateBuilder(true).build();
-        return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()), Collections.emptyList());
+        return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()), Collections.emptyList(),
+                             new PeriodStatus(Instant.now(), Status.OPEN_PERIOD));
     }
 
     private static Candidate applicableAssignedCandidate() {
         var applicableCandidate = TestUtils.randomCandidateBuilder(true).build();
         return new Candidate(randomUUID(), applicableCandidate, List.of(approvalWithAssignee()),
-                             Collections.emptyList());
+                             Collections.emptyList(), new PeriodStatus(Instant.now(), Status.OPEN_PERIOD));
     }
 
     private static DbApprovalStatus getApprovalStatus() {

@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.rest.create;
 
-import static no.sikt.nva.nvi.test.TestUtils.randomApprovalStatus;
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.nviServiceReturningClosedPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidateWithPublicationYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -14,36 +14,37 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.util.List;
+import java.util.Calendar;
 import java.util.Map;
 import java.util.UUID;
-import no.sikt.nva.nvi.CandidateResponse;
-import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
 public class CreateNoteHandlerTest extends LocalDynamoTest {
 
+    public static final int YEAR = Calendar.getInstance().getWeekYear();
     private Context context;
     private ByteArrayOutputStream output;
     private CreateNoteHandler handler;
-    private NviCandidateRepository nviCandidateRepository;
+    private NviService nviService;
 
     @BeforeEach
     void setUp() {
         output = new ByteArrayOutputStream();
         context = mock(Context.class);
         localDynamo = initializeTestDatabase();
-        nviCandidateRepository = new NviCandidateRepository(localDynamo);
-        var service = new NviService(localDynamo);
-        handler = new CreateNoteHandler(service);
+        nviService = TestUtils.nviServiceReturningOpenPeriod(localDynamo, YEAR);
+        handler = new CreateNoteHandler(nviService);
     }
 
     @Test
@@ -68,7 +69,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldAddNoteToCandidateWhenNoteIsValid() throws IOException {
-        var candidate = nviCandidateRepository.create(randomCandidate(), List.of(randomApprovalStatus()));
+        var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
         var theNote = "The note";
         var userName = randomString();
 
@@ -79,6 +80,18 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
 
         assertThat(actualNote.text(), is(equalTo(theNote)));
         assertThat(actualNote.user(), is(equalTo(userName)));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenCreatingNoteAndReportingPeriodIsClosed() throws IOException {
+        var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
+        var request = createRequest(candidate.identifier(), new NviNoteRequest(randomString()), randomString());
+        var nviService = nviServiceReturningClosedPeriod(localDynamo, YEAR);
+        var handler = new CreateNoteHandler(nviService);
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
     }
 
     private InputStream createRequest(UUID identifier, NviNoteRequest body, String userName)

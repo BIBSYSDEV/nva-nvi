@@ -16,6 +16,7 @@ import java.net.HttpURLConnection;
 import java.util.Date;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.NviPeriodDto;
+import no.sikt.nva.nvi.rest.upsert.UpdateNviPeriodHandler;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
