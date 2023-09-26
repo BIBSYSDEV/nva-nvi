@@ -75,7 +75,13 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
 
     @DynamoDbIgnore
     private DbApprovalStatus resetStatus(NviService nviService) {
-        return this.fetch(nviService).copy().status(DbStatus.PENDING).finalizedBy(null).finalizedDate(null).build();
+        return this.fetch(nviService)
+                   .copy()
+                   .status(DbStatus.PENDING)
+                   .finalizedBy(null)
+                   .finalizedDate(null)
+                   .reason(null)
+                   .build();
     }
 
     @DynamoDbIgnore
@@ -86,6 +92,7 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
                    .assignee(this.hasAssignee() ? this.assignee : username)
                    .finalizedBy(username)
                    .finalizedDate(Instant.now())
+                   .reason(null)
                    .build();
     }
 

@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.common.db.PeriodStatus.Status.CLOSED_PERIOD;
 import static no.sikt.nva.nvi.common.db.PeriodStatus.Status.NO_PERIOD;
 import static no.sikt.nva.nvi.common.db.PeriodStatus.Status.OPEN_PERIOD;
 import static no.sikt.nva.nvi.common.db.model.DbStatus.APPROVED;
+import static no.sikt.nva.nvi.common.db.model.DbStatus.REJECTED;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.nviServiceReturningClosedPeriod;
@@ -415,6 +416,18 @@ public class NviServiceTest extends LocalDynamoTest {
                      () -> approval.update(nviService, updateRequestWithoutReason(DbStatus.REJECTED)));
     }
 
+    @ParameterizedTest
+    @EnumSource(value = DbStatus.class, names = {"PENDING", "APPROVED"})
+    void shouldRemoveReasonWhenUpdatingStatusFromReject(DbStatus newStatus) {
+        var existingCandidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
+        var approval = getSingleApproval(existingCandidate);
+        updateApproval(existingCandidate, REJECTED);
+
+        var actualApproval = approval.update(nviService, updateRequestWithoutReason(newStatus));
+        assertThat(actualApproval.status(), is(equalTo(newStatus)));
+        assertThat(actualApproval.reason(), is(nullValue()));
+    }
+
     @Test
     void shouldKeepAssigneeWhenFinalizingApproval() {
         var existingCandidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
@@ -584,6 +597,14 @@ public class NviServiceTest extends LocalDynamoTest {
                    .toList();
     }
 
+    private void updateApproval(Candidate existingCandidate, DbStatus status) {
+        nviService.updateApproval(existingCandidate.identifier(),
+                                  getSingleApproval(existingCandidate).copy()
+                                      .status(status)
+                                      .reason(DbStatus.REJECTED.equals(status) ? randomString() : null)
+                                      .build());
+    }
+
     private DbApprovalStatus updateAssignee(DbApprovalStatus approval, String assignee) {
         return approval.update(nviService, new UpdateAssigneeRequest(DbUsername.fromString(assignee)));
     }
@@ -591,11 +612,6 @@ public class NviServiceTest extends LocalDynamoTest {
     private void updateAssignee(DbApprovalStatus existingApprovalStatus) {
         nviService.updateApproval(existingApprovalStatus.candidateIdentifier(),
                                   existingApprovalStatus.copy().assignee(randomUsername()).build());
-    }
-
-    private void updateApproval(Candidate existingCandidate, DbStatus status) {
-        nviService.updateApproval(existingCandidate.identifier(),
-                                  getSingleApproval(existingCandidate).copy().status(status).build());
     }
 
     private DbCandidate createExpectedCandidate(UUID identifier, List<DbCreator> creators, InstanceType instanceType,

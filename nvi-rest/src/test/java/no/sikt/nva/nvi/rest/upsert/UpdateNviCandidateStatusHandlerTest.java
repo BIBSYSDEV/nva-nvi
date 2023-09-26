@@ -195,6 +195,26 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         assertThat(actualApprovalStatus.reason(), is(equalTo(rejectionReason)));
     }
 
+    @ParameterizedTest
+    @EnumSource(value = DbStatus.class, names = {"PENDING", "APPROVED"})
+    void shouldRemoveReasonWhenUpdatingStatusFromRejected(DbStatus newStatus) throws IOException {
+        var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
+        var institutionId = candidate.approvalStatuses().get(0).institutionId();
+        candidate.approvalStatuses()
+            .get(0)
+            .update(nviService, new UpdateStatusRequest(DbStatus.REJECTED, randomString(),
+                                                        randomString()));
+        var request = createRequest(candidate.identifier(), institutionId,
+                                    NviApprovalStatus.parse(newStatus.getValue()));
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
+        var candidateResponse = response.getBodyObject(CandidateResponse.class);
+
+        var actualApprovalStatus = candidateResponse.approvalStatuses().get(0);
+        assertThat(actualApprovalStatus.status().getValue(), is(equalTo(newStatus.getValue())));
+        assertThat(actualApprovalStatus.reason(), is(nullValue()));
+    }
+
     private static DbCandidate createCandidate(URI institutionId) {
         return DbCandidate.builder()
                    .publicationId(randomUri())
