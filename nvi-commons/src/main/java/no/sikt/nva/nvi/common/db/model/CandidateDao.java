@@ -285,7 +285,7 @@ public record CandidateDao(
     }
 
     @DynamoDbImmutable(builder = PublicationDate.Builder.class)
-    public static record PublicationDate(String year, String month, String day) {
+    public record PublicationDate(String year, String month, String day) {
 
         public static Builder builder() {
             return new Builder();
@@ -322,7 +322,7 @@ public record CandidateDao(
     }
 
     @DynamoDbImmutable(builder = Creator.Builder.class)
-    public static record Creator(URI creatorId, List<URI> affiliations) {
+    public record Creator(URI creatorId, List<URI> affiliations) {
 
         public static Builder builder() {
             return new Builder();
@@ -353,7 +353,7 @@ public record CandidateDao(
     }
 
     @DynamoDbImmutable(builder = InstitutionPoints.Builder.class)
-    public static record InstitutionPoints(URI institutionId, BigDecimal points) {
+    public record InstitutionPoints(URI institutionId, BigDecimal points) {
 
         public static Builder builder() {
             return new Builder();
