@@ -26,7 +26,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
+import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.model.Username;

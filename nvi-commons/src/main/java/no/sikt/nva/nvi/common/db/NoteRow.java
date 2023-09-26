@@ -12,8 +12,8 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmut
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-@DynamoDbImmutable(builder = NoteDao.Builder.class)
-public record NoteDao(UUID identifier,
+@DynamoDbImmutable(builder = NoteRow.Builder.class)
+public record NoteRow(UUID identifier,
                       @DynamoDbAttribute(DATA_FIELD)
                       DbNote note
 ) implements DynamoEntryWithRangeKey {
@@ -32,7 +32,7 @@ public record NoteDao(UUID identifier,
     @DynamoDbPartitionKey
     @DynamoDbAttribute(HASH_KEY)
     public String primaryKeyHashKey() {
-        return CandidateDao.createPartitionKey(identifier.toString());
+        return CandidateRow.createPartitionKey(identifier.toString());
     }
 
     @Override
@@ -85,8 +85,8 @@ public record NoteDao(UUID identifier,
             return this;
         }
 
-        public NoteDao build() {
-            return new NoteDao(builderIdentifier, builderNote);
+        public NoteRow build() {
+            return new NoteRow(builderIdentifier, builderNote);
         }
     }
 

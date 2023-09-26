@@ -7,7 +7,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.util.Objects;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
+import no.sikt.nva.nvi.common.db.NoteRow.DbNote;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.CandidateResponse;

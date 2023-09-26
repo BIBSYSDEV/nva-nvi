@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.common.model;
 
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
+import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbStatus;
 
 public record UpdateStatusRequest(DbStatus approvalStatus,
                                   String username,

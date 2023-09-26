@@ -3,11 +3,11 @@ package no.sikt.nva.nvi.common.service;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
-import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.CandidateRow.DbCandidate;
+import no.sikt.nva.nvi.common.db.NoteRow.DbNote;
+import no.sikt.nva.nvi.common.db.PeriodRow.DbNviPeriod;
 
 public record Candidate(UUID identifier, DbCandidate candidate, List<DbApprovalStatus> approvalStatuses,
                         List<DbNote> notes, PeriodStatus periodStatus) {

@@ -4,7 +4,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.util.List;
-import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.PeriodRow.DbNviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.NviPeriodDto;
 import no.sikt.nva.nvi.rest.model.NviPeriodsResponse;

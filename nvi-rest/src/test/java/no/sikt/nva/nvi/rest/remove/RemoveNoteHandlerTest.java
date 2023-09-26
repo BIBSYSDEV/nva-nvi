@@ -22,7 +22,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
+import no.sikt.nva.nvi.common.db.NoteRow.DbNote;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.Candidate;

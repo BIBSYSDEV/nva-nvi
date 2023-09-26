@@ -23,8 +23,8 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmut
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-@DynamoDbImmutable(builder = ApprovalStatusDao.Builder.class)
-public record ApprovalStatusDao(UUID identifier,
+@DynamoDbImmutable(builder = ApprovalStatusRow.Builder.class)
+public record ApprovalStatusRow(UUID identifier,
                                 @DynamoDbAttribute(DATA_FIELD) DbApprovalStatus approvalStatus
 ) implements DynamoEntryWithRangeKey {
 
@@ -42,7 +42,7 @@ public record ApprovalStatusDao(UUID identifier,
     @DynamoDbPartitionKey
     @DynamoDbAttribute(HASH_KEY)
     public String primaryKeyHashKey() {
-        return CandidateDao.createPartitionKey(identifier.toString());
+        return CandidateRow.createPartitionKey(identifier.toString());
     }
 
     @Override
@@ -117,8 +117,8 @@ public record ApprovalStatusDao(UUID identifier,
             return this;
         }
 
-        public ApprovalStatusDao build() {
-            return new ApprovalStatusDao(this.builderIdentifier, this.builderApprovalStatus);
+        public ApprovalStatusRow build() {
+            return new ApprovalStatusRow(this.builderIdentifier, this.builderApprovalStatus);
         }
     }
 
@@ -134,8 +134,8 @@ public record ApprovalStatusDao(UUID identifier,
         }
 
         @DynamoDbIgnore
-        public ApprovalStatusDao toDao(UUID candidateIdentifier) {
-            return new ApprovalStatusDao(candidateIdentifier, this);
+        public ApprovalStatusRow toDao(UUID candidateIdentifier) {
+            return new ApprovalStatusRow(candidateIdentifier, this);
         }
 
         @DynamoDbIgnore

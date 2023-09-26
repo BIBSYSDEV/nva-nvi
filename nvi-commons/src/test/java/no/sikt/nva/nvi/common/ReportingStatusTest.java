@@ -9,7 +9,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.Instant;
-import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.PeriodRow.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbCompletionStatus;
 import no.sikt.nva.nvi.common.db.model.DbReportingStatus;
 import no.sikt.nva.nvi.common.db.model.Username;

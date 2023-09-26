@@ -7,7 +7,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbApprovalStatus;
 import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.CandidateResponse;

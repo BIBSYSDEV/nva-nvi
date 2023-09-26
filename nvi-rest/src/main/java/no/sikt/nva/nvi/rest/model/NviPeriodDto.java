@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.rest.model;
 
 import static nva.commons.core.attempt.Try.attempt;
 import java.time.Instant;
-import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.PeriodRow.DbNviPeriod;
 
 public record NviPeriodDto(String publishingYear,
                            String reportingDate) {

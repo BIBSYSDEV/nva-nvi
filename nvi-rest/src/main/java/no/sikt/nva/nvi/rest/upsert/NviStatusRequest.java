@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.rest.upsert;
 import static java.util.Objects.nonNull;
 import java.net.URI;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
+import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbStatus;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 
 public record NviStatusRequest(UUID candidateId,

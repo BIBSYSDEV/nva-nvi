@@ -24,8 +24,8 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecon
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondarySortKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-@DynamoDbImmutable(builder = CandidateDao.Builder.class)
-public record CandidateDao(
+@DynamoDbImmutable(builder = CandidateRow.Builder.class)
+public record CandidateRow(
     UUID identifier,
     @DynamoDbAttribute(DATA_FIELD) DbCandidate candidate
 ) implements DynamoEntryWithRangeKey {
@@ -144,8 +144,8 @@ public record CandidateDao(
             return this;
         }
 
-        public CandidateDao build() {
-            return new CandidateDao(builderIdentifier, builderCandidate);
+        public CandidateRow build() {
+            return new CandidateRow(builderIdentifier, builderCandidate);
         }
     }
 

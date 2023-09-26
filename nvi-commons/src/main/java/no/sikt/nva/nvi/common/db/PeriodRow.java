@@ -13,19 +13,19 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmut
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-@DynamoDbImmutable(builder = NviPeriodDao.Builder.class)
-public record NviPeriodDao(
+@DynamoDbImmutable(builder = PeriodRow.Builder.class)
+public record PeriodRow(
 
     String identifier,
     @DynamoDbAttribute(DATA_FIELD)
     DbNviPeriod nviPeriod
 ) implements DynamoEntryWithRangeKey {
 
-    public static final TableSchema<NviPeriodDao> TABLE_SCHEMA = TableSchema.fromClass(NviPeriodDao.class);
+    public static final TableSchema<PeriodRow> TABLE_SCHEMA = TableSchema.fromClass(PeriodRow.class);
 
     public static final String TYPE = "PERIOD";
 
-    public NviPeriodDao(DbNviPeriod nviPeriod) {
+    public PeriodRow(DbNviPeriod nviPeriod) {
         this(nviPeriod.publishingYear(), nviPeriod);
     }
 
@@ -87,8 +87,8 @@ public record NviPeriodDao(
             return this;
         }
 
-        public NviPeriodDao build() {
-            return new NviPeriodDao(builderIdentifier, builderNviPeriod);
+        public PeriodRow build() {
+            return new PeriodRow(builderIdentifier, builderNviPeriod);
         }
     }
 

@@ -13,7 +13,7 @@ import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationTyp
 import java.net.URI;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.StorageReader;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateRow.DbCandidate;
 import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;
