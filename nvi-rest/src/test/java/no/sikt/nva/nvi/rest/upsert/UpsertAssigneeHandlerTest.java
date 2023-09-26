@@ -26,13 +26,13 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.db.Candidate;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
-import no.sikt.nva.nvi.common.db.model.DbStatus;
-import no.sikt.nva.nvi.common.db.model.DbUsername;
+import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.ApprovalDto;
 import no.sikt.nva.nvi.rest.model.CandidateResponse;
@@ -153,7 +153,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
             GatewayResponse.fromOutputStream(output, CandidateResponse.class);
 
         assertThat(response.getBodyObject(CandidateResponse.class).approvalStatuses().get(0).assignee(),
-                   is(equalTo(DbUsername.fromString(newAssignee))));
+                   is(equalTo(Username.fromString(newAssignee))));
     }
 
     private void removeAssignee(Candidate candidate) {

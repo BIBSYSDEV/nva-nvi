@@ -19,15 +19,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.NviPeriodRepository;
-import no.sikt.nva.nvi.common.db.model.DbCandidate;
-import no.sikt.nva.nvi.common.db.model.DbCreator;
-import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.model.DbLevel;
-import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
-import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
+import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.NviService;
 import nva.commons.core.paths.UriWrapper;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -126,8 +126,8 @@ public final class TestUtils {
                    .publishingYear(randomYear());
     }
 
-    public static DbUsername randomUsername() {
-        return DbUsername.fromString(randomString());
+    public static Username randomUsername() {
+        return Username.fromString(randomString());
     }
 
     public static BigDecimal randomBigDecimal() {

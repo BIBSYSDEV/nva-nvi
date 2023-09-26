@@ -13,8 +13,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.Date;
-import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
-import no.sikt.nva.nvi.common.db.model.DbUsername;
+import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.NviPeriodDto;
 import no.sikt.nva.nvi.rest.model.NviPeriodsResponse;
@@ -70,20 +70,20 @@ public class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
         assertThat(response.getBodyObject(NviPeriodsResponse.class).periods(), hasSize(0));
     }
 
+    private static DbNviPeriod periodWithPublishingYear(String publishingYear) {
+        return DbNviPeriod.builder()
+                   .publishingYear(publishingYear)
+                   .reportingDate(new Date(2050, 0, 25).toInstant())
+                   .createdBy(Username.fromString(randomString()))
+                   .build();
+    }
+
     private InputStream createRequestWithAccessRight(AccessRight accessRight) throws JsonProcessingException {
         var customerId = randomUri();
         return new HandlerRequestBuilder<NviPeriodDto>(JsonUtils.dtoObjectMapper)
                    .withCurrentCustomer(customerId)
                    .withAccessRights(customerId, accessRight.name())
                    .withUserName(randomString())
-                   .build();
-    }
-
-    private static DbNviPeriod periodWithPublishingYear(String publishingYear) {
-        return DbNviPeriod.builder()
-                   .publishingYear(publishingYear)
-                   .reportingDate(new Date(2050, 0, 25).toInstant())
-                   .createdBy(DbUsername.fromString(randomString()))
                    .build();
     }
 }

@@ -9,10 +9,10 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.Instant;
+import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbCompletionStatus;
-import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.DbReportingStatus;
-import no.sikt.nva.nvi.common.db.model.DbUsername;
+import no.sikt.nva.nvi.common.db.model.Username;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.Test;
 
@@ -35,14 +35,14 @@ public record ReportingStatusTest() {
 
     private static DbNviPeriod randomPeriod() {
         return DbNviPeriod.builder().publishingYear(randomString())
-                                      .reportingDate(randomInstant())
-                                      .createdBy(DbUsername.fromString(randomString()))
-                                      .modifiedBy(DbUsername.fromString(randomString()))
-                                      .build();
+                   .reportingDate(randomInstant())
+                   .createdBy(Username.fromString(randomString()))
+                   .modifiedBy(Username.fromString(randomString()))
+                   .build();
     }
 
     private DbReportingStatus randomReportingStatus() {
-        return  DbReportingStatus.builder()
+        return DbReportingStatus.builder()
                    .institutionId(randomUri())
                    .nviPeriod(randomPeriod())
                    .status(DbCompletionStatus.COMPLETED)
