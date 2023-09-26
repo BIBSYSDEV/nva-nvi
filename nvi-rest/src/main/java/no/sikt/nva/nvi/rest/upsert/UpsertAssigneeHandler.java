@@ -9,15 +9,16 @@ import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.ApprovalDto;
+import no.sikt.nva.nvi.rest.model.CandidateResponse;
+import no.sikt.nva.nvi.rest.model.CandidateResponseMapper;
 import no.sikt.nva.nvi.rest.model.User;
 import no.sikt.nva.nvi.rest.model.User.Role;
-import no.sikt.nva.nvi.utils.RequestUtil;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
+import no.sikt.nva.nvi.utils.RequestUtil;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.RawContentRetriever;
 import no.unit.nva.commons.json.JsonUtils;
@@ -66,20 +67,8 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
                    .map(dbApprovalStatus -> updateApprovalStatus(input, dbApprovalStatus))
                    .map(this::fetchCandidate)
                    .map(Optional::orElseThrow)
-                   .map(CandidateResponse::fromCandidate)
+                   .map(CandidateResponseMapper::fromCandidate)
                    .orElseThrow(ExceptionMapper::map);
-    }
-
-    private Optional<Candidate> fetchCandidate(DbApprovalStatus dbApprovalStatus) {
-        return nviService.findCandidateById(dbApprovalStatus.candidateIdentifier());
-    }
-
-    private DbApprovalStatus updateApprovalStatus(ApprovalDto input, DbApprovalStatus dbApprovalStatus) {
-        return dbApprovalStatus.update(nviService, input.toUpdateRequest());
-    }
-
-    private DbApprovalStatus fetchApprovalStatus(DbApprovalStatus dbApprovalStatus) {
-        return dbApprovalStatus.fetch(nviService);
     }
 
     @Override
@@ -95,6 +84,18 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
 
     private static User toUser(String body) {
         return attempt(() -> JsonUtils.dtoObjectMapper.readValue(body, User.class)).orElseThrow();
+    }
+
+    private Optional<Candidate> fetchCandidate(DbApprovalStatus dbApprovalStatus) {
+        return nviService.findCandidateById(dbApprovalStatus.candidateIdentifier());
+    }
+
+    private DbApprovalStatus updateApprovalStatus(ApprovalDto input, DbApprovalStatus dbApprovalStatus) {
+        return dbApprovalStatus.update(nviService, input.toUpdateRequest());
+    }
+
+    private DbApprovalStatus fetchApprovalStatus(DbApprovalStatus dbApprovalStatus) {
+        return dbApprovalStatus.fetch(nviService);
     }
 
     private DbApprovalStatus toApprovalStatus(ApprovalDto input, UUID candidateIdentifier) {
