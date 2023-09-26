@@ -22,7 +22,7 @@ public final class CandidateResponseMapper {
     private CandidateResponseMapper() {
     }
 
-    public static CandidateResponse fromCandidate(Candidate candidate) {
+    public static CandidateResponse toDto(Candidate candidate) {
         return CandidateResponse.builder()
                    .withId(constructId(candidate))
                    .withIdentifier(candidate.identifier())
@@ -44,7 +44,7 @@ public final class CandidateResponseMapper {
     }
 
     private static Note mapToNote(DbNote dbNote) {
-        return new Note(dbNote.user().value(), dbNote.text(), dbNote.createdDate());
+        return new Note(getUsername(dbNote.user()), dbNote.text(), dbNote.createdDate());
     }
 
     private static List<ApprovalStatus> mapToApprovalStatus(Candidate candidate) {
@@ -60,11 +60,18 @@ public final class CandidateResponseMapper {
                    .withInstitutionId(approvalStatus.institutionId())
                    .withStatus(NviApprovalStatus.parse(approvalStatus.status().getValue()))
                    .withPoints(getPointsForApprovalStatus(institutionPoints, approvalStatus))
-                   .withAssignee(approvalStatus.assignee())
-                   .withFinalizedBy(approvalStatus.finalizedBy())
+                   .withAssignee(getUsername(approvalStatus.assignee()))
+                   .withFinalizedBy(getUsername(approvalStatus.finalizedBy()))
                    .withFinalizedDate(approvalStatus.finalizedDate())
                    .withReason(approvalStatus.reason())
                    .build();
+    }
+
+    private static Username getUsername(no.sikt.nva.nvi.common.db.model.Username approvalStatus) {
+        if (approvalStatus == null) {
+            return null;
+        }
+        return new Username(approvalStatus.value());
     }
 
     private static BigDecimal getPointsForApprovalStatus(List<DbInstitutionPoints> points,

@@ -152,8 +152,8 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         var response =
             GatewayResponse.fromOutputStream(output, CandidateResponse.class);
 
-        assertThat(response.getBodyObject(CandidateResponse.class).approvalStatuses().get(0).assignee(),
-                   is(equalTo(Username.fromString(newAssignee))));
+        assertThat(response.getBodyObject(CandidateResponse.class).approvalStatuses().get(0).assignee().value(),
+                   is(equalTo(newAssignee)));
     }
 
     private void removeAssignee(Candidate candidate) {
