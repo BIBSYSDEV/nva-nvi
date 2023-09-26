@@ -1,12 +1,14 @@
 package no.sikt.nva.nvi.common.db;
 
+import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
-import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
-import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
+import java.time.Instant;
+import no.sikt.nva.nvi.common.db.model.Username;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
@@ -87,6 +89,62 @@ public record NviPeriodDao(
 
         public NviPeriodDao build() {
             return new NviPeriodDao(builderIdentifier, builderNviPeriod);
+        }
+    }
+
+    @DynamoDbImmutable(builder = DbNviPeriod.Builder.class)
+    public record DbNviPeriod(String publishingYear,
+                              Instant reportingDate,
+                              Username createdBy,
+                              Username modifiedBy) {
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        @DynamoDbIgnore
+        public Builder copy() {
+            return builder()
+                       .publishingYear(publishingYear)
+                       .reportingDate(reportingDate)
+                       .createdBy(createdBy)
+                       .modifiedBy(modifiedBy);
+        }
+
+        public static final class Builder {
+
+            private String builderPublishingYear;
+            private Instant builderReportingDate;
+            private Username builderCreatedBy;
+            private Username builderModifiedBy;
+
+            private Builder() {
+            }
+
+            public Builder publishingYear(String publishingYear) {
+                this.builderPublishingYear = publishingYear;
+                return this;
+            }
+
+            public Builder reportingDate(Instant reportingDate) {
+                this.builderReportingDate = reportingDate;
+                return this;
+            }
+
+            public Builder createdBy(Username createdBy) {
+                this.builderCreatedBy = createdBy;
+                return this;
+            }
+
+            public Builder modifiedBy(Username modifiedBy) {
+                this.builderModifiedBy = modifiedBy;
+                return this;
+            }
+
+            public DbNviPeriod build() {
+                return new DbNviPeriod(builderPublishingYear, builderReportingDate, builderCreatedBy,
+                                       builderModifiedBy);
+            }
         }
     }
 }

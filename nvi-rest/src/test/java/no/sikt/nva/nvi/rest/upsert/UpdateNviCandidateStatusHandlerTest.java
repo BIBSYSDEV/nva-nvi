@@ -28,14 +28,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.db.Candidate;
-import no.sikt.nva.nvi.common.db.model.DbCandidate;
-import no.sikt.nva.nvi.common.db.model.DbCreator;
-import no.sikt.nva.nvi.common.db.model.DbLevel;
-import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.model.DbStatus;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -89,7 +89,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         var candidateResponse = response.getBodyObject(CandidateResponse.class);
 
-        assertThat(candidateResponse.approvalStatuses().get(0).assignee().getValue(), is(equalTo(assignee)));
+        assertThat(candidateResponse.approvalStatuses().get(0).assignee().value(), is(equalTo(assignee)));
     }
 
     @ParameterizedTest(name = "Should update from old status {0} to new status {1}")

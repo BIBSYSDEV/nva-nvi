@@ -4,10 +4,10 @@ import static nva.commons.core.paths.UriWrapper.HTTPS;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
-import no.sikt.nva.nvi.common.db.Candidate;
-import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.model.DbNote;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
+import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
@@ -44,7 +44,7 @@ public final class CandidateResponseMapper {
     }
 
     private static Note mapToNote(DbNote dbNote) {
-        return new Note(dbNote.user().getValue(), dbNote.text(), dbNote.createdDate());
+        return new Note(dbNote.user().value(), dbNote.text(), dbNote.createdDate());
     }
 
     private static List<ApprovalStatus> mapToApprovalStatus(Candidate candidate) {
