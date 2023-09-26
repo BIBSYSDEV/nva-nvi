@@ -423,9 +423,9 @@ public class NviServiceTest extends LocalDynamoTest {
         var approval = getSingleApproval(existingCandidate);
         updateApproval(existingCandidate, REJECTED);
 
-        var fetchedApproval = approval.update(nviService, updateRequestWithoutReason(newStatus));
-        assertThat(fetchedApproval.status(), is(equalTo(newStatus)));
-        assertThat(fetchedApproval.reason(), is(nullValue()));
+        var actualApproval = approval.update(nviService, updateRequestWithoutReason(newStatus));
+        assertThat(actualApproval.status(), is(equalTo(newStatus)));
+        assertThat(actualApproval.reason(), is(nullValue()));
     }
 
     @Test
