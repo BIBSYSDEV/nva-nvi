@@ -90,12 +90,6 @@ public class NviService {
         return nviCandidateRepository.updateApprovalStatus(candidateIdentifier, newApproval);
     }
 
-    private void candidateIsEditable(UUID candidateIdentifier) {
-        var candidate = findCandidateById(candidateIdentifier).orElseThrow();
-        var period = fetchPeriodForCandidate(candidate);
-        candidate.isEditableForPeriod(period);
-    }
-
     public DbApprovalStatus findApprovalStatus(URI institutionId, UUID candidateIdentifier) {
         return nviCandidateRepository.findApprovalByIdAndInstitutionId(candidateIdentifier, institutionId)
                    .orElseThrow();
@@ -131,7 +125,7 @@ public class NviService {
     }
 
     private static boolean isNoteOwner(String requestUsername, DbNote note) {
-        return note.user().getValue().equals(requestUsername);
+        return note.user().value().equals(requestUsername);
     }
 
     private static boolean isInteger(String value) {
@@ -170,6 +164,12 @@ public class NviService {
         if (InstanceType.NON_CANDIDATE.equals(candidate.instanceType())) {
             throw new InvalidNviCandidateException("Can not update invalid candidate");
         }
+    }
+
+    private void candidateIsEditable(UUID candidateIdentifier) {
+        var candidate = findCandidateById(candidateIdentifier).orElseThrow();
+        var period = fetchPeriodForCandidate(candidate);
+        candidate.isEditableForPeriod(period);
     }
 
     private Candidate injectPeriodStatus(Candidate candidate) {

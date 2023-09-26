@@ -44,7 +44,7 @@ public final class CandidateResponseMapper {
     }
 
     private static Note mapToNote(DbNote dbNote) {
-        return new Note(dbNote.user().getValue(), dbNote.text(), dbNote.createdDate());
+        return new Note(dbNote.user().value(), dbNote.text(), dbNote.createdDate());
     }
 
     private static List<ApprovalStatus> mapToApprovalStatus(Candidate candidate) {

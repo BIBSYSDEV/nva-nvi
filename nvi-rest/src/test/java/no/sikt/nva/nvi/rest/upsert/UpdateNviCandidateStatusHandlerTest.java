@@ -89,7 +89,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         var candidateResponse = response.getBodyObject(CandidateResponse.class);
 
-        assertThat(candidateResponse.approvalStatuses().get(0).assignee().getValue(), is(equalTo(assignee)));
+        assertThat(candidateResponse.approvalStatuses().get(0).assignee().value(), is(equalTo(assignee)));
     }
 
     @ParameterizedTest(name = "Should update from old status {0} to new status {1}")

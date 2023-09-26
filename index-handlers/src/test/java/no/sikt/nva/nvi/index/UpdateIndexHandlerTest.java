@@ -221,7 +221,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                                  ApprovalStatus.fromValue(approval.status().getValue()),
                                                  Optional.of(approval)
                                                      .map(DbApprovalStatus::assignee)
-                                                     .map(DbUsername::getValue)
+                                                     .map(DbUsername::value)
                                                      .orElse(null)))
                    .toList();
     }

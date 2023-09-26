@@ -337,7 +337,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var candidateWith2Notes = nviService.createNote(fullCandidate.identifier(), dbNote);
         var noteIdentifier = getNoteIdentifier(candidateWith2Notes, user);
         var candidateWith1Note = nviService.deleteNote(candidateWith2Notes.identifier(), noteIdentifier,
-                                                       user.getValue());
+                                                       user.value());
         assertThat(candidateWith1Note.notes(), hasSize(1));
     }
 
@@ -436,7 +436,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var assignedApproval = updateAssignee(approval, assignee);
         var fetchedApproval = assignedApproval.update(nviService, updateRequestWithoutReason(APPROVED));
 
-        assertThat(fetchedApproval.assignee().getValue(), is(equalTo(assignee)));
+        assertThat(fetchedApproval.assignee().value(), is(equalTo(assignee)));
     }
 
     @Test
@@ -538,7 +538,7 @@ public class NviServiceTest extends LocalDynamoTest {
     private static UUID getNoteIdentifier(Candidate candidateWith2Notes, DbUsername user) {
         return candidateWith2Notes.notes()
                    .stream()
-                   .filter(n -> n.user().getValue().equals(user.getValue()))
+                   .filter(n -> n.user().value().equals(user.value()))
                    .findFirst()
                    .map(DbNote::noteId)
                    .orElseThrow();
