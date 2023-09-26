@@ -13,7 +13,7 @@ import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationTyp
 import java.net.URI;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.StorageReader;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbCandidate;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.CandidateData;
 import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;
@@ -67,7 +67,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         return record.getDynamodb().getKeys().get(SORT_KEY).getS().split(PRIMARY_KEY_DELIMITER)[0];
     }
 
-    private static URI extractBucketUri(DbCandidate candidate) {
+    private static URI extractBucketUri(CandidateData candidate) {
         return candidate.publicationBucketUri();
     }
 

@@ -14,15 +14,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbCreator;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbLevel;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.model.InstanceType;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.CandidateData;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.Creator;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.InstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.ChannelLevel;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.PublicationDate;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.InstanceType;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.events.CandidateDetails.Creator;
-import no.sikt.nva.nvi.events.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.events.model.InvalidNviMessageException;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
@@ -55,61 +53,61 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         return null;
     }
 
-    private static DbCandidate toDbCandidate(CandidateEvaluatedMessage message) {
-        return DbCandidate.builder()
+    private static CandidateData toDbCandidate(CandidateEvaluatedMessage message) {
+        return CandidateData.builder()
                    .publicationBucketUri(message.publicationBucketUri())
                    .publicationId(message.candidateDetails().publicationId())
                    .applicable(isNviCandidate(message))
                    .creators(mapToVerifiedCreators(message.candidateDetails().verifiedCreators()))
-                   .level(DbLevel.parse(message.candidateDetails().level()))
+                   .level(ChannelLevel.parse(message.candidateDetails().level()))
                    .instanceType(InstanceType.parse(message.candidateDetails().instanceType()))
                    .publicationDate(mapToPublicationDate(message.candidateDetails().publicationDate()))
                    .points(mapToInstitutionPoints(message.institutionPoints()))
                    .build();
     }
 
-    private static List<DbInstitutionPoints> mapToInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
+    private static List<InstitutionPoints> mapToInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
         return isNotEmpty(institutionPoints)
                    ? convertToPoints(institutionPoints)
                    : List.of();
     }
 
-    private static List<DbInstitutionPoints> convertToPoints(Map<URI, BigDecimal> institutionPoints) {
+    private static List<InstitutionPoints> convertToPoints(Map<URI, BigDecimal> institutionPoints) {
         return institutionPoints.entrySet().stream()
-                   .map(entry -> new DbInstitutionPoints(entry.getKey(), entry.getValue())).toList();
+                   .map(entry -> new InstitutionPoints(entry.getKey(), entry.getValue())).toList();
     }
 
     private static boolean isNotEmpty(Map<URI, BigDecimal> institutionPoints) {
         return nonNull(institutionPoints) && !institutionPoints.isEmpty();
     }
 
-    private static boolean isNotEmpty(List<Creator> creators) {
+    private static boolean isNotEmpty(List<CandidateDetails.Creator> creators) {
         return nonNull(creators) && !creators.isEmpty();
     }
 
-    private static DbPublicationDate mapToPublicationDate(CandidateDetails.PublicationDate publicationDate) {
+    private static PublicationDate mapToPublicationDate(CandidateDetails.PublicationDate publicationDate) {
         return Optional.ofNullable(publicationDate)
                    .map(UpsertNviCandidateHandler::toPublicationDate)
                    .orElse(null);
     }
 
-    private static DbPublicationDate toPublicationDate(PublicationDate publicationDate1) {
-        return new DbPublicationDate(publicationDate1.year(), publicationDate1.month(), publicationDate1.day());
+    private static PublicationDate toPublicationDate(CandidateDetails.PublicationDate publicationDate1) {
+        return new PublicationDate(publicationDate1.year(), publicationDate1.month(), publicationDate1.day());
     }
 
-    private static List<DbCreator> mapToVerifiedCreators(List<CandidateDetails.Creator> creators) {
+    private static List<Creator> mapToVerifiedCreators(List<CandidateDetails.Creator> creators) {
         return isNotEmpty(creators)
                    ? convertToCreators(creators)
                    : List.of();
     }
 
-    private static List<DbCreator> convertToCreators(List<Creator> creators) {
+    private static List<Creator> convertToCreators(List<CandidateDetails.Creator> creators) {
         return creators.stream().map(UpsertNviCandidateHandler::toCreator).toList();
     }
 
-    private static DbCreator toCreator(Creator verifiedCreatorDto) {
-        return new DbCreator(verifiedCreatorDto.id(),
-                             verifiedCreatorDto.nviInstitutions());
+    private static Creator toCreator(CandidateDetails.Creator verifiedCreatorDto) {
+        return new Creator(verifiedCreatorDto.id(),
+                           verifiedCreatorDto.nviInstitutions());
     }
 
     private static boolean isNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {

@@ -26,8 +26,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.ApprovalStatusDao.ApprovalStatusData;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.InstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.utils.JsonPointers;
@@ -68,19 +68,19 @@ public final class NviCandidateIndexDocumentGenerator {
                    .build();
     }
 
-    private static BigDecimal sumPoints(List<DbInstitutionPoints> points) {
-        return points.stream().map(DbInstitutionPoints::points)
+    private static BigDecimal sumPoints(List<InstitutionPoints> points) {
+        return points.stream().map(InstitutionPoints::points)
                    .reduce(BigDecimal.ZERO, BigDecimal::add)
                    .setScale(POINTS_SCALE, ROUNDING_MODE);
     }
 
-    private static List<Approval> createApprovals(JsonNode resource, List<DbApprovalStatus> approvals) {
+    private static List<Approval> createApprovals(JsonNode resource, List<ApprovalStatusData> approvals) {
         return approvals.stream()
                    .map(approval -> toApproval(resource, approval))
                    .toList();
     }
 
-    private static Map<String, String> extractLabel(JsonNode resource, DbApprovalStatus approval) {
+    private static Map<String, String> extractLabel(JsonNode resource, ApprovalStatusData approval) {
         return getTopLevelOrgs(resource.toString()).stream()
                    .filter(organization -> organization.hasAffiliation(approval.institutionId().toString()))
                    .findFirst()
@@ -88,7 +88,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .getLabels();
     }
 
-    private static Approval toApproval(JsonNode resource, DbApprovalStatus approval) {
+    private static Approval toApproval(JsonNode resource, ApprovalStatusData approval) {
         return new Approval.Builder()
                    .withId(approval.institutionId().toString())
                    .withLabels(extractLabel(resource, approval))
@@ -97,9 +97,9 @@ public final class NviCandidateIndexDocumentGenerator {
                    .build();
     }
 
-    private static String extractAssignee(DbApprovalStatus approval) {
+    private static String extractAssignee(ApprovalStatusData approval) {
         return Optional.of(approval)
-                   .map(DbApprovalStatus::assignee)
+                   .map(ApprovalStatusData::assignee)
                    .map(Username::value)
                    .orElse(null);
     }

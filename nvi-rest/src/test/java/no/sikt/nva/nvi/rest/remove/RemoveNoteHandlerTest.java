@@ -22,7 +22,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.NoteRow.DbNote;
+import no.sikt.nva.nvi.common.db.model.NoteDao.NoteData;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.Candidate;
@@ -137,7 +137,7 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
 
     private Candidate createNote(Candidate candidate, Username user) {
         return nviService.createNote(candidate.identifier(),
-                                     DbNote.builder()
+                                     NoteData.builder()
                                          .user(user)
                                          .text("Not My Note")
                                          .build());

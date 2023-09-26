@@ -26,9 +26,8 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbStatus;
-import no.sikt.nva.nvi.common.db.PeriodStatus;
-import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
+import no.sikt.nva.nvi.common.db.model.ApprovalStatusDao.Status;
+import no.sikt.nva.nvi.common.service.PeriodStatus;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
@@ -163,7 +162,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     private Candidate candidateWithFinalizedApproval(String newAssignee) {
         var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
         candidate.approvalStatuses().get(0).update(nviService, UpdateStatusRequest.builder()
-                                                                   .withApprovalStatus(DbStatus.APPROVED)
+                                                                   .withApprovalStatus(Status.APPROVED)
                                                                    .withUsername(newAssignee)
                                                                    .build());
         return candidate;
@@ -172,7 +171,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     private Candidate nonExistingCandidate() {
         var candidate = nviService.upsertCandidate(randomApplicableCandidateBuilder()).orElseThrow();
         return new Candidate(randomUUID(), candidate.candidate(), candidate.approvalStatuses(),
-                             Collections.emptyList(), new PeriodStatus(Instant.now(), Status.OPEN_PERIOD));
+                             Collections.emptyList(), new PeriodStatus(Instant.now(), PeriodStatus.Status.OPEN_PERIOD));
     }
 
     private void mockUserApiResponse(String responseFile) {

@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.db;
+package no.sikt.nva.nvi.common.db.model;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -11,7 +11,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.db.DynamoEntryWithRangeKey;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
@@ -23,9 +23,9 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmut
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-@DynamoDbImmutable(builder = ApprovalStatusRow.Builder.class)
-public record ApprovalStatusRow(UUID identifier,
-                                @DynamoDbAttribute(DATA_FIELD) DbApprovalStatus approvalStatus
+@DynamoDbImmutable(builder = ApprovalStatusDao.Builder.class)
+public record ApprovalStatusDao(UUID identifier,
+                                @DynamoDbAttribute(DATA_FIELD) ApprovalStatusData approvalStatus
 ) implements DynamoEntryWithRangeKey {
 
     public static final String TYPE = "APPROVAL_STATUS";
@@ -42,7 +42,7 @@ public record ApprovalStatusRow(UUID identifier,
     @DynamoDbPartitionKey
     @DynamoDbAttribute(HASH_KEY)
     public String primaryKeyHashKey() {
-        return CandidateRow.createPartitionKey(identifier.toString());
+        return CandidateDao.createPartitionKey(identifier.toString());
     }
 
     @Override
@@ -60,20 +60,20 @@ public record ApprovalStatusRow(UUID identifier,
     }
 
     @JacocoGenerated
-    public enum DbStatus {
+    public enum Status {
         APPROVED("Approved"), PENDING("Pending"), REJECTED("Rejected");
 
         @JsonValue
         private final String value;
 
-        DbStatus(String value) {
+        Status(String value) {
             this.value = value;
         }
 
         @JsonCreator
-        public static DbStatus parse(String value) {
+        public static Status parse(String value) {
             return Arrays
-                       .stream(DbStatus.values())
+                       .stream(Status.values())
                        .filter(status -> status.getValue().equalsIgnoreCase(value))
                        .findFirst()
                        .orElseThrow();
@@ -87,7 +87,7 @@ public record ApprovalStatusRow(UUID identifier,
     public static final class Builder {
 
         private UUID builderIdentifier;
-        private DbApprovalStatus builderApprovalStatus;
+        private ApprovalStatusData builderApprovalStatus;
 
         private Builder() {
         }
@@ -112,19 +112,19 @@ public record ApprovalStatusRow(UUID identifier,
             return this;
         }
 
-        public Builder approvalStatus(DbApprovalStatus approvalStatus) {
+        public Builder approvalStatus(ApprovalStatusData approvalStatus) {
             this.builderApprovalStatus = approvalStatus;
             return this;
         }
 
-        public ApprovalStatusRow build() {
-            return new ApprovalStatusRow(this.builderIdentifier, this.builderApprovalStatus);
+        public ApprovalStatusDao build() {
+            return new ApprovalStatusDao(this.builderIdentifier, this.builderApprovalStatus);
         }
     }
 
-    @DynamoDbImmutable(builder = DbApprovalStatus.Builder.class)
-    public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbStatus status, Username assignee,
-                                   Username finalizedBy, Instant finalizedDate, String reason) {
+    @DynamoDbImmutable(builder = ApprovalStatusData.Builder.class)
+    public record ApprovalStatusData(URI institutionId, UUID candidateIdentifier, Status status, Username assignee,
+                                     Username finalizedBy, Instant finalizedDate, String reason) {
 
         private static final String UNKNOWN_REQUEST_TYPE_MESSAGE = "Unknown request type";
         private static final String ERROR_MISSING_REJECTION_REASON = "Cannot reject approval status without reason.";
@@ -134,8 +134,8 @@ public record ApprovalStatusRow(UUID identifier,
         }
 
         @DynamoDbIgnore
-        public ApprovalStatusRow toDao(UUID candidateIdentifier) {
-            return new ApprovalStatusRow(candidateIdentifier, this);
+        public ApprovalStatusDao toDao(UUID candidateIdentifier) {
+            return new ApprovalStatusDao(candidateIdentifier, this);
         }
 
         @DynamoDbIgnore
@@ -155,12 +155,12 @@ public record ApprovalStatusRow(UUID identifier,
         }
 
         @DynamoDbIgnore
-        public DbApprovalStatus fetch(NviService nviService) {
+        public ApprovalStatusData fetch(NviService nviService) {
             return nviService.findApprovalStatus(institutionId, candidateIdentifier);
         }
 
         @DynamoDbIgnore
-        public DbApprovalStatus update(NviService nviService, UpdateApprovalRequest input) {
+        public ApprovalStatusData update(NviService nviService, UpdateApprovalRequest input) {
             var copy = this.copy();
             if (input instanceof UpdateAssigneeRequest request) {
                 return nviService.updateApproval(candidateIdentifier,
@@ -174,7 +174,7 @@ public record ApprovalStatusRow(UUID identifier,
 
         @JacocoGenerated
         @DynamoDbIgnore
-        private DbApprovalStatus updateStatus(NviService nviService, UpdateStatusRequest request) {
+        private ApprovalStatusData updateStatus(NviService nviService, UpdateStatusRequest request) {
             return switch (request.approvalStatus()) {
                 case APPROVED -> finalizeApprovedStatus(nviService, request);
                 case REJECTED -> finalizeRejectedStatus(nviService, request);
@@ -183,10 +183,10 @@ public record ApprovalStatusRow(UUID identifier,
         }
 
         @DynamoDbIgnore
-        private DbApprovalStatus resetStatus(NviService nviService) {
+        private ApprovalStatusData resetStatus(NviService nviService) {
             return this.fetch(nviService)
                        .copy()
-                       .status(DbStatus.PENDING)
+                       .status(Status.PENDING)
                        .finalizedBy(null)
                        .finalizedDate(null)
                        .reason(null)
@@ -194,7 +194,7 @@ public record ApprovalStatusRow(UUID identifier,
         }
 
         @DynamoDbIgnore
-        private DbApprovalStatus finalizeApprovedStatus(NviService nviService, UpdateStatusRequest request) {
+        private ApprovalStatusData finalizeApprovedStatus(NviService nviService, UpdateStatusRequest request) {
             var username = Username.fromString(request.username());
             return this.fetch(nviService).copy()
                        .status(request.approvalStatus())
@@ -206,7 +206,7 @@ public record ApprovalStatusRow(UUID identifier,
         }
 
         @DynamoDbIgnore
-        private DbApprovalStatus finalizeRejectedStatus(NviService nviService, UpdateStatusRequest request) {
+        private ApprovalStatusData finalizeRejectedStatus(NviService nviService, UpdateStatusRequest request) {
             if (isNull(request.reason())) {
                 throw new UnsupportedOperationException(ERROR_MISSING_REJECTION_REASON);
             }
@@ -224,7 +224,7 @@ public record ApprovalStatusRow(UUID identifier,
 
             private URI builderInstitutionId;
             private UUID builderCandidateIdentifier;
-            private DbStatus builderStatus;
+            private Status builderStatus;
             private Username builderAssignee;
             private Username builderFinalizedBy;
             private Instant builderFinalizedDate;
@@ -238,7 +238,7 @@ public record ApprovalStatusRow(UUID identifier,
                 return this;
             }
 
-            public Builder status(DbStatus status) {
+            public Builder status(Status status) {
                 this.builderStatus = status;
                 return this;
             }
@@ -268,9 +268,9 @@ public record ApprovalStatusRow(UUID identifier,
                 return this;
             }
 
-            public DbApprovalStatus build() {
-                return new DbApprovalStatus(builderInstitutionId, builderCandidateIdentifier, builderStatus,
-                                            builderAssignee, builderFinalizedBy, builderFinalizedDate, builderReason);
+            public ApprovalStatusData build() {
+                return new ApprovalStatusData(builderInstitutionId, builderCandidateIdentifier, builderStatus,
+                                              builderAssignee, builderFinalizedBy, builderFinalizedDate, builderReason);
             }
         }
     }

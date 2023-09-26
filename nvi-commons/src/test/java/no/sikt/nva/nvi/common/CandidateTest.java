@@ -12,11 +12,11 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbCreator;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbLevel;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.Creator;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.CandidateData;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.InstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.ChannelLevel;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.PublicationDate;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.Test;
 
@@ -26,36 +26,36 @@ public class CandidateTest {
     void shouldMakeRoundTripWithoutLossOfInformation() throws JsonProcessingException {
         var candidate = randomCandidate();
         var json = JsonUtils.dtoObjectMapper.writeValueAsString(candidate);
-        var reconstructedCandidate = JsonUtils.dtoObjectMapper.readValue(json, DbCandidate.class);
+        var reconstructedCandidate = JsonUtils.dtoObjectMapper.readValue(json, CandidateData.class);
         assertThat(reconstructedCandidate, is(equalTo(candidate)));
     }
 
-    private DbCandidate randomCandidate() {
-        return DbCandidate.builder()
+    private CandidateData randomCandidate() {
+        return CandidateData.builder()
                    .publicationId(randomUri())
                    .creatorCount(randomInteger())
                    .instanceType(randomInstanceType())
-                   .level(DbLevel.LEVEL_ONE)
+                   .level(ChannelLevel.LEVEL_ONE)
                    .applicable(true)
                    .internationalCollaboration(true)
                    .creators(randomVerifiedCreators())
                    .publicationDate(localDateNowAsPublicationDate())
-                   .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
+                   .points(List.of(new InstitutionPoints(randomUri(), randomBigDecimal())))
                    .build();
     }
 
-    private DbPublicationDate localDateNowAsPublicationDate() {
+    private PublicationDate localDateNowAsPublicationDate() {
         var now = LocalDate.now();
-        return new DbPublicationDate(String.valueOf(now.getYear()), String.valueOf(now.getMonth()),
-                                     String.valueOf(now.getDayOfMonth()));
+        return new PublicationDate(String.valueOf(now.getYear()), String.valueOf(now.getMonth()),
+                                   String.valueOf(now.getDayOfMonth()));
     }
 
-    private List<DbCreator> randomVerifiedCreators() {
+    private List<Creator> randomVerifiedCreators() {
         return IntStream.range(1, 20).boxed().map(i -> randomVerifiedCreator()).toList();
     }
 
-    private DbCreator randomVerifiedCreator() {
-        return new DbCreator(randomUri(), randomAffiliations());
+    private Creator randomVerifiedCreator() {
+        return new Creator(randomUri(), randomAffiliations());
     }
 
     private List<URI> randomAffiliations() {

@@ -4,7 +4,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.util.List;
-import no.sikt.nva.nvi.common.db.PeriodRow.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.model.PeriodDao.PeriodData;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.NviPeriodDto;
 import no.sikt.nva.nvi.rest.model.NviPeriodsResponse;
@@ -46,13 +46,13 @@ public class FetchNviPeriodsHandler extends ApiGatewayHandler<Void, NviPeriodsRe
         return HttpURLConnection.HTTP_OK;
     }
 
-    private static List<NviPeriodDto> toPeriodDtoList(List<DbNviPeriod> dbNviPeriods) {
-        return dbNviPeriods.stream()
+    private static List<NviPeriodDto> toPeriodDtoList(List<PeriodData> periodData) {
+        return periodData.stream()
                    .map(NviPeriodDto::fromNviPeriod)
                    .toList();
     }
 
-    private NviPeriodsResponse toNviPeriodsResponse(List<DbNviPeriod> dbNviPeriods) {
-        return new NviPeriodsResponse(toPeriodDtoList(dbNviPeriods));
+    private NviPeriodsResponse toNviPeriodsResponse(List<PeriodData> periodData) {
+        return new NviPeriodsResponse(toPeriodDtoList(periodData));
     }
 }

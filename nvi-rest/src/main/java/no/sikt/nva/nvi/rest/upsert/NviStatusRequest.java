@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.rest.upsert;
 import static java.util.Objects.nonNull;
 import java.net.URI;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbStatus;
+import no.sikt.nva.nvi.common.db.model.ApprovalStatusDao.Status;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 
 public record NviStatusRequest(UUID candidateId,
@@ -14,12 +14,12 @@ public record NviStatusRequest(UUID candidateId,
     public UpdateStatusRequest toUpdateRequest(String username) {
         return nonNull(reason)
                    ? UpdateStatusRequest.builder()
-                         .withApprovalStatus(DbStatus.parse(status.getValue()))
+                         .withApprovalStatus(Status.parse(status.getValue()))
                          .withUsername(username)
                          .withReason(reason)
                          .build()
                    : UpdateStatusRequest.builder()
-                         .withApprovalStatus(DbStatus.parse(status.getValue()))
+                         .withApprovalStatus(Status.parse(status.getValue()))
                          .withUsername(username)
                          .build();
     }

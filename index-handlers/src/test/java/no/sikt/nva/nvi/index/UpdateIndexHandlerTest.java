@@ -35,12 +35,11 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.StorageReader;
-import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbStatus;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.PeriodStatus;
-import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
+import no.sikt.nva.nvi.common.db.model.ApprovalStatusDao.ApprovalStatusData;
+import no.sikt.nva.nvi.common.db.model.ApprovalStatusDao.Status;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.InstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.PublicationDate;
+import no.sikt.nva.nvi.common.service.PeriodStatus;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
@@ -159,7 +158,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @ParameterizedTest
     @MethodSource("publicationDates")
     void shouldAddDocumentToIndexWhenNviCandidateExistsInResourcesStorageWithDifferentDateFormats(
-        DbPublicationDate date) throws JsonProcessingException {
+        PublicationDate date) throws JsonProcessingException {
         var candidate = createApplicableCandidateWithPublicationDate(date);
         var expectedDocument = constructExpectedIndexDocument(date, candidate);
         when(storageReader.read(any())).thenReturn(createExpandedResource(expectedDocument));
@@ -172,17 +171,17 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         assertThat(document, is(equalTo(expectedDocument)));
     }
 
-    private static Candidate createApplicableCandidateWithPublicationDate(DbPublicationDate date) {
+    private static Candidate createApplicableCandidateWithPublicationDate(PublicationDate date) {
         return new Candidate(UUID.randomUUID(), TestUtils.randomCandidateBuilder(true)
                                                     .applicable(true)
                                                     .creators(Collections.emptyList())
                                                     .publicationDate(date).build(),
                              Collections.emptyList(),
                              Collections.emptyList(),
-                             new PeriodStatus(Instant.now(), Status.OPEN_PERIOD));
+                             new PeriodStatus(Instant.now(), PeriodStatus.Status.OPEN_PERIOD));
     }
 
-    private static NviCandidateIndexDocument constructExpectedIndexDocument(DbPublicationDate date,
+    private static NviCandidateIndexDocument constructExpectedIndexDocument(PublicationDate date,
                                                                             Candidate candidate) {
         return new Builder()
                    .withContext(CANDIDATE_CONTEXT)
@@ -198,21 +197,21 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private static BigDecimal sumPoints(List<DbInstitutionPoints> points) {
-        return points.stream().map(DbInstitutionPoints::points)
+    private static BigDecimal sumPoints(List<InstitutionPoints> points) {
+        return points.stream().map(InstitutionPoints::points)
                    .reduce(BigDecimal.ZERO, BigDecimal::add)
                    .setScale(POINTS_SCALE, ROUNDING_MODE);
     }
 
-    private static String getExpectedPublicationDate(DbPublicationDate date) {
+    private static String getExpectedPublicationDate(PublicationDate date) {
         return Objects.nonNull(date.month()) && Objects.nonNull(date.day())
                    ? date.year() + "-" + date.month() + "-" + date.day()
                    : date.year();
     }
 
-    private static Stream<DbPublicationDate> publicationDates() {
-        return Stream.of(new DbPublicationDate("2023", null, null),
-                         new DbPublicationDate("2023", "01", "03"));
+    private static Stream<PublicationDate> publicationDates() {
+        return Stream.of(new PublicationDate("2023", null, null),
+                         new PublicationDate("2023", "01", "03"));
     }
 
     private static List<Approval> constructExpectedApprovals(Candidate candidate) {
@@ -220,7 +219,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .map(approval -> new Approval(approval.institutionId().toString(), getLabels(),
                                                  ApprovalStatus.fromValue(approval.status().getValue()),
                                                  Optional.of(approval)
-                                                     .map(DbApprovalStatus::assignee)
+                                                     .map(ApprovalStatusData::assignee)
                                                      .map(Username::value)
                                                      .orElse(null)))
                    .toList();
@@ -276,32 +275,32 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private static Candidate randomCandidate(boolean applicable) {
         var candidate = TestUtils.randomCandidateBuilder(applicable);
         return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()), Collections.emptyList(),
-                             new PeriodStatus(Instant.now(), Status.OPEN_PERIOD));
+                             new PeriodStatus(Instant.now(), PeriodStatus.Status.OPEN_PERIOD));
     }
 
     private static Candidate randomApplicableCandidate() {
         var applicableCandidate = TestUtils.randomCandidateBuilder(true).build();
         return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()), Collections.emptyList(),
-                             new PeriodStatus(Instant.now(), Status.OPEN_PERIOD));
+                             new PeriodStatus(Instant.now(), PeriodStatus.Status.OPEN_PERIOD));
     }
 
     private static Candidate applicableAssignedCandidate() {
         var applicableCandidate = TestUtils.randomCandidateBuilder(true).build();
         return new Candidate(randomUUID(), applicableCandidate, List.of(approvalWithAssignee()),
-                             Collections.emptyList(), new PeriodStatus(Instant.now(), Status.OPEN_PERIOD));
+                             Collections.emptyList(), new PeriodStatus(Instant.now(), PeriodStatus.Status.OPEN_PERIOD));
     }
 
-    private static DbApprovalStatus getApprovalStatus() {
-        return DbApprovalStatus.builder()
+    private static ApprovalStatusData getApprovalStatus() {
+        return ApprovalStatusData.builder()
                    .institutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
-                   .status(DbStatus.PENDING).build();
+                   .status(Status.PENDING).build();
     }
 
-    private static DbApprovalStatus approvalWithAssignee() {
-        return DbApprovalStatus.builder()
+    private static ApprovalStatusData approvalWithAssignee() {
+        return ApprovalStatusData.builder()
                    .institutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
                    .assignee(Username.fromString(randomString()))
-                   .status(DbStatus.PENDING).build();
+                   .status(Status.PENDING).build();
     }
 
     private DynamodbStreamRecord createDynamoDbRecord(Candidate candidate) throws JsonProcessingException {
@@ -322,8 +321,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private BigDecimal sumPoint(List<DbInstitutionPoints> points) {
-        return points.stream().map(DbInstitutionPoints::points)
+    private BigDecimal sumPoint(List<InstitutionPoints> points) {
+        return points.stream().map(InstitutionPoints::points)
                    .reduce(BigDecimal.ZERO, BigDecimal::add)
                    .setScale(POINTS_SCALE, ROUNDING_MODE);
     }

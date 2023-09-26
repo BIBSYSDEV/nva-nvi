@@ -8,18 +8,16 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbStatus;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.NoteRow.DbNote;
+import no.sikt.nva.nvi.common.db.model.ApprovalStatusDao.ApprovalStatusData;
+import no.sikt.nva.nvi.common.db.model.ApprovalStatusDao.Status;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.CandidateData;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.InstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.PublicationDate;
+import no.sikt.nva.nvi.common.db.model.NoteDao.NoteData;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRow.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.model.PeriodDao.PeriodData;
 import no.sikt.nva.nvi.common.db.NviPeriodRepository;
-import no.sikt.nva.nvi.common.db.PeriodStatus;
-import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
-import no.sikt.nva.nvi.common.db.model.InstanceType;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.InstanceType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -49,47 +47,47 @@ public class NviService {
     }
 
     @JacocoGenerated //TODO Temporary for coverage
-    public Optional<Candidate> upsertCandidate(DbCandidate dbCandidate) {
-        if (isNewCandidate(dbCandidate)) {
-            validateCandidate(dbCandidate);
-            return createCandidate(dbCandidate);
+    public Optional<Candidate> upsertCandidate(CandidateData candidateData) {
+        if (isNewCandidate(candidateData)) {
+            validateCandidate(candidateData);
+            return createCandidate(candidateData);
         }
-        if (isExistingCandidate(dbCandidate)) {
-            validateCandidate(dbCandidate);
-            return updateCandidate(dbCandidate);
+        if (isExistingCandidate(candidateData)) {
+            validateCandidate(candidateData);
+            return updateCandidate(candidateData);
         }
-        if (shouldBeDeleted(dbCandidate)) {
-            return updateCandidateToNotApplicable(dbCandidate);
+        if (shouldBeDeleted(candidateData)) {
+            return updateCandidateToNotApplicable(candidateData);
         }
         return Optional.empty();
     }
 
-    public DbNviPeriod createPeriod(DbNviPeriod period) {
+    public PeriodData createPeriod(PeriodData period) {
         validatePeriod(period);
         return nviPeriodRepository.save(period);
     }
 
-    public DbNviPeriod updatePeriod(DbNviPeriod period) {
+    public PeriodData updatePeriod(PeriodData period) {
         var nviPeriod = injectCreatedBy(period);
         validatePeriod(nviPeriod);
         return nviPeriodRepository.save(nviPeriod);
     }
 
-    public DbNviPeriod getPeriod(String publishingYear) {
+    public PeriodData getPeriod(String publishingYear) {
         //TODO: Handle not-found. optional?
         return nviPeriodRepository.findByPublishingYear(publishingYear).orElseThrow();
     }
 
-    public List<DbNviPeriod> getPeriods() {
+    public List<PeriodData> getPeriods() {
         return nviPeriodRepository.getPeriods();
     }
 
-    public DbApprovalStatus updateApproval(UUID candidateIdentifier, DbApprovalStatus newApproval) {
+    public ApprovalStatusData updateApproval(UUID candidateIdentifier, ApprovalStatusData newApproval) {
         candidateIsEditable(candidateIdentifier);
         return nviCandidateRepository.updateApprovalStatus(candidateIdentifier, newApproval);
     }
 
-    public DbApprovalStatus findApprovalStatus(URI institutionId, UUID candidateIdentifier) {
+    public ApprovalStatusData findApprovalStatus(URI institutionId, UUID candidateIdentifier) {
         return nviCandidateRepository.findApprovalByIdAndInstitutionId(candidateIdentifier, institutionId)
                    .orElseThrow();
     }
@@ -102,10 +100,10 @@ public class NviService {
         return nviCandidateRepository.findByPublicationId(publicationId).map(this::injectPeriodStatus);
     }
 
-    public Candidate createNote(UUID candidateIdentifier, DbNote dbNote) {
+    public Candidate createNote(UUID candidateIdentifier, NoteData noteData) {
         candidateIsEditable(candidateIdentifier);
         if (nviCandidateRepository.exists(candidateIdentifier)) {
-            nviCandidateRepository.saveNote(candidateIdentifier, dbNote);
+            nviCandidateRepository.saveNote(candidateIdentifier, noteData);
         }
         return nviCandidateRepository.findCandidateById(candidateIdentifier)
                    .map(this::injectPeriodStatus)
@@ -123,7 +121,7 @@ public class NviService {
         throw new IllegalArgumentException("User not allowed to remove others note.");
     }
 
-    private static boolean isNoteOwner(String requestUsername, DbNote note) {
+    private static boolean isNoteOwner(String requestUsername, NoteData note) {
         return note.user().value().equals(requestUsername);
     }
 
@@ -131,22 +129,22 @@ public class NviService {
         return attempt(() -> Integer.parseInt(value)).map(ignore -> true).orElse((ignore) -> false);
     }
 
-    private static boolean hasInvalidLength(DbNviPeriod period) {
+    private static boolean hasInvalidLength(PeriodData period) {
         return period.publishingYear().length() != 4;
     }
 
-    private static List<DbApprovalStatus> generatePendingApprovalStatuses(List<DbInstitutionPoints> institutionPoints) {
+    private static List<ApprovalStatusData> generatePendingApprovalStatuses(List<InstitutionPoints> institutionPoints) {
         return institutionPoints.stream().map(NviService::toPendingApprovalStatus).toList();
     }
 
-    private static DbApprovalStatus toPendingApprovalStatus(DbInstitutionPoints institutionPoints) {
-        return DbApprovalStatus.builder()
-                   .status(DbStatus.PENDING)
+    private static ApprovalStatusData toPendingApprovalStatus(InstitutionPoints institutionPoints) {
+        return ApprovalStatusData.builder()
+                   .status(Status.PENDING)
                    .institutionId(institutionPoints.institutionId())
                    .build();
     }
 
-    private static void validateCandidate(DbCandidate candidate) {
+    private static void validateCandidate(CandidateData candidate) {
         attempt(() -> {
             assertIsCandidate(candidate);
             Objects.requireNonNull(candidate.publicationBucketUri());
@@ -159,7 +157,7 @@ public class NviService {
         }).orElseThrow(failure -> new InvalidNviCandidateException(INVALID_CANDIDATE_MESSAGE));
     }
 
-    private static void assertIsCandidate(DbCandidate candidate) {
+    private static void assertIsCandidate(CandidateData candidate) {
         if (InstanceType.NON_CANDIDATE.equals(candidate.instanceType())) {
             throw new InvalidNviCandidateException("Can not update invalid candidate");
         }
@@ -175,70 +173,71 @@ public class NviService {
         return candidate.copy().withPeriodStatus(getPeriodStatus(candidate)).build();
     }
 
-    private DbNviPeriod fetchPeriodForCandidate(Candidate candidate) {
+    private PeriodData fetchPeriodForCandidate(Candidate candidate) {
         return nviPeriodRepository.findByPublishingYear(candidate.candidate().publicationDate().year()).orElseThrow();
     }
 
     private PeriodStatus getPeriodStatus(Candidate candidate) {
         return Optional.of(candidate.candidate())
-                   .map(DbCandidate::publicationDate)
-                   .map(DbPublicationDate::year)
+                   .map(CandidateData::publicationDate)
+                   .map(PublicationDate::year)
                    .flatMap(nviPeriodRepository::findByPublishingYear)
                    .map(PeriodStatus::fromPeriod)
-                   .orElse(PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
+                   .orElse(PeriodStatus.builder().withStatus(PeriodStatus.Status.NO_PERIOD).build());
     }
 
-    private boolean shouldBeDeleted(DbCandidate dbCandidate) {
-        return isExistingCandidate(dbCandidate.publicationId()) && !dbCandidate.applicable();
+    private boolean shouldBeDeleted(CandidateData candidateData) {
+        return isExistingCandidate(candidateData.publicationId()) && !candidateData.applicable();
     }
 
-    private DbNviPeriod injectCreatedBy(DbNviPeriod period) {
+    private PeriodData injectCreatedBy(PeriodData period) {
         return period.copy().createdBy(getPeriod(period.publishingYear()).createdBy()).build();
     }
 
-    private boolean isExistingCandidate(DbCandidate dbCandidate) {
-        return isExistingCandidate(dbCandidate.publicationId()) && dbCandidate.applicable();
+    private boolean isExistingCandidate(CandidateData candidateData) {
+        return isExistingCandidate(candidateData.publicationId()) && candidateData.applicable();
     }
 
     private boolean isExistingCandidate(URI publicationId) {
         return nviCandidateRepository.findByPublicationId(publicationId).isPresent();
     }
 
-    private boolean isNewCandidate(DbCandidate dbCandidate) {
-        return !isExistingCandidate(dbCandidate.publicationId()) && dbCandidate.applicable();
+    private boolean isNewCandidate(CandidateData candidateData) {
+        return !isExistingCandidate(candidateData.publicationId()) && candidateData.applicable();
     }
 
-    private Optional<Candidate> createCandidate(DbCandidate candidate) {
+    private Optional<Candidate> createCandidate(CandidateData candidate) {
         return Optional.of(createCandidate(candidate, generatePendingApprovalStatuses(candidate.points())));
     }
 
-    private Candidate createCandidate(DbCandidate candidate, List<DbApprovalStatus> approvalStatuses) {
+    private Candidate createCandidate(CandidateData candidate, List<ApprovalStatusData> approvalStatuses) {
         var persistedCandidate = nviCandidateRepository.create(candidate, approvalStatuses);
         return persistedCandidate.copy().withPeriodStatus(getPeriodStatus(persistedCandidate)).build();
     }
 
-    private Optional<Candidate> updateCandidate(DbCandidate dbCandidate) {
-        var existingCandidate = findByPublicationId(dbCandidate.publicationId()).orElseThrow();
-        return Optional.of(updateCandidate(existingCandidate.identifier(), dbCandidate,
-                                           generatePendingApprovalStatuses(dbCandidate.points())));
+    private Optional<Candidate> updateCandidate(CandidateData candidateData) {
+        var existingCandidate = findByPublicationId(candidateData.publicationId()).orElseThrow();
+        return Optional.of(updateCandidate(existingCandidate.identifier(), candidateData,
+                                           generatePendingApprovalStatuses(candidateData.points())));
     }
 
-    private Candidate updateCandidate(UUID identifier, DbCandidate candidate, List<DbApprovalStatus> approvalStatuses) {
+    private Candidate updateCandidate(UUID identifier, CandidateData candidate,
+                                      List<ApprovalStatusData> approvalStatuses) {
         return nviCandidateRepository.update(identifier, candidate, approvalStatuses);
     }
 
-    private Optional<Candidate> updateCandidateToNotApplicable(DbCandidate dbCandidate) {
-        var existingCandidate = findByPublicationId(dbCandidate.publicationId()).orElseThrow();
-        return Optional.of(updateCandidateRemovingApprovals(existingCandidate.identifier(), dbCandidate,
-                                                            generatePendingApprovalStatuses(dbCandidate.points())));
+    private Optional<Candidate> updateCandidateToNotApplicable(CandidateData candidateData) {
+        var existingCandidate = findByPublicationId(candidateData.publicationId()).orElseThrow();
+        return Optional.of(updateCandidateRemovingApprovals(existingCandidate.identifier(), candidateData,
+                                                            generatePendingApprovalStatuses(candidateData.points())));
     }
 
-    private Candidate updateCandidateRemovingApprovals(UUID identifier, DbCandidate candidate,
-                                                       List<DbApprovalStatus> approvalStatuses) {
+    private Candidate updateCandidateRemovingApprovals(UUID identifier, CandidateData candidate,
+                                                       List<ApprovalStatusData> approvalStatuses) {
         return nviCandidateRepository.updateCandidateRemovingApprovals(identifier, candidate, approvalStatuses);
     }
 
-    private void validatePeriod(DbNviPeriod period) {
+    private void validatePeriod(PeriodData period) {
         if (hasInvalidLength(period)) {
             throw new IllegalArgumentException(INVALID_LENGTH_MESSAGE);
         }

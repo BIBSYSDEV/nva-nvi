@@ -18,9 +18,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbCandidate;
-import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
+import no.sikt.nva.nvi.common.db.model.ApprovalStatusDao.ApprovalStatusData;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.CandidateData;
+import no.sikt.nva.nvi.common.service.PeriodStatus;
+import no.sikt.nva.nvi.common.service.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.CandidateResponse;
@@ -112,9 +113,10 @@ class FetchNviCandidateHandlerTest {
                    .build();
     }
 
-    private static Candidate getCandidate(UUID id, DbCandidate candidate, List<DbApprovalStatus> approvalStatusList) {
+    private static Candidate getCandidate(UUID id, CandidateData candidate,
+                                          List<ApprovalStatusData> approvalStatusList) {
         return new Candidate(id, candidate, approvalStatusList, List.of(),
-                             new no.sikt.nva.nvi.common.db.PeriodStatus(NOW, Status.OPEN_PERIOD));
+                             new PeriodStatus(NOW, Status.OPEN_PERIOD));
     }
 
     private GatewayResponse<CandidateResponse> getGatewayResponse()

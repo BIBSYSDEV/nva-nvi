@@ -9,7 +9,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.model.ApprovalStatusDao.ApprovalStatusData;
 import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.ApprovalDto;
@@ -86,20 +86,20 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
         return attempt(() -> JsonUtils.dtoObjectMapper.readValue(body, User.class)).orElseThrow();
     }
 
-    private Optional<Candidate> fetchCandidate(DbApprovalStatus dbApprovalStatus) {
-        return nviService.findCandidateById(dbApprovalStatus.candidateIdentifier());
+    private Optional<Candidate> fetchCandidate(ApprovalStatusData approvalStatusData) {
+        return nviService.findCandidateById(approvalStatusData.candidateIdentifier());
     }
 
-    private DbApprovalStatus updateApprovalStatus(ApprovalDto input, DbApprovalStatus dbApprovalStatus) {
-        return dbApprovalStatus.update(nviService, input.toUpdateRequest());
+    private ApprovalStatusData updateApprovalStatus(ApprovalDto input, ApprovalStatusData approvalStatusData) {
+        return approvalStatusData.update(nviService, input.toUpdateRequest());
     }
 
-    private DbApprovalStatus fetchApprovalStatus(DbApprovalStatus dbApprovalStatus) {
-        return dbApprovalStatus.fetch(nviService);
+    private ApprovalStatusData fetchApprovalStatus(ApprovalStatusData approvalStatusData) {
+        return approvalStatusData.fetch(nviService);
     }
 
-    private DbApprovalStatus toApprovalStatus(ApprovalDto input, UUID candidateIdentifier) {
-        return DbApprovalStatus.builder()
+    private ApprovalStatusData toApprovalStatus(ApprovalDto input, UUID candidateIdentifier) {
+        return ApprovalStatusData.builder()
                    .institutionId(input.institutionId())
                    .candidateIdentifier(candidateIdentifier)
                    .build();

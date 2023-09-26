@@ -4,9 +4,9 @@ import static nva.commons.core.paths.UriWrapper.HTTPS;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
-import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.NoteRow.DbNote;
+import no.sikt.nva.nvi.common.db.model.ApprovalStatusDao.ApprovalStatusData;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.InstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.NoteDao.NoteData;
 import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
 import nva.commons.core.Environment;
@@ -39,12 +39,12 @@ public final class CandidateResponseMapper {
                    .getUri();
     }
 
-    private static List<Note> mapToNotes(List<DbNote> dbNotes) {
-        return dbNotes.stream().map(CandidateResponseMapper::mapToNote).toList();
+    private static List<Note> mapToNotes(List<NoteData> noteData) {
+        return noteData.stream().map(CandidateResponseMapper::mapToNote).toList();
     }
 
-    private static Note mapToNote(DbNote dbNote) {
-        return new Note(dbNote.user().value(), dbNote.text(), dbNote.createdDate());
+    private static Note mapToNote(NoteData noteData) {
+        return new Note(noteData.user().value(), noteData.text(), noteData.createdDate());
     }
 
     private static List<ApprovalStatus> mapToApprovalStatus(Candidate candidate) {
@@ -54,8 +54,8 @@ public final class CandidateResponseMapper {
                    .toList();
     }
 
-    private static ApprovalStatus mapToApprovalStatus(DbApprovalStatus approvalStatus,
-                                                      List<DbInstitutionPoints> institutionPoints) {
+    private static ApprovalStatus mapToApprovalStatus(ApprovalStatusData approvalStatus,
+                                                      List<InstitutionPoints> institutionPoints) {
         return ApprovalStatus.builder()
                    .withInstitutionId(approvalStatus.institutionId())
                    .withStatus(NviApprovalStatus.parse(approvalStatus.status().getValue()))
@@ -67,17 +67,17 @@ public final class CandidateResponseMapper {
                    .build();
     }
 
-    private static BigDecimal getPointsForApprovalStatus(List<DbInstitutionPoints> points,
-                                                         DbApprovalStatus approvalStatus) {
+    private static BigDecimal getPointsForApprovalStatus(List<InstitutionPoints> points,
+                                                         ApprovalStatusData approvalStatus) {
         return points.stream()
                    .filter(institutionPoints -> isForSameInstitution(approvalStatus, institutionPoints))
-                   .map(DbInstitutionPoints::points)
+                   .map(InstitutionPoints::points)
                    .findFirst()
                    .orElse(null);
     }
 
-    private static boolean isForSameInstitution(DbApprovalStatus approvalStatus,
-                                                DbInstitutionPoints institutionPoints) {
+    private static boolean isForSameInstitution(ApprovalStatusData approvalStatus,
+                                                InstitutionPoints institutionPoints) {
         return institutionPoints.institutionId().equals(approvalStatus.institutionId());
     }
 }

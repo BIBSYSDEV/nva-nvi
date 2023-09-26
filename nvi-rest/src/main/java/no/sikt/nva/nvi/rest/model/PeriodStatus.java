@@ -11,15 +11,15 @@ public record PeriodStatus(Status status, String periodClosesAt) {
         return new Builder();
     }
 
-    public static PeriodStatus fromPeriodStatus(no.sikt.nva.nvi.common.db.PeriodStatus periodStatus) {
+    public static PeriodStatus fromPeriodStatus(no.sikt.nva.nvi.common.service.PeriodStatus periodStatus) {
         return builder().withStatus(Status.parse(periodStatus.status().getValue()))
                    .withPeriodClosesAt(toClosesAt(periodStatus))
                    .build();
     }
 
-    private static String toClosesAt(no.sikt.nva.nvi.common.db.PeriodStatus periodStatus) {
+    private static String toClosesAt(no.sikt.nva.nvi.common.service.PeriodStatus periodStatus) {
         return Optional.of(periodStatus)
-                   .map(no.sikt.nva.nvi.common.db.PeriodStatus::periodClosesAt)
+                   .map(no.sikt.nva.nvi.common.service.PeriodStatus::periodClosesAt)
                    .map(Object::toString)
                    .orElse(null);
     }

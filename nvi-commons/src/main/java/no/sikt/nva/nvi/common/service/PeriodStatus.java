@@ -1,11 +1,11 @@
-package no.sikt.nva.nvi.common.db;
+package no.sikt.nva.nvi.common.service;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
 import java.util.Objects;
-import no.sikt.nva.nvi.common.db.PeriodRow.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.model.PeriodDao.PeriodData;
 import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.core.JacocoGenerated;
 
@@ -17,7 +17,7 @@ public record PeriodStatus(Instant periodClosesAt, Status status) implements Jso
         return new Builder();
     }
 
-    public static PeriodStatus fromPeriod(DbNviPeriod period) {
+    public static PeriodStatus fromPeriod(PeriodData period) {
         Objects.requireNonNull(period);
         return period.reportingDate().isAfter(Instant.now())
                    ? toOpenPeriodStatus(period)
@@ -30,11 +30,11 @@ public record PeriodStatus(Instant periodClosesAt, Status status) implements Jso
         return toJsonString();
     }
 
-    private static PeriodStatus toOpenPeriodStatus(DbNviPeriod period) {
+    private static PeriodStatus toOpenPeriodStatus(PeriodData period) {
         return PeriodStatus.builder().withPeriodClosesAt(period.reportingDate()).withStatus(Status.OPEN_PERIOD).build();
     }
 
-    private static PeriodStatus toClosedPeriodStatus(DbNviPeriod period) {
+    private static PeriodStatus toClosedPeriodStatus(PeriodData period) {
         return PeriodStatus.builder()
                    .withPeriodClosesAt(period.reportingDate())
                    .withStatus(Status.CLOSED_PERIOD)

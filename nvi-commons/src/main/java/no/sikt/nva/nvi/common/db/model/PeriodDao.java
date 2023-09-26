@@ -1,10 +1,10 @@
-package no.sikt.nva.nvi.common.db;
+package no.sikt.nva.nvi.common.db.model;
 
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 import java.time.Instant;
-import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.db.DynamoEntryWithRangeKey;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
@@ -13,19 +13,19 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmut
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-@DynamoDbImmutable(builder = PeriodRow.Builder.class)
-public record PeriodRow(
+@DynamoDbImmutable(builder = PeriodDao.Builder.class)
+public record PeriodDao(
 
     String identifier,
     @DynamoDbAttribute(DATA_FIELD)
-    DbNviPeriod nviPeriod
+    PeriodData nviPeriod
 ) implements DynamoEntryWithRangeKey {
 
-    public static final TableSchema<PeriodRow> TABLE_SCHEMA = TableSchema.fromClass(PeriodRow.class);
+    public static final TableSchema<PeriodDao> TABLE_SCHEMA = TableSchema.fromClass(PeriodDao.class);
 
     public static final String TYPE = "PERIOD";
 
-    public PeriodRow(DbNviPeriod nviPeriod) {
+    public PeriodDao(PeriodData nviPeriod) {
         this(nviPeriod.publishingYear(), nviPeriod);
     }
 
@@ -57,7 +57,7 @@ public record PeriodRow(
     public static final class Builder {
 
         private String builderIdentifier;
-        private DbNviPeriod builderNviPeriod;
+        private PeriodData builderNviPeriod;
 
         private Builder() {
         }
@@ -82,21 +82,21 @@ public record PeriodRow(
             return this;
         }
 
-        public Builder nviPeriod(DbNviPeriod nviPeriod) {
+        public Builder nviPeriod(PeriodData nviPeriod) {
             this.builderNviPeriod = nviPeriod;
             return this;
         }
 
-        public PeriodRow build() {
-            return new PeriodRow(builderIdentifier, builderNviPeriod);
+        public PeriodDao build() {
+            return new PeriodDao(builderIdentifier, builderNviPeriod);
         }
     }
 
-    @DynamoDbImmutable(builder = DbNviPeriod.Builder.class)
-    public record DbNviPeriod(String publishingYear,
-                              Instant reportingDate,
-                              Username createdBy,
-                              Username modifiedBy) {
+    @DynamoDbImmutable(builder = PeriodData.Builder.class)
+    public record PeriodData(String publishingYear,
+                             Instant reportingDate,
+                             Username createdBy,
+                             Username modifiedBy) {
 
         public static Builder builder() {
             return new Builder();
@@ -141,9 +141,9 @@ public record PeriodRow(
                 return this;
             }
 
-            public DbNviPeriod build() {
-                return new DbNviPeriod(builderPublishingYear, builderReportingDate, builderCreatedBy,
-                                       builderModifiedBy);
+            public PeriodData build() {
+                return new PeriodData(builderPublishingYear, builderReportingDate, builderCreatedBy,
+                                      builderModifiedBy);
             }
         }
     }

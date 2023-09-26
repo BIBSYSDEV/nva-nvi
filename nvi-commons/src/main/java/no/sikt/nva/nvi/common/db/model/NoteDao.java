@@ -1,21 +1,21 @@
-package no.sikt.nva.nvi.common.db;
+package no.sikt.nva.nvi.common.db.model;
 
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 import java.time.Instant;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.db.DynamoEntryWithRangeKey;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-@DynamoDbImmutable(builder = NoteRow.Builder.class)
-public record NoteRow(UUID identifier,
+@DynamoDbImmutable(builder = NoteDao.Builder.class)
+public record NoteDao(UUID identifier,
                       @DynamoDbAttribute(DATA_FIELD)
-                      DbNote note
+                      NoteData note
 ) implements DynamoEntryWithRangeKey {
 
     public static final String TYPE = "NOTE";
@@ -32,7 +32,7 @@ public record NoteRow(UUID identifier,
     @DynamoDbPartitionKey
     @DynamoDbAttribute(HASH_KEY)
     public String primaryKeyHashKey() {
-        return CandidateRow.createPartitionKey(identifier.toString());
+        return CandidateDao.createPartitionKey(identifier.toString());
     }
 
     @Override
@@ -55,7 +55,7 @@ public record NoteRow(UUID identifier,
         // And because of @DynamoDbImmutable the methods must have the same name as the getters
         // And in records that obj.identifer() not obj.getIdentifier()
         private UUID builderIdentifier;
-        private DbNote builderNote;
+        private NoteData builderNote;
 
         private Builder() {
         }
@@ -80,21 +80,21 @@ public record NoteRow(UUID identifier,
             return this;
         }
 
-        public Builder note(DbNote note) {
+        public Builder note(NoteData note) {
             this.builderNote = note;
             return this;
         }
 
-        public NoteRow build() {
-            return new NoteRow(builderIdentifier, builderNote);
+        public NoteDao build() {
+            return new NoteDao(builderIdentifier, builderNote);
         }
     }
 
-    @DynamoDbImmutable(builder = DbNote.Builder.class)
-    public record DbNote(UUID noteId,
-                         Username user,
-                         String text,
-                         Instant createdDate) {
+    @DynamoDbImmutable(builder = NoteData.Builder.class)
+    public record NoteData(UUID noteId,
+                           Username user,
+                           String text,
+                           Instant createdDate) {
 
         public static Builder builder() {
             return new Builder();
@@ -131,8 +131,8 @@ public record NoteRow(UUID identifier,
                 return this;
             }
 
-            public DbNote build() {
-                return new DbNote(builderNoteId, builderUser, builderText, builderCreatedDate);
+            public NoteData build() {
+                return new NoteData(builderNoteId, builderUser, builderText, builderCreatedDate);
             }
         }
     }

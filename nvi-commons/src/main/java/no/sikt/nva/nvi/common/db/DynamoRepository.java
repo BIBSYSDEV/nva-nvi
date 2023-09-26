@@ -14,7 +14,8 @@ import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-public class DynamoRepository {
+public abstract class DynamoRepository {
+
     private static final String PARTITION_KEY_NAME_PLACEHOLDER = "#partitionKey";
     private static final String SORT_KEY_NAME_PLACEHOLDER = "#sortKey";
     private static final Logger logger = LoggerFactory.getLogger(DynamoRepository.class);
@@ -24,17 +25,13 @@ public class DynamoRepository {
         this.client = DynamoDbEnhancedClient.builder().dynamoDbClient(client).build();
     }
 
-
-    private static String keyNotExistsCondition() {
-        return String.format("attribute_not_exists(%s) AND attribute_not_exists(%s)",
-                             PARTITION_KEY_NAME_PLACEHOLDER, SORT_KEY_NAME_PLACEHOLDER);
-    }
-
-    private static Map<String, String> primaryKeyEqualityConditionAttributeNames() {
-        return Map.of(
-            PARTITION_KEY_NAME_PLACEHOLDER, HASH_KEY,
-            SORT_KEY_NAME_PLACEHOLDER, SORT_KEY
-        );
+    @JacocoGenerated
+    public static DynamoDbClient defaultDynamoClient() {
+        return DynamoDbClient.builder()
+                   .httpClient(UrlConnectionHttpClient.create())
+                   .credentialsProvider(DefaultCredentialsProvider.create())
+                   .region(REGION)
+                   .build();
     }
 
     protected static Expression uniquePrimaryKeysExpression() {
@@ -57,14 +54,15 @@ public class DynamoRepository {
         }
     }
 
-    @JacocoGenerated
-    public static DynamoDbClient defaultDynamoClient() {
-        return DynamoDbClient.builder()
-                                 .httpClient(UrlConnectionHttpClient.create())
-                                 .credentialsProvider(DefaultCredentialsProvider.create())
-                                 .region(REGION)
-                                 .build();
+    private static String keyNotExistsCondition() {
+        return String.format("attribute_not_exists(%s) AND attribute_not_exists(%s)",
+                             PARTITION_KEY_NAME_PLACEHOLDER, SORT_KEY_NAME_PLACEHOLDER);
     }
 
-
+    private static Map<String, String> primaryKeyEqualityConditionAttributeNames() {
+        return Map.of(
+            PARTITION_KEY_NAME_PLACEHOLDER, HASH_KEY,
+            SORT_KEY_NAME_PLACEHOLDER, SORT_KEY
+        );
+    }
 }

@@ -7,7 +7,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.model.ApprovalStatusDao.ApprovalStatusData;
 import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.CandidateResponse;
@@ -68,12 +68,12 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
         }
     }
 
-    private Optional<Candidate> fetchCandidate(DbApprovalStatus dbApprovalStatus) {
-        return nviService.findCandidateById(dbApprovalStatus.candidateIdentifier());
+    private Optional<Candidate> fetchCandidate(ApprovalStatusData approvalStatusData) {
+        return nviService.findCandidateById(approvalStatusData.candidateIdentifier());
     }
 
-    private DbApprovalStatus toApprovalStatus(NviStatusRequest input, UUID candidateIdentifier) {
-        return DbApprovalStatus.builder()
+    private ApprovalStatusData toApprovalStatus(NviStatusRequest input, UUID candidateIdentifier) {
+        return ApprovalStatusData.builder()
                    .candidateIdentifier(candidateIdentifier)
                    .institutionId(input.institutionId())
                    .build();

@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.db;
+package no.sikt.nva.nvi.common.db.model;
 
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
@@ -14,7 +14,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.model.InstanceType;
+import no.sikt.nva.nvi.common.db.DynamoEntryWithRangeKey;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
@@ -24,10 +24,10 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecon
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondarySortKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-@DynamoDbImmutable(builder = CandidateRow.Builder.class)
-public record CandidateRow(
+@DynamoDbImmutable(builder = CandidateDao.Builder.class)
+public record CandidateDao(
     UUID identifier,
-    @DynamoDbAttribute(DATA_FIELD) DbCandidate candidate
+    @DynamoDbAttribute(DATA_FIELD) CandidateData candidate
 ) implements DynamoEntryWithRangeKey {
 
     public static final String TYPE = "CANDIDATE";
@@ -76,21 +76,21 @@ public record CandidateRow(
         return nonNull(candidate.publicationId()) ? candidate.publicationId().toString() : null;
     }
 
-    public enum DbLevel {
+    public enum ChannelLevel {
         UNASSIGNED("Unassigned"), LEVEL_ONE("1"), LEVEL_TWO("2"), NON_CANDIDATE("NonCandidateLevel");
 
         @JsonValue
         private final String value;
 
-        DbLevel(String value) {
+        ChannelLevel(String value) {
 
             this.value = value;
         }
 
         @JsonCreator
-        public static DbLevel parse(String value) {
+        public static ChannelLevel parse(String value) {
             return Arrays
-                       .stream(DbLevel.values())
+                       .stream(ChannelLevel.values())
                        .filter(level -> level.getValue().equalsIgnoreCase(value))
                        .findFirst()
                        .orElse(NON_CANDIDATE);
@@ -101,10 +101,37 @@ public record CandidateRow(
         }
     }
 
+    public enum InstanceType {
+
+        ACADEMIC_MONOGRAPH("AcademicMonograph"), ACADEMIC_CHAPTER("AcademicChapter"),
+        ACADEMIC_ARTICLE("AcademicArticle"), ACADEMIC_LITERATURE_REVIEW("AcademicLiteratureReview"),
+        NON_CANDIDATE("NonCandidateInstanceType");
+
+        private final String value;
+
+        InstanceType(String value) {
+            this.value = value;
+        }
+
+        @JacocoGenerated
+        public static InstanceType parse(String value) {
+            return Arrays.stream(InstanceType.values())
+                       .filter(type -> type.getValue().equalsIgnoreCase(value))
+                       .findFirst()
+                       .orElse(NON_CANDIDATE);
+        }
+
+        @JsonCreator
+        @JacocoGenerated
+        public String getValue() {
+            return value;
+        }
+    }
+
     public static final class Builder {
 
         private UUID builderIdentifier;
-        private DbCandidate builderCandidate;
+        private CandidateData builderCandidate;
 
         private Builder() {
         }
@@ -139,28 +166,28 @@ public record CandidateRow(
             return this;
         }
 
-        public Builder candidate(DbCandidate candidate) {
+        public Builder candidate(CandidateData candidate) {
             this.builderCandidate = candidate;
             return this;
         }
 
-        public CandidateRow build() {
-            return new CandidateRow(builderIdentifier, builderCandidate);
+        public CandidateDao build() {
+            return new CandidateDao(builderIdentifier, builderCandidate);
         }
     }
 
-    @DynamoDbImmutable(builder = DbCandidate.Builder.class)
-    public record DbCandidate(
+    @DynamoDbImmutable(builder = CandidateData.Builder.class)
+    public record CandidateData(
         URI publicationId,
         URI publicationBucketUri,
         boolean applicable,
         InstanceType instanceType,
-        DbLevel level,
-        DbPublicationDate publicationDate,
+        ChannelLevel level,
+        PublicationDate publicationDate,
         boolean internationalCollaboration,
         int creatorCount,
-        List<DbCreator> creators,
-        List<DbInstitutionPoints> points
+        List<Creator> creators,
+        List<InstitutionPoints> points
     ) {
 
         public static Builder builder() {
@@ -188,12 +215,12 @@ public record CandidateRow(
             private URI builderPublicationBucketUri;
             private boolean builderApplicable;
             private InstanceType builderInstanceType;
-            private DbLevel builderLevel;
-            private DbPublicationDate builderPublicationDate;
+            private ChannelLevel builderLevel;
+            private PublicationDate builderPublicationDate;
             private boolean builderInternationalCollaboration;
             private int builderCreatorCount;
-            private List<DbCreator> builderCreators;
-            private List<DbInstitutionPoints> builderPoints;
+            private List<Creator> builderCreators;
+            private List<InstitutionPoints> builderPoints;
 
             private Builder() {
             }
@@ -218,12 +245,12 @@ public record CandidateRow(
                 return this;
             }
 
-            public Builder level(DbLevel level) {
+            public Builder level(ChannelLevel level) {
                 this.builderLevel = level;
                 return this;
             }
 
-            public Builder publicationDate(DbPublicationDate publicationDate) {
+            public Builder publicationDate(PublicationDate publicationDate) {
                 this.builderPublicationDate = publicationDate;
                 return this;
             }
@@ -238,27 +265,27 @@ public record CandidateRow(
                 return this;
             }
 
-            public Builder creators(List<DbCreator> creators) {
+            public Builder creators(List<Creator> creators) {
                 this.builderCreators = creators;
                 return this;
             }
 
-            public Builder points(List<DbInstitutionPoints> points) {
+            public Builder points(List<InstitutionPoints> points) {
                 this.builderPoints = points;
                 return this;
             }
 
-            public DbCandidate build() {
-                return new DbCandidate(builderPublicationId, builderPublicationBucketUri, builderApplicable,
-                                       builderInstanceType, builderLevel,
-                                       builderPublicationDate, builderInternationalCollaboration, builderCreatorCount,
-                                       builderCreators, builderPoints);
+            public CandidateData build() {
+                return new CandidateData(builderPublicationId, builderPublicationBucketUri, builderApplicable,
+                                         builderInstanceType, builderLevel,
+                                         builderPublicationDate, builderInternationalCollaboration, builderCreatorCount,
+                                         builderCreators, builderPoints);
             }
         }
     }
 
-    @DynamoDbImmutable(builder = DbPublicationDate.Builder.class)
-    public static record DbPublicationDate(String year, String month, String day) {
+    @DynamoDbImmutable(builder = PublicationDate.Builder.class)
+    public static record PublicationDate(String year, String month, String day) {
 
         public static Builder builder() {
             return new Builder();
@@ -288,14 +315,14 @@ public record CandidateRow(
                 return this;
             }
 
-            public DbPublicationDate build() {
-                return new DbPublicationDate(builderYear, builderMonth, builderDay);
+            public PublicationDate build() {
+                return new PublicationDate(builderYear, builderMonth, builderDay);
             }
         }
     }
 
-    @DynamoDbImmutable(builder = DbCreator.Builder.class)
-    public static record DbCreator(URI creatorId, List<URI> affiliations) {
+    @DynamoDbImmutable(builder = Creator.Builder.class)
+    public static record Creator(URI creatorId, List<URI> affiliations) {
 
         public static Builder builder() {
             return new Builder();
@@ -319,14 +346,14 @@ public record CandidateRow(
                 return this;
             }
 
-            public DbCreator build() {
-                return new DbCreator(builderCreatorId, builderAffiliations);
+            public Creator build() {
+                return new Creator(builderCreatorId, builderAffiliations);
             }
         }
     }
 
-    @DynamoDbImmutable(builder = DbInstitutionPoints.Builder.class)
-    public static record DbInstitutionPoints(URI institutionId, BigDecimal points) {
+    @DynamoDbImmutable(builder = InstitutionPoints.Builder.class)
+    public static record InstitutionPoints(URI institutionId, BigDecimal points) {
 
         public static Builder builder() {
             return new Builder();
@@ -350,8 +377,8 @@ public record CandidateRow(
                 return this;
             }
 
-            public DbInstitutionPoints build() {
-                return new DbInstitutionPoints(builderInstitutionId, builderPoints);
+            public InstitutionPoints build() {
+                return new InstitutionPoints(builderInstitutionId, builderPoints);
             }
         }
     }

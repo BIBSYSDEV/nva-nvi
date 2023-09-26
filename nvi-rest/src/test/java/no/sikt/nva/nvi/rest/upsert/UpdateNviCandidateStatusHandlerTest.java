@@ -28,12 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbStatus;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbCreator;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbLevel;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.model.InstanceType;
+import no.sikt.nva.nvi.common.db.model.ApprovalStatusDao.Status;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.CandidateData;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.Creator;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.ChannelLevel;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.PublicationDate;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
@@ -64,10 +64,10 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     private ByteArrayOutputStream output;
 
     public static Stream<Arguments> approvalStatusProvider() {
-        return Stream.of(Arguments.of(DbStatus.PENDING, DbStatus.APPROVED),
-                         Arguments.of(DbStatus.APPROVED, DbStatus.PENDING),
-                         Arguments.of(DbStatus.REJECTED, DbStatus.PENDING),
-                         Arguments.of(DbStatus.APPROVED, DbStatus.APPROVED));
+        return Stream.of(Arguments.of(Status.PENDING, Status.APPROVED),
+                         Arguments.of(Status.APPROVED, Status.PENDING),
+                         Arguments.of(Status.REJECTED, Status.PENDING),
+                         Arguments.of(Status.APPROVED, Status.APPROVED));
     }
 
     @BeforeEach
@@ -94,7 +94,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
 
     @ParameterizedTest(name = "Should update from old status {0} to new status {1}")
     @MethodSource("approvalStatusProvider")
-    void shouldUpdateApprovalStatus(DbStatus oldStatus, DbStatus newStatus) throws IOException {
+    void shouldUpdateApprovalStatus(Status oldStatus, Status newStatus) throws IOException {
         var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
         var institutionId = candidate.approvalStatuses().get(0).institutionId();
         candidate.approvalStatuses().get(0).update(nviService, UpdateStatusRequest.builder()
@@ -112,8 +112,8 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = DbStatus.class, names = {"REJECTED", "APPROVED"})
-    void shouldResetFinalizedValuesWhenUpdatingStatusToPending(DbStatus oldStatus) throws IOException {
+    @EnumSource(value = Status.class, names = {"REJECTED", "APPROVED"})
+    void shouldResetFinalizedValuesWhenUpdatingStatusToPending(Status oldStatus) throws IOException {
         var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
         var institutionId = candidate.approvalStatuses().get(0).institutionId();
         candidate.approvalStatuses().get(0).update(nviService, UpdateStatusRequest.builder()
@@ -177,8 +177,8 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = DbStatus.class, names = {"PENDING", "APPROVED"})
-    void shouldUpdateApprovalStatusToRejectedWithReason(DbStatus oldStatus) throws IOException {
+    @EnumSource(value = Status.class, names = {"PENDING", "APPROVED"})
+    void shouldUpdateApprovalStatusToRejectedWithReason(Status oldStatus) throws IOException {
         var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
         var institutionId = candidate.approvalStatuses().get(0).institutionId();
         candidate.approvalStatuses().get(0).update(nviService, new UpdateStatusRequest(oldStatus, randomString(),
@@ -196,13 +196,13 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = DbStatus.class, names = {"PENDING", "APPROVED"})
-    void shouldRemoveReasonWhenUpdatingStatusFromRejected(DbStatus newStatus) throws IOException {
+    @EnumSource(value = Status.class, names = {"PENDING", "APPROVED"})
+    void shouldRemoveReasonWhenUpdatingStatusFromRejected(Status newStatus) throws IOException {
         var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
         var institutionId = candidate.approvalStatuses().get(0).institutionId();
         candidate.approvalStatuses()
             .get(0)
-            .update(nviService, new UpdateStatusRequest(DbStatus.REJECTED, randomString(),
+            .update(nviService, new UpdateStatusRequest(Status.REJECTED, randomString(),
                                                         randomString()));
         var request = createRequest(candidate.identifier(), institutionId,
                                     NviApprovalStatus.parse(newStatus.getValue()));
@@ -215,14 +215,14 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         assertThat(actualApprovalStatus.reason(), is(nullValue()));
     }
 
-    private static DbCandidate createCandidate(URI institutionId) {
-        return DbCandidate.builder()
+    private static CandidateData createCandidate(URI institutionId) {
+        return CandidateData.builder()
                    .publicationId(randomUri())
-                   .level(DbLevel.LEVEL_ONE)
+                   .level(ChannelLevel.LEVEL_ONE)
                    .internationalCollaboration(false)
                    .publicationBucketUri(randomUri())
-                   .publicationDate(new DbPublicationDate("2023", "01", "01"))
-                   .creators(List.of(new DbCreator(randomUri(), List.of(institutionId))))
+                   .publicationDate(new PublicationDate("2023", "01", "01"))
+                   .creators(List.of(new Creator(randomUri(), List.of(institutionId))))
                    .creatorCount(1)
                    .instanceType(randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE))
                    .applicable(true)

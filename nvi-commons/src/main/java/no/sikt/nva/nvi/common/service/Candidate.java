@@ -3,18 +3,17 @@ package no.sikt.nva.nvi.common.service;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.PeriodStatus;
-import no.sikt.nva.nvi.common.db.CandidateRow.DbCandidate;
-import no.sikt.nva.nvi.common.db.NoteRow.DbNote;
-import no.sikt.nva.nvi.common.db.PeriodRow.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.model.ApprovalStatusDao.ApprovalStatusData;
+import no.sikt.nva.nvi.common.db.model.CandidateDao.CandidateData;
+import no.sikt.nva.nvi.common.db.model.NoteDao.NoteData;
+import no.sikt.nva.nvi.common.db.model.PeriodDao.PeriodData;
 
-public record Candidate(UUID identifier, DbCandidate candidate, List<DbApprovalStatus> approvalStatuses,
-                        List<DbNote> notes, PeriodStatus periodStatus) {
+public record Candidate(UUID identifier, CandidateData candidate, List<ApprovalStatusData> approvalStatuses,
+                        List<NoteData> notes, PeriodStatus periodStatus) {
 
     public static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
 
-    public void isEditableForPeriod(DbNviPeriod period) {
+    public void isEditableForPeriod(PeriodData period) {
         if (period.reportingDate().isBefore(Instant.now())) {
             throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
         }
@@ -31,9 +30,9 @@ public record Candidate(UUID identifier, DbCandidate candidate, List<DbApprovalS
     public static final class Builder {
 
         private UUID identifier;
-        private DbCandidate candidate;
-        private List<DbApprovalStatus> approvalStatuses;
-        private List<DbNote> notes;
+        private CandidateData candidate;
+        private List<ApprovalStatusData> approvalStatuses;
+        private List<NoteData> notes;
         private PeriodStatus periodStatus;
 
         public Builder() {
@@ -44,17 +43,17 @@ public record Candidate(UUID identifier, DbCandidate candidate, List<DbApprovalS
             return this;
         }
 
-        public Builder withCandidate(DbCandidate candidate) {
+        public Builder withCandidate(CandidateData candidate) {
             this.candidate = candidate;
             return this;
         }
 
-        public Builder withApprovalStatuses(List<DbApprovalStatus> approvalStatuses) {
+        public Builder withApprovalStatuses(List<ApprovalStatusData> approvalStatuses) {
             this.approvalStatuses = approvalStatuses;
             return this;
         }
 
-        public Builder withNotes(List<DbNote> notes) {
+        public Builder withNotes(List<NoteData> notes) {
             this.notes = notes;
             return this;
         }

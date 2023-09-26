@@ -1,7 +1,8 @@
-package no.sikt.nva.nvi.common.db;
+package no.sikt.nva.nvi.common.db.model;
 
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
+import no.sikt.nva.nvi.common.db.DynamoEntryWithRangeKey;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;

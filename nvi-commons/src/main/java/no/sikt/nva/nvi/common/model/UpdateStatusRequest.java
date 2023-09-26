@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.common.model;
 
-import no.sikt.nva.nvi.common.db.ApprovalStatusRow.DbStatus;
+import no.sikt.nva.nvi.common.db.model.ApprovalStatusDao.Status;
 
-public record UpdateStatusRequest(DbStatus approvalStatus,
+public record UpdateStatusRequest(Status approvalStatus,
                                   String username,
                                   String reason) implements UpdateApprovalRequest {
 
@@ -12,14 +12,14 @@ public record UpdateStatusRequest(DbStatus approvalStatus,
 
     public static final class Builder {
 
-        private DbStatus approvalStatus;
+        private Status approvalStatus;
         private String username;
         private String reason;
 
         private Builder() {
         }
 
-        public Builder withApprovalStatus(DbStatus approvalStatus) {
+        public Builder withApprovalStatus(Status approvalStatus) {
             this.approvalStatus = approvalStatus;
             return this;
         }

@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.Date;
-import no.sikt.nva.nvi.common.db.PeriodRow.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.model.PeriodDao.PeriodData;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.NviPeriodDto;
@@ -70,8 +70,8 @@ public class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
         assertThat(response.getBodyObject(NviPeriodsResponse.class).periods(), hasSize(0));
     }
 
-    private static DbNviPeriod periodWithPublishingYear(String publishingYear) {
-        return DbNviPeriod.builder()
+    private static PeriodData periodWithPublishingYear(String publishingYear) {
+        return PeriodData.builder()
                    .publishingYear(publishingYear)
                    .reportingDate(new Date(2050, 0, 25).toInstant())
                    .createdBy(Username.fromString(randomString()))

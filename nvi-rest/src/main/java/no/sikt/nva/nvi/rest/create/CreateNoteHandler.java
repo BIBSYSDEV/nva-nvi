@@ -7,7 +7,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.util.Objects;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.NoteRow.DbNote;
+import no.sikt.nva.nvi.common.db.model.NoteDao.NoteData;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.CandidateResponse;
@@ -54,8 +54,8 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         return HttpURLConnection.HTTP_OK;
     }
 
-    private static DbNote getNote(NviNoteRequest input, Username username) {
-        return DbNote.builder()
+    private static NoteData getNote(NviNoteRequest input, Username username) {
+        return NoteData.builder()
                    .text(input.text())
                    .user(Username.fromString(username.value()))
                    .build();
