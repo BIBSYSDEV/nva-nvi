@@ -24,7 +24,7 @@ public class CandidateResponseMapper {
 
     public static CandidateResponse fromCandidate(Candidate candidate) {
         return CandidateResponse.builder()
-                   .withId(getId(candidate))
+                   .withId(constructId(candidate))
                    .withIdentifier(candidate.identifier())
                    .withPublicationId(candidate.candidate().publicationId())
                    .withApprovalStatuses(CandidateResponseMapper.mapToApprovalStatus(candidate))
@@ -32,7 +32,7 @@ public class CandidateResponseMapper {
                    .build();
     }
 
-    private static URI getId(Candidate candidate) {
+    private static URI constructId(Candidate candidate) {
         return new UriWrapper(HTTPS, API_DOMAIN)
                    .addChild(BASE_PATH, CANDIDATE_PATH, candidate.identifier().toString())
                    .getUri();
