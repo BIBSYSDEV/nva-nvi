@@ -29,6 +29,7 @@ public class CandidateResponseMapper {
                    .withPublicationId(candidate.candidate().publicationId())
                    .withApprovalStatuses(CandidateResponseMapper.mapToApprovalStatus(candidate))
                    .withNotes(CandidateResponseMapper.mapToNotes(candidate.notes()))
+                   .withPeriodStatus(PeriodStatus.fromPeriodStatus(candidate.periodStatus()))
                    .build();
     }
 
