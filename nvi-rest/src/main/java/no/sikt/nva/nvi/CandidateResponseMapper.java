@@ -26,14 +26,15 @@ public class CandidateResponseMapper {
 
     public static CandidateResponse fromCandidate(Candidate candidate) {
         return CandidateResponse.builder()
-                   .withIdentifier(getIdentifier(candidate))
+                   .withId(getId(candidate))
+                   .withIdentifier(candidate.identifier())
                    .withPublicationId(candidate.candidate().publicationId())
                    .withApprovalStatuses(CandidateResponseMapper.mapToApprovalStatus(candidate))
                    .withNotes(CandidateResponseMapper.mapToNotes(candidate.notes()))
                    .build();
     }
 
-    private static URI getIdentifier(Candidate candidate) {
+    private static URI getId(Candidate candidate) {
         return new UriWrapper(HTTPS, API_DOMAIN)
                    .addChild(BASE_PATH, CANDIDATE_PATH, candidate.identifier().toString())
                    .getUri();

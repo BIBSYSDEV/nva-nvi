@@ -72,7 +72,7 @@ class FetchNviCandidateHandlerTest {
         assertEquals(HttpStatus.SC_OK, gatewayResponse.getStatusCode());
         var bodyObject = gatewayResponse.getBodyObject(CandidateResponse.class);
         var candidateUri = getCandidateIdentifier(candidateId);
-        assertEquals(bodyObject.identifier(), candidateUri);
+        assertEquals(bodyObject.id(), candidateUri);
         var expectedResponse = getExpectedResponse(candidateWithIdentifier);
 
         assertEquals(bodyObject, expectedResponse);
@@ -95,6 +95,7 @@ class FetchNviCandidateHandlerTest {
 
     private static CandidateResponse getExpectedResponse(Candidate candidate) {
         return new CandidateResponse(getCandidateIdentifier(candidate.identifier()),
+                                     candidate.identifier(),
                                      candidate.candidate().publicationId(),
                                      getApprovalStatuses(candidate.approvalStatuses(), candidate.candidate().points()),
                                      List.of()

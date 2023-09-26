@@ -5,15 +5,18 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import no.sikt.nva.nvi.rest.fetch.ApprovalStatus;
 import no.sikt.nva.nvi.rest.fetch.Note;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record CandidateResponse(URI identifier,
-                                URI publicationId,
-                                List<ApprovalStatus> approvalStatuses,
-                                List<Note> notes) {
+public record CandidateResponse(
+    URI id,
+    UUID identifier,
+    URI publicationId,
+    List<ApprovalStatus> approvalStatuses,
+    List<Note> notes) {
 
     public static Builder builder() {
         return new Builder();
@@ -21,7 +24,8 @@ public record CandidateResponse(URI identifier,
 
     public static final class Builder {
 
-        private URI identifier;
+        private URI id;
+        private UUID identifier;
         private URI publicationId;
         private List<ApprovalStatus> approvalStatuses = new ArrayList<>();
         private List<Note> notes = new ArrayList<>();
@@ -29,7 +33,12 @@ public record CandidateResponse(URI identifier,
         private Builder() {
         }
 
-        public Builder withIdentifier(URI identifier) {
+        public Builder withId(URI id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder withIdentifier(UUID identifier) {
             this.identifier = identifier;
             return this;
         }
@@ -50,7 +59,7 @@ public record CandidateResponse(URI identifier,
         }
 
         public CandidateResponse build() {
-            return new CandidateResponse(identifier, publicationId, approvalStatuses, notes);
+            return new CandidateResponse(id, identifier, publicationId, approvalStatuses, notes);
         }
     }
 }
