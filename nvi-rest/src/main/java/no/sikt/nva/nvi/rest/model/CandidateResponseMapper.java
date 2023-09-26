@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi;
+package no.sikt.nva.nvi.rest.model;
 
 import static nva.commons.core.paths.UriWrapper.HTTPS;
 import java.math.BigDecimal;
@@ -8,8 +8,6 @@ import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbNote;
-import no.sikt.nva.nvi.rest.fetch.ApprovalStatus;
-import no.sikt.nva.nvi.rest.fetch.Note;
 import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
@@ -64,6 +62,7 @@ public class CandidateResponseMapper {
                    .withAssignee(approvalStatus.assignee())
                    .withFinalizedBy(approvalStatus.finalizedBy())
                    .withFinalizedDate(approvalStatus.finalizedDate())
+                   .withReason(approvalStatus.reason())
                    .build();
     }
 

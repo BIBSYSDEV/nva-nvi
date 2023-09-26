@@ -27,7 +27,7 @@ import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.ApprovalStatus;
 import no.sikt.nva.nvi.rest.model.CandidateResponse;
-import no.sikt.nva.nvi.rest.model.PeriodStatus;
+import no.sikt.nva.nvi.rest.model.CandidateResponseMapper;
 import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
@@ -99,12 +99,7 @@ class FetchNviCandidateHandlerTest {
     }
 
     private static CandidateResponse getExpectedResponse(Candidate candidate) {
-        return new CandidateResponse(getCandidateIdentifier(candidate.identifier()),
-                                     candidate.identifier(),
-                                     candidate.candidate().publicationId(),
-                                     getApprovalStatuses(candidate.approvalStatuses(), candidate.candidate().points()),
-                                     List.of(),
-                                     PeriodStatus.fromPeriodStatus(expectedPeriodStatus()));
+        return CandidateResponseMapper.fromCandidate(candidate);
     }
 
     private static no.sikt.nva.nvi.common.db.PeriodStatus expectedPeriodStatus() {
