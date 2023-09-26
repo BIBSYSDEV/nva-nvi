@@ -200,9 +200,12 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldRemoveReasonWhenUpdatingStatusFromRejected(DbStatus newStatus) throws IOException {
         var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
         var institutionId = candidate.approvalStatuses().get(0).institutionId();
-        candidate.approvalStatuses().get(0).update(nviService, new UpdateStatusRequest(DbStatus.REJECTED, randomString(),
-                                                                                       randomString()));
-        var request = createRequest(candidate.identifier(), institutionId, NviApprovalStatus.parse(newStatus.getValue()));
+        candidate.approvalStatuses()
+            .get(0)
+            .update(nviService, new UpdateStatusRequest(DbStatus.REJECTED, randomString(),
+                                                        randomString()));
+        var request = createRequest(candidate.identifier(), institutionId,
+                                    NviApprovalStatus.parse(newStatus.getValue()));
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         var candidateResponse = response.getBodyObject(CandidateResponse.class);

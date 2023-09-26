@@ -63,15 +63,12 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
         }
     }
 
-    private static boolean isRejected(UpdateStatusRequest request) {
-        return DbStatus.REJECTED.equals(request.approvalStatus());
-    }
-
     @JacocoGenerated
     @DynamoDbIgnore
     private DbApprovalStatus updateStatus(NviService nviService, UpdateStatusRequest request) {
         return switch (request.approvalStatus()) {
-            case APPROVED, REJECTED -> finalizeApprovalStatus(nviService, request);
+            case APPROVED -> finalizeApprovedStatus(nviService, request);
+            case REJECTED -> finalizeRejectedStatus(nviService, request);
             case PENDING -> resetStatus(nviService);
         };
     }
@@ -88,8 +85,20 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
     }
 
     @DynamoDbIgnore
-    private DbApprovalStatus finalizeApprovalStatus(NviService nviService, UpdateStatusRequest request) {
-        if (isRejected(request) && isNull(request.reason())) {
+    private DbApprovalStatus finalizeApprovedStatus(NviService nviService, UpdateStatusRequest request) {
+        var username = DbUsername.fromString(request.username());
+        return this.fetch(nviService).copy()
+                   .status(request.approvalStatus())
+                   .assignee(this.hasAssignee() ? this.assignee : username)
+                   .finalizedBy(username)
+                   .finalizedDate(Instant.now())
+                   .reason(null)
+                   .build();
+    }
+
+    @DynamoDbIgnore
+    private DbApprovalStatus finalizeRejectedStatus(NviService nviService, UpdateStatusRequest request) {
+        if (isNull(request.reason())) {
             throw new UnsupportedOperationException(ERROR_MISSING_REJECTION_REASON);
         }
         var username = DbUsername.fromString(request.username());
@@ -98,7 +107,7 @@ public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbSt
                    .assignee(this.hasAssignee() ? this.assignee : username)
                    .finalizedBy(username)
                    .finalizedDate(Instant.now())
-                   .reason(isRejected(request) ? request.reason() : null)
+                   .reason(request.reason())
                    .build();
     }
 
