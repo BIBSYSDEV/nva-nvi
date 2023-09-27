@@ -6,7 +6,7 @@ import java.time.Instant;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record Note(Username user,
+public record Note(String user,
                    String text,
                    Instant createdDate) {
 
