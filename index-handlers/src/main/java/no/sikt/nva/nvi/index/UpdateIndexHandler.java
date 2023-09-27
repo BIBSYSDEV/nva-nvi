@@ -13,15 +13,14 @@ import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationTyp
 import java.net.URI;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.StorageReader;
-import no.sikt.nva.nvi.common.db.Candidate;
-import no.sikt.nva.nvi.common.db.model.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
-import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,16 +85,16 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         return candidate.candidate().applicable();
     }
 
-    private boolean isCandidateOrApproval(DynamodbStreamRecord record) {
-        return isCandidate(record) || isApproval(record);
-    }
-
     private static boolean isApproval(DynamodbStreamRecord record) {
         return APPROVAL_TYPE.equals(extractRecordType(record));
     }
 
     private static boolean isCandidate(DynamodbStreamRecord record) {
         return CANDIDATE_TYPE.equals(extractRecordType(record));
+    }
+
+    private boolean isCandidateOrApproval(DynamodbStreamRecord record) {
+        return isCandidate(record) || isApproval(record);
     }
 
     private void updateIndex(DynamodbStreamRecord record) {

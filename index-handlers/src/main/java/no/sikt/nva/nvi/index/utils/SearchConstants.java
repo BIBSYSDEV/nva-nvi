@@ -39,6 +39,7 @@ public final class SearchConstants {
     public static final String YEAR = "year";
     public static final String MONTH = "month";
     public static final String DAY = "day";
+    public static final String KEYWORD = "keyword";
     public static final String APPROVAL_STATUS = "approvalStatus";
     public static final String NVI_CANDIDATES_INDEX = "nvi-candidates";
     public static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";

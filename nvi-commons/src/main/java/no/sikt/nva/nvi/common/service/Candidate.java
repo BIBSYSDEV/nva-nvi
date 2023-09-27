@@ -1,12 +1,13 @@
-package no.sikt.nva.nvi.common.db;
+package no.sikt.nva.nvi.common.service;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.model.DbCandidate;
-import no.sikt.nva.nvi.common.db.model.DbNote;
-import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.PeriodStatus;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
+import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 
 public record Candidate(UUID identifier, DbCandidate candidate, List<DbApprovalStatus> approvalStatuses,
                         List<DbNote> notes, PeriodStatus periodStatus) {

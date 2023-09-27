@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
-import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
@@ -13,8 +12,8 @@ import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
 public record ApprovalStatus(URI institutionId,
                              NviApprovalStatus status,
                              BigDecimal points,
-                             DbUsername assignee,
-                             DbUsername finalizedBy,
+                             Username assignee,
+                             Username finalizedBy,
                              Instant finalizedDate,
                              String reason) {
 
@@ -27,8 +26,8 @@ public record ApprovalStatus(URI institutionId,
         private URI institutionId;
         private NviApprovalStatus status;
         private BigDecimal points;
-        private DbUsername assignee;
-        private DbUsername finalizedBy;
+        private Username assignee;
+        private Username finalizedBy;
         private Instant finalizedDate;
         private String reason;
 
@@ -50,12 +49,12 @@ public record ApprovalStatus(URI institutionId,
             return this;
         }
 
-        public Builder withAssignee(DbUsername assignee) {
+        public Builder withAssignee(Username assignee) {
             this.assignee = assignee;
             return this;
         }
 
-        public Builder withFinalizedBy(DbUsername finalizedBy) {
+        public Builder withFinalizedBy(Username finalizedBy) {
             this.finalizedBy = finalizedBy;
             return this;
         }

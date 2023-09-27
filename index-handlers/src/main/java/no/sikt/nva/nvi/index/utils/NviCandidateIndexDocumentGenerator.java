@@ -25,10 +25,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import no.sikt.nva.nvi.common.db.Candidate;
-import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.model.DbUsername;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.utils.JsonPointers;
 import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
@@ -93,7 +93,10 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private static String extractAssignee(DbApprovalStatus approval) {
-        return Optional.of(approval).map(DbApprovalStatus::assignee).map(DbUsername::getValue).orElse(null);
+        return Optional.of(approval)
+                   .map(DbApprovalStatus::assignee)
+                   .map(Username::value)
+                   .orElse(null);
     }
 
     private static List<Organization> getTopLevelOrgs(String s) {

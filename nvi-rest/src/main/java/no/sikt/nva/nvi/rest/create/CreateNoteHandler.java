@@ -7,10 +7,11 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.util.Objects;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.model.DbNote;
-import no.sikt.nva.nvi.common.db.model.DbUsername;
+import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
+import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.CandidateResponse;
+import no.sikt.nva.nvi.rest.model.CandidateResponseMapper;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
 import no.sikt.nva.nvi.utils.RequestUtil;
 import nva.commons.apigateway.AccessRight;
@@ -42,8 +43,9 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         validate(input);
         var username = RequestUtil.getUsername(requestInfo);
         var candidateIdentifier = requestInfo.getPathParameter(CANDIDATE_IDENTIFIER);
+
         return attempt(() -> service.createNote(UUID.fromString(candidateIdentifier), getNote(input, username)))
-                   .map(CandidateResponse::fromCandidate)
+                   .map(CandidateResponseMapper::toDto)
                    .orElseThrow(ExceptionMapper::map);
     }
 
@@ -52,10 +54,10 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         return HttpURLConnection.HTTP_OK;
     }
 
-    private static DbNote getNote(NviNoteRequest input, DbUsername username) {
+    private static DbNote getNote(NviNoteRequest input, Username username) {
         return DbNote.builder()
                    .text(input.text())
-                   .user(DbUsername.fromString(username.getValue()))
+                   .user(Username.fromString(username.value()))
                    .build();
     }
 

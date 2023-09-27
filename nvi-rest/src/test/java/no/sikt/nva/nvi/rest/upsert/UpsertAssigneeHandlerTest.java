@@ -5,7 +5,6 @@ import static no.sikt.nva.nvi.rest.upsert.UpsertAssigneeHandler.CANDIDATE_IDENTI
 import static no.sikt.nva.nvi.test.TestUtils.nviServiceReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomApplicableCandidateBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateWithPublicationYear;
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidateWithPublicationYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -27,13 +26,13 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.db.Candidate;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
-import no.sikt.nva.nvi.common.db.model.DbStatus;
-import no.sikt.nva.nvi.common.db.model.DbUsername;
+import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.ApprovalDto;
 import no.sikt.nva.nvi.rest.model.CandidateResponse;
@@ -126,7 +125,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         handler.handleRequest(createRequest(candidate, assignee), output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
 
-        assertThat(response.getBodyObject(CandidateResponse.class).approvalStatuses().get(0).assignee().getValue(),
+        assertThat(response.getBodyObject(CandidateResponse.class).approvalStatuses().get(0).assignee().value(),
                    is(equalTo(assignee)));
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
     }
@@ -153,8 +152,8 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         var response =
             GatewayResponse.fromOutputStream(output, CandidateResponse.class);
 
-        assertThat(response.getBodyObject(CandidateResponse.class).approvalStatuses().get(0).assignee(),
-                   is(equalTo(DbUsername.fromString(newAssignee))));
+        assertThat(response.getBodyObject(CandidateResponse.class).approvalStatuses().get(0).assignee().value(),
+                   is(equalTo(newAssignee)));
     }
 
     private void removeAssignee(Candidate candidate) {

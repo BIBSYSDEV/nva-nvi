@@ -8,18 +8,17 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.Candidate;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
+import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.NviPeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
-import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.model.DbCandidate;
-import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.model.DbNote;
-import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
-import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.model.DbStatus;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import nva.commons.core.JacocoGenerated;
@@ -90,12 +89,6 @@ public class NviService {
         return nviCandidateRepository.updateApprovalStatus(candidateIdentifier, newApproval);
     }
 
-    private void candidateIsEditable(UUID candidateIdentifier) {
-        var candidate = findCandidateById(candidateIdentifier).orElseThrow();
-        var period = fetchPeriodForCandidate(candidate);
-        candidate.isEditableForPeriod(period);
-    }
-
     public DbApprovalStatus findApprovalStatus(URI institutionId, UUID candidateIdentifier) {
         return nviCandidateRepository.findApprovalByIdAndInstitutionId(candidateIdentifier, institutionId)
                    .orElseThrow();
@@ -131,7 +124,7 @@ public class NviService {
     }
 
     private static boolean isNoteOwner(String requestUsername, DbNote note) {
-        return note.user().getValue().equals(requestUsername);
+        return note.user().value().equals(requestUsername);
     }
 
     private static boolean isInteger(String value) {
@@ -170,6 +163,12 @@ public class NviService {
         if (InstanceType.NON_CANDIDATE.equals(candidate.instanceType())) {
             throw new InvalidNviCandidateException("Can not update invalid candidate");
         }
+    }
+
+    private void candidateIsEditable(UUID candidateIdentifier) {
+        var candidate = findCandidateById(candidateIdentifier).orElseThrow();
+        var period = fetchPeriodForCandidate(candidate);
+        candidate.isEditableForPeriod(period);
     }
 
     private Candidate injectPeriodStatus(Candidate candidate) {
@@ -228,10 +227,11 @@ public class NviService {
         return nviCandidateRepository.update(identifier, candidate, approvalStatuses);
     }
 
-    private Optional<Candidate> updateCandidateToNotApplicable(DbCandidate dbCandidate) {
-        var existingCandidate = findByPublicationId(dbCandidate.publicationId()).orElseThrow();
-        return Optional.of(updateCandidateRemovingApprovals(existingCandidate.identifier(), dbCandidate,
-                                                            generatePendingApprovalStatuses(dbCandidate.points())));
+    private Optional<Candidate> updateCandidateToNotApplicable(DbCandidate candidate) {
+        var existingCandidate = findByPublicationId(candidate.publicationId()).orElseThrow();
+        return Optional.of(updateCandidateRemovingApprovals(existingCandidate.identifier(),
+                                                            candidate,
+                                                            existingCandidate.approvalStatuses()));
     }
 
     private Candidate updateCandidateRemovingApprovals(UUID identifier, DbCandidate candidate,

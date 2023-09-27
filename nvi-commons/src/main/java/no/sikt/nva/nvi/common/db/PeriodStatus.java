@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
 import java.util.Objects;
-import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.core.JacocoGenerated;
 

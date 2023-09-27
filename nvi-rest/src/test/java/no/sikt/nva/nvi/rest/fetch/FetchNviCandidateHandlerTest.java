@@ -12,24 +12,22 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigDecimal;
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.Candidate;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
-import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.model.DbCandidate;
-import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.model.ApprovalStatus;
 import no.sikt.nva.nvi.rest.model.CandidateResponse;
-import no.sikt.nva.nvi.rest.model.PeriodStatus;
-import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
+import no.sikt.nva.nvi.rest.model.CandidateResponseMapper;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
+import nva.commons.core.paths.UriWrapper;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpStatus;
 import org.eclipse.jetty.http.HttpHeader;
@@ -74,7 +72,8 @@ class FetchNviCandidateHandlerTest {
         var gatewayResponse = getGatewayResponse();
         assertEquals(HttpStatus.SC_OK, gatewayResponse.getStatusCode());
         var bodyObject = gatewayResponse.getBodyObject(CandidateResponse.class);
-        assertEquals(bodyObject.id(), candidateId);
+        var candidateUri = constructId(candidateId);
+        assertEquals(bodyObject.id(), candidateUri);
         var expectedResponse = getExpectedResponse(candidateWithIdentifier);
 
         assertEquals(bodyObject, expectedResponse);
@@ -96,46 +95,14 @@ class FetchNviCandidateHandlerTest {
     }
 
     private static CandidateResponse getExpectedResponse(Candidate candidate) {
-        return new CandidateResponse(candidate.identifier(),
-                                     candidate.candidate().publicationId(),
-                                     getApprovalStatuses(candidate.approvalStatuses(), candidate.candidate().points()),
-                                     List.of(),
-                                     PeriodStatus.fromPeriodStatus(expectedPeriodStatus()));
+        return CandidateResponseMapper.toDto(candidate);
     }
 
-    private static no.sikt.nva.nvi.common.db.PeriodStatus expectedPeriodStatus() {
-        return no.sikt.nva.nvi.common.db.PeriodStatus.builder()
-                   .withStatus(Status.OPEN_PERIOD)
-                   .withPeriodClosesAt(NOW)
-                   .build();
-    }
-
-    private static List<ApprovalStatus> getApprovalStatuses(List<DbApprovalStatus> approvalStatuses,
-                                                            List<DbInstitutionPoints> points) {
-        return approvalStatuses.stream()
-                   .map(approvalStatus -> new ApprovalStatus(
-                       approvalStatus.institutionId(),
-                       NviApprovalStatus.parse(approvalStatus.status().getValue()),
-                       getPointsForApprovalStatus(points, approvalStatus),
-                       approvalStatus.assignee(),
-                       approvalStatus.finalizedBy(),
-                       approvalStatus.finalizedDate(),
-                       approvalStatus.reason()))
-                   .toList();
-    }
-
-    private static BigDecimal getPointsForApprovalStatus(List<DbInstitutionPoints> points,
-                                                         DbApprovalStatus approvalStatus) {
-        return points.stream()
-                   .filter(institutionPoints -> isForSameInstitution(approvalStatus, institutionPoints))
-                   .map(DbInstitutionPoints::points)
-                   .findFirst()
-                   .orElseThrow();
-    }
-
-    private static boolean isForSameInstitution(DbApprovalStatus approvalStatus,
-                                                DbInstitutionPoints institutionPoints) {
-        return institutionPoints.institutionId().equals(approvalStatus.institutionId());
+    private static URI constructId(UUID identifier) {
+        return UriWrapper.fromHost("https://example.org")
+                   .addChild("scientific-index", "candidate")
+                   .addChild(identifier.toString())
+                   .getUri();
     }
 
     private static InputStream getInput(UUID publicationId) throws JsonProcessingException {
