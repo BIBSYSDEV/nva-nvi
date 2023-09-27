@@ -32,6 +32,7 @@ import java.util.stream.IntStream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.commons.json.JsonUtils;
@@ -89,7 +90,7 @@ public class SearchNviCandidatesHandlerTest {
 
     @Test
     void shouldReturnDocumentFromIndexWhenNoSearchIsSpecified() throws IOException {
-        when(openSearchClient.search(any(), any(), any(), any(), anyInt(), anyInt()))
+        when(openSearchClient.search(any(), any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
         handler.handleRequest(emptyRequest(), output, context);
         var response =
@@ -163,7 +164,7 @@ public class SearchNviCandidatesHandlerTest {
         var documents = generateNumberOfIndexDocuments(10);
         var aggregationName = randomString();
         var docCount = randomInteger();
-        when(openSearchClient.search(any(), any(), any(), any(), anyInt(), anyInt()))
+        when(openSearchClient.search(any(), any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(createSearchResponse(documents, 10, aggregationName, docCount));
         handler.handleRequest(emptyRequest(), output, context);
         var response =
@@ -176,7 +177,7 @@ public class SearchNviCandidatesHandlerTest {
 
     @Test
     void shouldThrowExceptionWhenSearchFails() throws IOException {
-        when(openSearchClient.search(any(), any(), any(), any(), anyInt(), anyInt()))
+        when(openSearchClient.search(any(), any(), any(), any(), any(), anyInt(), anyInt()))
             .thenThrow(RuntimeException.class);
         handler.handleRequest(emptyRequest(), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -186,7 +187,8 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     private static void mockOpenSearchClient() throws IOException {
-        when(openSearchClient.search(any(), any(), any(), any(), eq(DEFAULT_OFFSET_SIZE), eq(DEFAULT_QUERY_SIZE)))
+        when(openSearchClient.search(any(), any(), any(), any(), any(), eq(DEFAULT_OFFSET_SIZE),
+                                     eq(DEFAULT_QUERY_SIZE)))
             .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
     }
 
@@ -232,7 +234,8 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     private static PublicationDetails randomPublicationDetails() {
-        return new PublicationDetails(randomString(), randomString(), randomString(), randomString(), List.of());
+        return new PublicationDetails(randomString(), randomString(), randomString(),
+                                      PublicationDate.builder().withYear(randomString()).build(), List.of());
     }
 
     private URI constructBasePath() {

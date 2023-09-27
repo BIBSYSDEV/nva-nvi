@@ -5,7 +5,9 @@
       "id" : "https://api.dev.nva.aws.unit.no/publication/018a03b59fd9-88b45d41-03e8-4feb-a3e5-3ad865aea1ca",
       "type" : "AcademicArticle",
       "title" : "Nvi kandidat",
-      "publicationDate" : "2023-08-17",
+      "publicationDate": {
+        "year": "2023"
+      },
       "contributors" : [ {
         "id" : "https://api.dev.nva.aws.unit.no/cristin/person/1136326",
         "name" : "Kir Truhacev",

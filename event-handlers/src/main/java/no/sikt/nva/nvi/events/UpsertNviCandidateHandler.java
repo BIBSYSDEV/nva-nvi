@@ -14,11 +14,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.db.model.DbCandidate;
-import no.sikt.nva.nvi.common.db.model.DbCreator;
-import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.model.DbLevel;
-import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.events.CandidateDetails.Creator;
@@ -30,8 +30,8 @@ import org.slf4j.LoggerFactory;
 
 public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(UpsertNviCandidateHandler.class);
     public static final String INVALID_NVI_CANDIDATE_MESSAGE = "Invalid nvi candidate message";
+    private static final Logger LOGGER = LoggerFactory.getLogger(UpsertNviCandidateHandler.class);
     private final NviService nviService;
 
     @JacocoGenerated
@@ -116,17 +116,17 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         return CandidateStatus.CANDIDATE.equals(evaluatedCandidate.status());
     }
 
-    private void upsertNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-        validateMessage(evaluatedCandidate);
-        nviService.upsertCandidate(toDbCandidate(evaluatedCandidate));
-    }
-
     private static void validateMessage(CandidateEvaluatedMessage message) {
         attempt(() -> {
             Objects.requireNonNull(message.publicationBucketUri());
             Objects.requireNonNull(message.candidateDetails().publicationId());
             return message;
         }).orElseThrow(failure -> new InvalidNviMessageException(INVALID_NVI_CANDIDATE_MESSAGE));
+    }
+
+    private void upsertNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
+        validateMessage(evaluatedCandidate);
+        nviService.upsertCandidate(toDbCandidate(evaluatedCandidate));
     }
 
     private CandidateEvaluatedMessage parseBody(String body) {

@@ -2,7 +2,9 @@ package no.sikt.nva.nvi.rest.remove;
 
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.rest.remove.RemoveNoteHandler.PARAM_NOTE_IDENTIFIER;
+import static no.sikt.nva.nvi.test.TestUtils.nviServiceReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidateWithPublicationYear;
 import static no.sikt.nva.nvi.test.TestUtils.randomUsername;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -16,29 +18,35 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import no.sikt.nva.nvi.CandidateResponse;
+import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
-import no.sikt.nva.nvi.common.db.model.DbNote;
+import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.create.NviNoteRequest;
+import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
 class RemoveNoteHandlerTest extends LocalDynamoTest {
 
+    public static final int YEAR = Calendar.getInstance().getWeeksInWeekYear();
     private Context context;
     private ByteArrayOutputStream output;
     private RemoveNoteHandler handler;
-    private NviService service;
+    private NviService nviService;
     private NviCandidateRepository nviCandidateRepository;
 
     @BeforeEach
@@ -47,8 +55,8 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
         context = mock(Context.class);
         localDynamo = initializeTestDatabase();
         nviCandidateRepository = new NviCandidateRepository(localDynamo);
-        service = new NviService(localDynamo);
-        handler = new RemoveNoteHandler(service);
+        nviService = TestUtils.nviServiceReturningOpenPeriod(localDynamo, YEAR);
+        handler = new RemoveNoteHandler(nviService);
     }
 
     @Test
@@ -65,10 +73,7 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
         var dbCandidate = randomCandidate();
         var user = randomUsername();
         var candidate = nviCandidateRepository.create(dbCandidate, List.of());
-        var candidateWithNote = service.createNote(candidate.identifier(), DbNote.builder()
-                                                                               .user(user)
-                                                                               .text("Not My Note")
-                                                                               .build());
+        var candidateWithNote = createNote(candidate, user);
         var req = createRequest(candidate.identifier(), candidateWithNote.notes().get(0).noteId(),
                                 randomString()).build();
         handler.handleRequest(req, output, context);
@@ -78,17 +83,13 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldBeAbleToRemoveNoteWhenTheUserThatCreatedIt() throws IOException {
-        var dbCandidate = randomCandidate();
+        var dbCandidate = randomCandidateWithPublicationYear(YEAR);
         var user = randomUsername();
         var candidate = nviCandidateRepository.create(dbCandidate, List.of());
-        var candidateWithNote = service.createNote(candidate.identifier(),
-                                                   DbNote.builder()
-                                                       .user(user)
-                                                       .text("Not My Note")
-                                                       .build());
+        var candidateWithNote = createNote(candidate, user);
         var req = createRequest(candidate.identifier(),
                                 candidateWithNote.notes().get(0).noteId(),
-                                user.getValue()).build();
+                                user.value()).build();
         handler.handleRequest(req, output, context);
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         var body = gatewayResponse.getBodyObject(CandidateResponse.class);
@@ -98,7 +99,6 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnNotFoundWhenNoteDoesntExist() throws IOException {
         var dbCandidate = randomCandidate();
-        var user = randomUsername();
         var candidate = nviCandidateRepository.create(dbCandidate, List.of());
         var req = createRequest(candidate.identifier(),
                                 UUID.randomUUID(),
@@ -107,6 +107,21 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
         handler.handleRequest(req, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_NOT_FOUND)));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenRemovingNoteAndReportingPeriodIsClosed() throws IOException {
+        var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
+        var user = randomUsername();
+        var candidateWithNote = createNote(candidate, user);
+        var request = createRequest(candidate.identifier(), candidateWithNote.notes().get(0).noteId(),
+                                    user.value()).build();
+        var nviService = nviServiceReturningClosedPeriod(localDynamo, YEAR);
+        handler = new RemoveNoteHandler(nviService);
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
     }
 
     private static HandlerRequestBuilder<NviNoteRequest> createRequestWithoutAccessRights(URI customerId,
@@ -118,6 +133,14 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
                                               PARAM_NOTE_IDENTIFIER, noteId))
                    .withCurrentCustomer(customerId)
                    .withUserName(userName);
+    }
+
+    private Candidate createNote(Candidate candidate, Username user) {
+        return nviService.createNote(candidate.identifier(),
+                                     DbNote.builder()
+                                         .user(user)
+                                         .text("Not My Note")
+                                         .build());
     }
 
     private HandlerRequestBuilder<NviNoteRequest> createRequest(UUID candidateIdentifier, UUID noteIdentifier,

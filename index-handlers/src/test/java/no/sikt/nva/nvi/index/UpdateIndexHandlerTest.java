@@ -29,21 +29,23 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.StorageReader;
-import no.sikt.nva.nvi.common.db.Candidate;
-import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.model.DbStatus;
-import no.sikt.nva.nvi.common.db.model.DbUsername;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.PeriodStatus;
+import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
+import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.Affiliation;
@@ -52,6 +54,7 @@ import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument.Builder;
+import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -207,7 +210,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                                     .creators(Collections.emptyList())
                                                     .publicationDate(date).build(),
                              Collections.emptyList(),
-                             Collections.emptyList());
+                             Collections.emptyList(),
+                             new PeriodStatus(Instant.now(), Status.OPEN_PERIOD));
     }
 
     private static NviCandidateIndexDocument constructExpectedIndexDocument(DbPublicationDate date,
@@ -232,10 +236,12 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .setScale(POINTS_SCALE, ROUNDING_MODE);
     }
 
-    private static String getExpectedPublicationDate(DbPublicationDate date) {
-        return Objects.nonNull(date.month()) && Objects.nonNull(date.day())
-                   ? date.year() + "-" + date.month() + "-" + date.day()
-                   : date.year();
+    private static PublicationDate getExpectedPublicationDate(DbPublicationDate date) {
+        return PublicationDate.builder()
+                   .withYear(Optional.of(date).map(DbPublicationDate::year).orElse(null))
+                   .withMonth(Optional.of(date).map(DbPublicationDate::month).orElse(null))
+                   .withDay(Optional.of(date).map(DbPublicationDate::day).orElse(null))
+                   .build();
     }
 
     private static Stream<DbPublicationDate> publicationDates() {
@@ -249,7 +255,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                                  ApprovalStatus.fromValue(approval.status().getValue()),
                                                  Optional.of(approval)
                                                      .map(DbApprovalStatus::assignee)
-                                                     .map(DbUsername::getValue)
+                                                     .map(Username::value)
                                                      .orElse(null)))
                    .toList();
     }
@@ -264,7 +270,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
             "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
             "AcademicArticle",
             "Demo nvi candidate",
-            "2023-06-04",
+            new PublicationDate("2023", "6", "4"),
             List.of(new Contributor.Builder()
                         .withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
                         .withName("Mona Ullah")
@@ -311,18 +317,20 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
 
     private static Candidate randomCandidate(boolean applicable) {
         var candidate = TestUtils.randomCandidateBuilder(applicable);
-        return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()), Collections.emptyList());
+        return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()), Collections.emptyList(),
+                             new PeriodStatus(Instant.now(), Status.OPEN_PERIOD));
     }
 
     private static Candidate randomApplicableCandidate() {
         var applicableCandidate = TestUtils.randomCandidateBuilder(true).build();
-        return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()), Collections.emptyList());
+        return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()), Collections.emptyList(),
+                             new PeriodStatus(Instant.now(), Status.OPEN_PERIOD));
     }
 
     private static Candidate applicableAssignedCandidate() {
         var applicableCandidate = TestUtils.randomCandidateBuilder(true).build();
         return new Candidate(randomUUID(), applicableCandidate, List.of(approvalWithAssignee()),
-                             Collections.emptyList());
+                             Collections.emptyList(), new PeriodStatus(Instant.now(), Status.OPEN_PERIOD));
     }
 
     private static DbApprovalStatus getApprovalStatus() {
@@ -334,7 +342,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private static DbApprovalStatus approvalWithAssignee() {
         return DbApprovalStatus.builder()
                    .institutionId(URI.create(INSTITUTION_ID_FROM_EVENT))
-                   .assignee(DbUsername.fromString(randomString()))
+                   .assignee(Username.fromString(randomString()))
                    .status(DbStatus.PENDING).build();
     }
 
@@ -382,7 +390,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
 
         @Override
         public SearchResponse<NviCandidateIndexDocument> search(String affiliations, String filter, String username,
-                                                                URI customer, int offset, int size) {
+                                                                String year, URI customer, int offset, int size) {
             return null;
         }
 

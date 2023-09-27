@@ -5,8 +5,9 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.rest.model.CandidateResponse;
+import no.sikt.nva.nvi.rest.model.CandidateResponseMapper;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -33,9 +34,9 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateR
         throws ApiGatewayException {
         return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER))
                    .map(UUID::fromString)
-                   .map(service::findCandidateById)
+                   .map(service::findApplicableCandidateById)
                    .map(Optional::orElseThrow)
-                   .map(CandidateResponse::fromCandidate)
+                   .map(CandidateResponseMapper::toDto)
                    .orElseThrow(ExceptionMapper::map);
     }
 

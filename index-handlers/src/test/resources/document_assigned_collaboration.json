@@ -6,7 +6,9 @@
     "id": "https://api.dev.nva.aws.unit.no/publication/01892ad6fc07-4ddfbfc5-3145-4b06-9f77-d4202d074380",
     "type": "AcademicArticle",
     "title": "Testing nvi flow 36",
-    "publicationDate": "2023",
+    "publicationDate": {
+      "year": "2023"
+    },
     "contributors": [
       {
         "id": "https://api.dev.nva.aws.unit.no/cristin/person/1136323555",

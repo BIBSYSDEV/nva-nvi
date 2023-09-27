@@ -1,16 +1,22 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.index.Aggregations.PUBLICATION_DATE_AGG;
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.index.Aggregations.assignmentsQuery;
 import static no.sikt.nva.nvi.index.Aggregations.containsPendingStatusQuery;
 import static no.sikt.nva.nvi.index.Aggregations.contributorQuery;
+import static no.sikt.nva.nvi.index.Aggregations.jsonPathOf;
 import static no.sikt.nva.nvi.index.Aggregations.multipleApprovalsQuery;
 import static no.sikt.nva.nvi.index.Aggregations.mustMatch;
 import static no.sikt.nva.nvi.index.Aggregations.statusQuery;
 import static no.sikt.nva.nvi.index.Aggregations.statusQueryWithAssignee;
+import static no.sikt.nva.nvi.index.Aggregations.termQuery;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.REJECTED;
 import java.util.List;
+import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -37,6 +43,11 @@ public final class SearchConstants {
     public static final String ASSIGNEE = "assignee";
     public static final String NUMBER_OF_APPROVALS = "numberOfApprovals";
     public static final String APPROVALS = "approvals";
+    public static final String PUBLICATION_DATE = "publicationDate";
+    public static final String YEAR = "year";
+    public static final String MONTH = "month";
+    public static final String DAY = "day";
+    public static final String KEYWORD = "keyword";
     public static final String APPROVAL_STATUS = "approvalStatus";
     public static final String PUBLICATION_DETAILS = "publicationDetails";
     public static final String CONTRIBUTORS = "contributors";
@@ -54,12 +65,14 @@ public final class SearchConstants {
 
     }
 
-    public static Query constructQuery(String affiliations, String filter, String username, String customer) {
+    public static Query constructQuery(String affiliations, String filter, String username, String customer,
+                                       String year) {
         var affiliationsQuery = Objects.nonNull(affiliations) ? createAffiliationsQuery(affiliations) : null;
         var filterQuery = isNotEmpty(filter) ? constructQueryWithFilter(filter, username, customer) : null;
+        var yearQuery = Objects.nonNull(year) ? publicationDateQuery(year) : null;
 
         var appliedQueries =
-            Stream.of(affiliationsQuery, filterQuery)
+            Stream.of(affiliationsQuery, filterQuery, yearQuery)
                 .filter(Objects::nonNull).toList().toArray(Query[]::new);
 
         return appliedQueries.length == 0
@@ -109,6 +122,12 @@ public final class SearchConstants {
         };
     }
 
+    private static Query publicationDateQuery(String year) {
+        return termQuery(nonNull(year) ? year : String.valueOf(ZonedDateTime.now().getYear()),
+                         jsonPathOf(PUBLICATION_DETAILS, PUBLICATION_DATE, YEAR, KEYWORD));
+
+    }
+
     private static Query createAffiliationsQuery(String affiliations) {
         return contributorQuery(List.of(affiliations.split(",")));
     }
@@ -116,7 +135,7 @@ public final class SearchConstants {
     private static Map<String, Property> mappingProperties() {
         return Map.of(String.join(".",PUBLICATION_DETAILS, CONTRIBUTORS),
                       new Property.Builder().nested(contributorsNestedProperty()).build(),
-            APPROVALS, new Property.Builder().nested(approvalsNestedProperty()).build()
+                      APPROVALS, new Property.Builder().nested(approvalsNestedProperty()).build()
         );
     }
 

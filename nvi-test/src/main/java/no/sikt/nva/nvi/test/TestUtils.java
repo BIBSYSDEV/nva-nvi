@@ -5,6 +5,9 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
@@ -13,19 +16,21 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.model.DbCandidate;
-import no.sikt.nva.nvi.common.db.model.DbCreator;
-import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.model.DbLevel;
-import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
-import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.model.DbStatus;
-import no.sikt.nva.nvi.common.db.model.DbUsername;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.NviPeriodRepository;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
+import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.service.NviService;
 import nva.commons.core.paths.UriWrapper;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public final class TestUtils {
 
@@ -42,8 +47,7 @@ public final class TestUtils {
 
     public static DbPublicationDate randomPublicationDate() {
         var randomDate = randomLocalDate();
-        return new DbPublicationDate(String.valueOf(randomDate.getYear()),
-                                     String.valueOf(randomDate.getMonthValue()),
+        return new DbPublicationDate(String.valueOf(randomDate.getYear()), String.valueOf(randomDate.getMonthValue()),
                                      String.valueOf(randomDate.getDayOfMonth()));
     }
 
@@ -52,10 +56,7 @@ public final class TestUtils {
     }
 
     public static URI generatePublicationId(UUID identifier) {
-        return UriWrapper.fromHost(API_HOST)
-                   .addChild(PUBLICATION_API_PATH)
-                   .addChild(identifier.toString())
-                   .getUri();
+        return UriWrapper.fromHost(API_HOST).addChild(PUBLICATION_API_PATH).addChild(identifier.toString()).getUri();
     }
 
     public static LocalDate randomLocalDate() {
@@ -85,8 +86,7 @@ public final class TestUtils {
     }
 
     public static InstanceType randomInstanceTypeExcluding(InstanceType instanceType) {
-        var instanceTypes = Arrays.stream(InstanceType.values())
-                                .filter(type -> !type.equals(instanceType)).toList();
+        var instanceTypes = Arrays.stream(InstanceType.values()).filter(type -> !type.equals(instanceType)).toList();
         return instanceTypes.get(new Random().nextInt(instanceTypes.size()));
     }
 
@@ -110,14 +110,12 @@ public final class TestUtils {
     }
 
     public static DbCandidate randomCandidate() {
-        return randomCandidateBuilder(true)
-                   .build();
+        return randomCandidateBuilder(true).build();
     }
 
-    public static DbCandidate randomCandidateWithInstitution(URI institutionId) {
+    public static DbCandidate randomCandidateWithPublicationYear(int year) {
         return randomCandidateBuilder(true)
-                   .creators(List.of(new DbCreator(randomUri(), List.of(institutionId))))
-                   .build();
+                   .publicationDate(DbPublicationDate.builder().year(String.valueOf(year)).build()).build();
     }
 
     public static DbNviPeriod.Builder randomNviPeriodBuilder() {
@@ -128,25 +126,33 @@ public final class TestUtils {
                    .publishingYear(randomYear());
     }
 
-    public static DbNviPeriod randomNviPeriod() {
-        return randomNviPeriodBuilder()
-                   .build();
-    }
-
-    public static DbApprovalStatus randomApprovalStatus() {
-        return new DbApprovalStatus(randomUri(), UUID.randomUUID(), randomElement(DbStatus.values()), randomUsername(),
-                                    randomUsername(),
-                                    Instant.EPOCH);
-    }
-
-    public static DbUsername randomUsername() {
-        return DbUsername.fromString(randomString());
+    public static Username randomUsername() {
+        return Username.fromString(randomString());
     }
 
     public static BigDecimal randomBigDecimal() {
-        var randomBigDecimal =
-            MIN_BIG_DECIMAL.add(BigDecimal.valueOf(Math.random()).multiply(MAX_BIG_DECIMAL.subtract(MIN_BIG_DECIMAL)));
+        var randomBigDecimal = MIN_BIG_DECIMAL.add(
+            BigDecimal.valueOf(Math.random()).multiply(MAX_BIG_DECIMAL.subtract(MIN_BIG_DECIMAL)));
         return randomBigDecimal.setScale(SCALE, RoundingMode.HALF_UP);
+    }
+
+    public static NviService nviServiceReturningOpenPeriod(DynamoDbClient client, int year) {
+        var nviPeriodRepository = mock(NviPeriodRepository.class);
+        var nviService = new NviService(client, nviPeriodRepository);
+        var period = DbNviPeriod.builder()
+                         .publishingYear(String.valueOf(year))
+                         .reportingDate(Instant.now().plusSeconds(300))
+                         .build();
+        when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
+        return nviService;
+    }
+
+    public static NviService nviServiceReturningClosedPeriod(DynamoDbClient client, int year) {
+        var nviPeriodRepository = mock(NviPeriodRepository.class);
+        var nviService = new NviService(client, nviPeriodRepository);
+        var period = DbNviPeriod.builder().publishingYear(String.valueOf(year)).reportingDate(Instant.now()).build();
+        when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
+        return nviService;
     }
 
     private static Instant getNowWithMillisecondAccuracy() {

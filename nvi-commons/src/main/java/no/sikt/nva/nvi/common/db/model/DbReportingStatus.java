@@ -2,11 +2,12 @@ package no.sikt.nva.nvi.common.db.model;
 
 import java.net.URI;
 import java.time.Instant;
+import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
 @DynamoDbImmutable(builder = DbReportingStatus.Builder.class)
 public record DbReportingStatus(URI institutionId,
-                                DbNviPeriod nviPeriod,
+                                NviPeriodDao.DbNviPeriod nviPeriod,
                                 DbCompletionStatus status,
                                 Instant updatedDate) {
 
@@ -17,7 +18,7 @@ public record DbReportingStatus(URI institutionId,
     public static final class Builder {
 
         private URI builderInstitutionId;
-        private DbNviPeriod builderNviPeriod;
+        private NviPeriodDao.DbNviPeriod builderNviPeriod;
         private DbCompletionStatus builderStatus;
         private Instant builderUpdatedDate;
 
@@ -29,7 +30,7 @@ public record DbReportingStatus(URI institutionId,
             return this;
         }
 
-        public Builder nviPeriod(DbNviPeriod nviPeriod) {
+        public Builder nviPeriod(NviPeriodDao.DbNviPeriod nviPeriod) {
             this.builderNviPeriod = nviPeriod;
             return this;
         }

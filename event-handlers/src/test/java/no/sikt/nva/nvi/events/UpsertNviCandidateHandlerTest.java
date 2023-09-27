@@ -4,6 +4,7 @@ import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidateWithPublicationYear;
 import static no.sikt.nva.nvi.test.TestUtils.randomInstanceTypeExcluding;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
@@ -22,22 +23,25 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.db.Candidate;
-import no.sikt.nva.nvi.common.db.model.DbCandidate;
-import no.sikt.nva.nvi.common.db.model.DbCreator;
-import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.model.DbLevel;
-import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
+import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.events.CandidateDetails.Creator;
 import no.sikt.nva.nvi.events.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.events.model.InvalidNviMessageException;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,13 +52,14 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     public static final Context CONTEXT = mock(Context.class);
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
+    public static final int YEAR = Calendar.getInstance().getWeekYear();
     private UpsertNviCandidateHandler handler;
     private NviService nviService;
 
     @BeforeEach
     void setup() {
         localDynamo = initializeTestDatabase();
-        nviService = new NviService(localDynamo);
+        nviService = TestUtils.nviServiceReturningOpenPeriod(localDynamo, YEAR);
         handler = new UpsertNviCandidateHandler(nviService);
     }
 
@@ -97,24 +102,24 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldUpdateExistingNviCandidateToNonCandidateWhenIncomingEventIsNonCandidate() {
-        var existingCandidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
+        var existingCandidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
         var eventMessage = nonCandidateMessageForExistingCandidate(existingCandidate);
         handler.handleRequest(createEvent(eventMessage), CONTEXT);
         var updatedCandidate = nviService.findCandidateById(existingCandidate.identifier()).orElseThrow();
 
         assertThat(updatedCandidate.candidate().applicable(), is(false));
         assertThat(updatedCandidate.candidate().instanceType(), is(InstanceType.NON_CANDIDATE));
-
     }
 
-    private CandidateEvaluatedMessage nonCandidateMessageForExistingCandidate(Candidate candidate) {
-        return CandidateEvaluatedMessage.builder()
-                   .withStatus(CandidateStatus.NON_CANDIDATE)
-                   .withPublicationBucketUri(candidate.candidate().publicationBucketUri())
-                   .withInstitutionPoints(null)
-                   .withCandidateDetails(new CandidateDetails(candidate.candidate().publicationId(),
-                                                              null, null, null, null))
-                   .build();
+    @Test
+    void shouldDeleteExistingApprovalsIfWhenIncomingEventIsNonCandidate() {
+        var existingCandidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
+        var eventMessage = nonCandidateMessageForExistingCandidate(existingCandidate);
+        handler.handleRequest(createEvent(eventMessage), CONTEXT);
+        var updatedCandidate = nviService.findCandidateById(existingCandidate.identifier()).orElseThrow();
+
+        assertThat(updatedCandidate.candidate().applicable(), is(false));
+        assertThat(updatedCandidate.approvalStatuses(), is(Collections.emptyList()));
     }
 
     private static DbPublicationDate toPublicationDate(CandidateDetails.PublicationDate publicationDate) {
@@ -140,7 +145,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                                         randomElement(DbLevel.values()).getValue(),
                                                                         randomPublicationDate(),
                                                                         List.of(randomCreator()))).build()
-                             );
+        );
     }
 
     private static CandidateDetails.PublicationDate randomPublicationDate() {
@@ -150,10 +155,6 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                     String.valueOf(randomDate.getDayOfMonth()));
     }
 
-    //TODO: shouldUpdateNviCandidateAndDeleteInstitutionApprovalsIfCriticalCandidateDetailsAreChanged
-
-    //TODO: shouldMarkCandidateAsNotApplicableIfExistingCandidateBecomesNonCandidate
-
     private static SQSEvent createEventWithInvalidBody() {
         var sqsEvent = new SQSEvent();
         var invalidSqsMessage = new SQSMessage();
@@ -161,6 +162,10 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         sqsEvent.setRecords(List.of(invalidSqsMessage));
         return sqsEvent;
     }
+
+    //TODO: shouldUpdateNviCandidateAndDeleteInstitutionApprovalsIfCriticalCandidateDetailsAreChanged
+
+    //TODO: shouldMarkCandidateAsNotApplicableIfExistingCandidateBecomesNonCandidate
 
     private static CandidateDetails.Creator randomCreator() {
         return new CandidateDetails.Creator(randomUri(), List.of(randomUri()));
@@ -177,6 +182,16 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         return creators.stream()
                    .map(creator -> new DbCreator(creator.id(), creator.nviInstitutions()))
                    .toList();
+    }
+
+    private CandidateEvaluatedMessage nonCandidateMessageForExistingCandidate(Candidate candidate) {
+        return CandidateEvaluatedMessage.builder()
+                   .withStatus(CandidateStatus.NON_CANDIDATE)
+                   .withPublicationBucketUri(candidate.candidate().publicationBucketUri())
+                   .withInstitutionPoints(null)
+                   .withCandidateDetails(new CandidateDetails(candidate.candidate().publicationId(),
+                                                              null, null, null, null))
+                   .build();
     }
 
     private static SQSEvent createEvent(CandidateEvaluatedMessage candidateEvaluatedMessage) {

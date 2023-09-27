@@ -1,11 +1,10 @@
-package no.sikt.nva.nvi.rest.fetch;
+package no.sikt.nva.nvi.rest.model;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
-import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
@@ -13,9 +12,10 @@ import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
 public record ApprovalStatus(URI institutionId,
                              NviApprovalStatus status,
                              BigDecimal points,
-                             DbUsername assignee,
-                             DbUsername finalizedBy,
-                             Instant finalizedDate) {
+                             String assignee,
+                             String finalizedBy,
+                             Instant finalizedDate,
+                             String reason) {
 
     public static Builder builder() {
         return new Builder();
@@ -26,9 +26,10 @@ public record ApprovalStatus(URI institutionId,
         private URI institutionId;
         private NviApprovalStatus status;
         private BigDecimal points;
-        private DbUsername assignee;
-        private DbUsername finalizedBy;
+        private String assignee;
+        private String finalizedBy;
         private Instant finalizedDate;
+        private String reason;
 
         private Builder() {
         }
@@ -48,12 +49,12 @@ public record ApprovalStatus(URI institutionId,
             return this;
         }
 
-        public Builder withAssignee(DbUsername assignee) {
+        public Builder withAssignee(String assignee) {
             this.assignee = assignee;
             return this;
         }
 
-        public Builder withFinalizedBy(DbUsername finalizedBy) {
+        public Builder withFinalizedBy(String finalizedBy) {
             this.finalizedBy = finalizedBy;
             return this;
         }
@@ -63,8 +64,13 @@ public record ApprovalStatus(URI institutionId,
             return this;
         }
 
+        public Builder withReason(String reason) {
+            this.reason = reason;
+            return this;
+        }
+
         public ApprovalStatus build() {
-            return new ApprovalStatus(institutionId, status, points, assignee, finalizedBy, finalizedDate);
+            return new ApprovalStatus(institutionId, status, points, assignee, finalizedBy, finalizedDate, reason);
         }
     }
 }

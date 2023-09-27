@@ -12,11 +12,11 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.common.db.model.DbCreator;
-import no.sikt.nva.nvi.common.db.model.DbCandidate;
-import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.model.DbLevel;
-import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.Test;
 
