@@ -62,7 +62,7 @@ public class SearchNviCandidatesHandler
 
     private String extractQueryParamPublicationDateOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
-                   .getOrDefault(QUERY_PARAM_YEAR, String.valueOf(ZonedDateTime.now().getDayOfYear()));
+                   .getOrDefault(QUERY_PARAM_YEAR, String.valueOf(ZonedDateTime.now().getYear()));
     }
 
     @Override
