@@ -32,6 +32,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -368,6 +369,20 @@ public class NviServiceTest extends LocalDynamoTest {
         assertThat(persistedCandidate.orElseThrow().approvalStatuses(), is(empty()));
     }
 
+    @ParameterizedTest
+    @EnumSource(value = DbStatus.class)
+    void shouldUpdateCandidateRemovingApprovalsWhenCandidateIsNoLongerApplicable(DbStatus oldStatus) {
+        var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
+        updateApproval(candidate, oldStatus);
+
+        var updatedCandidate = nviService.findCandidateById(candidate.identifier()).orElseThrow();
+        var notApplicableCandidate = getNotApplicableCandidate(updatedCandidate);
+        nviService.upsertCandidate(notApplicableCandidate);
+        var persistedCandidate = nviService.findCandidateById(candidate.identifier());
+        assertThat(persistedCandidate.orElseThrow().candidate().applicable(), is(false));
+        assertThat(persistedCandidate.orElseThrow().approvalStatuses(), is(empty()));
+    }
+
     @Test
     void shouldRemoveAssigneeWhenExistingApprovalHasAssignee() {
         var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
@@ -514,6 +529,16 @@ public class NviServiceTest extends LocalDynamoTest {
                      () -> nviService.deleteNote(candidate.identifier(), persistedNote.identifier(), randomString()));
     }
 
+    private static DbCandidate getNotApplicableCandidate(Candidate updatedCandidate) {
+        return updatedCandidate.candidate()
+                   .copy()
+                   .applicable(false)
+                   .creators(Collections.emptyList())
+                   .level(null)
+                   .points(Collections.emptyList())
+                   .build();
+    }
+
     private static UpdateStatusRequest updateRequestWithReason(DbStatus newStatus) {
         return UpdateStatusRequest.builder()
                    .withApprovalStatus(newStatus)
@@ -600,6 +625,8 @@ public class NviServiceTest extends LocalDynamoTest {
                                   getSingleApproval(existingCandidate).copy()
                                       .status(status)
                                       .reason(DbStatus.REJECTED.equals(status) ? randomString() : null)
+                                      .finalizedBy(Username.fromString(randomString()))
+                                      .finalizedDate(Instant.now())
                                       .build());
     }
 
