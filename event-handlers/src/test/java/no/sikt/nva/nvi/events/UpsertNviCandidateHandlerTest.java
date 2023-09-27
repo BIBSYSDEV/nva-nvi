@@ -23,6 +23,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -107,6 +108,17 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
         assertThat(updatedCandidate.candidate().applicable(), is(false));
         assertThat(updatedCandidate.candidate().instanceType(), is(InstanceType.NON_CANDIDATE));
+    }
+
+    @Test
+    void shouldDeleteExistingApprovalsIfWhenIncomingEventIsNonCandidate() {
+        var existingCandidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
+        var eventMessage = nonCandidateMessageForExistingCandidate(existingCandidate);
+        handler.handleRequest(createEvent(eventMessage), CONTEXT);
+        var updatedCandidate = nviService.findCandidateById(existingCandidate.identifier()).orElseThrow();
+
+        assertThat(updatedCandidate.candidate().applicable(), is(false));
+        assertThat(updatedCandidate.approvalStatuses(), is(Collections.emptyList()));
     }
 
     private static DbPublicationDate toPublicationDate(CandidateDetails.PublicationDate publicationDate) {
