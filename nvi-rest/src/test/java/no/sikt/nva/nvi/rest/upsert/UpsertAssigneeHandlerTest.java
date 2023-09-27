@@ -156,7 +156,8 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     }
 
     private void removeAssignee(Candidate candidate) {
-        candidate.approvalStatuses().get(0).update(nviService, new UpdateAssigneeRequest(null));
+        var dbApprovalStatus = candidate.approvalStatuses().get(0);
+        dbApprovalStatus.update(nviService, new UpdateAssigneeRequest(dbApprovalStatus.institutionId(), null));
     }
 
     private Candidate candidateWithFinalizedApproval(String newAssignee) {

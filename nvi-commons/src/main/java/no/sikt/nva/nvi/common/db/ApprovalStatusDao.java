@@ -11,6 +11,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus.Builder;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
@@ -57,6 +58,13 @@ public record ApprovalStatusDao(UUID identifier,
     @DynamoDbAttribute(TYPE_FIELD)
     public String type() {
         return TYPE;
+    }
+
+    @DynamoDbIgnore
+    public ApprovalStatusDao.Builder copy() {
+        return builder()
+                   .identifier(identifier)
+                   .approvalStatus(approvalStatus.copy().build()) ;
     }
 
     @JacocoGenerated

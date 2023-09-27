@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
-import no.sikt.nva.nvi.common.db.NviCandidateRepository;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
@@ -47,14 +47,14 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
     private ByteArrayOutputStream output;
     private RemoveNoteHandler handler;
     private NviService nviService;
-    private NviCandidateRepository nviCandidateRepository;
+    private CandidateRepository candidateRepository;
 
     @BeforeEach
     void setUp() {
         output = new ByteArrayOutputStream();
         context = mock(Context.class);
         localDynamo = initializeTestDatabase();
-        nviCandidateRepository = new NviCandidateRepository(localDynamo);
+        candidateRepository = new CandidateRepository(localDynamo);
         nviService = TestUtils.nviServiceReturningOpenPeriod(localDynamo, YEAR);
         handler = new RemoveNoteHandler(nviService);
     }
@@ -72,7 +72,7 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
     void shouldReturnUnauthorizedWhenNotTheUserThatCreatedTheNote() throws IOException {
         var dbCandidate = randomCandidate();
         var user = randomUsername();
-        var candidate = nviCandidateRepository.create(dbCandidate, List.of());
+        var candidate = candidateRepository.create(dbCandidate, List.of());
         var candidateWithNote = createNote(candidate, user);
         var req = createRequest(candidate.identifier(), candidateWithNote.notes().get(0).noteId(),
                                 randomString()).build();
@@ -85,7 +85,7 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
     void shouldBeAbleToRemoveNoteWhenTheUserThatCreatedIt() throws IOException {
         var dbCandidate = randomCandidateWithPublicationYear(YEAR);
         var user = randomUsername();
-        var candidate = nviCandidateRepository.create(dbCandidate, List.of());
+        var candidate = candidateRepository.create(dbCandidate, List.of());
         var candidateWithNote = createNote(candidate, user);
         var req = createRequest(candidate.identifier(),
                                 candidateWithNote.notes().get(0).noteId(),
@@ -99,7 +99,7 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnNotFoundWhenNoteDoesntExist() throws IOException {
         var dbCandidate = randomCandidate();
-        var candidate = nviCandidateRepository.create(dbCandidate, List.of());
+        var candidate = candidateRepository.create(dbCandidate, List.of());
         var req = createRequest(candidate.identifier(),
                                 UUID.randomUUID(),
                                 randomString())

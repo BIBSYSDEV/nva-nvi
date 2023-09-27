@@ -9,7 +9,7 @@ public record ApprovalDto(String assignee, URI institutionId) {
 
     public UpdateAssigneeRequest toUpdateRequest() {
         return nonNull(assignee)
-                   ? new UpdateAssigneeRequest(Username.fromString(assignee))
-                   : new UpdateAssigneeRequest(null);
+                   ? new UpdateAssigneeRequest(institutionId, Username.fromString(assignee))
+                   : new UpdateAssigneeRequest(institutionId, null);
     }
 }
