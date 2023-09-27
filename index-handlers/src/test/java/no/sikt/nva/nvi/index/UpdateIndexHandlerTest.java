@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -50,6 +49,7 @@ import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument.Builder;
+import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
@@ -204,10 +204,12 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .setScale(POINTS_SCALE, ROUNDING_MODE);
     }
 
-    private static String getExpectedPublicationDate(DbPublicationDate date) {
-        return Objects.nonNull(date.month()) && Objects.nonNull(date.day())
-                   ? date.year() + "-" + date.month() + "-" + date.day()
-                   : date.year();
+    private static PublicationDate getExpectedPublicationDate(DbPublicationDate date) {
+        return PublicationDate.builder()
+                   .withYear(Optional.of(date).map(DbPublicationDate::year).orElse(null))
+                   .withMonth(Optional.of(date).map(DbPublicationDate::month).orElse(null))
+                   .withDay(Optional.of(date).map(DbPublicationDate::day).orElse(null))
+                   .build();
     }
 
     private static Stream<DbPublicationDate> publicationDates() {
@@ -236,7 +238,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
             "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
             "AcademicArticle",
             "Demo nvi candidate",
-            "2023-06-04",
+            new PublicationDate("2023", "6", "4"),
             List.of(new Contributor(
                 "https://api.dev.nva.aws.unit.no/cristin/person/997998",
                 "Mona Ullah",

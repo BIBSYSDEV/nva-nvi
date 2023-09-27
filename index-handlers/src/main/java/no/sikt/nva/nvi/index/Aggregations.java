@@ -15,6 +15,9 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.ID;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NUMBER_OF_APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DATE;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DETAILS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.YEAR;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_COLLABORATION_AGG;
 import java.util.Arrays;
@@ -24,6 +27,8 @@ import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
+import org.opensearch.client.opensearch._types.aggregations.ValueType;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.ExistsQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
@@ -38,6 +43,7 @@ public final class Aggregations {
     public static final String COMPLETED_AGGREGATION_AGG = "completed";
     public static final String TOTAL_COUNT_AGGREGATION_AGG = "totalCount";
     public static final int MULTIPLE = 2;
+    public static final String PUBLICATION_DATE_AGG = "publicationDate";
 
     private Aggregations() {
     }
@@ -55,7 +61,14 @@ public final class Aggregations {
         aggregations.put(ASSIGNMENTS_AGG, assignmentsAggregation(username, customer));
         aggregations.put(COMPLETED_AGGREGATION_AGG, completedAggregation(customer));
         aggregations.put(TOTAL_COUNT_AGGREGATION_AGG, totalCountAggregation(customer));
+        aggregations.put(PUBLICATION_DATE_AGG, publicationDateAggregation());
         return aggregations;
+    }
+
+    private static Aggregation publicationDateAggregation() {
+        return new TermsAggregation.Builder()
+                   .field(jsonPathOf(PUBLICATION_DETAILS, PUBLICATION_DATE, YEAR,"keyword"))
+                   .build()._toAggregation();
     }
 
     public static Query containsPendingStatusQuery() {

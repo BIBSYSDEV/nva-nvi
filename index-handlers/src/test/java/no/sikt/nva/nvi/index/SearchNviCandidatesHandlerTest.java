@@ -31,6 +31,7 @@ import java.util.stream.IntStream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.commons.json.JsonUtils;
@@ -243,7 +244,8 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     private static PublicationDetails randomPublicationDetails() {
-        return new PublicationDetails(randomString(), randomString(), randomString(), randomString(), List.of());
+        return new PublicationDetails(randomString(), randomString(), randomString(),
+                                      PublicationDate.builder().withYear(randomString()).build(), List.of());
     }
 
     private URI constructBasePath() {

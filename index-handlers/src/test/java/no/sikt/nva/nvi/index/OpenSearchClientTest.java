@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.index.Aggregations.COMPLETED_AGGREGATION_AGG;
+import static no.sikt.nva.nvi.index.Aggregations.PUBLICATION_DATE_AGG;
 import static no.sikt.nva.nvi.index.Aggregations.TOTAL_COUNT_AGGREGATION_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVED_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVED_COLLABORATION_AGG;
@@ -9,6 +10,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNED_COLLABORATION
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNMENTS_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DATE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_COLLABORATION_AGG;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -18,6 +20,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -45,6 +49,7 @@ import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.auth.CachedJwtProvider;
@@ -158,6 +163,8 @@ public class OpenSearchClientTest {
                                     DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
         var docCount = getDocCount(searchResponse, entry.getKey());
 
+        assertThat(getDocCount(searchResponse, PUBLICATION_DATE_AGG), is(not(nullValue())));
+
         assertThat(docCount, is(equalTo(entry.getValue())));
     }
 
@@ -232,7 +239,9 @@ public class OpenSearchClientTest {
     }
 
     private static PublicationDetails randomPublicationDetails() {
-        return new PublicationDetails(randomString(), randomString(), randomString(), randomString(), List.of());
+        return new PublicationDetails(randomString(), randomString(), randomString(),
+                                      PublicationDate.builder().withYear(randomString()).build(),
+                                      List.of());
     }
 
     private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {
