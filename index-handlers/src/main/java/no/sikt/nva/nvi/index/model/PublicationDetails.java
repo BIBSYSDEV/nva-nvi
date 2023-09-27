@@ -9,7 +9,7 @@ import java.util.List;
 public record PublicationDetails(String id,
                                  String type,
                                  String title,
-                                 String publicationDate,
+                                 PublicationDate publicationDate,
                                  List<Contributor> contributors) {
 
 }

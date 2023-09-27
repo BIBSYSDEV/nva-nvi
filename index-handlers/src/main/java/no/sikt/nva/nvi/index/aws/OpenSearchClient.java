@@ -100,13 +100,14 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     public SearchResponse<NviCandidateIndexDocument> search(String searchTerm,
                                                             String filter,
                                                             String username,
-                                                            URI customer,
+                                                            String year, URI customer,
                                                             int offset,
                                                             int size)
         throws IOException {
         logSearchRequest(searchTerm, filter, username, customer, offset, size);
         return client.withTransportOptions(getOptions())
-                   .search(constructSearchRequest(searchTerm, filter, username, customer.toString(), offset, size),
+                   .search(constructSearchRequest(searchTerm, filter, username, customer.toString(), year, offset,
+                                                  size),
                            NviCandidateIndexDocument.class);
     }
 
@@ -180,10 +181,10 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     private SearchRequest constructSearchRequest(String searchTerm, String filter, String username, String customer,
-                                                 int offset, int size) {
+                                                 String year, int offset, int size) {
         return new SearchRequest.Builder()
                    .index(NVI_CANDIDATES_INDEX)
-                   .query(SearchConstants.constructQuery(searchTerm, filter, username, customer))
+                   .query(SearchConstants.constructQuery(searchTerm, filter, username, customer, year))
                    .aggregations(Aggregations.generateAggregations(username, customer))
                    .from(offset)
                    .size(size)

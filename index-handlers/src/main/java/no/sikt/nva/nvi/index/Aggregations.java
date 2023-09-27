@@ -38,6 +38,7 @@ public final class Aggregations {
     public static final String COMPLETED_AGGREGATION_AGG = "completed";
     public static final String TOTAL_COUNT_AGGREGATION_AGG = "totalCount";
     public static final int MULTIPLE = 2;
+    public static final String PUBLICATION_DATE_AGG = "publicationDate";
 
     private Aggregations() {
     }
