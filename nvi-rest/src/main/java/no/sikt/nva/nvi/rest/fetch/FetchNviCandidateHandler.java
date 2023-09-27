@@ -36,7 +36,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateR
                    .map(UUID::fromString)
                    .map(service::findCandidateById)
                    .map(Optional::orElseThrow)
-                   .map(CandidateResponseMapper::fromCandidate)
+                   .map(CandidateResponseMapper::toDto)
                    .orElseThrow(ExceptionMapper::map);
     }
 

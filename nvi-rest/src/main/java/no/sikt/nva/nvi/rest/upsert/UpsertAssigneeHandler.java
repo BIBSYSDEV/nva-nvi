@@ -67,7 +67,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
                    .map(dbApprovalStatus -> updateApprovalStatus(input, dbApprovalStatus))
                    .map(this::fetchCandidate)
                    .map(Optional::orElseThrow)
-                   .map(CandidateResponseMapper::fromCandidate)
+                   .map(CandidateResponseMapper::toDto)
                    .orElseThrow(ExceptionMapper::map);
     }
 

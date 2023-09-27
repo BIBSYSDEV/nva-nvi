@@ -47,7 +47,7 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
                    .map(approval -> approval.update(nviService, input.toUpdateRequest(username)))
                    .map(this::fetchCandidate)
                    .map(Optional::orElseThrow)
-                   .map(CandidateResponseMapper::fromCandidate)
+                   .map(CandidateResponseMapper::toDto)
                    .orElseThrow(ExceptionMapper::map);
     }
 

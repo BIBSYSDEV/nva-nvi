@@ -95,7 +95,7 @@ class FetchNviCandidateHandlerTest {
     }
 
     private static CandidateResponse getExpectedResponse(Candidate candidate) {
-        return CandidateResponseMapper.fromCandidate(candidate);
+        return CandidateResponseMapper.toDto(candidate);
     }
 
     private static URI constructId(UUID identifier) {
