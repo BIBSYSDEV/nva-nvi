@@ -97,7 +97,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     private void updateCandidateToNotApplicable(Candidate candidate) {
-        nviService.upsertCandidate(candidate.candidate().copy().applicable(false).build()).orElseThrow();
+        nviService.upsertCandidate(candidate.candidate().copy().applicable(false).build());
     }
 
     private GatewayResponse<CandidateResponse> getGatewayResponse()
