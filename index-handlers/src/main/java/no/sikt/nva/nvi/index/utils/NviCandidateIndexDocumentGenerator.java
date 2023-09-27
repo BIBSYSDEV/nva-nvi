@@ -150,9 +150,9 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static PublicationDate formatPublicationDate(JsonNode publicationDateNode) {
         return PublicationDate.builder()
-                   .withYear(publicationDateNode.at(JSON_PTR_YEAR).asText())
-                   .withMonth(publicationDateNode.at(JSON_PTR_MONTH).asText(null))
-                   .withDay(publicationDateNode.at(JSON_PTR_DAY).asText(null))
+                   .withYear(extractJsonNodeTextValue(publicationDateNode, JSON_PTR_YEAR))
+                   .withMonth(extractJsonNodeTextValue(publicationDateNode, JSON_PTR_MONTH))
+                   .withDay(extractJsonNodeTextValue(publicationDateNode, JSON_PTR_DAY))
                    .build();
     }
 }

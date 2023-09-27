@@ -39,7 +39,6 @@ import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
-import nva.commons.core.StringUtils;
 import nva.commons.core.paths.UriWrapper;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,7 +58,6 @@ import org.zalando.problem.Problem;
 @Testcontainers
 public class SearchNviCandidatesHandlerTest {
 
-    private static final String DEFAULT_FILTER = StringUtils.EMPTY_STRING;
     private static final String QUERY_PARAM_FILTER = "filter";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
@@ -89,7 +87,7 @@ public class SearchNviCandidatesHandlerTest {
 
     @Test
     void shouldReturnDocumentFromIndex() throws IOException {
-        when(openSearchClient.search(any(), any(), any(), any(), anyInt(), anyInt()))
+        when(openSearchClient.search(any(), any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
         handler.handleRequest(request("*"), output, context);
         var response =
@@ -103,7 +101,7 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldReturnDocumentFromIndexContainingSingleHitWhenUsingTerms() throws IOException {
         var document = singleNviCandidateIndexDocument();
-        when(openSearchClient.search(any(), any(), any(), any(), anyInt(), anyInt()))
+        when(openSearchClient.search(any(), any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(createSearchResponse(document));
         handler.handleRequest(request(document.identifier()), output, context);
         var response =
@@ -174,7 +172,7 @@ public class SearchNviCandidatesHandlerTest {
         var documents = generateNumberOfIndexDocuments(10);
         var aggregationName = randomString();
         var docCount = randomInteger();
-        when(openSearchClient.search(any(), any(), any(), any(), anyInt(), anyInt()))
+        when(openSearchClient.search(any(), any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(createSearchResponse(documents, 10, aggregationName, docCount));
         handler.handleRequest(request("*"), output, context);
         var response =
@@ -188,7 +186,7 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldThrowExceptionWhenSearchFails() throws IOException {
         var document = singleNviCandidateIndexDocument();
-        when(openSearchClient.search(any(), any(), any(), any(), anyInt(), anyInt()))
+        when(openSearchClient.search(any(), any(), any(), any(), any(), anyInt(), anyInt()))
             .thenThrow(RuntimeException.class);
         handler.handleRequest(request(document.identifier()), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -198,7 +196,8 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     private static void mockOpenSearchClient() throws IOException {
-        when(openSearchClient.search(any(), any(), any(), any(), eq(DEFAULT_OFFSET_SIZE), eq(DEFAULT_QUERY_SIZE)))
+        when(openSearchClient.search(any(), any(), any(), any(), any(), eq(DEFAULT_OFFSET_SIZE),
+                                     eq(DEFAULT_QUERY_SIZE)))
             .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
     }
 

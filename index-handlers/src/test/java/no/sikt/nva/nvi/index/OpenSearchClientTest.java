@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.index.Aggregations.COMPLETED_AGGREGATION_AGG;
-import static no.sikt.nva.nvi.index.Aggregations.PUBLICATION_DATE_AGG;
 import static no.sikt.nva.nvi.index.Aggregations.TOTAL_COUNT_AGGREGATION_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVED_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVED_COLLABORATION_AGG;
@@ -10,7 +9,6 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNED_COLLABORATION
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNMENTS_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DATE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_COLLABORATION_AGG;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -20,8 +18,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -80,6 +76,7 @@ public class OpenSearchClientTest {
     private static final OpensearchContainer container = new OpensearchContainer(OPEN_SEARCH_IMAGE);
     private static final int DEFAULT_QUERY_SIZE = 10;
     private static final int DEFAULT_OFFSET_SIZE = 0;
+    public static final String YEAR = "2023";
     private static RestClient restClient;
     private static OpenSearchClient openSearchClient;
 
@@ -101,18 +98,24 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldReturnDocumentsFromIndexAccordingToGivenOffsetAndSize() throws IOException, InterruptedException {
-        addDocumentsToIndex(singleNviCandidateIndexDocument(), singleNviCandidateIndexDocument(),
-                            singleNviCandidateIndexDocument(), singleNviCandidateIndexDocument(),
-                            singleNviCandidateIndexDocument(), singleNviCandidateIndexDocument(),
-                            singleNviCandidateIndexDocument(), singleNviCandidateIndexDocument(),
-                            singleNviCandidateIndexDocument(), singleNviCandidateIndexDocument(),
-                            singleNviCandidateIndexDocument(), singleNviCandidateIndexDocument());
+        addDocumentsToIndex(singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
+                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
+                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
+                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
+                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
+                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
+                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
+                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
+                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
+                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
+                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
+                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR));
 
         int totalNumberOfDocuments = 12;
         int offset = 10;
         int size = 10;
         var searchResponse =
-            openSearchClient.search("*", NO_FILTER, USERNAME, CUSTOMER, offset, size);
+            openSearchClient.search("*", NO_FILTER, USERNAME, YEAR, CUSTOMER, offset, size);
 
         assertThat(extractTotalNumberOfHits(searchResponse), is(equalTo(totalNumberOfDocuments)));
 
@@ -126,7 +129,7 @@ public class OpenSearchClientTest {
         addDocumentsToIndex(document);
         openSearchClient.deleteIndex();
         assertThrows(OpenSearchException.class,
-                     () -> openSearchClient.search(document.identifier(), NO_FILTER, USERNAME, CUSTOMER,
+                     () -> openSearchClient.search(document.identifier(), NO_FILTER, USERNAME, YEAR, CUSTOMER,
                                                    DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE));
     }
 
@@ -137,7 +140,7 @@ public class OpenSearchClientTest {
         openSearchClient.removeDocumentFromIndex(document);
         Thread.sleep(2000);
         var searchResponse =
-            openSearchClient.search(document.identifier(), NO_FILTER, USERNAME, CUSTOMER,
+            openSearchClient.search(document.identifier(), NO_FILTER, USERNAME, YEAR, CUSTOMER,
                                     DEFAULT_OFFSET_SIZE,
                                     DEFAULT_QUERY_SIZE);
         var nviCandidateIndexDocument = searchResponse.hits().hits();
@@ -159,13 +162,26 @@ public class OpenSearchClientTest {
                             documentFromString("document_rejected_collaboration.json"));
 
         var searchResponse =
-            openSearchClient.search("*", NO_FILTER, USERNAME, CUSTOMER,
+            openSearchClient.search("*", NO_FILTER, USERNAME, YEAR, CUSTOMER,
                                     DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
         var docCount = getDocCount(searchResponse, entry.getKey());
 
-        assertThat(getDocCount(searchResponse, PUBLICATION_DATE_AGG), is(not(nullValue())));
-
         assertThat(docCount, is(equalTo(entry.getValue())));
+    }
+
+    @Test
+    void shouldReturnSingleDocumentWhenFilteringByYear() throws InterruptedException, IOException {
+        var customer = randomUri();
+        var year = randomString();
+        var document = singleNviCandidateIndexDocumentWithCustomerAndYear(customer.toString(), year);
+        addDocumentsToIndex(document,
+                            singleNviCandidateIndexDocumentWithCustomerAndYear(customer.toString(), randomString()));
+
+        var searchResponse =
+            openSearchClient.search("*", NO_FILTER, USERNAME, year, customer,
+                                    DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
+
+        assertThat(searchResponse.hits().hits(), hasSize(1));
     }
 
     @ParameterizedTest
@@ -183,7 +199,7 @@ public class OpenSearchClientTest {
 
         var searchTerm = "Testing nvi flow 36";
         var searchResponse =
-            openSearchClient.search(searchTerm, entry.getKey(), USERNAME, CUSTOMER,
+            openSearchClient.search(searchTerm, entry.getKey(), USERNAME, YEAR, CUSTOMER,
                                     DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
 
         assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));
@@ -223,6 +239,13 @@ public class OpenSearchClientTest {
                                              approvals, approvals.size(), TestUtils.randomBigDecimal());
     }
 
+    private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomerAndYear(String customer,
+                                                                                                String year) {
+        var approval = new Approval(customer, Map.of(), randomStatus(), null);
+        return new NviCandidateIndexDocument(randomUri(), randomString(), randomPublicationDetailsWithYear(year),
+                                             List.of(approval), 1, TestUtils.randomBigDecimal());
+    }
+
     private static List<Approval> randomApprovalList() {
         return IntStream.range(0, 5).boxed().map(i -> randomApproval()).toList();
     }
@@ -241,6 +264,12 @@ public class OpenSearchClientTest {
     private static PublicationDetails randomPublicationDetails() {
         return new PublicationDetails(randomString(), randomString(), randomString(),
                                       PublicationDate.builder().withYear(randomString()).build(),
+                                      List.of());
+    }
+
+    private static PublicationDetails randomPublicationDetailsWithYear(String year) {
+        return new PublicationDetails(randomString(), randomString(), randomString(),
+                                      PublicationDate.builder().withYear(year).build(),
                                       List.of());
     }
 

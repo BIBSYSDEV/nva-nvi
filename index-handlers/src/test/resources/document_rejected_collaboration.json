@@ -7,7 +7,8 @@
     "type": "AcademicArticle",
     "title": "Testing nvi flow 36",
     "publicationDate": {
-      "year": "2023"
+      "year": "2023",
+      "month": "1"
     },
     "contributors": [
       {

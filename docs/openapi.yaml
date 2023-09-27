@@ -168,6 +168,11 @@ paths:
           schema:
             $ref: "#/components/schemas/Filter"
           description: Filter values to use
+        - in: query
+          name: year
+          schema:
+            type: string
+          description: Filters values based on year
       security:
         - CognitoUserPool: [
           'https://api.nva.unit.no/scopes/backend',
@@ -513,7 +518,14 @@ components:
             title:
               type: string
             publicationDate:
-              type: string
+              type: object
+              properties:
+                year:
+                  type: string
+                month:
+                  type: string
+                day:
+                  type: string
             contributors:
               type: array
               items:
