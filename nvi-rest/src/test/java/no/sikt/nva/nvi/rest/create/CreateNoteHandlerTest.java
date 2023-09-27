@@ -79,7 +79,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         var actualNote = gatewayResponse.getBodyObject(CandidateResponse.class).notes().get(0);
 
         assertThat(actualNote.text(), is(equalTo(theNote)));
-        assertThat(actualNote.user().value(), is(equalTo(userName)));
+        assertThat(actualNote.user(), is(equalTo(userName)));
     }
 
     @Test
