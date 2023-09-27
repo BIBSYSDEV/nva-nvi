@@ -40,8 +40,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldReturn404whenCandidateDoesNotExist() throws IOException {
-
+    void shouldReturnNotFoundWhenCandidateDoesNotExist() throws IOException {
         handler.handleRequest(createRequest(UUID.randomUUID()), output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
 
@@ -49,10 +48,10 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldReturnNotFoundIfCandidateExistsButNotApplicable() throws IOException {
+    void shouldReturnNotFoundWhenCandidateExistsButNotApplicable() throws IOException {
         var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
-        var input = createRequest(candidate.identifier());
-        handler.handleRequest(input, output, CONTEXT);
+        updateCandidateToNotApplicable(candidate);
+        handler.handleRequest(createRequest(candidate.identifier()), output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
 
         assertEquals(HttpStatus.SC_NOT_FOUND, gatewayResponse.getStatusCode());
@@ -95,6 +94,10 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
                    .withHeaders(Map.of(HttpHeader.ACCEPT.asString(), ContentType.APPLICATION_JSON.getMimeType()))
                    .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, publicationId.toString()))
                    .build();
+    }
+
+    private void updateCandidateToNotApplicable(Candidate candidate) {
+        nviService.upsertCandidate(candidate.candidate().copy().applicable(false).build()).orElseThrow();
     }
 
     private GatewayResponse<CandidateResponse> getGatewayResponse()
