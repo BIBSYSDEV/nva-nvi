@@ -17,7 +17,7 @@ import nva.commons.core.StringUtils;
 public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
-    public static final String QUERY_PARAM_INSTITUTIONS = "institutions";
+    public static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     public static final String QUERY_PARAM_FILTER = "filter";
     private static final String DEFAULT_FILTER = StringUtils.EMPTY_STRING;
     private static final String QUERY_SIZE_PARAM = "size";
@@ -46,12 +46,12 @@ public class SearchNviCandidatesHandler
         var offset = extractQueryParamOffsetOrDefault(requestInfo);
         var size = extractQueryParamSizeOrDefault(requestInfo);
         var filter = extractQueryParamFilterOrDefault(requestInfo);
-        var institutions = extractQueryParamInstitutionsOrDefault(requestInfo);
+        var affiliations = extractQueryParamAffilitionsOrDefault(requestInfo);
         var customer = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         var username = requestInfo.getUserName();
 
-        return attempt(() -> openSearchClient.search(institutions, filter, username, customer, offset, size))
-                   .map(searchResponse -> toPaginatedResult(searchResponse, institutions, filter, offset, size))
+        return attempt(() -> openSearchClient.search(affiliations, filter, username, customer, offset, size))
+                   .map(searchResponse -> toPaginatedResult(searchResponse, affiliations, filter, offset, size))
                    .orElseThrow();
     }
 
@@ -70,9 +70,9 @@ public class SearchNviCandidatesHandler
                    .orElse(DEFAULT_OFFSET_SIZE);
     }
 
-    private static String extractQueryParamInstitutionsOrDefault(RequestInfo requestInfo) {
+    private static String extractQueryParamAffilitionsOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
-                   .getOrDefault(QUERY_PARAM_INSTITUTIONS, null);
+                   .getOrDefault(QUERY_PARAM_AFFILIATIONS, null);
     }
 
     private static String extractQueryParamFilterOrDefault(RequestInfo requestInfo) {

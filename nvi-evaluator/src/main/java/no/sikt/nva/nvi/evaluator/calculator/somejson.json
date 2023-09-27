@@ -1,0 +1,40 @@
+{
+  "@context": "https://bibsysdev.github.io/src/organization-context.json",
+  "type": "Organization",
+  "id": "https://api.dev.nva.aws.unit.no/cristin/organization/185.15.5.12",
+  "labels": {
+    "en": "IT Services Group",
+    "nb": "IT-driftsgruppen"
+  },
+  "country": "NO",
+  "partOf": [
+    {
+      "type": "Organization",
+      "id": "https://api.dev.nva.aws.unit.no/cristin/organization/185.15.5.0",
+      "labels": {
+        "en": "Department for Informatics",
+        "nb": "Institutt for informatikk"
+      },
+      "partOf": [
+        {
+          "type": "Organization",
+          "id": "https://api.dev.nva.aws.unit.no/cristin/organization/185.15.0.0",
+          "labels": {
+            "en": "Faculty of Mathematics and Natural Sciences",
+            "nb": "Det matematisk-naturvitenskapelige fakultet"
+          },
+          "partOf": [
+            {
+              "type": "Organization",
+              "id": "https://api.dev.nva.aws.unit.no/cristin/organization/185.90.0.0",
+              "labels": {
+                "en": "University of Oslo",
+                "nb": "Universitetet i Oslo"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

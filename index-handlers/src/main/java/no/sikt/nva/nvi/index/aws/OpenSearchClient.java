@@ -97,16 +97,16 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     @Override
-    public SearchResponse<NviCandidateIndexDocument> search(String institutions,
+    public SearchResponse<NviCandidateIndexDocument> search(String affiliations,
                                                             String filter,
                                                             String username,
                                                             URI customer,
                                                             int offset,
                                                             int size)
         throws IOException {
-        logSearchRequest(institutions, filter, username, customer, offset, size);
+        logSearchRequest(affiliations, filter, username, customer, offset, size);
         return client.withTransportOptions(getOptions())
-                   .search(constructSearchRequest(institutions, filter, username, customer.toString(), offset, size),
+                   .search(constructSearchRequest(affiliations, filter, username, customer.toString(), offset, size),
                            NviCandidateIndexDocument.class);
 
 
@@ -182,9 +182,9 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         return new RuntimeException(exception.getMessage());
     }
 
-    private SearchRequest constructSearchRequest(String institutions, String filter, String username, String customer,
+    private SearchRequest constructSearchRequest(String affiliations, String filter, String username, String customer,
                                                  int offset, int size) {
-        var query = SearchConstants.constructQuery(institutions, filter, username, customer);
+        var query = SearchConstants.constructQuery(affiliations, filter, username, customer);
         return new SearchRequest.Builder()
                    .index(NVI_CANDIDATES_INDEX)
                    .query(query)

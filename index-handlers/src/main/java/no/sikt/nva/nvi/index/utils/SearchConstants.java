@@ -42,6 +42,7 @@ public final class SearchConstants {
     public static final String CONTRIBUTORS = "contributors";
     public static final String NAME = "name";
     public static final String AFFILIATIONS = "affiliations";
+    public static final String PART_OF = "partOf";
     public static final String ROLE = "role";
     public static final String NVI_CANDIDATES_INDEX = "nvi-candidates";
     public static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
@@ -53,12 +54,12 @@ public final class SearchConstants {
 
     }
 
-    public static Query constructQuery(String institutions, String filter, String username, String customer) {
-        var institutionQuery = Objects.nonNull(institutions) ? createInstitutionQuery(institutions) : null;
+    public static Query constructQuery(String affiliations, String filter, String username, String customer) {
+        var affiliationsQuery = Objects.nonNull(affiliations) ? createAffiliationsQuery(affiliations) : null;
         var filterQuery = isNotEmpty(filter) ? constructQueryWithFilter(filter, username, customer) : null;
 
         var appliedQueries =
-            Stream.of(institutionQuery, filterQuery)
+            Stream.of(affiliationsQuery, filterQuery)
                 .filter(Objects::nonNull).toList().toArray(Query[]::new);
 
         return appliedQueries.length == 0
@@ -108,8 +109,8 @@ public final class SearchConstants {
         };
     }
 
-    private static Query createInstitutionQuery(String institutions) {
-        return contributorQuery(List.of(institutions.split(",")));
+    private static Query createAffiliationsQuery(String affiliations) {
+        return contributorQuery(List.of(affiliations.split(",")));
     }
 
     private static Map<String, Property> mappingProperties() {
@@ -121,6 +122,10 @@ public final class SearchConstants {
 
     private static NestedProperty contributorsNestedProperty() {
         return new NestedProperty.Builder().includeInParent(true).properties(contributorsProperties()).build();
+    }
+
+    private static NestedProperty affiliationsNestedProperty() {
+        return new NestedProperty.Builder().includeInParent(true).properties(affiliationsProperties()).build();
     }
 
     private static NestedProperty approvalsNestedProperty() {
@@ -142,8 +147,14 @@ public final class SearchConstants {
     private static Map<String, Property> contributorsProperties() {
         return Map.of(ID, keywordProperty(),
                       NAME, keywordProperty(),
-                      AFFILIATIONS, keywordProperty(),
+                      AFFILIATIONS, affiliationsNestedProperty()._toProperty(),
                       ROLE, keywordProperty()
+        );
+    }
+
+    private static Map<String, Property> affiliationsProperties() {
+        return Map.of(ID, keywordProperty(),
+                      PART_OF, keywordProperty()
         );
     }
 

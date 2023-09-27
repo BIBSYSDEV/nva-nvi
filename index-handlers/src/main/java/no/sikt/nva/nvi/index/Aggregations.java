@@ -21,6 +21,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DETAILS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ROLE;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.PART_OF;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -34,7 +35,6 @@ import org.opensearch.client.opensearch._types.query_dsl.ExistsQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
@@ -99,16 +99,25 @@ public final class Aggregations {
 
     public static Query contributorQuery(List<String> institutions) {
         return nestedQuery(jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS),
-                           QueryBuilders.bool().must(
-                               termsQuery(institutions, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS)),
-                               matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, ROLE))
-                           ).build()._toQuery()
+               mustMatch(
+                   matchAtLeastOne(
+                       termsQuery(institutions, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, ID)),
+                       termsQuery(institutions, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, PART_OF))
+                   ),
+                   matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, ROLE))
+               )
         );
     }
 
     public static Query mustMatch(Query... queries) {
         return new Query.Builder()
                    .bool(new Builder().must(Arrays.stream(queries).toList()).build())
+                   .build();
+    }
+
+    public static Query matchAtLeastOne(Query... queries) {
+        return new Query.Builder()
+                   .bool(new Builder().should(Arrays.stream(queries).toList()).build())
                    .build();
     }
 

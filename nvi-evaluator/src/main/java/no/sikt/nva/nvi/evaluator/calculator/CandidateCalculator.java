@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.evaluator.calculator;
 
-import static java.util.Objects.isNull;
+import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
+import static no.sikt.nva.nvi.common.utils.GraphUtils.isNviCandidate;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_ID;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_VERIFICATION_STATUS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
@@ -21,15 +22,12 @@ import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
-import static nva.commons.core.ioutils.IoUtils.stringToStream;
 import com.fasterxml.jackson.databind.JsonNode;
-import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -50,15 +48,7 @@ import no.sikt.nva.nvi.evaluator.model.Organization;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
-import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
-import org.apache.jena.query.QueryExecution;
-import org.apache.jena.query.QueryExecutionFactory;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.riot.Lang;
-import org.apache.jena.riot.RDFDataMgr;
-import org.apache.jena.riot.RiotException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +68,6 @@ public class CandidateCalculator {
     private static final String ACADEMIC_CHAPTER = "AcademicChapter";
     private static final String ACADEMIC_ARTICLE = "AcademicArticle";
     private static final String ACADEMIC_LITERATURE_REVIEW = "AcademicLiteratureReview";
-    private static final String NVI_SPARQL = IoUtils.stringFromResources(Path.of("sparql/nvi.sparql"));
     private static final String API_HOST = new Environment().readEnv("API_HOST");
     private final AuthorizedBackendUriRetriever uriRetriever;
 
@@ -100,17 +89,7 @@ public class CandidateCalculator {
                    : createCandidateResponse(verifiedCreatorsWithNviInstitutions, body);
     }
 
-    private static boolean isNviCandidate(Model model) {
-        return attempt(() -> QueryExecutionFactory.create(NVI_SPARQL, model)).map(QueryExecution::execAsk)
-                   .map(Boolean::booleanValue)
-                   .orElseThrow();
-    }
 
-    private static Model createModel(JsonNode body) {
-        var model = ModelFactory.createDefaultModel();
-        loadDataIntoModel(model, stringToStream(body.toString()));
-        return model;
-    }
 
     private static boolean doesNotHaveNviInstitutions(Entry<URI, List<URI>> entry) {
         return !entry.getValue().isEmpty();
@@ -118,18 +97,6 @@ public class CandidateCalculator {
 
     private static NonNviCandidate createNonCandidateResponse(JsonNode publication) {
         return new NonNviCandidate.Builder().withPublicationId(extractId(publication)).build();
-    }
-
-    @JacocoGenerated
-    private static void loadDataIntoModel(Model model, InputStream inputStream) {
-        if (isNull(inputStream)) {
-            return;
-        }
-        try {
-            RDFDataMgr.read(model, inputStream, Lang.JSONLD);
-        } catch (RiotException e) {
-            logInvalidJsonLdInput(e);
-        }
     }
 
     private static URI createCustomerApiUri(String institutionId) {

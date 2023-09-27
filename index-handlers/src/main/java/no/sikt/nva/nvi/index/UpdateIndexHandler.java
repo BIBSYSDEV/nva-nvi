@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.index;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 import static no.sikt.nva.nvi.common.service.NviService.defaultNviService;
 import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient;
-import static no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator.generateDocument;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -19,6 +18,8 @@ import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
+import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
@@ -35,20 +36,27 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateIndexHandler.class);
     private static final Environment ENVIRONMENT = new Environment();
     private static final String EXPANDED_RESOURCES_BUCKET = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
+    public static final String BACKEND_CLIENT_AUTH_URL = new Environment().readEnv("BACKEND_CLIENT_AUTH_URL");
+    public static final String BACKEND_CLIENT_SECRET_NAME = new Environment().readEnv("BACKEND_CLIENT_SECRET_NAME");
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
     private final StorageReader<URI> storageReader;
     private final NviService nviService;
+    private final NviCandidateIndexDocumentGenerator documentGenerator;
 
     public UpdateIndexHandler() {
-        this(new S3StorageReader(EXPANDED_RESOURCES_BUCKET), defaultOpenSearchClient(), defaultNviService());
+        this(new S3StorageReader(EXPANDED_RESOURCES_BUCKET), defaultOpenSearchClient(), defaultNviService(),
+             new NviCandidateIndexDocumentGenerator(defaultUriRetriver()));
     }
 
     public UpdateIndexHandler(StorageReader<URI> storageReader,
                               SearchClient<NviCandidateIndexDocument> openSearchClient,
-                              NviService nviService) {
+                              NviService nviService,
+                              NviCandidateIndexDocumentGenerator documentGenerator
+    ) {
         this.storageReader = storageReader;
         this.openSearchClient = openSearchClient;
         this.nviService = nviService;
+        this.documentGenerator = documentGenerator;
     }
 
     public Void handleRequest(DynamodbEvent event, Context context) {
@@ -121,12 +129,19 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
             .orElseThrow();
     }
 
+    private static AuthorizedBackendUriRetriever defaultUriRetriver() {
+        return new AuthorizedBackendUriRetriever(
+            new Environment().readEnv("BACKEND_CLIENT_AUTH_URL"),
+            new Environment().readEnv("BACKEND_CLIENT_SECRET_NAME")
+        );
+    }
+
     private void addDocumentToIndex(Candidate candidate) {
         LOGGER.info("Attempting to add/update document with identifier {}", candidate.identifier().toString());
         attempt(candidate::candidate)
             .map(UpdateIndexHandler::extractBucketUri)
             .map(storageReader::read)
-            .map(blob -> generateDocument(blob, candidate))
+            .map(blob -> documentGenerator.generateDocument(blob, candidate))
             .forEach(openSearchClient::addDocumentToIndex)
             .orElseThrow();
     }

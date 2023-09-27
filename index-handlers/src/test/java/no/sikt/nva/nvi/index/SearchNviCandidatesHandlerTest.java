@@ -60,7 +60,7 @@ import org.zalando.problem.Problem;
 public class SearchNviCandidatesHandlerTest {
 
     private static final String DEFAULT_FILTER = StringUtils.EMPTY_STRING;
-    private static final String QUERY_PARAM_INSTITUTIONS = "institutions";
+    private static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     private static final String QUERY_PARAM_FILTER = "filter";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
@@ -100,23 +100,6 @@ public class SearchNviCandidatesHandlerTest {
         assertThat(paginatedResult.getHits(), hasSize(1));
     }
 
-    /*
-    @Test
-    void shouldReturnDocumentFromIndexContainingSingleHitWhenUsingTerms() throws IOException {
-        var document = singleNviCandidateIndexDocument();
-        when(openSearchClient.search(any(), any(), any(), any(), anyInt(), anyInt()))
-            .thenReturn(createSearchResponse(document));
-        handler.handleRequest(request(document.identifier()), output, context);
-        var response =
-            GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
-        var paginatedResult =
-            objectMapper.readValue(response.getBody(), TYPE_REF);
-
-        assertThat(paginatedResult.getHits(), hasSize(1));
-    }
-
-     */
-
     @Test
     void shouldReturnPaginatedSearchResultWithDefaultOffsetAndSizeIfNotGiven() throws IOException {
         mockOpenSearchClient();
@@ -129,7 +112,7 @@ public class SearchNviCandidatesHandlerTest {
         assertThat(actualId,
                    containsString(QUERY_PARAM_OFFSET + "=" + DEFAULT_OFFSET_SIZE));
         assertThat(actualId,
-                   not(containsString(QUERY_PARAM_INSTITUTIONS)));
+                   not(containsString(QUERY_PARAM_AFFILIATIONS)));
     }
 
     @Test
@@ -167,7 +150,7 @@ public class SearchNviCandidatesHandlerTest {
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
 
         var actualId = paginatedSearchResult.getId().toString();
-        var expectedQuery = QUERY_PARAM_INSTITUTIONS
+        var expectedQuery = QUERY_PARAM_AFFILIATIONS
                             + "=" + randomInstitutions.get(0)
                             + "," + randomInstitutions.get(1);
 
@@ -271,7 +254,7 @@ public class SearchNviCandidatesHandlerTest {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
                    .withTopLevelCristinOrgId(randomUri())
                    .withUserName(randomString())
-                   .withQueryParameters(Map.of(QUERY_PARAM_INSTITUTIONS, String.join(",", institutions),
+                   .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS, String.join(",", institutions),
                                                QUERY_PARAM_OFFSET, String.valueOf(DEFAULT_OFFSET_SIZE),
                                                QUERY_PARAM_SIZE, String.valueOf(DEFAULT_QUERY_SIZE)))
                    .build();
@@ -290,7 +273,7 @@ public class SearchNviCandidatesHandlerTest {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
                    .withTopLevelCristinOrgId(randomUri())
                    .withUserName(randomString())
-                   .withQueryParameters(Map.of(QUERY_PARAM_INSTITUTIONS, String.join(",", institutions),
+                   .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS, String.join(",", institutions),
                                                QUERY_PARAM_FILTER, filter))
                    .build();
     }

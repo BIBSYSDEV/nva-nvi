@@ -76,7 +76,7 @@ public class OpenSearchClientTest {
     private static final OpensearchContainer container = new OpensearchContainer(OPEN_SEARCH_IMAGE);
     private static final int DEFAULT_QUERY_SIZE = 10;
     private static final int DEFAULT_OFFSET_SIZE = 0;
-    public static final int DELAY_ON_INDEX = 1000;
+    public static final int DELAY_ON_INDEX = 2000;
     private static RestClient restClient;
     private static OpenSearchClient openSearchClient;
 
@@ -184,6 +184,22 @@ public class OpenSearchClientTest {
         );
 
         var siktInstitutionId = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0";
+        var searchResponse =
+            openSearchClient.search(siktInstitutionId, "", USERNAME, CUSTOMER,
+                                    DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
+
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+    }
+
+    @Test
+    void shouldReturnSearchResultsWithContributorOfSearchedInstitutionWhenNotSearchingTopLevelInstititution()
+        throws IOException, InterruptedException {
+        addDocumentsToIndex(documentFromString("document_with_contributor_from_ntnu.json"),
+                            documentFromString("document_with_contributor_from_sikt.json"),
+                            documentFromString("document_with_contributor_from_sikt_but_not_creator.json")
+        );
+
+        var siktInstitutionId = "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0";
         var searchResponse =
             openSearchClient.search(siktInstitutionId, "", USERNAME, CUSTOMER,
                                     DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);

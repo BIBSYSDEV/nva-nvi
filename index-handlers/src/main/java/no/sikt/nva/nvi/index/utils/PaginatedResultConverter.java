@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.index.utils;
 
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_FILTER;
-import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_INSTITUTIONS;
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_AFFILIATIONS;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -61,7 +61,7 @@ public final class PaginatedResultConverter {
     private static Map<String, String> getQueryParameters(String institutions, String filter) {
         var queryParams = new HashMap();
         if (Objects.nonNull(institutions)) {
-            queryParams.put(QUERY_PARAM_INSTITUTIONS, institutions);
+            queryParams.put(QUERY_PARAM_AFFILIATIONS, institutions);
         }
         if (isNotEmpty(filter)) {
             queryParams.put(QUERY_PARAM_FILTER, filter);

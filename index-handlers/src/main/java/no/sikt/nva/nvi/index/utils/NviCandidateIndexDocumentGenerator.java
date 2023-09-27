@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_DAY;
@@ -32,6 +33,7 @@ import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbUsername;
 import no.sikt.nva.nvi.common.utils.JsonPointers;
+import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contexts;
@@ -40,23 +42,29 @@ import no.sikt.nva.nvi.index.model.ExpandedResource;
 import no.sikt.nva.nvi.index.model.ExpandedResource.Organization;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
+import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
+import org.apache.jena.rdf.model.RDFNode;
 
 public final class NviCandidateIndexDocumentGenerator {
 
     private static final int POINTS_SCALE = 4;
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
+    public static final String APPLICATION_JSON = "application/json";
+    public static final String PART_OF_PROPERTY = "https://nva.sikt.no/ontology/publication#partOf";
+    private AuthorizedBackendUriRetriever uriRetriever;
 
-    private NviCandidateIndexDocumentGenerator() {
+    public NviCandidateIndexDocumentGenerator(AuthorizedBackendUriRetriever uriRetriever) {
+        this.uriRetriever = uriRetriever;
     }
 
-    public static NviCandidateIndexDocument generateDocument(
+    public NviCandidateIndexDocument generateDocument(
         String resource, Candidate candidate) {
         return createNviCandidateIndexDocument(
             attempt(() -> dtoObjectMapper.readTree(resource)).map(root -> root.at(JsonPointers.JSON_PTR_BODY))
                 .orElseThrow(), candidate);
     }
 
-    private static NviCandidateIndexDocument createNviCandidateIndexDocument(
+    private NviCandidateIndexDocument createNviCandidateIndexDocument(
         JsonNode resource, Candidate candidate) {
         var approvals = createApprovals(resource, candidate.approvalStatuses());
         return new NviCandidateIndexDocument.Builder()
@@ -69,19 +77,19 @@ public final class NviCandidateIndexDocumentGenerator {
                    .build();
     }
 
-    private static BigDecimal sumPoints(List<DbInstitutionPoints> points) {
+    private BigDecimal sumPoints(List<DbInstitutionPoints> points) {
         return points.stream().map(DbInstitutionPoints::points)
                    .reduce(BigDecimal.ZERO, BigDecimal::add)
                    .setScale(POINTS_SCALE, ROUNDING_MODE);
     }
 
-    private static List<Approval> createApprovals(JsonNode resource, List<DbApprovalStatus> approvals) {
+    private List<Approval> createApprovals(JsonNode resource, List<DbApprovalStatus> approvals) {
         return approvals.stream()
                    .map(approval -> toApproval(resource, approval))
                    .toList();
     }
 
-    private static Map<String, String> extractLabel(JsonNode resource, DbApprovalStatus approval) {
+    private Map<String, String> extractLabel(JsonNode resource, DbApprovalStatus approval) {
         return getTopLevelOrgs(resource.toString()).stream()
                    .filter(organization -> organization.hasAffiliation(approval.institutionId().toString()))
                    .findFirst()
@@ -89,7 +97,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .getLabels();
     }
 
-    private static Approval toApproval(JsonNode resource, DbApprovalStatus approval) {
+    private Approval toApproval(JsonNode resource, DbApprovalStatus approval) {
         return new Approval.Builder()
                    .withId(approval.institutionId().toString())
                    .withLabels(extractLabel(resource, approval))
@@ -98,30 +106,30 @@ public final class NviCandidateIndexDocumentGenerator {
                    .build();
     }
 
-    private static String extractAssignee(DbApprovalStatus approval) {
+    private String extractAssignee(DbApprovalStatus approval) {
         return Optional.of(approval)
                    .map(DbApprovalStatus::assignee)
                    .map(DbUsername::getValue)
                    .orElse(null);
     }
 
-    private static List<Organization> getTopLevelOrgs(String s) {
+    private List<Organization> getTopLevelOrgs(String s) {
         return attempt(() -> dtoObjectMapper.readValue(s, ExpandedResource.class)).orElseThrow()
                    .getTopLevelOrganization();
     }
 
-    private static PublicationDetails extractPublicationDetails(JsonNode resource) {
+    private PublicationDetails extractPublicationDetails(JsonNode resource) {
         return new PublicationDetails(extractId(resource), extractInstanceType(resource), extractMainTitle(resource),
                                       extractPublicationDate(resource), extractContributors(resource));
     }
 
-    private static List<Contributor> extractContributors(JsonNode resource) {
+    private List<Contributor> extractContributors(JsonNode resource) {
         return getJsonNodeStream(resource, JSON_PTR_CONTRIBUTOR)
-                   .map(NviCandidateIndexDocumentGenerator::createContributor)
+                   .map(this::createContributor)
                    .toList();
     }
 
-    private static Contributor createContributor(JsonNode contributor) {
+    private Contributor createContributor(JsonNode contributor) {
         var identity = contributor.at(JSON_PTR_IDENTITY);
         return new Contributor.Builder()
                    .withId(extractId(identity))
@@ -132,37 +140,48 @@ public final class NviCandidateIndexDocumentGenerator {
                    .build();
     }
 
-    private static List<String> extractAffiliations(JsonNode contributor) {
+    private List<Affiliation> extractAffiliations(JsonNode contributor) {
         return streamNode(contributor.at(JSON_PTR_AFFILIATIONS))
-                   .map(affiliation -> extractJsonNodeTextValue(affiliation, JSON_PTR_ID))
+                   .map(this::extractAffiliation)
                    .toList();
     }
 
-    private static String extractId(JsonNode resource) {
+    private Affiliation extractAffiliation(JsonNode affiliation) {
+        var id = extractJsonNodeTextValue(affiliation, JSON_PTR_ID);
+        return attempt(() -> this.uriRetriever.getRawContent(URI.create(id), APPLICATION_JSON))
+                   .map(Optional::orElseThrow)
+                   .map(str -> createModel(dtoObjectMapper.readTree(str)))
+                   .map(model -> model.listObjectsOfProperty(model.createProperty(PART_OF_PROPERTY)))
+                   .map(nodeIterator -> nodeIterator.toList().stream().map(RDFNode::toString).toList())
+                   .map(result -> new Affiliation.Builder().withId(id).withPartOf(result).build())
+                   .orElseThrow();
+    }
+
+    private String extractId(JsonNode resource) {
         return extractJsonNodeTextValue(resource, JSON_PTR_ID);
     }
 
-    private static String extractRoleType(JsonNode resource) {
+    private String extractRoleType(JsonNode resource) {
         return extractJsonNodeTextValue(resource, JSON_PTR_ROLE_TYPE);
     }
 
-    private static String extractPublicationDate(JsonNode resource) {
+    private String extractPublicationDate(JsonNode resource) {
         return formatPublicationDate(resource.at(JSON_PTR_PUBLICATION_DATE));
     }
 
-    private static String extractMainTitle(JsonNode resource) {
+    private String extractMainTitle(JsonNode resource) {
         return extractJsonNodeTextValue(resource, JSON_PTR_MAIN_TITLE);
     }
 
-    private static String extractInstanceType(JsonNode resource) {
+    private String extractInstanceType(JsonNode resource) {
         return extractJsonNodeTextValue(resource, JSON_PTR_INSTANCE_TYPE);
     }
 
-    private static Stream<JsonNode> getJsonNodeStream(JsonNode jsonNode, String jsonPtr) {
+    private Stream<JsonNode> getJsonNodeStream(JsonNode jsonNode, String jsonPtr) {
         return StreamSupport.stream(jsonNode.at(jsonPtr).spliterator(), false);
     }
 
-    private static String formatPublicationDate(JsonNode publicationDateNode) {
+    private String formatPublicationDate(JsonNode publicationDateNode) {
         var year = publicationDateNode.at(JSON_PTR_YEAR);
         var month = publicationDateNode.at(JSON_PTR_MONTH);
         var day = publicationDateNode.at(JSON_PTR_DAY);
