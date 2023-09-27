@@ -384,6 +384,14 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldNotReturnCandidateIfCandidateNotApplicable() {
+        var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
+        nviService.upsertCandidate(getNotApplicableCandidate(candidate));
+
+        assertThat(nviService.findApplicableCandidateById(candidate.identifier()), is(equalTo(Optional.empty())));
+    }
+
+    @Test
     void shouldRemoveAssigneeWhenExistingApprovalHasAssignee() {
         var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
         var existingApprovalStatus = getSingleApproval(candidate);

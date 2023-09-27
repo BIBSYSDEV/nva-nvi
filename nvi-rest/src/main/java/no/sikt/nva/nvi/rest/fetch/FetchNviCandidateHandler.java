@@ -34,7 +34,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateR
         throws ApiGatewayException {
         return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER))
                    .map(UUID::fromString)
-                   .map(service::findCandidateById)
+                   .map(service::findApplicableCandidateById)
                    .map(Optional::orElseThrow)
                    .map(CandidateResponseMapper::toDto)
                    .orElseThrow(ExceptionMapper::map);

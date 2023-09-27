@@ -94,6 +94,11 @@ public class NviService {
                    .orElseThrow();
     }
 
+    public Optional<Candidate> findApplicableCandidateById(UUID uuid) {
+        var candidate = findCandidateById(uuid);
+        return candidate.isPresent() && candidate.get().candidate().applicable() ? candidate : Optional.empty();
+    }
+
     public Optional<Candidate> findCandidateById(UUID uuid) {
         return nviCandidateRepository.findCandidateById(uuid).map(this::injectPeriodStatus);
     }
