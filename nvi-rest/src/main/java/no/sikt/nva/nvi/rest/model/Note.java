@@ -8,7 +8,7 @@ import java.util.UUID;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 public record Note(UUID identifier,
-                   Username user,
+                   String user,
                    String text,
                    Instant createdDate) {
 

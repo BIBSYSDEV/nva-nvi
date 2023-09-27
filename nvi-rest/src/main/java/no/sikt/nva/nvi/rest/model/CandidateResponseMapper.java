@@ -68,11 +68,8 @@ public final class CandidateResponseMapper {
                    .build();
     }
 
-    private static Username getUsername(no.sikt.nva.nvi.common.db.model.Username approvalStatus) {
-        if (approvalStatus == null) {
-            return null;
-        }
-        return new Username(approvalStatus.value());
+    private static String getUsername(no.sikt.nva.nvi.common.db.model.Username approvalStatus) {
+        return approvalStatus != null ? approvalStatus.value() : null;
     }
 
     private static BigDecimal getPointsForApprovalStatus(List<DbInstitutionPoints> points,
