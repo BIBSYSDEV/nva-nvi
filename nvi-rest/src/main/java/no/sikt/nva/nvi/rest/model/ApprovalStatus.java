@@ -12,8 +12,8 @@ import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
 public record ApprovalStatus(URI institutionId,
                              NviApprovalStatus status,
                              BigDecimal points,
-                             Username assignee,
-                             Username finalizedBy,
+                             String assignee,
+                             String finalizedBy,
                              Instant finalizedDate,
                              String reason) {
 
@@ -26,8 +26,8 @@ public record ApprovalStatus(URI institutionId,
         private URI institutionId;
         private NviApprovalStatus status;
         private BigDecimal points;
-        private Username assignee;
-        private Username finalizedBy;
+        private String assignee;
+        private String finalizedBy;
         private Instant finalizedDate;
         private String reason;
 
@@ -49,12 +49,12 @@ public record ApprovalStatus(URI institutionId,
             return this;
         }
 
-        public Builder withAssignee(Username assignee) {
+        public Builder withAssignee(String assignee) {
             this.assignee = assignee;
             return this;
         }
 
-        public Builder withFinalizedBy(Username finalizedBy) {
+        public Builder withFinalizedBy(String finalizedBy) {
             this.finalizedBy = finalizedBy;
             return this;
         }
