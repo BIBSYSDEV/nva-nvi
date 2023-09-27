@@ -183,15 +183,6 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .toList();
     }
 
-    private static SQSEvent createEvent(CandidateEvaluatedMessage candidateEvaluatedMessage) {
-        var sqsEvent = new SQSEvent();
-        var message = new SQSMessage();
-        var body = attempt(() -> objectMapper.writeValueAsString(candidateEvaluatedMessage)).orElseThrow();
-        message.setBody(body);
-        sqsEvent.setRecords(List.of(message));
-        return sqsEvent;
-    }
-
     private CandidateEvaluatedMessage nonCandidateMessageForExistingCandidate(Candidate candidate) {
         return CandidateEvaluatedMessage.builder()
                    .withStatus(CandidateStatus.NON_CANDIDATE)
@@ -200,6 +191,15 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withCandidateDetails(new CandidateDetails(candidate.candidate().publicationId(),
                                                               null, null, null, null))
                    .build();
+    }
+
+    private static SQSEvent createEvent(CandidateEvaluatedMessage candidateEvaluatedMessage) {
+        var sqsEvent = new SQSEvent();
+        var message = new SQSMessage();
+        var body = attempt(() -> objectMapper.writeValueAsString(candidateEvaluatedMessage)).orElseThrow();
+        message.setBody(body);
+        sqsEvent.setRecords(List.of(message));
+        return sqsEvent;
     }
 
     private SQSEvent createEvent(UUID identifier,
