@@ -227,10 +227,11 @@ public class NviService {
         return nviCandidateRepository.update(identifier, candidate, approvalStatuses);
     }
 
-    private Optional<Candidate> updateCandidateToNotApplicable(DbCandidate dbCandidate) {
-        var existingCandidate = findByPublicationId(dbCandidate.publicationId()).orElseThrow();
-        return Optional.of(updateCandidateRemovingApprovals(existingCandidate.identifier(), dbCandidate,
-                                                            generatePendingApprovalStatuses(dbCandidate.points())));
+    private Optional<Candidate> updateCandidateToNotApplicable(DbCandidate candidate) {
+        var existingCandidate = findByPublicationId(candidate.publicationId()).orElseThrow();
+        return Optional.of(updateCandidateRemovingApprovals(existingCandidate.identifier(),
+                                                            candidate,
+                                                            existingCandidate.approvalStatuses()));
     }
 
     private Candidate updateCandidateRemovingApprovals(UUID identifier, DbCandidate candidate,
