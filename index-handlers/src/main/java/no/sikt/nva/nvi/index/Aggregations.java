@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.index;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.REJECTED;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.AFFILIATIONS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVED_AGG;
@@ -12,19 +11,14 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNED_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNMENTS_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.CONTRIBUTORS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ID;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NUMBER_OF_APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DETAILS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.ROLE;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.PART_OF;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import org.opensearch.client.json.JsonData;
@@ -37,8 +31,6 @@ import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
-import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
-import org.opensearch.client.opensearch._types.query_dsl.TermsQueryField;
 
 public final class Aggregations {
 
@@ -46,8 +38,6 @@ public final class Aggregations {
     public static final String COMPLETED_AGGREGATION_AGG = "completed";
     public static final String TOTAL_COUNT_AGGREGATION_AGG = "totalCount";
     public static final int MULTIPLE = 2;
-    public static final String CREATOR_ROLE = "Creator";
-    public static final String PUBLICATION_DATE_AGG = "publicationDate";
 
     private Aggregations() {
     }
@@ -98,27 +88,9 @@ public final class Aggregations {
                                : notExistsQuery(jsonPathOf(APPROVALS, ASSIGNEE)));
     }
 
-    public static Query contributorQuery(List<String> institutions) {
-        return nestedQuery(jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS),
-               mustMatch(
-                   matchAtLeastOne(
-                       termsQuery(institutions, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, ID)),
-                       termsQuery(institutions, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, PART_OF))
-                   ),
-                   matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, ROLE))
-               )
-        );
-    }
-
     public static Query mustMatch(Query... queries) {
         return new Query.Builder()
                    .bool(new Builder().must(Arrays.stream(queries).toList()).build())
-                   .build();
-    }
-
-    public static Query matchAtLeastOne(Query... queries) {
-        return new Query.Builder()
-                   .bool(new Builder().should(Arrays.stream(queries).toList()).build())
                    .build();
     }
 
@@ -132,14 +104,6 @@ public final class Aggregations {
         return new TermQuery.Builder()
                    .value(new FieldValue.Builder().stringValue(value).build())
                    .field(field)
-                   .build()._toQuery();
-    }
-
-    public static Query termsQuery(List<String> values, String field) {
-        var termsFields = values.stream().map(FieldValue::of).toList();
-        return new TermsQuery.Builder()
-                   .field(field)
-                   .terms(new TermsQueryField.Builder().value(termsFields).build())
                    .build()._toQuery();
     }
 

@@ -51,7 +51,7 @@ public final class NviCandidateIndexDocumentGenerator {
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     public static final String APPLICATION_JSON = "application/json";
     public static final String PART_OF_PROPERTY = "https://nva.sikt.no/ontology/publication#partOf";
-    private AuthorizedBackendUriRetriever uriRetriever;
+    private final AuthorizedBackendUriRetriever uriRetriever;
 
     public NviCandidateIndexDocumentGenerator(AuthorizedBackendUriRetriever uriRetriever) {
         this.uriRetriever = uriRetriever;

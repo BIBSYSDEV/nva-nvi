@@ -79,6 +79,7 @@ public class OpenSearchClientTest {
     private static final int DEFAULT_OFFSET_SIZE = 0;
     public static final int DELAY_ON_INDEX = 2000;
     public static final String YEAR = "2023";
+    public static final String UNEXISTING_FILTER = "unexisting-filter";
     private static RestClient restClient;
     private static OpenSearchClient openSearchClient;
 
@@ -155,6 +156,13 @@ public class OpenSearchClientTest {
         openSearchClient.deleteIndex();
         assertThrows(OpenSearchException.class,
                      () -> openSearchClient.search(null, NO_FILTER, USERNAME, YEAR, CUSTOMER,
+                                                   DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE));
+    }
+
+    @Test
+    void shoulThrowWhenUsingUndefinedFilterName() {
+        assertThrows(IllegalStateException.class,
+                     () -> openSearchClient.search(null, UNEXISTING_FILTER, USERNAME, YEAR, CUSTOMER,
                                                    DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE));
     }
 

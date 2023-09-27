@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.events;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateWithPublicationYear;
 import static no.sikt.nva.nvi.test.TestUtils.randomInstanceTypeExcluding;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;

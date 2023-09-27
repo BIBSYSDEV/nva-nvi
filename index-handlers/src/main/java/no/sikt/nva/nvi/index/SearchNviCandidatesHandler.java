@@ -5,9 +5,7 @@ import static no.sikt.nva.nvi.index.utils.PaginatedResultConverter.toPaginatedRe
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
-import java.time.Instant;
 import java.time.ZonedDateTime;
-import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
