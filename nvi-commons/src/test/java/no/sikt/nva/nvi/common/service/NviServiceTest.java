@@ -427,6 +427,18 @@ public class NviServiceTest extends LocalDynamoTest {
         assertThat(fetchedApproval.status(), is(equalTo(newStatus)));
     }
 
+    @Test
+    void shouldUpdateStatusWhenCandidateHasApprovalThatHasBeenReset() {
+        var existingCandidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
+        nviService.upsertCandidate(existingCandidate.candidate().copy().level(DbLevel.LEVEL_ONE).build())
+                .orElseThrow();
+        var updatedCandidate = nviService.findCandidateById(existingCandidate.identifier()).orElseThrow();
+        var approval = getSingleApproval(updatedCandidate);
+        var newStatus = APPROVED;
+        var actualApproval = approval.update(nviService, updateRequestWithoutReason(newStatus));
+        assertThat(actualApproval.status(), is(equalTo(newStatus)));
+    }
+
     @ParameterizedTest
     @EnumSource(value = DbStatus.class, names = {"PENDING", "APPROVED"})
     void shouldThrowUnsupportedOperationExceptionIfRejectingWithoutReason(DbStatus oldStatus) {

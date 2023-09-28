@@ -58,14 +58,18 @@ public class NviCandidateRepository extends DynamoRepository {
 
     public Candidate update(UUID identifier, DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatusList) {
         var candidate = constructCandidate(identifier, dbCandidate);
-        var approvalStatuses = approvalStatusList.stream().map(approval -> approval.toDao(identifier)).toList();
+        var approvalStatusesWithCandidateIdentifiers = injectCandidateIdentifier(approvalStatusList, identifier);
+        var approvalStatuses = approvalStatusesWithCandidateIdentifiers.stream()
+                                   .map(approval -> approval.toDao(identifier))
+                                   .toList();
         var transaction = TransactWriteItemsEnhancedRequest.builder();
         transaction.addPutItem(candidateTable, candidate);
+
         approvalStatuses.forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
         client.transactWriteItems(transaction.build());
         return new Candidate.Builder().withIdentifier(identifier)
                    .withCandidate(dbCandidate)
-                   .withApprovalStatuses(approvalStatusList)
+                   .withApprovalStatuses(approvalStatusesWithCandidateIdentifiers)
                    .withNotes(getNotes(identifier))
                    .build();
     }
