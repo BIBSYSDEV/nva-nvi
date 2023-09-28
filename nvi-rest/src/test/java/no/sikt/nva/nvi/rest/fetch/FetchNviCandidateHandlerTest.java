@@ -75,8 +75,8 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldReturnCandidate() throws IOException {
-        var nviService = TestUtils.nviServiceReturningOpenPeriod(initializeTestDatabase(), 2024);
+    void shouldReturnCandidateWhenWithNotStartedPeriod() throws IOException {
+        var nviService = TestUtils.nviServiceReturningNotStartedPeriod(initializeTestDatabase(), 2024);
         var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(2024)).orElseThrow();
         var input = createRequest(candidate.identifier());
         var handler = new FetchNviCandidateHandler(nviService);
