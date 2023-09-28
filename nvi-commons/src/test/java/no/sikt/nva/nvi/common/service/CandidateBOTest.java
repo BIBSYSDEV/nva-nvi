@@ -32,7 +32,6 @@ import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
-import no.sikt.nva.nvi.common.service.dto.Candidate;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.common.service.exception.IllegalOperationException;
 import no.sikt.nva.nvi.common.service.exception.NotFoundException;
@@ -182,7 +181,7 @@ class CandidateBOTest extends LocalDynamoTest {
     void shouldThrowUnsupportedOperationWhenMissingRejectionReason() {
         var institutionId = randomUri();
         var createRequest = createUpsertCandidateRequest(institutionId);
-        CandidateBO candidateBO = CandidateBO.fromRequest(createRequest, candidateRepository, periodRepository);
+        var candidateBO = CandidateBO.fromRequest(createRequest, candidateRepository, periodRepository);
         assertThrows(UnsupportedOperationException.class,
                      () -> candidateBO.updateStatus(createUpdateStatusRequest(DbStatus.REJECTED, null, institutionId)));
     }
@@ -192,9 +191,9 @@ class CandidateBOTest extends LocalDynamoTest {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
         var candidateBO = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository);
-        CandidateBO updatedCandidate = candidateBO.updateStatus(
+        var updatedCandidate = candidateBO.updateStatus(
             createUpdateStatusRequest(DbStatus.APPROVED, null, institutionId));
-        NviApprovalStatus status = updatedCandidate.toDto().approvalStatuses().get(0).status();
+        var status = updatedCandidate.toDto().approvalStatuses().get(0).status();
 
         assertThat(status, is(equalTo(NviApprovalStatus.APPROVED)));
     }
@@ -206,8 +205,8 @@ class CandidateBOTest extends LocalDynamoTest {
         var candidateBO = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository);
         candidateBO.updateStatus(createUpdateStatusRequest(DbStatus.APPROVED, null, institutionId));
 
-        NviApprovalStatus status = CandidateBO.fromRequest(candidateBO::identifier, candidateRepository,
-                                                           periodRepository).toDto().approvalStatuses().get(0).status();
+        var status = CandidateBO.fromRequest(candidateBO::identifier, candidateRepository,
+                                             periodRepository).toDto().approvalStatuses().get(0).status();
 
         assertThat(status, is(equalTo(NviApprovalStatus.APPROVED)));
     }
@@ -233,7 +232,7 @@ class CandidateBOTest extends LocalDynamoTest {
     void shouldCreateNoteWhenRequestingIt() {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
         var candidateBO = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository);
-        int size = candidateBO.createNote(createNoteRequest(randomString(), randomString())).toDto().notes().size();
+        var size = candidateBO.createNote(createNoteRequest(randomString(), randomString())).toDto().notes().size();
 
         assertThat(size, is(1));
     }
@@ -247,10 +246,10 @@ class CandidateBOTest extends LocalDynamoTest {
         candidateBO.createNote(createNoteRequest(randomString(), randomString()));
         var deletedNoteIdentifier = candidateBO.toDto().notes().get(0).identifier();
         var latestCandidate = candidateBO.deleteNote(() -> deletedNoteIdentifier);
-        boolean anyNotesWithDeletedIdentifier = latestCandidate.toDto()
-                                                    .notes()
-                                                    .stream()
-                                                    .anyMatch(note -> note.identifier() == deletedNoteIdentifier);
+        var anyNotesWithDeletedIdentifier = latestCandidate.toDto()
+                                                .notes()
+                                                .stream()
+                                                .anyMatch(note -> note.identifier() == deletedNoteIdentifier);
         assertThat(latestCandidate.toDto().notes().size(), is(2));
         assertThat(anyNotesWithDeletedIdentifier, is(false));
     }
@@ -292,7 +291,7 @@ class CandidateBOTest extends LocalDynamoTest {
                                                                createCandidateRequest.publicationId(), false, 1,
                                                                InstanceType.ACADEMIC_MONOGRAPH);
         var nonCandidate = CandidateBO.fromRequest(nonCandidateRequest, candidateRepository, periodRepository);
-        Candidate dto = nonCandidate.toDto();
+        var dto = nonCandidate.toDto();
         assertThat(dto.approvalStatuses().size(), is(0));
     }
 
@@ -310,6 +309,9 @@ class CandidateBOTest extends LocalDynamoTest {
         assertThat(candidate.approvalStatuses().get(0).assignee(), is(equalTo(assignee)));
         assertThat(candidate.approvalStatuses().get(0).finalizedBy(), is(not(equalTo(assignee))));
     }
+    //TODO: TEst mer enn bare size for note og approval
+    //TODO: Parameterize ApprovalStatuChange
+    //TODO; add xDto to DTO classes
 
     private static no.sikt.nva.nvi.common.service.dto.PeriodStatus getDefaultPeriodstatus() {
         return no.sikt.nva.nvi.common.service.dto.PeriodStatus.fromPeriodStatus(
