@@ -32,7 +32,10 @@ public class CandidateBONotesTest extends LocalDynamoTest {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
         var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository);
         var noteRequest = createNoteRequest(randomString(), randomString());
-        var actualNote = candidate.createNote(noteRequest).toDto().notes().get(0);
+        candidate.createNote(noteRequest);
+
+        var actualNote = CandidateBO.fromRequest(candidate::identifier, candidateRepository, periodRepository)
+                             .toDto().notes().get(0);
 
         assertThat(noteRequest.username(), is(equalTo(actualNote.user())));
         assertThat(noteRequest.text(), is(equalTo(actualNote.text())));
