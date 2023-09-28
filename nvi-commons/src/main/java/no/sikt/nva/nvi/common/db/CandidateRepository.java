@@ -189,9 +189,7 @@ public class CandidateRepository extends DynamoRepository {
     public void updateCandidateRemovingApprovals(UUID identifier, CandidateDao nonApplicableCandidate) {
         candidateTable.putItem(nonApplicableCandidate);
         var approvalStatuseDaos = getApprovalStatuseDaos(identifier);
-        if (approvalStatuseDaos.size() > 25) {
-            //TODO Max transaction size is 25 items
-        } else {
+        if (!approvalStatuseDaos.isEmpty()) {
             var transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
             approvalStatuseDaos.forEach(approvalStatusDao ->
                                             transactionBuilder.addDeleteItem(approvalStatusTable, approvalStatusDao));

@@ -19,12 +19,13 @@ public class NoteBO {
         this.original = note;
     }
 
-    public static NoteBO fromRequest(CreateNoteRequest input, CandidateRepository repository) {
-        var noteDao = repository.saveNote(input.identifier(), DbNote.builder()
-                                                                  .text(input.text())
-                                                                  .user(Username.fromString(input.username()))
-                                                                  .build());
-        return new NoteBO(repository, input.identifier(), noteDao);
+    public static NoteBO fromRequest(UUID candidateIdentifier, CandidateRepository repository,
+                                     CreateNoteRequest input) {
+        var noteDao = repository.saveNote(candidateIdentifier, DbNote.builder()
+                                                                   .text(input.text())
+                                                                   .user(Username.fromString(input.username()))
+                                                                   .build());
+        return new NoteBO(repository, candidateIdentifier, noteDao);
     }
 
     public UUID id() {

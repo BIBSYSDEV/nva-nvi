@@ -15,6 +15,7 @@ public interface UpsertCandidateRequest {
     URI publicationId();
 
     boolean isApplicable();
+
     boolean isInternationalCooperation();
 
     Map<URI, List<URI>> creators();

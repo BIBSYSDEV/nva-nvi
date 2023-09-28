@@ -40,6 +40,7 @@ import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchByPublicationRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchCandidateRequest;
 import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
 public class CandidateBO {
@@ -100,7 +101,7 @@ public class CandidateBO {
             return newCandidate(request, repository, periodRepository);
         }
         if (isUpdateCandidate(request, repository)) {
-            return updateCandidate(request, repository, periodRepository);
+            return updateCandidateDao(request, repository, periodRepository);
         }
         if (shouldBeDeleted(request, repository)) {
             return deleteCandidate(request, repository);
@@ -110,6 +111,10 @@ public class CandidateBO {
 
     public UUID identifier() {
         return identifier;
+    }
+
+    public URI publicationId() {
+        return original.candidate().publicationId();
     }
 
     public Candidate toDto() {
@@ -129,7 +134,7 @@ public class CandidateBO {
     }
 
     public CandidateBO createNote(CreateNoteRequest input) {
-        var noteBO = NoteBO.fromRequest(input, repository);
+        var noteBO = NoteBO.fromRequest(identifier, repository, input);
         notes.put(noteBO.id(), noteBO);
         return this;
     }
@@ -146,7 +151,7 @@ public class CandidateBO {
                                                CandidateRepository repository) {
         var existingCandidateDao = repository.findByPublicationIdDao(request.publicationId())
                                        .orElseThrow(NotFoundException::new);
-        var nonApplicableCandidate = updateCandidate(existingCandidateDao, request);
+        var nonApplicableCandidate = updateCandidateDao(existingCandidateDao, request);
         repository.updateCandidateRemovingApprovals(request.identifier(), nonApplicableCandidate);
 
         return new CandidateBO(repository, nonApplicableCandidate, Collections.emptyList(),
@@ -154,14 +159,14 @@ public class CandidateBO {
                                PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
     }
 
-    private static CandidateBO updateCandidate(UpsertCandidateRequest request,
-                                               CandidateRepository repository,
-                                               PeriodRepository periodRepository) {
+    private static CandidateBO updateCandidateDao(UpsertCandidateRequest request,
+                                                  CandidateRepository repository,
+                                                  PeriodRepository periodRepository) {
         validateCandidate(request);
         var existingCandidateDao = repository.findByPublicationIdDao(request.publicationId())
                                        .orElseThrow(NotFoundException::new);
         var newApprovals = mapToApprovals(request.points());
-        var newCandidateDao = updateCandidate(existingCandidateDao, request);
+        var newCandidateDao = updateCandidateDao(existingCandidateDao, request);
         repository.updateV(existingCandidateDao.identifier(),
                            newCandidateDao.candidate(),
                            newApprovals);
@@ -185,8 +190,7 @@ public class CandidateBO {
     }
 
     private static boolean shouldBeDeleted(UpsertCandidateRequest dbCandidate, CandidateRepository repository) {
-        boolean existingCandidate = isExistingCandidate(dbCandidate, repository);
-        return existingCandidate && !dbCandidate.isApplicable();
+        return isExistingCandidate(dbCandidate, repository) && !dbCandidate.isApplicable();
     }
 
     private static List<ApprovalStatusDao> mapToApprovalsDaos(UUID identifier, List<DbApprovalStatus> newApprovals) {
@@ -224,7 +228,7 @@ public class CandidateBO {
     private static Map<URI, BigDecimal> mapToPointsMap(CandidateDao candidateDao) {
         return candidateDao.candidate().points().stream()
                    .collect(Collectors.toMap(DbInstitutionPoints::institutionId,
-                                                                                   DbInstitutionPoints::points));
+                                             DbInstitutionPoints::points));
     }
 
     private static Map<UUID, NoteBO> mapToNotesMap(CandidateRepository repository, List<NoteDao> notes) {
@@ -320,7 +324,7 @@ public class CandidateBO {
         return repository.findByPublicationId(publicationId.publicationId()).isPresent();
     }
 
-    private static CandidateDao updateCandidate(CandidateDao candidateDao, UpsertCandidateRequest request) {
+    private static CandidateDao updateCandidateDao(CandidateDao candidateDao, UpsertCandidateRequest request) {
         return candidateDao.copy()
                    .candidate(candidateDao.candidate().copy()
                                   .creators(mapToCreators(request.creators()))
@@ -333,6 +337,10 @@ public class CandidateBO {
                                   .creatorCount(request.creatorCount())
                                   .build())
                    .build();
+    }
+
+    private static String mapToUsernameString(Username assignee) {
+        return assignee != null ? assignee.value() : null;
     }
 
     private no.sikt.nva.nvi.common.service.dto.PeriodStatus mapToPeriodStatusDto() {
@@ -365,10 +373,7 @@ public class CandidateBO {
                    .build();
     }
 
-    private static String mapToUsernameString(Username assignee) {
-        return assignee != null ? assignee.value() : null;
-    }
-
+    @JacocoGenerated //TODO bug when no need for default
     private NviApprovalStatus mapToNviApprovalStatus(DbStatus status) {
         return switch (status) {
             case APPROVED -> NviApprovalStatus.APPROVED;

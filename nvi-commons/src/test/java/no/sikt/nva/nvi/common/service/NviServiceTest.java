@@ -46,8 +46,8 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
@@ -403,10 +403,10 @@ public class NviServiceTest extends LocalDynamoTest {
 
     @Test
     void approvalShouldUpdateAssigneeByItself() {
-        var assignee = randomUsername();
+        var assignee = randomString();
         var approval = getSingleApproval(nviService.upsertCandidate(randomCandidate()).orElseThrow());
         var fetchedApproval = approval.update(nviService, new UpdateAssigneeRequest(randomUri(), assignee));
-        assertThat(fetchedApproval.assignee(), is(equalTo(assignee)));
+        assertThat(fetchedApproval.assignee().value(), is(equalTo(assignee)));
     }
 
     @ParameterizedTest(name = "Should update from old status {0} to new status {1}")
@@ -445,11 +445,11 @@ public class NviServiceTest extends LocalDynamoTest {
     void shouldKeepAssigneeWhenFinalizingApproval() {
         var existingCandidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
         var approval = getSingleApproval(existingCandidate);
-        var assignee = randomUsername();
+        var assignee = randomString();
         var assignedApproval = updateAssignee(approval, assignee);
         var fetchedApproval = assignedApproval.update(nviService, updateRequestWithoutReason(APPROVED));
 
-        assertThat(fetchedApproval.assignee(), is(equalTo(assignee)));
+        assertThat(fetchedApproval.assignee().value(), is(equalTo(assignee)));
     }
 
     @Test
@@ -630,7 +630,7 @@ public class NviServiceTest extends LocalDynamoTest {
                                       .build());
     }
 
-    private DbApprovalStatus updateAssignee(DbApprovalStatus approval, Username assignee) {
+    private DbApprovalStatus updateAssignee(DbApprovalStatus approval, String assignee) {
         return approval.update(nviService, new UpdateAssigneeRequest(randomUri(), assignee));
     }
 

@@ -12,8 +12,10 @@ import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import nva.commons.core.JacocoGenerated;
 
 public class ApprovalBO {
+
     private static final String UNKNOWN_REQUEST_TYPE_MESSAGE = "Unknown request type";
     private static final String ERROR_MISSING_REJECTION_REASON = "Cannot reject approval status without reason.";
 
@@ -48,12 +50,16 @@ public class ApprovalBO {
         }
     }
 
-    private DbApprovalStatus updateAssignee(UpdateAssigneeRequest request) {
-        return original.approvalStatus().copy().assignee(request.username()).build();
+    private static Username getAssignee(DbApprovalStatus approval, Username username) {
+        return approval.hasAssignee() ? approval.assignee() : username;
     }
 
+    private DbApprovalStatus updateAssignee(UpdateAssigneeRequest request) {
+        return original.approvalStatus().copy().assignee(Username.fromString(request.username())).build();
+    }
 
-    private DbApprovalStatus updateStatus( UpdateStatusRequest request) {
+    @JacocoGenerated //TODO still bug with return switch not needing default
+    private DbApprovalStatus updateStatus(UpdateStatusRequest request) {
         return switch (request.approvalStatus()) {
             case APPROVED -> finalizeApprovedStatus(request);
             case REJECTED -> finalizeRejectedStatus(request);
@@ -76,7 +82,7 @@ public class ApprovalBO {
         var approval = original.approvalStatus();
         return approval.copy()
                    .status(request.approvalStatus())
-                   .assignee(approval.hasAssignee() ? approval.assignee() : username)
+                   .assignee(getAssignee(approval, username))
                    .finalizedBy(username)
                    .finalizedDate(Instant.now())
                    .reason(null)
@@ -91,11 +97,10 @@ public class ApprovalBO {
         var approval = original.approvalStatus();
         return approval.copy()
                    .status(request.approvalStatus())
-                   .assignee(approval.hasAssignee() ? approval.assignee() : username)
+                   .assignee(getAssignee(approval, username))
                    .finalizedBy(username)
                    .finalizedDate(Instant.now())
                    .reason(request.reason())
                    .build();
     }
-
 }
