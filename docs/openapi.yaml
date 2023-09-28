@@ -146,8 +146,8 @@ paths:
       description: 'Search for scientific index candidates'
       parameters:
         - in: query
-          name: query
-          description: 'Term to search for in candidates'
+          name: affiliations
+          description: 'Only return candidates in given affiliations. Formated as a comma separated list of affiliations ids.'
           required: false
           schema:
             type: string
@@ -168,6 +168,11 @@ paths:
           schema:
             $ref: "#/components/schemas/Filter"
           description: Filter values to use
+        - in: query
+          name: year
+          schema:
+            type: string
+          description: Filters values based on year
       security:
         - CognitoUserPool: [
           'https://api.nva.unit.no/scopes/backend',
@@ -513,7 +518,14 @@ components:
             title:
               type: string
             publicationDate:
-              type: string
+              type: object
+              properties:
+                year:
+                  type: string
+                month:
+                  type: string
+                day:
+                  type: string
             contributors:
               type: array
               items:

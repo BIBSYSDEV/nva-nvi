@@ -4,8 +4,6 @@ import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 
 public class ExpandedResourceGenerator {
@@ -46,31 +44,12 @@ public class ExpandedResourceGenerator {
         return attempt(() -> objectMapper.writeValueAsString(body)).orElseThrow();
     }
 
-    private static String extractMonth(String dateString) {
-        var formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        return String.valueOf(LocalDate.parse(dateString, formatter).getMonthValue());
-    }
-
-    private static String extractDay(String dateString) {
-        var formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        return String.valueOf(LocalDate.parse(dateString, formatter).getDayOfMonth());
-    }
-
-    private static String extractYear(String dateString) {
-        var formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        return String.valueOf(LocalDate.parse(dateString, formatter).getYear());
-    }
-
     private static ObjectNode createAndPopulatePublicationDate(NviCandidateIndexDocument document) {
         var publicationDate = objectMapper.createObjectNode();
         publicationDate.put("type", "PublicationDate");
-        if (document.publicationDetails().publicationDate().length() == 4) {
-            publicationDate.put("year", document.publicationDetails().publicationDate());
-        } else if (document.publicationDetails().publicationDate().length() > 4) {
-            publicationDate.put("day", extractDay(document.publicationDetails().publicationDate()));
-            publicationDate.put("month", extractMonth(document.publicationDetails().publicationDate()));
-            publicationDate.put("year", extractYear(document.publicationDetails().publicationDate()));
-        }
+        publicationDate.put("year", document.publicationDetails().publicationDate().year());
+        publicationDate.put("day", document.publicationDetails().publicationDate().day());
+        publicationDate.put("month", document.publicationDetails().publicationDate().month());
         return publicationDate;
     }
 

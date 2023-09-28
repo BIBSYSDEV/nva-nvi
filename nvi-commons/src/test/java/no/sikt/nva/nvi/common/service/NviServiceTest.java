@@ -384,6 +384,14 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldNotReturnCandidateIfCandidateNotApplicable() {
+        var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
+        nviService.upsertCandidate(getNotApplicableCandidate(candidate));
+
+        assertThat(nviService.findApplicableCandidateById(candidate.identifier()), is(equalTo(Optional.empty())));
+    }
+
+    @Test
     void shouldRemoveAssigneeWhenExistingApprovalHasAssignee() {
         var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
         var existingApprovalStatus = getSingleApproval(candidate);
@@ -417,6 +425,18 @@ public class NviServiceTest extends LocalDynamoTest {
         updateApproval(existingCandidate, oldStatus);
         var fetchedApproval = approval.update(nviService, updateRequestWithReason(newStatus));
         assertThat(fetchedApproval.status(), is(equalTo(newStatus)));
+    }
+
+    @Test
+    void shouldUpdateStatusWhenCandidateHasApprovalThatHasBeenReset() {
+        var existingCandidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
+        nviService.upsertCandidate(existingCandidate.candidate().copy().level(DbLevel.LEVEL_ONE).build())
+                .orElseThrow();
+        var updatedCandidate = nviService.findCandidateById(existingCandidate.identifier()).orElseThrow();
+        var approval = getSingleApproval(updatedCandidate);
+        var newStatus = APPROVED;
+        var actualApproval = approval.update(nviService, updateRequestWithoutReason(newStatus));
+        assertThat(actualApproval.status(), is(equalTo(newStatus)));
     }
 
     @ParameterizedTest

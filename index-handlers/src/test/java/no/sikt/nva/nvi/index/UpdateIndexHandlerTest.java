@@ -5,11 +5,15 @@ import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.Opera
 import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType.REMOVE;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.index.utils.ExpandedResourceGenerator.createExpandedResource;
+import static no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator.APPLICATION_JSON;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -30,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -45,14 +48,18 @@ import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.SearchClient;
+import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument.Builder;
+import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
+import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
+import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
@@ -78,14 +85,21 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private StorageReader<URI> storageReader;
     private FakeSearchClient openSearchClient;
     private NviService nviService;
+    private AuthorizedBackendUriRetriever uriRetriever;
+    private NviCandidateIndexDocumentGenerator documentGenerator;
 
     @BeforeEach
     void setup() {
         storageReader = mock(StorageReader.class);
+        uriRetriever = mock(AuthorizedBackendUriRetriever.class);
         openSearchClient = new FakeSearchClient();
         nviService = mock(NviService.class);
-        handler = new UpdateIndexHandler(storageReader, openSearchClient, nviService);
+        documentGenerator = new NviCandidateIndexDocumentGenerator(uriRetriever);
+        handler = new UpdateIndexHandler(storageReader, openSearchClient, nviService, documentGenerator);
         appender = LogUtils.getTestingAppenderForRootLogger();
+
+        when(uriRetriever.getRawContent(any(), any()))
+            .thenReturn(Optional.of(IoUtils.stringFromResources(Path.of("20754.0.0.6.json"))));
     }
 
     @Test
@@ -99,6 +113,24 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         var expectedDocument = constructExpectedDocument(persistedCandidate);
 
         assertThat(document, is(equalTo(expectedDocument)));
+    }
+
+    @Test
+    void shouldAddDocumentToIndexWithTopLevelsWhenIncommingEventHasAAffilition()
+        throws JsonProcessingException {
+        when(storageReader.read(any())).thenReturn(CANDIDATE);
+        var persistedCandidate = randomApplicableCandidate();
+        when(nviService.findCandidateById(any())).thenReturn(Optional.of(persistedCandidate));
+        var str = IoUtils.stringFromResources(Path.of("20754.0.0.6.json"));
+        var expectedUri = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.6");
+        when(uriRetriever.getRawContent(expectedUri, APPLICATION_JSON))
+            .thenReturn(Optional.of(str));
+        handler.handleRequest(createEvent(INSERT, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
+        var document = openSearchClient.getDocuments().get(0);
+        var topLevels = document.publicationDetails().contributors().get(0).affiliations().get(0).partOf();
+
+        assertThat(topLevels, is(notNullValue()));
+        assertThat(topLevels, hasSize(greaterThanOrEqualTo(1)));
     }
 
     @Test
@@ -204,10 +236,12 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .setScale(POINTS_SCALE, ROUNDING_MODE);
     }
 
-    private static String getExpectedPublicationDate(DbPublicationDate date) {
-        return Objects.nonNull(date.month()) && Objects.nonNull(date.day())
-                   ? date.year() + "-" + date.month() + "-" + date.day()
-                   : date.year();
+    private static PublicationDate getExpectedPublicationDate(DbPublicationDate date) {
+        return PublicationDate.builder()
+                   .withYear(Optional.of(date).map(DbPublicationDate::year).orElse(null))
+                   .withMonth(Optional.of(date).map(DbPublicationDate::month).orElse(null))
+                   .withDay(Optional.of(date).map(DbPublicationDate::day).orElse(null))
+                   .build();
     }
 
     private static Stream<DbPublicationDate> publicationDates() {
@@ -236,13 +270,21 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
             "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
             "AcademicArticle",
             "Demo nvi candidate",
-            "2023-06-04",
-            List.of(new Contributor(
-                "https://api.dev.nva.aws.unit.no/cristin/person/997998",
-                "Mona Ullah",
-                null,
-                List.of("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0")
-            )));
+            new PublicationDate("2023", "6", "4"),
+            List.of(new Contributor.Builder()
+                        .withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
+                        .withName("Mona Ullah")
+                        .withRole("Creator")
+                        .withAffiliations(List.of(constructAffiliation()))
+                        .build()
+            ));
+    }
+
+    private static Affiliation constructAffiliation() {
+        return new Affiliation.Builder().withId("https://api.dev.nva.aws.unit"
+                                         + ".no/cristin/organization/20754"
+                                         + ".0.0.0").withPartOf(List.of(
+            "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0")).build();
     }
 
     private static DynamodbStreamRecord toRecord(String fileName) throws JsonProcessingException {
@@ -347,8 +389,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         }
 
         @Override
-        public SearchResponse<NviCandidateIndexDocument> search(String searchTerm, String filter, String username,
-                                                                URI customer, int offset, int size) {
+        public SearchResponse<NviCandidateIndexDocument> search(String affiliations, String filter, String username,
+                                                                String year, URI customer, int offset, int size) {
             return null;
         }
 

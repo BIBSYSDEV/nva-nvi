@@ -1,14 +1,16 @@
 package no.sikt.nva.nvi.index.utils;
 
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_FILTER;
-import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_SEARCH_TERM;
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_AFFILIATIONS;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.StringWriter;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.commons.json.JsonUtils;
@@ -40,28 +42,31 @@ public final class PaginatedResultConverter {
     }
 
     public static PaginatedSearchResult<NviCandidateIndexDocument> toPaginatedResult(
-        SearchResponse<NviCandidateIndexDocument> searchResponse, String searchTerm, String filter, int offset,
+        SearchResponse<NviCandidateIndexDocument> searchResponse, String institutions, String filter, int offset,
         int size)
         throws UnprocessableContentException {
-
         var paginatedSearchResult = PaginatedSearchResult.create(
             constructBaseUri(),
             offset,
             size,
             extractTotalNumberOfHits(searchResponse),
             extractsHits(searchResponse),
-            getQueryParameters(searchTerm, filter),
+            getQueryParameters(institutions, filter),
             extractAggregations(searchResponse));
 
         LOGGER.info("Returning paginatedSearchResult with id: {}", paginatedSearchResult.getId().toString());
         return paginatedSearchResult;
     }
 
-    private static Map<String, String> getQueryParameters(String searchTerm, String filter) {
-        return isNotEmpty(filter)
-                   ? Map.of(QUERY_PARAM_SEARCH_TERM, searchTerm,
-                            QUERY_PARAM_FILTER, filter)
-                   : Map.of(QUERY_PARAM_SEARCH_TERM, searchTerm);
+    private static Map<String, String> getQueryParameters(String institutions, String filter) {
+        var queryParams = new HashMap();
+        if (Objects.nonNull(institutions)) {
+            queryParams.put(QUERY_PARAM_AFFILIATIONS, institutions);
+        }
+        if (isNotEmpty(filter)) {
+            queryParams.put(QUERY_PARAM_FILTER, filter);
+        }
+        return queryParams;
     }
 
     private static boolean isNotEmpty(String filter) {

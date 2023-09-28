@@ -38,7 +38,6 @@ public class UpdateNviPeriodHandlerTest extends LocalDynamoTest {
         output = new ByteArrayOutputStream();
         context = mock(Context.class);
         nviService = new NviService((initializeTestDatabase()));
-        ;
         handler = new UpdateNviPeriodHandler(nviService);
     }
 

@@ -11,7 +11,7 @@ dependencies {
     implementation libs.aws.sdk2.dynamodb
     implementation libs.aws.sdk2.dynamodbenhanced
     implementation libs.aws.sdk2.urlconnection
-
+    implementation libs.bundles.jena
 
     testImplementation(group: 'com.amazonaws', name: 'DynamoDBLocal', version: '1.19.0') {
         exclude group: 'com.amazonaws', module: 'aws-java-sdk-dynamodb'
