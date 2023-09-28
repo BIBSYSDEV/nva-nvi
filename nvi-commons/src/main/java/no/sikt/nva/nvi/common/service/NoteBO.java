@@ -28,7 +28,7 @@ public class NoteBO {
         return new NoteBO(repository, candidateIdentifier, noteDao);
     }
 
-    public UUID id() {
+    public UUID noteId() {
         return original.note().noteId();
     }
 

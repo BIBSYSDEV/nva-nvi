@@ -45,7 +45,7 @@ import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
-public class CandidateBO {
+public final class CandidateBO {
 
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
@@ -138,12 +138,12 @@ public class CandidateBO {
 
     public CandidateBO createNote(CreateNoteRequest input) {
         var noteBO = NoteBO.fromRequest(input, identifier, repository);
-        notes.put(noteBO.id(), noteBO);
+        notes.put(noteBO.noteId(), noteBO);
         return this;
     }
 
     public CandidateBO deleteNote(DeleteNoteRequest input) {
-        notes.computeIfPresent(input.id(), (uuid, noteBO) -> {
+        notes.computeIfPresent(input.noteId(), (uuid, noteBO) -> {
             noteBO.delete();
             return null;
         });
@@ -231,14 +231,14 @@ public class CandidateBO {
     private static Map<UUID, NoteBO> mapToNotesMap(CandidateRepository repository, List<NoteDao> notes) {
         return notes.stream()
                    .map(dao -> new NoteBO(repository, dao.identifier(), dao))
-                   .collect(Collectors.toMap(NoteBO::id, Function.identity()));
+                   .collect(Collectors.toMap(NoteBO::noteId, Function.identity()));
     }
 
     private static Map<URI, ApprovalBO> mapToApprovalsMap(CandidateRepository repository,
                                                           List<ApprovalStatusDao> approvals) {
         return approvals.stream()
                    .map(dao -> new ApprovalBO(repository, dao.identifier(), dao))
-                   .collect(Collectors.toMap(ApprovalBO::id, Function.identity()));
+                   .collect(Collectors.toMap(ApprovalBO::institutionId, Function.identity()));
     }
 
     private static PeriodStatus getPeriodStatus(PeriodRepository periodRepository, String year) {
@@ -255,7 +255,7 @@ public class CandidateBO {
 
     private static Note mapToNoteDto(NoteBO bo) {
         var note = bo.note().note();
-        return new Note(bo.id(),
+        return new Note(bo.noteId(),
                         mapToUsernameString(note.user()),
                         note.text(),
                         note.createdDate());

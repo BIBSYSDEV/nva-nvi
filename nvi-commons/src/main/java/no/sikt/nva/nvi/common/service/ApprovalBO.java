@@ -29,7 +29,7 @@ public class ApprovalBO {
         this.original = dbApprovalStatus;
     }
 
-    public URI id() {
+    public URI institutionId() {
         return original.approvalStatus().institutionId();
     }
 
