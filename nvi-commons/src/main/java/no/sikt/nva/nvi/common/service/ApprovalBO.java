@@ -16,9 +16,9 @@ import nva.commons.core.JacocoGenerated;
 
 public class ApprovalBO {
 
+    public static final String ERROR_MSG_USERNAME_NULL = "Username cannot be null";
     private static final String UNKNOWN_REQUEST_TYPE_MESSAGE = "Unknown request type";
     private static final String ERROR_MISSING_REJECTION_REASON = "Cannot reject approval status without reason.";
-
     private final CandidateRepository repository;
     private final UUID identifier;
     private final ApprovalStatusDao original;
@@ -42,6 +42,7 @@ public class ApprovalBO {
             var newDao = repository.updateApprovalStatusDao(identifier, updateAssignee(request));
             return new ApprovalBO(repository, identifier, newDao);
         } else if (input instanceof UpdateStatusRequest request) {
+            validate((UpdateStatusRequest) input);
             var newDao = repository.updateApprovalStatusDao(identifier, updateStatus(request));
             return new ApprovalBO(repository, identifier, newDao);
         } else {
@@ -51,6 +52,12 @@ public class ApprovalBO {
 
     private static Username getAssignee(DbApprovalStatus approval, Username username) {
         return approval.hasAssignee() ? approval.assignee() : username;
+    }
+
+    private void validate(UpdateStatusRequest input) {
+        if (isNull(input.username())) {
+            throw new IllegalArgumentException(ERROR_MSG_USERNAME_NULL);
+        }
     }
 
     private DbApprovalStatus updateAssignee(UpdateAssigneeRequest request) {

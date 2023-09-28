@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
+import static java.util.Objects.isNull;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NoteDao;
@@ -21,6 +22,7 @@ public class NoteBO {
 
     public static NoteBO fromRequest(CreateNoteRequest input, UUID candidateIdentifier,
                                      CandidateRepository repository) {
+        validate(input);
         var noteDao = repository.saveNote(candidateIdentifier, DbNote.builder()
                                                                    .text(input.text())
                                                                    .user(Username.fromString(input.username()))
@@ -38,5 +40,11 @@ public class NoteBO {
 
     public void delete() {
         repository.deleteNote(identifier, original.note().noteId());
+    }
+
+    private static void validate(CreateNoteRequest input) {
+        if (isNull(input.text()) || isNull(input.username())) {
+            throw new IllegalArgumentException();
+        }
     }
 }
