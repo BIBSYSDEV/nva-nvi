@@ -255,7 +255,7 @@ public class NviService {
         if (period.reportingDate().isBefore(Instant.now())) {
             throw new IllegalArgumentException(NOT_SUPPORTED_REPORTING_DATE_MESSAGE);
         }
-        if(period.startDate().isBefore(Instant.now())) {
+        if (period.startDate().isBefore(Instant.now())) {
             throw new IllegalArgumentException(START_DATE_ERROR_MESSAGE);
         }
     }

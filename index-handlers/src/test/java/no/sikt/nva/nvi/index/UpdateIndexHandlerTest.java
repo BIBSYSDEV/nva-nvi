@@ -94,7 +94,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         uriRetriever = mock(AuthorizedBackendUriRetriever.class);
         openSearchClient = new FakeSearchClient();
         nviService = mock(NviService.class);
-        NviCandidateIndexDocumentGenerator documentGenerator = new NviCandidateIndexDocumentGenerator(uriRetriever);
+        var documentGenerator = new NviCandidateIndexDocumentGenerator(uriRetriever);
         handler = new UpdateIndexHandler(storageReader, openSearchClient, nviService, documentGenerator);
         appender = LogUtils.getTestingAppenderForRootLogger();
 

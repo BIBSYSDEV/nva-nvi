@@ -11,7 +11,9 @@ public record NviPeriodDto(String publishingYear,
     public static final String INVALID_DATE_FORMAT = "Invalid date format!";
 
     public static NviPeriodDto fromNviPeriod(DbNviPeriod period) {
-        return new NviPeriodDto(period.publishingYear(), period.startDate().toString(), period.reportingDate().toString());
+        return new NviPeriodDto(period.publishingYear(),
+                                period.startDate().toString(),
+                                period.reportingDate().toString());
     }
 
     public DbNviPeriod toNviPeriod() {
