@@ -39,6 +39,8 @@ import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchByPublicationRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchCandidateRequest;
+import no.sikt.nva.nvi.common.service.requests.PublicationDate;
+import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
@@ -99,9 +101,9 @@ public class CandidateBO {
                                           PeriodRepository periodRepository) {
         if (request.isApplicable()) {
             if (!isExistingCandidate(request, repository)) {
-                return newCandidate(request, repository, periodRepository);
+                return createCandidate(request, repository, periodRepository);
             } else {
-                return updateCandidateDao(request, repository, periodRepository);
+                return updateCandidate(request, repository, periodRepository);
             }
         } else if (isExistingCandidate(request, repository)) {
             return deleteCandidate(request, repository);
@@ -160,17 +162,15 @@ public class CandidateBO {
                                PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
     }
 
-    private static CandidateBO updateCandidateDao(UpsertCandidateRequest request,
-                                                  CandidateRepository repository,
-                                                  PeriodRepository periodRepository) {
+    private static CandidateBO updateCandidate(UpsertCandidateRequest request,
+                                               CandidateRepository repository,
+                                               PeriodRepository periodRepository) {
         validateCandidate(request);
         var existingCandidateDao = repository.findByPublicationIdDao(request.publicationId())
                                        .orElseThrow(NotFoundException::new);
         var newApprovals = mapToApprovals(request.points());
         var newCandidateDao = updateCandidateDaoFromRequest(existingCandidateDao, request);
-        repository.updateV(existingCandidateDao.identifier(),
-                           newCandidateDao.candidate(),
-                           newApprovals);
+        repository.updateCandidate(existingCandidateDao.identifier(), newCandidateDao, newApprovals);
         var notes = repository.getNotes(existingCandidateDao.identifier());
         var periodStatus = getPeriodStatus(periodRepository,
                                            existingCandidateDao.candidate().publicationDate().year());
@@ -178,9 +178,9 @@ public class CandidateBO {
         return new CandidateBO(repository, newCandidateDao, approvals, notes, periodStatus);
     }
 
-    private static CandidateBO newCandidate(UpsertCandidateRequest request,
-                                            CandidateRepository repository,
-                                            PeriodRepository periodRepository) {
+    private static CandidateBO createCandidate(UpsertCandidateRequest request,
+                                               CandidateRepository repository,
+                                               PeriodRepository periodRepository) {
         validateCandidate(request);
         var candidateDao = repository.createDao(mapToCandidate(request), mapToApprovals(request.points()));
         var approvals1 = repository.fetchApprovals(candidateDao.identifier());

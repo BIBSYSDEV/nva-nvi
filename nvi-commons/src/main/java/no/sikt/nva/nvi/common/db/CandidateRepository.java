@@ -63,15 +63,14 @@ public class CandidateRepository extends DynamoRepository {
         return candidateTable.getItem(candidate);
     }
 
-    public void updateV(UUID identifier, DbCandidate dbCandidate, List<DbApprovalStatus> approvals) {
-        var candidate = constructCandidate(identifier, dbCandidate);
+    public void updateCandidate(UUID identifier, CandidateDao candidateDao, List<DbApprovalStatus> approvals) {
         var approvalMap = approvals.stream()
                               .map(approval -> mapToApprovalStatusDao(identifier, approval))
                               .collect(toMap(approvalStatusDao -> approvalStatusDao.approvalStatus().institutionId(),
                                              Function.identity()));
         var transaction = TransactWriteItemsEnhancedRequest.builder();
         addNoLongerValidApprovalsToTransaction(identifier, approvalMap, transaction);
-        transaction.addPutItem(candidateTable, candidate);
+        transaction.addPutItem(candidateTable, candidateDao);
         approvalMap.values().forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
         client.transactWriteItems(transaction.build());
     }
@@ -132,10 +131,6 @@ public class CandidateRepository extends DynamoRepository {
 
     public ApprovalStatusDao updateApprovalStatusDao(UUID identifier, DbApprovalStatus newApproval) {
         return approvalStatusTable.updateItem(newApproval.toDao(identifier));
-    }
-
-    public boolean exists(UUID identifier) {
-        return findCandidateById(identifier).isPresent();
     }
 
     public NoteDao saveNote(UUID candidateIdentifier, DbNote dbNote) {
