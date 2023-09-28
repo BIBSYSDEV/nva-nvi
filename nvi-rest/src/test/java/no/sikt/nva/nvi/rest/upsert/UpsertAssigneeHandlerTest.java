@@ -104,7 +104,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldReturnBadRequestWhenUpdatingAssigneeAndReportingPeriodIsClosed() throws IOException {
+    void shouldReturnConflictWhenUpdatingAssigneeAndReportingPeriodIsClosed() throws IOException {
         var nviService = nviServiceReturningClosedPeriod(initializeTestDatabase(), YEAR);
         mockUserApiResponse("userResponseBodyWithAccessRight.json");
         var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
@@ -113,7 +113,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         handler.handleRequest(createRequest(candidate, assignee), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
     }
 
     @Test

@@ -30,6 +30,7 @@ public class NviService {
     public static final String PERIOD_NOT_NUMERIC_MESSAGE = "Period is not numeric!";
     public static final String NOT_SUPPORTED_REPORTING_DATE_MESSAGE = "Provided reporting date is not supported";
     public static final String INVALID_CANDIDATE_MESSAGE = "Candidate is missing mandatory fields";
+    public static final String START_DATE_ERROR_MESSAGE = "Period start date has already been reached!";
     private final NviCandidateRepository nviCandidateRepository;
     private final NviPeriodRepository nviPeriodRepository;
 
@@ -253,6 +254,9 @@ public class NviService {
         }
         if (period.reportingDate().isBefore(Instant.now())) {
             throw new IllegalArgumentException(NOT_SUPPORTED_REPORTING_DATE_MESSAGE);
+        }
+        if(period.startDate().isBefore(Instant.now())) {
+            throw new IllegalArgumentException(START_DATE_ERROR_MESSAGE);
         }
     }
 }

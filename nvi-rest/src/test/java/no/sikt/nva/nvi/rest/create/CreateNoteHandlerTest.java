@@ -83,7 +83,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldReturnBadRequestWhenCreatingNoteAndReportingPeriodIsClosed() throws IOException {
+    void shouldReturnConflictWhenCreatingNoteAndReportingPeriodIsClosed() throws IOException {
         var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
         var request = createRequest(candidate.identifier(), new NviNoteRequest(randomString()), randomString());
         var nviService = nviServiceReturningClosedPeriod(localDynamo, YEAR);
@@ -91,7 +91,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_CONFLICT)));
     }
 
     private InputStream createRequest(UUID identifier, NviNoteRequest body, String userName)
