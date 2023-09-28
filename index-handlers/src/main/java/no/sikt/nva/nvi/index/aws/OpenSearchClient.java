@@ -97,16 +97,16 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     @Override
-    public SearchResponse<NviCandidateIndexDocument> search(String searchTerm,
+    public SearchResponse<NviCandidateIndexDocument> search(String affiliations,
                                                             String filter,
                                                             String username,
                                                             String year, URI customer,
                                                             int offset,
                                                             int size)
         throws IOException {
-        logSearchRequest(searchTerm, filter, username, customer, offset, size);
+        logSearchRequest(affiliations, filter, username, customer, offset, size);
         return client.withTransportOptions(getOptions())
-                   .search(constructSearchRequest(searchTerm, filter, username, customer.toString(), year, offset,
+                   .search(constructSearchRequest(affiliations, filter, username, customer.toString(), year, offset,
                                                   size),
                            NviCandidateIndexDocument.class);
     }
@@ -180,11 +180,12 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         return new RuntimeException(exception.getMessage());
     }
 
-    private SearchRequest constructSearchRequest(String searchTerm, String filter, String username, String customer,
+    private SearchRequest constructSearchRequest(String affiliations, String filter, String username, String customer,
                                                  String year, int offset, int size) {
+        var query = SearchConstants.constructQuery(affiliations, filter, username, customer, year);
         return new SearchRequest.Builder()
                    .index(NVI_CANDIDATES_INDEX)
-                   .query(SearchConstants.constructQuery(searchTerm, filter, username, customer, year))
+                   .query(query)
                    .aggregations(Aggregations.generateAggregations(username, customer))
                    .from(offset)
                    .size(size)

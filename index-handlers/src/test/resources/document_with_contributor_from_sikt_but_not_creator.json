@@ -1,0 +1,24 @@
+{
+    "@context" : "https://bibsysdev.github.io/src/nvi-context.json",
+    "identifier" : "92935d68-dce7-4a16-a2a4-02b965e8fa22",
+    "publicationDetails" : {
+      "id" : "https://api.dev.nva.aws.unit.no/publication/018a03b59fd9-88b45d41-03e8-4feb-a3e5-3ad865aea1ca",
+      "type" : "AcademicArticle",
+      "title" : "Nvi kandidat",
+      "publicationDate": {
+        "year": "2023"
+      },
+      "contributors" : [ {
+        "id" : "https://api.dev.nva.aws.unit.no/cristin/person/1136326",
+        "name" : "Kir Truhacev",
+        "affiliations" : [ {
+          "id": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.1",
+          "partOf": ["https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"]
+        } ],
+        "role" : "Editor"
+      } ]
+    },
+    "approvals" : [ ],
+    "numberOfApprovals" : 0,
+    "points" : 0
+  }
