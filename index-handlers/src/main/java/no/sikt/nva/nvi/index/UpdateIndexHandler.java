@@ -20,6 +20,7 @@ import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
+import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
@@ -35,8 +36,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateIndexHandler.class);
     private static final Environment ENVIRONMENT = new Environment();
     private static final String EXPANDED_RESOURCES_BUCKET = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
-    public static final String BACKEND_CLIENT_AUTH_URL = new Environment().readEnv("BACKEND_CLIENT_AUTH_URL");
-    public static final String BACKEND_CLIENT_SECRET_NAME = new Environment().readEnv("BACKEND_CLIENT_SECRET_NAME");
+    public static final String COULD_NOT_UPDATE_INDEX_MESSAGE = "Could not update index for event: {}";
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
     private final StorageReader<URI> storageReader;
     private final NviService nviService;
@@ -59,10 +59,15 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     public Void handleRequest(DynamodbEvent event, Context context) {
-        event.getRecords().stream()
-            .filter(this::isUpdate)
-            .filter(this::isCandidateOrApproval)
-            .forEach(this::updateIndex);
+        try {
+            event.getRecords().stream()
+                .filter(this::isUpdate)
+                .filter(this::isCandidateOrApproval)
+                .forEach(this::updateIndex);
+        } catch (Exception e) {
+            var eventString = attempt(() -> JsonUtils.dtoObjectMapper.writeValueAsString(event)).orElseThrow();
+            LOGGER.error(COULD_NOT_UPDATE_INDEX_MESSAGE, eventString);
+        }
 
         return null;
     }
@@ -85,7 +90,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
                    .build();
     }
 
-    private static UUID extractIdentifierFromOldImage(DynamodbStreamRecord record) {
+    private static UUID extractIdentifierFromNewImage(DynamodbStreamRecord record) {
         return UUID.fromString(record.getDynamodb().getNewImage().get(IDENTIFIER).getS());
     }
 
@@ -106,7 +111,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     private void updateIndex(DynamodbStreamRecord record) {
-        var candidate = nviService.findCandidateById(extractIdentifierFromOldImage(record)).orElseThrow();
+        var candidate = nviService.findCandidateById(extractIdentifierFromNewImage(record)).orElseThrow();
         if (isApplicable(candidate)) {
             addDocumentToIndex(candidate);
         } else {
