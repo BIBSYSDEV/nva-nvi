@@ -203,7 +203,7 @@ public class OpenSearchClientTest {
     }
 
     @Test
-    void shouldReturnSearchResultsWithContributorOfSearchedInstitution()
+    void shouldReturnSearchResultsWithContributorAffiliatedWithSubUnitOfSearchedInstitution()
         throws IOException, InterruptedException {
         addDocumentsToIndex(documentFromString("document_with_contributor_from_ntnu.json"),
                             documentFromString("document_with_contributor_from_sikt.json"),
@@ -219,7 +219,7 @@ public class OpenSearchClientTest {
     }
 
     @Test
-    void shouldReturnSearchResultsWithContributorOfSearchedInstitutionWhenNotSearchingTopLevelInstititution()
+    void shouldReturnSearchResultsWithContributorOfSearchedInstitutionWhenSearchingTopLevelInstititution()
         throws IOException, InterruptedException {
         addDocumentsToIndex(documentFromString("document_with_contributor_from_ntnu.json"),
                             documentFromString("document_with_contributor_from_sikt.json"),
