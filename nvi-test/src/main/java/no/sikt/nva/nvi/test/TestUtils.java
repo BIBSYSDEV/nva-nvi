@@ -27,6 +27,8 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.NviPeriodRepository;
+import no.sikt.nva.nvi.common.db.PeriodStatus;
+import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.NviService;
@@ -155,6 +157,12 @@ public final class TestUtils {
         var period = DbNviPeriod.builder().publishingYear(String.valueOf(year)).reportingDate(Instant.now()).build();
         when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
         return nviService;
+    }
+
+    public static PeriodStatus randomPeriodStatus() {
+        return new PeriodStatus(ZonedDateTime.now().plusMonths(1).toInstant(),
+                                ZonedDateTime.now().plusMonths(10).toInstant(),
+                                Status.OPEN_PERIOD);
     }
 
     public static NviService nviServiceReturningNotStartedPeriod(DynamoDbClient client, int year) {

@@ -566,6 +566,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Note'
+        periodStatus:
+          type: object
+          properties:
+            status:
+              type: string
+              enum:
+                - OpenPeriod
+                - ClosedPeriod
+                - NoPeriod
+            reportingDate:
+              type: string
+            startDate:
+              type: string
     ApprovalStatus:
       type: object
       properties:
