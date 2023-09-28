@@ -152,8 +152,8 @@ public class CandidateBO {
                                                CandidateRepository repository) {
         var existingCandidateDao = repository.findByPublicationIdDao(request.publicationId())
                                        .orElseThrow(NotFoundException::new);
-        var nonApplicableCandidate = updateCandidateDao(existingCandidateDao, request);
-        repository.updateCandidateRemovingApprovals(request.identifier(), nonApplicableCandidate);
+        var nonApplicableCandidate = updateCandidateDaoFromRequest(existingCandidateDao, request);
+        repository.updateCandidateAndRemovingApprovals(request.identifier(), nonApplicableCandidate);
 
         return new CandidateBO(repository, nonApplicableCandidate, Collections.emptyList(),
                                Collections.emptyList(),
@@ -167,7 +167,7 @@ public class CandidateBO {
         var existingCandidateDao = repository.findByPublicationIdDao(request.publicationId())
                                        .orElseThrow(NotFoundException::new);
         var newApprovals = mapToApprovals(request.points());
-        var newCandidateDao = updateCandidateDao(existingCandidateDao, request);
+        var newCandidateDao = updateCandidateDaoFromRequest(existingCandidateDao, request);
         repository.updateV(existingCandidateDao.identifier(),
                            newCandidateDao.candidate(),
                            newApprovals);
@@ -314,7 +314,8 @@ public class CandidateBO {
         return repository.findByPublicationId(publicationId.publicationId()).isPresent();
     }
 
-    private static CandidateDao updateCandidateDao(CandidateDao candidateDao, UpsertCandidateRequest request) {
+    private static CandidateDao updateCandidateDaoFromRequest(CandidateDao candidateDao,
+                                                              UpsertCandidateRequest request) {
         return candidateDao.copy()
                    .candidate(candidateDao.candidate().copy()
                                   .creators(mapToCreators(request.creators()))

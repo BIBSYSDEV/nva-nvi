@@ -108,9 +108,7 @@ public class NviService {
 
     public Candidate createNote(UUID candidateIdentifier, DbNote dbNote) {
         candidateIsEditable(candidateIdentifier);
-        if (candidateRepository.exists(candidateIdentifier)) {
-            candidateRepository.saveNote(candidateIdentifier, dbNote);
-        }
+        candidateRepository.saveNote(candidateIdentifier, dbNote);
         return candidateRepository.findCandidateById(candidateIdentifier)
                    .map(this::injectPeriodStatus)
                    .orElseThrow();

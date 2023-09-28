@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -360,6 +361,11 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldThrowExceptionWhenTryingToAddNoteToANonExistingCandidate() {
+        assertThrows(NoSuchElementException.class, () -> nviService.createNote(UUID.randomUUID(), randomDbNote()));
+    }
+
+    @Test
     void shouldUpdateCandidateRemovingApprovalsWhenCandidateIsNoLongerApplicable() {
         var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
         var notApplicableCandidate = candidate.candidate().copy().applicable(false).build();
@@ -431,7 +437,7 @@ public class NviServiceTest extends LocalDynamoTest {
     void shouldUpdateStatusWhenCandidateHasApprovalThatHasBeenReset() {
         var existingCandidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
         nviService.upsertCandidate(existingCandidate.candidate().copy().level(DbLevel.LEVEL_ONE).build())
-                .orElseThrow();
+            .orElseThrow();
         var updatedCandidate = nviService.findCandidateById(existingCandidate.identifier()).orElseThrow();
         var approval = getSingleApproval(updatedCandidate);
         var newStatus = APPROVED;

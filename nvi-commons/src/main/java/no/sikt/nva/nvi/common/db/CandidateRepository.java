@@ -80,8 +80,7 @@ public class CandidateRepository extends DynamoRepository {
         var candidate = constructCandidate(identifier, dbCandidate);
         var approvalStatusesWithCandidateIdentifiers = injectCandidateIdentifier(approvalStatusList, identifier);
         var approvalStatuses = approvalStatusesWithCandidateIdentifiers.stream()
-                                   .map(approval -> approval.toDao(identifier))
-//                                   .map(approval -> mapToApprovalStatusDao(identifier,approval))
+                                   .map(approval -> mapToApprovalStatusDao(identifier, approval))
                                    .toList();
         var transaction = TransactWriteItemsEnhancedRequest.builder();
         transaction.addPutItem(candidateTable, candidate);
@@ -188,7 +187,7 @@ public class CandidateRepository extends DynamoRepository {
                    .toList();
     }
 
-    public void updateCandidateRemovingApprovals(UUID identifier, CandidateDao nonApplicableCandidate) {
+    public void updateCandidateAndRemovingApprovals(UUID identifier, CandidateDao nonApplicableCandidate) {
         candidateTable.putItem(nonApplicableCandidate);
         var approvalStatuseDaos = getApprovalStatuseDaos(identifier);
         if (!approvalStatuseDaos.isEmpty()) {
