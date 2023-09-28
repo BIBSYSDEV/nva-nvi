@@ -13,8 +13,8 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
@@ -48,7 +48,6 @@ public class NviService {
         return new NviService(defaultDynamoClient());
     }
 
-    @JacocoGenerated //TODO Temporary for coverage
     public Optional<Candidate> upsertCandidate(DbCandidate dbCandidate) {
         if (isNewCandidate(dbCandidate)) {
             validateCandidate(dbCandidate);

@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.common.model;
 import java.net.URI;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 
-public record UpdateStatusRequest(java.net.URI institutionId,
+public record UpdateStatusRequest(URI institutionId,
                                   DbStatus approvalStatus,
                                   String username,
                                   String reason) implements UpdateApprovalRequest {

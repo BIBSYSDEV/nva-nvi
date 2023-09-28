@@ -19,8 +19,8 @@ public class NoteBO {
         this.original = note;
     }
 
-    public static NoteBO fromRequest(UUID candidateIdentifier, CandidateRepository repository,
-                                     CreateNoteRequest input) {
+    public static NoteBO fromRequest(CreateNoteRequest input, UUID candidateIdentifier,
+                                     CandidateRepository repository) {
         var noteDao = repository.saveNote(candidateIdentifier, DbNote.builder()
                                                                    .text(input.text())
                                                                    .user(Username.fromString(input.username()))

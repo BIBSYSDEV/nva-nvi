@@ -97,13 +97,13 @@ public class CandidateBO {
     public static CandidateBO fromRequest(UpsertCandidateRequest request,
                                           CandidateRepository repository,
                                           PeriodRepository periodRepository) {
-        if (isNewCandidate(request, repository)) {
-            return newCandidate(request, repository, periodRepository);
-        }
-        if (isUpdateCandidate(request, repository)) {
-            return updateCandidateDao(request, repository, periodRepository);
-        }
-        if (shouldBeDeleted(request, repository)) {
+        if (request.isApplicable()) {
+            if (!isExistingCandidate(request, repository)) {
+                return newCandidate(request, repository, periodRepository);
+            } else {
+                return updateCandidateDao(request, repository, periodRepository);
+            }
+        } else if (isExistingCandidate(request, repository)) {
             return deleteCandidate(request, repository);
         }
         throw new IllegalOperationException();
@@ -119,6 +119,7 @@ public class CandidateBO {
 
     public Candidate toDto() {
         return Candidate.builder()
+                   .withId(constructId(identifier))
                    .withIdentifier(identifier)
                    .withId(constructId(identifier))
                    .withPublicationId(original.candidate().publicationId())
@@ -134,7 +135,7 @@ public class CandidateBO {
     }
 
     public CandidateBO createNote(CreateNoteRequest input) {
-        var noteBO = NoteBO.fromRequest(identifier, repository, input);
+        var noteBO = NoteBO.fromRequest(input, identifier, repository);
         notes.put(noteBO.id(), noteBO);
         return this;
     }
@@ -189,10 +190,6 @@ public class CandidateBO {
         return new CandidateBO(repository, candidateDao, approvals1, notes1, periodStatus1);
     }
 
-    private static boolean shouldBeDeleted(UpsertCandidateRequest dbCandidate, CandidateRepository repository) {
-        return isExistingCandidate(dbCandidate, repository) && !dbCandidate.isApplicable();
-    }
-
     private static List<ApprovalStatusDao> mapToApprovalsDaos(UUID identifier, List<DbApprovalStatus> newApprovals) {
         return newApprovals.stream()
                    .map(app -> mapToApprovalDao(identifier, app))
@@ -232,7 +229,8 @@ public class CandidateBO {
     }
 
     private static Map<UUID, NoteBO> mapToNotesMap(CandidateRepository repository, List<NoteDao> notes) {
-        return notes.stream().map(dao -> new NoteBO(repository, dao.identifier(), dao))
+        return notes.stream()
+                   .map(dao -> new NoteBO(repository, dao.identifier(), dao))
                    .collect(Collectors.toMap(NoteBO::id, Function.identity()));
     }
 
@@ -310,14 +308,6 @@ public class CandidateBO {
                    .map(e -> new DbCreator(e.getKey(),
                                            e.getValue()))
                    .toList();
-    }
-
-    private static boolean isNewCandidate(UpsertCandidateRequest dbCandidate, CandidateRepository repository) {
-        return !isUpdateCandidate(dbCandidate, repository) && dbCandidate.isApplicable();
-    }
-
-    private static boolean isUpdateCandidate(UpsertCandidateRequest publicationId, CandidateRepository repository) {
-        return isExistingCandidate(publicationId, repository) && publicationId.isApplicable();
     }
 
     private static boolean isExistingCandidate(UpsertCandidateRequest publicationId, CandidateRepository repository) {

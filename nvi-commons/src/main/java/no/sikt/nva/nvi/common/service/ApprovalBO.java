@@ -24,7 +24,6 @@ public class ApprovalBO {
     private final ApprovalStatusDao original;
 
     public ApprovalBO(CandidateRepository repository, UUID identifier, ApprovalStatusDao dbApprovalStatus) {
-
         this.repository = repository;
         this.identifier = identifier;
         this.original = dbApprovalStatus;
