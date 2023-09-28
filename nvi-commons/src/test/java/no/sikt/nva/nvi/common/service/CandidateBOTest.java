@@ -136,8 +136,7 @@ class CandidateBOTest extends LocalDynamoTest {
         return no.sikt.nva.nvi.common.service.dto.PeriodStatus.fromPeriodStatus(
             PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
     }
-    //TODO: TEst mer enn bare size for note og approval
-    //TODO: Parameterize ApprovalStatuChange
+
     //TODO; add xDto to DTO classes
 
     private static URI constructId(UUID identifier) {
