@@ -13,10 +13,15 @@ public record Candidate(UUID identifier, DbCandidate candidate, List<DbApprovalS
                         List<DbNote> notes, PeriodStatus periodStatus) {
 
     public static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
+    public static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
+                                                           + " forbidden!";
 
     public void isEditableForPeriod(DbNviPeriod period) {
         if (period.reportingDate().isBefore(Instant.now())) {
             throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
+        }
+        if (period.startDate().isAfter(Instant.now())) {
+            throw new IllegalStateException(PERIOD_NOT_OPENED_MESSAGE);
         }
     }
 

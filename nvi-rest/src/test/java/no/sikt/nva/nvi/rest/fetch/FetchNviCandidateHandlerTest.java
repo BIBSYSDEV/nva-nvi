@@ -58,7 +58,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldReturnValidCandidateIfExists() throws IOException {
+    void shouldReturnValidCandidateWhenCandidateExists() throws IOException {
         var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
         var input = createRequest(candidate.identifier());
         handler.handleRequest(input, output, CONTEXT);

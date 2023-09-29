@@ -33,6 +33,7 @@ import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.Candidate;
 import no.sikt.nva.nvi.common.service.dto.Note;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
+import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.IllegalOperationException;
 import no.sikt.nva.nvi.common.service.exception.NotFoundException;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
@@ -334,8 +335,8 @@ public final class CandidateBO {
         return assignee != null ? assignee.value() : null;
     }
 
-    private no.sikt.nva.nvi.common.service.dto.PeriodStatus mapToPeriodStatusDto() {
-        return no.sikt.nva.nvi.common.service.dto.PeriodStatus.fromPeriodStatus(periodStatus);
+    private PeriodStatusDto mapToPeriodStatusDto() {
+        return PeriodStatusDto.fromPeriodStatus(periodStatus);
     }
 
     private List<Note> mapToNoteDtos() {

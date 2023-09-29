@@ -151,7 +151,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldReturnBadRequestWhenUpdatingStatusAndReportingPeriodIsClosed() throws IOException {
+    void shouldReturnConflictWhenUpdatingStatusAndReportingPeriodIsClosed() throws IOException {
         var nviService = nviServiceReturningClosedPeriod(initializeTestDatabase(), YEAR);
         var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
         var institutionId = candidate.approvalStatuses().get(0).institutionId();
@@ -160,7 +160,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
     }
 
     @Test

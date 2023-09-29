@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.rest.upsert.UpsertAssigneeHandler.CANDIDATE_IDENTI
 import static no.sikt.nva.nvi.test.TestUtils.nviServiceReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomApplicableCandidateBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateWithPublicationYear;
+import static no.sikt.nva.nvi.test.TestUtils.randomPeriodStatus;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -21,14 +22,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
-import no.sikt.nva.nvi.common.db.PeriodStatus;
-import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.Candidate;
@@ -104,7 +102,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldReturnBadRequestWhenUpdatingAssigneeAndReportingPeriodIsClosed() throws IOException {
+    void shouldReturnConflictWhenUpdatingAssigneeAndReportingPeriodIsClosed() throws IOException {
         var nviService = nviServiceReturningClosedPeriod(initializeTestDatabase(), YEAR);
         mockUserApiResponse("userResponseBodyWithAccessRight.json");
         var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
@@ -113,7 +111,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         handler.handleRequest(createRequest(candidate, assignee), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
     }
 
     @Test
@@ -172,7 +170,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     private Candidate nonExistingCandidate() {
         var candidate = nviService.upsertCandidate(randomApplicableCandidateBuilder()).orElseThrow();
         return new Candidate(randomUUID(), candidate.candidate(), candidate.approvalStatuses(),
-                             Collections.emptyList(), new PeriodStatus(Instant.now(), Status.OPEN_PERIOD));
+                             Collections.emptyList(), randomPeriodStatus());
     }
 
     private void mockUserApiResponse(String responseFile) {

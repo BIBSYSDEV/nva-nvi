@@ -6,6 +6,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -15,7 +16,7 @@ public record CandidateResponse(
     URI publicationId,
     List<ApprovalStatus> approvalStatuses,
     List<Note> notes,
-    PeriodStatus periodStatus) {
+    PeriodStatusDto periodStatus) {
 
     public static Builder builder() {
         return new Builder();
@@ -28,7 +29,7 @@ public record CandidateResponse(
         private URI publicationId;
         private List<ApprovalStatus> approvalStatuses = new ArrayList<>();
         private List<Note> notes = new ArrayList<>();
-        private PeriodStatus periodStatus;
+        private PeriodStatusDto periodStatus;
 
         private Builder() {
         }
@@ -58,7 +59,7 @@ public record CandidateResponse(
             return this;
         }
 
-        public Builder withPeriodStatus(PeriodStatus periodStatus) {
+        public Builder withPeriodStatus(PeriodStatusDto periodStatus) {
             this.periodStatus = periodStatus;
             return this;
         }

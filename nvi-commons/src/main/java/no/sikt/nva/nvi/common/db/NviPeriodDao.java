@@ -16,10 +16,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 @DynamoDbImmutable(builder = NviPeriodDao.Builder.class)
 public record NviPeriodDao(
 
-    String identifier,
-    @DynamoDbAttribute(DATA_FIELD)
-    DbNviPeriod nviPeriod
-) implements DynamoEntryWithRangeKey {
+    String identifier, @DynamoDbAttribute(DATA_FIELD) DbNviPeriod nviPeriod) implements DynamoEntryWithRangeKey {
 
     public static final TableSchema<NviPeriodDao> TABLE_SCHEMA = TableSchema.fromClass(NviPeriodDao.class);
 
@@ -93,9 +90,7 @@ public record NviPeriodDao(
     }
 
     @DynamoDbImmutable(builder = DbNviPeriod.Builder.class)
-    public record DbNviPeriod(String publishingYear,
-                              Instant reportingDate,
-                              Username createdBy,
+    public record DbNviPeriod(String publishingYear, Instant startDate, Instant reportingDate, Username createdBy,
                               Username modifiedBy) {
 
         public static Builder builder() {
@@ -104,8 +99,8 @@ public record NviPeriodDao(
 
         @DynamoDbIgnore
         public Builder copy() {
-            return builder()
-                       .publishingYear(publishingYear)
+            return builder().publishingYear(publishingYear)
+                       .startDate(startDate)
                        .reportingDate(reportingDate)
                        .createdBy(createdBy)
                        .modifiedBy(modifiedBy);
@@ -114,6 +109,7 @@ public record NviPeriodDao(
         public static final class Builder {
 
             private String builderPublishingYear;
+            private Instant builderStartDate;
             private Instant builderReportingDate;
             private Username builderCreatedBy;
             private Username builderModifiedBy;
@@ -123,6 +119,11 @@ public record NviPeriodDao(
 
             public Builder publishingYear(String publishingYear) {
                 this.builderPublishingYear = publishingYear;
+                return this;
+            }
+
+            public Builder startDate(Instant startDate) {
+                this.builderStartDate = startDate;
                 return this;
             }
 
@@ -142,7 +143,7 @@ public record NviPeriodDao(
             }
 
             public DbNviPeriod build() {
-                return new DbNviPeriod(builderPublishingYear, builderReportingDate, builderCreatedBy,
+                return new DbNviPeriod(builderPublishingYear, builderStartDate, builderReportingDate, builderCreatedBy,
                                        builderModifiedBy);
             }
         }

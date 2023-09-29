@@ -15,7 +15,7 @@ public record Candidate(
     URI publicationId,
     List<ApprovalStatus> approvalStatuses,
     List<Note> notes,
-    PeriodStatus periodStatus) {
+    PeriodStatusDto periodStatus) {
 
     public static Builder builder() {
         return new Builder();
@@ -28,7 +28,7 @@ public record Candidate(
         private URI publicationId;
         private List<ApprovalStatus> approvalStatuses = new ArrayList<>();
         private List<Note> notes = new ArrayList<>();
-        private PeriodStatus periodStatus;
+        private PeriodStatusDto periodStatus;
 
         private Builder() {
         }
@@ -58,7 +58,7 @@ public record Candidate(
             return this;
         }
 
-        public Builder withPeriodStatus(PeriodStatus periodStatus) {
+        public Builder withPeriodStatus(PeriodStatusDto periodStatus) {
             this.periodStatus = periodStatus;
             return this;
         }

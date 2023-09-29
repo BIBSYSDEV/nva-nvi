@@ -4,6 +4,7 @@ import java.util.NoSuchElementException;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.BadGatewayException;
 import nva.commons.apigateway.exceptions.BadRequestException;
+import nva.commons.apigateway.exceptions.ConflictException;
 import nva.commons.apigateway.exceptions.NotFoundException;
 import nva.commons.core.attempt.Failure;
 import org.slf4j.Logger;
@@ -28,7 +29,7 @@ public final class ExceptionMapper {
         }
         if (exception instanceof IllegalStateException) {
             logger.error("IllegalStateException", exception);
-            return new BadRequestException(exception.getMessage());
+            return new ConflictException(exception.getMessage());
         }
         logger.error("BadGatewayException", exception);
         return new BadGatewayException(exception.getMessage());

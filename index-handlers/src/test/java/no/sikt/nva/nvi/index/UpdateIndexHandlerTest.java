@@ -6,6 +6,7 @@ import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.Opera
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.index.utils.ExpandedResourceGenerator.createExpandedResource;
 import static no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator.APPLICATION_JSON;
+import static no.sikt.nva.nvi.test.TestUtils.randomPeriodStatus;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -29,7 +30,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.nio.file.Path;
-import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -86,7 +87,6 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private FakeSearchClient openSearchClient;
     private NviService nviService;
     private AuthorizedBackendUriRetriever uriRetriever;
-    private NviCandidateIndexDocumentGenerator documentGenerator;
 
     @BeforeEach
     void setup() {
@@ -94,7 +94,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         uriRetriever = mock(AuthorizedBackendUriRetriever.class);
         openSearchClient = new FakeSearchClient();
         nviService = mock(NviService.class);
-        documentGenerator = new NviCandidateIndexDocumentGenerator(uriRetriever);
+        var documentGenerator = new NviCandidateIndexDocumentGenerator(uriRetriever);
         handler = new UpdateIndexHandler(storageReader, openSearchClient, nviService, documentGenerator);
         appender = LogUtils.getTestingAppenderForRootLogger();
 
@@ -211,7 +211,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                                     .publicationDate(date).build(),
                              Collections.emptyList(),
                              Collections.emptyList(),
-                             new PeriodStatus(Instant.now(), Status.OPEN_PERIOD));
+                             randomPeriodStatus());
     }
 
     private static NviCandidateIndexDocument constructExpectedIndexDocument(DbPublicationDate date,
@@ -318,19 +318,20 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private static Candidate randomCandidate(boolean applicable) {
         var candidate = TestUtils.randomCandidateBuilder(applicable);
         return new Candidate(randomUUID(), candidate.build(), List.of(getApprovalStatus()), Collections.emptyList(),
-                             new PeriodStatus(Instant.now(), Status.OPEN_PERIOD));
+                             randomPeriodStatus());
     }
 
     private static Candidate randomApplicableCandidate() {
         var applicableCandidate = TestUtils.randomCandidateBuilder(true).build();
         return new Candidate(randomUUID(), applicableCandidate, List.of(getApprovalStatus()), Collections.emptyList(),
-                             new PeriodStatus(Instant.now(), Status.OPEN_PERIOD));
+                             randomPeriodStatus());
     }
 
     private static Candidate applicableAssignedCandidate() {
         var applicableCandidate = TestUtils.randomCandidateBuilder(true).build();
         return new Candidate(randomUUID(), applicableCandidate, List.of(approvalWithAssignee()),
-                             Collections.emptyList(), new PeriodStatus(Instant.now(), Status.OPEN_PERIOD));
+                             Collections.emptyList(),
+                             randomPeriodStatus());
     }
 
     private static DbApprovalStatus getApprovalStatus() {

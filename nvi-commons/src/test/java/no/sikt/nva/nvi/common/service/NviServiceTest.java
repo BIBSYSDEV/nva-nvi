@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.common.db.PeriodStatus.Status.OPEN_PERIOD;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.nviServiceReturningClosedPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.nviServiceReturningNotStartedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateWithPublicationYear;
@@ -30,10 +31,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -50,6 +50,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
@@ -66,7 +67,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class NviServiceTest extends LocalDynamoTest {
 
-    public static final int YEAR = Calendar.getInstance().getWeekYear();
+    public static final int YEAR = ZonedDateTime.now().getYear();
     private NviService nviService;
     private CandidateRepository candidateRepository;
 
@@ -87,7 +88,7 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldCreateAndFetchPublicationById() {
+    void shouldCreateAndFetchCandidateById() {
         var identifier = randomUUID();
         var institutionId = randomUri();
         var verifiedCreators = List.of(new DbCreator(randomUri(), List.of(institutionId)));
@@ -100,10 +101,20 @@ public class NviServiceTest extends LocalDynamoTest {
 
         var createdCandidate = nviService.upsertCandidate(candidate).orElseThrow();
         var createdCandidateId = createdCandidate.identifier();
+        var fetchedCandidate = nviService.findCandidateById(createdCandidateId).orElseThrow();
 
-        var fetchedCandidate = nviService.findCandidateById(createdCandidateId).orElseThrow().candidate();
+        assertThat(fetchedCandidate.candidate(), is(equalTo(candidate)));
+    }
 
-        assertThat(fetchedCandidate, is(equalTo(candidate)));
+    @Test
+    void shouldCreateCandidateWithPeriodStatusAndPeriodStatusShouldMatchCorrespondingPeriod() {
+        var year = ZonedDateTime.now().getYear();
+        var period = nviService.getPeriod(String.valueOf(year));
+        var expectedPeriodStatus = new PeriodStatus(period.startDate(), period.reportingDate(), OPEN_PERIOD);
+        var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(year)).orElseThrow();
+
+        assertThat(candidate.periodStatus().startDate(), is(equalTo(expectedPeriodStatus.startDate())));
+        assertThat(candidate.periodStatus(), is(equalTo(expectedPeriodStatus)));
     }
 
     @Test
@@ -205,7 +216,6 @@ public class NviServiceTest extends LocalDynamoTest {
                                                         publicationDate, institutionPoints, false);
 
         var candidate = nviService.upsertCandidate(expectedCandidate);
-
         assertThat(candidate, is(Optional.empty()));
     }
 
@@ -233,22 +243,35 @@ public class NviServiceTest extends LocalDynamoTest {
 
     @Test
     void shouldUpdateNviPeriod() {
-        var originalPeriod = createPeriod("2014");
+        var originalPeriod = createPeriod(String.valueOf(ZonedDateTime.now().getYear()));
         nviService.createPeriod(originalPeriod);
-        nviService.updatePeriod(originalPeriod.copy().reportingDate(new Date(2060, 03, 25).toInstant()).build());
+        nviService.updatePeriod(originalPeriod.copy()
+                                    .reportingDate(originalPeriod.reportingDate().plusSeconds(500))
+                                    .build());
         var fetchedPeriod = nviService.getPeriod(originalPeriod.publishingYear());
         assertThat(fetchedPeriod, is(not(equalTo(originalPeriod))));
     }
 
     @Test
-    void shouldReturnBadRequestWhenPublishingYearIsNotAYear() {
+    void shouldReturnIllegalArgumentExceptionWhenPublishingYearIsNotAYear() {
         var period = createPeriod(randomString());
         assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
     }
 
     @Test
-    void shouldReturnBadRequestWhenPublishingYearHasInvalidLength() {
+    void shouldReturnIllegalArgumentExceptionWhenPublishingYearHasInvalidLength() {
         var period = createPeriod("22");
+        assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
+    }
+
+    @Test
+    void shouldReturnIllegalArgumentExceptionWhenWhenStartDateHasAlreadyBeenReached() {
+        var period = DbNviPeriod.builder()
+                         .startDate(ZonedDateTime.now().minusDays(1).toInstant())
+                         .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
+                         .publishingYear(String.valueOf(ZonedDateTime.now().getYear()))
+                         .createdBy(randomUsername())
+                         .build();
         assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
     }
 
@@ -257,6 +280,17 @@ public class NviServiceTest extends LocalDynamoTest {
         var period = DbNviPeriod.builder()
                          .reportingDate(Instant.MIN)
                          .publishingYear("2023")
+                         .createdBy(Username.builder().value("me").build())
+                         .build();
+        assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
+    }
+
+    @Test
+    void shouldReturnIllegalArgumentWhenStartDateIsAfterReportingDate() {
+        var period = DbNviPeriod.builder()
+                         .startDate(ZonedDateTime.now().plusMonths(10).toInstant())
+                         .reportingDate(ZonedDateTime.now().plusMonths(1).toInstant())
+                         .publishingYear(String.valueOf(ZonedDateTime.now().getYear()))
                          .createdBy(Username.builder().value("me").build())
                          .build();
         assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
@@ -345,8 +379,8 @@ public class NviServiceTest extends LocalDynamoTest {
     void shouldReturnPeriodsOnlyWhenFetchingPeriods() {
         var nviService = new NviService(localDynamo);
         nviService.upsertCandidate(randomCandidate());
-        nviService.createPeriod(createPeriod("2100"));
-        nviService.createPeriod(createPeriod("2101"));
+        nviService.createPeriod(createPeriod(String.valueOf(ZonedDateTime.now().getYear())));
+        nviService.createPeriod(createPeriod(String.valueOf(ZonedDateTime.now().plusYears(1).getYear())));
         var periods = nviService.getPeriods();
         assertThat(periods, hasSize(2));
     }
@@ -533,7 +567,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var nviService = new NviService(localDynamo);
         var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
 
-        assertThat(candidate.periodStatus().periodClosesAt(), is(nullValue()));
+        assertThat(candidate.periodStatus().reportingDate(), is(nullValue()));
         assertThat(candidate.periodStatus().status(), is(equalTo(NO_PERIOD)));
     }
 
@@ -553,6 +587,14 @@ public class NviServiceTest extends LocalDynamoTest {
         var nviService = nviServiceReturningClosedPeriod(localDynamo, YEAR);
         assertThrows(IllegalStateException.class,
                      () -> nviService.deleteNote(candidate.identifier(), persistedNote.identifier(), randomString()));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenUpdatingNoteWhenPeriodIsNotStarted() {
+        var nviService = nviServiceReturningNotStartedPeriod(localDynamo, YEAR);
+        var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
+        var note = new DbNote(randomUUID(), randomUsername(), randomString(), Instant.now());
+        assertThrows(IllegalStateException.class, () -> nviService.createNote(candidate.identifier(), note));
     }
 
     private static DbCandidate getNotApplicableCandidate(Candidate updatedCandidate) {
@@ -606,7 +648,8 @@ public class NviServiceTest extends LocalDynamoTest {
 
     private static DbNviPeriod createPeriod(String publishingYear) {
         return DbNviPeriod.builder()
-                   .reportingDate(new Date(2050, 03, 25).toInstant())
+                   .startDate(ZonedDateTime.now().plusMonths(1).toInstant())
+                   .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
                    .publishingYear(publishingYear)
                    .createdBy(randomUsername())
                    .build();
