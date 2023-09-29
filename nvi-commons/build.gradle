@@ -22,6 +22,7 @@ dependencies {
 
 test {
     environment "API_HOST", "example.org"
+    environment "CUSTOM_DOMAIN_BASE_PATH", "scientific-index"
     environment("SEARCH_INFRASTRUCTURE_API_HOST", "localhost")
     environment("SEARCH_INFRASTRUCTURE_AUTH_URI", "localhost")
     environment("SEARCH_INFRASTRUCTURE_API_URI", "localhost")

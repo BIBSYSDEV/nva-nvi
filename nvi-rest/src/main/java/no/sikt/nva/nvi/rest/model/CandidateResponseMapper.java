@@ -8,6 +8,7 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.service.Candidate;
+import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
@@ -29,7 +30,7 @@ public final class CandidateResponseMapper {
                    .withPublicationId(candidate.candidate().publicationId())
                    .withApprovalStatuses(CandidateResponseMapper.mapToApprovalStatus(candidate))
                    .withNotes(CandidateResponseMapper.mapToNotes(candidate.notes()))
-                   .withPeriodStatus(PeriodStatus.fromPeriodStatus(candidate.periodStatus()))
+                   .withPeriodStatus(PeriodStatusDto.fromPeriodStatus(candidate.periodStatus()))
                    .build();
     }
 

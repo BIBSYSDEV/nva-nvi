@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -46,8 +47,8 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
-import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
@@ -68,7 +69,7 @@ public class NviServiceTest extends LocalDynamoTest {
 
     public static final int YEAR = ZonedDateTime.now().getYear();
     private NviService nviService;
-    private NviCandidateRepository nviCandidateRepository;
+    private CandidateRepository candidateRepository;
 
     public static Stream<Arguments> statusProvider() {
         return Stream.of(Arguments.of(DbStatus.PENDING, DbStatus.REJECTED),
@@ -82,7 +83,7 @@ public class NviServiceTest extends LocalDynamoTest {
     @BeforeEach
     void setup() {
         localDynamo = initializeTestDatabase();
-        nviCandidateRepository = new NviCandidateRepository(localDynamo);
+        candidateRepository = new CandidateRepository(localDynamo);
         nviService = TestUtils.nviServiceReturningOpenPeriod(localDynamo, YEAR);
     }
 
@@ -196,7 +197,7 @@ public class NviServiceTest extends LocalDynamoTest {
 
         nviService.upsertCandidate(expectedCandidate);
 
-        var fetchedCandidate = nviCandidateRepository.findByPublicationId(generatePublicationId(identifier))
+        var fetchedCandidate = candidateRepository.findByPublicationId(generatePublicationId(identifier))
                                    .map(Candidate::candidate);
 
         assertThat(fetchedCandidate.orElseThrow(), is(equalTo(expectedCandidate)));
@@ -310,10 +311,10 @@ public class NviServiceTest extends LocalDynamoTest {
         var institutionUri = randomUri();
         var candidateData = createDbCandidate(institutionUri);
         var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
-        var fullCandidate = nviCandidateRepository.create(candidateData, dbApprovalStatus);
+        var fullCandidate = candidateRepository.create(candidateData, dbApprovalStatus);
         var updatedCandidate = createDbCandidate(institutionUri);
-        nviCandidateRepository.update(fullCandidate.identifier(), updatedCandidate, fullCandidate.approvalStatuses());
-        var candidate1 = nviCandidateRepository.findCandidateById(fullCandidate.identifier());
+        candidateRepository.update(fullCandidate.identifier(), updatedCandidate, fullCandidate.approvalStatuses());
+        var candidate1 = candidateRepository.findCandidateById(fullCandidate.identifier());
         assertThat(candidate1.orElseThrow().candidate(), is(not(fullCandidate.candidate())));
     }
 
@@ -322,7 +323,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var institutionUri = randomUri();
         var candidateData = createDbCandidate(institutionUri);
         var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
-        var fullCandidate = nviCandidateRepository.create(candidateData, dbApprovalStatus);
+        var fullCandidate = candidateRepository.create(candidateData, dbApprovalStatus);
         var dbNote = new DbNote(randomUUID(), randomUsername(), randomString(), Instant.now());
         var candidate = nviService.createNote(fullCandidate.identifier(), dbNote);
         assertThat(candidate.notes(), hasSize(1));
@@ -333,7 +334,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var institutionUri = randomUri();
         var candidateData = createDbCandidate(institutionUri);
         var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
-        var fullCandidate = nviCandidateRepository.create(candidateData, dbApprovalStatus);
+        var fullCandidate = candidateRepository.create(candidateData, dbApprovalStatus);
         var dbNote = new DbNote(randomUUID(), randomUsername(), randomString(), Instant.now());
         nviService.createNote(fullCandidate.identifier(), dbNote);
         dbNote = new DbNote(randomUUID(), randomUsername(), randomString(), Instant.now());
@@ -346,7 +347,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var institutionUri = randomUri();
         var candidateData = createDbCandidate(institutionUri);
         var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
-        var fullCandidate = nviCandidateRepository.create(candidateData, dbApprovalStatus);
+        var fullCandidate = candidateRepository.create(candidateData, dbApprovalStatus);
         var dbNote = DbNote.builder().user(randomUsername()).text(randomString()).build();
         nviService.createNote(fullCandidate.identifier(), dbNote);
         dbNote = DbNote.builder().user(randomUsername()).text(randomString()).build();
@@ -363,7 +364,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var institutionUri = randomUri();
         var candidateData = createDbCandidate(institutionUri);
         var dbApprovalStatus = List.of(createDbApprovalStatus(institutionUri));
-        var fullCandidate = nviCandidateRepository.create(candidateData, dbApprovalStatus);
+        var fullCandidate = candidateRepository.create(candidateData, dbApprovalStatus);
         var dbNote = DbNote.builder().user(randomUsername()).text(randomString()).build();
         nviService.createNote(fullCandidate.identifier(), dbNote);
         var user = randomUsername();
@@ -391,6 +392,11 @@ public class NviServiceTest extends LocalDynamoTest {
         var persistedCandidate = nviService.upsertCandidate(updateCandidate(candidate.orElseThrow()));
         var actualNotes = persistedCandidate.orElseThrow().notes();
         assertThat(actualNotes, is(equalTo(createdNotes)));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenTryingToAddNoteToANonExistingCandidate() {
+        assertThrows(NoSuchElementException.class, () -> nviService.createNote(UUID.randomUUID(), randomDbNote()));
     }
 
     @Test
@@ -445,10 +451,10 @@ public class NviServiceTest extends LocalDynamoTest {
 
     @Test
     void approvalShouldUpdateAssigneeByItself() {
-        var assignee = randomUsername();
+        var assignee = randomString();
         var approval = getSingleApproval(nviService.upsertCandidate(randomCandidate()).orElseThrow());
-        var fetchedApproval = approval.update(nviService, new UpdateAssigneeRequest(assignee));
-        assertThat(fetchedApproval.assignee(), is(equalTo(assignee)));
+        var fetchedApproval = approval.update(nviService, new UpdateAssigneeRequest(randomUri(), assignee));
+        assertThat(fetchedApproval.assignee().value(), is(equalTo(assignee)));
     }
 
     @ParameterizedTest(name = "Should update from old status {0} to new status {1}")
@@ -459,6 +465,18 @@ public class NviServiceTest extends LocalDynamoTest {
         updateApproval(existingCandidate, oldStatus);
         var fetchedApproval = approval.update(nviService, updateRequestWithReason(newStatus));
         assertThat(fetchedApproval.status(), is(equalTo(newStatus)));
+    }
+
+    @Test
+    void shouldUpdateStatusWhenCandidateHasApprovalThatHasBeenReset() {
+        var existingCandidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
+        nviService.upsertCandidate(existingCandidate.candidate().copy().level(DbLevel.LEVEL_ONE).build())
+            .orElseThrow();
+        var updatedCandidate = nviService.findCandidateById(existingCandidate.identifier()).orElseThrow();
+        var approval = getSingleApproval(updatedCandidate);
+        var newStatus = APPROVED;
+        var actualApproval = approval.update(nviService, updateRequestWithoutReason(newStatus));
+        assertThat(actualApproval.status(), is(equalTo(newStatus)));
     }
 
     @ParameterizedTest
@@ -487,11 +505,11 @@ public class NviServiceTest extends LocalDynamoTest {
     void shouldKeepAssigneeWhenFinalizingApproval() {
         var existingCandidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
         var approval = getSingleApproval(existingCandidate);
-        var assignee = randomUsername();
+        var assignee = randomString();
         var assignedApproval = updateAssignee(approval, assignee);
         var fetchedApproval = assignedApproval.update(nviService, updateRequestWithoutReason(APPROVED));
 
-        assertThat(fetchedApproval.assignee(), is(equalTo(assignee)));
+        assertThat(fetchedApproval.assignee().value(), is(equalTo(assignee)));
     }
 
     @Test
@@ -681,8 +699,8 @@ public class NviServiceTest extends LocalDynamoTest {
                                       .build());
     }
 
-    private DbApprovalStatus updateAssignee(DbApprovalStatus approval, Username assignee) {
-        return approval.update(nviService, new UpdateAssigneeRequest(assignee));
+    private DbApprovalStatus updateAssignee(DbApprovalStatus approval, String assignee) {
+        return approval.update(nviService, new UpdateAssigneeRequest(randomUri(), assignee));
     }
 
     private void updateAssignee(DbApprovalStatus existingApprovalStatus) {

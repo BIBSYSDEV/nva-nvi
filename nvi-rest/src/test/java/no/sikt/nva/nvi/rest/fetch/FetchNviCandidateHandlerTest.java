@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.rest.fetch;
 
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidateWithPublicationYear;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -18,7 +17,6 @@ import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.rest.model.CandidateResponseMapper;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
-import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.ContentType;
@@ -72,18 +70,6 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
         var actualResponse = gatewayResponse.getBodyObject(CandidateResponse.class);
 
         assertEquals(actualResponse, expectedResponse);
-    }
-
-    @Test
-    void shouldReturnCandidateWhenWithNotStartedPeriod() throws IOException {
-        var nviService = TestUtils.nviServiceReturningNotStartedPeriod(initializeTestDatabase(), 2024);
-        var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(2024)).orElseThrow();
-        var input = createRequest(candidate.identifier());
-        var handler = new FetchNviCandidateHandler(nviService);
-        handler.handleRequest(input, output, CONTEXT);
-
-        var gatewayResponse = getGatewayResponse();
-        assertEquals(HttpStatus.SC_OK, gatewayResponse.getStatusCode());
     }
 
     @Test

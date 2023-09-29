@@ -9,14 +9,14 @@ import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class NviPeriodRepositoryTest extends LocalDynamoTest {
+class PeriodRepositoryTest extends LocalDynamoTest {
 
-    private NviPeriodRepository nviPeriodRepository;
+    private PeriodRepository periodRepository;
 
     @BeforeEach
     public void setUp() {
         localDynamo = initializeTestDatabase();
-        nviPeriodRepository = new NviPeriodRepository(localDynamo);
+        periodRepository = new PeriodRepository(localDynamo);
     }
 
     @Test
@@ -28,12 +28,12 @@ class NviPeriodRepositoryTest extends LocalDynamoTest {
 
         var nviPeriod1 = randomNviPeriodBuilder().publishingYear(year).modifiedBy(user1).build();
         var nviPeriod2 = randomNviPeriodBuilder().publishingYear(year).modifiedBy(user2).build();
-        nviPeriodRepository.save(nviPeriod1);
-        nviPeriodRepository.save(nviPeriod2);
+        periodRepository.save(nviPeriod1);
+        periodRepository.save(nviPeriod2);
         var tableItemCount = scanDB().count();
         assertThat(tableItemCount, is(equalTo(1)));
 
-        var fetched = nviPeriodRepository.findByPublishingYear(year);
+        var fetched = periodRepository.findByPublishingYear(year);
         assertThat(fetched.get().modifiedBy(), is(equalTo(user2)));
     }
 }

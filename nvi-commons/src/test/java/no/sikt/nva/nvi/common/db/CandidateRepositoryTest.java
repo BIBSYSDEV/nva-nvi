@@ -13,14 +13,14 @@ import no.sikt.nva.nvi.test.LocalDynamoTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class NviCandidateRepositoryTest extends LocalDynamoTest {
+class CandidateRepositoryTest extends LocalDynamoTest {
 
-    private NviCandidateRepository nviCandidateRepository;
+    private CandidateRepository candidateRepository;
 
     @BeforeEach
     public void setUp() {
         localDynamo = initializeTestDatabase();
-        nviCandidateRepository = new NviCandidateRepository(localDynamo);
+        candidateRepository = new CandidateRepository(localDynamo);
     }
 
     @Test
@@ -28,18 +28,18 @@ class NviCandidateRepositoryTest extends LocalDynamoTest {
         var publicationId = randomUri();
         var candidate1 = randomCandidateBuilder(true).publicationId(publicationId).build();
         var candidate2 = randomCandidateBuilder(true).publicationId(publicationId).build();
-        nviCandidateRepository.create(candidate1, List.of());
-        assertThrows(RuntimeException.class, () -> nviCandidateRepository.create(candidate2, List.of()));
+        candidateRepository.create(candidate1, List.of());
+        assertThrows(RuntimeException.class, () -> candidateRepository.create(candidate2, List.of()));
         assertThat(scanDB().count(), is(equalTo(2)));
     }
 
     @Test
     public void shouldOverwriteExistingCandidateWhenUpdating() {
         var originalCandidate = randomCandidate();
-        var created = nviCandidateRepository.create(originalCandidate, List.of());
+        var created = candidateRepository.create(originalCandidate, List.of());
         var newCandidate = originalCandidate.copy().publicationBucketUri(randomUri()).build();
-        nviCandidateRepository.update(created.identifier(),newCandidate,List.of());
-        var fetched = nviCandidateRepository.findCandidateById(created.identifier()).get().candidate();
+        candidateRepository.update(created.identifier(), newCandidate, List.of());
+        var fetched = candidateRepository.findCandidateById(created.identifier()).get().candidate();
 
         assertThat(scanDB().count(), is(equalTo(2)));
         assertThat(fetched, is(not(equalTo(originalCandidate))));

@@ -1,24 +1,24 @@
-package no.sikt.nva.nvi.rest.model;
+package no.sikt.nva.nvi.common.service.dto;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 import java.util.Optional;
 import nva.commons.core.JacocoGenerated;
 
-public record PeriodStatus(Status status, String startDate, String reportingDate) {
+public record PeriodStatusDto(Status status, String startDate, String reportingDate) {
 
     public static Builder builder() {
         return new Builder();
     }
 
-    public static PeriodStatus fromPeriodStatus(no.sikt.nva.nvi.common.db.PeriodStatus periodStatus) {
+    public static PeriodStatusDto fromPeriodStatus(no.sikt.nva.nvi.common.db.PeriodStatus periodStatus) {
         return builder().withStatus(Status.parse(periodStatus.status().getValue()))
                    .withStartDate(toStartDate(periodStatus))
-                   .withClosedDate(toClosesAt(periodStatus))
+                   .withReportingDate(toReportingDate(periodStatus))
                    .build();
     }
 
-    private static String toClosesAt(no.sikt.nva.nvi.common.db.PeriodStatus periodStatus) {
+    private static String toReportingDate(no.sikt.nva.nvi.common.db.PeriodStatus periodStatus) {
         return Optional.of(periodStatus)
                    .map(no.sikt.nva.nvi.common.db.PeriodStatus::reportingDate)
                    .map(Object::toString)
@@ -69,8 +69,8 @@ public record PeriodStatus(Status status, String startDate, String reportingDate
             return this;
         }
 
-        public Builder withClosedDate(String closedDate) {
-            this.closedDate = closedDate;
+        public Builder withReportingDate(String reportingDate) {
+            this.closedDate = reportingDate;
             return this;
         }
 
@@ -78,8 +78,8 @@ public record PeriodStatus(Status status, String startDate, String reportingDate
             this.startDate = startDate;
             return this;
         }
-        public PeriodStatus build() {
-            return new PeriodStatus(status, startDate, closedDate);
+        public PeriodStatusDto build() {
+            return new PeriodStatusDto(status, startDate, closedDate);
         }
 
     }

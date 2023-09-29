@@ -59,6 +59,14 @@ public record ApprovalStatusDao(UUID identifier,
         return TYPE;
     }
 
+    @DynamoDbIgnore
+    @JacocoGenerated
+    public ApprovalStatusDao.Builder copy() {
+        return builder()
+                   .identifier(identifier)
+                   .approvalStatus(approvalStatus.copy().build());
+    }
+
     @JacocoGenerated
     public enum DbStatus {
         APPROVED("Approved"), PENDING("Pending"), REJECTED("Rejected");
@@ -164,7 +172,7 @@ public record ApprovalStatusDao(UUID identifier,
             var copy = this.copy();
             if (input instanceof UpdateAssigneeRequest request) {
                 return nviService.updateApproval(candidateIdentifier,
-                                                 copy.assignee(request.username()).build());
+                                                 copy.assignee(Username.fromString(request.username())).build());
             } else if (input instanceof UpdateStatusRequest request) {
                 return nviService.updateApproval(this.candidateIdentifier, updateStatus(nviService, request));
             } else {

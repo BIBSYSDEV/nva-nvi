@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.rest.model;
+package no.sikt.nva.nvi.common.service.dto;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -6,11 +6,10 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record CandidateResponse(
+public record Candidate(
     URI id,
     UUID identifier,
     URI publicationId,
@@ -64,8 +63,8 @@ public record CandidateResponse(
             return this;
         }
 
-        public CandidateResponse build() {
-            return new CandidateResponse(id, identifier, publicationId, approvalStatuses, notes, periodStatus);
+        public Candidate build() {
+            return new Candidate(id, identifier, publicationId, approvalStatuses, notes, periodStatus);
         }
     }
 }
