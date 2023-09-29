@@ -33,7 +33,6 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +49,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
@@ -66,7 +66,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class NviServiceTest extends LocalDynamoTest {
 
-    public static final int YEAR = Calendar.getInstance().getWeekYear();
+    public static final int YEAR = ZonedDateTime.now().getYear();
     private NviService nviService;
     private NviCandidateRepository nviCandidateRepository;
 
@@ -100,11 +100,20 @@ public class NviServiceTest extends LocalDynamoTest {
 
         var createdCandidate = nviService.upsertCandidate(candidate).orElseThrow();
         var createdCandidateId = createdCandidate.identifier();
-
         var fetchedCandidate = nviService.findCandidateById(createdCandidateId).orElseThrow();
 
-        assertThat(fetchedCandidate.periodStatus().startDate(), is(not(nullValue())));
         assertThat(fetchedCandidate.candidate(), is(equalTo(candidate)));
+    }
+
+    @Test
+    void shouldCreateCandidateWithPeriodStatusAndPeriodStatusShouldMatchCorrespondingPeriod() {
+        var year = ZonedDateTime.now().getYear();
+        var period = nviService.getPeriod(String.valueOf(year));
+        var expectedPeriodStatus = new PeriodStatus(period.startDate(), period.reportingDate(), OPEN_PERIOD);
+        var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(year)).orElseThrow();
+
+        assertThat(candidate.periodStatus().startDate(), is(equalTo(expectedPeriodStatus.startDate())));
+        assertThat(candidate.periodStatus(), is(equalTo(expectedPeriodStatus)));
     }
 
     @Test
@@ -270,6 +279,17 @@ public class NviServiceTest extends LocalDynamoTest {
         var period = DbNviPeriod.builder()
                          .reportingDate(Instant.MIN)
                          .publishingYear("2023")
+                         .createdBy(Username.builder().value("me").build())
+                         .build();
+        assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
+    }
+
+    @Test
+    void shouldReturnIllegalArgumentWhenStartDateIsAfterReportingDate() {
+        var period = DbNviPeriod.builder()
+                         .startDate(ZonedDateTime.now().plusMonths(10).toInstant())
+                         .reportingDate(ZonedDateTime.now().plusMonths(1).toInstant())
+                         .publishingYear(String.valueOf(ZonedDateTime.now().getYear()))
                          .createdBy(Username.builder().value("me").build())
                          .build();
         assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
