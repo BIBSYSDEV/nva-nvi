@@ -78,6 +78,7 @@ public record PeriodStatusDto(Status status, String startDate, String reportingD
             this.startDate = startDate;
             return this;
         }
+
         public PeriodStatusDto build() {
             return new PeriodStatusDto(status, startDate, closedDate);
         }
