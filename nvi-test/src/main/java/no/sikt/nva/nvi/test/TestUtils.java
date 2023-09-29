@@ -13,6 +13,7 @@ import java.math.RoundingMode;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
@@ -30,6 +31,8 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.PeriodStatus;
+import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
@@ -151,6 +154,7 @@ public final class TestUtils {
         var nviService = new NviService(client, nviPeriodRepository);
         var period = DbNviPeriod.builder()
                          .publishingYear(String.valueOf(year))
+                         .startDate(Instant.now())
                          .reportingDate(Instant.now().plusSeconds(300))
                          .build();
         when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
@@ -161,6 +165,24 @@ public final class TestUtils {
         var nviPeriodRepository = mock(PeriodRepository.class);
         var nviService = new NviService(client, nviPeriodRepository);
         var period = DbNviPeriod.builder().publishingYear(String.valueOf(year)).reportingDate(Instant.now()).build();
+        when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
+        return nviService;
+    }
+
+    public static PeriodStatus randomPeriodStatus() {
+        return new PeriodStatus(ZonedDateTime.now().plusMonths(1).toInstant(),
+                                ZonedDateTime.now().plusMonths(10).toInstant(),
+                                Status.OPEN_PERIOD);
+    }
+
+    public static NviService nviServiceReturningNotStartedPeriod(DynamoDbClient client, int year) {
+        var nviPeriodRepository = mock(PeriodRepository.class);
+        var nviService = new NviService(client, nviPeriodRepository);
+        var period = DbNviPeriod.builder()
+                         .publishingYear(String.valueOf(year))
+                         .startDate(ZonedDateTime.now().plusMonths(1).toInstant())
+                         .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
+                         .build();
         when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
         return nviService;
     }

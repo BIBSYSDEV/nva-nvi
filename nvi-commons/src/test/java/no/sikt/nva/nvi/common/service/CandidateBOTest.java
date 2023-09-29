@@ -27,6 +27,7 @@ import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
+import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.IllegalOperationException;
 import no.sikt.nva.nvi.common.service.exception.NotFoundException;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -109,7 +110,7 @@ class CandidateBOTest extends LocalDynamoTest {
             assertThat(dto.identifier(), is(equalTo(candidateBO.identifier())));
             var periodStatus = getDefaultPeriodstatus();
             assertThat(dto.periodStatus().status(), is(equalTo(periodStatus.status())));
-            assertThat(dto.periodStatus().periodClosesAt(), is(nullValue()));
+            assertThat(dto.periodStatus().reportingDate(), is(nullValue()));
             assertThat(approvalMap.get(institutionToApprove).status(), is(equalTo(NviApprovalStatus.APPROVED)));
             var rejectedAP = approvalMap.get(institutionToReject);
             assertThat(rejectedAP.status(), is(equalTo(NviApprovalStatus.REJECTED)));
@@ -132,8 +133,8 @@ class CandidateBOTest extends LocalDynamoTest {
         assertThat(candidate.approvalStatuses().get(0).finalizedBy(), is(not(equalTo(assignee))));
     }
 
-    private static no.sikt.nva.nvi.common.service.dto.PeriodStatus getDefaultPeriodstatus() {
-        return no.sikt.nva.nvi.common.service.dto.PeriodStatus.fromPeriodStatus(
+    private static PeriodStatusDto getDefaultPeriodstatus() {
+        return PeriodStatusDto.fromPeriodStatus(
             PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
     }
 

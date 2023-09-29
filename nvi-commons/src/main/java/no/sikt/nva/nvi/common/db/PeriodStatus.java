@@ -11,7 +11,7 @@ import nva.commons.core.JacocoGenerated;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record PeriodStatus(Instant periodClosesAt, Status status) implements JsonSerializable {
+public record PeriodStatus(Instant startDate, Instant reportingDate, Status status) implements JsonSerializable {
 
     public static Builder builder() {
         return new Builder();
@@ -31,12 +31,17 @@ public record PeriodStatus(Instant periodClosesAt, Status status) implements Jso
     }
 
     private static PeriodStatus toOpenPeriodStatus(DbNviPeriod period) {
-        return PeriodStatus.builder().withPeriodClosesAt(period.reportingDate()).withStatus(Status.OPEN_PERIOD).build();
+        return PeriodStatus.builder()
+                   .withStartDate(period.startDate())
+                   .withReportingDate(period.reportingDate())
+                   .withStatus(Status.OPEN_PERIOD)
+                   .build();
     }
 
     private static PeriodStatus toClosedPeriodStatus(DbNviPeriod period) {
         return PeriodStatus.builder()
-                   .withPeriodClosesAt(period.reportingDate())
+                   .withStartDate(period.startDate())
+                   .withReportingDate(period.reportingDate())
                    .withStatus(Status.CLOSED_PERIOD)
                    .build();
     }
@@ -59,14 +64,20 @@ public record PeriodStatus(Instant periodClosesAt, Status status) implements Jso
 
     public static final class Builder {
 
-        private Instant periodClosesAt;
+        private Instant reportingDate;
+        private Instant startDate;
         private Status status;
 
         private Builder() {
         }
 
-        public Builder withPeriodClosesAt(Instant periodClosesAt) {
-            this.periodClosesAt = periodClosesAt;
+        public Builder withStartDate(Instant startDate) {
+            this.startDate = startDate;
+            return this;
+        }
+
+        public Builder withReportingDate(Instant reportingDate) {
+            this.reportingDate = reportingDate;
             return this;
         }
 
@@ -76,7 +87,7 @@ public record PeriodStatus(Instant periodClosesAt, Status status) implements Jso
         }
 
         public PeriodStatus build() {
-            return new PeriodStatus(periodClosesAt, status);
+            return new PeriodStatus(startDate, reportingDate, status);
         }
     }
 }
