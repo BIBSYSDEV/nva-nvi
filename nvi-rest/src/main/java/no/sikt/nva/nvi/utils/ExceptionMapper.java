@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.utils;
 
 import java.util.NoSuchElementException;
+import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.BadGatewayException;
 import nva.commons.apigateway.exceptions.BadRequestException;
@@ -19,7 +20,7 @@ public final class ExceptionMapper {
 
     public static <T> ApiGatewayException map(Failure<T> failure) {
         var exception = failure.getException();
-        if (exception instanceof NotFoundException || exception instanceof NoSuchElementException) {
+        if (isNotFoundException(exception)) {
             logger.error("NotFoundException", exception);
             return new NotFoundException("Resource not found!");
         }
@@ -33,5 +34,11 @@ public final class ExceptionMapper {
         }
         logger.error("BadGatewayException", exception);
         return new BadGatewayException(exception.getMessage());
+    }
+
+    private static boolean isNotFoundException(Exception exception) {
+        return exception instanceof NotFoundException
+               || exception instanceof NoSuchElementException
+               || exception instanceof CandidateNotFoundException;
     }
 }

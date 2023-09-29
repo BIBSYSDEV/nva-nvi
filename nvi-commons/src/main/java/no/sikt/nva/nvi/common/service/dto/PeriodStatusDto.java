@@ -33,7 +33,8 @@ public record PeriodStatusDto(Status status, String startDate, String reportingD
     }
 
     public enum Status {
-        OPEN_PERIOD("OpenPeriod"), CLOSED_PERIOD("ClosedPeriod"), NO_PERIOD("NoPeriod");
+        OPEN_PERIOD("OpenPeriod"), CLOSED_PERIOD("ClosedPeriod"), NO_PERIOD("NoPeriod"), UNOPENED_PERIOD(
+            "UnopenedPeriod");
 
         private final String value;
 
