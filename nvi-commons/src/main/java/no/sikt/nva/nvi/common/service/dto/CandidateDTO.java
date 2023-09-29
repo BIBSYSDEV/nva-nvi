@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record Candidate(
+public record CandidateDTO(
     URI id,
     UUID identifier,
     URI publicationId,
@@ -63,8 +63,8 @@ public record Candidate(
             return this;
         }
 
-        public Candidate build() {
-            return new Candidate(id, identifier, publicationId, approvalStatuses, notes, periodStatus);
+        public CandidateDTO build() {
+            return new CandidateDTO(id, identifier, publicationId, approvalStatuses, notes, periodStatus);
         }
     }
 }

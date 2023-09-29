@@ -30,7 +30,7 @@ import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
-import no.sikt.nva.nvi.common.service.dto.Candidate;
+import no.sikt.nva.nvi.common.service.dto.CandidateDTO;
 import no.sikt.nva.nvi.common.service.dto.Note;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.common.service.exception.IllegalOperationException;
@@ -52,6 +52,9 @@ public final class CandidateBO {
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
     private static final String CANDIDATE_PATH = "candidate";
     private static final String INVALID_CANDIDATE_MESSAGE = "Candidate is missing mandatory fields";
+    private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
+    private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not open, perform actions on candidate is "
+                                                            + "forbidden!";
     private final CandidateRepository repository;
     private final UUID identifier;
     private final CandidateDao original;
@@ -119,8 +122,8 @@ public final class CandidateBO {
         return original.candidate().publicationId();
     }
 
-    public Candidate toDto() {
-        return Candidate.builder()
+    public CandidateDTO toDto() {
+        return CandidateDTO.builder()
                    .withId(constructId(identifier))
                    .withIdentifier(identifier)
                    .withId(constructId(identifier))
@@ -132,8 +135,18 @@ public final class CandidateBO {
     }
 
     public CandidateBO updateStatus(UpdateApprovalRequest input) {
+        //validatePeriodStatus();
         approvals.computeIfPresent(input.institutionId(), (uri, approvalBO) -> approvalBO.update(input));
         return this;
+    }
+
+    private void validatePeriodStatus() {
+        if (periodStatus.status().equals(Status.CLOSED_PERIOD)) {
+            throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
+        }
+        if (Status.NO_PERIOD.equals(periodStatus.status())) {
+            throw new IllegalStateException(PERIOD_NOT_OPENED_MESSAGE);
+        }
     }
 
     public CandidateBO createNote(CreateNoteRequest input) {

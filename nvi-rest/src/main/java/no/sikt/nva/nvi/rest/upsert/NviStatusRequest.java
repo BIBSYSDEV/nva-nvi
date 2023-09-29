@@ -14,11 +14,13 @@ public record NviStatusRequest(UUID candidateId,
     public UpdateStatusRequest toUpdateRequest(String username) {
         return nonNull(reason)
                    ? UpdateStatusRequest.builder()
+                         .withInstitutionId(institutionId)
                          .withApprovalStatus(DbStatus.parse(status.getValue()))
                          .withUsername(username)
                          .withReason(reason)
                          .build()
                    : UpdateStatusRequest.builder()
+                         .withInstitutionId(institutionId)
                          .withApprovalStatus(DbStatus.parse(status.getValue()))
                          .withUsername(username)
                          .build();
