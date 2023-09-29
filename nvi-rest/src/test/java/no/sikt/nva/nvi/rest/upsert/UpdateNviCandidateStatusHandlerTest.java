@@ -4,6 +4,10 @@ import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.rest.upsert.NviApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.rest.upsert.NviApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.rest.upsert.NviApprovalStatus.REJECTED;
+import static no.sikt.nva.nvi.test.TestUtils.OPEN_YEAR;
+import static no.sikt.nva.nvi.test.TestUtils.candidateRepositoryReturningClosedPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.candidateRepositoryReturningNotOpenedPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.candidateRepositoryReturningOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -20,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.util.Calendar;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -29,7 +32,6 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.CandidateBO;
-import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDTO;
 import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -40,22 +42,21 @@ import nva.commons.apigateway.GatewayResponse;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.zalando.problem.Problem;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
 
     private static final String ERROR_MISSING_REJECTION_REASON = "Cannot reject approval status without reason";
+    private final DynamoDbClient localDynamo = initializeTestDatabase();
     private UpdateNviCandidateStatusHandler handler;
-    private NviService nviService;
     private Context context;
     private ByteArrayOutputStream output;
-
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
 
@@ -72,10 +73,8 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void setUp() {
         output = new ByteArrayOutputStream();
         context = mock(Context.class);
-        var localDynamo = initializeTestDatabase();
         candidateRepository = new CandidateRepository(localDynamo);
-        periodRepository = new PeriodRepository(localDynamo);
-        nviService = new NviService(localDynamo);
+        periodRepository = candidateRepositoryReturningOpenedPeriod(Integer.parseInt(OPEN_YEAR));
         handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository);
     }
 
@@ -100,8 +99,10 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    @Disabled
-    void shouldReturnBadRequestWhenUpdatingStatusAndReportingPeriodIsClosed() throws IOException {
+    void shouldReturnConflictWhenUpdatingStatusAndReportingPeriodIsClosed() throws IOException {
+        candidateRepository = new CandidateRepository(localDynamo);
+        periodRepository = candidateRepositoryReturningClosedPeriod(Integer.parseInt(OPEN_YEAR));
+        handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository);
         var institutionId = randomUri();
         var candidate =
             CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository);
@@ -109,7 +110,22 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
+    }
+
+    @Test
+    void shouldReturnConflictWhenUpdatingStatusAndNotOpenedPeriod() throws IOException {
+        candidateRepository = new CandidateRepository(localDynamo);
+        periodRepository = candidateRepositoryReturningNotOpenedPeriod(Integer.parseInt(OPEN_YEAR));
+        handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository);
+        var institutionId = randomUri();
+        var candidate =
+            CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository);
+        var request = createRequest(candidate.identifier(), institutionId, APPROVED);
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
     }
 
     @Test

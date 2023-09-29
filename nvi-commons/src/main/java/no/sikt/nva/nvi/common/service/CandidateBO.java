@@ -4,6 +4,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -136,18 +137,9 @@ public final class CandidateBO {
     }
 
     public CandidateBO updateStatus(UpdateApprovalRequest input) {
-        //validatePeriodStatus();
+        validatePeriodStatus();
         approvals.computeIfPresent(input.institutionId(), (uri, approvalBO) -> approvalBO.update(input));
         return this;
-    }
-
-    private void validatePeriodStatus() {
-        if (periodStatus.status().equals(Status.CLOSED_PERIOD)) {
-            throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
-        }
-        if (Status.NO_PERIOD.equals(periodStatus.status())) {
-            throw new IllegalStateException(PERIOD_NOT_OPENED_MESSAGE);
-        }
     }
 
     public CandidateBO createNote(CreateNoteRequest input) {
@@ -346,6 +338,15 @@ public final class CandidateBO {
 
     private static String mapToUsernameString(Username assignee) {
         return assignee != null ? assignee.value() : null;
+    }
+
+    private void validatePeriodStatus() {
+        if (periodStatus.status().equals(Status.CLOSED_PERIOD)) {
+            throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
+        }
+        if (Status.NO_PERIOD.equals(periodStatus.status()) || periodStatus.startDate().isAfter(Instant.now())) {
+            throw new IllegalStateException(PERIOD_NOT_OPENED_MESSAGE);
+        }
     }
 
     private PeriodStatusDto mapToPeriodStatusDto() {
