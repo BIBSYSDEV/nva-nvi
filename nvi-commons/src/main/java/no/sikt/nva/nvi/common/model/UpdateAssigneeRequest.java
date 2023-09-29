@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.model;
 
-import no.sikt.nva.nvi.common.db.model.Username;
+import java.net.URI;
 
-public record UpdateAssigneeRequest(Username username) implements UpdateApprovalRequest {
+public record UpdateAssigneeRequest(URI institutionId, String username) implements UpdateApprovalRequest {
 
 }

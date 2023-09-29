@@ -16,19 +16,29 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
-import no.sikt.nva.nvi.common.db.NviPeriodRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
+import no.sikt.nva.nvi.common.service.requests.PublicationDate;
+import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import nva.commons.core.paths.UriWrapper;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -137,7 +147,7 @@ public final class TestUtils {
     }
 
     public static NviService nviServiceReturningOpenPeriod(DynamoDbClient client, int year) {
-        var nviPeriodRepository = mock(NviPeriodRepository.class);
+        var nviPeriodRepository = mock(PeriodRepository.class);
         var nviService = new NviService(client, nviPeriodRepository);
         var period = DbNviPeriod.builder()
                          .publishingYear(String.valueOf(year))
@@ -148,11 +158,111 @@ public final class TestUtils {
     }
 
     public static NviService nviServiceReturningClosedPeriod(DynamoDbClient client, int year) {
-        var nviPeriodRepository = mock(NviPeriodRepository.class);
+        var nviPeriodRepository = mock(PeriodRepository.class);
         var nviService = new NviService(client, nviPeriodRepository);
         var period = DbNviPeriod.builder().publishingYear(String.valueOf(year)).reportingDate(Instant.now()).build();
         when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
         return nviService;
+    }
+
+    public static UpdateStatusRequest createUpdateStatusRequest(DbStatus status, URI institutionId, String username) {
+        return UpdateStatusRequest.builder()
+                   .withReason(DbStatus.REJECTED.equals(status) ? randomString() : null)
+                   .withApprovalStatus(status)
+                   .withInstitutionId(institutionId)
+                   .withUsername(username)
+                   .build();
+    }
+
+    public static UpsertCandidateRequest createUpsertCandidateRequest(URI... institutions) {
+        return createUpsertCandidateRequest(UUID.randomUUID(), randomUri(), true, 1, InstanceType.ACADEMIC_MONOGRAPH,
+                                            institutions);
+    }
+
+    public static UpsertCandidateRequest createUpsertCandidateRequest(UUID identifier, URI publicationId,
+                                                                      boolean isApplicable, int creatorCount,
+                                                                      final InstanceType instanceType,
+                                                                      URI... institutions) {
+        var creators = IntStream.of(creatorCount)
+                           .mapToObj(i -> randomUri())
+                           .collect(Collectors.toMap(Function.identity(), e -> List.of(institutions)));
+        var points = Arrays.stream(institutions)
+                         .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal()));
+        return new UpsertCandidateRequest() {
+            @Override
+            public UUID identifier() {
+                return identifier;
+            }
+
+            @Override
+            public URI publicationBucketUri() {
+                return randomUri();
+            }
+
+            @Override
+            public URI publicationId() {
+                return publicationId;
+            }
+
+            @Override
+            public boolean isApplicable() {
+                return isApplicable;
+            }
+
+            @Override
+            public boolean isInternationalCooperation() {
+                return false;
+            }
+
+            @Override
+            public Map<URI, List<URI>> creators() {
+                return creators;
+            }
+
+            @Override
+            public String level() {
+                return DbLevel.LEVEL_TWO.getValue();
+            }
+
+            @Override
+            public String instanceType() {
+                return instanceType.getValue();
+            }
+
+            @Override
+            public PublicationDate publicationDate() {
+                return new PublicationDate("2023", null, null);
+            }
+
+            @Override
+            public Map<URI, BigDecimal> points() {
+                return points;
+            }
+
+            @Override
+            public int creatorCount() {
+                return creatorCount;
+            }
+        };
+    }
+
+    public static CreateNoteRequest createNoteRequest(String text, String username) {
+        return new CreateNoteRequest() {
+            @Override
+            public String text() {
+                return text;
+            }
+
+            @Override
+            public String username() {
+                return username;
+            }
+        };
+    }
+
+    public static void createNotes(CandidateBO candidate, int max) {
+        IntStream.range(0, max).boxed().forEach(i -> candidate.createNote(createNoteRequest(randomString(),
+                                                                                            randomString())));
     }
 
     private static Instant getNowWithMillisecondAccuracy() {
