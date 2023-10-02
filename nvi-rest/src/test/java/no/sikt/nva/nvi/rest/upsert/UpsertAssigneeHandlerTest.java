@@ -180,7 +180,8 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
                                 candidateRepository,
                                 periodRepository);
         candidate.updateApproval(new UpdateAssigneeRequest(institutionId, newAssignee));
-        candidate.updateApproval(new UpdateStatusRequest(institutionId, DbStatus.APPROVED, randomString(), randomString()));
+        candidate.updateApproval(new UpdateStatusRequest(institutionId,
+                                                         DbStatus.APPROVED, randomString(), randomString()));
         return candidate;
     }
 
