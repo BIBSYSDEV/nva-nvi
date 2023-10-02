@@ -4,6 +4,7 @@ import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.rest.upsert.NviApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.rest.upsert.NviApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.rest.upsert.NviApprovalStatus.REJECTED;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningNotOpenedPeriod;
@@ -23,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -52,7 +52,6 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
 
-    private static final int CURRENT_YEAR = LocalDate.now().getYear();
     private static final String ERROR_MISSING_REJECTION_REASON = "Cannot reject approval status without reason";
     private static final String CANDIDATE_IDENTIFIER_PATH = "candidateIdentifier";
     private final DynamoDbClient localDynamo = initializeTestDatabase();

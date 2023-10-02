@@ -48,13 +48,14 @@ import nva.commons.core.paths.UriWrapper;
 
 public final class CandidateBO {
 
+    public static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
+    public static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
+                                                           + " forbidden!";
+    public static final String CANDIDATE_NOT_APPLICABLE_MESSAGE = "Candidate is not applicable";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
     private static final String CANDIDATE_PATH = "candidate";
-    public static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
-    public static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
-                                                           + " forbidden!";
     private static final String INVALID_CANDIDATE_MESSAGE = "Candidate is missing mandatory fields";
     private final CandidateRepository repository;
     private final UUID identifier;
@@ -94,6 +95,9 @@ public final class CandidateBO {
                                           PeriodRepository periodRepository) {
         var candidateDao = repository.findCandidateDaoById(request.identifier())
                                .orElseThrow(CandidateNotFoundException::new);
+        if (isNotApplicable(candidateDao)) {
+            throw new CandidateNotFoundException();
+        }
         var approvalDaoList = repository.fetchApprovals(candidateDao.identifier());
         var noteDaoList = repository.getNotes(candidateDao.identifier());
         var periodStatus = getPeriodStatus(periodRepository, candidateDao.candidate().publicationDate().year());
@@ -139,15 +143,6 @@ public final class CandidateBO {
         validateCandidateState();
         approvals.computeIfPresent(input.institutionId(), (uri, approvalBO) -> approvalBO.update(input));
         return this;
-    }
-
-    private void validateCandidateState() {
-        if (periodStatus.status().equals(Status.CLOSED_PERIOD)) {
-            throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
-        }
-        if (Status.NO_PERIOD.equals(periodStatus.status()) || Status.UNOPENED_PERIOD.equals(periodStatus.status()))  {
-            throw new IllegalStateException(PERIOD_NOT_OPENED_MESSAGE);
-        }
     }
 
     public CandidateBO createNote(CreateNoteRequest input) {
@@ -346,6 +341,34 @@ public final class CandidateBO {
 
     private static String mapToUsernameString(Username assignee) {
         return assignee != null ? assignee.value() : null;
+    }
+
+    private void validateCandidateState() {
+        if (periodStatus.status().equals(Status.CLOSED_PERIOD)) {
+            throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
+        }
+        if (Status.NO_PERIOD.equals(periodStatus.status()) || Status.UNOPENED_PERIOD.equals(periodStatus.status())) {
+            throw new IllegalStateException(PERIOD_NOT_OPENED_MESSAGE);
+        }
+        if (isNotApplicable()) {
+            throw new IllegalStateException(CANDIDATE_NOT_APPLICABLE_MESSAGE);
+        }
+    }
+
+    private static boolean isNotApplicable(CandidateDao candidateDao) {
+        return isApplicable(candidateDao);
+    }
+
+    private boolean isNotApplicable() {
+        return !isApplicable();
+    }
+
+    private static boolean isApplicable(CandidateDao candidateDao) {
+        return !candidateDao.candidate().applicable();
+    }
+
+    private boolean isApplicable() {
+        return original.candidate().applicable();
     }
 
     private PeriodStatusDto mapToPeriodStatusDto() {

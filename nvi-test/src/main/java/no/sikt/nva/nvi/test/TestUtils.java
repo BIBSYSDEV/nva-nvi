@@ -55,6 +55,8 @@ public final class TestUtils {
     private static final String PUBLICATION_API_PATH = "publication";
     private static final String API_HOST = "example.com";
 
+    public static final int CURRENT_YEAR = LocalDate.now().getYear();
+
     private TestUtils() {
     }
 
@@ -101,21 +103,6 @@ public final class TestUtils {
     public static InstanceType randomInstanceTypeExcluding(InstanceType instanceType) {
         var instanceTypes = Arrays.stream(InstanceType.values()).filter(type -> !type.equals(instanceType)).toList();
         return instanceTypes.get(new Random().nextInt(instanceTypes.size()));
-    }
-
-    public static DbCandidate randomApplicableCandidateBuilder() {
-        return DbCandidate.builder()
-                   .publicationId(randomUri())
-                   .publicationBucketUri(randomUri())
-                   .applicable(true)
-                   .instanceType(randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE))
-                   .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
-                   .level(randomElement(DbLevel.values()))
-                   .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
-                   .internationalCollaboration(randomBoolean())
-                   .creatorCount(randomInteger())
-                   .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))))
-                   .build();
     }
 
     public static String randomYear() {
