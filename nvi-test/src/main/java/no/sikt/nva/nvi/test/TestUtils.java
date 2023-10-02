@@ -227,11 +227,11 @@ public final class TestUtils {
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI... institutions) {
-        return createUpsertCandidateRequest(UUID.randomUUID(), randomUri(), true, 1, InstanceType.ACADEMIC_MONOGRAPH,
+        return createUpsertCandidateRequest(randomUri(), true, 1, InstanceType.ACADEMIC_MONOGRAPH,
                                             institutions);
     }
 
-    public static UpsertCandidateRequest createUpsertCandidateRequest(UUID identifier, URI publicationId,
+    public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
                                                                       boolean isApplicable, int creatorCount,
                                                                       final InstanceType instanceType,
                                                                       URI... institutions) {
@@ -241,10 +241,6 @@ public final class TestUtils {
         var points = Arrays.stream(institutions)
                          .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal()));
         return new UpsertCandidateRequest() {
-            @Override
-            public UUID identifier() {
-                return identifier;
-            }
 
             @Override
             public URI publicationBucketUri() {
