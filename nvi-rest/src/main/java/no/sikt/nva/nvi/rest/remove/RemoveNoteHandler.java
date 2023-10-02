@@ -4,71 +4,54 @@ import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDEN
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
-import java.util.NoSuchElementException;
 import java.util.UUID;
-import java.util.function.Function;
-import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.model.CandidateResponse;
-import no.sikt.nva.nvi.rest.model.CandidateResponseMapper;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.DynamoRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
+import no.sikt.nva.nvi.utils.ExceptionMapper;
 import no.sikt.nva.nvi.utils.RequestUtil;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
-import nva.commons.apigateway.exceptions.BadRequestException;
-import nva.commons.apigateway.exceptions.NotFoundException;
-import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
-import nva.commons.core.attempt.Failure;
 
-public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateResponse> {
+public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto> {
 
     public static final String PARAM_NOTE_IDENTIFIER = "noteIdentifier";
-    private final NviService service;
+    private final CandidateRepository candidateRepository;
+    private final PeriodRepository periodRepository;
 
     @JacocoGenerated
     public RemoveNoteHandler() {
-        this(NviService.defaultNviService());
+        this(new CandidateRepository(DynamoRepository.defaultDynamoClient()),
+             new PeriodRepository(DynamoRepository.defaultDynamoClient()));
     }
 
-    public RemoveNoteHandler(NviService service) {
+    public RemoveNoteHandler(CandidateRepository candidateRepository, PeriodRepository periodRepository) {
         super(Void.class);
-        this.service = service;
+        this.candidateRepository = candidateRepository;
+        this.periodRepository = periodRepository;
     }
 
     @Override
-    protected CandidateResponse processInput(Void input, RequestInfo requestInfo, Context context)
+    protected CandidateDto processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
-        var username = RequestUtil.getUsername(requestInfo);
-        var candidateIdentifier = requestInfo.getPathParameter(CANDIDATE_IDENTIFIER);
-        var noteIdentifier = requestInfo.getPathParameter(PARAM_NOTE_IDENTIFIER);
-        return attempt(() -> service.deleteNote(UUID.fromString(candidateIdentifier),
-                                                UUID.fromString(noteIdentifier),
-                                                username.value()))
-                   .map(CandidateResponseMapper::toDto)
-                   .orElseThrow(handleFailure());
+        var username = RequestUtil.getUsername(requestInfo).value();
+        var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
+        var noteIdentifier = UUID.fromString(requestInfo.getPathParameter(PARAM_NOTE_IDENTIFIER));
+        return attempt(() -> CandidateBO.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository))
+                   .map(candidate -> candidate.deleteNote(new DeleteNoteRequest(noteIdentifier, username)))
+                   .map(CandidateBO::toDto)
+                   .orElseThrow(ExceptionMapper::map);
     }
 
     @Override
-    protected Integer getSuccessStatusCode(Void input, CandidateResponse output) {
+    protected Integer getSuccessStatusCode(Void input, CandidateDto output) {
         return HttpURLConnection.HTTP_OK;
-    }
-
-    private static Function<Failure<CandidateResponse>, ApiGatewayException> handleFailure() {
-        return failure -> {
-            var exception = failure.getException();
-            if (exception instanceof NoSuchElementException) {
-                return new NotFoundException(exception.getMessage());
-            }
-            if (exception instanceof IllegalArgumentException) {
-                return new UnauthorizedException(exception.getMessage());
-            }
-            if (exception instanceof IllegalStateException) {
-                return new BadRequestException(exception.getMessage());
-            }
-            return (ApiGatewayException) exception;
-        };
     }
 }

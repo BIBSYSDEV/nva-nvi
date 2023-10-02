@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.rest.create;
 
-import static no.sikt.nva.nvi.test.TestUtils.nviServiceReturningClosedPeriod;
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidateWithPublicationYear;
+import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -14,10 +14,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.util.Calendar;
+import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
@@ -32,19 +34,21 @@ import org.zalando.problem.Problem;
 
 public class CreateNoteHandlerTest extends LocalDynamoTest {
 
-    public static final int YEAR = Calendar.getInstance().getWeekYear();
+    public static final int YEAR = ZonedDateTime.now().getYear();
     private Context context;
     private ByteArrayOutputStream output;
     private CreateNoteHandler handler;
-    private NviService nviService;
+    private CandidateRepository candidateRepository;
+    private PeriodRepository periodRepository;
 
     @BeforeEach
     void setUp() {
         output = new ByteArrayOutputStream();
         context = mock(Context.class);
         localDynamo = initializeTestDatabase();
-        nviService = TestUtils.nviServiceReturningOpenPeriod(localDynamo, YEAR);
-        handler = new CreateNoteHandler(nviService);
+        candidateRepository = new CandidateRepository(localDynamo);
+        periodRepository = TestUtils.periodRepositoryReturningOpenedPeriod(YEAR);
+        handler = new CreateNoteHandler(candidateRepository, periodRepository);
     }
 
     @Test
@@ -69,7 +73,8 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldAddNoteToCandidateWhenNoteIsValid() throws IOException {
-        var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
+        var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
+                                                periodRepository);
         var theNote = "The note";
         var userName = randomString();
 
@@ -84,10 +89,10 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnConflictWhenCreatingNoteAndReportingPeriodIsClosed() throws IOException {
-        var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
+        var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
+                                                periodRepository);
         var request = createRequest(candidate.identifier(), new NviNoteRequest(randomString()), randomString());
-        var nviService = nviServiceReturningClosedPeriod(localDynamo, YEAR);
-        var handler = new CreateNoteHandler(nviService);
+        var handler = new CreateNoteHandler(candidateRepository, periodRepositoryReturningClosedPeriod(YEAR));
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -97,8 +102,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
     private InputStream createRequest(UUID identifier, NviNoteRequest body, String userName)
         throws JsonProcessingException {
         var customerId = randomUri();
-        return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper)
-                   .withBody(body)
+        return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper).withBody(body)
                    .withCurrentCustomer(customerId)
                    .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE.name())
@@ -106,11 +110,9 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private InputStream createRequest(UUID identifier, String body, String userName)
-        throws JsonProcessingException {
+    private InputStream createRequest(UUID identifier, String body, String userName) throws JsonProcessingException {
         var customerId = randomUri();
-        return new HandlerRequestBuilder<String>(JsonUtils.dtoObjectMapper)
-                   .withBody(body)
+        return new HandlerRequestBuilder<String>(JsonUtils.dtoObjectMapper).withBody(body)
                    .withCurrentCustomer(customerId)
                    .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE.name())

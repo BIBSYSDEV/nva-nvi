@@ -14,7 +14,7 @@ public record CandidateDto(
     UUID identifier,
     URI publicationId,
     List<ApprovalStatus> approvalStatuses,
-    List<Note> notes,
+    List<NoteDto> notes,
     PeriodStatusDto periodStatus) {
 
     public static Builder builder() {
@@ -27,7 +27,7 @@ public record CandidateDto(
         private UUID identifier;
         private URI publicationId;
         private List<ApprovalStatus> approvalStatuses = new ArrayList<>();
-        private List<Note> notes = new ArrayList<>();
+        private List<NoteDto> notes = new ArrayList<>();
         private PeriodStatusDto periodStatus;
 
         private Builder() {
@@ -53,7 +53,7 @@ public record CandidateDto(
             return this;
         }
 
-        public Builder withNotes(List<Note> notes) {
+        public Builder withNotes(List<NoteDto> notes) {
             this.notes = notes;
             return this;
         }
