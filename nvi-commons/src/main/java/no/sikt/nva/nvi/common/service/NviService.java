@@ -68,13 +68,13 @@ public class NviService {
     }
 
     public DbNviPeriod createPeriod(DbNviPeriod period) {
-        validatePeriod(period);
+        validateNewPeriod(period);
         return periodRepository.save(period);
     }
 
     public DbNviPeriod updatePeriod(DbNviPeriod period) {
         var nviPeriod = injectCreatedBy(period);
-        validatePeriod(nviPeriod);
+        validateUpdatePeriod(nviPeriod);
         return periodRepository.save(nviPeriod);
     }
 
@@ -240,7 +240,7 @@ public class NviService {
         return candidateRepository.updateCandidateRemovingApprovals(identifier, candidate, approvalStatuses);
     }
 
-    private void validatePeriod(DbNviPeriod period) {
+    private void validateNewPeriod(DbNviPeriod period) {
         if (hasNullValues(period)) {
             throw new IllegalArgumentException(PERIOD_IS_MISSING_VALUES_ERROR);
         }
@@ -255,6 +255,15 @@ public class NviService {
         }
         if (period.startDate().isBefore(Instant.now())) {
             throw new IllegalArgumentException(START_DATE_BACK_IN_TIME_ERROR_MESSAGE);
+        }
+        if (period.startDate().isAfter(period.reportingDate())) {
+            throw new IllegalArgumentException(START_DATE_ERROR_MESSAGE);
+        }
+    }
+
+    private void validateUpdatePeriod(DbNviPeriod period) {
+        if (period.reportingDate().isBefore(Instant.now())) {
+            throw new IllegalArgumentException(NOT_SUPPORTED_REPORTING_DATE_MESSAGE);
         }
         if (period.startDate().isAfter(period.reportingDate())) {
             throw new IllegalArgumentException(START_DATE_ERROR_MESSAGE);
