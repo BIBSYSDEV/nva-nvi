@@ -89,11 +89,6 @@ public class NviService {
         return candidateRepository.updateApprovalStatus(candidateIdentifier, newApproval);
     }
 
-    public DbApprovalStatus findApprovalStatus(URI institutionId, UUID candidateIdentifier) {
-        return candidateRepository.findApprovalByIdAndInstitutionId(candidateIdentifier, institutionId)
-                   .orElseThrow();
-    }
-
     public Optional<Candidate> findApplicableCandidateById(UUID uuid) {
         var candidate = findCandidateById(uuid);
         return candidate.isPresent() && candidate.get().candidate().applicable() ? candidate : Optional.empty();
