@@ -356,7 +356,7 @@ public final class CandidateBO {
     }
 
     private static boolean isNotApplicable(CandidateDao candidateDao) {
-        return isApplicable(candidateDao);
+        return !isApplicable(candidateDao);
     }
 
     private boolean isNotApplicable() {
@@ -364,7 +364,7 @@ public final class CandidateBO {
     }
 
     private static boolean isApplicable(CandidateDao candidateDao) {
-        return !candidateDao.candidate().applicable();
+        return candidateDao.candidate().applicable();
     }
 
     private boolean isApplicable() {
