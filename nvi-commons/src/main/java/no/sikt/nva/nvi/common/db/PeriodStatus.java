@@ -19,15 +19,36 @@ public record PeriodStatus(Instant startDate, Instant reportingDate, Status stat
 
     public static PeriodStatus fromPeriod(DbNviPeriod period) {
         Objects.requireNonNull(period);
-        return period.reportingDate().isAfter(Instant.now())
-                   ? toOpenPeriodStatus(period)
-                   : toClosedPeriodStatus(period);
+        if (isOpenPeriod(period)) {
+            return toOpenPeriodStatus(period);
+        }
+        if (closedPeriod(period)) {
+            return toClosedPeriodStatus(period);
+        } else {
+            return toUnopenedPeriod(period);
+        }
     }
 
     @Override
     @JacocoGenerated
     public String toString() {
         return toJsonString();
+    }
+
+    private static PeriodStatus toUnopenedPeriod(DbNviPeriod period) {
+        return PeriodStatus.builder()
+                   .withStartDate(period.startDate())
+                   .withReportingDate(period.reportingDate())
+                   .withStatus(Status.UNOPENED_PERIOD)
+                   .build();
+    }
+
+    private static boolean closedPeriod(DbNviPeriod period) {
+        return period.reportingDate().isBefore(Instant.now());
+    }
+
+    private static boolean isOpenPeriod(DbNviPeriod period) {
+        return period.startDate().isBefore(Instant.now()) && period.reportingDate().isAfter(Instant.now());
     }
 
     private static PeriodStatus toOpenPeriodStatus(DbNviPeriod period) {
@@ -47,7 +68,8 @@ public record PeriodStatus(Instant startDate, Instant reportingDate, Status stat
     }
 
     public enum Status {
-        OPEN_PERIOD("OpenPeriod"), CLOSED_PERIOD("ClosedPeriod"), NO_PERIOD("NoPeriod");
+        OPEN_PERIOD("OpenPeriod"), CLOSED_PERIOD("ClosedPeriod"), NO_PERIOD("NoPeriod"), UNOPENED_PERIOD(
+            "UnopenedPeriod");
 
         private final String value;
 

@@ -54,7 +54,6 @@ public final class TestUtils {
     private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
     private static final String PUBLICATION_API_PATH = "publication";
     private static final String API_HOST = "example.com";
-    public static final String OPEN_YEAR = "2023";
 
     private TestUtils() {
     }
@@ -165,9 +164,39 @@ public final class TestUtils {
     public static NviService nviServiceReturningClosedPeriod(DynamoDbClient client, int year) {
         var nviPeriodRepository = mock(PeriodRepository.class);
         var nviService = new NviService(client, nviPeriodRepository);
-        var period = DbNviPeriod.builder().publishingYear(String.valueOf(year)).reportingDate(Instant.now()).build();
+        var period = DbNviPeriod.builder().publishingYear(String.valueOf(year)).startDate(Instant.now())
+                .reportingDate(Instant.now()).build();
         when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
         return nviService;
+    }
+
+    public static PeriodRepository periodRepositoryReturningClosedPeriod(int year) {
+        var nviPeriodRepository = mock(PeriodRepository.class);
+        var period = DbNviPeriod.builder().publishingYear(String.valueOf(year))
+                         .startDate(ZonedDateTime.now().minusMonths(10).toInstant())
+                         .reportingDate(ZonedDateTime.now().minusMonths(1).toInstant()).build();
+        when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
+        return nviPeriodRepository;
+    }
+
+    public static PeriodRepository periodRepositoryReturningNotOpenedPeriod(int year) {
+        var nviPeriodRepository = mock(PeriodRepository.class);
+        var period = DbNviPeriod.builder()
+                         .publishingYear(String.valueOf(year))
+                         .startDate(ZonedDateTime.now().plusMonths(1).toInstant())
+                         .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant()).build();
+        when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
+        return nviPeriodRepository;
+    }
+
+    public static PeriodRepository periodRepositoryReturningOpenedPeriod(int year) {
+        var nviPeriodRepository = mock(PeriodRepository.class);
+        var period = DbNviPeriod.builder()
+                         .publishingYear(String.valueOf(year))
+                         .startDate(Instant.now())
+                         .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant()).build();
+        when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
+        return nviPeriodRepository;
     }
 
     public static PeriodStatus randomPeriodStatus() {
@@ -186,33 +215,6 @@ public final class TestUtils {
                          .build();
         when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
         return nviService;
-    }
-
-    public static PeriodRepository candidateRepositoryReturningClosedPeriod(int year) {
-        var nviPeriodRepository = mock(PeriodRepository.class);
-        var period = DbNviPeriod.builder().publishingYear(String.valueOf(year)).reportingDate(Instant.now()).build();
-        when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
-        return nviPeriodRepository;
-    }
-
-    public static PeriodRepository candidateRepositoryReturningNotOpenedPeriod(int year) {
-        var nviPeriodRepository = mock(PeriodRepository.class);
-        var period = DbNviPeriod.builder()
-                         .publishingYear(String.valueOf(year))
-                         .startDate(ZonedDateTime.now().plusMonths(1).toInstant())
-                         .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant()).build();
-        when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
-        return nviPeriodRepository;
-    }
-
-    public static PeriodRepository candidateRepositoryReturningOpenedPeriod(int year) {
-        var nviPeriodRepository = mock(PeriodRepository.class);
-        var period = DbNviPeriod.builder()
-                         .publishingYear(String.valueOf(year))
-                         .startDate(Instant.now())
-                         .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant()).build();
-        when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
-        return nviPeriodRepository;
     }
 
     public static UpdateStatusRequest createUpdateStatusRequest(DbStatus status, URI institutionId, String username) {
@@ -281,7 +283,7 @@ public final class TestUtils {
 
             @Override
             public PublicationDate publicationDate() {
-                return new PublicationDate(OPEN_YEAR, null, null);
+                return new PublicationDate(String.valueOf(ZonedDateTime.now().getYear()), null, null);
             }
 
             @Override

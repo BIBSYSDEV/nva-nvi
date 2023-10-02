@@ -1,10 +1,9 @@
 package no.sikt.nva.nvi.common.service;
 
-import static no.sikt.nva.nvi.test.TestUtils.OPEN_YEAR;
-import static no.sikt.nva.nvi.test.TestUtils.candidateRepositoryReturningOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.createNoteRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
@@ -13,10 +12,10 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.net.URI;
+import java.time.ZonedDateTime;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -30,8 +29,8 @@ import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
+import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalOperationException;
-import no.sikt.nva.nvi.common.service.exception.NotFoundException;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
@@ -50,12 +49,12 @@ class CandidateBOTest extends LocalDynamoTest {
     void setup() {
         localDynamo = initializeTestDatabase();
         candidateRepository = new CandidateRepository(localDynamo);
-        periodRepository = candidateRepositoryReturningOpenedPeriod(Integer.parseInt(OPEN_YEAR));
+        periodRepository = periodRepositoryReturningOpenedPeriod(ZonedDateTime.now().getYear());
     }
 
     @Test
     void shouldThrowNotFoundExceptionWhenCandidateDoesNotExist() {
-        assertThrows(NotFoundException.class,
+        assertThrows(CandidateNotFoundException.class,
                      () -> CandidateBO.fromRequest(UUID::randomUUID, candidateRepository, periodRepository));
     }
 
@@ -93,8 +92,8 @@ class CandidateBOTest extends LocalDynamoTest {
         var candidateBO = CandidateBO.fromRequest(createRequest, candidateRepository, periodRepository);
         candidateBO.createNote(createNoteRequest(randomString(), randomString()))
             .createNote(createNoteRequest(randomString(), randomString()))
-            .updateStatus(createUpdateStatusRequest(DbStatus.APPROVED, institutionToApprove, randomString()))
-            .updateStatus(createUpdateStatusRequest(DbStatus.REJECTED, institutionToReject, randomString()));
+            .updateApproval(createUpdateStatusRequest(DbStatus.APPROVED, institutionToApprove, randomString()))
+            .updateApproval(createUpdateStatusRequest(DbStatus.REJECTED, institutionToReject, randomString()));
         var dto = candidateBO.toDto();
         var approvalMap = dto.approvalStatuses()
                               .stream()
@@ -110,8 +109,8 @@ class CandidateBOTest extends LocalDynamoTest {
             assertThat(note.createdDate(), is(notNullValue()));
             assertThat(dto.id(), is(equalTo(constructId(candidateBO.identifier()))));
             assertThat(dto.identifier(), is(equalTo(candidateBO.identifier())));
-            assertThat(dto.periodStatus().status(), is(equalTo(PeriodStatusDto.Status.OPEN_PERIOD)));
-            assertThat(dto.periodStatus().reportingDate(), is(not(nullValue())));
+            var periodStatus = getDefaultPeriodStatus();
+            assertThat(dto.periodStatus().status(), is(equalTo(periodStatus.status())));
             assertThat(approvalMap.get(institutionToApprove).status(), is(equalTo(NviApprovalStatus.APPROVED)));
             var rejectedAP = approvalMap.get(institutionToReject);
             assertThat(rejectedAP.status(), is(equalTo(NviApprovalStatus.REJECTED)));
@@ -126,17 +125,17 @@ class CandidateBOTest extends LocalDynamoTest {
         var assignee = randomString();
         var createCandidateRequest = createUpsertCandidateRequest(institutionId);
         var candidate = CandidateBO.fromRequest(createCandidateRequest, candidateRepository, periodRepository)
-                            .updateStatus(new UpdateAssigneeRequest(institutionId, assignee))
-                            .updateStatus(createUpdateStatusRequest(DbStatus.APPROVED, institutionId, randomString()))
-                            .updateStatus(createUpdateStatusRequest(DbStatus.REJECTED, institutionId, randomString()))
+                            .updateApproval(new UpdateAssigneeRequest(institutionId, assignee))
+                            .updateApproval(createUpdateStatusRequest(DbStatus.APPROVED, institutionId, randomString()))
+                            .updateApproval(createUpdateStatusRequest(DbStatus.REJECTED, institutionId, randomString()))
                             .toDto();
         assertThat(candidate.approvalStatuses().get(0).assignee(), is(equalTo(assignee)));
         assertThat(candidate.approvalStatuses().get(0).finalizedBy(), is(not(equalTo(assignee))));
     }
 
-    private static PeriodStatusDto getDefaultPeriodstatus() {
+    private static PeriodStatusDto getDefaultPeriodStatus() {
         return PeriodStatusDto.fromPeriodStatus(
-            PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
+            PeriodStatus.builder().withStatus(Status.OPEN_PERIOD).build());
     }
 
     //TODO; add xDto to DTO classes

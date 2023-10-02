@@ -99,6 +99,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(year)).orElseThrow();
 
         assertThat(candidate.periodStatus().startDate(), is(equalTo(expectedPeriodStatus.startDate())));
+        assertThat(candidate.periodStatus().reportingDate(), is(equalTo(expectedPeriodStatus.reportingDate())));
         assertThat(candidate.periodStatus(), is(equalTo(expectedPeriodStatus)));
     }
 
