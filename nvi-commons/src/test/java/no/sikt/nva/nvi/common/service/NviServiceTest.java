@@ -250,7 +250,7 @@ public class NviServiceTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnIllegalArgumentExceptionWhenPublishingYearIsNotAYear() {
-        var period = createPeriod(randomString());
+        var period = createPeriod("20AA");
         assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
     }
 
@@ -275,6 +275,7 @@ public class NviServiceTest extends LocalDynamoTest {
     void shouldReturnIllegalArgumentWhenReportingDateIsBeforeNow() {
         var period = DbNviPeriod.builder()
                          .reportingDate(Instant.MIN)
+                         .startDate(ZonedDateTime.now().plusMonths(1).toInstant())
                          .publishingYear("2023")
                          .createdBy(Username.builder().value("me").build())
                          .build();
