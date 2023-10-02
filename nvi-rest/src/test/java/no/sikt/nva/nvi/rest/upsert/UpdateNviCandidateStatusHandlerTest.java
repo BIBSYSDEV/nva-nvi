@@ -32,7 +32,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.CandidateBO;
-import no.sikt.nva.nvi.common.service.dto.CandidateDTO;
+import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
@@ -152,8 +152,8 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var request = createRequest(candidate.identifier(), institutionId,
                                     NviApprovalStatus.parse(newStatus.getValue()));
         handler.handleRequest(request, output, context);
-        var response = GatewayResponse.fromOutputStream(output, CandidateDTO.class);
-        var candidateResponse = response.getBodyObject(CandidateDTO.class);
+        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+        var candidateResponse = response.getBodyObject(CandidateDto.class);
 
         assertThat(candidateResponse.approvalStatuses().get(0).status().getValue(), is(equalTo(newStatus.getValue())));
     }
@@ -168,8 +168,8 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var newStatus = PENDING;
         var request = createRequest(candidate.identifier(), institutionId, newStatus);
         handler.handleRequest(request, output, context);
-        var response = GatewayResponse.fromOutputStream(output, CandidateDTO.class);
-        var candidateResponse = response.getBodyObject(CandidateDTO.class);
+        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+        var candidateResponse = response.getBodyObject(CandidateDto.class);
 
         assertThat(candidateResponse.approvalStatuses().get(0).finalizedBy(), is(nullValue()));
         assertThat(candidateResponse.approvalStatuses().get(0).finalizedDate(), is(nullValue()));
@@ -223,8 +223,8 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var requestBody = new NviStatusRequest(candidate.identifier(), institutionId, APPROVED, null);
         var request = createRequest(candidate.identifier(), institutionId, requestBody, assignee);
         handler.handleRequest(request, output, context);
-        var response = GatewayResponse.fromOutputStream(output, CandidateDTO.class);
-        var candidateResponse = response.getBodyObject(CandidateDTO.class);
+        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+        var candidateResponse = response.getBodyObject(CandidateDto.class);
 
         assertThat(candidateResponse.approvalStatuses().get(0).assignee(), is(equalTo(assignee)));
     }

@@ -31,7 +31,7 @@ import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
-import no.sikt.nva.nvi.common.service.dto.CandidateDTO;
+import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.Note;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
@@ -124,8 +124,8 @@ public final class CandidateBO {
         return original.candidate().publicationId();
     }
 
-    public CandidateDTO toDto() {
-        return CandidateDTO.builder()
+    public CandidateDto toDto() {
+        return CandidateDto.builder()
                    .withId(constructId(identifier))
                    .withIdentifier(identifier)
                    .withId(constructId(identifier))

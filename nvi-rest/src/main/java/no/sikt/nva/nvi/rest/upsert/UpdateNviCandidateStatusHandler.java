@@ -9,7 +9,7 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.CandidateBO;
-import no.sikt.nva.nvi.common.service.dto.CandidateDTO;
+import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
 import no.sikt.nva.nvi.utils.RequestUtil;
 import nva.commons.apigateway.AccessRight;
@@ -20,7 +20,7 @@ import nva.commons.apigateway.exceptions.ForbiddenException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
 
-public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatusRequest, CandidateDTO> {
+public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatusRequest, CandidateDto> {
 
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
@@ -37,7 +37,7 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
     }
 
     @Override
-    protected CandidateDTO processInput(NviStatusRequest input, RequestInfo requestInfo, Context context)
+    protected CandidateDto processInput(NviStatusRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         validateRequest(input, requestInfo);
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
@@ -50,7 +50,7 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
     }
 
     @Override
-    protected Integer getSuccessStatusCode(NviStatusRequest input, CandidateDTO output) {
+    protected Integer getSuccessStatusCode(NviStatusRequest input, CandidateDto output) {
         return HTTP_OK;
     }
 
