@@ -15,7 +15,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 public record ApprovalStatusDao(UUID identifier,
                                 @DynamoDbAttribute(DATA_FIELD) DbApprovalStatus approvalStatus,
                                 String version
-) implements DynamoEntryWithRangeKey, Dao {
+) implements DynamoEntryWithRangeKey {
 
     public static final String TYPE = "APPROVAL_STATUS";
 

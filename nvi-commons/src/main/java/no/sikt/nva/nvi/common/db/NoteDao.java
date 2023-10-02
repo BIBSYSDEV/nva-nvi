@@ -16,7 +16,7 @@ public record NoteDao(UUID identifier,
                       @DynamoDbAttribute(DATA_FIELD)
                       DbNote note,
                       String version
-) implements DynamoEntryWithRangeKey, Dao {
+) implements DynamoEntryWithRangeKey {
 
     public static final String TYPE = "NOTE";
 

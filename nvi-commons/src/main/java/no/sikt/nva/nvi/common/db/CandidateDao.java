@@ -23,7 +23,7 @@ public record CandidateDao(
     UUID identifier,
     @DynamoDbAttribute(DATA_FIELD) DbCandidate candidate,
     String version
-) implements DynamoEntryWithRangeKey, Dao {
+) implements DynamoEntryWithRangeKey {
 
     public static final String TYPE = "CANDIDATE";
 

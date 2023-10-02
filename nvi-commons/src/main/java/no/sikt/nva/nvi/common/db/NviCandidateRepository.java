@@ -42,7 +42,7 @@ public class NviCandidateRepository extends DynamoRepository {
 
     public static final int BATCH_SIZE = 25;
     protected final DynamoDbTable<CandidateDao> candidateTable;
-    private final DynamoDbTable<CandidateUniquenessEntryDao> uniquenessTable;
+    protected final DynamoDbTable<CandidateUniquenessEntryDao> uniquenessTable;
     private final DynamoDbIndex<CandidateDao> publicationIdIndex;
     protected final DynamoDbTable<ApprovalStatusDao> approvalStatusTable;
     protected final DynamoDbTable<NoteDao> noteTable;
@@ -56,7 +56,7 @@ public class NviCandidateRepository extends DynamoRepository {
         this.noteTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(NoteDao.class));
     }
 
-    public <T> ListingResult refresh(int pageSize, Map<String,
+    public ListingResult refresh(int pageSize, Map<String,
                                                       String> startMarker) {
         var scan = defaultClient.scan(createScanRequest(pageSize, startMarker));
 
@@ -113,18 +113,11 @@ public class NviCandidateRepository extends DynamoRepository {
                                                       e -> AttributeValue.builder().s(e.getValue()).build())) : null;
         return ScanRequest.builder()
                    .tableName(NVI_TABLE_NAME)
-                   //.filterExpression(filterExpressionToScanCandidates().expression())
+                   .filterExpression("not contains (#PK, :TYPE) ")
+                   .expressionAttributeNames(Map.of("#PK", "PrimaryKeyHashKey"))
+                   .expressionAttributeValues(Map.of(":TYPE", AttributeValue.fromS("CandidateUniquenessEntry")))
                    .exclusiveStartKey(start)
                    .limit(pageSize)
-                   .build();
-    }
-
-    private static Expression filterExpressionToScanCandidates() {
-        return Expression.builder()
-                   .expression("begins_with (#PK, :CANDIDATE) and begins_with (#RK, :CANDIDATE)")
-                   .expressionNames(Map.of("#PK", "PrimaryKeyHashKey",
-                                           "#RK", "PrimaryKeyRangeKey"))
-                   .expressionValues(Map.of(":CANDIDATE", AttributeValue.fromS("CANDIDATE")))
                    .build();
     }
 

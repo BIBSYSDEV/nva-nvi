@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.db.CandidateUniquenessEntryDao;
 import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.NviCandidateRepository;
 import no.sikt.nva.nvi.common.db.model.DbNote;
@@ -158,9 +159,49 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         assertTrue(allEntitiesUpdated, "All approvals should have been updated with new version");
     }
 
-    //todo: test at body ikke endrer seg
+    @Test
+    void shouldNotIterateUniquenessEntries() {
+        createRandomCandidates(10).toList();
 
-    //todo: sjekk at uniqueness ikke blir prosessert
+        var items = candidateRepository.getUniquenessEntries().toList();
+
+
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+
+        while (thereAreMoreEventsInEventBridge()) {
+            var currentRequest = consumeLatestEmittedEvent();
+
+            handler.handleRequest(eventToInputStream(currentRequest), output, context);
+        }
+
+        var noEntitiesUpdated = items.stream()
+                                     .allMatch(item -> Objects.equals(item.version(),
+                                                                      candidateRepository.getUniquenessEntry(item)
+                                                                          .version())) && !items.isEmpty();
+
+        assertTrue(noEntitiesUpdated, "No uniqueness entries should have been updated with new version");
+    }
+
+
+    @Test
+    void bodyShouldNotChange() {
+        var candidates = createRandomCandidates(10).toList();
+
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+
+        while (thereAreMoreEventsInEventBridge()) {
+            var currentRequest = consumeLatestEmittedEvent();
+
+            handler.handleRequest(eventToInputStream(currentRequest), output, context);
+        }
+
+        var noEntitiesUpdated = candidates.stream()
+                                    .allMatch(item -> Objects.equals(item.hashCode(),
+                                                                     candidateRepository.getCandidateById(item.identifier())
+                                                                         .hashCode())) && !candidates.isEmpty();
+
+        assertTrue(noEntitiesUpdated, "No values should have been updated with new version");
+    }
 
     private ScanDatabaseRequest consumeLatestEmittedEvent() {
         var allRequests = eventBridgeClient.getRequestEntries();
@@ -202,7 +243,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         return IoUtils.stringToStream(event.toJsonString());
     }
 
-    public class NviCandidateRepositoryHelper extends NviCandidateRepository {
+    public static class NviCandidateRepositoryHelper extends NviCandidateRepository {
 
         public NviCandidateRepositoryHelper(DynamoDbClient client) {
             super(client);
@@ -232,6 +273,14 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
                        .stream()
                        .findFirst()
                        .orElseThrow();
+        }
+        public Stream<CandidateUniquenessEntryDao> getUniquenessEntries() {
+            return uniquenessTable.scan().items().stream().filter(a -> a.partitionKey() != null);
+        }
+
+        public CandidateUniquenessEntryDao getUniquenessEntry(CandidateUniquenessEntryDao entry)
+        {
+            return uniquenessTable.getItem(entry);
         }
     }
 }
