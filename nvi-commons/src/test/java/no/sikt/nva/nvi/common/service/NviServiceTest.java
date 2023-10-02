@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.common.service;
 
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus.APPROVED;
-import static no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus.REJECTED;
 import static no.sikt.nva.nvi.common.db.PeriodStatus.Status.CLOSED_PERIOD;
 import static no.sikt.nva.nvi.common.db.PeriodStatus.Status.NO_PERIOD;
 import static no.sikt.nva.nvi.common.db.PeriodStatus.Status.OPEN_PERIOD;
@@ -39,7 +38,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
@@ -54,31 +52,18 @@ import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
-import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
-import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.MethodSource;
 
 public class NviServiceTest extends LocalDynamoTest {
 
     public static final int YEAR = ZonedDateTime.now().getYear();
     private NviService nviService;
     private CandidateRepository candidateRepository;
-
-    public static Stream<Arguments> statusProvider() {
-        return Stream.of(Arguments.of(DbStatus.PENDING, DbStatus.REJECTED),
-                         Arguments.of(DbStatus.PENDING, DbStatus.APPROVED),
-                         Arguments.of(DbStatus.APPROVED, DbStatus.PENDING),
-                         Arguments.of(DbStatus.APPROVED, DbStatus.REJECTED),
-                         Arguments.of(DbStatus.REJECTED, DbStatus.PENDING),
-                         Arguments.of(DbStatus.APPROVED, DbStatus.APPROVED));
-    }
 
     @BeforeEach
     void setup() {
@@ -451,69 +436,6 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
-    void approvalShouldUpdateAssigneeByItself() {
-        var assignee = randomString();
-        var approval = getSingleApproval(nviService.upsertCandidate(randomCandidate()).orElseThrow());
-        var fetchedApproval = approval.update(nviService, new UpdateAssigneeRequest(randomUri(), assignee));
-        assertThat(fetchedApproval.assignee().value(), is(equalTo(assignee)));
-    }
-
-    @ParameterizedTest(name = "Should update from old status {0} to new status {1}")
-    @MethodSource("statusProvider")
-    void approvalShouldUpdateStatusByItself(DbStatus oldStatus, DbStatus newStatus) {
-        var existingCandidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
-        var approval = getSingleApproval(existingCandidate);
-        updateApproval(existingCandidate, oldStatus);
-        var fetchedApproval = approval.update(nviService, updateRequestWithReason(newStatus));
-        assertThat(fetchedApproval.status(), is(equalTo(newStatus)));
-    }
-
-    @Test
-    void shouldUpdateStatusWhenCandidateHasApprovalThatHasBeenReset() {
-        var existingCandidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
-        nviService.upsertCandidate(existingCandidate.candidate().copy().level(DbLevel.LEVEL_ONE).build())
-            .orElseThrow();
-        var updatedCandidate = nviService.findCandidateById(existingCandidate.identifier()).orElseThrow();
-        var approval = getSingleApproval(updatedCandidate);
-        var newStatus = APPROVED;
-        var actualApproval = approval.update(nviService, updateRequestWithoutReason(newStatus));
-        assertThat(actualApproval.status(), is(equalTo(newStatus)));
-    }
-
-    @ParameterizedTest
-    @EnumSource(value = DbStatus.class, names = {"PENDING", "APPROVED"})
-    void shouldThrowUnsupportedOperationExceptionIfRejectingWithoutReason(DbStatus oldStatus) {
-        var existingCandidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
-        var approval = getSingleApproval(existingCandidate);
-        updateApproval(existingCandidate, oldStatus);
-        assertThrows(UnsupportedOperationException.class,
-                     () -> approval.update(nviService, updateRequestWithoutReason(DbStatus.REJECTED)));
-    }
-
-    @ParameterizedTest
-    @EnumSource(value = DbStatus.class, names = {"PENDING", "APPROVED"})
-    void shouldRemoveReasonWhenUpdatingStatusFromReject(DbStatus newStatus) {
-        var existingCandidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
-        var approval = getSingleApproval(existingCandidate);
-        updateApproval(existingCandidate, REJECTED);
-
-        var actualApproval = approval.update(nviService, updateRequestWithoutReason(newStatus));
-        assertThat(actualApproval.status(), is(equalTo(newStatus)));
-        assertThat(actualApproval.reason(), is(nullValue()));
-    }
-
-    @Test
-    void shouldKeepAssigneeWhenFinalizingApproval() {
-        var existingCandidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
-        var approval = getSingleApproval(existingCandidate);
-        var assignee = randomString();
-        var assignedApproval = updateAssignee(approval, assignee);
-        var fetchedApproval = assignedApproval.update(nviService, updateRequestWithoutReason(APPROVED));
-
-        assertThat(fetchedApproval.assignee().value(), is(equalTo(assignee)));
-    }
-
-    @Test
     void shouldThrowIllegalArgumentExceptionWhenUnknownUpdateRequest() {
         var approval = getSingleApproval(nviService.upsertCandidate(randomCandidate()).orElseThrow());
         assertThrows(IllegalArgumentException.class, () -> approval.update(nviService, null));
@@ -608,21 +530,6 @@ public class NviServiceTest extends LocalDynamoTest {
                    .build();
     }
 
-    private static UpdateStatusRequest updateRequestWithReason(DbStatus newStatus) {
-        return UpdateStatusRequest.builder()
-                   .withApprovalStatus(newStatus)
-                   .withReason(DbStatus.REJECTED.equals(newStatus) ? randomString() : null)
-                   .withUsername(randomString())
-                   .build();
-    }
-
-    private static UpdateStatusRequest updateRequestWithoutReason(DbStatus dbStatus) {
-        return UpdateStatusRequest.builder()
-                   .withApprovalStatus(dbStatus)
-                   .withUsername(randomString())
-                   .build();
-    }
-
     private static DbApprovalStatus getSingleApproval(Candidate existingCandidate) {
         return existingCandidate.approvalStatuses().get(0);
     }
@@ -698,10 +605,6 @@ public class NviServiceTest extends LocalDynamoTest {
                                       .finalizedBy(Username.fromString(randomString()))
                                       .finalizedDate(Instant.now())
                                       .build());
-    }
-
-    private DbApprovalStatus updateAssignee(DbApprovalStatus approval, String assignee) {
-        return approval.update(nviService, new UpdateAssigneeRequest(randomUri(), assignee));
     }
 
     private void updateAssignee(DbApprovalStatus existingApprovalStatus) {
