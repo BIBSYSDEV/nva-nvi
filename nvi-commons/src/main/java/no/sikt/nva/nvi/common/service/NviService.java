@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
@@ -31,6 +32,8 @@ public class NviService {
     public static final String NOT_SUPPORTED_REPORTING_DATE_MESSAGE = "Provided reporting date is not supported";
     public static final String INVALID_CANDIDATE_MESSAGE = "Candidate is missing mandatory fields";
     public static final String START_DATE_ERROR_MESSAGE = "Period start date can not be after reporting date!";
+    public static final String START_DATE_BACK_IN_TIME_ERROR_MESSAGE = "Period start date can not be back in time!";
+    public static final String PERIOD_IS_MISSING_VALUES_ERROR = "Period is missing mandatory values!";
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
 
@@ -238,6 +241,9 @@ public class NviService {
     }
 
     private void validatePeriod(DbNviPeriod period) {
+        if (hasNullValues(period)) {
+            throw new IllegalArgumentException(PERIOD_IS_MISSING_VALUES_ERROR);
+        }
         if (hasInvalidLength(period)) {
             throw new IllegalArgumentException(INVALID_LENGTH_MESSAGE);
         }
@@ -248,10 +254,14 @@ public class NviService {
             throw new IllegalArgumentException(NOT_SUPPORTED_REPORTING_DATE_MESSAGE);
         }
         if (period.startDate().isBefore(Instant.now())) {
-            throw new IllegalArgumentException(START_DATE_ERROR_MESSAGE);
+            throw new IllegalArgumentException(START_DATE_BACK_IN_TIME_ERROR_MESSAGE);
         }
         if (period.startDate().isAfter(period.reportingDate())) {
             throw new IllegalArgumentException(START_DATE_ERROR_MESSAGE);
         }
+    }
+
+    private static boolean hasNullValues(DbNviPeriod period) {
+        return Stream.of(period.startDate(), period.reportingDate(), period.publishingYear()).anyMatch(Objects::isNull);
     }
 }

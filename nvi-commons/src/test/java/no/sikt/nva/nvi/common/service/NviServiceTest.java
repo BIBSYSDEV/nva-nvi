@@ -228,6 +228,16 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldThrowIllegalArgumentWhenPeriodMissedMandatoryValues() {
+        var period = new DbNviPeriod(String.valueOf(ZonedDateTime.now().plusYears(1).getYear()),
+                                     null, ZonedDateTime.now().plusMonths(10).toInstant(),
+                                     new Username(randomString()), null);
+        var nviService = new NviService(localDynamo);
+
+        assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
+    }
+
+    @Test
     void shouldUpdateNviPeriod() {
         var originalPeriod = createPeriod(String.valueOf(ZonedDateTime.now().getYear()));
         nviService.createPeriod(originalPeriod);
