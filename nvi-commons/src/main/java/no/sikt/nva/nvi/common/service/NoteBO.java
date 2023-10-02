@@ -48,7 +48,7 @@ public class NoteBO {
                    .build();
     }
 
-    public NoteDao dao() {
+    public NoteDao getDao() {
         return dao;
     }
 

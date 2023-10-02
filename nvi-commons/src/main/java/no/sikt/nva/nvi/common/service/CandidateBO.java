@@ -162,7 +162,7 @@ public final class CandidateBO {
     public CandidateBO deleteNote(DeleteNoteRequest request) {
         validateCandidateState();
         var note = notes.get(request.noteId());
-        validateNoteOwner(request.username(), note.dao());
+        validateNoteOwner(request.username(), note.getDao());
         notes.computeIfPresent(request.noteId(), (uuid, noteBO) -> {
             noteBO.delete();
             return null;
