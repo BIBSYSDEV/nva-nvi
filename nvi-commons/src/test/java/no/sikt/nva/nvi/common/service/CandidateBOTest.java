@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.common.service;
 
+import static no.sikt.nva.nvi.test.TestUtils.OPEN_YEAR;
+import static no.sikt.nva.nvi.test.TestUtils.candidateRepositoryReturningOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.createNoteRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
@@ -48,7 +50,7 @@ class CandidateBOTest extends LocalDynamoTest {
     void setup() {
         localDynamo = initializeTestDatabase();
         candidateRepository = new CandidateRepository(localDynamo);
-        periodRepository = new PeriodRepository(localDynamo);
+        periodRepository = candidateRepositoryReturningOpenedPeriod(Integer.parseInt(OPEN_YEAR));
     }
 
     @Test
@@ -108,9 +110,8 @@ class CandidateBOTest extends LocalDynamoTest {
             assertThat(note.createdDate(), is(notNullValue()));
             assertThat(dto.id(), is(equalTo(constructId(candidateBO.identifier()))));
             assertThat(dto.identifier(), is(equalTo(candidateBO.identifier())));
-            var periodStatus = getDefaultPeriodstatus();
-            assertThat(dto.periodStatus().status(), is(equalTo(periodStatus.status())));
-            assertThat(dto.periodStatus().reportingDate(), is(nullValue()));
+            assertThat(dto.periodStatus().status(), is(equalTo(PeriodStatusDto.Status.OPEN_PERIOD)));
+            assertThat(dto.periodStatus().reportingDate(), is(not(nullValue())));
             assertThat(approvalMap.get(institutionToApprove).status(), is(equalTo(NviApprovalStatus.APPROVED)));
             var rejectedAP = approvalMap.get(institutionToReject);
             assertThat(rejectedAP.status(), is(equalTo(NviApprovalStatus.REJECTED)));

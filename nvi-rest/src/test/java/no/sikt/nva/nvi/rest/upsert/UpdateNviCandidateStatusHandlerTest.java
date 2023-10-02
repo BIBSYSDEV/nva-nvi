@@ -53,6 +53,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
 
     private static final String ERROR_MISSING_REJECTION_REASON = "Cannot reject approval status without reason";
+    private static final String CANDIDATE_IDENTIFIER_QUERY_PARAM = "candidateIdentifier";
     private final DynamoDbClient localDynamo = initializeTestDatabase();
     private UpdateNviCandidateStatusHandler handler;
     private Context context;
@@ -251,7 +252,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     private static InputStream createRequest(UUID candidateIdentifier, URI institutionId, NviStatusRequest requestBody,
                                              String username) throws JsonProcessingException {
         return new HandlerRequestBuilder<NviStatusRequest>(JsonUtils.dtoObjectMapper).withPathParameters(
-                Map.of("candidateIdentifier", candidateIdentifier.toString()))
+                Map.of(CANDIDATE_IDENTIFIER_QUERY_PARAM, candidateIdentifier.toString()))
                    .withBody(requestBody)
                    .withCurrentCustomer(institutionId)
                    .withTopLevelCristinOrgId(institutionId)

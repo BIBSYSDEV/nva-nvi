@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.common.service;
 
+import static no.sikt.nva.nvi.test.TestUtils.OPEN_YEAR;
+import static no.sikt.nva.nvi.test.TestUtils.candidateRepositoryReturningOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -49,7 +51,7 @@ public class CandidateBOApprovalStatusTest extends LocalDynamoTest {
     void setup() {
         localDynamo = initializeTestDatabase();
         candidateRepository = new CandidateRepository(localDynamo);
-        periodRepository = new PeriodRepository(localDynamo);
+        periodRepository = candidateRepositoryReturningOpenedPeriod(Integer.parseInt(OPEN_YEAR));
     }
 
     @Test

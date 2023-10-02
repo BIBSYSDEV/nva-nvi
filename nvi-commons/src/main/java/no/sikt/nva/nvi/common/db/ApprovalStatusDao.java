@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.db;
 
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
@@ -14,7 +13,6 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
-import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.NviService;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
@@ -135,7 +133,6 @@ public record ApprovalStatusDao(UUID identifier,
                                    Username finalizedBy, Instant finalizedDate, String reason) {
 
         private static final String UNKNOWN_REQUEST_TYPE_MESSAGE = "Unknown request type";
-        private static final String ERROR_MISSING_REJECTION_REASON = "Cannot reject approval status without reason.";
 
         public static Builder builder() {
             return new Builder();
@@ -173,59 +170,9 @@ public record ApprovalStatusDao(UUID identifier,
             if (input instanceof UpdateAssigneeRequest request) {
                 return nviService.updateApproval(candidateIdentifier,
                                                  copy.assignee(Username.fromString(request.username())).build());
-            } else if (input instanceof UpdateStatusRequest request) {
-                return nviService.updateApproval(this.candidateIdentifier, updateStatus(nviService, request));
             } else {
                 throw new IllegalArgumentException(UNKNOWN_REQUEST_TYPE_MESSAGE);
             }
-        }
-
-        @JacocoGenerated
-        @DynamoDbIgnore
-        private DbApprovalStatus updateStatus(NviService nviService, UpdateStatusRequest request) {
-            return switch (request.approvalStatus()) {
-                case APPROVED -> finalizeApprovedStatus(nviService, request);
-                case REJECTED -> finalizeRejectedStatus(nviService, request);
-                case PENDING -> resetStatus(nviService);
-            };
-        }
-
-        @DynamoDbIgnore
-        private DbApprovalStatus resetStatus(NviService nviService) {
-            return this.fetch(nviService)
-                       .copy()
-                       .status(DbStatus.PENDING)
-                       .finalizedBy(null)
-                       .finalizedDate(null)
-                       .reason(null)
-                       .build();
-        }
-
-        @DynamoDbIgnore
-        private DbApprovalStatus finalizeApprovedStatus(NviService nviService, UpdateStatusRequest request) {
-            var username = Username.fromString(request.username());
-            return this.fetch(nviService).copy()
-                       .status(request.approvalStatus())
-                       .assignee(this.hasAssignee() ? this.assignee : username)
-                       .finalizedBy(username)
-                       .finalizedDate(Instant.now())
-                       .reason(null)
-                       .build();
-        }
-
-        @DynamoDbIgnore
-        private DbApprovalStatus finalizeRejectedStatus(NviService nviService, UpdateStatusRequest request) {
-            if (isNull(request.reason())) {
-                throw new UnsupportedOperationException(ERROR_MISSING_REJECTION_REASON);
-            }
-            var username = Username.fromString(request.username());
-            return this.fetch(nviService).copy()
-                       .status(request.approvalStatus())
-                       .assignee(this.hasAssignee() ? this.assignee : username)
-                       .finalizedBy(username)
-                       .finalizedDate(Instant.now())
-                       .reason(request.reason())
-                       .build();
         }
 
         public static final class Builder {
