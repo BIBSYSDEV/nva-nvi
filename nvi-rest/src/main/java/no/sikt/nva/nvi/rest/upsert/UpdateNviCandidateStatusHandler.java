@@ -44,7 +44,7 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
         var username = requestInfo.getUserName();
 
         return attempt(() -> CandidateBO.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository))
-                   .map(candidate -> candidate.updateStatus(input.toUpdateRequest(username)))
+                   .map(candidate -> candidate.updateApproval(input.toUpdateRequest(username)))
                    .orElseThrow(ExceptionMapper::map)
                    .toDto();
     }
