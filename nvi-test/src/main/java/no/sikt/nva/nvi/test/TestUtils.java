@@ -164,9 +164,39 @@ public final class TestUtils {
     public static NviService nviServiceReturningClosedPeriod(DynamoDbClient client, int year) {
         var nviPeriodRepository = mock(PeriodRepository.class);
         var nviService = new NviService(client, nviPeriodRepository);
-        var period = DbNviPeriod.builder().publishingYear(String.valueOf(year)).reportingDate(Instant.now()).build();
+        var period = DbNviPeriod.builder().publishingYear(String.valueOf(year)).startDate(Instant.now())
+                .reportingDate(Instant.now()).build();
         when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
         return nviService;
+    }
+
+    public static PeriodRepository periodRepositoryReturningClosedPeriod(int year) {
+        var nviPeriodRepository = mock(PeriodRepository.class);
+        var period = DbNviPeriod.builder().publishingYear(String.valueOf(year))
+                         .startDate(ZonedDateTime.now().minusMonths(10).toInstant())
+                         .reportingDate(ZonedDateTime.now().minusMonths(1).toInstant()).build();
+        when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
+        return nviPeriodRepository;
+    }
+
+    public static PeriodRepository periodRepositoryReturningNotOpenedPeriod(int year) {
+        var nviPeriodRepository = mock(PeriodRepository.class);
+        var period = DbNviPeriod.builder()
+                         .publishingYear(String.valueOf(year))
+                         .startDate(ZonedDateTime.now().plusMonths(1).toInstant())
+                         .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant()).build();
+        when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
+        return nviPeriodRepository;
+    }
+
+    public static PeriodRepository periodRepositoryReturningOpenedPeriod(int year) {
+        var nviPeriodRepository = mock(PeriodRepository.class);
+        var period = DbNviPeriod.builder()
+                         .publishingYear(String.valueOf(year))
+                         .startDate(Instant.now())
+                         .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant()).build();
+        when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
+        return nviPeriodRepository;
     }
 
     public static PeriodStatus randomPeriodStatus() {
@@ -253,7 +283,7 @@ public final class TestUtils {
 
             @Override
             public PublicationDate publicationDate() {
-                return new PublicationDate("2023", null, null);
+                return new PublicationDate(String.valueOf(ZonedDateTime.now().getYear()), null, null);
             }
 
             @Override
