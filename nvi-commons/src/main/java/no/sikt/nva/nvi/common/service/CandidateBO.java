@@ -344,7 +344,7 @@ public final class CandidateBO {
     }
 
     private void validateCandidateState() {
-        if (periodStatus.status().equals(Status.CLOSED_PERIOD)) {
+        if (Status.CLOSED_PERIOD.equals(periodStatus.status())) {
             throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
         }
         if (Status.NO_PERIOD.equals(periodStatus.status()) || Status.UNOPENED_PERIOD.equals(periodStatus.status())) {
