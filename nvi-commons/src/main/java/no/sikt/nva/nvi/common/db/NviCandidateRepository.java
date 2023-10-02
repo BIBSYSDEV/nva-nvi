@@ -8,6 +8,7 @@ import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.so
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -24,25 +25,27 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
-import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
-import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactPutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest.Builder;
-import software.amazon.awssdk.enhanced.dynamodb.model.WriteBatch;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.PutRequest;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
+import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
+import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 public class NviCandidateRepository extends DynamoRepository {
 
     public static final int BATCH_SIZE = 25;
-    private final DynamoDbTable<CandidateDao> candidateTable;
+    protected final DynamoDbTable<CandidateDao> candidateTable;
     private final DynamoDbTable<CandidateUniquenessEntryDao> uniquenessTable;
     private final DynamoDbIndex<CandidateDao> publicationIdIndex;
-    private final DynamoDbTable<ApprovalStatusDao> approvalStatusTable;
-    private final DynamoDbTable<NoteDao> noteTable;
+    protected final DynamoDbTable<ApprovalStatusDao> approvalStatusTable;
+    protected final DynamoDbTable<NoteDao> noteTable;
 
     public NviCandidateRepository(DynamoDbClient client) {
         super(client);
@@ -53,26 +56,31 @@ public class NviCandidateRepository extends DynamoRepository {
         this.noteTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(NoteDao.class));
     }
 
-    public <T> ListingResult<CandidateDao> refresh(int pageSize, Map<String,
+    public <T> ListingResult refresh(int pageSize, Map<String,
                                                       String> startMarker) {
-        var page = candidateTable.scan(createScanRequest(pageSize, startMarker))
-                             .stream()
-                             .limit(1)
-                             .findFirst();
+        var scan = defaultClient.scan(createScanRequest(pageSize, startMarker));
 
-        var batchResults = Optional.of(getBatches(page.get().items(), BATCH_SIZE)
-                            .map(this::toBatchRequest)
-                            .map(client::batchWriteItem)
-                            .toList())
-                       .orElse(List.of());
+        var items = scan.items().stream()
+                        .map(this::mutateVersion).toList();
 
-        return new ListingResult<>(thereAreMorePagesToScan(page.get()), page.get().lastEvaluatedKey(),
+        var batchResults = Optional.of(getBatches(items, BATCH_SIZE)
+                                           .map(this::toBatchRequest)
+                                           .map(defaultClient::batchWriteItem)
+                                           .toList())
+                               .orElse(List.of());
+
+        return new ListingResult(thereAreMorePagesToScan(scan), scan.lastEvaluatedKey(),
                                    batchResults.size(),
-                                   batchResults.stream().mapToInt(a -> a.unprocessedPutItemsForTable(candidateTable).size()).sum(),
-                                   batchResults.stream().mapToInt(a -> a.unprocessedDeleteItemsForTable(candidateTable).size()).sum());
+                                   batchResults.stream().mapToInt(a -> a.unprocessedItems().size()).sum());
     }
 
-    private boolean thereAreMorePagesToScan(Page<CandidateDao> scanResult) {
+    private Map<String, AttributeValue> mutateVersion(Map<String, AttributeValue> item) {
+        var mutableMap = new HashMap<>(item);
+        mutableMap.put("version", AttributeValue.builder().s(UUID.randomUUID().toString()).build());
+        return mutableMap;
+    }
+
+    private boolean thereAreMorePagesToScan(ScanResponse scanResult) {
         return nonNull(scanResult.lastEvaluatedKey()) && !scanResult.lastEvaluatedKey().isEmpty();
     }
 
@@ -83,28 +91,29 @@ public class NviCandidateRepository extends DynamoRepository {
                                                                                      count)));
     }
 
-    private BatchWriteItemEnhancedRequest toBatchRequest(List<CandidateDao> results) {
-        return BatchWriteItemEnhancedRequest.builder()
-                   .writeBatches(toWriteBatches(results))
-                   .build();
+    private BatchWriteItemRequest toBatchRequest(List<Map<String, AttributeValue>> results) {
+        return BatchWriteItemRequest.builder()
+                   .requestItems(Map.of(NVI_TABLE_NAME, toWriteBatches(results))).build();
     }
 
-    private Collection<WriteBatch> toWriteBatches(List<CandidateDao> results) {
-        return results.stream().map(this::toWriteBatch).toList();
+    private Collection<WriteRequest> toWriteBatches(List<Map<String, AttributeValue>> results) {
+        return results.stream().map(this::toWriteRequest).toList();
     }
 
-    private WriteBatch toWriteBatch(CandidateDao dao) {
-        return WriteBatch.builder(CandidateDao.class)
-                   .mappedTableResource(candidateTable)
-                   .addPutItem(dao)
-                   .build();
+    private WriteRequest toWriteRequest(Map<String, AttributeValue> dao) {
+        return WriteRequest.builder().putRequest(toPutRequest(dao)).build();
     }
 
-    private ScanEnhancedRequest createScanRequest(int pageSize, Map<String, String> startMarker) {
+    private PutRequest toPutRequest(Map<String, AttributeValue> dao) {
+        return PutRequest.builder().item(dao).build();
+    }
+
+    private ScanRequest createScanRequest(int pageSize, Map<String, String> startMarker) {
         var start = startMarker!= null ? startMarker.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
                                                       e -> AttributeValue.builder().s(e.getValue()).build())) : null;
-        return ScanEnhancedRequest.builder()
-                   .filterExpression(filterExpressionToScanCandidates())
+        return ScanRequest.builder()
+                   .tableName(NVI_TABLE_NAME)
+                   //.filterExpression(filterExpressionToScanCandidates().expression())
                    .exclusiveStartKey(start)
                    .limit(pageSize)
                    .build();
@@ -142,7 +151,6 @@ public class NviCandidateRepository extends DynamoRepository {
         // Maybe we need to remove the rows first, but preferably override
         client.transactWriteItems(transaction.build());
         return new Candidate.Builder().withIdentifier(identifier)
-                   .withVersion(candidate.version())
                    .withCandidate(dbCandidate)
                    .withApprovalStatuses(approvalStatusList)
                    .withNotes(getNotes(identifier))
@@ -150,7 +158,7 @@ public class NviCandidateRepository extends DynamoRepository {
     }
 
     public Optional<Candidate> findCandidateById(UUID candidateIdentifier) {
-        return Optional.of(new CandidateDao(candidateIdentifier, DbCandidate.builder().build(), UUID.randomUUID()))
+        return Optional.of(CandidateDao.builder().identifier(candidateIdentifier).build())
                    .map(candidateTable::getItem)
                    .map(this::toCandidate);
     }
@@ -222,7 +230,7 @@ public class NviCandidateRepository extends DynamoRepository {
         return Key.builder().partitionValue(publicationId.toString()).sortValue(publicationId.toString()).build();
     }
 
-    private static QueryConditional findApprovalByCandidateIdAndInstitutionId(UUID identifier, URI uri) {
+    protected static QueryConditional findApprovalByCandidateIdAndInstitutionId(UUID identifier, URI uri) {
         return QueryConditional.keyEqualTo(approvalByCandidateIdAndInstitutionIdKey(identifier, uri));
     }
 
@@ -233,7 +241,7 @@ public class NviCandidateRepository extends DynamoRepository {
                    .build();
     }
 
-    private static Key noteKey(UUID candidateIdentifier, UUID noteIdentifier) {
+    protected static Key noteKey(UUID candidateIdentifier, UUID noteIdentifier) {
         return Key.builder()
                    .partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
                    .sortValue(NoteDao.createSortKey(noteIdentifier.toString()))
@@ -247,7 +255,7 @@ public class NviCandidateRepository extends DynamoRepository {
                    .build();
     }
 
-    private static QueryConditional queryCandidateParts(UUID id, String type) {
+    protected static QueryConditional queryCandidateParts(UUID id, String type) {
         return sortBeginsWith(
             Key.builder().partitionValue(CandidateDao.createPartitionKey(id.toString())).sortValue(type).build());
     }
@@ -261,7 +269,6 @@ public class NviCandidateRepository extends DynamoRepository {
 
     private Candidate toCandidate(CandidateDao candidateDao) {
         return new Candidate.Builder().withIdentifier(candidateDao.identifier())
-                   .withVersion(candidateDao.version())
                    .withCandidate(candidateDao.candidate())
                    .withApprovalStatuses(getApprovalStatuses(approvalStatusTable, candidateDao.identifier()))
                    .withNotes(getNotes(candidateDao.identifier()))

@@ -34,6 +34,11 @@ public class NviService {
         this.nviPeriodRepository = new NviPeriodRepository(dynamoDbClient);
     }
 
+    public NviService(DynamoDbClient dynamoDbClient, NviCandidateRepository nviCandidateRepository) {
+        this.nviCandidateRepository = nviCandidateRepository;
+        this.nviPeriodRepository = new NviPeriodRepository(dynamoDbClient);
+    }
+
     @JacocoGenerated
     public static NviService defaultNviService() {
         return new NviService(defaultDynamoClient());

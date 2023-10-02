@@ -13,8 +13,9 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 
 @DynamoDbImmutable(builder = ApprovalStatusDao.Builder.class)
 public record ApprovalStatusDao(UUID identifier,
-                                @DynamoDbAttribute(DATA_FIELD) DbApprovalStatus approvalStatus
-) implements DynamoEntryWithRangeKey {
+                                @DynamoDbAttribute(DATA_FIELD) DbApprovalStatus approvalStatus,
+                                String version
+) implements DynamoEntryWithRangeKey, Dao {
 
     public static final String TYPE = "APPROVAL_STATUS";
 
@@ -51,6 +52,7 @@ public record ApprovalStatusDao(UUID identifier,
 
         private UUID builderIdentifier;
         private DbApprovalStatus builderApprovalStatus;
+        private String version;
 
         private Builder() {
         }
@@ -80,8 +82,13 @@ public record ApprovalStatusDao(UUID identifier,
             return this;
         }
 
+        public Builder version(String version) {
+            this.version = version;
+            return this;
+        }
+
         public ApprovalStatusDao build() {
-            return new ApprovalStatusDao(this.builderIdentifier, this.builderApprovalStatus);
+            return new ApprovalStatusDao(this.builderIdentifier, this.builderApprovalStatus, this.version);
         }
     }
 }

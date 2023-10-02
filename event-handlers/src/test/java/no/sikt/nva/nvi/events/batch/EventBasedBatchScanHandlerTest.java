@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.events.batch;
 
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.randomUsername;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
@@ -14,11 +15,21 @@ import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.net.URI;
+import java.time.Instant;
+import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.Candidate;
+import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.db.NoteDao;
+import no.sikt.nva.nvi.common.db.NviCandidateRepository;
+import no.sikt.nva.nvi.common.db.model.DbNote;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -29,10 +40,11 @@ import nva.commons.core.ioutils.IoUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
 class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
-    
+
     public static final int LARGE_PAGE = 10;
     public static final int ONE_ENTRY_PER_EVENT = 1;
     public static final Map<String, String> START_FROM_BEGINNING = null;
@@ -44,6 +56,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     private Context context;
     private FakeEventBridgeClient eventBridgeClient;
     private NviService nviService;
+    private NviCandidateRepositoryHelper candidateRepository;
 
     @BeforeEach
     public void init() {
@@ -51,7 +64,9 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         this.context = mock(Context.class);
         when(context.getInvokedFunctionArn()).thenReturn(randomString());
         this.eventBridgeClient = new FakeEventBridgeClient();
-        this.nviService = new NviService(initializeTestDatabase());
+        DynamoDbClient db = initializeTestDatabase();
+        candidateRepository = new NviCandidateRepositoryHelper(db);
+        this.nviService = new NviService(db, candidateRepository);
         this.handler = new EventBasedBatchScanHandler(nviService, eventBridgeClient);
     }
 
@@ -59,7 +74,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     void shouldUpdateDataEntriesWhenValidRequestIsReceived() {
         nviService.upsertCandidate(randomCandidate());
         handler.handleRequest(createInitialScanRequest(), output, context);
-    
+
         assertThat(true, is(equalTo(true)));
     }
 
@@ -67,9 +82,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     void shouldNotGoIntoInfiniteLoop() {
         createRandomCandidates(1000);
 
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(ONE_ENTRY_PER_EVENT,
-                                                              START_FROM_BEGINNING,
-                                                              TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(ONE_ENTRY_PER_EVENT, START_FROM_BEGINNING, TOPIC));
         while (thereAreMoreEventsInEventBridge()) {
             var currentRequest = consumeLatestEmittedEvent();
             handler.handleRequest(eventToInputStream(currentRequest), output, context);
@@ -79,7 +92,8 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldIterateAllCandidates() {
-        var candidates = createRandomCandidates(10).toList();
+        var daos = createRandomCandidates(10).map(candidate -> candidateRepository.findDaoById(candidate.identifier()))
+                       .toList();
 
         pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
 
@@ -89,12 +103,64 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
             handler.handleRequest(eventToInputStream(currentRequest), output, context);
         }
 
-        var allCandidatesIsChanged = candidates.stream().toList().stream()
-                                    .allMatch(c -> c.version() != nviService.findById(c.identifier()).orElseThrow()
-                                                                      .version());
+        var allEntitiesUpdated = daos.stream()
+                                     .noneMatch(dao -> Objects.equals(dao.version(),
+                                                                      candidateRepository.findDaoById(dao.identifier())
+                                                                          .version()));
 
-        assertTrue(allCandidatesIsChanged);
+        assertTrue(allEntitiesUpdated, "All candidates should have been updated with new version");
     }
+
+    @Test
+    void shouldIterateAllNotes() {
+        var daos = createRandomCandidates(10).map(
+                candidate -> candidateRepository.findNoteDaosByCandidateId(candidate.identifier()).toList())
+                       .flatMap(Collection::stream)
+                       .toList();
+
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+
+        while (thereAreMoreEventsInEventBridge()) {
+            var currentRequest = consumeLatestEmittedEvent();
+
+            handler.handleRequest(eventToInputStream(currentRequest), output, context);
+        }
+
+        var allEntitiesUpdated = daos.stream()
+                                     .noneMatch(dao -> Objects.equals(dao.version(), candidateRepository.getNoteDaoById(
+                                         dao.identifier(), dao.note().noteId()).version()));
+
+        assertTrue(allEntitiesUpdated, "All notes should have been updated with new version");
+    }
+
+    @Test
+    void shouldIterateAllApprovals() {
+        var daos = createRandomCandidates(10).map(
+                candidate -> candidateRepository.findApprovalDaosByCandidateId(candidate.identifier()).toList())
+                       .flatMap(Collection::stream)
+                       .toList();
+
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+
+        while (thereAreMoreEventsInEventBridge()) {
+            var currentRequest = consumeLatestEmittedEvent();
+
+            handler.handleRequest(eventToInputStream(currentRequest), output, context);
+        }
+
+        var allEntitiesUpdated = daos.stream()
+                                     .noneMatch(dao -> Objects.equals(dao.version(),
+                                                                      candidateRepository.findApprovalDaoByIdAndInstitutionId(
+                                                                              dao.identifier(),
+                                                                              dao.approvalStatus().institutionId())
+                                                                          .version()));
+
+        assertTrue(allEntitiesUpdated, "All approvals should have been updated with new version");
+    }
+
+    //todo: test at body ikke endrer seg
+
+    //todo: sjekk at uniqueness ikke blir prosessert
 
     private ScanDatabaseRequest consumeLatestEmittedEvent() {
         var allRequests = eventBridgeClient.getRequestEntries();
@@ -107,17 +173,19 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     }
 
     private void pushInitialEntryInEventBridge(ScanDatabaseRequest scanDatabaseRequest) {
-        var entry = PutEventsRequestEntry.builder()
-                        .detail(scanDatabaseRequest.toJsonString())
-                        .build();
+        var entry = PutEventsRequestEntry.builder().detail(scanDatabaseRequest.toJsonString()).build();
         eventBridgeClient.getRequestEntries().add(entry);
     }
 
     private Stream<Candidate> createRandomCandidates(int i) {
-        return IntStream.range(0, i).boxed()
-            .map(item -> randomCandidate())
-            .map(nviService::upsertCandidate)
-            .map(Optional::orElseThrow);
+        return IntStream.range(0, i)
+                   .boxed()
+                   .map(item -> randomCandidate())
+                   .map(nviService::upsertCandidate)
+                   .map(Optional::orElseThrow)
+                   .map(a -> nviService.createNote(a.identifier(),
+                                                   new DbNote(UUID.randomUUID(), randomUsername(), randomString(),
+                                                              Instant.now())));
     }
 
     private InputStream createInitialScanRequest() {
@@ -133,4 +201,38 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         event.setDetail(scanDatabaseRequest);
         return IoUtils.stringToStream(event.toJsonString());
     }
+
+    public class NviCandidateRepositoryHelper extends NviCandidateRepository {
+
+        public NviCandidateRepositoryHelper(DynamoDbClient client) {
+            super(client);
+        }
+
+        public CandidateDao findDaoById(UUID id) {
+            return Optional.of(CandidateDao.builder().identifier(id).build())
+                       .map(candidateTable::getItem)
+                       .orElseThrow();
+        }
+
+        public Stream<NoteDao> findNoteDaosByCandidateId(UUID id) {
+            return noteTable.query(queryCandidateParts(id, NoteDao.TYPE)).items().stream();
+        }
+
+        public Stream<ApprovalStatusDao> findApprovalDaosByCandidateId(UUID identifier) {
+            return approvalStatusTable.query(queryCandidateParts(identifier, ApprovalStatusDao.TYPE)).items().stream();
+        }
+
+        public NoteDao getNoteDaoById(UUID candidateIdentifier, UUID noteIdentifier) {
+            return Optional.of(noteKey(candidateIdentifier, noteIdentifier)).map(noteTable::getItem).orElseThrow();
+        }
+
+        public ApprovalStatusDao findApprovalDaoByIdAndInstitutionId(UUID identifier, URI uri) {
+            return approvalStatusTable.query(findApprovalByCandidateIdAndInstitutionId(identifier, uri))
+                       .items()
+                       .stream()
+                       .findFirst()
+                       .orElseThrow();
+        }
+    }
 }
+

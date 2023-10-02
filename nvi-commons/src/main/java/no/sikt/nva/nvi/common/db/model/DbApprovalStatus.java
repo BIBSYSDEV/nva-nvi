@@ -20,7 +20,7 @@ public record DbApprovalStatus(URI institutionId,
 
     @DynamoDbIgnore
     public ApprovalStatusDao toDao(UUID candidateIdentifier) {
-        return new ApprovalStatusDao(candidateIdentifier, this);
+        return ApprovalStatusDao.builder().identifier(candidateIdentifier).approvalStatus(this).build();
     }
 
     @DynamoDbIgnore
