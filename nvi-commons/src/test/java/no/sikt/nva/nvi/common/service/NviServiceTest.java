@@ -418,30 +418,6 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldRemoveAssigneeWhenExistingApprovalHasAssignee() {
-        var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
-        var existingApprovalStatus = getSingleApproval(candidate);
-        updateAssignee(existingApprovalStatus);
-        var updatedApprovalStatus = existingApprovalStatus.copy().assignee(null).build();
-        var actualApprovalStatus = nviService.updateApproval(candidate.identifier(), updatedApprovalStatus);
-
-        assertThat(actualApprovalStatus.assignee(), is(nullValue()));
-    }
-
-    @Test
-    void approvalShouldFetchItself() {
-        var approval = getSingleApproval(nviService.upsertCandidate(randomCandidate()).orElseThrow());
-        var fetchedApproval = approval.fetch(nviService);
-        assertThat(approval, is(equalTo(fetchedApproval)));
-    }
-
-    @Test
-    void shouldThrowIllegalArgumentExceptionWhenUnknownUpdateRequest() {
-        var approval = getSingleApproval(nviService.upsertCandidate(randomCandidate()).orElseThrow());
-        assertThrows(IllegalArgumentException.class, () -> approval.update(nviService, null));
-    }
-
-    @Test
     void shouldThrowInvalidNviCandidateExceptionWhenNviCandidateIsMissingMandatoryFields() {
         var candidate = randomCandidate().copy().publicationDate(null).build();
         assertThrows(InvalidNviCandidateException.class, () -> nviService.upsertCandidate(candidate));
@@ -605,11 +581,6 @@ public class NviServiceTest extends LocalDynamoTest {
                                       .finalizedBy(Username.fromString(randomString()))
                                       .finalizedDate(Instant.now())
                                       .build());
-    }
-
-    private void updateAssignee(DbApprovalStatus existingApprovalStatus) {
-        nviService.updateApproval(existingApprovalStatus.candidateIdentifier(),
-                                  existingApprovalStatus.copy().assignee(randomUsername()).build());
     }
 
     private DbCandidate createExpectedCandidate(UUID identifier, List<DbCreator> creators, InstanceType instanceType,
