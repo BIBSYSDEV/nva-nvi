@@ -26,8 +26,8 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.rest.create.NviNoteRequest;
-import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -87,8 +87,8 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
         var noteId = candidateWithNote.toDto().notes().get(0).identifier();
         var request = createRequest(candidate.identifier(), noteId, user.value()).build();
         handler.handleRequest(request, output, context);
-        var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
-        var body = gatewayResponse.getBodyObject(CandidateResponse.class);
+        var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+        var body = gatewayResponse.getBodyObject(CandidateDto.class);
         assertThat(body.notes(), hasSize(0));
     }
 
