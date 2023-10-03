@@ -16,6 +16,7 @@ Globals:
         SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
         SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
         CUSTOM_DOMAIN_BASE_PATH: !Ref CustomDomainBasePath
+        API_HOST: !Ref ApiDomain
   Api:
     Cors:
       AllowMethods: "'PUT, GET,OPTIONS,DELETE,POST'"
@@ -247,7 +248,6 @@ Resources:
         Variables:
           BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
           BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
-          API_HOST: !Ref ApiDomain
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
           CANDIDATE_QUEUE_NAME: !Ref NewCandidateQueueName
           CANDIDATE_DLQ_NAME: !Ref NewCandidateDLQName
@@ -315,7 +315,6 @@ Resources:
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
-          API_HOST: !Ref ApiDomain
       Events:
         ApiEvent:
           Type: Api
@@ -336,7 +335,6 @@ Resources:
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
-          API_HOST: !Ref ApiDomain
       Events:
         ApiEvent:
           Type: Api
@@ -357,7 +355,6 @@ Resources:
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
-          API_HOST: !Ref ApiDomain
       Events:
         ApiEvent:
           Type: Api
@@ -378,7 +375,6 @@ Resources:
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
-          API_HOST: !Ref ApiDomain
           COGNITO_HOST: !Ref CognitoAuthorizationUri
       Events:
         GetEvent:
@@ -410,7 +406,6 @@ Resources:
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
-          API_HOST: !Ref ApiDomain
       Events:
         GetEvent:
           Type: Api
@@ -431,7 +426,6 @@ Resources:
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
-          API_HOST: !Ref ApiDomain
       Events:
         GetEvent:
           Type: Api
@@ -455,7 +449,6 @@ Resources:
           BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
           BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
           COGNITO_HOST: !Ref CognitoAuthorizationUri
-          API_HOST: !Ref ApiDomain
       Events:
         GetEvent:
           Type: Api
@@ -479,7 +472,6 @@ Resources:
           BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
           BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
           COGNITO_HOST: !Ref CognitoAuthorizationUri
-          API_HOST: !Ref ApiDomain
       Events:
         GetEvent:
           Type: Api
@@ -503,7 +495,6 @@ Resources:
           BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
           BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
           COGNITO_HOST: !Ref CognitoAuthorizationUri
-          API_HOST: !Ref ApiDomain
       Events:
         GetEvent:
           Type: Api

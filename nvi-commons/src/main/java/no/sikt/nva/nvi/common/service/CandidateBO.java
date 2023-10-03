@@ -5,6 +5,7 @@ import static nva.commons.core.paths.UriWrapper.HTTPS;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -49,15 +50,15 @@ import nva.commons.core.paths.UriWrapper;
 
 public final class CandidateBO {
 
+    private static final String DELETE_MESSAGE_ERROR = "Can not delete message you does not own!";
+    private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
+    private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
+                                                            + " forbidden!";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
     private static final String CANDIDATE_PATH = "candidate";
-    public static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
-    public static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
-                                                           + " forbidden!";
     private static final String INVALID_CANDIDATE_MESSAGE = "Candidate is missing mandatory fields";
-    public static final String DELETE_MESSAGE_ERROR = "Can not delete message you does not own!";
     private final CandidateRepository repository;
     private final UUID identifier;
     private final CandidateDao original;
@@ -117,6 +118,10 @@ public final class CandidateBO {
         throw new IllegalOperationException();
     }
 
+    public Map<URI, ApprovalBO> getApprovals() {
+        return new HashMap<>(approvals);
+    }
+
     public UUID identifier() {
         return identifier;
     }
@@ -126,30 +131,24 @@ public final class CandidateBO {
     }
 
     public CandidateDto toDto() {
-        return CandidateDto.builder()
-                   .withId(constructId(identifier))
-                   .withIdentifier(identifier)
-                   .withId(constructId(identifier))
-                   .withPublicationId(original.candidate().publicationId())
-                   .withApprovalStatuses(mapToApprovalDtos())
-                   .withNotes(mapToNoteDtos())
-                   .withPeriodStatus(mapToPeriodStatusDto())
-                   .build();
+        if (isApplicable()) {
+            return CandidateDto.builder()
+                       .withId(constructId(identifier))
+                       .withIdentifier(identifier)
+                       .withPublicationId(original.candidate().publicationId())
+                       .withApprovalStatuses(mapToApprovalDtos())
+                       .withNotes(mapToNoteDtos())
+                       .withPeriodStatus(mapToPeriodStatusDto())
+                       .build();
+        } else {
+            throw new CandidateNotFoundException();
+        }
     }
 
     public CandidateBO updateApproval(UpdateApprovalRequest input) {
         validateCandidateState();
         approvals.computeIfPresent(input.institutionId(), (uri, approvalBO) -> approvalBO.update(input));
         return this;
-    }
-
-    private void validateCandidateState() {
-        if (periodStatus.status().equals(Status.CLOSED_PERIOD)) {
-            throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
-        }
-        if (Status.NO_PERIOD.equals(periodStatus.status()) || Status.UNOPENED_PERIOD.equals(periodStatus.status()))  {
-            throw new IllegalStateException(PERIOD_NOT_OPENED_MESSAGE);
-        }
     }
 
     public CandidateBO createNote(CreateNoteRequest input) {
@@ -170,10 +169,8 @@ public final class CandidateBO {
         return this;
     }
 
-    private void validateNoteOwner(String username, NoteDao dao) {
-        if (isNotNoteOwner(username, dao)) {
-            throw new UnauthorizedOperationException(DELETE_MESSAGE_ERROR);
-        }
+    public boolean isApplicable() {
+        return original.candidate().applicable();
     }
 
     private static boolean isNotNoteOwner(String username, NoteDao dao) {
@@ -185,7 +182,7 @@ public final class CandidateBO {
         var existingCandidateDao = repository.findByPublicationIdDao(request.publicationId())
                                        .orElseThrow(CandidateNotFoundException::new);
         var nonApplicableCandidate = updateCandidateDaoFromRequest(existingCandidateDao, request);
-        repository.updateCandidateAndRemovingApprovals(request.identifier(), nonApplicableCandidate);
+        repository.updateCandidateAndRemovingApprovals(existingCandidateDao.identifier(), nonApplicableCandidate);
 
         return new CandidateBO(repository, nonApplicableCandidate, Collections.emptyList(),
                                Collections.emptyList(),
@@ -354,6 +351,21 @@ public final class CandidateBO {
 
     private static String mapToUsernameString(Username assignee) {
         return assignee != null ? assignee.value() : null;
+    }
+
+    private void validateNoteOwner(String username, NoteDao dao) {
+        if (isNotNoteOwner(username, dao)) {
+            throw new UnauthorizedOperationException(DELETE_MESSAGE_ERROR);
+        }
+    }
+
+    private void validateCandidateState() {
+        if (Status.CLOSED_PERIOD.equals(periodStatus.status())) {
+            throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
+        }
+        if (Status.NO_PERIOD.equals(periodStatus.status()) || Status.UNOPENED_PERIOD.equals(periodStatus.status())) {
+            throw new IllegalStateException(PERIOD_NOT_OPENED_MESSAGE);
+        }
     }
 
     private PeriodStatusDto mapToPeriodStatusDto() {

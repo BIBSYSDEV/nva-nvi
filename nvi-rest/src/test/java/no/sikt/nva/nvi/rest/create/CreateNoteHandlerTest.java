@@ -20,7 +20,7 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.CandidateBO;
-import no.sikt.nva.nvi.rest.model.CandidateResponse;
+import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.commons.json.JsonUtils;
@@ -80,8 +80,8 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
 
         var request = createRequest(candidate.identifier(), new NviNoteRequest(theNote), userName);
         handler.handleRequest(request, output, context);
-        var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
-        var actualNote = gatewayResponse.getBodyObject(CandidateResponse.class).notes().get(0);
+        var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+        var actualNote = gatewayResponse.getBodyObject(CandidateDto.class).notes().get(0);
 
         assertThat(actualNote.text(), is(equalTo(theNote)));
         assertThat(actualNote.user(), is(equalTo(userName)));

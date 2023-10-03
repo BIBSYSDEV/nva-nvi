@@ -76,7 +76,7 @@ class CandidateBOTest extends LocalDynamoTest {
 
     @Test
     void shouldThrowIllegalOperationWhenNonApplicableNonCandidateIsAttemptedInserted() {
-        var updateRequest = createUpsertCandidateRequest(UUID.randomUUID(), randomUri(), false, 2,
+        var updateRequest = createUpsertCandidateRequest(randomUri(), false, 2,
                                                          InstanceType.NON_CANDIDATE, randomUri());
         assertThrows(IllegalOperationException.class,
                      () -> CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository));
@@ -86,7 +86,7 @@ class CandidateBOTest extends LocalDynamoTest {
     void dontMindMeJustTestingToDto() {
         var institutionToReject = randomUri();
         var institutionToApprove = randomUri();
-        var createRequest = createUpsertCandidateRequest(UUID.randomUUID(), randomUri(), true, 4,
+        var createRequest = createUpsertCandidateRequest(randomUri(), true, 4,
                                                          InstanceType.ACADEMIC_MONOGRAPH, institutionToApprove,
                                                          randomUri(), institutionToReject);
         var candidateBO = CandidateBO.fromRequest(createRequest, candidateRepository, periodRepository);

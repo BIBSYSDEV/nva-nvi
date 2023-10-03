@@ -191,10 +191,6 @@ public class CandidateRepository extends DynamoRepository {
                    .findFirst();
     }
 
-    public DbApprovalStatus updateApprovalStatus(UUID identifier, DbApprovalStatus newApproval) {
-        return updateApprovalStatusDao(identifier, newApproval).approvalStatus();
-    }
-
     public ApprovalStatusDao updateApprovalStatusDao(UUID identifier, DbApprovalStatus newApproval) {
         return approvalStatusTable.updateItem(newApproval.toDao(identifier));
     }

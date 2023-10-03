@@ -15,7 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import java.net.URI;
 import java.time.ZonedDateTime;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -92,7 +91,7 @@ public class CandidateBOApprovalStatusTest extends LocalDynamoTest {
     @EnumSource(value = DbStatus.class, names = {"REJECTED", "APPROVED"})
     void shouldResetApprovalWhenChangingToPending(DbStatus oldStatus) {
         var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(UUID.randomUUID(), randomUri(), true, 1,
+        var upsertCandidateRequest = createUpsertCandidateRequest(randomUri(), true, 1,
                                                                   InstanceType.ACADEMIC_MONOGRAPH, institutionId);
         var candidateBO = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository);
         var assignee = randomString();
@@ -126,7 +125,7 @@ public class CandidateBOApprovalStatusTest extends LocalDynamoTest {
     void shouldUpdateCandidateApprovalsWhenChangingPoints() {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
         var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository);
-        var updateRequest = createUpsertCandidateRequest(candidate.identifier(), candidate.toDto().publicationId(),
+        var updateRequest = createUpsertCandidateRequest(candidate.toDto().publicationId(),
                                                          true, 2, InstanceType.ACADEMIC_MONOGRAPH, randomUri(),
                                                          randomUri(), randomUri());
         var updatedCandidate = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository);
@@ -140,10 +139,10 @@ public class CandidateBOApprovalStatusTest extends LocalDynamoTest {
         var deleteInstitutionId = randomUri();
         var createCandidateRequest = createUpsertCandidateRequest(keepInstitutionId, deleteInstitutionId, randomUri());
         CandidateBO.fromRequest(createCandidateRequest, candidateRepository, periodRepository);
-        var updateRequest = createUpsertCandidateRequest(createCandidateRequest.identifier(),
-                                                         createCandidateRequest.publicationId(), true, 2,
-                                                         InstanceType.ACADEMIC_MONOGRAPH, keepInstitutionId,
-                                                         randomUri());
+        var updateRequest = createUpsertCandidateRequest(
+            createCandidateRequest.publicationId(), true, 2,
+            InstanceType.ACADEMIC_MONOGRAPH, keepInstitutionId,
+            randomUri());
         var updatedCandidate = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository);
         var dto = updatedCandidate.toDto();
         var approvalMap = dto.approvalStatuses()
@@ -159,18 +158,18 @@ public class CandidateBOApprovalStatusTest extends LocalDynamoTest {
     void shouldRemoveApprovalsWhenBecomingNonCandidate() {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
         var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository);
-        var updateRequest = createUpsertCandidateRequest(candidate.identifier(), candidate.toDto().publicationId(),
+        var updateRequest = createUpsertCandidateRequest(candidate.toDto().publicationId(),
                                                          false, 2, InstanceType.ACADEMIC_MONOGRAPH, randomUri());
         var updatedCandidate = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository);
         assertThat(updatedCandidate.identifier(), is(equalTo(candidate.identifier())));
-        assertThat(updatedCandidate.toDto().approvalStatuses().size(), is(equalTo(0)));
+        assertThat(updatedCandidate.getApprovals().size(), is(equalTo(0)));
     }
 
     @Test
     void shouldThrowExceptionWhenApplicableAndNonCandidate() {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
         var candidateBO = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository);
-        var updateRequest = createUpsertCandidateRequest(candidateBO.identifier(), candidateBO.toDto().publicationId(),
+        var updateRequest = createUpsertCandidateRequest(candidateBO.toDto().publicationId(),
                                                          true, 2, InstanceType.NON_CANDIDATE, randomUri());
         assertThrows(InvalidNviCandidateException.class,
                      () -> CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository));

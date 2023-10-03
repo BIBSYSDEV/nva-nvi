@@ -13,6 +13,7 @@ import java.math.RoundingMode;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Year;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -54,6 +55,8 @@ public final class TestUtils {
     private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
     private static final String PUBLICATION_API_PATH = "publication";
     private static final String API_HOST = "example.com";
+
+    public static final int CURRENT_YEAR = Year.now().getValue();
 
     private TestUtils() {
     }
@@ -212,11 +215,11 @@ public final class TestUtils {
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI... institutions) {
-        return createUpsertCandidateRequest(UUID.randomUUID(), randomUri(), true, 1, InstanceType.ACADEMIC_MONOGRAPH,
+        return createUpsertCandidateRequest(randomUri(), true, 1, InstanceType.ACADEMIC_MONOGRAPH,
                                             institutions);
     }
 
-    public static UpsertCandidateRequest createUpsertCandidateRequest(UUID identifier, URI publicationId,
+    public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
                                                                       boolean isApplicable, int creatorCount,
                                                                       final InstanceType instanceType,
                                                                       URI... institutions) {
@@ -226,10 +229,6 @@ public final class TestUtils {
         var points = Arrays.stream(institutions)
                          .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal()));
         return new UpsertCandidateRequest() {
-            @Override
-            public UUID identifier() {
-                return identifier;
-            }
 
             @Override
             public URI publicationBucketUri() {
