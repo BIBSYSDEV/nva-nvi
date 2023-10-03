@@ -475,9 +475,12 @@ components:
           type: string
         reportingDate:
           type: string
+        startDate:
+          type: string
       required:
         - publishingYear
         - reportingDate
+        - startDate
     NviPeriods:
       type: array
       items:

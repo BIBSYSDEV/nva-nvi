@@ -11,9 +11,6 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.model.Username;
-import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
-import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
-import no.sikt.nva.nvi.common.service.NviService;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
@@ -129,10 +126,8 @@ public record ApprovalStatusDao(UUID identifier,
     }
 
     @DynamoDbImmutable(builder = DbApprovalStatus.Builder.class)
-    public record DbApprovalStatus(URI institutionId, UUID candidateIdentifier, DbStatus status, Username assignee,
+    public record DbApprovalStatus(URI institutionId, DbStatus status, Username assignee,
                                    Username finalizedBy, Instant finalizedDate, String reason) {
-
-        private static final String UNKNOWN_REQUEST_TYPE_MESSAGE = "Unknown request type";
 
         public static Builder builder() {
             return new Builder();
@@ -146,7 +141,6 @@ public record ApprovalStatusDao(UUID identifier,
         @DynamoDbIgnore
         public Builder copy() {
             return builder().institutionId(institutionId)
-                       .candidateIdentifier(candidateIdentifier)
                        .status(status)
                        .assignee(assignee)
                        .finalizedBy(finalizedBy)
@@ -159,26 +153,9 @@ public record ApprovalStatusDao(UUID identifier,
             return nonNull(assignee);
         }
 
-        @DynamoDbIgnore
-        public DbApprovalStatus fetch(NviService nviService) {
-            return nviService.findApprovalStatus(institutionId, candidateIdentifier);
-        }
-
-        @DynamoDbIgnore
-        public DbApprovalStatus update(NviService nviService, UpdateApprovalRequest input) {
-            var copy = this.copy();
-            if (input instanceof UpdateAssigneeRequest request) {
-                return nviService.updateApproval(candidateIdentifier,
-                                                 copy.assignee(Username.fromString(request.username())).build());
-            } else {
-                throw new IllegalArgumentException(UNKNOWN_REQUEST_TYPE_MESSAGE);
-            }
-        }
-
         public static final class Builder {
 
             private URI builderInstitutionId;
-            private UUID builderCandidateIdentifier;
             private DbStatus builderStatus;
             private Username builderAssignee;
             private Username builderFinalizedBy;
@@ -213,18 +190,13 @@ public record ApprovalStatusDao(UUID identifier,
                 return this;
             }
 
-            public Builder candidateIdentifier(UUID candidateIdentifier) {
-                this.builderCandidateIdentifier = candidateIdentifier;
-                return this;
-            }
-
             public Builder reason(String reason) {
                 this.builderReason = reason;
                 return this;
             }
 
             public DbApprovalStatus build() {
-                return new DbApprovalStatus(builderInstitutionId, builderCandidateIdentifier, builderStatus,
+                return new DbApprovalStatus(builderInstitutionId, builderStatus,
                                             builderAssignee, builderFinalizedBy, builderFinalizedDate, builderReason);
             }
         }

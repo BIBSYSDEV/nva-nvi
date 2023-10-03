@@ -228,19 +228,28 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldThrowIllegalArgumentWhenPeriodMissedMandatoryValues() {
+        var period = new DbNviPeriod(String.valueOf(ZonedDateTime.now().plusYears(1).getYear()), null,
+                                     ZonedDateTime.now().plusMonths(10).toInstant(), new Username(randomString()),
+                                     null);
+        var nviService = new NviService(localDynamo);
+
+        assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
+    }
+
+    @Test
     void shouldUpdateNviPeriod() {
         var originalPeriod = createPeriod(String.valueOf(ZonedDateTime.now().getYear()));
         nviService.createPeriod(originalPeriod);
-        nviService.updatePeriod(originalPeriod.copy()
-                                    .reportingDate(originalPeriod.reportingDate().plusSeconds(500))
-                                    .build());
+        nviService.updatePeriod(
+            originalPeriod.copy().reportingDate(originalPeriod.reportingDate().plusSeconds(500)).build());
         var fetchedPeriod = nviService.getPeriod(originalPeriod.publishingYear());
         assertThat(fetchedPeriod, is(not(equalTo(originalPeriod))));
     }
 
     @Test
     void shouldReturnIllegalArgumentExceptionWhenPublishingYearIsNotAYear() {
-        var period = createPeriod(randomString());
+        var period = createPeriod("20AA");
         assertThrows(IllegalArgumentException.class, () -> nviService.createPeriod(period));
     }
 
@@ -265,6 +274,7 @@ public class NviServiceTest extends LocalDynamoTest {
     void shouldReturnIllegalArgumentWhenReportingDateIsBeforeNow() {
         var period = DbNviPeriod.builder()
                          .reportingDate(Instant.MIN)
+                         .startDate(ZonedDateTime.now().plusMonths(1).toInstant())
                          .publishingYear("2023")
                          .createdBy(Username.builder().value("me").build())
                          .build();
@@ -415,30 +425,6 @@ public class NviServiceTest extends LocalDynamoTest {
         nviService.upsertCandidate(getNotApplicableCandidate(candidate));
 
         assertThat(nviService.findApplicableCandidateById(candidate.identifier()), is(equalTo(Optional.empty())));
-    }
-
-    @Test
-    void shouldRemoveAssigneeWhenExistingApprovalHasAssignee() {
-        var candidate = nviService.upsertCandidate(randomCandidate()).orElseThrow();
-        var existingApprovalStatus = getSingleApproval(candidate);
-        updateAssignee(existingApprovalStatus);
-        var updatedApprovalStatus = existingApprovalStatus.copy().assignee(null).build();
-        var actualApprovalStatus = nviService.updateApproval(candidate.identifier(), updatedApprovalStatus);
-
-        assertThat(actualApprovalStatus.assignee(), is(nullValue()));
-    }
-
-    @Test
-    void approvalShouldFetchItself() {
-        var approval = getSingleApproval(nviService.upsertCandidate(randomCandidate()).orElseThrow());
-        var fetchedApproval = approval.fetch(nviService);
-        assertThat(approval, is(equalTo(fetchedApproval)));
-    }
-
-    @Test
-    void shouldThrowIllegalArgumentExceptionWhenUnknownUpdateRequest() {
-        var approval = getSingleApproval(nviService.upsertCandidate(randomCandidate()).orElseThrow());
-        assertThrows(IllegalArgumentException.class, () -> approval.update(nviService, null));
     }
 
     @Test
@@ -598,18 +584,13 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     private void updateApproval(Candidate existingCandidate, DbStatus status) {
-        nviService.updateApproval(existingCandidate.identifier(),
-                                  getSingleApproval(existingCandidate).copy()
-                                      .status(status)
-                                      .reason(DbStatus.REJECTED.equals(status) ? randomString() : null)
-                                      .finalizedBy(Username.fromString(randomString()))
-                                      .finalizedDate(Instant.now())
-                                      .build());
-    }
-
-    private void updateAssignee(DbApprovalStatus existingApprovalStatus) {
-        nviService.updateApproval(existingApprovalStatus.candidateIdentifier(),
-                                  existingApprovalStatus.copy().assignee(randomUsername()).build());
+        nviService.updateApproval(existingCandidate.identifier(), getSingleApproval(existingCandidate).copy()
+                                                                      .status(status)
+                                                                      .reason(DbStatus.REJECTED.equals(status)
+                                                                                  ? randomString() : null)
+                                                                      .finalizedBy(Username.fromString(randomString()))
+                                                                      .finalizedDate(Instant.now())
+                                                                      .build());
     }
 
     private DbCandidate createExpectedCandidate(UUID identifier, List<DbCreator> creators, InstanceType instanceType,
