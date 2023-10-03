@@ -11,6 +11,7 @@ dependencies {
     implementation libs.aws.lambda.java.core
     implementation libs.aws.lambda.events
     implementation libs.aws.sdk2.sqs
+    implementation libs.aws.sdk2.dynamodb
 
     implementation libs.jackson.core
     implementation libs.jackson.databind
@@ -27,6 +28,7 @@ dependencies {
 test {
     useJUnitPlatform()
     environment "API_HOST", "example.org"
+    environment "CUSTOM_DOMAIN_BASE_PATH", "example.org"
     environment("SEARCH_INFRASTRUCTURE_API_HOST", "localhost")
     environment("SEARCH_INFRASTRUCTURE_AUTH_URI", "localhost")
     environment("SEARCH_INFRASTRUCTURE_API_URI", "localhost")
