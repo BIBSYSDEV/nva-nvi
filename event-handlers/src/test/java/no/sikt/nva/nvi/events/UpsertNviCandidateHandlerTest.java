@@ -31,7 +31,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -139,11 +143,10 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                           candidateRepository, periodRepository);
         var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));
         handler.handleRequest(sqsEvent, CONTEXT);
-
-        assertTrue(candidateRepository.findApprovalByIdAndInstitutionId(dto.identifier(), keep).isPresent());
-        assertFalse(candidateRepository.findApprovalByIdAndInstitutionId(dto.identifier(), delete).isPresent());
-        var updatedCandidate = CandidateBO.fromRequest(dto::identifier, candidateRepository, periodRepository).toDto();
-        assertThat(updatedCandidate.approvalStatuses().size(), is(2));
+        Map<URI, DbApprovalStatus> approvals = getAprovalMaps(dto);
+        assertTrue(approvals.containsKey(keep));
+        assertFalse(approvals.containsKey(delete));
+        assertThat(approvals.size(), is(2));
     }
 
     private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
@@ -200,6 +203,14 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                               verifiedCreators))
                    .withInstitutionPoints(institutionPoints)
                    .build();
+    }
+
+    private Map<URI, DbApprovalStatus> getAprovalMaps(CandidateBO dto) {
+        return candidateRepository.fetchApprovals(dto.identifier())
+                   .stream()
+                   .map(ApprovalStatusDao::approvalStatus)
+                   .collect(Collectors.toMap(
+                       DbApprovalStatus::institutionId, Function.identity()));
     }
 
     private CandidateDto createResponse(UUID identifier, URI publicationId, Map<URI, BigDecimal> institutionPoints) {
