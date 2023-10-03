@@ -142,6 +142,8 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
         assertTrue(candidateRepository.findApprovalByIdAndInstitutionId(dto.identifier(), keep).isPresent());
         assertFalse(candidateRepository.findApprovalByIdAndInstitutionId(dto.identifier(), delete).isPresent());
+        var updatedCandidate = CandidateBO.fromRequest(dto::identifier, candidateRepository, periodRepository).toDto();
+        assertThat(updatedCandidate.approvalStatuses().size(), is(2));
     }
 
     private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
