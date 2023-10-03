@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.net.URI;
 import java.time.ZonedDateTime;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -30,7 +31,6 @@ import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
-import no.sikt.nva.nvi.common.service.exception.IllegalOperationException;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
@@ -61,7 +61,8 @@ class CandidateBOTest extends LocalDynamoTest {
     @Test
     void shouldReturnCandidateWhenExists() {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
-        var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository);
+        var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
+                            .orElseThrow();
         var fetchedCandidate = CandidateBO.fromRequest(candidate::identifier, candidateRepository, periodRepository);
         assertThat(fetchedCandidate.identifier(), is(equalTo(candidate.identifier())));
     }
@@ -69,17 +70,19 @@ class CandidateBOTest extends LocalDynamoTest {
     @Test
     void shouldFetchCandidateByPublicationId() {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
-        var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository);
+        var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
+                            .orElseThrow();
         var fetchedCandidate = CandidateBO.fromRequest(candidate::publicationId, candidateRepository, periodRepository);
         assertThat(fetchedCandidate.identifier(), is(equalTo(candidate.identifier())));
     }
 
     @Test
-    void shouldThrowIllegalOperationWhenNonApplicableNonCandidateIsAttemptedInserted() {
+    void shouldDoNothingIfCreateRequestIsForNonCandidateThatDoesNotExist() {
         var updateRequest = createUpsertCandidateRequest(randomUri(), false, 2,
                                                          InstanceType.NON_CANDIDATE, randomUri());
-        assertThrows(IllegalOperationException.class,
-                     () -> CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository));
+
+        var optionalCandidate = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository);
+        assertThat(optionalCandidate, is(equalTo(Optional.empty())));
     }
 
     @Test
@@ -89,7 +92,7 @@ class CandidateBOTest extends LocalDynamoTest {
         var createRequest = createUpsertCandidateRequest(randomUri(), true, 4,
                                                          InstanceType.ACADEMIC_MONOGRAPH, institutionToApprove,
                                                          randomUri(), institutionToReject);
-        var candidateBO = CandidateBO.fromRequest(createRequest, candidateRepository, periodRepository);
+        var candidateBO = CandidateBO.fromRequest(createRequest, candidateRepository, periodRepository).orElseThrow();
         candidateBO.createNote(createNoteRequest(randomString(), randomString()))
             .createNote(createNoteRequest(randomString(), randomString()))
             .updateApproval(createUpdateStatusRequest(DbStatus.APPROVED, institutionToApprove, randomString()))
@@ -125,6 +128,7 @@ class CandidateBOTest extends LocalDynamoTest {
         var assignee = randomString();
         var createCandidateRequest = createUpsertCandidateRequest(institutionId);
         var candidate = CandidateBO.fromRequest(createCandidateRequest, candidateRepository, periodRepository)
+                            .orElseThrow()
                             .updateApproval(new UpdateAssigneeRequest(institutionId, assignee))
                             .updateApproval(createUpdateStatusRequest(DbStatus.APPROVED, institutionId, randomString()))
                             .updateApproval(createUpdateStatusRequest(DbStatus.REJECTED, institutionId, randomString()))
