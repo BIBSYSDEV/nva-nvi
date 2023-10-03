@@ -26,7 +26,6 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Year;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -125,11 +124,9 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var eventMessage = nonCandidateMessageForExistingCandidate(dto);
         handler.handleRequest(createEvent(eventMessage), CONTEXT);
         var updatedCandidate =
-            CandidateBO.fromRequest(dto::identifier, candidateRepository, periodRepository).toDto();
+            CandidateBO.fromRequest(dto::identifier, candidateRepository, periodRepository);
 
-        var expectedResponse = createResponse(updatedCandidate.identifier(), dto.publicationId(),
-                                              Collections.emptyMap());
-        assertThat(updatedCandidate, is(equalTo(expectedResponse)));
+        assertThat(updatedCandidate.isApplicable(), is(false));
     }
 
     @Test

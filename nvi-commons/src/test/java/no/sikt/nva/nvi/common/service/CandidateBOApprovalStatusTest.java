@@ -15,7 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import java.net.URI;
 import java.time.ZonedDateTime;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -141,9 +140,9 @@ public class CandidateBOApprovalStatusTest extends LocalDynamoTest {
         var createCandidateRequest = createUpsertCandidateRequest(keepInstitutionId, deleteInstitutionId, randomUri());
         CandidateBO.fromRequest(createCandidateRequest, candidateRepository, periodRepository);
         var updateRequest = createUpsertCandidateRequest(
-                                                         createCandidateRequest.publicationId(), true, 2,
-                                                         InstanceType.ACADEMIC_MONOGRAPH, keepInstitutionId,
-                                                         randomUri());
+            createCandidateRequest.publicationId(), true, 2,
+            InstanceType.ACADEMIC_MONOGRAPH, keepInstitutionId,
+            randomUri());
         var updatedCandidate = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository);
         var dto = updatedCandidate.toDto();
         var approvalMap = dto.approvalStatuses()
@@ -163,7 +162,7 @@ public class CandidateBOApprovalStatusTest extends LocalDynamoTest {
                                                          false, 2, InstanceType.ACADEMIC_MONOGRAPH, randomUri());
         var updatedCandidate = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository);
         assertThat(updatedCandidate.identifier(), is(equalTo(candidate.identifier())));
-        assertThat(updatedCandidate.toDto().approvalStatuses().size(), is(equalTo(0)));
+        assertThat(updatedCandidate.getApprovals().size(), is(equalTo(0)));
     }
 
     @Test
