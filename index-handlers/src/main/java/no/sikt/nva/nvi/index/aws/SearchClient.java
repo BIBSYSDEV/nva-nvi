@@ -10,7 +10,8 @@ public interface SearchClient<T> {
 
     void removeDocumentFromIndex(T indexDocument);
 
-    SearchResponse<T> search(String searchTerm, String filter, String username, URI customer, int offset, int size)
+    SearchResponse<T> search(String affiliations, String filter, String username,
+                             String year, URI customer, int offset, int size)
         throws IOException;
 
     void deleteIndex() throws IOException;

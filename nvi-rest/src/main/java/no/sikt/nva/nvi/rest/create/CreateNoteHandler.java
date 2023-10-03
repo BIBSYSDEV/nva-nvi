@@ -1,55 +1,64 @@
 package no.sikt.nva.nvi.rest.create;
 
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
-import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.PARAM_CANDIDATE_IDENTIFIER;
+import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
+import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
+import java.util.Objects;
 import java.util.UUID;
-import no.sikt.nva.nvi.CandidateResponse;
-import no.sikt.nva.nvi.common.db.model.DbNote;
-import no.sikt.nva.nvi.common.db.model.DbUsername;
-import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.utils.RequestUtil;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.model.CreateNoteRequest;
+import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.utils.ExceptionMapper;
+import no.sikt.nva.nvi.utils.RequestUtil;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.core.JacocoGenerated;
 
-public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, CandidateResponse> {
+public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, CandidateDto> {
 
-    private final NviService service;
+    public static final String INVALID_REQUEST_ERROR = "Request body must contain text field.";
+    private final CandidateRepository candidateRepository;
+    private final PeriodRepository periodRepository;
 
     @JacocoGenerated
     public CreateNoteHandler() {
-        this(new NviService(defaultDynamoClient()));
+        this(new CandidateRepository(defaultDynamoClient()), new PeriodRepository(defaultDynamoClient()));
     }
 
-    public CreateNoteHandler(NviService service) {
+    public CreateNoteHandler(CandidateRepository candidateRepository, PeriodRepository periodRepository) {
         super(NviNoteRequest.class);
-        this.service = service;
+        this.candidateRepository = candidateRepository;
+        this.periodRepository = periodRepository;
     }
 
     @Override
-    protected CandidateResponse processInput(NviNoteRequest input, RequestInfo requestInfo, Context context)
+    protected CandidateDto processInput(NviNoteRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
+        validate(input);
         var username = RequestUtil.getUsername(requestInfo);
-        var candidateIdentifier = requestInfo.getPathParameter(PARAM_CANDIDATE_IDENTIFIER);
-
-        var candidate = service.createNote(UUID.fromString(candidateIdentifier), getNote(input, username));
-        return CandidateResponse.fromCandidate(candidate);
+        var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
+        return attempt(() -> CandidateBO.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository))
+                   .map(candidate -> candidate.createNote(new CreateNoteRequest(input.text(), username.value())))
+                   .map(CandidateBO::toDto)
+                   .orElseThrow(ExceptionMapper::map);
     }
 
     @Override
-    protected Integer getSuccessStatusCode(NviNoteRequest input, CandidateResponse output) {
+    protected Integer getSuccessStatusCode(NviNoteRequest input, CandidateDto output) {
         return HttpURLConnection.HTTP_OK;
     }
 
-    private static DbNote getNote(NviNoteRequest input, DbUsername username) {
-        return DbNote.builder()
-                   .text(input.note())
-                   .user(new DbUsername(username.value()))
-                   .build();
+    private void validate(NviNoteRequest input) throws BadRequestException {
+        if (Objects.isNull(input.text())) {
+            throw new BadRequestException(INVALID_REQUEST_ERROR);
+        }
     }
 }

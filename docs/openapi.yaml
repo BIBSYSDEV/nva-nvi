@@ -146,8 +146,8 @@ paths:
       description: 'Search for scientific index candidates'
       parameters:
         - in: query
-          name: query
-          description: 'Term to search for in candidates'
+          name: affiliations
+          description: 'Only return candidates in given affiliations. Formated as a comma separated list of affiliations ids.'
           required: false
           schema:
             type: string
@@ -168,6 +168,11 @@ paths:
           schema:
             $ref: "#/components/schemas/Filter"
           description: Filter values to use
+        - in: query
+          name: year
+          schema:
+            type: string
+          description: Filters values based on year
       security:
         - CognitoUserPool: [
           'https://api.nva.unit.no/scopes/backend',
@@ -470,9 +475,12 @@ components:
           type: string
         reportingDate:
           type: string
+        startDate:
+          type: string
       required:
         - publishingYear
         - reportingDate
+        - startDate
     NviPeriods:
       type: array
       items:
@@ -513,7 +521,14 @@ components:
             title:
               type: string
             publicationDate:
-              type: string
+              type: object
+              properties:
+                year:
+                  type: string
+                month:
+                  type: string
+                day:
+                  type: string
             contributors:
               type: array
               items:
@@ -554,6 +569,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Note'
+        periodStatus:
+          type: object
+          properties:
+            status:
+              type: string
+              enum:
+                - OpenPeriod
+                - ClosedPeriod
+                - NoPeriod
+            reportingDate:
+              type: string
+            startDate:
+              type: string
     ApprovalStatus:
       type: object
       properties:
@@ -629,6 +657,12 @@ components:
         status:
           type: string
           enum: [ 'Approved','Pending','Rejected' ]
+        reason:
+          type: string
+          maxLength: 500
+          description: Required if status is updated to Rejected. Reason for rejection.
+      required:
+        - status
     AssigneeRequest:
       type: object
       properties:
@@ -638,6 +672,7 @@ components:
           type: string
       required:
         - institutionId
+        - assignee
     CreateNoteRequest:
       type: object
       properties:

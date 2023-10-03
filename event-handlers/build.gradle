@@ -38,4 +38,5 @@ test {
     environment("SEARCH_INFRASTRUCTURE_AUTH_URI", "localhost")
     environment("SEARCH_INFRASTRUCTURE_API_URI", "localhost")
     environment("NVI_TABLE_NAME", "some-table")
+    environment ("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
 }

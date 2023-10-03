@@ -1,12 +1,19 @@
 package no.sikt.nva.nvi.common.db;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import java.net.URI;
+import java.time.Instant;
+import java.util.Arrays;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.model.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.model.Username;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
@@ -46,6 +53,39 @@ public record ApprovalStatusDao(UUID identifier,
     @DynamoDbAttribute(TYPE_FIELD)
     public String type() {
         return TYPE;
+    }
+
+    @DynamoDbIgnore
+    @JacocoGenerated
+    public ApprovalStatusDao.Builder copy() {
+        return builder()
+                   .identifier(identifier)
+                   .approvalStatus(approvalStatus.copy().build());
+    }
+
+    @JacocoGenerated
+    public enum DbStatus {
+        APPROVED("Approved"), PENDING("Pending"), REJECTED("Rejected");
+
+        @JsonValue
+        private final String value;
+
+        DbStatus(String value) {
+            this.value = value;
+        }
+
+        @JsonCreator
+        public static DbStatus parse(String value) {
+            return Arrays
+                       .stream(DbStatus.values())
+                       .filter(status -> status.getValue().equalsIgnoreCase(value))
+                       .findFirst()
+                       .orElseThrow();
+        }
+
+        public String getValue() {
+            return value;
+        }
     }
 
     public static final class Builder {
@@ -89,6 +129,83 @@ public record ApprovalStatusDao(UUID identifier,
 
         public ApprovalStatusDao build() {
             return new ApprovalStatusDao(this.builderIdentifier, this.builderApprovalStatus, this.version);
+        }
+    }
+
+    @DynamoDbImmutable(builder = DbApprovalStatus.Builder.class)
+    public record DbApprovalStatus(URI institutionId, DbStatus status, Username assignee,
+                                   Username finalizedBy, Instant finalizedDate, String reason) {
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        @DynamoDbIgnore
+        public ApprovalStatusDao toDao(UUID candidateIdentifier) {
+            return new ApprovalStatusDao(candidateIdentifier, this, null);
+        }
+
+        @DynamoDbIgnore
+        public Builder copy() {
+            return builder().institutionId(institutionId)
+                       .status(status)
+                       .assignee(assignee)
+                       .finalizedBy(finalizedBy)
+                       .finalizedDate(finalizedDate)
+                       .reason(reason);
+        }
+
+        @DynamoDbIgnore
+        public boolean hasAssignee() {
+            return nonNull(assignee);
+        }
+
+        public static final class Builder {
+
+            private URI builderInstitutionId;
+            private DbStatus builderStatus;
+            private Username builderAssignee;
+            private Username builderFinalizedBy;
+            private Instant builderFinalizedDate;
+            private String builderReason;
+
+            private Builder() {
+            }
+
+            public Builder institutionId(URI institutionId) {
+                this.builderInstitutionId = institutionId;
+                return this;
+            }
+
+            public Builder status(DbStatus status) {
+                this.builderStatus = status;
+                return this;
+            }
+
+            public Builder assignee(Username assignee) {
+                this.builderAssignee = assignee;
+                return this;
+            }
+
+            public Builder finalizedBy(Username finalizedBy) {
+                this.builderFinalizedBy = finalizedBy;
+                return this;
+            }
+
+            public Builder finalizedDate(Instant finalizedDate) {
+                this.builderFinalizedDate = finalizedDate;
+                return this;
+            }
+
+            public Builder reason(String reason) {
+                this.builderReason = reason;
+                return this;
+            }
+
+            public DbApprovalStatus build() {
+                return new DbApprovalStatus(builderInstitutionId, builderStatus,
+                                            builderAssignee, builderFinalizedBy, builderFinalizedDate, builderReason);
+            }
         }
     }
 }

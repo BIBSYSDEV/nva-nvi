@@ -1,8 +1,10 @@
 package no.sikt.nva.nvi.rest.remove;
 
-import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.PARAM_CANDIDATE_IDENTIFIER;
+import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.rest.remove.RemoveNoteHandler.PARAM_NOTE_IDENTIFIER;
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomUsername;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -16,45 +18,50 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.util.List;
+import java.util.Calendar;
 import java.util.Map;
 import java.util.UUID;
-import no.sikt.nva.nvi.CandidateResponse;
-import no.sikt.nva.nvi.common.db.NviCandidateRepository;
-import no.sikt.nva.nvi.common.db.model.DbNote;
-import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.model.CreateNoteRequest;
+import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.rest.create.NviNoteRequest;
+import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
 class RemoveNoteHandlerTest extends LocalDynamoTest {
 
+    public static final int YEAR = Calendar.getInstance().getWeeksInWeekYear();
     private Context context;
     private ByteArrayOutputStream output;
     private RemoveNoteHandler handler;
-    private NviService service;
-    private NviCandidateRepository nviCandidateRepository;
+    private PeriodRepository periodRepository;
+    private CandidateRepository candidateRepository;
 
     @BeforeEach
     void setUp() {
         output = new ByteArrayOutputStream();
         context = mock(Context.class);
         localDynamo = initializeTestDatabase();
-        nviCandidateRepository = new NviCandidateRepository(localDynamo);
-        service = new NviService(localDynamo);
-        handler = new RemoveNoteHandler(service);
+        candidateRepository = new CandidateRepository(localDynamo);
+        periodRepository = periodRepositoryReturningOpenedPeriod(YEAR);
+        handler = new RemoveNoteHandler(candidateRepository, periodRepository);
     }
 
     @Test
     void shouldReturnUnauthorizedWhenMissingAccessRights() throws IOException {
-        handler.handleRequest(createRequestWithoutAccessRights(randomUri(), randomString(), randomString(),
-                                                               randomString()).build(), output, context);
+        handler.handleRequest(
+            createRequestWithoutAccessRights(randomUri(), randomString(), randomString(), randomString()).build(),
+            output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -62,34 +69,24 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnUnauthorizedWhenNotTheUserThatCreatedTheNote() throws IOException {
-        var dbCandidate = randomCandidate();
+        var candidate = createCandidate();
         var user = randomUsername();
-        var candidate = nviCandidateRepository.create(dbCandidate, List.of());
-        var candidateWithNote = service.createNote(candidate.identifier(), DbNote.builder()
-                                                                               .user(user)
-                                                                               .text("Not My Note")
-                                                                               .build());
-        var req = createRequest(candidate.identifier(), candidateWithNote.notes().get(0).noteId(),
-                                randomString()).build();
-        handler.handleRequest(req, output, context);
+        var candidateWithNote = createNote(candidate, user);
+        var noteId = candidateWithNote.toDto().notes().get(0).identifier();
+        var request = createRequest(candidate.identifier(), noteId, randomString()).build();
+        handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
     }
 
     @Test
     void shouldBeAbleToRemoveNoteWhenTheUserThatCreatedIt() throws IOException {
-        var dbCandidate = randomCandidate();
+        var candidate = createCandidate();
         var user = randomUsername();
-        var candidate = nviCandidateRepository.create(dbCandidate, List.of());
-        var candidateWithNote = service.createNote(candidate.identifier(),
-                                                   DbNote.builder()
-                                                       .user(user)
-                                                       .text("Not My Note")
-                                                       .build());
-        var req = createRequest(candidate.identifier(),
-                                candidateWithNote.notes().get(0).noteId(),
-                                user.value()).build();
-        handler.handleRequest(req, output, context);
+        var candidateWithNote = createNote(candidate, user);
+        var noteId = candidateWithNote.toDto().notes().get(0).identifier();
+        var request = createRequest(candidate.identifier(), noteId, user.value()).build();
+        handler.handleRequest(request, output, context);
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
         var body = gatewayResponse.getBodyObject(CandidateResponse.class);
         assertThat(body.notes(), hasSize(0));
@@ -97,34 +94,50 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnNotFoundWhenNoteDoesntExist() throws IOException {
-        var dbCandidate = randomCandidate();
-        var user = randomUsername();
-        var candidate = nviCandidateRepository.create(dbCandidate, List.of());
-        var req = createRequest(candidate.identifier(),
-                                UUID.randomUUID(),
-                                randomString())
-                      .build();
-        handler.handleRequest(req, output, context);
+        var request = createRequest(UUID.randomUUID(), UUID.randomUUID(), randomString()).build();
+        handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_NOT_FOUND)));
+    }
+
+    @Test
+    void shouldReturnConflictWhenRemovingNoteAndReportingPeriodIsClosed() throws IOException {
+        var candidate = createCandidate();
+        var user = randomString();
+        candidate.createNote(new CreateNoteRequest(randomString(), user));
+        var noteId = candidate.toDto().notes().get(0).identifier();
+        var request = createRequest(candidate.identifier(), noteId, user).build();
+        handler = new RemoveNoteHandler(candidateRepository, periodRepositoryReturningClosedPeriod(YEAR));
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_CONFLICT)));
     }
 
     private static HandlerRequestBuilder<NviNoteRequest> createRequestWithoutAccessRights(URI customerId,
                                                                                           String candidateId,
                                                                                           String noteId,
                                                                                           String userName) {
-        return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dynamoObjectMapper)
-                   .withPathParameters(Map.of(PARAM_CANDIDATE_IDENTIFIER, candidateId,
-                                              PARAM_NOTE_IDENTIFIER, noteId))
+        return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dynamoObjectMapper).withPathParameters(
+                Map.of(CANDIDATE_IDENTIFIER, candidateId, PARAM_NOTE_IDENTIFIER, noteId))
                    .withCurrentCustomer(customerId)
                    .withUserName(userName);
+    }
+
+    private CandidateBO createNote(CandidateBO candidate, Username user) {
+        return candidate.createNote(new CreateNoteRequest(randomString(), user.value()));
+    }
+
+    private CandidateBO createCandidate() {
+        return CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
+                                       periodRepository);
     }
 
     private HandlerRequestBuilder<NviNoteRequest> createRequest(UUID candidateIdentifier, UUID noteIdentifier,
                                                                 String userName) {
         var customerId = randomUri();
         return createRequestWithoutAccessRights(customerId, candidateIdentifier.toString(), noteIdentifier.toString(),
-                                                userName)
-                   .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE.name());
+                                                userName).withAccessRights(customerId,
+                                                                           AccessRight.MANAGE_NVI_CANDIDATE.name());
     }
 }

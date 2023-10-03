@@ -1,5 +1,5 @@
 package no.sikt.nva.nvi.rest.create;
 
-public record NviNoteRequest(String note) {
+public record NviNoteRequest(String text) {
 
 }

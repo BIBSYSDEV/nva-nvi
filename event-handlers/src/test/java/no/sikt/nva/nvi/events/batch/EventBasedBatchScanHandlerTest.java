@@ -1,9 +1,11 @@
 package no.sikt.nva.nvi.events.batch;
 
+import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomUsername;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
@@ -17,6 +19,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.time.Instant;
+import java.time.Year;
+import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
@@ -25,15 +29,20 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
-import no.sikt.nva.nvi.common.db.Candidate;
 import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.CandidateUniquenessEntryDao;
 import no.sikt.nva.nvi.common.db.NoteDao;
-import no.sikt.nva.nvi.common.db.NviCandidateRepository;
-import no.sikt.nva.nvi.common.db.model.DbNote;
+import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.model.CreateNoteRequest;
+import no.sikt.nva.nvi.common.service.Candidate;
+import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.common.service.requests.FetchCandidateRequest;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
 import no.unit.nva.stubs.FakeEventBridgeClient;
 import nva.commons.core.Environment;
@@ -58,6 +67,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     private FakeEventBridgeClient eventBridgeClient;
     private NviService nviService;
     private NviCandidateRepositoryHelper candidateRepository;
+    private PeriodRepository periodRepository;
 
     @BeforeEach
     public void init() {
@@ -67,7 +77,8 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         this.eventBridgeClient = new FakeEventBridgeClient();
         DynamoDbClient db = initializeTestDatabase();
         candidateRepository = new NviCandidateRepositoryHelper(db);
-        this.nviService = new NviService(db, candidateRepository);
+        periodRepository = TestUtils.periodRepositoryReturningOpenedPeriod(Year.now().getValue());
+        this.nviService = new NviService(periodRepository, candidateRepository);
         this.handler = new EventBasedBatchScanHandler(nviService, eventBridgeClient);
     }
 
@@ -165,7 +176,6 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
 
         var items = candidateRepository.getUniquenessEntries().toList();
 
-
         pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
 
         while (thereAreMoreEventsInEventBridge()) {
@@ -175,13 +185,12 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         }
 
         var noEntitiesUpdated = items.stream()
-                                     .allMatch(item -> Objects.equals(item.version(),
-                                                                      candidateRepository.getUniquenessEntry(item)
-                                                                          .version())) && !items.isEmpty();
+                                    .allMatch(item -> Objects.equals(item.version(),
+                                                                     candidateRepository.getUniquenessEntry(item)
+                                                                         .version())) && !items.isEmpty();
 
         assertTrue(noEntitiesUpdated, "No uniqueness entries should have been updated with new version");
     }
-
 
     @Test
     void bodyShouldNotChange() {
@@ -196,9 +205,10 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         }
 
         var noEntitiesUpdated = candidates.stream()
-                                    .allMatch(item -> Objects.equals(item.hashCode(),
-                                                                     candidateRepository.getCandidateById(item.identifier())
-                                                                         .hashCode())) && !candidates.isEmpty();
+                                    .allMatch(item -> item.toDto().equals(CandidateBO.fromRequest(item::identifier,
+                                                                                             candidateRepository,
+                                                                                             periodRepository).toDto()
+                                                                         )) && !candidates.isEmpty();
 
         assertTrue(noEntitiesUpdated, "No values should have been updated with new version");
     }
@@ -218,15 +228,12 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         eventBridgeClient.getRequestEntries().add(entry);
     }
 
-    private Stream<Candidate> createRandomCandidates(int i) {
+    private Stream<CandidateBO> createRandomCandidates(int i) {
         return IntStream.range(0, i)
                    .boxed()
-                   .map(item -> randomCandidate())
-                   .map(nviService::upsertCandidate)
-                   .map(Optional::orElseThrow)
-                   .map(a -> nviService.createNote(a.identifier(),
-                                                   new DbNote(UUID.randomUUID(), randomUsername(), randomString(),
-                                                              Instant.now())));
+                   .map(item -> CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
+                                                        candidateRepository, periodRepository))
+                   .map(a -> a.createNote(new CreateNoteRequest(randomString(), randomString())));
     }
 
     private InputStream createInitialScanRequest() {
@@ -243,7 +250,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         return IoUtils.stringToStream(event.toJsonString());
     }
 
-    public static class NviCandidateRepositoryHelper extends NviCandidateRepository {
+    public static class NviCandidateRepositoryHelper extends CandidateRepository {
 
         public NviCandidateRepositoryHelper(DynamoDbClient client) {
             super(client);
@@ -274,12 +281,12 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
                        .findFirst()
                        .orElseThrow();
         }
+
         public Stream<CandidateUniquenessEntryDao> getUniquenessEntries() {
             return uniquenessTable.scan().items().stream().filter(a -> a.partitionKey() != null);
         }
 
-        public CandidateUniquenessEntryDao getUniquenessEntry(CandidateUniquenessEntryDao entry)
-        {
+        public CandidateUniquenessEntryDao getUniquenessEntry(CandidateUniquenessEntryDao entry) {
             return uniquenessTable.getItem(entry);
         }
     }

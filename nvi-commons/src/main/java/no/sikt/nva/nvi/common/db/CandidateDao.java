@@ -7,8 +7,15 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_HASH_KE
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_RANGE_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import java.math.BigDecimal;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.model.DbCandidate;
+import no.sikt.nva.nvi.common.db.model.InstanceType;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
@@ -71,6 +78,38 @@ public record CandidateDao(
         return nonNull(candidate.publicationId()) ? candidate.publicationId().toString() : null;
     }
 
+    @DynamoDbIgnore
+    public CandidateDao.Builder copy() {
+        return builder()
+                   .identifier(identifier)
+                   .candidate(candidate);
+    }
+
+    public enum DbLevel {
+        UNASSIGNED("Unassigned"), LEVEL_ONE("1"), LEVEL_TWO("2"), NON_CANDIDATE("NonCandidateLevel");
+
+        @JsonValue
+        private final String value;
+
+        DbLevel(String value) {
+
+            this.value = value;
+        }
+
+        @JsonCreator
+        public static DbLevel parse(String value) {
+            return Arrays
+                       .stream(DbLevel.values())
+                       .filter(level -> level.getValue().equalsIgnoreCase(value))
+                       .findFirst()
+                       .orElse(NON_CANDIDATE);
+        }
+
+        public String getValue() {
+            return value;
+        }
+    }
+
     public static final class Builder {
 
         private UUID builderIdentifier;
@@ -122,6 +161,234 @@ public record CandidateDao(
 
         public CandidateDao build() {
             return new CandidateDao(builderIdentifier, builderCandidate, version);
+        }
+    }
+
+    @DynamoDbImmutable(builder = DbCandidate.Builder.class)
+    public record DbCandidate(
+        URI publicationId,
+        URI publicationBucketUri,
+        boolean applicable,
+        InstanceType instanceType,
+        DbLevel level,
+        DbPublicationDate publicationDate,
+        boolean internationalCollaboration,
+        int creatorCount,
+        List<DbCreator> creators,
+        List<DbInstitutionPoints> points
+    ) {
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        @DynamoDbIgnore
+        public Builder copy() {
+            return builder()
+                       .publicationId(publicationId)
+                       .publicationBucketUri(publicationBucketUri)
+                       .applicable(applicable)
+                       .instanceType(instanceType)
+                       .level(level)
+                       .publicationDate(publicationDate.copy())
+                       .internationalCollaboration(internationalCollaboration)
+                       .creatorCount(creatorCount)
+                       .creators(creators.stream().map(DbCreator::copy).toList())
+                       .points(points.stream().map(DbInstitutionPoints::copy).toList());
+        }
+
+        public static final class Builder {
+
+            private URI builderPublicationId;
+            private URI builderPublicationBucketUri;
+            private boolean builderApplicable;
+            private InstanceType builderInstanceType;
+            private DbLevel builderLevel;
+            private DbPublicationDate builderPublicationDate;
+            private boolean builderInternationalCollaboration;
+            private int builderCreatorCount;
+            private List<DbCreator> builderCreators;
+            private List<DbInstitutionPoints> builderPoints;
+
+            private Builder() {
+            }
+
+            public Builder publicationId(URI publicationId) {
+                this.builderPublicationId = publicationId;
+                return this;
+            }
+
+            public Builder publicationBucketUri(URI publicationBucketUri) {
+                this.builderPublicationBucketUri = publicationBucketUri;
+                return this;
+            }
+
+            public Builder applicable(boolean applicable) {
+                this.builderApplicable = applicable;
+                return this;
+            }
+
+            public Builder instanceType(InstanceType instanceType) {
+                this.builderInstanceType = instanceType;
+                return this;
+            }
+
+            public Builder level(DbLevel level) {
+                this.builderLevel = level;
+                return this;
+            }
+
+            public Builder publicationDate(DbPublicationDate publicationDate) {
+                this.builderPublicationDate = publicationDate;
+                return this;
+            }
+
+            public Builder internationalCollaboration(boolean internationalCollaboration) {
+                this.builderInternationalCollaboration = internationalCollaboration;
+                return this;
+            }
+
+            public Builder creatorCount(int creatorCount) {
+                this.builderCreatorCount = creatorCount;
+                return this;
+            }
+
+            public Builder creators(List<DbCreator> creators) {
+                this.builderCreators = creators;
+                return this;
+            }
+
+            public Builder points(List<DbInstitutionPoints> points) {
+                this.builderPoints = points;
+                return this;
+            }
+
+            public DbCandidate build() {
+                return new DbCandidate(builderPublicationId, builderPublicationBucketUri, builderApplicable,
+                                       builderInstanceType, builderLevel,
+                                       builderPublicationDate, builderInternationalCollaboration, builderCreatorCount,
+                                       builderCreators, builderPoints);
+            }
+        }
+    }
+
+    @DynamoDbImmutable(builder = DbPublicationDate.Builder.class)
+    public record DbPublicationDate(String year, String month, String day) {
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        @DynamoDbIgnore
+        public DbPublicationDate copy() {
+            return new DbPublicationDate(year, month, day);
+        }
+
+        public static final class Builder {
+
+            private String builderYear;
+            private String builderMonth;
+            private String builderDay;
+
+            private Builder() {
+            }
+
+            public Builder year(String year) {
+                this.builderYear = year;
+                return this;
+            }
+
+            public Builder month(String month) {
+                this.builderMonth = month;
+                return this;
+            }
+
+            public Builder day(String day) {
+                this.builderDay = day;
+                return this;
+            }
+
+            public DbPublicationDate build() {
+                return new DbPublicationDate(builderYear, builderMonth, builderDay);
+            }
+        }
+    }
+
+    @DynamoDbImmutable(builder = DbCreator.Builder.class)
+    public record DbCreator(URI creatorId, List<URI> affiliations) {
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        @DynamoDbIgnore
+        public DbCreator copy() {
+            return builder()
+                       .creatorId(creatorId)
+                       .affiliations(new ArrayList<>(affiliations))
+                       .build();
+        }
+
+        public static final class Builder {
+
+            private URI builderCreatorId;
+            private List<URI> builderAffiliations;
+
+            private Builder() {
+            }
+
+            public Builder creatorId(URI creatorId) {
+                this.builderCreatorId = creatorId;
+                return this;
+            }
+
+            public Builder affiliations(List<URI> affiliations) {
+                this.builderAffiliations = affiliations;
+                return this;
+            }
+
+            public DbCreator build() {
+                return new DbCreator(builderCreatorId, builderAffiliations);
+            }
+        }
+    }
+
+    @DynamoDbImmutable(builder = DbInstitutionPoints.Builder.class)
+    public record DbInstitutionPoints(URI institutionId, BigDecimal points) {
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        @DynamoDbIgnore
+        public DbInstitutionPoints copy() {
+            return builder()
+                       .institutionId(institutionId)
+                       .points(points)
+                       .build();
+        }
+
+        public static final class Builder {
+
+            private URI builderInstitutionId;
+            private BigDecimal builderPoints;
+
+            private Builder() {
+            }
+
+            public Builder institutionId(URI institutionId) {
+                this.builderInstitutionId = institutionId;
+                return this;
+            }
+
+            public Builder points(BigDecimal points) {
+                this.builderPoints = points;
+                return this;
+            }
+
+            public DbInstitutionPoints build() {
+                return new DbInstitutionPoints(builderInstitutionId, builderPoints);
+            }
         }
     }
 }

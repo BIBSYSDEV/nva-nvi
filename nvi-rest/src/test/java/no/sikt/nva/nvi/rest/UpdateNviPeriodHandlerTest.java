@@ -13,9 +13,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.util.Date;
+import java.time.ZonedDateTime;
+import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.NviPeriodDto;
+import no.sikt.nva.nvi.rest.upsert.UpdateNviPeriodHandler;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -37,7 +39,6 @@ public class UpdateNviPeriodHandlerTest extends LocalDynamoTest {
         output = new ByteArrayOutputStream();
         context = mock(Context.class);
         nviService = new NviService((initializeTestDatabase()));
-        ;
         handler = new UpdateNviPeriodHandler(nviService);
     }
 
@@ -63,11 +64,17 @@ public class UpdateNviPeriodHandlerTest extends LocalDynamoTest {
     void shouldUpdateNviPeriodSuccessfully()
         throws IOException {
         var persistedPeriod = nviService.createPeriod(randomPeriod().toNviPeriod());
-        var newValue = persistedPeriod.copy().reportingDate(new Date(2050, 0, 25).toInstant()).build();
+        var newValue = updatedPeriod(persistedPeriod);
         handler.handleRequest(createRequest(NviPeriodDto.fromNviPeriod(newValue)), output, context);
         var updatedPeriod = nviService.getPeriod(persistedPeriod.publishingYear());
 
         assertThat(persistedPeriod.reportingDate(), is(not(equalTo(updatedPeriod.reportingDate()))));
+    }
+
+    private static DbNviPeriod updatedPeriod(DbNviPeriod persistedPeriod) {
+        return persistedPeriod.copy()
+                   .reportingDate(ZonedDateTime.now().plusMonths(4).toInstant())
+                   .build();
     }
 
     private InputStream createRequest(NviPeriodDto period) throws JsonProcessingException {
@@ -85,6 +92,8 @@ public class UpdateNviPeriodHandlerTest extends LocalDynamoTest {
     }
 
     private NviPeriodDto randomPeriod() {
-        return new NviPeriodDto("2023", new Date(2050, 03, 25).toInstant().toString());
+        return new NviPeriodDto(String.valueOf(ZonedDateTime.now().getYear()),
+                                ZonedDateTime.now().plusMonths(1).toInstant().toString(),
+                                ZonedDateTime.now().plusMonths(10).toInstant().toString());
     }
 }

@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest.fetch;
 
+import static no.sikt.nva.nvi.test.TestUtils.randomUsername;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -12,9 +13,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.util.Date;
-import no.sikt.nva.nvi.common.db.model.DbNviPeriod;
-import no.sikt.nva.nvi.common.db.model.DbUsername;
+import java.time.ZonedDateTime;
+import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.NviPeriodDto;
 import no.sikt.nva.nvi.rest.model.NviPeriodsResponse;
@@ -52,8 +52,8 @@ public class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnPeriodsWhenUserHasAccessRights() throws IOException {
-        nviService.createPeriod(periodWithPublishingYear("2100"));
-        nviService.createPeriod(periodWithPublishingYear("2101"));
+        nviService.createPeriod(periodWithPublishingYear(String.valueOf(ZonedDateTime.now().getYear())));
+        nviService.createPeriod(periodWithPublishingYear(String.valueOf(ZonedDateTime.now().plusYears(1).getYear())));
         handler.handleRequest(createRequestWithAccessRight(AccessRight.MANAGE_NVI_PERIODS), output, context);
         var response = GatewayResponse.fromOutputStream(output, NviPeriodsResponse.class);
 
@@ -70,20 +70,21 @@ public class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
         assertThat(response.getBodyObject(NviPeriodsResponse.class).periods(), hasSize(0));
     }
 
+    private static DbNviPeriod periodWithPublishingYear(String publishingYear) {
+        return DbNviPeriod.builder()
+                   .publishingYear(publishingYear)
+                   .startDate(ZonedDateTime.now().plusMonths(1).toInstant())
+                   .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
+                   .createdBy(randomUsername())
+                   .build();
+    }
+
     private InputStream createRequestWithAccessRight(AccessRight accessRight) throws JsonProcessingException {
         var customerId = randomUri();
         return new HandlerRequestBuilder<NviPeriodDto>(JsonUtils.dtoObjectMapper)
                    .withCurrentCustomer(customerId)
                    .withAccessRights(customerId, accessRight.name())
                    .withUserName(randomString())
-                   .build();
-    }
-
-    private static DbNviPeriod periodWithPublishingYear(String publishingYear) {
-        return DbNviPeriod.builder()
-                   .publishingYear(publishingYear)
-                   .reportingDate(new Date(2050, 0, 25).toInstant())
-                   .createdBy(new DbUsername(randomString()))
                    .build();
     }
 }

@@ -12,8 +12,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.util.Date;
+import java.time.ZonedDateTime;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.rest.create.CreateNviPeriodHandler;
 import no.sikt.nva.nvi.rest.model.NviPeriodDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
@@ -49,7 +50,7 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnBadRequestWhenInvalidReportingDate() throws IOException {
-        var period = new NviPeriodDto("2023", "invalidValue");
+        var period = new NviPeriodDto("2023", null,"invalidValue");
         handler.handleRequest(createRequest(period), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -58,14 +59,16 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldCreateNviPeriod() throws IOException {
-        var period = randomPeriod();
+        var year = String.valueOf(ZonedDateTime.now().getYear());
+        var period = randomPeriod(year);
         handler.handleRequest(createRequest(period), output, context);
-        var persistedPeriod = nviService.getPeriod("2023");
+        var persistedPeriod = nviService.getPeriod(year);
         assertThat(period.publishingYear(), is(equalTo(persistedPeriod.publishingYear())));
     }
 
     private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
-        return new HandlerRequestBuilder<NviPeriodDto>(JsonUtils.dtoObjectMapper).withBody(randomPeriod()).build();
+        return new HandlerRequestBuilder<NviPeriodDto>(JsonUtils.dtoObjectMapper)
+                   .withBody(randomPeriod(String.valueOf(ZonedDateTime.now().getYear()))).build();
     }
 
     private InputStream createRequest(NviPeriodDto period) throws JsonProcessingException {
@@ -78,7 +81,9 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private NviPeriodDto randomPeriod() {
-        return new NviPeriodDto("2023", new Date(2050, 03, 25).toInstant().toString());
+    private NviPeriodDto randomPeriod(String year) {
+        return new NviPeriodDto(year,
+                                ZonedDateTime.now().plusMonths(1).toInstant().toString(),
+                                ZonedDateTime.now().plusMonths(10).toInstant().toString());
     }
 }

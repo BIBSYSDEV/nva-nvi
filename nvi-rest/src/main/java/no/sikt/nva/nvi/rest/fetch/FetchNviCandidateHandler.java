@@ -5,8 +5,9 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.CandidateResponse;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.rest.model.CandidateResponse;
+import no.sikt.nva.nvi.rest.model.CandidateResponseMapper;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -15,7 +16,7 @@ import nva.commons.core.JacocoGenerated;
 
 public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateResponse> {
 
-    public static final String PARAM_CANDIDATE_IDENTIFIER = "candidateIdentifier";
+    public static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
     private final NviService service;
 
     @JacocoGenerated
@@ -31,11 +32,11 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateR
     @Override
     protected CandidateResponse processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-        return attempt(() -> requestInfo.getPathParameter(PARAM_CANDIDATE_IDENTIFIER))
+        return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER))
                    .map(UUID::fromString)
-                   .map(service::findById)
+                   .map(service::findApplicableCandidateById)
                    .map(Optional::orElseThrow)
-                   .map(CandidateResponse::fromCandidate)
+                   .map(CandidateResponseMapper::toDto)
                    .orElseThrow(ExceptionMapper::map);
     }
 

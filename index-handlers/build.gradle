@@ -12,7 +12,6 @@ dependencies {
     implementation libs.nva.commons.pagination
     implementation libs.nva.s3
 
-
     implementation libs.aws.lambda.java.core
     implementation libs.aws.lambda.events
     implementation libs.aws.java.sdk.core
@@ -27,6 +26,7 @@ dependencies {
     implementation libs.jackson.databind
     implementation libs.com.auth0.jwt
     implementation libs.guava
+    implementation libs.jena.core
 
     testImplementation 'org.opensearch:opensearch-testcontainers:2.0.0'
     testImplementation "org.testcontainers:testcontainers:1.18.3"
@@ -53,4 +53,6 @@ test {
     environment("ALLOWED_ORIGIN", "*")
     environment("API_HOST", "example.com")
     environment("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
+    environment "BACKEND_CLIENT_AUTH_URL", "My url"
+    environment "BACKEND_CLIENT_SECRET_NAME", "My secret name"
 }

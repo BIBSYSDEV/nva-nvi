@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.common;
 
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.sikt.nva.nvi.test.TestUtils.randomInstanceType;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -12,11 +12,11 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.common.db.model.DbCreator;
-import no.sikt.nva.nvi.common.db.model.DbCandidate;
-import no.sikt.nva.nvi.common.db.model.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.model.DbLevel;
-import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +34,7 @@ public class CandidateTest {
         return DbCandidate.builder()
                    .publicationId(randomUri())
                    .creatorCount(randomInteger())
-                   .instanceType(randomString())
+                   .instanceType(randomInstanceType())
                    .level(DbLevel.LEVEL_ONE)
                    .applicable(true)
                    .internationalCollaboration(true)

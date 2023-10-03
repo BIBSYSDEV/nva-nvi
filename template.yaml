@@ -277,13 +277,15 @@ Resources:
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
+          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
       Events:
         FanoutSource:
           Type: DynamoDB
           Properties:
             Stream: !GetAtt NvaNviTable.StreamArn
             StartingPosition: TRIM_HORIZON
-            BatchSize: 10
+            BatchSize: 1
             Enabled: true
 
   UpsertNviCandidateHandler:
@@ -305,7 +307,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: nvi-rest
-      Handler: no.sikt.nva.nvi.rest.CreateNviPeriodHandler::handleRequest
+      Handler: no.sikt.nva.nvi.rest.create.CreateNviPeriodHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
       MemorySize: 1536
@@ -347,7 +349,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: nvi-rest
-      Handler: no.sikt.nva.nvi.rest.UpdateNviPeriodHandler::handleRequest
+      Handler: no.sikt.nva.nvi.rest.upsert.UpdateNviPeriodHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
       MemorySize: 1536
@@ -470,6 +472,7 @@ Resources:
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
       MemorySize: 1536
+      AutoPublishAlias: live
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -484,6 +487,7 @@ Resources:
             Path: /candidate/{candidateIdentifier}/note
             Method: post
             RestApiId: !Ref ScientificIndexApi
+
   RemoveNoteHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -492,6 +496,7 @@ Resources:
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
       MemorySize: 1536
+      AutoPublishAlias: live
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
