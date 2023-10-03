@@ -120,7 +120,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldUpdateExistingNviCandidateToNonCandidateWhenIncomingEventIsNonCandidate() {
         var dto = CandidateBO.fromRequest(
-            createUpsertCandidateRequest(randomUri()), candidateRepository, periodRepository).toDto();
+            createUpsertCandidateRequest(randomUri()), candidateRepository, periodRepository).orElseThrow().toDto();
         var eventMessage = nonCandidateMessageForExistingCandidate(dto);
         handler.handleRequest(createEvent(eventMessage), CONTEXT);
         var updatedCandidate =
@@ -137,7 +137,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var publicationId = generatePublicationId(identifier);
         var dto = CandidateBO.fromRequest(createUpsertCandidateRequest(publicationId, true, 1,
                                                                        InstanceType.ACADEMIC_ARTICLE, delete, keep),
-                                          candidateRepository, periodRepository);
+                                          candidateRepository, periodRepository).orElseThrow();
         var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));
         handler.handleRequest(sqsEvent, CONTEXT);
         Map<URI, DbApprovalStatus> approvals = getAprovalMaps(dto);

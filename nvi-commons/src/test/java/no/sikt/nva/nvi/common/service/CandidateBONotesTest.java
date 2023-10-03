@@ -90,6 +90,6 @@ public class CandidateBONotesTest extends LocalDynamoTest {
 
     private CandidateBO createCandidate() {
         return CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
-                                       periodRepository);
+                                       periodRepository).orElseThrow();
     }
 }

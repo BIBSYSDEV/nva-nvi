@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -36,7 +37,6 @@ import no.sikt.nva.nvi.common.service.dto.NoteDto;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
-import no.sikt.nva.nvi.common.service.exception.IllegalOperationException;
 import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
@@ -103,19 +103,18 @@ public final class CandidateBO {
         return new CandidateBO(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
     }
 
-    public static CandidateBO fromRequest(UpsertCandidateRequest request,
-                                          CandidateRepository repository,
-                                          PeriodRepository periodRepository) {
-        if (request.isApplicable()) {
-            if (!isExistingCandidate(request, repository)) {
-                return createCandidate(request, repository, periodRepository);
-            } else {
-                return updateCandidate(request, repository, periodRepository);
-            }
-        } else if (isExistingCandidate(request, repository)) {
-            return deleteCandidate(request, repository);
+    public static Optional<CandidateBO> fromRequest(UpsertCandidateRequest request, CandidateRepository repository,
+                                                    PeriodRepository periodRepository) {
+        if (isNewCandidate(request, repository)) {
+            return Optional.of(createCandidate(request, repository, periodRepository));
         }
-        throw new IllegalOperationException();
+        if (shouldBeUpdated(request, repository)) {
+            return Optional.of(updateCandidate(request, repository, periodRepository));
+        }
+        if (shouldBeDeleted(request, repository)) {
+            return Optional.of(deleteCandidate(request, repository));
+        }
+        return Optional.empty();
     }
 
     public Map<URI, ApprovalBO> getApprovals() {
@@ -171,6 +170,22 @@ public final class CandidateBO {
 
     public boolean isApplicable() {
         return original.candidate().applicable();
+    }
+
+    private static boolean shouldBeDeleted(UpsertCandidateRequest request, CandidateRepository repository) {
+        return !request.isApplicable() && isExistingCandidate(request, repository);
+    }
+
+    private static boolean shouldBeUpdated(UpsertCandidateRequest request, CandidateRepository repository) {
+        return request.isApplicable() && isExistingCandidate(request, repository);
+    }
+
+    private static boolean isNewCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
+        return request.isApplicable() && isNotExistingCandidate(request, repository);
+    }
+
+    private static boolean isNotExistingCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
+        return !isExistingCandidate(request, repository);
     }
 
     private static boolean isNotNoteOwner(String username, NoteDao dao) {
