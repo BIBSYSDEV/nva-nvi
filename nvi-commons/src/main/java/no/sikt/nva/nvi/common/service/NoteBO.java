@@ -6,18 +6,19 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.service.dto.NoteDto;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 
 public class NoteBO {
 
     private final CandidateRepository repository;
     private final UUID identifier;
-    private final NoteDao original;
+    private final NoteDao dao;
 
     public NoteBO(CandidateRepository repository, UUID identifier, NoteDao note) {
         this.repository = repository;
         this.identifier = identifier;
-        this.original = note;
+        this.dao = note;
     }
 
     public static NoteBO fromRequest(CreateNoteRequest input, UUID candidateIdentifier,
@@ -31,19 +32,29 @@ public class NoteBO {
     }
 
     public UUID noteId() {
-        return original.note().noteId();
-    }
-
-    public NoteDao note() {
-        return original;
+        return dao.note().noteId();
     }
 
     public void delete() {
-        repository.deleteNote(identifier, original.note().noteId());
+        repository.deleteNote(identifier, dao.note().noteId());
     }
 
-    private static void validate(CreateNoteRequest input) {
-        if (isNull(input.text()) || isNull(input.username())) {
+    public NoteDto toDto() {
+        return NoteDto.builder()
+                   .withCreatedDate(dao.note().createdDate())
+                   .withUser(dao.note().user().value())
+                   .withText(dao.note().text())
+                   .withIdentifier(dao.note().noteId())
+                   .build();
+    }
+
+    public NoteDao getDao() {
+        return dao;
+    }
+
+    private static void validate(CreateNoteRequest request) {
+        if (isNull(request.text()) || request.text().isEmpty()
+            || isNull(request.username()) || request.text().isEmpty()) {
             throw new IllegalArgumentException();
         }
     }

@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest.fetch;
 
+import static no.sikt.nva.nvi.test.TestUtils.randomUsername;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -14,7 +15,6 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.time.ZonedDateTime;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
-import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.rest.model.NviPeriodDto;
 import no.sikt.nva.nvi.rest.model.NviPeriodsResponse;
@@ -75,7 +75,7 @@ public class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
                    .publishingYear(publishingYear)
                    .startDate(ZonedDateTime.now().plusMonths(1).toInstant())
                    .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
-                   .createdBy(Username.fromString(randomString()))
+                   .createdBy(randomUsername())
                    .build();
     }
 

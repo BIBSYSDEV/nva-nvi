@@ -31,15 +31,14 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
-import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import nva.commons.core.paths.UriWrapper;
@@ -286,22 +285,7 @@ public final class TestUtils {
     }
 
     public static CreateNoteRequest createNoteRequest(String text, String username) {
-        return new CreateNoteRequest() {
-            @Override
-            public String text() {
-                return text;
-            }
-
-            @Override
-            public String username() {
-                return username;
-            }
-        };
-    }
-
-    public static void createNotes(CandidateBO candidate, int max) {
-        IntStream.range(0, max).boxed().forEach(i -> candidate.createNote(createNoteRequest(randomString(),
-                                                                                            randomString())));
+        return new CreateNoteRequest(text, username);
     }
 
     private static Instant getNowWithMillisecondAccuracy() {

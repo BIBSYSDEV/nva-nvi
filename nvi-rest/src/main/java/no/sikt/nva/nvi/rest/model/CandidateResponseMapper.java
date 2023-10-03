@@ -8,9 +8,11 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.service.Candidate;
+import no.sikt.nva.nvi.common.service.dto.NoteDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.rest.upsert.NviApprovalStatus;
 import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
 public final class CandidateResponseMapper {
@@ -40,12 +42,13 @@ public final class CandidateResponseMapper {
                    .getUri();
     }
 
-    private static List<Note> mapToNotes(List<DbNote> dbNotes) {
+    private static List<NoteDto> mapToNotes(List<DbNote> dbNotes) {
         return dbNotes.stream().map(CandidateResponseMapper::mapToNote).toList();
     }
 
-    private static Note mapToNote(DbNote dbNote) {
-        return new Note(dbNote.noteId(), getUsername(dbNote.user()), dbNote.text(),
+    @JacocoGenerated
+    private static NoteDto mapToNote(DbNote dbNote) {
+        return new NoteDto(dbNote.noteId(), dbNote.user().value(), dbNote.text(),
                         dbNote.createdDate());
     }
 

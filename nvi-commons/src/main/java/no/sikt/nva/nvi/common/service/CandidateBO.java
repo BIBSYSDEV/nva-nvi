@@ -31,11 +31,12 @@ import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.dto.Note;
+import no.sikt.nva.nvi.common.service.dto.NoteDto;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalOperationException;
+import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchByPublicationRequest;
@@ -56,6 +57,7 @@ public final class CandidateBO {
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
     private static final String CANDIDATE_PATH = "candidate";
     private static final String INVALID_CANDIDATE_MESSAGE = "Candidate is missing mandatory fields";
+    public static final String DELETE_MESSAGE_ERROR = "Can not delete message you does not own!";
     private final CandidateRepository repository;
     private final UUID identifier;
     private final CandidateDao original;
@@ -143,17 +145,31 @@ public final class CandidateBO {
     }
 
     public CandidateBO createNote(CreateNoteRequest input) {
+        validateCandidateState();
         var noteBO = NoteBO.fromRequest(input, identifier, repository);
         notes.put(noteBO.noteId(), noteBO);
         return this;
     }
 
-    public CandidateBO deleteNote(DeleteNoteRequest input) {
-        notes.computeIfPresent(input.noteId(), (uuid, noteBO) -> {
+    public CandidateBO deleteNote(DeleteNoteRequest request) {
+        validateCandidateState();
+        var note = notes.get(request.noteId());
+        validateNoteOwner(request.username(), note.getDao());
+        notes.computeIfPresent(request.noteId(), (uuid, noteBO) -> {
             noteBO.delete();
             return null;
         });
         return this;
+    }
+
+    private void validateNoteOwner(String username, NoteDao dao) {
+        if (isNotNoteOwner(username, dao)) {
+            throw new UnauthorizedOperationException(DELETE_MESSAGE_ERROR);
+        }
+    }
+
+    private static boolean isNotNoteOwner(String username, NoteDao dao) {
+        return !dao.note().user().value().equals(username);
     }
 
     private static CandidateBO deleteCandidate(UpsertCandidateRequest request,
@@ -259,14 +275,6 @@ public final class CandidateBO {
                    .getUri();
     }
 
-    private static Note mapToNoteDto(NoteBO bo) {
-        var note = bo.note().note();
-        return new Note(bo.noteId(),
-                        mapToUsernameString(note.user()),
-                        note.text(),
-                        note.createdDate());
-    }
-
     private static List<DbApprovalStatus> mapToApprovals(Map<URI, BigDecimal> points) {
         return points.keySet().stream().map(CandidateBO::mapToApproval).toList();
     }
@@ -357,10 +365,10 @@ public final class CandidateBO {
         return PeriodStatusDto.fromPeriodStatus(periodStatus);
     }
 
-    private List<Note> mapToNoteDtos() {
+    private List<NoteDto> mapToNoteDtos() {
         return this.notes.values()
                    .stream()
-                   .map(CandidateBO::mapToNoteDto)
+                   .map(NoteBO::toDto)
                    .toList();
     }
 
