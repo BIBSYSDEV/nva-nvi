@@ -139,6 +139,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                           candidateRepository, periodRepository);
         var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));
         handler.handleRequest(sqsEvent, CONTEXT);
+
         assertTrue(candidateRepository.findApprovalByIdAndInstitutionId(dto.identifier(), keep).isPresent());
         assertFalse(candidateRepository.findApprovalByIdAndInstitutionId(dto.identifier(), delete).isPresent());
     }
