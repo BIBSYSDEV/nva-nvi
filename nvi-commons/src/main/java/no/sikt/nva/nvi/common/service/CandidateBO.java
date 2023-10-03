@@ -102,9 +102,7 @@ public final class CandidateBO {
                                .orElseThrow(CandidateNotFoundException::new);
         var approvalDaoList = repository.fetchApprovals(candidateDao.identifier());
         var noteDaoList = repository.getNotes(candidateDao.identifier());
-        var periodStatus = candidateDao.candidate().applicable()
-                               ? getPeriodStatus(periodRepository, candidateDao.candidate().publicationDate().year())
-                               : PERIOD_STATUS_NO_PERIOD;
+        var periodStatus = calculatePeriodStatusIfApplicable(periodRepository, candidateDao);
         return new CandidateBO(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
     }
 
@@ -175,6 +173,13 @@ public final class CandidateBO {
 
     public boolean isApplicable() {
         return original.candidate().applicable();
+    }
+
+    private static PeriodStatus calculatePeriodStatusIfApplicable(PeriodRepository periodRepository,
+                                                                  CandidateDao candidateDao) {
+        return candidateDao.candidate().applicable()
+                   ? getPeriodStatus(periodRepository, candidateDao.candidate().publicationDate().year())
+                   : PERIOD_STATUS_NO_PERIOD;
     }
 
     private static boolean shouldBeDeleted(UpsertCandidateRequest request, CandidateRepository repository) {
