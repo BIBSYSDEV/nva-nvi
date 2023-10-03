@@ -526,16 +526,6 @@ public class NviServiceTest extends LocalDynamoTest {
                    .toList();
     }
 
-    private void updateApproval(Candidate existingCandidate, DbStatus status) {
-        nviService.updateApproval(existingCandidate.identifier(), getSingleApproval(existingCandidate).copy()
-                                                                      .status(status)
-                                                                      .reason(DbStatus.REJECTED.equals(status)
-                                                                                  ? randomString() : null)
-                                                                      .finalizedBy(Username.fromString(randomString()))
-                                                                      .finalizedDate(Instant.now())
-                                                                      .build());
-    }
-
     private DbCandidate createExpectedCandidate(UUID identifier, List<DbCreator> creators, InstanceType instanceType,
                                                 DbLevel level, DbPublicationDate publicationDate,
                                                 Map<URI, BigDecimal> institutionPoints, boolean applicable) {

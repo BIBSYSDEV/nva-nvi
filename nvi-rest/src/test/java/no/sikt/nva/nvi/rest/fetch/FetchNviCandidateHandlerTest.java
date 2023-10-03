@@ -20,9 +20,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.service.CandidateBO;
-import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
@@ -100,14 +98,14 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
                                        candidateRepository, periodRepository);
     }
 
-    private GatewayResponse<CandidateResponse> getGatewayResponse()
+    private GatewayResponse<CandidateDto> getGatewayResponse()
         throws JsonProcessingException {
         return dtoObjectMapper.readValue(
             output.toString(),
             dtoObjectMapper.getTypeFactory()
                 .constructParametricType(
                     GatewayResponse.class,
-                    CandidateResponse.class
+                    CandidateDto.class
                 ));
     }
 }
