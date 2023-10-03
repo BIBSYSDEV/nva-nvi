@@ -14,8 +14,12 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import java.math.BigDecimal;
 import java.net.URI;
+import java.time.Year;
 import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -26,11 +30,14 @@ import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
+import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalOperationException;
+import no.sikt.nva.nvi.common.service.requests.PublicationDate;
+import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
@@ -131,6 +138,76 @@ class CandidateBOTest extends LocalDynamoTest {
                             .toDto();
         assertThat(candidate.approvalStatuses().get(0).assignee(), is(equalTo(assignee)));
         assertThat(candidate.approvalStatuses().get(0).finalizedBy(), is(not(equalTo(assignee))));
+    }
+
+    @Test
+    void shouldNotResetApprovalsWhenUpdatingFieldsNotEffectingApprovals() {
+        var institutionId = randomUri();
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository);
+        candidate.updateApproval(new UpdateStatusRequest(institutionId, DbStatus.APPROVED, randomString(),
+                                                         randomString()));
+        var approval = candidate.toDto().approvalStatuses().get(0);
+        var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
+        var updatedCandidate = CandidateBO.fromRequest(newUpsertRequest, candidateRepository, periodRepository);
+        var updatedApproval = updatedCandidate.toDto().approvalStatuses().get(0);
+
+        assertThat(updatedApproval, is(equalTo(approval)));
+    }
+
+    private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(
+        UpsertCandidateRequest request) {
+        return new UpsertCandidateRequest() {
+            @Override
+            public URI publicationBucketUri() {
+                return request.publicationBucketUri();
+            }
+
+            @Override
+            public URI publicationId() {
+                return request.publicationId();
+            }
+
+            @Override
+            public boolean isApplicable() {
+                return true;
+            }
+
+            @Override
+            public boolean isInternationalCooperation() {
+                return false;
+            }
+
+            @Override
+            public Map<URI, List<URI>> creators() {
+                return  request.creators();
+            }
+
+            @Override
+            public String level() {
+                return request.level();
+            }
+
+            @Override
+            public String instanceType() {
+                return request.instanceType();
+            }
+
+            @Override
+            public PublicationDate publicationDate() {
+                return new PublicationDate(null, "3", Year.now().toString());
+            }
+
+            @Override
+            public Map<URI, BigDecimal> points() {
+                return request.points();
+            }
+
+            @Override
+            public int creatorCount() {
+                return 1;
+            }
+        };
     }
 
     private static PeriodStatusDto getDefaultPeriodStatus() {
