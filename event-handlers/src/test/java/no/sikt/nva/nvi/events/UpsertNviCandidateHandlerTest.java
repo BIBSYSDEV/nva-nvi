@@ -25,7 +25,6 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.math.BigDecimal;
 import java.net.URI;
-import java.time.Year;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -239,7 +238,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withInstitutionPoints(null)
                    .withCandidateDetails(new CandidateDetails(
                        candidate.publicationId(),
-                       null, null, new PublicationDate(Year.now().toString(), null, null), null))
+                       null, null, null, null))
                    .build();
     }
 

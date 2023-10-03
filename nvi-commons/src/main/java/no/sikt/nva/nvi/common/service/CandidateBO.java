@@ -50,6 +50,9 @@ import nva.commons.core.paths.UriWrapper;
 
 public final class CandidateBO {
 
+    public static final PeriodStatus PERIOD_STATUS_NO_PERIOD = PeriodStatus.builder()
+                                                                   .withStatus(Status.NO_PERIOD)
+                                                                   .build();
     private static final String DELETE_MESSAGE_ERROR = "Can not delete message you does not own!";
     private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
     private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
@@ -99,7 +102,9 @@ public final class CandidateBO {
                                .orElseThrow(CandidateNotFoundException::new);
         var approvalDaoList = repository.fetchApprovals(candidateDao.identifier());
         var noteDaoList = repository.getNotes(candidateDao.identifier());
-        var periodStatus = getPeriodStatus(periodRepository, candidateDao.candidate().publicationDate().year());
+        var periodStatus = candidateDao.candidate().applicable()
+                               ? getPeriodStatus(periodRepository, candidateDao.candidate().publicationDate().year())
+                               : PERIOD_STATUS_NO_PERIOD;
         return new CandidateBO(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
     }
 
@@ -201,7 +206,7 @@ public final class CandidateBO {
 
         return new CandidateBO(repository, nonApplicableCandidate, Collections.emptyList(),
                                Collections.emptyList(),
-                               PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
+                               PERIOD_STATUS_NO_PERIOD);
     }
 
     private static CandidateBO updateCandidate(UpsertCandidateRequest request,
@@ -286,7 +291,7 @@ public final class CandidateBO {
     private static PeriodStatus getPeriodStatus(PeriodRepository periodRepository, String year) {
         return periodRepository.findByPublishingYear(year)
                    .map(PeriodStatus::fromPeriod)
-                   .orElse(PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
+                   .orElse(PERIOD_STATUS_NO_PERIOD);
     }
 
     private static URI constructId(UUID identifier) {
@@ -354,7 +359,9 @@ public final class CandidateBO {
                    .candidate(candidateDao.candidate().copy()
                                   .creators(mapToCreators(request.creators()))
                                   .points(mapToPoints(request.points()))
-                                  .publicationDate(mapToPublicationDate(request.publicationDate()))
+                                  .publicationDate(Objects.nonNull(request.publicationDate())
+                                                       ? mapToPublicationDate(request.publicationDate())
+                                                       : null)
                                   .instanceType(InstanceType.parse(request.instanceType()))
                                   .level(DbLevel.parse(request.level()))
                                   .applicable(request.isApplicable())
