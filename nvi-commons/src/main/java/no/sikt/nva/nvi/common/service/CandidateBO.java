@@ -205,7 +205,7 @@ public final class CandidateBO {
                                                CandidateRepository repository) {
         var existingCandidateDao = repository.findByPublicationIdDao(request.publicationId())
                                        .orElseThrow(CandidateNotFoundException::new);
-        var nonApplicableCandidate = updateCandidateDaoFromRequest(existingCandidateDao, request);
+        var nonApplicableCandidate = updateCandidateToNonApplicable(existingCandidateDao, request);
         repository.updateCandidateAndRemovingApprovals(existingCandidateDao.identifier(), nonApplicableCandidate);
 
         return new CandidateBO(repository, nonApplicableCandidate, Collections.emptyList(),
@@ -363,14 +363,21 @@ public final class CandidateBO {
                    .candidate(candidateDao.candidate().copy()
                                   .creators(mapToCreators(request.creators()))
                                   .points(mapToPoints(request.points()))
-                                  .publicationDate(Objects.nonNull(request.publicationDate())
-                                                       ? mapToPublicationDate(request.publicationDate())
-                                                       : null)
+                                  .publicationDate(mapToPublicationDate(request.publicationDate()))
                                   .instanceType(InstanceType.parse(request.instanceType()))
                                   .level(DbLevel.parse(request.level()))
                                   .applicable(request.isApplicable())
                                   .internationalCollaboration(request.isInternationalCooperation())
                                   .creatorCount(request.creatorCount())
+                                  .build())
+                   .build();
+    }
+
+    private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao,
+                                                              UpsertCandidateRequest request) {
+        return candidateDao.copy()
+                   .candidate(candidateDao.candidate().copy()
+                                  .applicable(request.isApplicable())
                                   .build())
                    .build();
     }
