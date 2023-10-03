@@ -236,9 +236,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withStatus(CandidateStatus.NON_CANDIDATE)
                    .withPublicationBucketUri(generateS3BucketUri(candidate.identifier()))
                    .withInstitutionPoints(null)
-                   .withCandidateDetails(new CandidateDetails(
-                       candidate.publicationId(),
-                       null, null, null, null))
+                   .withCandidateDetails(new CandidateDetails(candidate.publicationId(), null, null, null, null))
                    .build();
     }
 
