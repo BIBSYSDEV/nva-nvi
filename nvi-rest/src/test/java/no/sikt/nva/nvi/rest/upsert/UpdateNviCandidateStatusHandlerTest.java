@@ -33,7 +33,6 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -189,8 +188,8 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var requestBody = new NviStatusRequest(candidate.identifier(), institutionId, newStatus, rejectionReason);
         var request = createRequest(candidate.identifier(), institutionId, requestBody, randomString());
         handler.handleRequest(request, output, context);
-        var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
-        var candidateResponse = response.getBodyObject(CandidateResponse.class);
+        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+        var candidateResponse = response.getBodyObject(CandidateDto.class);
 
         var actualApprovalStatus = candidateResponse.approvalStatuses().get(0);
         assertThat(actualApprovalStatus.status().getValue(), is(equalTo(newStatus.getValue())));
@@ -207,8 +206,8 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var request = createRequest(candidate.identifier(), institutionId,
                                     NviApprovalStatus.parse(newStatus.getValue()));
         handler.handleRequest(request, output, context);
-        var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
-        var candidateResponse = response.getBodyObject(CandidateResponse.class);
+        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+        var candidateResponse = response.getBodyObject(CandidateDto.class);
 
         var actualApprovalStatus = candidateResponse.approvalStatuses().get(0);
         assertThat(actualApprovalStatus.status().getValue(), is(equalTo(newStatus.getValue())));

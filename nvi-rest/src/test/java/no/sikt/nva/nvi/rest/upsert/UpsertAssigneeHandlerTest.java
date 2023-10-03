@@ -31,8 +31,8 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.rest.model.ApprovalDto;
-import no.sikt.nva.nvi.rest.model.CandidateResponse;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.commons.json.JsonUtils;
@@ -88,7 +88,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
                                                 periodRepository);
         var assignee = randomString();
         handler.handleRequest(createRequest(candidate, assignee), output, context);
-        var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
+        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
     }
@@ -140,9 +140,9 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
                                                 periodRepository);
         var assignee = randomString();
         handler.handleRequest(createRequest(candidate, assignee), output, context);
-        var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
+        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
-        assertThat(response.getBodyObject(CandidateResponse.class).approvalStatuses().get(0).assignee(),
+        assertThat(response.getBodyObject(CandidateDto.class).approvalStatuses().get(0).assignee(),
                    is(equalTo(assignee)));
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
     }
@@ -154,9 +154,9 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
                                                 candidateRepository,
                                                 periodRepository);
         handler.handleRequest(createRequest(candidate, null), output, context);
-        var response = GatewayResponse.fromOutputStream(output, CandidateResponse.class);
+        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
-        assertThat(response.getBodyObject(CandidateResponse.class).approvalStatuses().get(0).assignee(),
+        assertThat(response.getBodyObject(CandidateDto.class).approvalStatuses().get(0).assignee(),
                    is(nullValue()));
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
     }
@@ -168,9 +168,9 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         var candidate = candidateWithFinalizedApproval(newAssignee);
         handler.handleRequest(createRequest(candidate, newAssignee), output, context);
         var response =
-            GatewayResponse.fromOutputStream(output, CandidateResponse.class);
+            GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
-        assertThat(response.getBodyObject(CandidateResponse.class).approvalStatuses().get(0).assignee(),
+        assertThat(response.getBodyObject(CandidateDto.class).approvalStatuses().get(0).assignee(),
                    is(equalTo(newAssignee)));
     }
 
