@@ -130,7 +130,6 @@ public final class CandidateBO {
         return CandidateDto.builder()
                    .withId(constructId(identifier))
                    .withIdentifier(identifier)
-                   .withId(constructId(identifier))
                    .withPublicationId(original.candidate().publicationId())
                    .withApprovalStatuses(mapToApprovalDtos())
                    .withNotes(mapToNoteDtos())
@@ -177,7 +176,7 @@ public final class CandidateBO {
         var existingCandidateDao = repository.findByPublicationIdDao(request.publicationId())
                                        .orElseThrow(CandidateNotFoundException::new);
         var nonApplicableCandidate = updateCandidateDaoFromRequest(existingCandidateDao, request);
-        repository.updateCandidateAndRemovingApprovals(request.identifier(), nonApplicableCandidate);
+        repository.updateCandidateAndRemovingApprovals(existingCandidateDao.identifier(), nonApplicableCandidate);
 
         return new CandidateBO(repository, nonApplicableCandidate, Collections.emptyList(),
                                Collections.emptyList(),

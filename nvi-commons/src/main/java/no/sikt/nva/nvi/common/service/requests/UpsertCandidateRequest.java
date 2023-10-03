@@ -4,11 +4,8 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public interface UpsertCandidateRequest {
-
-    UUID identifier();
 
     URI publicationBucketUri();
 
