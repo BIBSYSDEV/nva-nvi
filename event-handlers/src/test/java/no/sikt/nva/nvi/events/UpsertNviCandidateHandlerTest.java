@@ -11,11 +11,14 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
+import static nva.commons.core.paths.UriWrapper.HTTPS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.StringContains.containsString;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
@@ -23,8 +26,10 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Year;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
@@ -32,11 +37,17 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
+import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
+import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto.Status;
 import no.sikt.nva.nvi.events.CandidateDetails.Creator;
 import no.sikt.nva.nvi.events.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.events.model.InvalidNviMessageException;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import nva.commons.core.Environment;
+import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +58,10 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     public static final Context CONTEXT = mock(Context.class);
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
+    private static final Environment ENVIRONMENT = new Environment();
+    private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
+    private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
+    private static final String CANDIDATE_PATH = "candidate";
     private UpsertNviCandidateHandler handler;
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
@@ -77,21 +92,26 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldSaveNewNviCandidateWithPendingInstitutionApprovalsIfCandidateDoesNotExist() {
-        var identifier = UUID.randomUUID();
         var institutionId = randomUri();
+        var identifier = UUID.randomUUID();
         var creators = List.of(new Creator(randomUri(), List.of(institutionId)));
         var instanceType = randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE);
         var randomLevel = randomElement(DbLevel.values());
         var publicationDate = randomPublicationDate();
         var institutionPoints = Map.of(institutionId, randomBigDecimal());
+        var publicationId = generatePublicationId(identifier);
+        var publicationBucketUri = generateS3BucketUri(identifier);
 
-        var sqsEvent = createEvent(identifier, creators, instanceType, randomLevel, publicationDate, institutionPoints);
+        var sqsEvent = createEvent(creators, instanceType, randomLevel, publicationDate, institutionPoints,
+                                   publicationId, publicationBucketUri);
         handler.handleRequest(sqsEvent, CONTEXT);
 
-        var fetchedCandidate = CandidateBO.fromRequest(() -> generatePublicationId(identifier), candidateRepository,
+        var fetchedCandidate = CandidateBO.fromRequest(() -> publicationId, candidateRepository,
                                                        periodRepository).toDto();
+        var expectedResponse = createResponse(fetchedCandidate.identifier(), publicationId,
+                                              institutionPoints);
 
-        assertThat(fetchedCandidate.approvalStatuses().get(0).institutionId(), is(equalTo(institutionId)));
+        assertThat(fetchedCandidate, is(equalTo(expectedResponse)));
     }
 
     @Test
@@ -103,7 +123,24 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var updatedCandidate =
             CandidateBO.fromRequest(dto::identifier, candidateRepository, periodRepository).toDto();
 
-        assertThat(updatedCandidate.approvalStatuses().size(), is(0));
+        var expectedResponse = createResponse(updatedCandidate.identifier(), dto.publicationId(),
+                                              Collections.emptyMap());
+        assertThat(updatedCandidate, is(equalTo(expectedResponse)));
+    }
+
+    @Test
+    void shouldUpdateNviCandidateAndDeleteInstitutionApprovalsIfCriticalCandidateDetailsAreChanged() {
+        var keep = randomUri();
+        var delete = randomUri();
+        var identifier = UUID.randomUUID();
+        var publicationId = generatePublicationId(identifier);
+        var dto = CandidateBO.fromRequest(createUpsertCandidateRequest(publicationId, true, 1,
+                                                                       InstanceType.ACADEMIC_ARTICLE, delete, keep),
+                                          candidateRepository, periodRepository);
+        var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));
+        handler.handleRequest(sqsEvent, CONTEXT);
+        assertTrue(candidateRepository.findApprovalByIdAndInstitutionId(dto.identifier(), keep).isPresent());
+        assertFalse(candidateRepository.findApprovalByIdAndInstitutionId(dto.identifier(), delete).isPresent());
     }
 
     private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
@@ -141,10 +178,6 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         return sqsEvent;
     }
 
-    //TODO: shouldUpdateNviCandidateAndDeleteInstitutionApprovalsIfCriticalCandidateDetailsAreChanged
-
-    //TODO: shouldMarkCandidateAsNotApplicableIfExistingCandidateBecomesNonCandidate
-
     private static CandidateDetails.Creator randomCreator() {
         return new CandidateDetails.Creator(randomUri(), List.of(randomUri()));
     }
@@ -158,6 +191,57 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         return sqsEvent;
     }
 
+    private static CandidateEvaluatedMessage createEvalMessage(List<Creator> verifiedCreators,
+                                                               InstanceType instanceType, DbLevel randomLevel,
+                                                               PublicationDate publicationDate,
+                                                               Map<URI, BigDecimal> institutionPoints,
+                                                               URI publicationId, URI publicationBucketUri) {
+        return CandidateEvaluatedMessage.builder()
+                   .withStatus(CandidateStatus.CANDIDATE)
+                   .withPublicationBucketUri(publicationBucketUri)
+                   .withCandidateDetails(new CandidateDetails(publicationId,
+                                                              instanceType.getValue(),
+                                                              randomLevel.getValue(),
+                                                              publicationDate,
+                                                              verifiedCreators))
+                   .withInstitutionPoints(institutionPoints)
+                   .build();
+    }
+
+    private CandidateDto createResponse(UUID identifier, URI publicationId, Map<URI, BigDecimal> institutionPoints) {
+        var id = new UriWrapper(HTTPS, API_DOMAIN)
+                     .addChild(BASE_PATH, CANDIDATE_PATH, identifier.toString())
+                     .getUri();
+        return CandidateDto.builder()
+                   .withIdentifier(identifier)
+                   .withPublicationId(publicationId)
+                   .withId(id)
+                   .withNotes(List.of())
+                   .withApprovalStatuses(institutionPoints.entrySet().stream().map(this::mapToApprovalStatus).toList())
+                   .withPeriodStatus(PeriodStatusDto.builder().withStatus(Status.NO_PERIOD).build())
+                   .build();
+    }
+
+    private ApprovalStatus mapToApprovalStatus(Entry<URI, BigDecimal> e) {
+        return ApprovalStatus.builder()
+                   .withInstitutionId(e.getKey())
+                   .withStatus(NviApprovalStatus.PENDING)
+                   .withPoints(e.getValue())
+                   .build();
+    }
+
+    private SQSEvent createEvent(URI keep, URI publicationId, URI publicationBucketUri) {
+        var institutionId = randomUri();
+        var creators = List.of(new Creator(randomUri(), List.of(institutionId, keep)));
+        var instanceType = randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE);
+        var randomLevel = randomElement(DbLevel.values());
+        var publicationDate = randomPublicationDate();
+        var institutionPoints = Map.of(institutionId, randomBigDecimal(), keep, randomBigDecimal());
+
+        return createEvent(creators, instanceType, randomLevel, publicationDate,
+                           institutionPoints, publicationId, publicationBucketUri);
+    }
+
     private CandidateEvaluatedMessage nonCandidateMessageForExistingCandidate(CandidateDto candidate) {
         return CandidateEvaluatedMessage.builder()
                    .withStatus(CandidateStatus.NON_CANDIDATE)
@@ -169,21 +253,13 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private SQSEvent createEvent(UUID identifier,
-                                 List<Creator> verifiedCreators,
+    private SQSEvent createEvent(List<Creator> verifiedCreators,
                                  InstanceType instanceType,
                                  DbLevel randomLevel,
                                  PublicationDate publicationDate,
-                                 Map<URI, BigDecimal> institutionPoints) {
-        return createEvent(CandidateEvaluatedMessage.builder()
-                               .withStatus(CandidateStatus.CANDIDATE)
-                               .withPublicationBucketUri(generateS3BucketUri(identifier))
-                               .withCandidateDetails(new CandidateDetails(generatePublicationId(identifier),
-                                                                          instanceType.getValue(),
-                                                                          randomLevel.getValue(),
-                                                                          publicationDate,
-                                                                          verifiedCreators))
-                               .withInstitutionPoints(institutionPoints)
-                               .build());
+                                 Map<URI, BigDecimal> institutionPoints, URI publicationId, URI publicationBucketUri) {
+        return createEvent(
+            createEvalMessage(verifiedCreators, instanceType, randomLevel, publicationDate,
+                              institutionPoints, publicationId, publicationBucketUri));
     }
 }
