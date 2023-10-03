@@ -51,7 +51,6 @@ public final class CandidateBO {
     public static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
     public static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
                                                            + " forbidden!";
-    public static final String CANDIDATE_NOT_APPLICABLE_MESSAGE = "Candidate is not applicable";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
@@ -341,6 +340,10 @@ public final class CandidateBO {
         return assignee != null ? assignee.value() : null;
     }
 
+    private static boolean isApplicable(CandidateDao candidateDao) {
+        return candidateDao.candidate().applicable();
+    }
+
     private void validateCandidateState() {
         if (Status.CLOSED_PERIOD.equals(periodStatus.status())) {
             throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
@@ -348,25 +351,6 @@ public final class CandidateBO {
         if (Status.NO_PERIOD.equals(periodStatus.status()) || Status.UNOPENED_PERIOD.equals(periodStatus.status())) {
             throw new IllegalStateException(PERIOD_NOT_OPENED_MESSAGE);
         }
-        if (isNotApplicable()) {
-            throw new IllegalStateException(CANDIDATE_NOT_APPLICABLE_MESSAGE);
-        }
-    }
-
-    private static boolean isNotApplicable(CandidateDao candidateDao) {
-        return !isApplicable(candidateDao);
-    }
-
-    private boolean isNotApplicable() {
-        return !isApplicable();
-    }
-
-    private static boolean isApplicable(CandidateDao candidateDao) {
-        return candidateDao.candidate().applicable();
-    }
-
-    private boolean isApplicable() {
-        return original.candidate().applicable();
     }
 
     private PeriodStatusDto mapToPeriodStatusDto() {

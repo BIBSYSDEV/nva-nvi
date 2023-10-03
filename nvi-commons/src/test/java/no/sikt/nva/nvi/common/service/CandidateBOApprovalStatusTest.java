@@ -5,7 +5,6 @@ import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningNotOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
-import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -62,26 +61,6 @@ public class CandidateBOApprovalStatusTest extends LocalDynamoTest {
         localDynamo = initializeTestDatabase();
         candidateRepository = new CandidateRepository(localDynamo);
         periodRepository = periodRepositoryReturningOpenedPeriod(ZonedDateTime.now().getYear());
-    }
-
-    @Test
-    void shouldThrowIllegalStateExceptionWhenUpdatingApprovalStatusOnNonApplicableCandidate() {
-        var institutionId = randomUri();
-        var nonApplicableCandidate = setUpNonApplicableCandidate(institutionId);
-        assertThrows(IllegalStateException.class,
-                     () -> nonApplicableCandidate.updateApproval(
-                         createUpdateStatusRequest(randomElement(DbStatus.values()),
-                                                   institutionId,
-                                                   randomString())));
-    }
-
-    @Test
-    void shouldThrowIllegalStateExceptionWhenUpdatingAssigneeOnNonApplicableCandidate() {
-        var institutionId = randomUri();
-        var nonApplicableCandidate = setUpNonApplicableCandidate(institutionId);
-        assertThrows(IllegalStateException.class,
-                     () -> nonApplicableCandidate.updateApproval(new UpdateAssigneeRequest(institutionId,
-                                                                                           randomString())));
     }
 
     @Test
@@ -279,16 +258,5 @@ public class CandidateBOApprovalStatusTest extends LocalDynamoTest {
 
     private static NviApprovalStatus mapToNviApprovalStatus(DbStatus newStatus) {
         return NviApprovalStatus.parse(newStatus.getValue());
-    }
-
-    private CandidateBO setUpNonApplicableCandidate(URI institutionId) {
-        var candidate =
-            CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository);
-        return CandidateBO.fromRequest(createUpsertCandidateRequest(candidate.identifier(),
-                                                                    candidate.publicationId(),
-                                                                    false, 0,
-                                                                    InstanceType.NON_CANDIDATE,
-                                                                    institutionId),
-                                       candidateRepository, periodRepository);
     }
 }
