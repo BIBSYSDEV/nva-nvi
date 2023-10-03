@@ -13,6 +13,7 @@ import java.math.RoundingMode;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Year;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -54,7 +55,7 @@ public final class TestUtils {
     private static final String PUBLICATION_API_PATH = "publication";
     private static final String API_HOST = "example.com";
 
-    public static final int CURRENT_YEAR = LocalDate.now().getYear();
+    public static final int CURRENT_YEAR = Year.now().getValue();
 
     private TestUtils() {
     }
