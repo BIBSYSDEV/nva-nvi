@@ -94,10 +94,8 @@ public final class CandidateBO {
                                           CandidateRepository repository,
                                           PeriodRepository periodRepository) {
         var candidateDao = repository.findCandidateDaoById(request.identifier())
+                               .filter(CandidateBO::isApplicable)
                                .orElseThrow(CandidateNotFoundException::new);
-        if (isNotApplicable(candidateDao)) {
-            throw new CandidateNotFoundException();
-        }
         var approvalDaoList = repository.fetchApprovals(candidateDao.identifier());
         var noteDaoList = repository.getNotes(candidateDao.identifier());
         var periodStatus = getPeriodStatus(periodRepository, candidateDao.candidate().publicationDate().year());
