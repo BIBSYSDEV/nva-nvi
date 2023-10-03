@@ -50,7 +50,7 @@ import nva.commons.core.paths.UriWrapper;
 
 public final class CandidateBO {
 
-    public static final String DELETE_MESSAGE_ERROR = "Can not delete message you does not own!";
+    private static final String DELETE_MESSAGE_ERROR = "Can not delete message you does not own!";
     private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
     private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
                                                             + " forbidden!";
