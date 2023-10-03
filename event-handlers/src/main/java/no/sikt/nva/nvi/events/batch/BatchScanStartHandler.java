@@ -4,7 +4,6 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
