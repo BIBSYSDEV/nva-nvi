@@ -49,10 +49,6 @@ import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
 public final class CandidateBO {
-
-    public static final PeriodStatus PERIOD_STATUS_NO_PERIOD = PeriodStatus.builder()
-                                                                   .withStatus(Status.NO_PERIOD)
-                                                                   .build();
     private static final String DELETE_MESSAGE_ERROR = "Can not delete message you does not own!";
     private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
     private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
@@ -62,6 +58,9 @@ public final class CandidateBO {
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
     private static final String CANDIDATE_PATH = "candidate";
     private static final String INVALID_CANDIDATE_MESSAGE = "Candidate is missing mandatory fields";
+    private static final PeriodStatus PERIOD_STATUS_NO_PERIOD = PeriodStatus.builder()
+                                                                    .withStatus(Status.NO_PERIOD)
+                                                                    .build();
     private final CandidateRepository repository;
     private final UUID identifier;
     private final CandidateDao original;
