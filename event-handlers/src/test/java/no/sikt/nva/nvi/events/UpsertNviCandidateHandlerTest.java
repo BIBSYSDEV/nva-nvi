@@ -182,15 +182,6 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         return new CandidateDetails.Creator(randomUri(), List.of(randomUri()));
     }
 
-    private static SQSEvent createEvent(CandidateEvaluatedMessage candidateEvaluatedMessage) {
-        var sqsEvent = new SQSEvent();
-        var message = new SQSMessage();
-        var body = attempt(() -> objectMapper.writeValueAsString(candidateEvaluatedMessage)).orElseThrow();
-        message.setBody(body);
-        sqsEvent.setRecords(List.of(message));
-        return sqsEvent;
-    }
-
     private static CandidateEvaluatedMessage createEvalMessage(List<Creator> verifiedCreators,
                                                                InstanceType instanceType, DbLevel randomLevel,
                                                                PublicationDate publicationDate,
@@ -230,6 +221,26 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
+    private CandidateEvaluatedMessage nonCandidateMessageForExistingCandidate(CandidateDto candidate) {
+        return CandidateEvaluatedMessage.builder()
+                   .withStatus(CandidateStatus.NON_CANDIDATE)
+                   .withPublicationBucketUri(generateS3BucketUri(candidate.identifier()))
+                   .withInstitutionPoints(null)
+                   .withCandidateDetails(new CandidateDetails(
+                       candidate.publicationId(),
+                       null, null, new PublicationDate(Year.now().toString(), null, null), null))
+                   .build();
+    }
+
+    private SQSEvent createEvent(CandidateEvaluatedMessage candidateEvaluatedMessage) {
+        var sqsEvent = new SQSEvent();
+        var message = new SQSMessage();
+        var body = attempt(() -> objectMapper.writeValueAsString(candidateEvaluatedMessage)).orElseThrow();
+        message.setBody(body);
+        sqsEvent.setRecords(List.of(message));
+        return sqsEvent;
+    }
+
     private SQSEvent createEvent(URI keep, URI publicationId, URI publicationBucketUri) {
         var institutionId = randomUri();
         var creators = List.of(new Creator(randomUri(), List.of(institutionId, keep)));
@@ -240,17 +251,6 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
         return createEvent(creators, instanceType, randomLevel, publicationDate,
                            institutionPoints, publicationId, publicationBucketUri);
-    }
-
-    private CandidateEvaluatedMessage nonCandidateMessageForExistingCandidate(CandidateDto candidate) {
-        return CandidateEvaluatedMessage.builder()
-                   .withStatus(CandidateStatus.NON_CANDIDATE)
-                   .withPublicationBucketUri(generateS3BucketUri(candidate.identifier()))
-                   .withInstitutionPoints(null)
-                   .withCandidateDetails(new CandidateDetails(
-                       candidate.publicationId(),
-                       null, null, new PublicationDate(Year.now().toString(), null, null), null))
-                   .build();
     }
 
     private SQSEvent createEvent(List<Creator> verifiedCreators,
