@@ -90,8 +90,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
         URI institutionId = randomUri();
         var candidate =
             CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository);
-        return CandidateBO.fromRequest(createUpsertCandidateRequest(candidate.identifier(),
-                                                                    candidate.publicationId(),
+        return CandidateBO.fromRequest(createUpsertCandidateRequest(candidate.publicationId(),
                                                                     false, 0,
                                                                     InstanceType.NON_CANDIDATE,
                                                                     institutionId),
