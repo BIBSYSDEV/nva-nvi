@@ -20,6 +20,7 @@ import java.time.Year;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -35,7 +36,6 @@ import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
-import no.sikt.nva.nvi.common.service.exception.IllegalOperationException;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -68,7 +68,8 @@ class CandidateBOTest extends LocalDynamoTest {
     @Test
     void shouldReturnCandidateWhenExists() {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
-        var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository);
+        var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
+                            .orElseThrow();
         var fetchedCandidate = CandidateBO.fromRequest(candidate::identifier, candidateRepository, periodRepository);
         assertThat(fetchedCandidate.identifier(), is(equalTo(candidate.identifier())));
     }
@@ -76,27 +77,28 @@ class CandidateBOTest extends LocalDynamoTest {
     @Test
     void shouldFetchCandidateByPublicationId() {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
-        var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository);
+        var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
+                            .orElseThrow();
         var fetchedCandidate = CandidateBO.fromRequest(candidate::publicationId, candidateRepository, periodRepository);
         assertThat(fetchedCandidate.identifier(), is(equalTo(candidate.identifier())));
     }
 
     @Test
-    void shouldThrowIllegalOperationWhenNonApplicableNonCandidateIsAttemptedInserted() {
-        var updateRequest = createUpsertCandidateRequest(randomUri(), false, 2,
-                                                         InstanceType.NON_CANDIDATE, randomUri());
-        assertThrows(IllegalOperationException.class,
-                     () -> CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository));
+    void shouldDoNothingIfCreateRequestIsForNonCandidateThatDoesNotExist() {
+        var updateRequest = createUpsertCandidateRequest(randomUri(), false, 2, InstanceType.NON_CANDIDATE,
+                                                         randomUri());
+
+        var optionalCandidate = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository);
+        assertThat(optionalCandidate, is(equalTo(Optional.empty())));
     }
 
     @Test
     void dontMindMeJustTestingToDto() {
         var institutionToReject = randomUri();
         var institutionToApprove = randomUri();
-        var createRequest = createUpsertCandidateRequest(randomUri(), true, 4,
-                                                         InstanceType.ACADEMIC_MONOGRAPH, institutionToApprove,
-                                                         randomUri(), institutionToReject);
-        var candidateBO = CandidateBO.fromRequest(createRequest, candidateRepository, periodRepository);
+        var createRequest = createUpsertCandidateRequest(randomUri(), true, 4, InstanceType.ACADEMIC_MONOGRAPH,
+                                                         institutionToApprove, randomUri(), institutionToReject);
+        var candidateBO = CandidateBO.fromRequest(createRequest, candidateRepository, periodRepository).orElseThrow();
         candidateBO.createNote(createNoteRequest(randomString(), randomString()))
             .createNote(createNoteRequest(randomString(), randomString()))
             .updateApproval(createUpdateStatusRequest(DbStatus.APPROVED, institutionToApprove, randomString()))
@@ -132,6 +134,7 @@ class CandidateBOTest extends LocalDynamoTest {
         var assignee = randomString();
         var createCandidateRequest = createUpsertCandidateRequest(institutionId);
         var candidate = CandidateBO.fromRequest(createCandidateRequest, candidateRepository, periodRepository)
+                            .orElseThrow()
                             .updateApproval(new UpdateAssigneeRequest(institutionId, assignee))
                             .updateApproval(createUpdateStatusRequest(DbStatus.APPROVED, institutionId, randomString()))
                             .updateApproval(createUpdateStatusRequest(DbStatus.REJECTED, institutionId, randomString()))
@@ -144,19 +147,30 @@ class CandidateBOTest extends LocalDynamoTest {
     void shouldNotResetApprovalsWhenUpdatingFieldsNotEffectingApprovals() {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
-        var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository);
-        candidate.updateApproval(new UpdateStatusRequest(institutionId, DbStatus.APPROVED, randomString(),
-                                                         randomString()));
+        var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
+                            .orElseThrow();
+        candidate.updateApproval(
+            new UpdateStatusRequest(institutionId, DbStatus.APPROVED, randomString(), randomString()));
         var approval = candidate.toDto().approvalStatuses().get(0);
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
-        var updatedCandidate = CandidateBO.fromRequest(newUpsertRequest, candidateRepository, periodRepository);
+        var updatedCandidate = CandidateBO.fromRequest(newUpsertRequest, candidateRepository, periodRepository)
+                                   .orElseThrow();
         var updatedApproval = updatedCandidate.toDto().approvalStatuses().get(0);
 
         assertThat(updatedApproval, is(equalTo(approval)));
     }
 
-    private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(
-        UpsertCandidateRequest request) {
+    private static PeriodStatusDto getDefaultPeriodStatus() {
+        return PeriodStatusDto.fromPeriodStatus(PeriodStatus.builder().withStatus(Status.OPEN_PERIOD).build());
+    }
+
+    private static URI constructId(UUID identifier) {
+        return new UriWrapper(HTTPS, API_DOMAIN).addChild(BASE_PATH, "candidate", identifier.toString()).getUri();
+    }
+
+    //TODO; add xDto to DTO classes
+
+    private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(UpsertCandidateRequest request) {
         return new UpsertCandidateRequest() {
             @Override
             public URI publicationBucketUri() {
@@ -180,7 +194,7 @@ class CandidateBOTest extends LocalDynamoTest {
 
             @Override
             public Map<URI, List<URI>> creators() {
-                return  request.creators();
+                return request.creators();
             }
 
             @Override
@@ -208,16 +222,5 @@ class CandidateBOTest extends LocalDynamoTest {
                 return 1;
             }
         };
-    }
-
-    private static PeriodStatusDto getDefaultPeriodStatus() {
-        return PeriodStatusDto.fromPeriodStatus(
-            PeriodStatus.builder().withStatus(Status.OPEN_PERIOD).build());
-    }
-
-    //TODO; add xDto to DTO classes
-
-    private static URI constructId(UUID identifier) {
-        return new UriWrapper(HTTPS, API_DOMAIN).addChild(BASE_PATH, "candidate", identifier.toString()).getUri();
     }
 }

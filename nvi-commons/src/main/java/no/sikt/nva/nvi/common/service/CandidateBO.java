@@ -5,9 +5,11 @@ import static nva.commons.core.paths.UriWrapper.HTTPS;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -35,7 +37,6 @@ import no.sikt.nva.nvi.common.service.dto.NoteDto;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
-import no.sikt.nva.nvi.common.service.exception.IllegalOperationException;
 import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
@@ -97,18 +98,22 @@ public final class CandidateBO {
         return new CandidateBO(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
     }
 
-    public static CandidateBO fromRequest(UpsertCandidateRequest request, CandidateRepository repository,
-                                          PeriodRepository periodRepository) {
-        if (request.isApplicable()) {
-            if (!isExistingCandidate(request, repository)) {
-                return createCandidate(request, repository, periodRepository);
-            } else {
-                return updateCandidate(request, repository, periodRepository);
-            }
-        } else if (isExistingCandidate(request, repository)) {
-            return deleteCandidate(request, repository);
+    public static Optional<CandidateBO> fromRequest(UpsertCandidateRequest request, CandidateRepository repository,
+                                                    PeriodRepository periodRepository) {
+        if (isNewCandidate(request, repository)) {
+            return Optional.of(createCandidate(request, repository, periodRepository));
         }
-        throw new IllegalOperationException();
+        if (shouldBeUpdated(request, repository)) {
+            return Optional.of(updateCandidate(request, repository, periodRepository));
+        }
+        if (shouldBeDeleted(request, repository)) {
+            return Optional.of(deleteCandidate(request, repository));
+        }
+        return Optional.empty();
+    }
+
+    public Map<URI, ApprovalBO> getApprovals() {
+        return new HashMap<>(approvals);
     }
 
     public UUID identifier() {
@@ -120,14 +125,18 @@ public final class CandidateBO {
     }
 
     public CandidateDto toDto() {
-        return CandidateDto.builder()
-                   .withId(constructId(identifier))
-                   .withIdentifier(identifier)
-                   .withPublicationId(candidateDao.candidate().publicationId())
-                   .withApprovalStatuses(mapToApprovalDtos())
-                   .withNotes(mapToNoteDtos())
-                   .withPeriodStatus(mapToPeriodStatusDto())
-                   .build();
+        if (isApplicable()) {
+            return CandidateDto.builder()
+                       .withId(constructId(identifier))
+                       .withIdentifier(identifier)
+                       .withPublicationId(candidateDao.candidate().publicationId())
+                       .withApprovalStatuses(mapToApprovalDtos())
+                       .withNotes(mapToNoteDtos())
+                       .withPeriodStatus(mapToPeriodStatusDto())
+                       .build();
+        } else {
+            throw new CandidateNotFoundException();
+        }
     }
 
     public CandidateBO updateApproval(UpdateApprovalRequest input) {
@@ -152,6 +161,26 @@ public final class CandidateBO {
             return null;
         });
         return this;
+    }
+
+    public boolean isApplicable() {
+        return candidateDao.candidate().applicable();
+    }
+
+    private static boolean shouldBeDeleted(UpsertCandidateRequest request, CandidateRepository repository) {
+        return !request.isApplicable() && isExistingCandidate(request, repository);
+    }
+
+    private static boolean shouldBeUpdated(UpsertCandidateRequest request, CandidateRepository repository) {
+        return request.isApplicable() && isExistingCandidate(request, repository);
+    }
+
+    private static boolean isNewCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
+        return request.isApplicable() && isNotExistingCandidate(request, repository);
+    }
+
+    private static boolean isNotExistingCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
+        return !isExistingCandidate(request, repository);
     }
 
     private static boolean isNotNoteOwner(String username, NoteDao dao) {
@@ -362,7 +391,7 @@ public final class CandidateBO {
     }
 
     private void validateCandidateState() {
-        if (periodStatus.status().equals(Status.CLOSED_PERIOD)) {
+        if (Status.CLOSED_PERIOD.equals(periodStatus.status())) {
             throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
         }
         if (Status.NO_PERIOD.equals(periodStatus.status()) || Status.UNOPENED_PERIOD.equals(periodStatus.status())) {

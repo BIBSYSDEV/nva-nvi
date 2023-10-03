@@ -26,7 +26,6 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Year;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -125,14 +124,12 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldUpdateExistingNviCandidateToNonCandidateWhenIncomingEventIsNonCandidate() {
         var dto = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
-                                          periodRepository).toDto();
+                                          periodRepository).orElseThrow().toDto();
         var eventMessage = nonCandidateMessageForExistingCandidate(dto);
         handler.handleRequest(createEvent(eventMessage), CONTEXT);
-        var updatedCandidate = CandidateBO.fromRequest(dto::identifier, candidateRepository, periodRepository).toDto();
+        var updatedCandidate = CandidateBO.fromRequest(dto::identifier, candidateRepository, periodRepository);
 
-        var expectedResponse = createResponse(updatedCandidate.identifier(), dto.publicationId(),
-                                              Collections.emptyMap());
-        assertThat(updatedCandidate, is(equalTo(expectedResponse)));
+        assertThat(updatedCandidate.isApplicable(), is(false));
     }
 
     @Test
@@ -142,8 +139,9 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var publicationId = generatePublicationId(identifier);
         var dto = CandidateBO.fromRequest(
-            createUpsertCandidateRequest(publicationId, true, 1, InstanceType.ACADEMIC_ARTICLE, delete, keep),
-            candidateRepository, periodRepository);
+            createUpsertCandidateRequest(publicationId, true, 1,
+                                         InstanceType.ACADEMIC_ARTICLE, delete, keep),
+            candidateRepository, periodRepository).orElseThrow();
         var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));
         handler.handleRequest(sqsEvent, CONTEXT);
         Map<URI, DbApprovalStatus> approvals = getAprovalMaps(dto);
@@ -156,12 +154,14 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     void shouldNotResetApprovalsWhenUpdatingFieldsNotEffectingApprovals() {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
-        var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository);
-        candidate.updateApproval(new UpdateStatusRequest(institutionId, DbStatus.APPROVED, randomString(),
-                                                         randomString()));
+        var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
+                            .orElseThrow();
+        candidate.updateApproval(
+            new UpdateStatusRequest(institutionId, DbStatus.APPROVED, randomString(), randomString()));
         var approval = candidate.toDto().approvalStatuses().get(0);
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest, institutionId);
-        var updatedCandidate = CandidateBO.fromRequest(newUpsertRequest, candidateRepository, periodRepository);
+        var updatedCandidate = CandidateBO.fromRequest(newUpsertRequest, candidateRepository, periodRepository)
+                                   .orElseThrow();
         var updatedApproval = updatedCandidate.toDto().approvalStatuses().get(0);
 
         assertThat(updatedApproval, is(equalTo(approval)));
@@ -219,6 +219,14 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
+    private static PeriodStatusDto toPeriodStatus(DbNviPeriod period) {
+        return PeriodStatusDto.builder()
+                   .withStatus(Status.OPEN_PERIOD)
+                   .withStartDate(period.startDate().toString())
+                   .withReportingDate(period.reportingDate().toString())
+                   .build();
+    }
+
     private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(UpsertCandidateRequest request,
                                                                                URI institutionId) {
         var creatorId = request.creators().keySet().stream().toList().get(0);
@@ -226,8 +234,9 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                              new CandidateDetails(request.publicationId(), request.instanceType(),
                                                                   request.level(),
                                                                   new PublicationDate(null, "3", Year.now().toString()),
-                                                                  List.of(new Creator(creatorId,
-                                                                                      List.of(institutionId)))), request.points());
+                                                                  List.of(
+                                                                      new Creator(creatorId, List.of(institutionId)))),
+                                             request.points());
     }
 
     private Map<URI, DbApprovalStatus> getAprovalMaps(CandidateBO dto) {
@@ -247,14 +256,6 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withNotes(List.of())
                    .withApprovalStatuses(institutionPoints.entrySet().stream().map(this::mapToApprovalStatus).toList())
                    .withPeriodStatus(toPeriodStatus(period))
-                   .build();
-    }
-
-    private static PeriodStatusDto toPeriodStatus(DbNviPeriod period) {
-        return PeriodStatusDto.builder()
-                   .withStatus(Status.OPEN_PERIOD)
-                   .withStartDate(period.startDate().toString())
-                   .withReportingDate(period.reportingDate().toString())
                    .build();
     }
 

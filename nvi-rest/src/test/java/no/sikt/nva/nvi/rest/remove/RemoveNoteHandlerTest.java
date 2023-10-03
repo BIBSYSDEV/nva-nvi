@@ -130,7 +130,7 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
 
     private CandidateBO createCandidate() {
         return CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
-                                       periodRepository);
+                                       periodRepository).orElseThrow();
     }
 
     private HandlerRequestBuilder<NviNoteRequest> createRequest(UUID candidateIdentifier, UUID noteIdentifier,

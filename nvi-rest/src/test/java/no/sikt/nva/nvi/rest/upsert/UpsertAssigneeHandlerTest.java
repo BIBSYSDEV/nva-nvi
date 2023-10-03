@@ -2,10 +2,10 @@ package no.sikt.nva.nvi.rest.upsert;
 
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.rest.upsert.UpsertAssigneeHandler.CANDIDATE_IDENTIFIER;
+import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningNotOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
-import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -85,7 +85,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         mockUserApiResponse("userResponseBodyWithoutAccessRight.json");
         var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
                                                 candidateRepository,
-                                                periodRepository);
+                                                periodRepository).orElseThrow();
         var assignee = randomString();
         handler.handleRequest(createRequest(candidate, assignee), output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -107,7 +107,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         mockUserApiResponse("userResponseBodyWithAccessRight.json");
         var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
                                                 candidateRepository,
-                                                periodRepository);
+                                                periodRepository).orElseThrow();
         var assignee = randomString();
         var periodRepository = periodRepositoryReturningClosedPeriod(YEAR);
         var handler = new UpsertAssigneeHandler(candidateRepository, periodRepository, uriRetriever);
@@ -122,7 +122,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         mockUserApiResponse("userResponseBodyWithAccessRight.json");
         var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
                                                 candidateRepository,
-                                                periodRepository);
+                                                periodRepository).orElseThrow();
         var assignee = randomString();
         var periodRepository = periodRepositoryReturningNotOpenedPeriod(YEAR);
         var handler = new UpsertAssigneeHandler(candidateRepository, periodRepository, uriRetriever);
@@ -137,7 +137,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         mockUserApiResponse("userResponseBodyWithAccessRight.json");
         var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
                                                 candidateRepository,
-                                                periodRepository);
+                                                periodRepository).orElseThrow();
         var assignee = randomString();
         handler.handleRequest(createRequest(candidate, assignee), output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -152,7 +152,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         mockUserApiResponse("userResponseBodyWithAccessRight.json");
         var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
                                                 candidateRepository,
-                                                periodRepository);
+                                                periodRepository).orElseThrow();
         handler.handleRequest(createRequest(candidate, null), output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
@@ -177,8 +177,8 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     private CandidateBO candidateWithFinalizedApproval(String newAssignee) {
         var institutionId = randomUri();
         var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId),
-                                candidateRepository,
-                                periodRepository);
+                                                candidateRepository,
+                                                periodRepository).orElseThrow();
         candidate.updateApproval(new UpdateAssigneeRequest(institutionId, newAssignee));
         candidate.updateApproval(new UpdateStatusRequest(institutionId,
                                                          DbStatus.APPROVED, randomString(), randomString()));
@@ -207,7 +207,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     private InputStream createRequestWithNonExistingCandidate() throws JsonProcessingException {
         var approvalToUpdate =
             CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository, periodRepository)
-                .toDto().approvalStatuses().get(0);
+                .orElseThrow().toDto().approvalStatuses().get(0);
         var requestBody = new ApprovalDto(randomString(), approvalToUpdate.institutionId());
         var customerId = randomUri();
         return new HandlerRequestBuilder<ApprovalDto>(JsonUtils.dtoObjectMapper).withBody(randomAssigneeRequest())
