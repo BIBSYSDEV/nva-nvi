@@ -59,6 +59,9 @@ public final class CandidateBO {
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
     private static final String CANDIDATE_PATH = "candidate";
     private static final String INVALID_CANDIDATE_MESSAGE = "Candidate is missing mandatory fields";
+    private static final PeriodStatus PERIOD_STATUS_NO_PERIOD = PeriodStatus.builder()
+                                                                    .withStatus(Status.NO_PERIOD)
+                                                                    .build();
     private final CandidateRepository repository;
     private final UUID identifier;
     private final CandidateDao candidateDao;
@@ -94,7 +97,7 @@ public final class CandidateBO {
                                .orElseThrow(CandidateNotFoundException::new);
         var approvalDaoList = repository.fetchApprovals(candidateDao.identifier());
         var noteDaoList = repository.getNotes(candidateDao.identifier());
-        var periodStatus = getPeriodStatus(periodRepository, candidateDao.candidate().publicationDate().year());
+        var periodStatus = calculatePeriodStatusIfApplicable(periodRepository, candidateDao);
         return new CandidateBO(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
     }
 
@@ -167,6 +170,13 @@ public final class CandidateBO {
         return candidateDao.candidate().applicable();
     }
 
+    private static PeriodStatus calculatePeriodStatusIfApplicable(PeriodRepository periodRepository,
+                                                                  CandidateDao candidateDao) {
+        return candidateDao.candidate().applicable()
+                   ? getPeriodStatus(periodRepository, candidateDao.candidate().publicationDate().year())
+                   : PERIOD_STATUS_NO_PERIOD;
+    }
+
     private static boolean shouldBeDeleted(UpsertCandidateRequest request, CandidateRepository repository) {
         return !request.isApplicable() && isExistingCandidate(request, repository);
     }
@@ -190,7 +200,7 @@ public final class CandidateBO {
     private static CandidateBO deleteCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
         var existingCandidateDao = repository.findByPublicationIdDao(request.publicationId())
                                        .orElseThrow(CandidateNotFoundException::new);
-        var nonApplicableCandidate = updateCandidateDaoFromRequest(existingCandidateDao, request);
+        var nonApplicableCandidate = updateCandidateToNonApplicable(existingCandidateDao, request);
         repository.updateCandidateAndRemovingApprovals(existingCandidateDao.identifier(), nonApplicableCandidate);
 
         return new CandidateBO(repository, nonApplicableCandidate, Collections.emptyList(), Collections.emptyList(),
@@ -315,7 +325,7 @@ public final class CandidateBO {
     private static PeriodStatus getPeriodStatus(PeriodRepository periodRepository, String year) {
         return periodRepository.findByPublishingYear(year)
                    .map(PeriodStatus::fromPeriod)
-                   .orElse(PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
+                   .orElse(PERIOD_STATUS_NO_PERIOD);
     }
 
     private static URI constructId(UUID identifier) {
@@ -376,6 +386,15 @@ public final class CandidateBO {
                                   .applicable(request.isApplicable())
                                   .internationalCollaboration(request.isInternationalCooperation())
                                   .creatorCount(request.creatorCount())
+                                  .build())
+                   .build();
+    }
+
+    private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao,
+                                                              UpsertCandidateRequest request) {
+        return candidateDao.copy()
+                   .candidate(candidateDao.candidate().copy()
+                                  .applicable(request.isApplicable())
                                   .build())
                    .build();
     }
