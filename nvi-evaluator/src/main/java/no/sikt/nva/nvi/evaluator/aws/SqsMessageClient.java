@@ -5,8 +5,6 @@ import java.time.Duration;
 import no.sikt.nva.nvi.common.QueueClient;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -16,7 +14,6 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 public class SqsMessageClient implements QueueClient<SendMessageResponse> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SqsMessageClient.class);
     private static final String QUEUE_NAME = new Environment().readEnv("CANDIDATE_QUEUE_NAME");
     private static final String DLQ_QUEUE_NAME = new Environment().readEnv("CANDIDATE_DLQ_NAME");
     private static final int MAX_CONNECTIONS = 10_000;
@@ -40,7 +37,6 @@ public class SqsMessageClient implements QueueClient<SendMessageResponse> {
     @Override
     public SendMessageResponse sendMessage(String message) {
         var candidate = createCandidate(message);
-        LOGGER.info("Candidate Message: {}", candidate.messageBody());
         return sqsClient.sendMessage(candidate);
     }
 

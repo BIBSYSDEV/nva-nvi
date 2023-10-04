@@ -37,6 +37,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateIndexHandler.class);
     private static final Environment ENVIRONMENT = new Environment();
     private static final String EXPANDED_RESOURCES_BUCKET = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
+    public static final String INDEXING_MESSAGE = "Nvi candidate has been indexed for publication: {}";
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
     private final StorageReader<URI> storageReader;
     private final NviService nviService;
@@ -115,6 +116,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
             } else {
                 removeDocumentFromIndex(candidate);
             }
+            LOGGER.info(INDEXING_MESSAGE, candidate.candidate().publicationId());
         } catch (Exception e) {
             logRecordThatCouldNotBeIndexed(record);
         }
