@@ -30,7 +30,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.nio.file.Path;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -43,11 +42,9 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.PeriodStatus;
-import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.Candidate;
-import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.Approval;
@@ -85,7 +82,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private TestAppender appender;
     private StorageReader<URI> storageReader;
     private FakeSearchClient openSearchClient;
-    private NviService nviService;
+    private CandidateRepository candidateRepository;
     private AuthorizedBackendUriRetriever uriRetriever;
 
     @BeforeEach
@@ -93,9 +90,9 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         storageReader = mock(StorageReader.class);
         uriRetriever = mock(AuthorizedBackendUriRetriever.class);
         openSearchClient = new FakeSearchClient();
-        nviService = mock(NviService.class);
+        candidateRepository = mock(CandidateRepository.class);
         var documentGenerator = new NviCandidateIndexDocumentGenerator(uriRetriever);
-        handler = new UpdateIndexHandler(storageReader, openSearchClient, nviService, documentGenerator);
+        handler = new UpdateIndexHandler(storageReader, openSearchClient, candidateRepository, documentGenerator);
         appender = LogUtils.getTestingAppenderForRootLogger();
 
         when(uriRetriever.getRawContent(any(), any()))
@@ -107,7 +104,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
         var persistedCandidate = randomApplicableCandidate();
-        when(nviService.findCandidateById(any())).thenReturn(Optional.of(persistedCandidate));
+        when(candidateRepository.findCandidateById(any())).thenReturn(Optional.of(persistedCandidate));
         handler.handleRequest(createEvent(INSERT, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
         var document = openSearchClient.getDocuments().get(0);
         var expectedDocument = constructExpectedDocument(persistedCandidate);
@@ -120,7 +117,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
         var persistedCandidate = randomApplicableCandidate();
-        when(nviService.findCandidateById(any())).thenReturn(Optional.of(persistedCandidate));
+        when(candidateRepository.findCandidateById(any())).thenReturn(Optional.of(persistedCandidate));
         var str = IoUtils.stringFromResources(Path.of("20754.0.0.6.json"));
         var expectedUri = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.6");
         when(uriRetriever.getRawContent(expectedUri, APPLICATION_JSON))
@@ -138,7 +135,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
         var persistedCandidate = randomApplicableCandidate();
-        when(nviService.findCandidateById(any())).thenReturn(Optional.of(persistedCandidate));
+        when(candidateRepository.findCandidateById(any())).thenReturn(Optional.of(persistedCandidate));
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
         var document = openSearchClient.getDocuments().get(0);
         var expectedDocument = constructExpectedDocument(persistedCandidate);
@@ -149,7 +146,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldRemoveFromIndexWhenIncomingEventIsModifyAndCandidateIsNotApplicable() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(nviService.findCandidateById(any())).thenReturn(Optional.of(randomCandidate(false)));
+        when(candidateRepository.findCandidateById(any())).thenReturn(Optional.of(randomCandidate(false)));
 
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordNotApplicable.json")), CONTEXT);
 
@@ -159,7 +156,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldDoNothingWhenIncomingEventIsRemove() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(nviService.findCandidateById(any())).thenReturn(Optional.of(randomCandidate(false)));
+        when(candidateRepository.findCandidateById(any())).thenReturn(Optional.of(randomCandidate(false)));
 
         handler.handleRequest(createEvent(REMOVE, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
 
@@ -169,7 +166,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void shouldDoNothingWhenConsumedRecordIsNotCandidate() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(nviService.findCandidateById(any())).thenReturn(Optional.of(randomCandidate(true)));
+        when(candidateRepository.findCandidateById(any())).thenReturn(Optional.of(randomCandidate(true)));
 
         handler.handleRequest(createEvent(REMOVE, toRecord("dynamoDbUniqueEntryEvent.json")), CONTEXT);
 
@@ -180,7 +177,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     void shouldUpdateDocumentWithNewApprovalWhenIncomingEventIsApproval() throws JsonProcessingException {
         when(storageReader.read(any())).thenReturn(CANDIDATE);
         var candidate = applicableAssignedCandidate();
-        when(nviService.findCandidateById(any())).thenReturn(Optional.of(candidate));
+        when(candidateRepository.findCandidateById(any())).thenReturn(Optional.of(candidate));
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbApprovalEvent.json")), CONTEXT);
         var expectedDocument = constructExpectedDocument(candidate);
         var document = openSearchClient.getDocuments().get(0);
@@ -195,7 +192,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         var candidate = createApplicableCandidateWithPublicationDate(date);
         var expectedDocument = constructExpectedIndexDocument(date, candidate);
         when(storageReader.read(any())).thenReturn(createExpandedResource(expectedDocument));
-        when(nviService.findCandidateById(any())).thenReturn(Optional.of(candidate));
+        when(candidateRepository.findCandidateById(any())).thenReturn(Optional.of(candidate));
 
         handler.handleRequest(createEvent(INSERT, createDynamoDbRecord(candidate)), CONTEXT);
 

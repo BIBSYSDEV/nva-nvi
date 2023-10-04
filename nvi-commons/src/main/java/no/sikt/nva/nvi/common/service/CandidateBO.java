@@ -244,11 +244,16 @@ public final class CandidateBO {
         return new CandidateBO(repository, updatedCandidate, approvalDaoList, noteDaoList, periodStatus);
     }
 
-    private static boolean shouldResetCandidate(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return levelIsUpdated(request, existingCandidateDao)
-               || instanceTypeIsUpdated(request, existingCandidateDao)
-               || creatorsAreUpdated(request, existingCandidateDao)
-               || pointsAreUpdated(request, existingCandidateDao);
+    private static boolean shouldResetCandidate(UpsertCandidateRequest request, CandidateDao candidate) {
+        return levelIsUpdated(request, candidate)
+               || instanceTypeIsUpdated(request, candidate)
+               || creatorsAreUpdated(request, candidate)
+               || pointsAreUpdated(request, candidate)
+               || publicationYearIsUpdated(request, candidate);
+    }
+
+    private static boolean publicationYearIsUpdated(UpsertCandidateRequest request, CandidateDao candidate) {
+        return !request.publicationDate().year().equals(candidate.candidate().publicationDate().year());
     }
 
     private static boolean pointsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
