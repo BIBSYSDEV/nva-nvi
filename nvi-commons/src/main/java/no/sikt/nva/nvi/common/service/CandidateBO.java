@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
+import static java.util.UUID.randomUUID;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
 import java.math.BigDecimal;
@@ -172,8 +173,9 @@ public final class CandidateBO {
 
     private static PeriodStatus calculatePeriodStatusIfApplicable(PeriodRepository periodRepository,
                                                                   CandidateDao candidateDao) {
-        return candidateDao.candidate().applicable()
-                   ? getPeriodStatus(periodRepository, candidateDao.candidate().publicationDate().year())
+        return candidateDao.candidate().applicable() ? getPeriodStatus(periodRepository, candidateDao.candidate()
+                                                                                             .publicationDate()
+                                                                                             .year())
                    : PERIOD_STATUS_NO_PERIOD;
     }
 
@@ -236,6 +238,7 @@ public final class CandidateBO {
                                                                        CandidateDao existingCandidateDao) {
         var updatedCandidate = updateCandidateDaoFromRequest(existingCandidateDao, request);
         var approvalDaoList = repository.fetchApprovals(updatedCandidate.identifier());
+        repository.updateCandidateOnly(updatedCandidate);
         var noteDaoList = repository.getNotes(updatedCandidate.identifier());
         var periodStatus = getPeriodStatus(periodRepository, updatedCandidate.candidate().publicationDate().year());
         return new CandidateBO(repository, updatedCandidate, approvalDaoList, noteDaoList, periodStatus);
@@ -387,15 +390,14 @@ public final class CandidateBO {
                                   .internationalCollaboration(request.isInternationalCooperation())
                                   .creatorCount(request.creatorCount())
                                   .build())
+                   .version(randomUUID().toString())
                    .build();
     }
 
     private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao,
-                                                              UpsertCandidateRequest request) {
+                                                               UpsertCandidateRequest request) {
         return candidateDao.copy()
-                   .candidate(candidateDao.candidate().copy()
-                                  .applicable(request.isApplicable())
-                                  .build())
+                   .candidate(candidateDao.candidate().copy().applicable(request.isApplicable()).build())
                    .build();
     }
 
