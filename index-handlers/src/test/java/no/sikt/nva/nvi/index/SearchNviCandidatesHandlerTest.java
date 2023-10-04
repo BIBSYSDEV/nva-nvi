@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index;
 
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
@@ -12,8 +13,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -60,7 +59,6 @@ import org.zalando.problem.Problem;
 @Testcontainers
 public class SearchNviCandidatesHandlerTest {
 
-    private static final String DEFAULT_FILTER = StringUtils.EMPTY_STRING;
     private static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     private static final String QUERY_PARAM_FILTER = "filter";
     private static final Environment ENVIRONMENT = new Environment();
@@ -70,7 +68,6 @@ public class SearchNviCandidatesHandlerTest {
     private static final String CANDIDATE_PATH = "candidate";
     private static final String QUERY_PARAM_OFFSET = "offset";
     private static final String QUERY_PARAM_SIZE = "size";
-    private static final String DEFAULT_SEARCH_TERM = "*";
     private static final int DEFAULT_QUERY_SIZE = 10;
     private static final int DEFAULT_OFFSET_SIZE = 0;
     private static final TypeReference<PaginatedSearchResult<NviCandidateIndexDocument>> TYPE_REF =
@@ -90,7 +87,7 @@ public class SearchNviCandidatesHandlerTest {
 
     @Test
     void shouldReturnDocumentFromIndexWhenNoSearchIsSpecified() throws IOException {
-        when(openSearchClient.search(any(), any(), any(), any(), any(), anyInt(), anyInt()))
+        when(openSearchClient.search(any()))
             .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
         handler.handleRequest(emptyRequest(), output, context);
         var response =
@@ -151,12 +148,14 @@ public class SearchNviCandidatesHandlerTest {
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
 
         var actualId = paginatedSearchResult.getId().toString();
-        var expectedQuery = QUERY_PARAM_AFFILIATIONS
+        var expectedInstitutionQuery = QUERY_PARAM_AFFILIATIONS
                             + "=" + randomInstitutions.get(0)
                             + "," + randomInstitutions.get(1);
+        var expectedExcludeQuery = QUERY_PARAM_EXCLUDE_SUB_UNITS + "=true";
 
         assertThat(actualId, containsString(QUERY_PARAM_FILTER + "=" + randomFilter));
-        assertThat(actualId, containsString(expectedQuery));
+        assertThat(actualId, containsString(expectedInstitutionQuery));
+        assertThat(actualId, containsString(expectedExcludeQuery));
     }
 
     @Test
@@ -164,7 +163,7 @@ public class SearchNviCandidatesHandlerTest {
         var documents = generateNumberOfIndexDocuments(10);
         var aggregationName = randomString();
         var docCount = randomInteger();
-        when(openSearchClient.search(any(), any(), any(), any(), any(), anyInt(), anyInt()))
+        when(openSearchClient.search(any()))
             .thenReturn(createSearchResponse(documents, 10, aggregationName, docCount));
         handler.handleRequest(emptyRequest(), output, context);
         var response =
@@ -177,7 +176,7 @@ public class SearchNviCandidatesHandlerTest {
 
     @Test
     void shouldThrowExceptionWhenSearchFails() throws IOException {
-        when(openSearchClient.search(any(), any(), any(), any(), any(), anyInt(), anyInt()))
+        when(openSearchClient.search(any()))
             .thenThrow(RuntimeException.class);
         handler.handleRequest(emptyRequest(), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -187,8 +186,7 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     private static void mockOpenSearchClient() throws IOException {
-        when(openSearchClient.search(any(), any(), any(), any(), any(), eq(DEFAULT_OFFSET_SIZE),
-                                     eq(DEFAULT_QUERY_SIZE)))
+        when(openSearchClient.search(any()))
             .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
     }
 
@@ -253,30 +251,13 @@ public class SearchNviCandidatesHandlerTest {
                    .build();
     }
 
-    private InputStream requestInstitutions(String[] institutions) throws JsonProcessingException {
-        return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
-                   .withTopLevelCristinOrgId(randomUri())
-                   .withUserName(randomString())
-                   .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS, String.join(",", institutions),
-                                               QUERY_PARAM_OFFSET, String.valueOf(DEFAULT_OFFSET_SIZE),
-                                               QUERY_PARAM_SIZE, String.valueOf(DEFAULT_QUERY_SIZE)))
-                   .build();
-    }
-
-    private InputStream requestWithFilter(String filter) throws JsonProcessingException {
-        return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
-                   .withTopLevelCristinOrgId(randomUri())
-                   .withUserName(randomString())
-                   .withQueryParameters(Map.of(QUERY_PARAM_FILTER, filter))
-                   .build();
-    }
-
     private InputStream requestWithInstitutionsAndFilter(List<String> institutions, String filter)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
                    .withTopLevelCristinOrgId(randomUri())
                    .withUserName(randomString())
                    .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS, String.join(",", institutions),
+                                               QUERY_PARAM_EXCLUDE_SUB_UNITS, "true",
                                                QUERY_PARAM_FILTER, filter))
                    .build();
     }

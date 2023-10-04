@@ -14,6 +14,7 @@ import java.net.http.HttpClient;
 import java.time.Clock;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
 import no.sikt.nva.nvi.index.Aggregations;
+import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.utils.SearchConstants;
 import no.unit.nva.auth.CachedJwtProvider;
@@ -97,17 +98,11 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     @Override
-    public SearchResponse<NviCandidateIndexDocument> search(String affiliations,
-                                                            String filter,
-                                                            String username,
-                                                            String year, URI customer,
-                                                            int offset,
-                                                            int size)
+    public SearchResponse<NviCandidateIndexDocument> search(CandidateSearchParameters candidateSearchParameters)
         throws IOException {
-        logSearchRequest(affiliations, filter, username, customer, offset, size);
+        logSearchRequest(candidateSearchParameters);
         return client.withTransportOptions(getOptions())
-                   .search(constructSearchRequest(affiliations, filter, username, customer.toString(), year, offset,
-                                                  size),
+                   .search(constructSearchRequest(candidateSearchParameters),
                            NviCandidateIndexDocument.class);
     }
 
@@ -118,10 +113,12 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
             .delete(new DeleteIndexRequest.Builder().index(NVI_CANDIDATES_INDEX).build());
     }
 
-    private static void logSearchRequest(String searchTerm, String filter, String username, URI customer, int offset,
-                                         int size) {
-        LOGGER.info("Generating search request with searchTerm: {}, filter: {}, username: {}, customer: {}, offset: "
-                    + "{}, size: {}", searchTerm, filter, username, customer.toString(), offset, size);
+    private static void logSearchRequest(CandidateSearchParameters params) {
+        LOGGER.info("Generating search request with affiliations: {}, excludeSubUnits: {}, filter: {}, username: {}, "
+                    + "customer: {}, offset: "
+                    + "{}, size: {}", params.affiliations(), params.excludeSubUnits(), params.filter(),
+                    params.username(),params.username(), params.offset(),
+                    params.size());
     }
 
     private static DeleteRequest contructDeleteRequest(NviCandidateIndexDocument indexDocument) {
@@ -180,15 +177,15 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         return new RuntimeException(exception.getMessage());
     }
 
-    private SearchRequest constructSearchRequest(String affiliations, String filter, String username, String customer,
-                                                 String year, int offset, int size) {
-        var query = SearchConstants.constructQuery(affiliations, filter, username, customer, year);
+    private SearchRequest constructSearchRequest(CandidateSearchParameters candidateSearchParameters) {
+        var query = SearchConstants.constructQuery(candidateSearchParameters);
         return new SearchRequest.Builder()
                    .index(NVI_CANDIDATES_INDEX)
                    .query(query)
-                   .aggregations(Aggregations.generateAggregations(username, customer))
-                   .from(offset)
-                   .size(size)
+                   .aggregations(Aggregations.generateAggregations(candidateSearchParameters.username(),
+                                                                   candidateSearchParameters.customer().toString()))
+                   .from(candidateSearchParameters.offset())
+                   .size(candidateSearchParameters.size())
                    .build();
     }
 }

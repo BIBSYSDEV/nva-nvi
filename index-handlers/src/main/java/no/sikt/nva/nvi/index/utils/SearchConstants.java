@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.index.aws.CandidateQuery;
 import no.sikt.nva.nvi.index.aws.CandidateQuery.QueryFilterType;
+import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
 import nva.commons.core.Environment;
 import org.opensearch.client.opensearch._types.mapping.KeywordProperty;
 import org.opensearch.client.opensearch._types.mapping.NestedProperty;
@@ -48,19 +49,19 @@ public final class SearchConstants {
 
     }
 
-    public static Query constructQuery(String affiliations, String filter, String username, String customer,
-                                       String year) {
-        var affiliationsList = nonNull(affiliations) && !affiliations.isEmpty()
-                                  ? List.of(affiliations.split(","))
+    public static Query constructQuery(CandidateSearchParameters params) {
+        var affiliationsList = nonNull(params.affiliations()) && !params.affiliations().isEmpty()
+                                  ? List.of(params.affiliations().split(","))
                                   : List.<String>of();
-        var filterType = QueryFilterType.parse(filter)
-                             .orElseThrow(() -> new IllegalStateException("unknown filter " + filter));
+        var filterType = QueryFilterType.parse(params.filter())
+                             .orElseThrow(() -> new IllegalStateException("unknown filter " + params.filter()));
         return new CandidateQuery.Builder()
                         .withInstitutions(affiliationsList)
+                        .withExcludeSubUnits(params.excludeSubUnits())
                         .withFilter(filterType)
-                        .withUsername(username)
-                        .withCustomer(customer)
-                        .withYear(year)
+                        .withUsername(params.username())
+                        .withCustomer(params.customer().toString())
+                        .withYear(params.year())
                         .build()
                         .toQuery();
     }
