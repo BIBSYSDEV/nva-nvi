@@ -132,7 +132,7 @@ Resources:
                   - sqs:GetQueueUrl
                 Resource:
                   - !Ref EventBusArn
-                  - !Ref InternalBus
+                  - !GetAtt InternalBus.Arn
                   - !GetAtt NewCandidateQueue.Arn
                   - !GetAtt NewCandidateDLQ.Arn
                   - !GetAtt BatchScanDLQ.Arn
