@@ -147,13 +147,13 @@ paths:
       parameters:
         - in: query
           name: affiliations
-          description: 'Only return candidates in given affiliations. Including their sub-affiliations. Formated as a comma separated list of affiliations ids.'
+          description: 'Only return candidates in given affiliations. Including their sub-units. Formated as a comma separated list of affiliations ids.'
           required: false
           schema:
             type: string
         - in: query
           name: excludeSubUnits
-          description: 'Exclude sub-affiliations of the given affiliations.'
+          description: 'Exclude sub-units of the given affiliations.'
           required: false
           schema:
             type: boolean

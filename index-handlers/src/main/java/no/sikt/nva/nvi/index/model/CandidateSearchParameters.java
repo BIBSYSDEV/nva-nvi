@@ -13,13 +13,13 @@ public record CandidateSearchParameters(String affiliations, boolean excludeSubU
     @JacocoGenerated
     public static final class Builder {
 
-        private String affiliations = null;
-        private boolean excludeSubUnits = false;
+        private String affiliations;
+        private boolean excludeSubUnits;
         private String filter = EMPTY_STRING;
         private String username;
         private String year;
         private URI customer;
-        private int offset = 0;
+        private int offset;
         private int size = 10;
 
         public Builder() {
