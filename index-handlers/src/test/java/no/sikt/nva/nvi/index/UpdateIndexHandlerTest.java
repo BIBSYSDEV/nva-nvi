@@ -47,6 +47,7 @@ import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
+import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDate;
@@ -182,8 +183,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
 
     @ParameterizedTest
     @MethodSource("publicationDates")
-    void shouldAddDocumentToIndexWhenNviCandidateExistsInResourcesStorageWithDifferentDateFormats(
-        PublicationDate date, String persistedResourceDate)
+    void shouldAddDocumentToIndexWhenNviCandidateExistsInResourcesStorageWithDifferentDateFormats(PublicationDate date,
+                                                                                                  String persistedResourceDate)
         throws JsonProcessingException {
         var candidate = randomApplicableCandidate();
         mockRepositories(candidate);
@@ -380,8 +381,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         }
 
         @Override
-        public SearchResponse<NviCandidateIndexDocument> search(String affiliations, String filter, String username,
-                                                                String year, URI customer, int offset, int size) {
+        public SearchResponse<NviCandidateIndexDocument> search(CandidateSearchParameters candidateSearchParameters) {
             return null;
         }
 

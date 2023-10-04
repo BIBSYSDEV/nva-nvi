@@ -6,10 +6,7 @@ import java.util.List;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record PublicationDetails(String id,
-                                 String type,
-                                 String title,
-                                 PublicationDate publicationDate,
+public record PublicationDetails(String id, String type, String title, PublicationDate publicationDate,
                                  List<Contributor> contributors) {
 
     public static Builder builder() {
@@ -25,10 +22,6 @@ public record PublicationDetails(String id,
         private List<Contributor> contributors;
 
         private Builder() {
-        }
-
-        public static Builder aPublicationDetails() {
-            return new Builder();
         }
 
         public Builder withId(String id) {
