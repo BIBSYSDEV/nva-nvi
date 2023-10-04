@@ -41,6 +41,8 @@ import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
@@ -221,6 +223,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
                    .boxed()
                    .map(item -> CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
                                                         candidateRepository, periodRepository))
+                   .map(Optional::orElseThrow)
                    .map(a -> a.createNote(new CreateNoteRequest(randomString(), randomString())));
     }
 
@@ -264,6 +267,17 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
                        .stream()
                        .findFirst()
                        .orElseThrow();
+        }
+
+        private static QueryConditional findApprovalByCandidateIdAndInstitutionId(UUID identifier, URI uri) {
+            return QueryConditional.keyEqualTo(approvalByCandidateIdAndInstitutionIdKey(identifier, uri));
+        }
+
+        private static Key approvalByCandidateIdAndInstitutionIdKey(UUID identifier, URI uri) {
+            return Key.builder()
+                       .partitionValue(CandidateDao.createPartitionKey(identifier.toString()))
+                       .sortValue(ApprovalStatusDao.createSortKey(uri.toString()))
+                       .build();
         }
 
         public Stream<CandidateUniquenessEntryDao> getUniquenessEntries() {

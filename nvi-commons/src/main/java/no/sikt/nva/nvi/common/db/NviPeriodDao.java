@@ -85,6 +85,7 @@ public record NviPeriodDao(
             return this;
         }
 
+        @JacocoGenerated
         public Builder version(String version) {
             this.version = version;
             return this;

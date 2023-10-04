@@ -298,28 +298,10 @@ public class CandidateRepository extends DynamoRepository {
         return Key.builder().partitionValue(publicationId.toString()).sortValue(publicationId.toString()).build();
     }
 
-    protected static QueryConditional findApprovalByCandidateIdAndInstitutionId(UUID identifier, URI uri) {
-        return QueryConditional.keyEqualTo(approvalByCandidateIdAndInstitutionIdKey(identifier, uri));
-    }
-
-    private static Key approvalByCandidateIdAndInstitutionIdKey(UUID identifier, URI uri) {
-        return Key.builder()
-                   .partitionValue(CandidateDao.createPartitionKey(identifier.toString()))
-                   .sortValue(ApprovalStatusDao.createSortKey(uri.toString()))
-                   .build();
-    }
-
     protected static Key noteKey(UUID candidateIdentifier, UUID noteIdentifier) {
         return Key.builder()
                    .partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
                    .sortValue(NoteDao.createSortKey(noteIdentifier.toString()))
-                   .build();
-    }
-
-    private static Key candidateKey(UUID candidateIdentifier) {
-        return Key.builder()
-                   .partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
-                   .sortValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
                    .build();
     }
 

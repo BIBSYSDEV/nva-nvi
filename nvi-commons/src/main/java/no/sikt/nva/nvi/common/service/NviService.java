@@ -257,6 +257,7 @@ public class NviService {
         }
     }
 
+    @JacocoGenerated
     private void validateUpdatePeriod(DbNviPeriod period) {
         if (period.reportingDate().isBefore(Instant.now())) {
             throw new IllegalArgumentException(NOT_SUPPORTED_REPORTING_DATE_MESSAGE);

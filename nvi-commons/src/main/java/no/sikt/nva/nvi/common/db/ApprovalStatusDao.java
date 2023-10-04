@@ -122,6 +122,7 @@ public record ApprovalStatusDao(UUID identifier,
             return this;
         }
 
+        @JacocoGenerated
         public Builder version(String version) {
             this.version = version;
             return this;
