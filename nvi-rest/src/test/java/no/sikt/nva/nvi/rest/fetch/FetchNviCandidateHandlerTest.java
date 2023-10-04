@@ -68,7 +68,8 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnValidCandidateWhenCandidateExists() throws IOException {
         var candidate =
-            CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository, periodRepository);
+            CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository, periodRepository)
+                .orElseThrow();
         var request = createRequest(candidate.identifier());
 
         handler.handleRequest(request, output, CONTEXT);
@@ -89,12 +90,13 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     private CandidateBO setUpNonApplicableCandidate() {
         URI institutionId = randomUri();
         var candidate =
-            CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository);
+            CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+                .orElseThrow();
         return CandidateBO.fromRequest(createUpsertCandidateRequest(candidate.publicationId(),
                                                                     false, 0,
                                                                     InstanceType.NON_CANDIDATE,
                                                                     institutionId),
-                                       candidateRepository, periodRepository);
+                                       candidateRepository, periodRepository).orElseThrow();
     }
 
     private GatewayResponse<CandidateDto> getGatewayResponse()

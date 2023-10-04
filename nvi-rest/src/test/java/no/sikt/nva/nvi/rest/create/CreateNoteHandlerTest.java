@@ -74,7 +74,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
     @Test
     void shouldAddNoteToCandidateWhenNoteIsValid() throws IOException {
         var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
-                                                periodRepository);
+                                                periodRepository).orElseThrow();
         var theNote = "The note";
         var userName = randomString();
 
@@ -90,7 +90,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnConflictWhenCreatingNoteAndReportingPeriodIsClosed() throws IOException {
         var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
-                                                periodRepository);
+                                                periodRepository).orElseThrow();
         var request = createRequest(candidate.identifier(), new NviNoteRequest(randomString()), randomString());
         var handler = new CreateNoteHandler(candidateRepository, periodRepositoryReturningClosedPeriod(YEAR));
         handler.handleRequest(request, output, context);
