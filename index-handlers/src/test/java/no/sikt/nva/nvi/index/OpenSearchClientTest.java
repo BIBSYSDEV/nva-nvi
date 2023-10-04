@@ -80,6 +80,7 @@ public class OpenSearchClientTest {
     public static final int DELAY_ON_INDEX = 2000;
     public static final String YEAR = "2023";
     public static final String UNEXISTING_FILTER = "unexisting-filter";
+    public static final String NTNU_INSTITUTION_ID = "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0";
     private static RestClient restClient;
     private static OpenSearchClient openSearchClient;
 
@@ -127,7 +128,7 @@ public class OpenSearchClientTest {
         int offset = 10;
         int size = 10;
         var searchResponse =
-            openSearchClient.search(null, NO_FILTER, USERNAME, YEAR, CUSTOMER, offset, size);
+            openSearchClient.search(null, false, NO_FILTER, USERNAME, YEAR, CUSTOMER, offset, size);
 
         assertThat(extractTotalNumberOfHits(searchResponse), is(equalTo(totalNumberOfDocuments)));
 
@@ -142,7 +143,7 @@ public class OpenSearchClientTest {
 
         int totalNumberOfDocuments = 2;
         var searchResponse =
-            openSearchClient.search(null, NO_FILTER, USERNAME, null, CUSTOMER, 0, 1000);
+            openSearchClient.search(null, false, NO_FILTER, USERNAME, null, CUSTOMER, 0, 1000);
 
         assertThat(extractTotalNumberOfHits(searchResponse), is(equalTo(totalNumberOfDocuments)));
         assertThat(searchResponse.hits().hits().size(), is(equalTo(totalNumberOfDocuments)));
@@ -155,14 +156,14 @@ public class OpenSearchClientTest {
         addDocumentsToIndex(document);
         openSearchClient.deleteIndex();
         assertThrows(OpenSearchException.class,
-                     () -> openSearchClient.search(null, NO_FILTER, USERNAME, YEAR, CUSTOMER,
+                     () -> openSearchClient.search(null, false, NO_FILTER, USERNAME, YEAR, CUSTOMER,
                                                    DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE));
     }
 
     @Test
     void shoulThrowWhenUsingUndefinedFilterName() {
         assertThrows(IllegalStateException.class,
-                     () -> openSearchClient.search(null, UNEXISTING_FILTER, USERNAME, YEAR, CUSTOMER,
+                     () -> openSearchClient.search(null, false, UNEXISTING_FILTER, USERNAME, YEAR, CUSTOMER,
                                                    DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE));
     }
 
@@ -173,7 +174,7 @@ public class OpenSearchClientTest {
         openSearchClient.removeDocumentFromIndex(document);
         Thread.sleep(DELAY_ON_INDEX);
         var searchResponse =
-            openSearchClient.search(null, NO_FILTER, USERNAME, YEAR, CUSTOMER,
+            openSearchClient.search(null, false, NO_FILTER, USERNAME, YEAR, CUSTOMER,
                                     DEFAULT_OFFSET_SIZE,
                                     DEFAULT_QUERY_SIZE);
         var nviCandidateIndexDocument = searchResponse.hits().hits();
@@ -195,7 +196,7 @@ public class OpenSearchClientTest {
                             documentFromString("document_rejected_collaboration.json"));
 
         var searchResponse =
-            openSearchClient.search(null, NO_FILTER, USERNAME, YEAR, CUSTOMER,
+            openSearchClient.search(null, false, NO_FILTER, USERNAME, YEAR, CUSTOMER,
                                     DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
         var docCount = getDocCount(searchResponse, entry.getKey());
 
@@ -205,14 +206,28 @@ public class OpenSearchClientTest {
     @Test
     void shouldReturnSearchResultsWithContributorAffiliatedWithSubUnitOfSearchedInstitution()
         throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_with_contributor_from_ntnu.json"),
+        addDocumentsToIndex(documentFromString("document_with_contributor_from_ntnu_subunit.json"),
                             documentFromString("document_with_contributor_from_sikt.json"),
                             documentFromString("document_with_contributor_from_sikt_but_not_creator.json")
         );
 
         var siktInstitutionId = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0";
         var searchResponse =
-            openSearchClient.search(siktInstitutionId, "", USERNAME, YEAR, CUSTOMER,
+            openSearchClient.search(siktInstitutionId, false, "", USERNAME, YEAR, CUSTOMER,
+                                    DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
+
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+    }
+
+    @Test
+    void shouldReturnSearchResultsWithContributorOfSearchedInstitutionWhenSearchingSubUnit()
+        throws IOException, InterruptedException {
+        addDocumentsToIndex(documentFromString("document_with_contributor_from_ntnu_subunit.json")
+        );
+
+        var siktInstitutionId = NTNU_INSTITUTION_ID;
+        var searchResponse =
+            openSearchClient.search(NTNU_INSTITUTION_ID, false, "", USERNAME, YEAR, CUSTOMER,
                                     DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
 
         assertThat(searchResponse.hits().hits(), hasSize(1));
@@ -221,14 +236,29 @@ public class OpenSearchClientTest {
     @Test
     void shouldReturnSearchResultsWithContributorOfSearchedInstitutionWhenSearchingTopLevelInstititution()
         throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_with_contributor_from_ntnu.json"),
+        addDocumentsToIndex(documentFromString("document_with_contributor_from_ntnu_subunit.json"),
+                            documentFromString("document_with_contributor_from_ntnu_toplevel.json"),
                             documentFromString("document_with_contributor_from_sikt.json"),
                             documentFromString("document_with_contributor_from_sikt_but_not_creator.json")
         );
 
-        var siktInstitutionId = "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0";
         var searchResponse =
-            openSearchClient.search(siktInstitutionId, "", USERNAME, YEAR, CUSTOMER,
+            openSearchClient.search(NTNU_INSTITUTION_ID, false, "", USERNAME, YEAR, CUSTOMER,
+                                    DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
+
+        assertThat(searchResponse.hits().hits(), hasSize(2));
+    }
+
+    @Test
+    void shouldReturnSearchResultsWithContributorOfSearchedInstitutionWhenSearchingTopLevelInstititutionAndExcludingSubUnits()
+        throws IOException, InterruptedException {
+        var subUnitDoc = documentFromString("document_with_contributor_from_ntnu_subunit.json");
+        var topLevelDoc = documentFromString("document_with_contributor_from_ntnu_toplevel.json");
+
+        addDocumentsToIndex(subUnitDoc, topLevelDoc);
+
+        var searchResponse =
+            openSearchClient.search(NTNU_INSTITUTION_ID, true, "", USERNAME, YEAR, CUSTOMER,
                                     DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
 
         assertThat(searchResponse.hits().hits(), hasSize(1));
@@ -248,7 +278,7 @@ public class OpenSearchClientTest {
                             documentFromString("document_rejected_collaboration.json"));
 
         var searchResponse =
-            openSearchClient.search(null, entry.getKey(), USERNAME, YEAR, CUSTOMER,
+            openSearchClient.search(null, false, entry.getKey(), USERNAME, YEAR, CUSTOMER,
                                     DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
 
         assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));
@@ -263,7 +293,7 @@ public class OpenSearchClientTest {
                             singleNviCandidateIndexDocumentWithCustomerAndYear(customer.toString(), randomString()));
 
         var searchResponse =
-            openSearchClient.search(null, NO_FILTER, USERNAME, year, customer,
+            openSearchClient.search(null, false, NO_FILTER, USERNAME, year, customer,
                                     DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
 
         assertThat(searchResponse.hits().hits(), hasSize(1));
@@ -282,9 +312,8 @@ public class OpenSearchClientTest {
                             documentFromString("document_rejected.json"),
                             documentFromString("document_rejected_collaboration.json"));
 
-        var institutions = "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0";
         var searchResponse =
-            openSearchClient.search(institutions, entry.getKey(), USERNAME, YEAR, CUSTOMER,
+            openSearchClient.search(NTNU_INSTITUTION_ID, false, entry.getKey(), USERNAME, YEAR, CUSTOMER,
                                     DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
 
         assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));

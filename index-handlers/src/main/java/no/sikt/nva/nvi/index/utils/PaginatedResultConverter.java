@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_FILTER;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_AFFILIATIONS;
 import static nva.commons.core.attempt.Try.attempt;
@@ -42,26 +43,28 @@ public final class PaginatedResultConverter {
     }
 
     public static PaginatedSearchResult<NviCandidateIndexDocument> toPaginatedResult(
-        SearchResponse<NviCandidateIndexDocument> searchResponse, String institutions, String filter, int offset,
-        int size)
-        throws UnprocessableContentException {
+        SearchResponse<NviCandidateIndexDocument> searchResponse, String institutions, boolean excludeSubUnits,
+        String filter, int offset, int size) throws UnprocessableContentException {
         var paginatedSearchResult = PaginatedSearchResult.create(
             constructBaseUri(),
             offset,
             size,
             extractTotalNumberOfHits(searchResponse),
             extractsHits(searchResponse),
-            getQueryParameters(institutions, filter),
+            getQueryParameters(institutions, excludeSubUnits, filter),
             extractAggregations(searchResponse));
 
         LOGGER.info("Returning paginatedSearchResult with id: {}", paginatedSearchResult.getId().toString());
         return paginatedSearchResult;
     }
 
-    private static Map<String, String> getQueryParameters(String institutions, String filter) {
+    private static Map<String, String> getQueryParameters(String institutions, boolean excludeSubUnits, String filter) {
         var queryParams = new HashMap();
         if (Objects.nonNull(institutions)) {
             queryParams.put(QUERY_PARAM_AFFILIATIONS, institutions);
+        }
+        if (excludeSubUnits) {
+            queryParams.put(QUERY_PARAM_EXCLUDE_SUB_UNITS, String.valueOf(true));
         }
         if (isNotEmpty(filter)) {
             queryParams.put(QUERY_PARAM_FILTER, filter);

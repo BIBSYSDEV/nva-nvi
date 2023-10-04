@@ -47,17 +47,20 @@ public class CandidateQuery {
     private static final CharSequence JSON_PATH_DELIMITER = ".";
     private static final String CREATOR_ROLE = "Creator";
     private final List<String> affiliations;
+    private final boolean excludeSubUnits;
     private final QueryFilterType filter;
     private final String username;
     private final String customer;
     private final String year;
 
     public CandidateQuery(Collection<String> affiliations,
+                          boolean excludeSubUnits,
                           QueryFilterType filter,
                           String username,
                           String customer,
                           String year) {
         this.affiliations = nonNull(affiliations) ? new ArrayList<>(affiliations) : emptyList();
+        this.excludeSubUnits = excludeSubUnits;
         this.filter = filter;
         this.username = username;
         this.customer = customer;
@@ -138,7 +141,7 @@ public class CandidateQuery {
                    .build()._toQuery();
     }
 
-    private static Query contributorQuery(List<String> institutions) {
+    private static Query contributorQueryIncludingSubUnits(List<String> institutions) {
         return nestedQuery(jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS),
                            QueryBuilders.bool().must(
                                matchAtLeastOne(
@@ -147,6 +150,16 @@ public class CandidateQuery {
                                    termsQuery(institutions,
                                               jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, PART_OF))
                                ),
+                               matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, ROLE))
+                           ).build()._toQuery()
+        );
+    }
+
+    private static Query contributorQueryExcludingSubUnits(List<String> institutions) {
+        return nestedQuery(jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS),
+                           QueryBuilders.bool().must(
+                               termsQuery(institutions,
+                                          jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, ID)),
                                matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, ROLE))
                            ).build()._toQuery()
         );
@@ -231,7 +244,12 @@ public class CandidateQuery {
     }
 
     private Optional<Query> createInstitutionQuery() {
-        return !affiliations.isEmpty() ? Optional.of(contributorQuery(affiliations)) : Optional.empty();
+        if (affiliations.isEmpty()) {
+            return Optional.empty();
+        }
+        return excludeSubUnits
+                   ? Optional.of(contributorQueryExcludingSubUnits(affiliations))
+                   : Optional.of(contributorQueryIncludingSubUnits(affiliations));
     }
 
     private Optional<Query> createYearQuery(String year) {
@@ -274,6 +292,7 @@ public class CandidateQuery {
     public static class Builder {
 
         private Collection<String> institutions;
+        private boolean excludeSubUnits;
         private QueryFilterType filter;
         private String username;
         private String customer;
@@ -285,6 +304,11 @@ public class CandidateQuery {
 
         public Builder withInstitutions(Collection<String> institutions) {
             this.institutions = institutions;
+            return this;
+        }
+
+        public Builder withExcludeSubUnits(boolean excludeSubUnits) {
+            this.excludeSubUnits = excludeSubUnits;
             return this;
         }
 
@@ -309,7 +333,7 @@ public class CandidateQuery {
         }
 
         public CandidateQuery build() {
-            return new CandidateQuery(institutions, filter, username, customer, year);
+            return new CandidateQuery(institutions, excludeSubUnits, filter, username, customer, year);
         }
     }
 }

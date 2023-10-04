@@ -98,6 +98,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
 
     @Override
     public SearchResponse<NviCandidateIndexDocument> search(String affiliations,
+                                                            boolean excludeSubUnits,
                                                             String filter,
                                                             String username,
                                                             String year, URI customer,
@@ -106,8 +107,8 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         throws IOException {
         logSearchRequest(affiliations, filter, username, customer, offset, size);
         return client.withTransportOptions(getOptions())
-                   .search(constructSearchRequest(affiliations, filter, username, customer.toString(), year, offset,
-                                                  size),
+                   .search(constructSearchRequest(affiliations, excludeSubUnits, filter, username, customer.toString(),
+                                                  year, offset, size),
                            NviCandidateIndexDocument.class);
     }
 
@@ -180,9 +181,11 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         return new RuntimeException(exception.getMessage());
     }
 
-    private SearchRequest constructSearchRequest(String affiliations, String filter, String username, String customer,
+    private SearchRequest constructSearchRequest(String affiliations, Boolean excludeSubUnits, String filter,
+                                                 String username,
+                                                 String customer,
                                                  String year, int offset, int size) {
-        var query = SearchConstants.constructQuery(affiliations, filter, username, customer, year);
+        var query = SearchConstants.constructQuery(affiliations, excludeSubUnits, filter, username, customer, year);
         return new SearchRequest.Builder()
                    .index(NVI_CANDIDATES_INDEX)
                    .query(query)

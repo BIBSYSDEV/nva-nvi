@@ -48,8 +48,8 @@ public final class SearchConstants {
 
     }
 
-    public static Query constructQuery(String affiliations, String filter, String username, String customer,
-                                       String year) {
+    public static Query constructQuery(String affiliations, Boolean excludeSubUnits, String filter,
+                                       String username, String customer, String year) {
         var affiliationsList = nonNull(affiliations) && !affiliations.isEmpty()
                                   ? List.of(affiliations.split(","))
                                   : List.<String>of();
@@ -57,6 +57,7 @@ public final class SearchConstants {
                              .orElseThrow(() -> new IllegalStateException("unknown filter " + filter));
         return new CandidateQuery.Builder()
                         .withInstitutions(affiliationsList)
+                        .withExcludeSubUnits(excludeSubUnits)
                         .withFilter(filterType)
                         .withUsername(username)
                         .withCustomer(customer)

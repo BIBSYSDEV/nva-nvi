@@ -19,6 +19,7 @@ public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
     public static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
+    public static final String QUERY_PARAM_EXCLUDE_SUB_UNITS = "excludeSubUnits";
     public static final String QUERY_PARAM_FILTER = "filter";
     private static final String DEFAULT_FILTER = StringUtils.EMPTY_STRING;
     private static final String QUERY_SIZE_PARAM = "size";
@@ -48,13 +49,16 @@ public class SearchNviCandidatesHandler
         var offset = extractQueryParamOffsetOrDefault(requestInfo);
         var size = extractQueryParamSizeOrDefault(requestInfo);
         var filter = extractQueryParamFilterOrDefault(requestInfo);
-        var affiliations = extractQueryParamAffilitionsOrDefault(requestInfo);
+        var affiliations = extractQueryParamAffiliationsOrDefault(requestInfo);
+        var excludeSubUnits = extractQueryParamExcludeSubUnitsOrDefault(requestInfo);
         var customer = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         var username = requestInfo.getUserName();
         var year = extractQueryParamPublicationDateOrDefault(requestInfo);
 
-        return attempt(() -> openSearchClient.search(affiliations, filter, username, year, customer, offset, size))
-                   .map(searchResponse -> toPaginatedResult(searchResponse, affiliations, filter, offset, size))
+        return attempt(() -> openSearchClient.search(affiliations, excludeSubUnits, filter, username, year, customer,
+                                                     offset, size))
+                   .map(searchResponse -> toPaginatedResult(searchResponse, affiliations, excludeSubUnits, filter,
+                                                            offset, size))
                    .orElseThrow();
     }
 
@@ -78,9 +82,14 @@ public class SearchNviCandidatesHandler
                    .orElse(DEFAULT_OFFSET_SIZE);
     }
 
-    private static String extractQueryParamAffilitionsOrDefault(RequestInfo requestInfo) {
+    private static String extractQueryParamAffiliationsOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
                    .getOrDefault(QUERY_PARAM_AFFILIATIONS, null);
+    }
+
+    private static boolean extractQueryParamExcludeSubUnitsOrDefault(RequestInfo requestInfo) {
+        return requestInfo.getQueryParameterOpt(QUERY_PARAM_EXCLUDE_SUB_UNITS)
+                    .map(Boolean::parseBoolean).orElse(false);
     }
 
     private static String extractQueryParamFilterOrDefault(RequestInfo requestInfo) {
