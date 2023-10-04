@@ -108,16 +108,21 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
     private void updateIndex(DynamodbStreamRecord record) {
         try {
-            var candidate = nviService.findCandidateById(extractIdentifierFromNewImage(record)).orElseThrow();
+            var candidateIdentifier = extractIdentifierFromNewImage(record);
+            var candidate = nviService.findCandidateById(candidateIdentifier).orElseThrow();
             if (isApplicable(candidate)) {
                 addDocumentToIndex(candidate);
             } else {
                 removeDocumentFromIndex(candidate);
             }
         } catch (Exception e) {
-            var eventString = attempt(() -> JsonUtils.dtoObjectMapper.writeValueAsString(record)).orElseThrow();
-            LOGGER.error(COULD_NOT_UPDATE_INDEX_MESSAGE, eventString);
+            logRecordThatCouldNotBeIndexed(record);
         }
+    }
+
+    private static void logRecordThatCouldNotBeIndexed(DynamodbStreamRecord record) {
+        var eventString = attempt(() -> JsonUtils.dtoObjectMapper.writeValueAsString(record)).orElseThrow();
+        LOGGER.error(COULD_NOT_UPDATE_INDEX_MESSAGE, eventString);
     }
 
     private boolean isUpdate(DynamodbStreamRecord record) {
@@ -127,14 +132,14 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
     private void removeDocumentFromIndex(Candidate candidate) {
         LOGGER.info("Attempting to remove document with identifier {}", candidate.identifier().toString());
-        attempt(candidate::identifier).map(UpdateIndexHandler::toIndexDocumentWithId)
+        attempt(() -> toIndexDocumentWithId(candidate.identifier()))
             .forEach(openSearchClient::removeDocumentFromIndex)
             .orElseThrow();
     }
 
     private void addDocumentToIndex(Candidate candidate) {
         LOGGER.info("Attempting to add/update document with identifier {}", candidate.identifier().toString());
-        attempt(candidate::candidate).map(UpdateIndexHandler::extractBucketUri)
+        attempt(() -> extractBucketUri(candidate.candidate()))
             .map(storageReader::read)
             .map(blob -> documentGenerator.generateDocument(blob, candidate))
             .forEach(openSearchClient::addDocumentToIndex)
