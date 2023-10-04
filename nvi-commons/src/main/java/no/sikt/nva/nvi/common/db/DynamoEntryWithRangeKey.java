@@ -7,5 +7,5 @@ public interface DynamoEntryWithRangeKey extends Typed {
 
     String primaryKeyRangeKey();
 
-
+    String version();
 }
