@@ -132,8 +132,10 @@ Resources:
                   - sqs:GetQueueUrl
                 Resource:
                   - !Ref EventBusArn
+                  - !Ref InternalBus
                   - !GetAtt NewCandidateQueue.Arn
                   - !GetAtt NewCandidateDLQ.Arn
+                  - !GetAtt BatchScanDLQ.Arn
         - PolicyName: writeLog
           PolicyDocument:
             Version: 2012-10-17
