@@ -225,7 +225,7 @@ public final class CandidateBO {
                                               PeriodRepository periodRepository, CandidateDao existingCandidateDao) {
         var newApprovals = mapToApprovals(request.points());
         var newCandidateDao = updateCandidateDaoFromRequest(existingCandidateDao, request);
-        repository.updateCandidate(existingCandidateDao.identifier(), newCandidateDao, newApprovals);
+        repository.updateCandidateResettingApprovals(existingCandidateDao.identifier(), newCandidateDao, newApprovals);
         var notes = repository.getNotes(existingCandidateDao.identifier());
         var periodStatus = getPeriodStatus(periodRepository, existingCandidateDao.candidate().publicationDate().year());
         var approvals = mapToApprovalsDaos(newCandidateDao.identifier(), newApprovals);
