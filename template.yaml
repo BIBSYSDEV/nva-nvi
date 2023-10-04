@@ -285,7 +285,6 @@ Resources:
           Properties:
             Stream: !GetAtt NvaNviTable.StreamArn
             StartingPosition: TRIM_HORIZON
-            BatchSize: 1
             Enabled: true
 
   UpsertNviCandidateHandler:
