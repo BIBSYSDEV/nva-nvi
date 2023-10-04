@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -74,6 +75,13 @@ public record CandidateDao(
     @DynamoDbAttribute(SECONDARY_INDEX_1_RANGE_KEY)
     public String searchByPublicationIdSortKey() {
         return nonNull(candidate.publicationId()) ? candidate.publicationId().toString() : null;
+    }
+
+    @DynamoDbIgnore
+    public CandidateDao.Builder copy() {
+        return builder()
+                   .identifier(identifier)
+                   .candidate(candidate);
     }
 
     public enum DbLevel {
@@ -175,11 +183,11 @@ public record CandidateDao(
                        .applicable(applicable)
                        .instanceType(instanceType)
                        .level(level)
-                       .publicationDate(publicationDate)
+                       .publicationDate(publicationDate.copy())
                        .internationalCollaboration(internationalCollaboration)
                        .creatorCount(creatorCount)
-                       .creators(creators)
-                       .points(points);
+                       .creators(creators.stream().map(DbCreator::copy).toList())
+                       .points(points.stream().map(DbInstitutionPoints::copy).toList());
         }
 
         public static final class Builder {
@@ -264,6 +272,11 @@ public record CandidateDao(
             return new Builder();
         }
 
+        @DynamoDbIgnore
+        public DbPublicationDate copy() {
+            return new DbPublicationDate(year, month, day);
+        }
+
         public static final class Builder {
 
             private String builderYear;
@@ -301,6 +314,14 @@ public record CandidateDao(
             return new Builder();
         }
 
+        @DynamoDbIgnore
+        public DbCreator copy() {
+            return builder()
+                       .creatorId(creatorId)
+                       .affiliations(new ArrayList<>(affiliations))
+                       .build();
+        }
+
         public static final class Builder {
 
             private URI builderCreatorId;
@@ -330,6 +351,14 @@ public record CandidateDao(
 
         public static Builder builder() {
             return new Builder();
+        }
+
+        @DynamoDbIgnore
+        public DbInstitutionPoints copy() {
+            return builder()
+                       .institutionId(institutionId)
+                       .points(points)
+                       .build();
         }
 
         public static final class Builder {

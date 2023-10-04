@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.rest.model;
+package no.sikt.nva.nvi.common.service.dto;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -9,13 +9,13 @@ import java.util.UUID;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record CandidateResponse(
+public record CandidateDto(
     URI id,
     UUID identifier,
     URI publicationId,
     List<ApprovalStatus> approvalStatuses,
-    List<Note> notes,
-    PeriodStatus periodStatus) {
+    List<NoteDto> notes,
+    PeriodStatusDto periodStatus) {
 
     public static Builder builder() {
         return new Builder();
@@ -27,8 +27,8 @@ public record CandidateResponse(
         private UUID identifier;
         private URI publicationId;
         private List<ApprovalStatus> approvalStatuses = new ArrayList<>();
-        private List<Note> notes = new ArrayList<>();
-        private PeriodStatus periodStatus;
+        private List<NoteDto> notes = new ArrayList<>();
+        private PeriodStatusDto periodStatus;
 
         private Builder() {
         }
@@ -53,18 +53,18 @@ public record CandidateResponse(
             return this;
         }
 
-        public Builder withNotes(List<Note> notes) {
+        public Builder withNotes(List<NoteDto> notes) {
             this.notes = notes;
             return this;
         }
 
-        public Builder withPeriodStatus(PeriodStatus periodStatus) {
+        public Builder withPeriodStatus(PeriodStatusDto periodStatus) {
             this.periodStatus = periodStatus;
             return this;
         }
 
-        public CandidateResponse build() {
-            return new CandidateResponse(id, identifier, publicationId, approvalStatuses, notes, periodStatus);
+        public CandidateDto build() {
+            return new CandidateDto(id, identifier, publicationId, approvalStatuses, notes, periodStatus);
         }
     }
 }

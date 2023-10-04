@@ -11,7 +11,7 @@ import nva.commons.core.JacocoGenerated;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record PeriodStatus(Instant periodClosesAt, Status status) implements JsonSerializable {
+public record PeriodStatus(Instant startDate, Instant reportingDate, Status status) implements JsonSerializable {
 
     public static Builder builder() {
         return new Builder();
@@ -19,9 +19,14 @@ public record PeriodStatus(Instant periodClosesAt, Status status) implements Jso
 
     public static PeriodStatus fromPeriod(DbNviPeriod period) {
         Objects.requireNonNull(period);
-        return period.reportingDate().isAfter(Instant.now())
-                   ? toOpenPeriodStatus(period)
-                   : toClosedPeriodStatus(period);
+        if (isOpenPeriod(period)) {
+            return toOpenPeriodStatus(period);
+        }
+        if (closedPeriod(period)) {
+            return toClosedPeriodStatus(period);
+        } else {
+            return toUnopenedPeriod(period);
+        }
     }
 
     @Override
@@ -30,19 +35,41 @@ public record PeriodStatus(Instant periodClosesAt, Status status) implements Jso
         return toJsonString();
     }
 
+    private static PeriodStatus toUnopenedPeriod(DbNviPeriod period) {
+        return PeriodStatus.builder()
+                   .withStartDate(period.startDate())
+                   .withReportingDate(period.reportingDate())
+                   .withStatus(Status.UNOPENED_PERIOD)
+                   .build();
+    }
+
+    private static boolean closedPeriod(DbNviPeriod period) {
+        return period.reportingDate().isBefore(Instant.now());
+    }
+
+    private static boolean isOpenPeriod(DbNviPeriod period) {
+        return period.startDate().isBefore(Instant.now()) && period.reportingDate().isAfter(Instant.now());
+    }
+
     private static PeriodStatus toOpenPeriodStatus(DbNviPeriod period) {
-        return PeriodStatus.builder().withPeriodClosesAt(period.reportingDate()).withStatus(Status.OPEN_PERIOD).build();
+        return PeriodStatus.builder()
+                   .withStartDate(period.startDate())
+                   .withReportingDate(period.reportingDate())
+                   .withStatus(Status.OPEN_PERIOD)
+                   .build();
     }
 
     private static PeriodStatus toClosedPeriodStatus(DbNviPeriod period) {
         return PeriodStatus.builder()
-                   .withPeriodClosesAt(period.reportingDate())
+                   .withStartDate(period.startDate())
+                   .withReportingDate(period.reportingDate())
                    .withStatus(Status.CLOSED_PERIOD)
                    .build();
     }
 
     public enum Status {
-        OPEN_PERIOD("OpenPeriod"), CLOSED_PERIOD("ClosedPeriod"), NO_PERIOD("NoPeriod");
+        OPEN_PERIOD("OpenPeriod"), CLOSED_PERIOD("ClosedPeriod"), NO_PERIOD("NoPeriod"), UNOPENED_PERIOD(
+            "UnopenedPeriod");
 
         private final String value;
 
@@ -59,14 +86,20 @@ public record PeriodStatus(Instant periodClosesAt, Status status) implements Jso
 
     public static final class Builder {
 
-        private Instant periodClosesAt;
+        private Instant reportingDate;
+        private Instant startDate;
         private Status status;
 
         private Builder() {
         }
 
-        public Builder withPeriodClosesAt(Instant periodClosesAt) {
-            this.periodClosesAt = periodClosesAt;
+        public Builder withStartDate(Instant startDate) {
+            this.startDate = startDate;
+            return this;
+        }
+
+        public Builder withReportingDate(Instant reportingDate) {
+            this.reportingDate = reportingDate;
             return this;
         }
 
@@ -76,7 +109,7 @@ public record PeriodStatus(Instant periodClosesAt, Status status) implements Jso
         }
 
         public PeriodStatus build() {
-            return new PeriodStatus(periodClosesAt, status);
+            return new PeriodStatus(startDate, reportingDate, status);
         }
     }
 }

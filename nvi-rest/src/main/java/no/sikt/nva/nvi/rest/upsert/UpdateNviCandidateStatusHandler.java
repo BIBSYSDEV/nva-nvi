@@ -5,13 +5,11 @@ import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
-import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
-import no.sikt.nva.nvi.common.service.Candidate;
-import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.model.CandidateResponse;
-import no.sikt.nva.nvi.rest.model.CandidateResponseMapper;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
 import no.sikt.nva.nvi.utils.RequestUtil;
 import nva.commons.apigateway.AccessRight;
@@ -22,37 +20,37 @@ import nva.commons.apigateway.exceptions.ForbiddenException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
 
-public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatusRequest, CandidateResponse> {
+public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatusRequest, CandidateDto> {
 
-    private final NviService nviService;
+    private final CandidateRepository candidateRepository;
+    private final PeriodRepository periodRepository;
 
     @JacocoGenerated
     public UpdateNviCandidateStatusHandler() {
-        this(new NviService(defaultDynamoClient()));
+        this(new CandidateRepository(defaultDynamoClient()), new PeriodRepository(defaultDynamoClient()));
     }
 
-    public UpdateNviCandidateStatusHandler(NviService service) {
+    public UpdateNviCandidateStatusHandler(CandidateRepository candidateRepository, PeriodRepository periodRepository) {
         super(NviStatusRequest.class);
-        this.nviService = service;
+        this.candidateRepository = candidateRepository;
+        this.periodRepository = periodRepository;
     }
 
     @Override
-    protected CandidateResponse processInput(NviStatusRequest input, RequestInfo requestInfo, Context context)
+    protected CandidateDto processInput(NviStatusRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         validateRequest(input, requestInfo);
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
         var username = requestInfo.getUserName();
 
-        return attempt(() -> toApprovalStatus(input, candidateIdentifier)).map(approval -> approval.fetch(nviService))
-                   .map(approval -> approval.update(nviService, input.toUpdateRequest(username)))
-                   .map(this::fetchCandidate)
-                   .map(Optional::orElseThrow)
-                   .map(CandidateResponseMapper::toDto)
-                   .orElseThrow(ExceptionMapper::map);
+        return attempt(() -> CandidateBO.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository))
+                   .map(candidate -> candidate.updateApproval(input.toUpdateRequest(username)))
+                   .orElseThrow(ExceptionMapper::map)
+                   .toDto();
     }
 
     @Override
-    protected Integer getSuccessStatusCode(NviStatusRequest input, CandidateResponse output) {
+    protected Integer getSuccessStatusCode(NviStatusRequest input, CandidateDto output) {
         return HTTP_OK;
     }
 
@@ -66,16 +64,5 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
         if (!input.institutionId().equals(requestInfo.getTopLevelOrgCristinId().orElseThrow())) {
             throw new ForbiddenException();
         }
-    }
-
-    private Optional<Candidate> fetchCandidate(DbApprovalStatus dbApprovalStatus) {
-        return nviService.findCandidateById(dbApprovalStatus.candidateIdentifier());
-    }
-
-    private DbApprovalStatus toApprovalStatus(NviStatusRequest input, UUID candidateIdentifier) {
-        return DbApprovalStatus.builder()
-                   .candidateIdentifier(candidateIdentifier)
-                   .institutionId(input.institutionId())
-                   .build();
     }
 }

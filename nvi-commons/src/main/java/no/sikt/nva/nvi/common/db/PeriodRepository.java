@@ -11,12 +11,12 @@ import software.amazon.awssdk.enhanced.dynamodb.internal.conditional.BeginsWithC
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-public class NviPeriodRepository extends DynamoRepository {
+public class PeriodRepository extends DynamoRepository {
 
     public static final String PERIOD = "PERIOD";
     private final DynamoDbTable<NviPeriodDao> nviPeriodTable;
 
-    public NviPeriodRepository(DynamoDbClient client) {
+    public PeriodRepository(DynamoDbClient client) {
         super(client);
         this.nviPeriodTable = this.client.table(NVI_TABLE_NAME, NviPeriodDao.TABLE_SCHEMA);
     }

@@ -475,9 +475,12 @@ components:
           type: string
         reportingDate:
           type: string
+        startDate:
+          type: string
       required:
         - publishingYear
         - reportingDate
+        - startDate
     NviPeriods:
       type: array
       items:
@@ -566,6 +569,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Note'
+        periodStatus:
+          type: object
+          properties:
+            status:
+              type: string
+              enum:
+                - OpenPeriod
+                - ClosedPeriod
+                - NoPeriod
+            reportingDate:
+              type: string
+            startDate:
+              type: string
     ApprovalStatus:
       type: object
       properties:
