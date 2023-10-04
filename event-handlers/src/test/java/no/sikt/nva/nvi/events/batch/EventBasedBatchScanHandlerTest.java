@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.events.batch;
 
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -9,7 +8,6 @@ import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -48,8 +46,6 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
 class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
-
-    public static final int LARGE_PAGE = 10;
     public static final int ONE_ENTRY_PER_EVENT = 1;
     public static final Map<String, String> START_FROM_BEGINNING = null;
     public static final String OUTPUT_EVENT_TOPIC = "OUTPUT_EVENT_TOPIC";
@@ -59,7 +55,6 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     private ByteArrayOutputStream output;
     private Context context;
     private FakeEventBridgeClient eventBridgeClient;
-    private NviService nviService;
     private NviCandidateRepositoryHelper candidateRepository;
     private PeriodRepository periodRepository;
 
@@ -72,16 +67,8 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         var db = initializeTestDatabase();
         candidateRepository = new NviCandidateRepositoryHelper(db);
         periodRepository = TestUtils.periodRepositoryReturningOpenedPeriod(Year.now().getValue());
-        this.nviService = new NviService(periodRepository, candidateRepository);
+        NviService nviService = new NviService(periodRepository, candidateRepository);
         this.handler = new EventBasedBatchScanHandler(nviService, eventBridgeClient);
-    }
-
-    @Test
-    void shouldUpdateDataEntriesWhenValidRequestIsReceived() {
-        nviService.upsertCandidate(randomCandidate());
-        handler.handleRequest(createInitialScanRequest(), output, context);
-
-        assertThat(true, is(equalTo(true))); // Um?
     }
 
     @Test
@@ -235,10 +222,6 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
                    .map(item -> CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
                                                         candidateRepository, periodRepository))
                    .map(a -> a.createNote(new CreateNoteRequest(randomString(), randomString())));
-    }
-
-    private InputStream createInitialScanRequest() {
-        return eventToInputStream(new ScanDatabaseRequest(LARGE_PAGE, Map.of(), TOPIC));
     }
 
     private InputStream eventToInputStream(ScanDatabaseRequest scanDatabaseRequest) {
