@@ -209,7 +209,7 @@ class CandidateBOTest extends LocalDynamoTest {
 
             @Override
             public PublicationDate publicationDate() {
-                return new PublicationDate(Year.now().toString(), null, null);
+                return request.publicationDate();
             }
 
             @Override

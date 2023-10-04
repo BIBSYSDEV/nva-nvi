@@ -14,7 +14,6 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.DynamoRepository;
 import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;
 import no.sikt.nva.nvi.index.aws.SearchClient;
@@ -47,7 +46,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     @JacocoGenerated
     public UpdateIndexHandler() {
         this(new S3StorageReader(EXPANDED_RESOURCES_BUCKET), defaultOpenSearchClient(),
-             new CandidateRepository(DynamoRepository.defaultDynamoClient()),
+             new CandidateRepository(defaultDynamoClient()),
              new NviCandidateIndexDocumentGenerator(defaultUriRetriver()));
     }
 
