@@ -18,7 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.time.Year;
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -69,7 +69,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         this.context = mock(Context.class);
         when(context.getInvokedFunctionArn()).thenReturn(randomString());
         this.eventBridgeClient = new FakeEventBridgeClient();
-        DynamoDbClient db = initializeTestDatabase();
+        var db = initializeTestDatabase();
         candidateRepository = new NviCandidateRepositoryHelper(db);
         periodRepository = TestUtils.periodRepositoryReturningOpenedPeriod(Year.now().getValue());
         this.nviService = new NviService(periodRepository, candidateRepository);
@@ -81,107 +81,69 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         nviService.upsertCandidate(randomCandidate());
         handler.handleRequest(createInitialScanRequest(), output, context);
 
-        assertThat(true, is(equalTo(true)));
+        assertThat(true, is(equalTo(true))); // Um?
     }
 
     @Test
     void shouldNotGoIntoInfiniteLoop() {
-        createRandomCandidates(1000);
+        createRandomCandidates(1000).forEach(item -> {});
 
         pushInitialEntryInEventBridge(new ScanDatabaseRequest(ONE_ENTRY_PER_EVENT, START_FROM_BEGINNING, TOPIC));
-        while (thereAreMoreEventsInEventBridge()) {
-            var currentRequest = consumeLatestEmittedEvent();
-            handler.handleRequest(eventToInputStream(currentRequest), output, context);
-        }
+
+        consumeEvents();
         assertThat(eventBridgeClient.getRequestEntries(), is(empty()));
     }
 
     @Test
     void shouldIterateAllCandidates() {
-        var daos = createRandomCandidates(10).map(candidate -> candidateRepository.findDaoById(candidate.identifier()))
-                       .toList();
+        var daos = generatedRepositoryCandidates();
 
         pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
 
-        while (thereAreMoreEventsInEventBridge()) {
-            var currentRequest = consumeLatestEmittedEvent();
+        consumeEvents();
 
-            handler.handleRequest(eventToInputStream(currentRequest), output, context);
-        }
-
-        var allEntitiesUpdated = daos.stream()
-                                     .noneMatch(dao -> Objects.equals(dao.version(),
-                                                                      candidateRepository.findDaoById(dao.identifier())
-                                                                          .version()));
+        var allEntitiesUpdated = daos.stream().noneMatch(this::isSameVersionAsRepositoryCopy);
 
         assertTrue(allEntitiesUpdated, "All candidates should have been updated with new version");
     }
 
     @Test
     void shouldIterateAllNotes() {
-        var daos = createRandomCandidates(10).map(
-                candidate -> candidateRepository.findNoteDaosByCandidateId(candidate.identifier()).toList())
-                       .flatMap(Collection::stream)
-                       .toList();
+        var daos = generateRepositoryCandidatesWithNotes();
 
         pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
 
-        while (thereAreMoreEventsInEventBridge()) {
-            var currentRequest = consumeLatestEmittedEvent();
+        consumeEvents();
 
-            handler.handleRequest(eventToInputStream(currentRequest), output, context);
-        }
-
-        var allEntitiesUpdated = daos.stream()
-                                     .noneMatch(dao -> Objects.equals(dao.version(), candidateRepository.getNoteDaoById(
-                                         dao.identifier(), dao.note().noteId()).version()));
+        var allEntitiesUpdated = daos.stream().noneMatch(this::isSameVersionAsRepositoryCopy);
 
         assertTrue(allEntitiesUpdated, "All notes should have been updated with new version");
     }
 
     @Test
     void shouldIterateAllApprovals() {
-        var daos = createRandomCandidates(10).map(
-                candidate -> candidateRepository.findApprovalDaosByCandidateId(candidate.identifier()).toList())
-                       .flatMap(Collection::stream)
-                       .toList();
+        var daos = generateCandidatesWithApprovalStatuses();
 
         pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
 
-        while (thereAreMoreEventsInEventBridge()) {
-            var currentRequest = consumeLatestEmittedEvent();
+        consumeEvents();
 
-            handler.handleRequest(eventToInputStream(currentRequest), output, context);
-        }
-
-        var allEntitiesUpdated = daos.stream()
-                                     .noneMatch(dao -> Objects.equals(dao.version(),
-                                                                      candidateRepository.findApprovalDaoByIdAndInstitutionId(
-                                                                              dao.identifier(),
-                                                                              dao.approvalStatus().institutionId())
-                                                                          .version()));
+        var allEntitiesUpdated = daos.stream().noneMatch(this::isSameVersionAsRepositoryCopy);
 
         assertTrue(allEntitiesUpdated, "All approvals should have been updated with new version");
     }
 
     @Test
     void shouldNotIterateUniquenessEntries() {
-        createRandomCandidates(10).toList();
+        createRandomCandidates(10).forEach(item -> {});
 
         var items = candidateRepository.getUniquenessEntries().toList();
 
         pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
 
-        while (thereAreMoreEventsInEventBridge()) {
-            var currentRequest = consumeLatestEmittedEvent();
+        consumeEvents();
 
-            handler.handleRequest(eventToInputStream(currentRequest), output, context);
-        }
-
-        var noEntitiesUpdated = items.stream()
-                                    .allMatch(item -> Objects.equals(item.version(),
-                                                                     candidateRepository.getUniquenessEntry(item)
-                                                                         .version())) && !items.isEmpty();
+        var noEntitiesUpdated = items.stream().allMatch(this::isSameVersionAsRepositoryCopy) && !items.isEmpty();
 
         assertTrue(noEntitiesUpdated, "No uniqueness entries should have been updated with new version");
     }
@@ -192,19 +154,64 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
 
         pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
 
-        while (thereAreMoreEventsInEventBridge()) {
-            var currentRequest = consumeLatestEmittedEvent();
+        consumeEvents();
 
-            handler.handleRequest(eventToInputStream(currentRequest), output, context);
-        }
-
-        var noEntitiesUpdated = candidates.stream()
-                                    .allMatch(item -> item.toDto().equals(CandidateBO.fromRequest(item::identifier,
-                                                                                             candidateRepository,
-                                                                                             periodRepository).toDto()
-                                                                         )) && !candidates.isEmpty();
+        var noEntitiesUpdated = candidates.stream().allMatch(this::isSameBodyAsRepositoryCopy) && !candidates.isEmpty();
 
         assertTrue(noEntitiesUpdated, "No values should have been updated with new version");
+    }
+
+    private void consumeEvents() {
+        while (thereAreMoreEventsInEventBridge()) {
+            var currentRequest = consumeLatestEmittedEvent();
+            handler.handleRequest(eventToInputStream(currentRequest), output, context);
+        }
+    }
+
+    private List<ApprovalStatusDao> generateCandidatesWithApprovalStatuses() {
+        return createRandomCandidates(10)
+                   .map(CandidateBO::identifier)
+                   .flatMap(candidateRepository::findApprovalDaosByCandidateId)
+                   .toList();
+    }
+
+    private List<CandidateDao> generatedRepositoryCandidates() {
+        return createRandomCandidates(10)
+                   .map(CandidateBO::identifier)
+                   .map(candidateRepository::findDaoById)
+                   .toList();
+    }
+
+    private List<NoteDao> generateRepositoryCandidatesWithNotes() {
+        return createRandomCandidates(10)
+                   .map(CandidateBO::identifier)
+                   .flatMap(candidateRepository::findNoteDaosByCandidateId)
+                   .toList();
+    }
+
+    private boolean isSameBodyAsRepositoryCopy(CandidateBO item) {
+        return item.toDto().equals(CandidateBO.fromRequest(item::identifier,
+                                                           candidateRepository,
+                                                           periodRepository).toDto()
+        );
+    }
+
+    private boolean isSameVersionAsRepositoryCopy(CandidateDao dao) {
+        return Objects.equals(dao.version(), candidateRepository.findDaoById(dao.identifier()).version());
+    }
+
+    private boolean isSameVersionAsRepositoryCopy(CandidateUniquenessEntryDao item) {
+        return Objects.equals(item.version(), candidateRepository.getUniquenessEntry(item).version());
+    }
+
+    private boolean isSameVersionAsRepositoryCopy(ApprovalStatusDao dao) {
+        return Objects.equals(dao.version(), candidateRepository.findApprovalDaoByIdAndInstitutionId(
+            dao.identifier(), dao.approvalStatus().institutionId()).version());
+    }
+
+    private boolean isSameVersionAsRepositoryCopy(NoteDao dao) {
+        return Objects.equals(dao.version(), candidateRepository.getNoteDaoById(
+            dao.identifier(), dao.note().noteId()).version());
     }
 
     private ScanDatabaseRequest consumeLatestEmittedEvent() {

@@ -1,57 +1,50 @@
 package no.sikt.nva.nvi.events.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import static nva.commons.core.attempt.Try.attempt;
+import static nva.commons.core.ioutils.IoUtils.streamToString;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+import no.sikt.nva.nvi.events.batch.BatchScanStartHandler.EventDetail;
 import no.unit.nva.commons.json.JsonSerializable;
 import no.unit.nva.commons.json.JsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
+import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
-public class ScanDatabaseRequest implements JsonSerializable {
+public record ScanDatabaseRequest(@JsonProperty(PAGE_SIZE_FIELD) int pageSize,
+                                  @JsonProperty(START_MARKER_FIELD) Map<String, String> startMarker,
+                                  @JsonProperty(TOPIC_FIELD) String topic) implements JsonSerializable {
 
-    public static final String START_MARKER = "startMarker";
-    public static final String PAGE_SIZE = "pageSize";
+    private static final Logger logger = LoggerFactory.getLogger(ScanDatabaseRequest.class);
+
+    public static final String LOG_INITIALIZATION_MESSAGE_TEMPLATE =
+        "Starting scanning with pageSize equal to: {}. Set 'pageSize' between [1,1000] "
+        + "if you want a different pageSize value.";
+
+    public static final String START_MARKER_FIELD = "startMarker";
+    public static final String PAGE_SIZE_FIELD = "pageSize";
     public static final int DEFAULT_PAGE_SIZE = 700; // Choosing for safety 3/4 of max page size.
     public static final int MAX_PAGE_SIZE = 1000;
-    public static final String TOPIC = "topic";
-    @JsonProperty(START_MARKER)
-    private final Map<String, String> startMarker;
-    @JsonProperty(PAGE_SIZE)
-    private final int pageSize;
-    @JsonProperty(TOPIC)
-    private String topic;
-
-    @JsonCreator
-    public ScanDatabaseRequest(@JsonProperty(PAGE_SIZE) int pageSize,
-                               @JsonProperty(START_MARKER) Map<String, String> startMarker,
-                               @JsonProperty(TOPIC) String topic) {
-        this.pageSize = pageSize;
-        this.startMarker = startMarker;
-        this.topic = topic;
-    }
+    public static final String TOPIC_FIELD = "topic";
 
     public static ScanDatabaseRequest fromJson(String detail) throws JsonProcessingException {
         return JsonUtils.dtoObjectMapper.readValue(detail, ScanDatabaseRequest.class);
     }
 
-    @JsonProperty(TOPIC)
-    public String getTopic() {
-        return topic;
-    }
-
-    public int getPageSize() {
+    @Override
+    public int pageSize() {
         return pageSizeWithinLimits(pageSize)
                    ? pageSize
                    : DEFAULT_PAGE_SIZE;
-    }
-
-    public Map<String, String> getStartMarker() {
-        return startMarker;
     }
 
     public ScanDatabaseRequest newScanDatabaseRequest(Map<String, AttributeValue> newStartMarker) {
@@ -59,7 +52,7 @@ public class ScanDatabaseRequest implements JsonSerializable {
             Collectors.toMap(Map.Entry::getKey,
                              e -> e.getValue().s()))) : null;
 
-        return new ScanDatabaseRequest(this.getPageSize(), start, topic);
+        return new ScanDatabaseRequest(this.pageSize(), start, topic);
     }
 
     public PutEventsRequestEntry createNewEventEntry(
@@ -78,11 +71,40 @@ public class ScanDatabaseRequest implements JsonSerializable {
                    .build();
     }
 
-    public void setTopic(String topic) {
-        this.topic = topic;
+    public void sendEvent(EventBridgeClient client, EventDetail details) {
+        logger.info(LOG_INITIALIZATION_MESSAGE_TEMPLATE, this.pageSize());
+        var event = this.createNewEventEntry(details.eventBus(), details.detail(), details.functionArn());
+        var putEventsRequest = PutEventsRequest.builder().entries(event).build();
+        var response = client.putEvents(putEventsRequest).toString();
+        logger.info("{}", response);
     }
 
     private boolean pageSizeWithinLimits(int pageSize) {
         return pageSize > 0 && pageSize <= MAX_PAGE_SIZE;
+    }
+
+    public static class Builder {
+
+        public static final ObjectMapper MAPPER = JsonUtils.dtoObjectMapper;
+        private Map<String, String> startMarker;
+        private int pageSize;
+        private String topic;
+
+        public Builder fromInputStream(InputStream inputStream) {
+            var request = attempt(() -> MAPPER.readValue(streamToString(inputStream), ScanDatabaseRequest.class))
+                              .orElseThrow();
+            this.startMarker = request.startMarker();
+            this.pageSize = request.pageSize();
+            return this;
+        }
+
+        public Builder withTopic(String topic) {
+            this.topic = topic;
+            return this;
+        }
+
+        public ScanDatabaseRequest build() {
+            return new ScanDatabaseRequest(pageSize, startMarker, topic);
+        }
     }
 }
