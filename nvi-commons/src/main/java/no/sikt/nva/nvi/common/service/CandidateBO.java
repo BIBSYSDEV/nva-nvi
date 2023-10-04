@@ -116,10 +116,17 @@ public final class CandidateBO {
         return Optional.empty();
     }
 
+    @JacocoGenerated
+    public CandidateDao getCandidateDao() {
+        return candidateDao;
+    }
+
+    @JacocoGenerated
     public Map<URI, ApprovalBO> getApprovals() {
         return new HashMap<>(approvals);
     }
 
+    @JacocoGenerated
     public UUID identifier() {
         return identifier;
     }

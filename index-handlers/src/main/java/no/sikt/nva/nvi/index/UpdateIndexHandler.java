@@ -14,7 +14,8 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.service.Candidate;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
@@ -41,22 +42,26 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
     private final StorageReader<URI> storageReader;
     private final CandidateRepository candidateRepository;
+    private final PeriodRepository periodRepository;
     private final NviCandidateIndexDocumentGenerator documentGenerator;
 
     @JacocoGenerated
     public UpdateIndexHandler() {
         this(new S3StorageReader(EXPANDED_RESOURCES_BUCKET), defaultOpenSearchClient(),
              new CandidateRepository(defaultDynamoClient()),
+             new PeriodRepository(defaultDynamoClient()),
              new NviCandidateIndexDocumentGenerator(defaultUriRetriver()));
     }
 
     public UpdateIndexHandler(StorageReader<URI> storageReader,
                               SearchClient<NviCandidateIndexDocument> openSearchClient,
                               CandidateRepository candidateRepository,
+                              PeriodRepository periodRepository,
                               NviCandidateIndexDocumentGenerator documentGenerator) {
         this.storageReader = storageReader;
         this.openSearchClient = openSearchClient;
         this.candidateRepository = candidateRepository;
+        this.periodRepository = periodRepository;
         this.documentGenerator = documentGenerator;
     }
 
@@ -90,8 +95,8 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         return UUID.fromString(record.getDynamodb().getNewImage().get(IDENTIFIER).getS());
     }
 
-    private static Boolean isApplicable(Candidate candidate) {
-        return candidate.candidate().applicable();
+    private static Boolean isApplicable(DbCandidate candidate) {
+        return candidate.applicable();
     }
 
     private static boolean isApproval(DynamodbStreamRecord record) {
@@ -119,16 +124,20 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     private void updateIndex(DynamodbStreamRecord record) {
         try {
             var candidateIdentifier = extractIdentifierFromNewImage(record);
-            var candidate = candidateRepository.findCandidateById(candidateIdentifier).orElseThrow();
-            if (isApplicable(candidate)) {
+            var candidate = fetchCandidate(candidateIdentifier);
+            if (isApplicable(candidate.getCandidateDao().candidate())) {
                 addDocumentToIndex(candidate);
             } else {
                 removeDocumentFromIndex(candidate);
             }
-            LOGGER.info(INDEXING_MESSAGE, candidate.candidate().publicationId());
+            LOGGER.info(INDEXING_MESSAGE, candidate.getCandidateDao().candidate().publicationId());
         } catch (Exception e) {
             logRecordThatCouldNotBeIndexed(record);
         }
+    }
+
+    private CandidateBO fetchCandidate(UUID candidateIdentifier) {
+        return CandidateBO.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository);
     }
 
     private boolean isUpdate(DynamodbStreamRecord record) {
@@ -136,15 +145,15 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         return OperationType.INSERT.equals(eventType) || OperationType.MODIFY.equals(eventType);
     }
 
-    private void removeDocumentFromIndex(Candidate candidate) {
+    private void removeDocumentFromIndex(CandidateBO candidate) {
         LOGGER.info("Attempting to remove document with identifier {}", candidate.identifier().toString());
         attempt(() -> toIndexDocumentWithId(candidate.identifier())).forEach(openSearchClient::removeDocumentFromIndex)
             .orElseThrow();
     }
 
-    private void addDocumentToIndex(Candidate candidate) {
+    private void addDocumentToIndex(CandidateBO candidate) {
         LOGGER.info("Attempting to add/update document with identifier {}", candidate.identifier().toString());
-        attempt(() -> extractBucketUri(candidate.candidate())).map(storageReader::read)
+        attempt(() -> extractBucketUri(candidate.getCandidateDao().candidate())).map(storageReader::read)
             .map(blob -> documentGenerator.generateDocument(blob, candidate))
             .forEach(openSearchClient::addDocumentToIndex)
             .orElseThrow();
