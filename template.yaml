@@ -81,7 +81,7 @@ Resources:
   InternalBus:
     Type: AWS::Events::EventBus
     Properties:
-      Name: !Join [ '',[ 'resource-service-internal-bus',!Ref Suffix ]   ]
+      Name: !Join [ '',[ 'nvi-internal-bus',!Ref Suffix ]   ]
 
   #=============================== SQSs ============================================================
   NewCandidateQueue:
