@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
@@ -43,15 +44,17 @@ public final class PaginatedResultConverter {
     }
 
     public static PaginatedSearchResult<NviCandidateIndexDocument> toPaginatedResult(
-        SearchResponse<NviCandidateIndexDocument> searchResponse, String institutions, boolean excludeSubUnits,
-        String filter, int offset, int size) throws UnprocessableContentException {
+        SearchResponse<NviCandidateIndexDocument> searchResponse, CandidateSearchParameters candidateSearchParameters)
+        throws UnprocessableContentException {
         var paginatedSearchResult = PaginatedSearchResult.create(
             constructBaseUri(),
-            offset,
-            size,
+            candidateSearchParameters.offset(),
+            candidateSearchParameters.size(),
             extractTotalNumberOfHits(searchResponse),
             extractsHits(searchResponse),
-            getQueryParameters(institutions, excludeSubUnits, filter),
+            getQueryParameters(candidateSearchParameters.affiliations(),
+                               candidateSearchParameters.excludeSubUnits(),
+                               candidateSearchParameters.filter()),
             extractAggregations(searchResponse));
 
         LOGGER.info("Returning paginatedSearchResult with id: {}", paginatedSearchResult.getId().toString());

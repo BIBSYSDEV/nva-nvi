@@ -44,6 +44,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
+import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
@@ -51,7 +52,6 @@ import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
 import no.unit.nva.commons.json.JsonUtils;
-import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import org.apache.http.HttpHost;
 import org.junit.jupiter.api.AfterAll;
@@ -70,17 +70,15 @@ public class OpenSearchClientTest {
 
     public static final String JSON_POINTER_FILTER = "/filter#";
     public static final String JSON_POINTER_DOC_COUNT = "/doc_count";
-    public static final String NO_FILTER = StringUtils.EMPTY_STRING;
     private static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:2.0.0";
     private static final URI CUSTOMER = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     private static final String USERNAME = "user1";
     private static final OpensearchContainer container = new OpensearchContainer(OPEN_SEARCH_IMAGE);
-    private static final int DEFAULT_QUERY_SIZE = 10;
-    private static final int DEFAULT_OFFSET_SIZE = 0;
     public static final int DELAY_ON_INDEX = 2000;
     public static final String YEAR = "2023";
     public static final String UNEXISTING_FILTER = "unexisting-filter";
     public static final String NTNU_INSTITUTION_ID = "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0";
+    public static final String SIKT_INSTITUTION_ID = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0";
     private static RestClient restClient;
     private static OpenSearchClient openSearchClient;
 
@@ -127,8 +125,10 @@ public class OpenSearchClientTest {
         int totalNumberOfDocuments = 12;
         int offset = 10;
         int size = 10;
-        var searchResponse =
-            openSearchClient.search(null, false, NO_FILTER, USERNAME, YEAR, CUSTOMER, offset, size);
+        var searchParameters =
+            CandidateSearchParameters.builder()
+                .withUsername(USERNAME).withCustomer(CUSTOMER).withYear(YEAR).withOffset(offset).withSize(size).build();
+        var searchResponse = openSearchClient.search(searchParameters);
 
         assertThat(extractTotalNumberOfHits(searchResponse), is(equalTo(totalNumberOfDocuments)));
 
@@ -142,8 +142,9 @@ public class OpenSearchClientTest {
                             singleNviCandidateIndexDocumentWithCustomerAndYear(randomString(), "12345"));
 
         int totalNumberOfDocuments = 2;
-        var searchResponse =
-            openSearchClient.search(null, false, NO_FILTER, USERNAME, null, CUSTOMER, 0, 1000);
+        var searchParameters = CandidateSearchParameters.builder()
+                                   .withCustomer(CUSTOMER).withUsername(USERNAME).build();
+        var searchResponse = openSearchClient.search(searchParameters);
 
         assertThat(extractTotalNumberOfHits(searchResponse), is(equalTo(totalNumberOfDocuments)));
         assertThat(searchResponse.hits().hits().size(), is(equalTo(totalNumberOfDocuments)));
@@ -155,16 +156,16 @@ public class OpenSearchClientTest {
         var document = singleNviCandidateIndexDocument();
         addDocumentsToIndex(document);
         openSearchClient.deleteIndex();
+        var searchParameters = defaultSearchParameters().build();
         assertThrows(OpenSearchException.class,
-                     () -> openSearchClient.search(null, false, NO_FILTER, USERNAME, YEAR, CUSTOMER,
-                                                   DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE));
+                     () -> openSearchClient.search(searchParameters));
     }
 
     @Test
     void shoulThrowWhenUsingUndefinedFilterName() {
+        var searchParameters = defaultSearchParameters().withFilter(UNEXISTING_FILTER).build();
         assertThrows(IllegalStateException.class,
-                     () -> openSearchClient.search(null, false, UNEXISTING_FILTER, USERNAME, YEAR, CUSTOMER,
-                                                   DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE));
+                     () -> openSearchClient.search(searchParameters));
     }
 
     @Test
@@ -173,10 +174,9 @@ public class OpenSearchClientTest {
         addDocumentsToIndex(document);
         openSearchClient.removeDocumentFromIndex(document);
         Thread.sleep(DELAY_ON_INDEX);
+        var searchParameters = defaultSearchParameters().build();
         var searchResponse =
-            openSearchClient.search(null, false, NO_FILTER, USERNAME, YEAR, CUSTOMER,
-                                    DEFAULT_OFFSET_SIZE,
-                                    DEFAULT_QUERY_SIZE);
+            openSearchClient.search(searchParameters);
         var nviCandidateIndexDocument = searchResponse.hits().hits();
 
         assertThat(nviCandidateIndexDocument, hasSize(0));
@@ -195,9 +195,9 @@ public class OpenSearchClientTest {
                             documentFromString("document_rejected.json"),
                             documentFromString("document_rejected_collaboration.json"));
 
+        var searchParameters = defaultSearchParameters().build();
         var searchResponse =
-            openSearchClient.search(null, false, NO_FILTER, USERNAME, YEAR, CUSTOMER,
-                                    DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
+            openSearchClient.search(searchParameters);
         var docCount = getDocCount(searchResponse, entry.getKey());
 
         assertThat(docCount, is(equalTo(entry.getValue())));
@@ -211,10 +211,10 @@ public class OpenSearchClientTest {
                             documentFromString("document_with_contributor_from_sikt_but_not_creator.json")
         );
 
-        var siktInstitutionId = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0";
+
+        var searchParameters = defaultSearchParameters().withAffiliations(SIKT_INSTITUTION_ID).build();
         var searchResponse =
-            openSearchClient.search(siktInstitutionId, false, "", USERNAME, YEAR, CUSTOMER,
-                                    DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
+            openSearchClient.search(searchParameters);
 
         assertThat(searchResponse.hits().hits(), hasSize(1));
     }
@@ -225,10 +225,9 @@ public class OpenSearchClientTest {
         addDocumentsToIndex(documentFromString("document_with_contributor_from_ntnu_subunit.json")
         );
 
-        var siktInstitutionId = NTNU_INSTITUTION_ID;
+        var searchParameters = defaultSearchParameters().withAffiliations(NTNU_INSTITUTION_ID).build();
         var searchResponse =
-            openSearchClient.search(NTNU_INSTITUTION_ID, false, "", USERNAME, YEAR, CUSTOMER,
-                                    DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
+            openSearchClient.search(searchParameters);
 
         assertThat(searchResponse.hits().hits(), hasSize(1));
     }
@@ -242,24 +241,25 @@ public class OpenSearchClientTest {
                             documentFromString("document_with_contributor_from_sikt_but_not_creator.json")
         );
 
+        var searchParameters = defaultSearchParameters().withAffiliations(NTNU_INSTITUTION_ID).build();
         var searchResponse =
-            openSearchClient.search(NTNU_INSTITUTION_ID, false, "", USERNAME, YEAR, CUSTOMER,
-                                    DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
+            openSearchClient.search(searchParameters);
 
         assertThat(searchResponse.hits().hits(), hasSize(2));
     }
 
     @Test
-    void shouldReturnSearchResultsWithContributorOfSearchedInstitutionWhenSearchingTopLevelInstititutionAndExcludingSubUnits()
+    void shouldReturnSearchResultsWithContributorOfSearchedInstitutionWhenSearchingTopLevelInstitutionExcludingSubUnit()
         throws IOException, InterruptedException {
         var subUnitDoc = documentFromString("document_with_contributor_from_ntnu_subunit.json");
         var topLevelDoc = documentFromString("document_with_contributor_from_ntnu_toplevel.json");
 
         addDocumentsToIndex(subUnitDoc, topLevelDoc);
 
+        var searchParameters =
+            defaultSearchParameters().withAffiliations(NTNU_INSTITUTION_ID).withExcludeSubUnits(true).build();
         var searchResponse =
-            openSearchClient.search(NTNU_INSTITUTION_ID, true, "", USERNAME, YEAR, CUSTOMER,
-                                    DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
+            openSearchClient.search(searchParameters);
 
         assertThat(searchResponse.hits().hits(), hasSize(1));
     }
@@ -277,9 +277,10 @@ public class OpenSearchClientTest {
                             documentFromString("document_rejected.json"),
                             documentFromString("document_rejected_collaboration.json"));
 
+        var searchParameters = defaultSearchParameters().withFilter(entry.getKey()).build();
+
         var searchResponse =
-            openSearchClient.search(null, false, entry.getKey(), USERNAME, YEAR, CUSTOMER,
-                                    DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
+            openSearchClient.search(searchParameters);
 
         assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));
     }
@@ -292,9 +293,10 @@ public class OpenSearchClientTest {
         addDocumentsToIndex(document,
                             singleNviCandidateIndexDocumentWithCustomerAndYear(customer.toString(), randomString()));
 
+        var searchParameters = defaultSearchParameters().withYear(year).build();
+
         var searchResponse =
-            openSearchClient.search(null, false, NO_FILTER, USERNAME, year, customer,
-                                    DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
+            openSearchClient.search(searchParameters);
 
         assertThat(searchResponse.hits().hits(), hasSize(1));
     }
@@ -312,9 +314,10 @@ public class OpenSearchClientTest {
                             documentFromString("document_rejected.json"),
                             documentFromString("document_rejected_collaboration.json"));
 
+        var searchParameters =
+            defaultSearchParameters().withFilter(entry.getKey()).withAffiliations(NTNU_INSTITUTION_ID).build();
         var searchResponse =
-            openSearchClient.search(NTNU_INSTITUTION_ID, false, entry.getKey(), USERNAME, YEAR, CUSTOMER,
-                                    DEFAULT_OFFSET_SIZE, DEFAULT_QUERY_SIZE);
+            openSearchClient.search(searchParameters);
 
         assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));
     }
@@ -420,6 +423,11 @@ public class OpenSearchClientTest {
         map.put(REJECTED_COLLABORATION_AGG, 1);
         map.put(ASSIGNMENTS_AGG, 4);
         return map.entrySet().stream();
+    }
+
+    private static CandidateSearchParameters.Builder defaultSearchParameters() {
+        return CandidateSearchParameters.builder()
+                   .withCustomer(CUSTOMER).withUsername(USERNAME).withYear(YEAR);
     }
 
     public static final class FakeCachedJwtProvider {

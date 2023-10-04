@@ -30,7 +30,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.nio.file.Path;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -43,8 +42,6 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.PeriodStatus;
-import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.Candidate;
 import no.sikt.nva.nvi.common.service.NviService;
@@ -52,6 +49,7 @@ import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
+import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument.Builder;
@@ -390,9 +388,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         }
 
         @Override
-        public SearchResponse<NviCandidateIndexDocument> search(String affiliations, boolean excludeSubUnits, String filter,
-                                                                String username,
-                                                                String year, URI customer, int offset, int size) {
+        public SearchResponse<NviCandidateIndexDocument> search(CandidateSearchParameters candidateSearchParameters) {
             return null;
         }
 
