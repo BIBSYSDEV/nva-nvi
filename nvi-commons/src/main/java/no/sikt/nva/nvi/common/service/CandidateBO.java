@@ -257,11 +257,8 @@ public final class CandidateBO {
     }
 
     private static boolean shouldResetCandidate(UpsertCandidateRequest request, CandidateDao candidate) {
-        return levelIsUpdated(request, candidate)
-               || instanceTypeIsUpdated(request, candidate)
-               || creatorsAreUpdated(request, candidate)
-               || pointsAreUpdated(request, candidate)
-               || publicationYearIsUpdated(request, candidate);
+        return levelIsUpdated(request, candidate) || instanceTypeIsUpdated(request, candidate) || creatorsAreUpdated(
+            request, candidate) || pointsAreUpdated(request, candidate) || publicationYearIsUpdated(request, candidate);
     }
 
     private static boolean publicationYearIsUpdated(UpsertCandidateRequest request, CandidateDao candidate) {

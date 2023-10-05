@@ -159,7 +159,7 @@ class CandidateBOTest extends LocalDynamoTest {
 
         assertThat(updatedApproval, is(equalTo(approval)));
     }
-
+    
     private static PeriodStatusDto getDefaultPeriodStatus() {
         return PeriodStatusDto.fromPeriodStatus(PeriodStatus.builder().withStatus(Status.OPEN_PERIOD).build());
     }

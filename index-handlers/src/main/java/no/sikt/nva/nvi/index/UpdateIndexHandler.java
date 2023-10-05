@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
     public static final String COULD_NOT_UPDATE_INDEX_MESSAGE = "Could not update index for record: {}";
-    public static final String INDEXING_MESSAGE = "Nvi candidate has been indexed for publication: {}";
     private static final String CANDIDATE_TYPE = "CANDIDATE";
     private static final String APPROVAL_TYPE = "APPROVAL_STATUS";
     private static final String PRIMARY_KEY_DELIMITER = "#";
@@ -119,7 +118,6 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
             } else {
                 removeDocumentFromIndex(candidate);
             }
-            LOGGER.info(INDEXING_MESSAGE, candidate.publicationId());
         } catch (Exception e) {
             logRecordThatCouldNotBeIndexed(record);
         }
@@ -135,13 +133,10 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     private void removeDocumentFromIndex(CandidateBO candidate) {
-        LOGGER.info("Attempting to remove document with identifier {}", candidate.identifier().toString());
-        attempt(() -> toIndexDocumentWithId(candidate.identifier())).forEach(openSearchClient::removeDocumentFromIndex)
-            .orElseThrow();
+        openSearchClient.removeDocumentFromIndex(toIndexDocumentWithId(candidate.identifier()));
     }
 
     private void addDocumentToIndex(CandidateBO candidate) {
-        LOGGER.info("Attempting to add/update document with identifier {}", candidate.identifier().toString());
         attempt(() -> storageReader.read(candidate.getBucketUri()))
             .map(blob -> documentGenerator.generateDocument(blob, candidate))
             .forEach(openSearchClient::addDocumentToIndex)
