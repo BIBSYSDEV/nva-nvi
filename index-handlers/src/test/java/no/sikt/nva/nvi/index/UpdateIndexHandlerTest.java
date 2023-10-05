@@ -60,7 +60,6 @@ import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -183,12 +182,12 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
 
     @ParameterizedTest
     @MethodSource("publicationDates")
-    void shouldAddDocumentToIndexWhenNviCandidateExistsInResourcesStorageWithDifferentDateFormats(PublicationDate date,
-                                                                                                  String persistedResourceDate)
+    void shouldAddDocumentToIndexWhenNviCandidateExistsInResourcesStorageWithDifferentDateFormats(
+        PublicationDate date, String persistedResourceDate)
         throws JsonProcessingException {
         var candidate = randomApplicableCandidate();
         mockRepositories(candidate);
-        when(storageReader.read(any())).thenReturn(replacePublicationDateWith(persistedResourceDate));
+        when(storageReader.read(any())).thenReturn(expandedResourceWithDate(persistedResourceDate));
         var expectedDocument = constructExpectedDocumentWithPublicationDate(candidate, date);
         handler.handleRequest(createEvent(INSERT, createDynamoDbRecord(candidate)), CONTEXT);
         var document = openSearchClient.getDocuments().get(0);
@@ -196,8 +195,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         assertThat(document, is(equalTo(expectedDocument)));
     }
 
-    @NotNull
-    private static String replacePublicationDateWith(String date) {
+    private static String expandedResourceWithDate(String date) {
         return CANDIDATE.replace("""
                                      "publicationDate": {
                                              "type": "PublicationDate",
@@ -245,12 +243,13 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private static PublicationDetails constructPublicationDetails() {
         return new PublicationDetails(
             "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
-            "AcademicArticle", "Demo nvi candidate", new PublicationDate("2023", "6", "4"), List.of(
-            new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
-                .withName("Mona Ullah")
-                .withRole("Creator")
-                .withAffiliations(List.of(constructAffiliation()))
-                .build()));
+            "AcademicArticle", "Demo nvi candidate", new PublicationDate("2023", "6", "4"),
+            List.of(new Contributor.Builder()
+                        .withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
+                        .withName("Mona Ullah")
+                        .withRole("Creator")
+                        .withAffiliations(List.of(constructAffiliation()))
+                        .build()));
     }
 
     private static PublicationDetails constructPublicationDetailsWithPublicationDate(PublicationDate publicationDate) {
