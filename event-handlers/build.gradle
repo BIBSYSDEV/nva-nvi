@@ -14,7 +14,6 @@ dependencies {
     implementation libs.aws.sdk2.sqs
     implementation libs.aws.sdk2.eventbridge
     implementation libs.aws.sdk2.dynamodb
-    implementation libs.aws.sdk2.dynamodbenhanced
     implementation libs.aws.sdk2.urlconnectionclient
 
     implementation libs.jackson.core

@@ -65,7 +65,7 @@ public class CandidateRepository extends DynamoRepository {
         var items = scan.items().stream()
                         .map(this::mutateVersion).toList();
 
-        var batchResults = Optional.of(getBatches(items, BATCH_SIZE)
+        var batchResults = Optional.of(getBatches(items)
                                            .map(this::toBatchRequest)
                                            .map(defaultClient::batchWriteItem)
                                            .toList())
@@ -86,11 +86,11 @@ public class CandidateRepository extends DynamoRepository {
         return nonNull(scanResult.lastEvaluatedKey()) && !scanResult.lastEvaluatedKey().isEmpty();
     }
 
-    private static <T> Stream<List<T>> getBatches(List<T> scanResult, int batchSize) {
+    private static <T> Stream<List<T>> getBatches(List<T> scanResult) {
         var count = scanResult.size();
-        return IntStream.range(0, (count + batchSize - 1) / batchSize)
-                   .mapToObj(i -> scanResult.subList(i * batchSize, Math.min((i + 1) * batchSize,
-                                                                                     count)));
+        return IntStream.range(0, (count + CandidateRepository.BATCH_SIZE - 1) / CandidateRepository.BATCH_SIZE)
+                   .mapToObj(i -> scanResult.subList(i * CandidateRepository.BATCH_SIZE, Math.min((i + 1) * CandidateRepository.BATCH_SIZE,
+                                                                                                  count)));
     }
 
     private BatchWriteItemRequest toBatchRequest(List<Map<String, AttributeValue>> results) {
@@ -111,7 +111,7 @@ public class CandidateRepository extends DynamoRepository {
     }
 
     private ScanRequest createScanRequest(int pageSize, Map<String, String> startMarker) {
-        var start = startMarker!= null ? startMarker.entrySet().stream().collect(toMap(Map.Entry::getKey,
+        var start = nonNull(startMarker) ? startMarker.entrySet().stream().collect(toMap(Map.Entry::getKey,
                                                       e -> AttributeValue.builder().s(e.getValue()).build())) : null;
         return ScanRequest.builder()
                    .tableName(NVI_TABLE_NAME)

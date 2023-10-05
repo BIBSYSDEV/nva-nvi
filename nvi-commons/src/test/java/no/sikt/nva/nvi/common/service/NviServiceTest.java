@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.service;
 
-import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus.APPROVED;
 import static no.sikt.nva.nvi.common.db.PeriodStatus.Status.CLOSED_PERIOD;
@@ -52,12 +51,13 @@ import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
+import no.sikt.nva.nvi.common.utils.ApplicationConstants;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 
 public class NviServiceTest extends LocalDynamoTest {
 
@@ -477,27 +477,33 @@ public class NviServiceTest extends LocalDynamoTest {
         assertThat(modified.version(), is(not(equalTo(original.version()))));
     }
 
-    @RepeatedTest(10)
+    @Test
     public void shouldWriteVersionOnRefreshWithStartMarker() {
-        var candidate1 = candidateRepository.create(randomCandidate(), List.of());
-        var candidate2 = candidateRepository.create(randomCandidate(), List.of());
-        var candidate1Original = candidateRepository.findDaoById(candidate1.identifier());
-        var candidate2Original = candidateRepository.findDaoById(candidate2.identifier());
+        candidateRepository.create(randomCandidate(), List.of());
+        candidateRepository.create(randomCandidate(), List.of());
 
-        var result = nviService.refresh(1000, Map.of(
-            "PrimaryKeyRangeKey", CandidateDao.TYPE + "#" + candidate1.identifier(),
-            "PrimaryKeyHashKey", CandidateDao.TYPE + "#" + candidate1.identifier()));
+        // Read candidates with scan to know the order for later comparison
+        var candidates =
+            localDynamo.scan(ScanRequest.builder().tableName(ApplicationConstants.NVI_TABLE_NAME).build())
+                .items()
+                .stream()
+                .filter(a -> a.get("type").s().equals("CANDIDATE")).toList();
 
-        var candidate1Modified = candidateRepository.findDaoById(candidate1.identifier());
-        var candidate2Modified = candidateRepository.findDaoById(candidate2.identifier());
+        var identifierForFirstRow = UUID.fromString(candidates.get(0).get("identifier").s());
+        var identifierForSecondRow = UUID.fromString(candidates.get(1).get("identifier").s());
 
-        var ok =
-            (nonNull(candidate1Modified.version()) && !candidate1Modified.version().equals(candidate1Original.version())) ||
-            (nonNull(candidate2Modified.version()) && !candidate2Modified.version().equals(candidate2Original.version()));
+        var candidate1Original = candidateRepository.findDaoById(identifierForFirstRow);
+        var candidate2Original = candidateRepository.findDaoById(identifierForSecondRow);
 
-        //assertThat(candidate1Modified.version(), is(not(equalTo(candidate1Original.version()))));
-        //assertThat(candidate2Modified.version(), is(not(equalTo(candidate2Original.version()))));
-        assertThat(true, is(true));
+        nviService.refresh(1000, Map.of(
+            "PrimaryKeyRangeKey", candidate1Original.primaryKeyHashKey(),
+            "PrimaryKeyHashKey", candidate1Original.primaryKeyHashKey()));
+
+        var candidate1Modified = candidateRepository.findDaoById(identifierForFirstRow);
+        var candidate2Modified = candidateRepository.findDaoById(identifierForSecondRow);
+
+        assertThat(candidate1Modified.version(), is(equalTo(candidate1Original.version())));
+        assertThat(candidate2Modified.version(), is(not(equalTo(candidate2Original.version()))));
     }
 
     public static class CandidateRepositoryHelper extends CandidateRepository {
