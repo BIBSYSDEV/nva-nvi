@@ -127,7 +127,6 @@ public final class CandidateBO {
         return candidateDao.candidate().publicationId();
     }
 
-    @JacocoGenerated
     public CandidateDto toDto() {
         if (isApplicable()) {
             return CandidateDto.builder()
@@ -171,7 +170,6 @@ public final class CandidateBO {
         return candidateDao.candidate().applicable();
     }
 
-    @JacocoGenerated
     private static PeriodStatus calculatePeriodStatusIfApplicable(PeriodRepository periodRepository,
                                                                   CandidateDao candidateDao) {
         return candidateDao.candidate().applicable()

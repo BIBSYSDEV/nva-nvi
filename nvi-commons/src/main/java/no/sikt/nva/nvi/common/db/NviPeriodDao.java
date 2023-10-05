@@ -16,7 +16,8 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 @DynamoDbImmutable(builder = NviPeriodDao.Builder.class)
 public record NviPeriodDao(
 
-    String identifier, @DynamoDbAttribute(DATA_FIELD) DbNviPeriod nviPeriod, String version) implements DynamoEntryWithRangeKey {
+    String identifier, @DynamoDbAttribute(DATA_FIELD) DbNviPeriod nviPeriod, String version)
+    implements DynamoEntryWithRangeKey {
 
     public static final TableSchema<NviPeriodDao> TABLE_SCHEMA = TableSchema.fromClass(NviPeriodDao.class);
 

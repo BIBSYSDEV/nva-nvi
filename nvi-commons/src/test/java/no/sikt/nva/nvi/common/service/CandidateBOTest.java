@@ -129,6 +129,22 @@ class CandidateBOTest extends LocalDynamoTest {
     }
 
     @Test
+    void toDtoShouldThrowCandidateNotFoundException() {
+        var institutionToReject = randomUri();
+        var institutionToApprove = randomUri();
+        var createRequest = createUpsertCandidateRequest(randomUri(), true, 4, InstanceType.ACADEMIC_MONOGRAPH,
+                                                         institutionToApprove, randomUri(), institutionToReject);
+        var tempCandidateBO =
+            CandidateBO.fromRequest(createRequest, candidateRepository, periodRepository).orElseThrow();
+        var updateRequest = createUpsertCandidateRequest(tempCandidateBO.publicationId(), false, 4,
+                                                         InstanceType.ACADEMIC_MONOGRAPH,
+                                                         institutionToApprove, randomUri(), institutionToReject);
+        var candidateBO = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository).orElseThrow();
+
+        assertThrows(CandidateNotFoundException.class, candidateBO::toDto);
+    }
+
+    @Test
     void shouldNotOverrideAssigneeWhenAssigneeAlreadyIsSet() {
         var institutionId = randomUri();
         var assignee = randomString();

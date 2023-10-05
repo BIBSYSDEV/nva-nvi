@@ -72,8 +72,8 @@ public class CandidateRepository extends DynamoRepository {
                                .orElse(List.of());
 
         return new ListingResult(thereAreMorePagesToScan(scan), scan.lastEvaluatedKey(),
-                                   batchResults.size(),
-                                   batchResults.stream().mapToInt(a -> a.unprocessedItems().size()).sum());
+                                 batchResults.size(),
+                                 batchResults.stream().mapToInt(a -> a.unprocessedItems().size()).sum());
     }
 
     private Map<String, AttributeValue> mutateVersion(Map<String, AttributeValue> item) {
@@ -89,8 +89,9 @@ public class CandidateRepository extends DynamoRepository {
     private static <T> Stream<List<T>> getBatches(List<T> scanResult) {
         var count = scanResult.size();
         return IntStream.range(0, (count + CandidateRepository.BATCH_SIZE - 1) / CandidateRepository.BATCH_SIZE)
-                   .mapToObj(i -> scanResult.subList(i * CandidateRepository.BATCH_SIZE, Math.min((i + 1) * CandidateRepository.BATCH_SIZE,
-                                                                                                  count)));
+                   .mapToObj(i -> scanResult.subList(i * CandidateRepository.BATCH_SIZE,
+                                                     Math.min((i + 1) * CandidateRepository.BATCH_SIZE,
+                                                              count)));
     }
 
     private BatchWriteItemRequest toBatchRequest(List<Map<String, AttributeValue>> results) {
@@ -112,7 +113,9 @@ public class CandidateRepository extends DynamoRepository {
 
     private ScanRequest createScanRequest(int pageSize, Map<String, String> startMarker) {
         var start = nonNull(startMarker) ? startMarker.entrySet().stream().collect(toMap(Map.Entry::getKey,
-                                                      e -> AttributeValue.builder().s(e.getValue()).build())) : null;
+                                                                                         e -> AttributeValue.builder()
+                                                                                                  .s(e.getValue())
+                                                                                                  .build())) : null;
         return ScanRequest.builder()
                    .tableName(NVI_TABLE_NAME)
                    .filterExpression("not contains (#PK, :TYPE) ")
