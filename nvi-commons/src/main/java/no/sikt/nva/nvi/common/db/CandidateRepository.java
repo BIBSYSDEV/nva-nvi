@@ -61,8 +61,7 @@ public class CandidateRepository extends DynamoRepository {
         return candidateTable.getItem(candidate);
     }
 
-    public void updateCandidate(UUID identifier, CandidateDao candidateDao,
-                                List<DbApprovalStatus> approvals) {
+    public void updateCandidate(UUID identifier, CandidateDao candidateDao, List<DbApprovalStatus> approvals) {
         var approvalMap = approvals.stream()
                               .map(approval -> mapToApprovalStatusDao(identifier, approval))
                               .collect(toMap(approvalStatusDao -> approvalStatusDao.approvalStatus().institutionId(),
@@ -71,6 +70,12 @@ public class CandidateRepository extends DynamoRepository {
         addNoLongerValidApprovalsToTransaction(identifier, approvalMap, transaction);
         transaction.addPutItem(candidateTable, candidateDao);
         approvalMap.values().forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
+        client.transactWriteItems(transaction.build());
+    }
+
+    public void updateCandidate(CandidateDao candidate) {
+        var transaction = TransactWriteItemsEnhancedRequest.builder();
+        transaction.addPutItem(candidateTable, candidate);
         client.transactWriteItems(transaction.build());
     }
 
@@ -176,12 +181,6 @@ public class CandidateRepository extends DynamoRepository {
                 approvalStatusDao -> transactionBuilder.addDeleteItem(approvalStatusTable, approvalStatusDao));
             client.transactWriteItems(transactionBuilder.build());
         }
-    }
-
-    public void updateCandidate(CandidateDao candidate) {
-        var transaction = TransactWriteItemsEnhancedRequest.builder();
-        transaction.addPutItem(candidateTable, candidate);
-        client.transactWriteItems(transaction.build());
     }
 
     private static ApprovalStatusDao mapToApprovalStatusDao(UUID identifier, DbApprovalStatus approval) {

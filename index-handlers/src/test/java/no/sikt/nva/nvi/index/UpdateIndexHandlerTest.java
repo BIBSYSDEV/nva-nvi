@@ -243,20 +243,20 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private static PublicationDetails constructPublicationDetails() {
         return new PublicationDetails(
             "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
-            "AcademicArticle", "Demo nvi candidate", new PublicationDate("2023", "6", "4"),
-            List.of(new Contributor.Builder()
-                        .withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
-                        .withName("Mona Ullah")
-                        .withRole("Creator")
-                        .withAffiliations(List.of(constructAffiliation()))
-                        .build()));
+            "AcademicArticle", "Demo nvi candidate", new PublicationDate("2023", "6", "4"), List.of(
+            new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
+                .withName("Mona Ullah")
+                .withRole("Creator")
+                .withAffiliations(List.of(constructAffiliation()))
+                .build()));
     }
 
     private static PublicationDetails constructPublicationDetailsWithPublicationDate(PublicationDate publicationDate) {
         return new PublicationDetails(
             "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
             "AcademicArticle", "Demo nvi candidate", publicationDate, List.of(
-            new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
+                new Contributor.Builder()
+                .withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
                 .withName("Mona Ullah")
                 .withRole("Creator")
                 .withAffiliations(List.of(constructAffiliation()))
