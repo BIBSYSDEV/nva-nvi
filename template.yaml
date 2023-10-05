@@ -410,7 +410,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: event-handlers
-      Handler: no.sikt.nva.nvi.events.EventBasedBatchScanHandler::handleRequest
+      Handler: no.sikt.nva.nvi.events.batch.EventBasedBatchScanHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
