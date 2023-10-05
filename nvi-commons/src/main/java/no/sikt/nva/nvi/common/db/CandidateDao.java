@@ -28,7 +28,8 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 @DynamoDbImmutable(builder = CandidateDao.Builder.class)
 public record CandidateDao(
     UUID identifier,
-    @DynamoDbAttribute(DATA_FIELD) DbCandidate candidate
+    @DynamoDbAttribute(DATA_FIELD) DbCandidate candidate,
+    String version
 ) implements DynamoEntryWithRangeKey {
 
     public static final String TYPE = "CANDIDATE";
@@ -113,8 +114,10 @@ public record CandidateDao(
 
         private UUID builderIdentifier;
         private DbCandidate builderCandidate;
+        private String builderVersion;
 
         private Builder() {
+
         }
 
         public Builder type(String noop) {
@@ -152,8 +155,13 @@ public record CandidateDao(
             return this;
         }
 
+        public Builder version(String version) {
+            this.builderVersion = version;
+            return this;
+        }
+
         public CandidateDao build() {
-            return new CandidateDao(builderIdentifier, builderCandidate);
+            return new CandidateDao(builderIdentifier, builderCandidate, builderVersion);
         }
     }
 

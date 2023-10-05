@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
+import static java.util.UUID.randomUUID;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
 import java.math.BigDecimal;
@@ -115,10 +116,12 @@ public final class CandidateBO {
         return Optional.empty();
     }
 
+    @JacocoGenerated
     public Map<URI, ApprovalBO> getApprovals() {
         return new HashMap<>(approvals);
     }
 
+    @JacocoGenerated
     public UUID identifier() {
         return identifier;
     }
@@ -170,10 +173,21 @@ public final class CandidateBO {
         return candidateDao.candidate().applicable();
     }
 
+    @JacocoGenerated
+    public List<DbInstitutionPoints> getPoints() {
+        return candidateDao.candidate().points();
+    }
+
+    @JacocoGenerated
+    public URI getBucketUri() {
+        return candidateDao.candidate().publicationBucketUri();
+    }
+
     private static PeriodStatus calculatePeriodStatusIfApplicable(PeriodRepository periodRepository,
                                                                   CandidateDao candidateDao) {
-        return candidateDao.candidate().applicable()
-                   ? getPeriodStatus(periodRepository, candidateDao.candidate().publicationDate().year())
+        return candidateDao.candidate().applicable() ? getPeriodStatus(periodRepository, candidateDao.candidate()
+                                                                                             .publicationDate()
+                                                                                             .year())
                    : PERIOD_STATUS_NO_PERIOD;
     }
 
@@ -236,16 +250,19 @@ public final class CandidateBO {
                                                                        CandidateDao existingCandidateDao) {
         var updatedCandidate = updateCandidateDaoFromRequest(existingCandidateDao, request);
         var approvalDaoList = repository.fetchApprovals(updatedCandidate.identifier());
+        repository.updateCandidate(updatedCandidate);
         var noteDaoList = repository.getNotes(updatedCandidate.identifier());
         var periodStatus = getPeriodStatus(periodRepository, updatedCandidate.candidate().publicationDate().year());
         return new CandidateBO(repository, updatedCandidate, approvalDaoList, noteDaoList, periodStatus);
     }
 
-    private static boolean shouldResetCandidate(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return levelIsUpdated(request, existingCandidateDao)
-               || instanceTypeIsUpdated(request, existingCandidateDao)
-               || creatorsAreUpdated(request, existingCandidateDao)
-               || pointsAreUpdated(request, existingCandidateDao);
+    private static boolean shouldResetCandidate(UpsertCandidateRequest request, CandidateDao candidate) {
+        return levelIsUpdated(request, candidate) || instanceTypeIsUpdated(request, candidate) || creatorsAreUpdated(
+            request, candidate) || pointsAreUpdated(request, candidate) || publicationYearIsUpdated(request, candidate);
+    }
+
+    private static boolean publicationYearIsUpdated(UpsertCandidateRequest request, CandidateDao candidate) {
+        return !request.publicationDate().year().equals(candidate.candidate().publicationDate().year());
     }
 
     private static boolean pointsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
@@ -387,15 +404,14 @@ public final class CandidateBO {
                                   .internationalCollaboration(request.isInternationalCooperation())
                                   .creatorCount(request.creatorCount())
                                   .build())
+                   .version(randomUUID().toString())
                    .build();
     }
 
     private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao,
-                                                              UpsertCandidateRequest request) {
+                                                               UpsertCandidateRequest request) {
         return candidateDao.copy()
-                   .candidate(candidateDao.candidate().copy()
-                                  .applicable(request.isApplicable())
-                                  .build())
+                   .candidate(candidateDao.candidate().copy().applicable(request.isApplicable()).build())
                    .build();
     }
 

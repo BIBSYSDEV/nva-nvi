@@ -159,7 +159,7 @@ class CandidateBOTest extends LocalDynamoTest {
 
         assertThat(updatedApproval, is(equalTo(approval)));
     }
-
+    
     private static PeriodStatusDto getDefaultPeriodStatus() {
         return PeriodStatusDto.fromPeriodStatus(PeriodStatus.builder().withStatus(Status.OPEN_PERIOD).build());
     }
@@ -209,7 +209,7 @@ class CandidateBOTest extends LocalDynamoTest {
 
             @Override
             public PublicationDate publicationDate() {
-                return new PublicationDate(null, "3", Year.now().toString());
+                return request.publicationDate();
             }
 
             @Override
