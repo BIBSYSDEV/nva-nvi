@@ -7,6 +7,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.time.ZonedDateTime;
 import no.sikt.nva.nvi.index.aws.SearchClient;
+import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import nva.commons.apigateway.ApiGatewayHandler;
@@ -19,13 +20,13 @@ public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
     public static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
+    public static final String QUERY_PARAM_EXCLUDE_SUB_UNITS = "excludeSubUnits";
     public static final String QUERY_PARAM_FILTER = "filter";
     private static final String DEFAULT_FILTER = StringUtils.EMPTY_STRING;
     private static final String QUERY_SIZE_PARAM = "size";
     private static final String QUERY_OFFSET_PARAM = "offset";
     private static final int DEFAULT_QUERY_SIZE = 10;
     private static final int DEFAULT_OFFSET_SIZE = 0;
-    private static final String SEARCH_ALL_DOCUMENTS_DEFAULT_QUERY = "*";
     public static final String QUERY_PARAM_YEAR = "year";
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
 
@@ -48,13 +49,17 @@ public class SearchNviCandidatesHandler
         var offset = extractQueryParamOffsetOrDefault(requestInfo);
         var size = extractQueryParamSizeOrDefault(requestInfo);
         var filter = extractQueryParamFilterOrDefault(requestInfo);
-        var affiliations = extractQueryParamAffilitionsOrDefault(requestInfo);
+        var affiliations = extractQueryParamAffiliationsOrDefault(requestInfo);
+        var excludeSubUnits = extractQueryParamExcludeSubUnitsOrDefault(requestInfo);
         var customer = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         var username = requestInfo.getUserName();
         var year = extractQueryParamPublicationDateOrDefault(requestInfo);
 
-        return attempt(() -> openSearchClient.search(affiliations, filter, username, year, customer, offset, size))
-                   .map(searchResponse -> toPaginatedResult(searchResponse, affiliations, filter, offset, size))
+        var candidateSearchParameters = new CandidateSearchParameters(affiliations, excludeSubUnits, filter, username,
+                                                                      year, customer, offset, size);
+
+        return attempt(() -> openSearchClient.search(candidateSearchParameters))
+                   .map(searchResponse -> toPaginatedResult(searchResponse, candidateSearchParameters))
                    .orElseThrow();
     }
 
@@ -78,9 +83,14 @@ public class SearchNviCandidatesHandler
                    .orElse(DEFAULT_OFFSET_SIZE);
     }
 
-    private static String extractQueryParamAffilitionsOrDefault(RequestInfo requestInfo) {
+    private static String extractQueryParamAffiliationsOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
                    .getOrDefault(QUERY_PARAM_AFFILIATIONS, null);
+    }
+
+    private static boolean extractQueryParamExcludeSubUnitsOrDefault(RequestInfo requestInfo) {
+        return requestInfo.getQueryParameterOpt(QUERY_PARAM_EXCLUDE_SUB_UNITS)
+                    .map(Boolean::parseBoolean).orElse(false);
     }
 
     private static String extractQueryParamFilterOrDefault(RequestInfo requestInfo) {

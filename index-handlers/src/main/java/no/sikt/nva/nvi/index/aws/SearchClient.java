@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.index.aws;
 
 import java.io.IOException;
-import java.net.URI;
+import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
 public interface SearchClient<T> {
@@ -10,8 +10,7 @@ public interface SearchClient<T> {
 
     void removeDocumentFromIndex(T indexDocument);
 
-    SearchResponse<T> search(String affiliations, String filter, String username,
-                             String year, URI customer, int offset, int size)
+    SearchResponse<T> search(CandidateSearchParameters candidateSearchParameters)
         throws IOException;
 
     void deleteIndex() throws IOException;
