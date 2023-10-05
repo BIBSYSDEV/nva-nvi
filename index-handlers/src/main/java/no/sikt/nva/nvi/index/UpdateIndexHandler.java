@@ -12,7 +12,6 @@ import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationTyp
 import java.net.URI;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.StorageReader;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.CandidateBO;
@@ -48,15 +47,13 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     @JacocoGenerated
     public UpdateIndexHandler() {
         this(new S3StorageReader(EXPANDED_RESOURCES_BUCKET), defaultOpenSearchClient(),
-             new CandidateRepository(defaultDynamoClient()),
-             new PeriodRepository(defaultDynamoClient()),
+             new CandidateRepository(defaultDynamoClient()), new PeriodRepository(defaultDynamoClient()),
              new NviCandidateIndexDocumentGenerator(defaultUriRetriver()));
     }
 
     public UpdateIndexHandler(StorageReader<URI> storageReader,
                               SearchClient<NviCandidateIndexDocument> openSearchClient,
-                              CandidateRepository candidateRepository,
-                              PeriodRepository periodRepository,
+                              CandidateRepository candidateRepository, PeriodRepository periodRepository,
                               NviCandidateIndexDocumentGenerator documentGenerator) {
         this.storageReader = storageReader;
         this.openSearchClient = openSearchClient;
@@ -83,20 +80,12 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         return record.getDynamodb().getKeys().get(SORT_KEY).getS().split(PRIMARY_KEY_DELIMITER)[0];
     }
 
-    private static URI extractBucketUri(DbCandidate candidate) {
-        return candidate.publicationBucketUri();
-    }
-
     private static NviCandidateIndexDocument toIndexDocumentWithId(UUID candidateIdentifier) {
         return new NviCandidateIndexDocument.Builder().withIdentifier(candidateIdentifier.toString()).build();
     }
 
     private static UUID extractIdentifierFromNewImage(DynamodbStreamRecord record) {
         return UUID.fromString(record.getDynamodb().getNewImage().get(IDENTIFIER).getS());
-    }
-
-    private static Boolean isApplicable(DbCandidate candidate) {
-        return candidate.applicable();
     }
 
     private static boolean isApproval(DynamodbStreamRecord record) {
@@ -125,12 +114,12 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         try {
             var candidateIdentifier = extractIdentifierFromNewImage(record);
             var candidate = fetchCandidate(candidateIdentifier);
-            if (isApplicable(candidate.getCandidateDao().candidate())) {
+            if (candidate.isApplicable()) {
                 addDocumentToIndex(candidate);
             } else {
                 removeDocumentFromIndex(candidate);
             }
-            LOGGER.info(INDEXING_MESSAGE, candidate.getCandidateDao().candidate().publicationId());
+            LOGGER.info(INDEXING_MESSAGE, candidate.publicationId());
         } catch (Exception e) {
             logRecordThatCouldNotBeIndexed(record);
         }
@@ -153,7 +142,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
     private void addDocumentToIndex(CandidateBO candidate) {
         LOGGER.info("Attempting to add/update document with identifier {}", candidate.identifier().toString());
-        attempt(() -> extractBucketUri(candidate.getCandidateDao().candidate())).map(storageReader::read)
+        attempt(() -> storageReader.read(candidate.getBucketUri()))
             .map(blob -> documentGenerator.generateDocument(blob, candidate))
             .forEach(openSearchClient::addDocumentToIndex)
             .orElseThrow();

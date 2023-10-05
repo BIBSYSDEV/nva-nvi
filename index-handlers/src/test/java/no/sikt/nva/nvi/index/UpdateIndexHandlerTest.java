@@ -37,9 +37,15 @@ import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
+import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.ApprovalBO;
 import no.sikt.nva.nvi.common.service.CandidateBO;
@@ -72,7 +78,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private static final Context CONTEXT = mock(Context.class);
     private static final String CANDIDATE = IoUtils.stringFromResources(Path.of("candidate.json"));
     private static final URI INSTITUTION_ID_FROM_EVENT = URI.create(
-        "https://api.dev.nva.aws.unit" + ".no/cristin/organization/20754.0.0.0");
+        "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     private static final int POINTS_SCALE = 4;
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private UpdateIndexHandler handler;
@@ -255,8 +261,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         return new PublicationDetails(
             "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
             "AcademicArticle", "Demo nvi candidate", publicationDate, List.of(
-                new Contributor.Builder()
-                .withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
+            new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
                 .withName("Mona Ullah")
                 .withRole("Creator")
                 .withAffiliations(List.of(constructAffiliation()))
@@ -302,11 +307,30 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         candidateRepository = mock(CandidateRepository.class);
         periodRepository = mock(PeriodRepository.class);
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(candidateRepository.findCandidateDaoById(any())).thenReturn(
-            Optional.of(persistedCandidate.getCandidateDao()));
+        when(candidateRepository.findCandidateDaoById(any())).thenReturn(Optional.of(toDao(persistedCandidate)));
         when(candidateRepository.fetchApprovals(any())).thenReturn(getApproval(persistedCandidate));
         handler = new UpdateIndexHandler(storageReader, openSearchClient, candidateRepository, periodRepository,
                                          generator);
+    }
+
+    private CandidateDao toDao(CandidateBO candidate) {
+        return CandidateDao.builder()
+                   .identifier(candidate.identifier())
+                   .candidate(DbCandidate.builder()
+                                  .publicationId(candidate.publicationId())
+                                  .points(candidate.getPoints())
+                                  .applicable(candidate.isApplicable())
+                                  .creatorCount(1)
+                                  .instanceType(InstanceType.ACADEMIC_ARTICLE)
+                                  .creators(List.of(new DbCreator(
+                                      URI.create("https://api.dev.nva.aws.unit" + ".no/cristin/person/997998"), List.of(
+                                      URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0")))))
+                                  .publicationDate(new DbPublicationDate("2023", "6", "4"))
+                                  .internationalCollaboration(false)
+                                  .level(DbLevel.LEVEL_ONE)
+                                  .publicationBucketUri(candidate.getBucketUri())
+                                  .build())
+                   .build();
     }
 
     private List<ApprovalStatusDao> getApproval(CandidateBO persistedCandidate) {
@@ -338,7 +362,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .withApprovals(constructExpectedApprovals(candidate.getApprovals()))
                    .withPublicationDetails(constructPublicationDetails())
                    .withNumberOfApprovals(candidate.getApprovals().size())
-                   .withPoints(sumPoint(candidate.getCandidateDao().candidate().points()))
+                   .withPoints(sumPoint(candidate.getPoints()))
                    .build();
     }
 
@@ -350,7 +374,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .withApprovals(constructExpectedApprovals(candidate.getApprovals()))
                    .withPublicationDetails(constructPublicationDetailsWithPublicationDate(publicationDate))
                    .withNumberOfApprovals(candidate.getApprovals().size())
-                   .withPoints(sumPoint(candidate.getCandidateDao().candidate().points()))
+                   .withPoints(sumPoint(candidate.getPoints()))
                    .build();
     }
 

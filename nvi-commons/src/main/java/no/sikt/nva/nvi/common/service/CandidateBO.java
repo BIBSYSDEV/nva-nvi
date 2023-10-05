@@ -117,11 +117,6 @@ public final class CandidateBO {
     }
 
     @JacocoGenerated
-    public CandidateDao getCandidateDao() {
-        return candidateDao;
-    }
-
-    @JacocoGenerated
     public Map<URI, ApprovalBO> getApprovals() {
         return new HashMap<>(approvals);
     }
@@ -176,6 +171,16 @@ public final class CandidateBO {
 
     public boolean isApplicable() {
         return candidateDao.candidate().applicable();
+    }
+
+    @JacocoGenerated
+    public List<DbInstitutionPoints> getPoints() {
+        return candidateDao.candidate().points();
+    }
+
+    @JacocoGenerated
+    public URI getBucketUri() {
+        return candidateDao.candidate().publicationBucketUri();
     }
 
     private static PeriodStatus calculatePeriodStatusIfApplicable(PeriodRepository periodRepository,

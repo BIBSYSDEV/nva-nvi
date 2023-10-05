@@ -72,7 +72,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withApprovals(approvals)
                    .withPublicationDetails(extractPublicationDetails(resource))
                    .withNumberOfApprovals(approvals.size())
-                   .withPoints(sumPoints(candidate.getCandidateDao().candidate().points()))
+                   .withPoints(sumPoints(candidate.getPoints()))
                    .build();
     }
 
