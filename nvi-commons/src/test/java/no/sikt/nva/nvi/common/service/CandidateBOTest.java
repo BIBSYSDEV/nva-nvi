@@ -145,6 +145,19 @@ class CandidateBOTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldReturnCandidateWithNoPeriodWhenNotApplicable() {
+        var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
+        var tempCandidateBO = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
+                            .orElseThrow();
+        var updateRequest = createUpsertCandidateRequest(tempCandidateBO.publicationId(), false, 4,
+                                                         InstanceType.ACADEMIC_MONOGRAPH,
+                                                         randomUri(), randomUri(), randomUri());
+        var candidateBO = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository).orElseThrow();
+        var fetchedCandidate = CandidateBO.fromRequest(candidateBO::identifier, candidateRepository, periodRepository);
+        assertThat(fetchedCandidate.periodStatus().status(), is(equalTo(Status.NO_PERIOD)));
+    }
+
+    @Test
     void shouldNotOverrideAssigneeWhenAssigneeAlreadyIsSet() {
         var institutionId = randomUri();
         var assignee = randomString();

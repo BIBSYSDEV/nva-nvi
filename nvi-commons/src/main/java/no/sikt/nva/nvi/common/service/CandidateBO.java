@@ -127,6 +127,10 @@ public final class CandidateBO {
         return candidateDao.candidate().publicationId();
     }
 
+    PeriodStatus periodStatus() {
+        return periodStatus;
+    }
+
     public CandidateDto toDto() {
         if (isApplicable()) {
             return CandidateDto.builder()
