@@ -439,7 +439,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: event-handlers
-      Handler: no.sikt.nva.nvi.events.BatchScanStartHandler::handleRequest
+      Handler: no.sikt.nva.nvi.events.batch.BatchScanStartHandler::handleRequest
       Runtime: java17
       Timeout: 60
       Role: !GetAtt NvaNviRole.Arn
