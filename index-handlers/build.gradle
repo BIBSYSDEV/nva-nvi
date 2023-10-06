@@ -19,6 +19,7 @@ dependencies {
     implementation libs.aws.sdk2.sqs
     implementation libs.aws.sdk2.apache.client
     implementation libs.aws.sdk2.regions
+    implementation libs.aws.sdk2.dynamodb
 
     implementation libs.opensearch.java
     implementation libs.opensearch.rest.client

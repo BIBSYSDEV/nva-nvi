@@ -21,6 +21,7 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
 
     public static final String INVALID_NVI_CANDIDATE_MESSAGE = "Invalid nvi candidate message";
     private static final Logger LOGGER = LoggerFactory.getLogger(UpsertNviCandidateHandler.class);
+    public static final String PERSISTANCE_MESSAGE = "Nvi candidate has been persisted for publication: {}";
     private final CandidateRepository repository;
     private final PeriodRepository periodRepository;
 
@@ -59,6 +60,7 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
     private void upsertNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
         validateMessage(evaluatedCandidate);
         CandidateBO.fromRequest(evaluatedCandidate, repository, periodRepository);
+        LOGGER.info(PERSISTANCE_MESSAGE, evaluatedCandidate.candidateDetails().publicationId());
     }
 
     private CandidateEvaluatedMessage parseBody(String body) {

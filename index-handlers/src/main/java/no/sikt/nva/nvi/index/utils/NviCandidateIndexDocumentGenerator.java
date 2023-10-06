@@ -25,12 +25,14 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.Username;
-import no.sikt.nva.nvi.common.service.Candidate;
+import no.sikt.nva.nvi.common.service.ApprovalBO;
+import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.utils.JsonPointers;
 import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.Approval;
@@ -47,31 +49,38 @@ import org.apache.jena.rdf.model.RDFNode;
 
 public final class NviCandidateIndexDocumentGenerator {
 
-    private static final int POINTS_SCALE = 4;
-    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     public static final String APPLICATION_JSON = "application/json";
     public static final String PART_OF_PROPERTY = "https://nva.sikt.no/ontology/publication#partOf";
+    private static final int POINTS_SCALE = 4;
+    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private final AuthorizedBackendUriRetriever uriRetriever;
 
     public NviCandidateIndexDocumentGenerator(AuthorizedBackendUriRetriever uriRetriever) {
         this.uriRetriever = uriRetriever;
     }
 
-    public NviCandidateIndexDocument generateDocument(String resource, Candidate candidate) {
+    public NviCandidateIndexDocument generateDocument(String resource, CandidateBO candidate) {
         return createNviCandidateIndexDocument(
             attempt(() -> dtoObjectMapper.readTree(resource)).map(root -> root.at(JsonPointers.JSON_PTR_BODY))
                 .orElseThrow(), candidate);
     }
 
-    private NviCandidateIndexDocument createNviCandidateIndexDocument(JsonNode resource, Candidate candidate) {
-        var approvals = createApprovals(resource, candidate.approvalStatuses());
+    private NviCandidateIndexDocument createNviCandidateIndexDocument(JsonNode resource, CandidateBO candidate) {
+        var approvals = createApprovals(resource, toDbApprovals(candidate.getApprovals()));
         return new NviCandidateIndexDocument.Builder().withContext(URI.create(Contexts.NVI_CONTEXT))
                    .withIdentifier(candidate.identifier().toString())
                    .withApprovals(approvals)
                    .withPublicationDetails(extractPublicationDetails(resource))
                    .withNumberOfApprovals(approvals.size())
-                   .withPoints(sumPoints(candidate.candidate().points()))
+                   .withPoints(sumPoints(candidate.getPoints()))
                    .build();
+    }
+
+    private List<DbApprovalStatus> toDbApprovals(Map<URI, ApprovalBO> approvals) {
+        return approvals.values()
+                   .stream()
+                   .map(approvalBO -> approvalBO.approval().approvalStatus())
+                   .collect(Collectors.toList());
     }
 
     private BigDecimal sumPoints(List<DbInstitutionPoints> points) {
@@ -102,10 +111,7 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private String extractAssignee(DbApprovalStatus approval) {
-        return Optional.of(approval)
-                   .map(DbApprovalStatus::assignee)
-                   .map(Username::value)
-                   .orElse(null);
+        return Optional.of(approval).map(DbApprovalStatus::assignee).map(Username::value).orElse(null);
     }
 
     private List<Organization> getTopLevelOrgs(String s) {
@@ -114,13 +120,17 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private PublicationDetails extractPublicationDetails(JsonNode resource) {
-        return new PublicationDetails(extractId(resource), extractInstanceType(resource), extractMainTitle(resource),
-                                      extractPublicationDate(resource), extractContributors(resource));
+        return PublicationDetails.builder()
+                   .withId(extractId(resource))
+                   .withContributors(extractContributors(resource))
+                   .withType(extractInstanceType(resource))
+                   .withPublicationDate(extractPublicationDate(resource))
+                   .withTitle(extractMainTitle(resource))
+                   .build();
     }
 
     private List<Contributor> extractContributors(JsonNode resource) {
-        return getJsonNodeStream(resource, JSON_PTR_CONTRIBUTOR)
-                   .map(this::createContributor).toList();
+        return getJsonNodeStream(resource, JSON_PTR_CONTRIBUTOR).map(this::createContributor).toList();
     }
 
     private Contributor createContributor(JsonNode contributor) {
@@ -134,15 +144,13 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private List<Affiliation> extractAffiliations(JsonNode contributor) {
-        return streamNode(contributor.at(JSON_PTR_AFFILIATIONS)).map(
-            this::extractAffiliation)
-                   .toList();
+        return streamNode(contributor.at(JSON_PTR_AFFILIATIONS)).map(this::extractAffiliation).toList();
     }
 
     private Affiliation extractAffiliation(JsonNode affiliation) {
         var id = extractJsonNodeTextValue(affiliation, JSON_PTR_ID);
-        return attempt(() -> this.uriRetriever.getRawContent(URI.create(id), APPLICATION_JSON))
-                   .map(Optional::orElseThrow)
+        return attempt(() -> this.uriRetriever.getRawContent(URI.create(id), APPLICATION_JSON)).map(
+                Optional::orElseThrow)
                    .map(str -> createModel(dtoObjectMapper.readTree(str)))
                    .map(model -> model.listObjectsOfProperty(model.createProperty(PART_OF_PROPERTY)))
                    .map(nodeIterator -> nodeIterator.toList().stream().map(RDFNode::toString).toList())

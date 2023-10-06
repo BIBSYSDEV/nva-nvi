@@ -114,9 +114,10 @@ public record CandidateDao(
 
         private UUID builderIdentifier;
         private DbCandidate builderCandidate;
-        private String version;
+        private String builderVersion;
 
         private Builder() {
+
         }
 
         public Builder type(String noop) {
@@ -155,12 +156,12 @@ public record CandidateDao(
         }
 
         public Builder version(String version) {
-            this.version = version;
+            this.builderVersion = version;
             return this;
         }
 
         public CandidateDao build() {
-            return new CandidateDao(builderIdentifier, builderCandidate, version);
+            return new CandidateDao(builderIdentifier, builderCandidate, builderVersion);
         }
     }
 

@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.evaluator;
 
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -31,8 +30,7 @@ public class EvaluatorService {
         this.candidateCalculator = candidateCalculator;
     }
 
-    public CandidateEvaluatedMessage evaluateCandidacy(EventReference input)
-        throws JsonProcessingException {
+    public CandidateEvaluatedMessage evaluateCandidacy(EventReference input) {
         var jsonNode = extractBodyFromContent(storageReader.read(input));
         var candidateType = candidateCalculator.calculateNviType(jsonNode);
         var publicationBucketUri = input.getUri();

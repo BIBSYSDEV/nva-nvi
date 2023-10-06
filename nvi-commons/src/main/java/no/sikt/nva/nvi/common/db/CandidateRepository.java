@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.db;
 
 import static java.util.Objects.nonNull;
+import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toMap;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
@@ -131,11 +132,10 @@ public class CandidateRepository extends DynamoRepository {
     }
 
     public CandidateDao createDao(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
-        var identifier = UUID.randomUUID();
+        var identifier = randomUUID();
         var candidate = constructCandidate(identifier, dbCandidate);
         var uniqueness = new CandidateUniquenessEntryDao(dbCandidate.publicationId().toString());
-        var transactionBuilder = buildTransaction(approvalStatuses, candidate,
-                                                  identifier, uniqueness);
+        var transactionBuilder = buildTransaction(approvalStatuses, candidate, identifier, uniqueness);
 
         this.client.transactWriteItems(transactionBuilder.build());
         return candidateTable.getItem(candidate);
@@ -150,6 +150,12 @@ public class CandidateRepository extends DynamoRepository {
         addNoLongerValidApprovalsToTransaction(identifier, approvalMap, transaction);
         transaction.addPutItem(candidateTable, candidateDao);
         approvalMap.values().forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
+        client.transactWriteItems(transaction.build());
+    }
+
+    public void updateCandidate(CandidateDao candidate) {
+        var transaction = TransactWriteItemsEnhancedRequest.builder();
+        transaction.addPutItem(candidateTable, candidate);
         client.transactWriteItems(transaction.build());
     }
 
@@ -171,9 +177,12 @@ public class CandidateRepository extends DynamoRepository {
     }
 
     public Optional<CandidateDao> findCandidateDaoById(UUID candidateIdentifier) {
-        return Optional.ofNullable(candidateTable.getItem(
-            Key.builder().partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
-                .sortValue(CandidateDao.createPartitionKey(candidateIdentifier.toString())).build()));
+        return Optional.ofNullable(candidateTable.getItem(Key.builder()
+                                                              .partitionValue(CandidateDao.createPartitionKey(
+                                                                  candidateIdentifier.toString()))
+                                                              .sortValue(CandidateDao.createPartitionKey(
+                                                                  candidateIdentifier.toString()))
+                                                              .build()));
     }
 
     public Optional<Candidate> findCandidateById(UUID candidateIdentifier) {
@@ -183,12 +192,12 @@ public class CandidateRepository extends DynamoRepository {
     }
 
     public Optional<Candidate> findByPublicationId(URI publicationId) {
-        return findByPublicationIdDao(publicationId)
-                   .map(this::toCandidate);
+        return findByPublicationIdDao(publicationId).map(this::toCandidate);
     }
 
     public Optional<CandidateDao> findByPublicationIdDao(URI publicationId) {
-        return this.publicationIdIndex.query(findCandidateByPublicationIdQuery(publicationId)).stream()
+        return this.publicationIdIndex.query(findCandidateByPublicationIdQuery(publicationId))
+                   .stream()
                    .map(Page::items)
                    .flatMap(Collection::stream)
                    .findFirst();
@@ -228,8 +237,7 @@ public class CandidateRepository extends DynamoRepository {
     }
 
     public List<ApprovalStatusDao> fetchApprovals(UUID identifier) {
-        return approvalStatusTable.query(constructApprovalsQuery(identifier))
-                   .items().stream().toList();
+        return approvalStatusTable.query(constructApprovalsQuery(identifier)).items().stream().toList();
     }
 
     public List<DbNote> getDbNotes(UUID candidateIdentifier) {
@@ -241,10 +249,7 @@ public class CandidateRepository extends DynamoRepository {
     }
 
     public List<NoteDao> getNotes(UUID candidateIdentifier) {
-        return noteTable.query(queryCandidateParts(candidateIdentifier, NoteDao.TYPE))
-                   .items()
-                   .stream()
-                   .toList();
+        return noteTable.query(queryCandidateParts(candidateIdentifier, NoteDao.TYPE)).items().stream().toList();
     }
 
     public void updateCandidateAndRemovingApprovals(UUID identifier, CandidateDao nonApplicableCandidate) {
@@ -252,41 +257,38 @@ public class CandidateRepository extends DynamoRepository {
         var approvalStatuseDaos = getApprovalStatuses(identifier);
         if (!approvalStatuseDaos.isEmpty()) {
             var transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
-            approvalStatuseDaos.forEach(approvalStatusDao ->
-                                            transactionBuilder.addDeleteItem(approvalStatusTable, approvalStatusDao));
+            approvalStatuseDaos.forEach(
+                approvalStatusDao -> transactionBuilder.addDeleteItem(approvalStatusTable, approvalStatusDao));
             client.transactWriteItems(transactionBuilder.build());
         }
     }
 
     private static ApprovalStatusDao mapToApprovalStatusDao(UUID identifier, DbApprovalStatus approval) {
-        return ApprovalStatusDao.builder()
-                   .identifier(identifier)
-                   .approvalStatus(approval)
-                   .build();
+        return ApprovalStatusDao.builder().identifier(identifier).approvalStatus(approval).build();
     }
 
     private static QueryConditional constructApprovalsQuery(UUID identifier) {
         return sortBeginsWith(Key.builder()
-                                  .partitionValue(
-                                      CandidateDao.createPartitionKey(identifier.toString()))
+                                  .partitionValue(CandidateDao.createPartitionKey(identifier.toString()))
                                   .sortValue(ApprovalStatusDao.TYPE)
                                   .build());
     }
 
     private static CandidateDao constructCandidate(UUID identifier, DbCandidate dbCandidate) {
-        return CandidateDao.builder().identifier(identifier).candidate(dbCandidate).build();
+        return CandidateDao.builder()
+                   .identifier(identifier)
+                   .candidate(dbCandidate)
+                   .version(randomUUID().toString())
+                   .build();
     }
 
     private static NoteDao newNoteDao(UUID candidateIdentifier, DbNote dbNote) {
-        return NoteDao.builder()
-                   .identifier(candidateIdentifier)
-                   .note(newDbNote(dbNote))
-                   .build();
+        return NoteDao.builder().identifier(candidateIdentifier).note(newDbNote(dbNote)).build();
     }
 
     private static DbNote newDbNote(DbNote dbNote) {
         return DbNote.builder()
-                   .noteId(UUID.randomUUID())
+                   .noteId(randomUUID())
                    .text(dbNote.text())
                    .user(dbNote.user())
                    .createdDate(Instant.now())
@@ -320,8 +322,7 @@ public class CandidateRepository extends DynamoRepository {
                    .build();
     }
 
-    private void addNoLongerValidApprovalsToTransaction(UUID identifier,
-                                                        Map<URI, ApprovalStatusDao> approvalMap,
+    private void addNoLongerValidApprovalsToTransaction(UUID identifier, Map<URI, ApprovalStatusDao> approvalMap,
                                                         Builder transaction) {
         var oldApprovals = new ArrayList<>(getApprovalStatuses(approvalStatusTable, identifier));
         if (oldApprovals.removeIf(old -> approvalMap.containsKey(old.institutionId()))) {
@@ -348,7 +349,9 @@ public class CandidateRepository extends DynamoRepository {
 
     private List<ApprovalStatusDao> getApprovalStatuses(UUID identifier) {
         return approvalStatusTable.query(queryCandidateParts(identifier, ApprovalStatusDao.TYPE))
-                   .items().stream().toList();
+                   .items()
+                   .stream()
+                   .toList();
     }
 
     private List<DbApprovalStatus> getApprovalStatuses(DynamoDbTable<ApprovalStatusDao> approvalStatusTable,
