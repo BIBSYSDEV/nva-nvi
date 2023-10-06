@@ -94,7 +94,8 @@ public final class PointCalculator {
         var instanceTypeAndLevelPoints = getInstanceTypeAndLevelPoints(instanceType, channelLevel.type(),
                                                                        channelLevel.level());
         boolean internationalCollaboration = isInternationalCollaboration(jsonNode);
-        return new PointCalculation(null, null, false, null, null,
+        return new PointCalculation(instanceType, channelLevel.type(), null, channelLevel.level(),
+                                    internationalCollaboration, null, null,
                                     calculatePoints(instanceTypeAndLevelPoints,
                                                     countCreatorShares(jsonNode),
                                                     internationalCollaboration,

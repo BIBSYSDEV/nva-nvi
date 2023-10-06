@@ -1,23 +1,11 @@
 package no.sikt.nva.nvi.evaluator.model;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonSerialize
 public record NonNviCandidate(URI publicationId) implements CandidateType {
 
-    public static final class Builder {
-
-        private URI publicationId;
-
-        public Builder() {
-        }
-
-        public Builder withPublicationId(URI publicationId) {
-            this.publicationId = publicationId;
-            return this;
-        }
-
-        public NonNviCandidate build() {
-            return new NonNviCandidate(publicationId);
-        }
-    }
 }

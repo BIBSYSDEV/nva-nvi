@@ -50,7 +50,7 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
         try {
             var message = evaluatorService.evaluateCandidacy(input);
             sendMessage(message);
-            LOGGER.info(EVALUATION_MESSAGE, message.candidateDetails().publicationId());
+            LOGGER.info(EVALUATION_MESSAGE, message.candidate());
         } catch (Exception e) {
             var msg = "Failure while calculating NVI Candidate: %s, ex: %s, msg: %s".formatted(input.getUri(),
                                                                                                e.getClass(),

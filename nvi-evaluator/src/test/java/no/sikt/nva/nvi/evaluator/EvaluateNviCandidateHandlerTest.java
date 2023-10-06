@@ -31,10 +31,10 @@ import java.util.Optional;
 import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.evaluator.model.CandidateEvaluatedMessage;
-import no.sikt.nva.nvi.evaluator.model.CandidateStatus;
+import no.sikt.nva.nvi.evaluator.model.NonNviCandidate;
+import no.sikt.nva.nvi.evaluator.model.NviCandidate;
 import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails.Creator;
-import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails.PublicationDate;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.s3.S3Driver;
@@ -251,8 +251,9 @@ class EvaluateNviCandidateHandlerTest {
         var body =
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class))
                 .orElseThrow();
-        assertThat(body.institutionPoints(), notNullValue());
-        assertThat(body.institutionPoints().get(CRISTIN_NVI_ORG_TOP_LEVEL_ID),
+        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        assertThat(institutionPoints, notNullValue());
+        assertThat(institutionPoints.get(CRISTIN_NVI_ORG_TOP_LEVEL_ID),
                    is(equalTo(BigDecimal.valueOf(1).setScale(4, RoundingMode.HALF_UP))));
     }
 
@@ -270,8 +271,9 @@ class EvaluateNviCandidateHandlerTest {
         var body =
             attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class))
                 .orElseThrow();
-        assertThat(body.institutionPoints(), notNullValue());
-        assertThat(body.institutionPoints().get(CRISTIN_NVI_ORG_TOP_LEVEL_ID), notNullValue());
+        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        assertThat(institutionPoints, notNullValue());
+        assertThat(institutionPoints.get(CRISTIN_NVI_ORG_TOP_LEVEL_ID), notNullValue());
     }
 
     @Test
@@ -325,7 +327,7 @@ class EvaluateNviCandidateHandlerTest {
         handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         var candidate = getSingleCandidateResponse(sentMessages);
-        assertThat(candidate.status(), is(equalTo(CandidateStatus.NON_CANDIDATE)));
+        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
     }
 
     @Test
@@ -337,7 +339,7 @@ class EvaluateNviCandidateHandlerTest {
         handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         var candidate = getSingleCandidateResponse(sentMessages);
-        assertThat(candidate.status(), is(equalTo(CandidateStatus.NON_CANDIDATE)));
+        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
     }
 
     @Test
@@ -349,8 +351,8 @@ class EvaluateNviCandidateHandlerTest {
         handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         var candidate = getSingleCandidateResponse(sentMessages);
-        assertThat(candidate.status(), is(equalTo(CandidateStatus.NON_CANDIDATE)));
-        assertThat(candidate.candidateDetails().publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
+        var nonNviCandidate = (NonNviCandidate) candidate.candidate();
+        assertThat(nonNviCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
     }
 
     @Test
@@ -362,7 +364,7 @@ class EvaluateNviCandidateHandlerTest {
         handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         var candidate = getSingleCandidateResponse(sentMessages);
-        assertThat(candidate.status(), is(equalTo(CandidateStatus.NON_CANDIDATE)));
+        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
     }
 
     @Test
@@ -374,7 +376,7 @@ class EvaluateNviCandidateHandlerTest {
         handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         var candidate = getSingleCandidateResponse(sentMessages);
-        assertThat(candidate.status(), is(equalTo(CandidateStatus.NON_CANDIDATE)));
+        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
     }
 
     @Test
@@ -394,7 +396,7 @@ class EvaluateNviCandidateHandlerTest {
         handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
         var candidate = getSingleCandidateResponse(sentMessages);
-        assertThat(candidate.status(), is(equalTo(CandidateStatus.NON_CANDIDATE)));
+        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
     }
 
     @Test
@@ -461,18 +463,20 @@ class EvaluateNviCandidateHandlerTest {
     private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(String instanceType,
                                                                          BigDecimal points, URI bucketUri) {
         return CandidateEvaluatedMessage.builder()
-                   .withStatus(CandidateStatus.CANDIDATE)
-                   .withCandidateDetails(createExpectedCandidateDetails(instanceType))
-                   .withInstitutionPoints(
-                       Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID, points.setScale(SCALE, RoundingMode.HALF_UP)))
+                   .withCandidateType(createExpectedCandidate(instanceType,
+                                                              Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID,
+                                                                     points.setScale(SCALE, RoundingMode.HALF_UP))))
                    .withPublicationBucketUri(bucketUri).build();
     }
 
-    private static CandidateDetails createExpectedCandidateDetails(String instanceType) {
-        return new CandidateDetails(HARDCODED_PUBLICATION_ID, instanceType, "1",
-                                    new PublicationDate(null, null, "2023"),
-                                    List.of(new Creator(EvaluateNviCandidateHandlerTest.HARDCODED_CREATOR_ID,
-                                                        List.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID))));
+    private static NviCandidate createExpectedCandidate(String instanceType, Map<URI, BigDecimal> institutionPoints) {
+        return new NviCandidate(CandidateDetails.builder()
+                                    .withPublicationId(HARDCODED_PUBLICATION_ID)
+                                    .withInstanceType(instanceType)
+                                    .withVerifiedCreators(List.of(
+                                        new Creator(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID))))
+                                    .withInstitutionPoints(institutionPoints)
+                                    .build());
     }
 
     private static String getHardCodedCristinOrgResponse() {

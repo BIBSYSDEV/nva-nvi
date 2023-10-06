@@ -1,22 +1,29 @@
 package no.sikt.nva.nvi.evaluator;
 
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_DAY;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MONTH;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_DATE;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_YEAR;
+import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
-import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.evaluator.model.CandidateEvaluatedMessage;
-import no.sikt.nva.nvi.evaluator.model.CandidateStatus;
+import no.sikt.nva.nvi.evaluator.model.CandidateType;
 import no.sikt.nva.nvi.evaluator.model.NonNviCandidate;
 import no.sikt.nva.nvi.evaluator.model.NviCandidate;
 import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails.Creator;
+import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails.PublicationDate;
+import no.sikt.nva.nvi.evaluator.model.PointCalculation;
 import no.unit.nva.events.models.EventReference;
 
 public class EvaluatorService {
@@ -32,47 +39,71 @@ public class EvaluatorService {
 
     public CandidateEvaluatedMessage evaluateCandidacy(EventReference input) {
         var jsonNode = extractBodyFromContent(storageReader.read(input));
-        var candidateType = candidateCalculator.calculateNviType(jsonNode);
         var publicationBucketUri = input.getUri();
-        if (candidateType instanceof NviCandidate) {
-            return constructCandidateResponse(publicationBucketUri,
-                                              (NviCandidate) candidateType,
-                                              calculatePoints(jsonNode, (NviCandidate) candidateType));
-        } else {
-            return constructNonCandidateResponse(publicationBucketUri, (NonNviCandidate) candidateType);
+        var publicationId = extractPublicationId(jsonNode);
+        var verifiedCreatorsWithNviInstitutions = candidateCalculator.getVerifiedCreatorsWithNviInstitutionsIfExists(
+            jsonNode);
+        if (!verifiedCreatorsWithNviInstitutions.isEmpty()) {
+            var pointCalculation = calculatePoints(jsonNode, verifiedCreatorsWithNviInstitutions);
+            var nviCandidate = constructNviCandidate(jsonNode, verifiedCreatorsWithNviInstitutions, pointCalculation,
+                                                     publicationId);
+            return constructMessage(publicationBucketUri, nviCandidate);
         }
+        return constructMessage(publicationBucketUri, new NonNviCandidate(publicationId));
     }
 
-    private static Map<URI, BigDecimal> calculatePoints(JsonNode jsonNode, NviCandidate candidateType) {
-        return PointCalculator.calculatePoints(jsonNode, extractNviCreatorsWithInstitutions(candidateType))
-                   .institutionPoints();
+    private static PointCalculation calculatePoints(JsonNode jsonNode, Map<URI, List<URI>> nviCreators) {
+        return PointCalculator.calculatePoints(jsonNode, nviCreators);
     }
 
-    private static Map<URI, List<URI>> extractNviCreatorsWithInstitutions(NviCandidate candidate) {
-        return candidate.candidateDetails()
-                   .verifiedCreators()
+    private static NviCandidate constructNviCandidate(JsonNode jsonNode,
+                                                      Map<URI, List<URI>> verifiedCreatorsWithNviInstitutions,
+                                                      PointCalculation pointCalculation, URI publicationId) {
+        return new NviCandidate(CandidateDetails.builder()
+                                    .withPublicationId(publicationId)
+                                    .withPublicationDate(extractPublicationDate(jsonNode))
+                                    .withInstanceType(pointCalculation.instanceType().value())
+                                    .withBasePoints(pointCalculation.basePoints())
+                                    .withLevel(pointCalculation.level().value())
+                                    .withChannelType(pointCalculation.channelType())
+                                    .withCollaborationFactor(pointCalculation.collaborationFactor())
+                                    .withPublicationChannelId(pointCalculation.publicationChannelId())
+                                    .withCollaborationFactor(pointCalculation.collaborationFactor())
+                                    .withInstitutionPoints(pointCalculation.institutionPoints())
+                                    .withIsInternationalCollaboration(pointCalculation.isInternationalCollaboration())
+                                    .withVerifiedCreators(mapToCreators(verifiedCreatorsWithNviInstitutions))
+                                    .build());
+    }
+
+    private static List<Creator> mapToCreators(Map<URI, List<URI>> verifiedCreatorsWithNviInstitutions) {
+        return verifiedCreatorsWithNviInstitutions.entrySet()
                    .stream()
-                   .collect(Collectors.toMap(Creator::id, Creator::nviInstitutions));
+                   .map(entry -> new Creator(entry.getKey(),
+                                             entry.getValue()))
+                   .toList();
     }
 
-    private static CandidateDetails createCandidateDetails(NonNviCandidate candidateType) {
-        return new CandidateDetails(candidateType.publicationId(), null, null, null, null);
+    private static URI extractPublicationId(JsonNode publication) {
+        return URI.create(extractJsonNodeTextValue(publication, JSON_PTR_ID));
     }
 
-    private CandidateEvaluatedMessage constructCandidateResponse(URI publicationBucketUri, NviCandidate candidateType,
-                                                                 Map<URI, BigDecimal> pointsPerInstitution) {
-        return CandidateEvaluatedMessage.builder().withStatus(CandidateStatus.CANDIDATE)
+    private static PublicationDate extractPublicationDate(JsonNode publication) {
+        return mapToPublicationDate(publication.at(JSON_PTR_PUBLICATION_DATE));
+    }
+
+    private static PublicationDate mapToPublicationDate(JsonNode publicationDateNode) {
+        var year = publicationDateNode.at(JSON_PTR_YEAR);
+        var month = publicationDateNode.at(JSON_PTR_MONTH);
+        var day = publicationDateNode.at(JSON_PTR_DAY);
+
+        return Optional.of(new PublicationDate(day.textValue(), month.textValue(), year.textValue()))
+                   .orElse(new PublicationDate(null, null, year.textValue()));
+    }
+
+    private CandidateEvaluatedMessage constructMessage(URI publicationBucketUri, CandidateType candidateType) {
+        return CandidateEvaluatedMessage.builder()
                    .withPublicationBucketUri(publicationBucketUri)
-                   .withCandidateDetails(candidateType.candidateDetails())
-                   .withInstitutionPoints(pointsPerInstitution)
-                   .build();
-    }
-
-    private CandidateEvaluatedMessage constructNonCandidateResponse(URI publicationBucketUri,
-                                                                    NonNviCandidate candidateType) {
-        return CandidateEvaluatedMessage.builder().withStatus(CandidateStatus.NON_CANDIDATE)
-                   .withPublicationBucketUri(publicationBucketUri)
-                   .withCandidateDetails(createCandidateDetails(candidateType))
+                   .withCandidateType(candidateType)
                    .build();
     }
 

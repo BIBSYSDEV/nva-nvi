@@ -4,8 +4,10 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Map;
 
-public record PointCalculation(PublicationChannel channelType,
+public record PointCalculation(InstanceType instanceType,
+                               PublicationChannel channelType,
                                URI publicationChannelId,
+                               Level level,
                                boolean isInternationalCollaboration,
                                BigDecimal collaborationFactor,
                                BigDecimal basePoints,

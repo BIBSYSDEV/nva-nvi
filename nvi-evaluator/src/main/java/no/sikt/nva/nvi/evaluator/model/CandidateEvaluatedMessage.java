@@ -2,19 +2,16 @@ package no.sikt.nva.nvi.evaluator.model;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.math.BigDecimal;
 import java.net.URI;
-import java.util.Map;
-import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails;
 
 @JsonAutoDetect(fieldVisibility = Visibility.ANY)
 @JsonSerialize
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 public record CandidateEvaluatedMessage(
-    CandidateStatus status,
     URI publicationBucketUri,
-    CandidateDetails candidateDetails,
-    Map<URI, BigDecimal> institutionPoints
+    CandidateType candidate
 ) {
 
     public static Builder builder() {
@@ -23,17 +20,10 @@ public record CandidateEvaluatedMessage(
 
     public static final class Builder {
 
-        private CandidateStatus status;
         private URI publicationBucketUri;
-        private CandidateDetails candidateDetails;
-        private Map<URI, BigDecimal> institutionPoints;
+        private CandidateType candidate;
 
         private Builder() {
-        }
-
-        public Builder withStatus(CandidateStatus status) {
-            this.status = status;
-            return this;
         }
 
         public Builder withPublicationBucketUri(URI publicationBucketUri) {
@@ -41,18 +31,13 @@ public record CandidateEvaluatedMessage(
             return this;
         }
 
-        public Builder withCandidateDetails(CandidateDetails candidateDetails) {
-            this.candidateDetails = candidateDetails;
-            return this;
-        }
-
-        public Builder withInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
-            this.institutionPoints = institutionPoints;
+        public Builder withCandidateType(CandidateType candidate) {
+            this.candidate = candidate;
             return this;
         }
 
         public CandidateEvaluatedMessage build() {
-            return new CandidateEvaluatedMessage(status, publicationBucketUri, candidateDetails, institutionPoints);
+            return new CandidateEvaluatedMessage(publicationBucketUri, candidate);
         }
     }
 }
