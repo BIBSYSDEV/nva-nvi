@@ -35,6 +35,7 @@ import no.sikt.nva.nvi.evaluator.model.NonNviCandidate;
 import no.sikt.nva.nvi.evaluator.model.NviCandidate;
 import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails.Creator;
+import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails.PublicationDate;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.s3.S3Driver;
@@ -52,6 +53,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 class EvaluateNviCandidateHandlerTest {
 
     public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
+    public static final PublicationDate HARDCODED_PUBLICATION_DATE = new PublicationDate(null, null, "2023");
     private static final String CRISTIN_API_ORGANIZATION_RESPONSE_JSON = "cristinApiOrganizationResponse.json";
     private static final URI HARDCODED_CREATOR_ID = URI.create("https://api.dev.nva.aws.unit.no/cristin/person/997998");
     private static final String ACADEMIC_CHAPTER_PATH = "candidate_academicChapter.json";
@@ -472,6 +474,7 @@ class EvaluateNviCandidateHandlerTest {
     private static NviCandidate createExpectedCandidate(String instanceType, Map<URI, BigDecimal> institutionPoints) {
         return new NviCandidate(CandidateDetails.builder()
                                     .withPublicationId(HARDCODED_PUBLICATION_ID)
+                                    .withPublicationDate(HARDCODED_PUBLICATION_DATE)
                                     .withInstanceType(instanceType)
                                     .withVerifiedCreators(List.of(
                                         new Creator(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID))))
