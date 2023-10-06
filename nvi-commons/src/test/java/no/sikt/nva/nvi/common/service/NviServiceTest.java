@@ -482,6 +482,15 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
+    public void refreshVersionShouldContinue() {
+        candidateRepository.create(randomCandidate(), List.of());
+        candidateRepository.create(randomCandidate(), List.of());
+        candidateRepository.create(randomCandidate(), List.of());
+        var result = nviService.refresh(1, null);
+        assertThat(result.shouldContinueScan(), is(equalTo(true)));
+    }
+
+    @Test
     public void shouldWriteVersionOnRefreshWithStartMarker() {
         candidateRepository.create(randomCandidate(), List.of());
         candidateRepository.create(randomCandidate(), List.of());

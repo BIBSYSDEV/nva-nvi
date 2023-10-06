@@ -226,6 +226,19 @@ public final class TestUtils {
         var creators = IntStream.of(creatorCount)
                            .mapToObj(i -> randomUri())
                            .collect(Collectors.toMap(Function.identity(), e -> List.of(institutions)));
+
+        return createUpsertCandidateRequest(publicationId, isApplicable, creators, instanceType,
+                                            DbLevel.LEVEL_TWO,
+                                            institutions);
+    }
+
+    public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
+                                                                      boolean isApplicable,
+                                                                      Map<URI, List<URI>> creators,
+                                                                      final InstanceType instanceType,
+                                                                      DbLevel level,
+                                                                      URI... institutions) {
+
         var points = Arrays.stream(institutions)
                          .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal()));
         return new UpsertCandidateRequest() {
@@ -257,7 +270,7 @@ public final class TestUtils {
 
             @Override
             public String level() {
-                return DbLevel.LEVEL_TWO.getValue();
+                return level.getValue();
             }
 
             @Override
@@ -277,7 +290,7 @@ public final class TestUtils {
 
             @Override
             public int creatorCount() {
-                return creatorCount;
+                return (int) creators.values().stream().mapToLong(List::size).sum();
             }
         };
     }

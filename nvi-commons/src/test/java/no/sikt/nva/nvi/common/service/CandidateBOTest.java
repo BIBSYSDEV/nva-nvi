@@ -24,7 +24,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
@@ -43,6 +45,9 @@ import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class CandidateBOTest extends LocalDynamoTest {
 
@@ -148,7 +153,7 @@ class CandidateBOTest extends LocalDynamoTest {
     void shouldReturnCandidateWithNoPeriodWhenNotApplicable() {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
         var tempCandidateBO = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
-                            .orElseThrow();
+                                  .orElseThrow();
         var updateRequest = createUpsertCandidateRequest(tempCandidateBO.publicationId(), false, 4,
                                                          InstanceType.ACADEMIC_MONOGRAPH,
                                                          randomUri(), randomUri(), randomUri());
@@ -187,6 +192,41 @@ class CandidateBOTest extends LocalDynamoTest {
         var updatedApproval = updatedCandidate.toDto().approvalStatuses().get(0);
 
         assertThat(updatedApproval, is(equalTo(approval)));
+    }
+
+    public static Stream<Arguments> shouldResetApprovalsWhenUpdatingFieldsEffectingApprovalsArguments() {
+        return Stream.of(
+            Arguments.of(DbLevel.LEVEL_ONE, InstanceType.ACADEMIC_MONOGRAPH, randomUri()),// change level
+            Arguments.of(DbLevel.LEVEL_TWO, InstanceType.ACADEMIC_LITERATURE_REVIEW, randomUri()), // change type
+            Arguments.of(DbLevel.LEVEL_TWO, InstanceType.ACADEMIC_MONOGRAPH, randomUri()) // points changed
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("shouldResetApprovalsWhenUpdatingFieldsEffectingApprovalsArguments")
+    void shouldResetApprovalsWhenUpdatingFieldsEffectingApprovals(DbLevel level,
+                                                                  InstanceType type,
+                                                                  URI institutionId) {
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+
+        var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
+                            .orElseThrow();
+
+        candidate.updateApproval(
+            new UpdateStatusRequest(institutionId, DbStatus.APPROVED, randomString(),
+                                    randomString()));
+
+        var newUpsertRequest = createUpsertCandidateRequest(candidate.publicationId(), true,
+                                                            upsertCandidateRequest.creators(),
+                                                            type,
+                                                            level,
+                                                            institutionId);
+
+        var updatedCandidate = CandidateBO.fromRequest(newUpsertRequest, candidateRepository, periodRepository)
+                                   .orElseThrow();
+        var updatedApproval = updatedCandidate.toDto().approvalStatuses().get(0);
+
+        assertThat(updatedApproval.status(), is(equalTo(NviApprovalStatus.PENDING)));
     }
 
     private static PeriodStatusDto getDefaultPeriodStatus() {
