@@ -60,7 +60,7 @@ public record CandidateUniquenessEntryDao(
 
         private String builderPartitionKey;
         private String builderSortKey;
-        private String version;
+        private String builderVersion;
 
         private Builder() {
         }
@@ -94,12 +94,12 @@ public record CandidateUniquenessEntryDao(
         }
 
         public Builder version(String version) {
-            this.version = version;
+            this.builderVersion = version;
             return this;
         }
 
         public CandidateUniquenessEntryDao build() {
-            return new CandidateUniquenessEntryDao(builderPartitionKey, builderSortKey, version);
+            return new CandidateUniquenessEntryDao(builderPartitionKey, builderSortKey, builderVersion);
         }
     }
 }

@@ -92,7 +92,7 @@ public record ApprovalStatusDao(UUID identifier,
 
         private UUID builderIdentifier;
         private DbApprovalStatus builderApprovalStatus;
-        private String version;
+        private String builderVersion;
 
         private Builder() {
         }
@@ -124,12 +124,12 @@ public record ApprovalStatusDao(UUID identifier,
 
         @JacocoGenerated
         public Builder version(String version) {
-            this.version = version;
+            this.builderVersion = version;
             return this;
         }
 
         public ApprovalStatusDao build() {
-            return new ApprovalStatusDao(this.builderIdentifier, this.builderApprovalStatus, this.version);
+            return new ApprovalStatusDao(this.builderIdentifier, this.builderApprovalStatus, this.builderVersion);
         }
     }
 

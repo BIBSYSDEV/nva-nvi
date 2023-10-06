@@ -79,7 +79,7 @@ public class CandidateRepository extends DynamoRepository {
 
     private Map<String, AttributeValue> mutateVersion(Map<String, AttributeValue> item) {
         var mutableMap = new HashMap<>(item);
-        mutableMap.put("version", AttributeValue.builder().s(UUID.randomUUID().toString()).build());
+        mutableMap.put("version", AttributeValue.builder().s(randomUUID().toString()).build());
         return mutableMap;
     }
 

@@ -57,7 +57,7 @@ public record NoteDao(UUID identifier,
         // And in records that obj.identifer() not obj.getIdentifier()
         private UUID builderIdentifier;
         private DbNote builderNote;
-        private String version;
+        private String builderVersion;
 
         private Builder() {
         }
@@ -89,12 +89,12 @@ public record NoteDao(UUID identifier,
 
         @JacocoGenerated
         public Builder version(String version) {
-            this.version = version;
+            this.builderVersion = version;
             return this;
         }
 
         public NoteDao build() {
-            return new NoteDao(builderIdentifier, builderNote, version);
+            return new NoteDao(builderIdentifier, builderNote, builderVersion);
         }
     }
 

@@ -56,7 +56,7 @@ public record NviPeriodDao(
 
         private String builderIdentifier;
         private DbNviPeriod builderNviPeriod;
-        private String version;
+        private String builderVersion;
 
         private Builder() {
         }
@@ -88,12 +88,12 @@ public record NviPeriodDao(
 
         @JacocoGenerated
         public Builder version(String version) {
-            this.version = version;
+            this.builderVersion = version;
             return this;
         }
 
         public NviPeriodDao build() {
-            return new NviPeriodDao(builderIdentifier, builderNviPeriod, version);
+            return new NviPeriodDao(builderIdentifier, builderNviPeriod, builderVersion);
         }
     }
 
