@@ -44,7 +44,8 @@ public class EvaluatorService {
     }
 
     private static Map<URI, BigDecimal> calculatePoints(JsonNode jsonNode, NviCandidate candidateType) {
-        return PointCalculator.calculatePoints(jsonNode, extractNviCreatorsWithInstitutions(candidateType));
+        return PointCalculator.calculatePoints(jsonNode, extractNviCreatorsWithInstitutions(candidateType))
+                   .institutionPoints();
     }
 
     private static Map<URI, List<URI>> extractNviCreatorsWithInstitutions(NviCandidate candidate) {
