@@ -462,7 +462,7 @@ class EvaluateNviCandidateHandlerTest {
                                     .withPublicationChannelId(
                                         EvaluateNviCandidateHandlerTest.HARDCODED_PUBLICATION_CHANNEL_ID)
                                     .withIsInternationalCollaboration(false)
-                                    .withCollaborationFactor(BigDecimal.ONE)
+                                    .withCollaborationFactor(BigDecimal.ONE.setScale(1, ROUNDING_MODE))
                                     .withBasePoints(basePoints)
                                     .withVerifiedCreators(List.of(
                                         new Creator(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID))))

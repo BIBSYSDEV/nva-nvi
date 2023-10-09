@@ -63,6 +63,12 @@ public class EvaluatorService {
                                     .withPublicationId(publicationId)
                                     .withPublicationDate(extractPublicationDate(jsonNode))
                                     .withInstanceType(pointCalculation.instanceType().value())
+                                    .withBasePoints(pointCalculation.basePoints())
+                                    .withPublicationChannelId(pointCalculation.publicationChannelId())
+                                    .withChannelType(pointCalculation.channelType().value())
+                                    .withLevel(pointCalculation.level().value())
+                                    .withIsInternationalCollaboration(pointCalculation.isInternationalCollaboration())
+                                    .withCollaborationFactor(pointCalculation.collaborationFactor())
                                     .withInstitutionPoints(pointCalculation.institutionPoints())
                                     .withVerifiedCreators(mapToCreators(verifiedCreatorsWithNviInstitutions))
                                     .build());

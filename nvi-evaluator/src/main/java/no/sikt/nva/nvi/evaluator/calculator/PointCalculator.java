@@ -56,9 +56,9 @@ public final class PointCalculator {
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private static final MathContext MATH_CONTEXT = new MathContext(SCALE, ROUNDING_MODE);
     private static final BigDecimal INTERNATIONAL_COLLABORATION_FACTOR =
-        new BigDecimal("1.3").setScale(SCALE, ROUNDING_MODE);
+        new BigDecimal("1.3").setScale(1, ROUNDING_MODE);
     private static final BigDecimal NOT_INTERNATIONAL_COLLABORATION_FACTOR =
-        BigDecimal.ONE.setScale(SCALE, ROUNDING_MODE);
+        BigDecimal.ONE.setScale(1, ROUNDING_MODE);
     private static final Map<InstanceType, Map<PublicationChannel, Map<Level, BigDecimal>>>
         INSTANCE_TYPE_AND_LEVEL_POINT_MAP = Map.of(
         ACADEMIC_MONOGRAPH, Map.of(
@@ -90,12 +90,15 @@ public final class PointCalculator {
     public static PointCalculation calculatePoints(JsonNode jsonNode,
                                                    Map<URI, List<URI>> nviCreatorsWithInstitutionIds) {
         var instanceType = extractInstanceType(jsonNode);
-        var channelLevel = extractChannelLevel(instanceType, jsonNode);
+        var channelLevel = extractChannel(instanceType, jsonNode);
         var instanceTypeAndLevelPoints = getInstanceTypeAndLevelPoints(instanceType, channelLevel.type(),
                                                                        channelLevel.level());
         boolean internationalCollaboration = isInternationalCollaboration(jsonNode);
-        return new PointCalculation(instanceType, channelLevel.type(), null, channelLevel.level(),
-                                    internationalCollaboration, null, null,
+        return new PointCalculation(instanceType, channelLevel.type(), channelLevel.id(), channelLevel.level(),
+                                    internationalCollaboration, internationalCollaboration
+                                                                    ? INTERNATIONAL_COLLABORATION_FACTOR
+                                                                    : NOT_INTERNATIONAL_COLLABORATION_FACTOR,
+                                    instanceTypeAndLevelPoints,
                                     calculatePoints(instanceTypeAndLevelPoints,
                                                     countCreatorShares(jsonNode),
                                                     internationalCollaboration,
@@ -202,7 +205,7 @@ public final class PointCalculator {
         return InstanceType.parse(extractJsonNodeTextValue(jsonNode, JSON_PTR_INSTANCE_TYPE));
     }
 
-    private static ChannelLevel extractChannelLevel(InstanceType instanceType, JsonNode jsonNode) {
+    private static Channel extractChannel(InstanceType instanceType, JsonNode jsonNode) {
         var channel = switch (instanceType) {
             case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW -> jsonNode.at(JSON_PTR_PUBLICATION_CONTEXT).toString();
             case ACADEMIC_MONOGRAPH -> extractAcademicMonographChannel(jsonNode);
@@ -212,7 +215,7 @@ public final class PointCalculator {
                 throw new IllegalArgumentException();
             }
         };
-        return attempt(() -> dtoObjectMapper.readValue(channel, ChannelLevel.class)).orElseThrow();
+        return attempt(() -> dtoObjectMapper.readValue(channel, Channel.class)).orElseThrow();
     }
 
     private static String extractAcademicChapterChannel(JsonNode jsonNode) {
@@ -235,7 +238,7 @@ public final class PointCalculator {
         return StreamSupport.stream(jsonNode.at(jsonPtr).spliterator(), false);
     }
 
-    private record ChannelLevel(PublicationChannel type, Level level) {
+    private record Channel(URI id, PublicationChannel type, Level level) {
 
     }
 }

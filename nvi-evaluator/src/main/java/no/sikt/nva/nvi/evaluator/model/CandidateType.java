@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.evaluator.model;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.net.URI;
 
 @JsonSerialize
 @JsonSubTypes({
@@ -13,5 +12,4 @@ import java.net.URI;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 public sealed interface CandidateType permits NonNviCandidate, NviCandidate {
 
-    URI publicationId();
 }
