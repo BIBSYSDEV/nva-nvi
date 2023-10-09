@@ -20,7 +20,7 @@ public record NviCandidate(CandidateDetails candidateDetails) implements Candida
                                    String instanceType,
                                    PublicationDate publicationDate,
                                    List<Creator> verifiedCreators,
-                                   PublicationChannel channelType,
+                                   String channelType,
                                    URI publicationChannelId,
                                    String level,
                                    BigDecimal basePoints,
@@ -49,7 +49,7 @@ public record NviCandidate(CandidateDetails candidateDetails) implements Candida
             private String instanceType;
             private NviCandidate.CandidateDetails.PublicationDate publicationDate;
             private List<NviCandidate.CandidateDetails.Creator> verifiedCreators;
-            private PublicationChannel channelType;
+            private String channelType;
             private URI publicationChannelId;
             private String level;
             private BigDecimal basePoints;
@@ -80,7 +80,7 @@ public record NviCandidate(CandidateDetails candidateDetails) implements Candida
                 return this;
             }
 
-            public Builder withChannelType(PublicationChannel channelType) {
+            public Builder withChannelType(String channelType) {
                 this.channelType = channelType;
                 return this;
             }
