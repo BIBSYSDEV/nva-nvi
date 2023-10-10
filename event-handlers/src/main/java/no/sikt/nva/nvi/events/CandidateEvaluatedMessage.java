@@ -8,8 +8,10 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import no.sikt.nva.nvi.events.NviCandidate.CandidateDetails.Creator;
 
 @JsonAutoDetect(fieldVisibility = Visibility.ANY)
 @JsonSerialize
@@ -30,7 +32,7 @@ public record CandidateEvaluatedMessage(
 
     @Override
     public boolean isApplicable() {
-        return false;
+        return isNviCandidate();
     }
 
     @Override
@@ -40,32 +42,60 @@ public record CandidateEvaluatedMessage(
 
     @Override
     public Map<URI, List<URI>> creators() {
-        return null;
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            return nviCandidate.candidateDetails()
+                       .verifiedCreators()
+                       .stream()
+                       .collect(Collectors.toMap(Creator::id, Creator::nviInstitutions));
+        }
+        return Map.of();
     }
 
     @Override
     public String level() {
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            return nviCandidate.candidateDetails().level();
+        }
         return null;
     }
 
     @Override
     public String instanceType() {
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            return nviCandidate.candidateDetails().instanceType();
+        }
         return null;
     }
 
     @Override
     public PublicationDate publicationDate() {
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            var publicationDate = nviCandidate.candidateDetails().publicationDate();
+            return new PublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
+        }
         return null;
     }
 
     @Override
     public Map<URI, BigDecimal> points() {
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            return nviCandidate.candidateDetails().institutionPoints();
+        }
         return null;
     }
 
     @Override
     public int creatorCount() {
         return 0;
+    }
+
+    private boolean isNviCandidate() {
+        return candidate instanceof NviCandidate;
     }
 
     public static final class Builder {
