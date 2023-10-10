@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static no.sikt.nva.nvi.common.utils.GraphUtils.PART_OF_PROPERTY;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
@@ -50,7 +51,6 @@ import org.apache.jena.rdf.model.RDFNode;
 public final class NviCandidateIndexDocumentGenerator {
 
     public static final String APPLICATION_JSON = "application/json";
-    public static final String PART_OF_PROPERTY = "https://nva.sikt.no/ontology/publication#partOf";
     private static final int POINTS_SCALE = 4;
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private final AuthorizedBackendUriRetriever uriRetriever;
