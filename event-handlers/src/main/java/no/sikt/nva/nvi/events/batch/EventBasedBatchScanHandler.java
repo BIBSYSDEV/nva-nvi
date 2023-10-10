@@ -1,10 +1,8 @@
 package no.sikt.nva.nvi.events.batch;
 
-import static java.util.stream.Collectors.toMap;
 import static no.sikt.nva.nvi.common.service.NviService.defaultNviService;
 import static no.sikt.nva.nvi.events.batch.BatchScanStartHandler.EVENT_BUS_NAME;
 import com.amazonaws.services.lambda.runtime.Context;
-import java.util.Map;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
@@ -14,7 +12,6 @@ import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
@@ -62,16 +59,10 @@ public class EventBasedBatchScanHandler extends EventHandler<ScanDatabaseRequest
                                                                 Context context,
                                                                 ListingResult result) {
         var newEvent = input
-                                             .newScanDatabaseRequest(toAttributeMap(result.startMarker()))
+                                             .newScanDatabaseRequest(result.startMarker())
                                              .createNewEventEntry(EVENT_BUS_NAME, DETAIL_TYPE,
                                                                   context.getInvokedFunctionArn());
         sendEvent(newEvent);
-    }
-
-    private static Map<String, AttributeValue> toAttributeMap(Map<String, String> startMarker) {
-        return startMarker.entrySet()
-                   .stream()
-                   .collect(toMap(Map.Entry::getKey, e -> AttributeValue.builder().s(e.getValue()).build()));
     }
 
     private void sendEvent(PutEventsRequestEntry putEventRequestEntry) {

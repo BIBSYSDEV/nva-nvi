@@ -7,15 +7,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;
 import java.time.Instant;
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 import no.sikt.nva.nvi.events.batch.BatchScanStartHandler.EventDetail;
 import no.unit.nva.commons.json.JsonSerializable;
 import no.unit.nva.commons.json.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
@@ -47,12 +44,8 @@ public record ScanDatabaseRequest(@JsonProperty(PAGE_SIZE_FIELD) int pageSize,
                    : DEFAULT_PAGE_SIZE;
     }
 
-    public ScanDatabaseRequest newScanDatabaseRequest(Map<String, AttributeValue> newStartMarker) {
-        var start = newStartMarker != null ? new LinkedHashMap<>(newStartMarker.entrySet().stream().collect(
-            Collectors.toMap(Map.Entry::getKey,
-                             e -> e.getValue().s()))) : null;
-
-        return new ScanDatabaseRequest(this.pageSize(), start, topic);
+    public ScanDatabaseRequest newScanDatabaseRequest(Map<String, String> newStartMarker) {
+        return new ScanDatabaseRequest(this.pageSize(), newStartMarker, topic);
     }
 
     public PutEventsRequestEntry createNewEventEntry(
