@@ -3,10 +3,11 @@ package no.sikt.nva.nvi.index;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.CoreMatchers.not;
+import static nva.commons.apigateway.RestRequestHandler.COMMA;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -23,9 +24,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
@@ -34,12 +37,13 @@ import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.test.TestUtils;
+import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
-import nva.commons.core.StringUtils;
+import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,12 +81,17 @@ public class SearchNviCandidatesHandlerTest {
     private static SearchNviCandidatesHandler handler;
     private static ByteArrayOutputStream output;
     private final Context context = mock(Context.class);
+    private AuthorizedBackendUriRetriever uriRetriever;
 
     @BeforeEach
     void init() {
         output = new ByteArrayOutputStream();
         openSearchClient = mock(OpenSearchClient.class);
-        handler = new SearchNviCandidatesHandler(openSearchClient);
+        uriRetriever = mock(AuthorizedBackendUriRetriever.class);
+        handler = new SearchNviCandidatesHandler(openSearchClient, uriRetriever);
+
+        when(uriRetriever.getRawContent(any(), any())).thenReturn(
+            Optional.of(IoUtils.stringFromResources(Path.of("20754.0.0.0.json"))));
     }
 
     @Test
@@ -109,8 +118,6 @@ public class SearchNviCandidatesHandlerTest {
                    containsString(QUERY_PARAM_SIZE + "=" + DEFAULT_QUERY_SIZE));
         assertThat(actualId,
                    containsString(QUERY_PARAM_OFFSET + "=" + DEFAULT_OFFSET_SIZE));
-        assertThat(actualId,
-                   not(containsString(QUERY_PARAM_AFFILIATIONS)));
     }
 
     @Test
@@ -142,7 +149,7 @@ public class SearchNviCandidatesHandlerTest {
     void shouldReturnPaginatedSearchResultWithCorrectQueryParamsFilterAndQueryInIdIfGiven() throws IOException {
         mockOpenSearchClient();
         var randomFilter = randomString();
-        var randomInstitutions = List.of(randomString(), randomString());
+        var randomInstitutions = List.of(randomSiktSubUnit(), randomSiktSubUnit());
         handler.handleRequest(requestWithInstitutionsAndFilter(randomInstitutions, randomFilter), output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
@@ -183,6 +190,23 @@ public class SearchNviCandidatesHandlerTest {
 
         assertThat(Objects.requireNonNull(response.getBodyObject(Problem.class).getStatus()).getStatusCode(),
                    is(equalTo(HttpURLConnection.HTTP_INTERNAL_ERROR)));
+    }
+
+    @Test
+    void shouldReturnForbiddenWhenTryingToSearchForAffiliationOutsideOfCustomersCristinIdScope() throws IOException {
+        when(openSearchClient.search(any()))
+            .thenThrow(RuntimeException.class);
+        var topLevelCristinOrg = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
+        var searchedAffiliation = "https://api.dev.nva.aws.unit.no/cristin/organization/0.0.0.0";
+
+        var request = requestWithInstitutionsAndTopLevelCristinOrgId(List.of(searchedAffiliation), topLevelCristinOrg);
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(Objects.requireNonNull(response.getBodyObject(Problem.class).getStatus()).getStatusCode(),
+                   is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+        assertThat(Objects.requireNonNull(response.getBodyObject(Problem.class).getDetail().toString()),
+                   containsString(searchedAffiliation));
     }
 
     private static void mockOpenSearchClient() throws IOException {
@@ -244,6 +268,20 @@ public class SearchNviCandidatesHandlerTest {
         return IntStream.range(0, number).boxed().map(i -> singleNviCandidateIndexDocument()).toList();
     }
 
+
+    private URI randomSiktSubUnit() {
+        return randomElement(
+            List.of(
+                URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.0.0"),
+                URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.2.0.0"),
+                URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.3.0.0"),
+                URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.4.0.0"),
+                URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.5.0.0"),
+                URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.6.0.0")
+            )
+        );
+    }
+
     private InputStream emptyRequest() throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
                    .withTopLevelCristinOrgId(randomUri())
@@ -251,14 +289,25 @@ public class SearchNviCandidatesHandlerTest {
                    .build();
     }
 
-    private InputStream requestWithInstitutionsAndFilter(List<String> institutions, String filter)
+    private InputStream requestWithInstitutionsAndFilter(List<URI> institutions, String filter)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
                    .withTopLevelCristinOrgId(randomUri())
                    .withUserName(randomString())
-                   .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS, String.join(",", institutions),
+                   .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS, String.join(COMMA,
+                                                    institutions.stream().map(URI::toString).toList()),
                                                QUERY_PARAM_EXCLUDE_SUB_UNITS, "true",
                                                QUERY_PARAM_FILTER, filter))
+                   .build();
+    }
+
+    private InputStream requestWithInstitutionsAndTopLevelCristinOrgId(List<String> institutions, URI cristinId)
+        throws JsonProcessingException {
+        return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
+                   .withTopLevelCristinOrgId(cristinId)
+                   .withUserName(randomString())
+                   .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS, String.join(",", institutions),
+                                               QUERY_PARAM_EXCLUDE_SUB_UNITS, "true"))
                    .build();
     }
 
