@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -50,7 +51,7 @@ public record CandidateEvaluatedMessage(
                        .stream()
                        .collect(Collectors.toMap(Creator::id, Creator::nviInstitutions));
         }
-        return Map.of();
+        return Collections.emptyMap();
     }
 
     @Override
@@ -86,7 +87,7 @@ public record CandidateEvaluatedMessage(
             var nviCandidate = (NviCandidate) candidate;
             return nviCandidate.candidateDetails().institutionPoints();
         }
-        return null;
+        return Collections.emptyMap();
     }
 
     @Override
@@ -94,8 +95,8 @@ public record CandidateEvaluatedMessage(
         return 0;
     }
 
-    private static PublicationDate mapToPublicationDate(CandidateDetails.PublicationDate publicationDate1) {
-        return new PublicationDate(publicationDate1.year(), publicationDate1.month(), publicationDate1.day());
+    private static PublicationDate mapToPublicationDate(CandidateDetails.PublicationDate publicationDate) {
+        return new PublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
     }
 
     private boolean isNviCandidate() {

@@ -18,6 +18,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -57,13 +58,13 @@ public class CandidateCalculator {
         var model = createModel(publication);
 
         if (!isNviCandidate(model)) {
-            return Map.of();
+            return Collections.emptyMap();
         }
 
         var verifiedCreatorsWithNviInstitutions = getVerifiedCreatorsWithNviInstitutions(publication);
 
         return verifiedCreatorsWithNviInstitutions.isEmpty()
-                   ? Map.of()
+                   ? Collections.emptyMap()
                    : verifiedCreatorsWithNviInstitutions;
     }
 
