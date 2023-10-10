@@ -13,9 +13,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.time.Instant;
 import java.time.Year;
+import java.time.ZonedDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -28,13 +32,16 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.CandidateUniquenessEntryDao;
 import no.sikt.nva.nvi.common.db.NoteDao;
+import no.sikt.nva.nvi.common.db.NviPeriodDao;
+import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
+import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
-import no.sikt.nva.nvi.test.TestUtils;
+import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
 import no.unit.nva.stubs.FakeEventBridgeClient;
 import nva.commons.core.Environment;
@@ -42,12 +49,14 @@ import nva.commons.core.ioutils.IoUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
 class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
+
     public static final int ONE_ENTRY_PER_EVENT = 1;
     public static final Map<String, String> START_FROM_BEGINNING = null;
     public static final String OUTPUT_EVENT_TOPIC = "OUTPUT_EVENT_TOPIC";
@@ -58,7 +67,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     private Context context;
     private FakeEventBridgeClient eventBridgeClient;
     private NviCandidateRepositoryHelper candidateRepository;
-    private PeriodRepository periodRepository;
+    private NviPeriodRepositoryHelper periodRepository;
 
     @BeforeEach
     public void init() {
@@ -68,14 +77,16 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         this.eventBridgeClient = new FakeEventBridgeClient();
         var db = initializeTestDatabase();
         candidateRepository = new NviCandidateRepositoryHelper(db);
-        periodRepository = TestUtils.periodRepositoryReturningOpenedPeriod(Year.now().getValue());
+        periodRepository = new NviPeriodRepositoryHelper(db);
         NviService nviService = new NviService(periodRepository, candidateRepository);
         this.handler = new EventBasedBatchScanHandler(nviService, eventBridgeClient);
     }
 
     @Test
     void shouldNotGoIntoInfiniteLoop() {
-        createRandomCandidates(1000).forEach(item -> {});
+        createPeriod();
+        createRandomCandidates(100).forEach(item -> {
+        });
 
         pushInitialEntryInEventBridge(new ScanDatabaseRequest(ONE_ENTRY_PER_EVENT, START_FROM_BEGINNING, TOPIC));
 
@@ -85,6 +96,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldIterateAllCandidates() {
+        createPeriod();
         var daos = generatedRepositoryCandidates();
 
         pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
@@ -98,6 +110,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldIterateAllNotes() {
+        createPeriod();
         var daos = generateRepositoryCandidatesWithNotes();
 
         pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
@@ -111,6 +124,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldIterateAllApprovals() {
+        createPeriod();
         var daos = generateCandidatesWithApprovalStatuses();
 
         pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
@@ -123,8 +137,27 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldIteratePeriodEntries() {
+        createPeriod();
+        createRandomCandidates(10).forEach(item -> {
+        });
+
+        var items = periodRepository.getPeriodsDao().toList();
+
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+
+        consumeEvents();
+
+        var allEntitiesUpdated = items.stream().noneMatch(this::isSameVersionAsRepositoryCopy);
+
+        assertTrue(allEntitiesUpdated, "All period entries should have been updated with new version");
+    }
+
+    @Test
     void shouldNotIterateUniquenessEntries() {
-        createRandomCandidates(10).forEach(item -> {});
+        createPeriod();
+        createRandomCandidates(10).forEach(item -> {
+        });
 
         var items = candidateRepository.getUniquenessEntries().toList();
 
@@ -139,6 +172,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
 
     @Test
     void bodyShouldNotChange() {
+        createPeriod();
         var candidates = createRandomCandidates(10).toList();
 
         pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
@@ -150,6 +184,25 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         assertTrue(noEntitiesUpdated, "No values should have been updated with new version");
     }
 
+    @Test
+    void emptyResultShouldNotFail() throws IOException {
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+
+        consumeEvents();
+        var result = JsonUtils.dtoObjectMapper.readValue(output.toByteArray(), ListingResult.class);
+
+        assertThat(result.totalItem(), is(0));
+        assertThat(result.unprocessedItemsForTable(), is(0));
+    }
+
+    private void createPeriod() {
+        periodRepository.save(DbNviPeriod.builder()
+                                  .publishingYear(String.valueOf(Year.now().getValue()))
+                                  .startDate(Instant.now())
+                                  .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
+                                  .build());
+    }
+
     private void consumeEvents() {
         while (thereAreMoreEventsInEventBridge()) {
             var currentRequest = consumeLatestEmittedEvent();
@@ -158,31 +211,25 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     }
 
     private List<ApprovalStatusDao> generateCandidatesWithApprovalStatuses() {
-        return createRandomCandidates(10)
-                   .map(CandidateBO::identifier)
+        return createRandomCandidates(10).map(CandidateBO::identifier)
                    .flatMap(candidateRepository::findApprovalDaosByCandidateId)
                    .toList();
     }
 
     private List<CandidateDao> generatedRepositoryCandidates() {
-        return createRandomCandidates(10)
-                   .map(CandidateBO::identifier)
-                   .map(candidateRepository::findDaoById)
-                   .toList();
+        return createRandomCandidates(10).map(CandidateBO::identifier).map(candidateRepository::findDaoById).toList();
     }
 
     private List<NoteDao> generateRepositoryCandidatesWithNotes() {
-        return createRandomCandidates(10)
-                   .map(CandidateBO::identifier)
+        return createRandomCandidates(10).map(CandidateBO::identifier)
                    .flatMap(candidateRepository::findNoteDaosByCandidateId)
                    .toList();
     }
 
     private boolean isSameBodyAsRepositoryCopy(CandidateBO item) {
-        return item.toDto().equals(CandidateBO.fromRequest(item::identifier,
-                                                           candidateRepository,
-                                                           periodRepository).toDto()
-        );
+        //TODO: should replace this comparison with the actual data field (equals in CandidateBO?)
+        return item.toDto()
+                   .equals(CandidateBO.fromRequest(item::identifier, candidateRepository, periodRepository).toDto());
     }
 
     private boolean isSameVersionAsRepositoryCopy(CandidateDao dao) {
@@ -194,13 +241,21 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     }
 
     private boolean isSameVersionAsRepositoryCopy(ApprovalStatusDao dao) {
-        return Objects.equals(dao.version(), candidateRepository.findApprovalDaoByIdAndInstitutionId(
-            dao.identifier(), dao.approvalStatus().institutionId()).version());
+        return Objects.equals(dao.version(), candidateRepository.findApprovalDaoByIdAndInstitutionId(dao.identifier(),
+                                                                                                     dao.approvalStatus()
+                                                                                                         .institutionId())
+                                                 .version());
+    }
+
+    private boolean isSameVersionAsRepositoryCopy(NviPeriodDao item) {
+        return Objects.equals(item.version(),
+                              periodRepository.findDaoByPublishingYear(item.nviPeriod().publishingYear())
+                                  .version());
     }
 
     private boolean isSameVersionAsRepositoryCopy(NoteDao dao) {
-        return Objects.equals(dao.version(), candidateRepository.getNoteDaoById(
-            dao.identifier(), dao.note().noteId()).version());
+        return Objects.equals(dao.version(),
+                              candidateRepository.getNoteDaoById(dao.identifier(), dao.note().noteId()).version());
     }
 
     private ScanDatabaseRequest consumeLatestEmittedEvent() {
@@ -221,8 +276,8 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     private Stream<CandidateBO> createRandomCandidates(int i) {
         return IntStream.range(0, i)
                    .boxed()
-                   .map(item -> CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
-                                                        candidateRepository, periodRepository))
+                   .map(item -> CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
+                                                        periodRepository))
                    .map(Optional::orElseThrow)
                    .map(a -> a.createNote(new CreateNoteRequest(randomString(), randomString())));
     }
@@ -237,7 +292,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         return IoUtils.stringToStream(event.toJsonString());
     }
 
-    public static class NviCandidateRepositoryHelper extends CandidateRepository {
+    protected static class NviCandidateRepositoryHelper extends CandidateRepository {
 
         public NviCandidateRepositoryHelper(DynamoDbClient client) {
             super(client);
@@ -288,5 +343,21 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
             return uniquenessTable.getItem(entry);
         }
     }
-}
 
+    protected static class NviPeriodRepositoryHelper extends PeriodRepository {
+
+        public NviPeriodRepositoryHelper(DynamoDbClient client) {
+            super(client);
+        }
+
+        public Stream<NviPeriodDao> getPeriodsDao() {
+            return nviPeriodTable.query(beginsWithPeriodQuery()).stream().map(Page::items).flatMap(Collection::stream);
+        }
+
+        public NviPeriodDao findDaoByPublishingYear(String publishingYear) {
+
+            var queryObj = new NviPeriodDao(DbNviPeriod.builder().publishingYear(publishingYear).build());
+            return this.nviPeriodTable.getItem(queryObj);
+        }
+    }
+}

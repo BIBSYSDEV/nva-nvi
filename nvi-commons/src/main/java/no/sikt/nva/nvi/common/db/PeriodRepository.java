@@ -14,7 +14,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 public class PeriodRepository extends DynamoRepository {
 
     public static final String PERIOD = "PERIOD";
-    private final DynamoDbTable<NviPeriodDao> nviPeriodTable;
+    protected final DynamoDbTable<NviPeriodDao> nviPeriodTable;
 
     public PeriodRepository(DynamoDbClient client) {
         super(client);
@@ -44,7 +44,7 @@ public class PeriodRepository extends DynamoRepository {
                    .toList();
     }
 
-    private static BeginsWithConditional beginsWithPeriodQuery() {
+    protected static BeginsWithConditional beginsWithPeriodQuery() {
         return new BeginsWithConditional(Key.builder()
                                              .partitionValue(PERIOD)
                                              .sortValue(PERIOD)

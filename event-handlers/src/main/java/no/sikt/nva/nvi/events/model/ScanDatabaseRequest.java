@@ -76,7 +76,7 @@ public record ScanDatabaseRequest(@JsonProperty(PAGE_SIZE_FIELD) int pageSize,
         var event = this.createNewEventEntry(details.eventBus(), details.detail(), details.functionArn());
         var putEventsRequest = PutEventsRequest.builder().entries(event).build();
         var response = client.putEvents(putEventsRequest).toString();
-        logger.info("{}", response);
+        logger.info("Put event response: {}", response);
     }
 
     private boolean pageSizeWithinLimits(int pageSize) {

@@ -36,6 +36,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhanced
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
@@ -43,12 +44,15 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 public class CandidateRepository extends DynamoRepository {
 
-    public static final int BATCH_SIZE = 25;
+    private static final int BATCH_SIZE = 25;
+    private static final String PRIMARY_KEY_HASH_KEY = "PrimaryKeyHashKey";
+    private static final String CANDIDATE_UNIQUENESS_ENTRY = "CandidateUniquenessEntry";
     protected final DynamoDbTable<CandidateDao> candidateTable;
     protected final DynamoDbTable<CandidateUniquenessEntryDao> uniquenessTable;
     private final DynamoDbIndex<CandidateDao> publicationIdIndex;
     protected final DynamoDbTable<ApprovalStatusDao> approvalStatusTable;
     protected final DynamoDbTable<NoteDao> noteTable;
+    protected final DynamoDbTable<NviPeriodDao> periodTable;
 
     public CandidateRepository(DynamoDbClient client) {
         super(client);
@@ -57,29 +61,29 @@ public class CandidateRepository extends DynamoRepository {
         this.publicationIdIndex = this.candidateTable.index(SECONDARY_INDEX_PUBLICATION_ID);
         this.approvalStatusTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(ApprovalStatusDao.class));
         this.noteTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(NoteDao.class));
+        this.periodTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(NviPeriodDao.class));
     }
 
-    public ListingResult refresh(int pageSize, Map<String,
-                                                      String> startMarker) {
+    public ListingResult refresh(int pageSize, Map<String, String> startMarker) {
         var scan = defaultClient.scan(createScanRequest(pageSize, startMarker));
 
-        var items = scan.items().stream()
-                        .map(this::mutateVersion).toList();
+        var items = scan.items().stream().map(this::mutateVersion).toList();
 
-        var batchResults = Optional.of(getBatches(items)
-                                           .map(this::toBatchRequest)
-                                           .map(defaultClient::batchWriteItem)
-                                           .toList())
-                               .orElse(List.of());
+        var batchResults = getBatches(items).map(this::toBatchRequest).map(defaultClient::batchWriteItem).toList();
 
-        return new ListingResult(thereAreMorePagesToScan(scan), scan.lastEvaluatedKey(),
+        return new ListingResult(thereAreMorePagesToScan(scan), toStringMap(scan.lastEvaluatedKey()),
                                  batchResults.size(),
-                                 batchResults.stream().mapToInt(a -> a.unprocessedItems().size()).sum());
+                                 getUnprocessedSum(batchResults));
+    }
+
+    private static int getUnprocessedSum(List<BatchWriteItemResponse> batchResults) {
+        return batchResults.stream().mapToInt(a -> a.unprocessedItems().size()).sum();
     }
 
     private Map<String, AttributeValue> mutateVersion(Map<String, AttributeValue> item) {
         var mutableMap = new HashMap<>(item);
-        mutableMap.put("version", AttributeValue.builder().s(randomUUID().toString()).build());
+        mutableMap.put(DynamoEntryWithRangeKey.VERSION_FIELD_NAME,
+                       AttributeValue.builder().s(randomUUID().toString()).build());
         return mutableMap;
     }
 
@@ -89,15 +93,12 @@ public class CandidateRepository extends DynamoRepository {
 
     private static <T> Stream<List<T>> getBatches(List<T> scanResult) {
         var count = scanResult.size();
-        return IntStream.range(0, (count + CandidateRepository.BATCH_SIZE - 1) / CandidateRepository.BATCH_SIZE)
-                   .mapToObj(i -> scanResult.subList(i * CandidateRepository.BATCH_SIZE,
-                                                     Math.min((i + 1) * CandidateRepository.BATCH_SIZE,
-                                                              count)));
+        return IntStream.range(0, (count + BATCH_SIZE - 1) / BATCH_SIZE)
+                   .mapToObj(i -> scanResult.subList(i * BATCH_SIZE, Math.min((i + 1) * BATCH_SIZE, count)));
     }
 
     private BatchWriteItemRequest toBatchRequest(List<Map<String, AttributeValue>> results) {
-        return BatchWriteItemRequest.builder()
-                   .requestItems(Map.of(NVI_TABLE_NAME, toWriteBatches(results))).build();
+        return BatchWriteItemRequest.builder().requestItems(Map.of(NVI_TABLE_NAME, toWriteBatches(results))).build();
     }
 
     private Collection<WriteRequest> toWriteBatches(List<Map<String, AttributeValue>> results) {
@@ -113,18 +114,27 @@ public class CandidateRepository extends DynamoRepository {
     }
 
     private ScanRequest createScanRequest(int pageSize, Map<String, String> startMarker) {
-        var start = nonNull(startMarker) ? startMarker.entrySet().stream().collect(toMap(Map.Entry::getKey,
-                                                                                         e -> AttributeValue.builder()
-                                                                                                  .s(e.getValue())
-                                                                                                  .build())) : null;
+        var start = nonNull(startMarker) ? toAttributeMap(startMarker) : null;
         return ScanRequest.builder()
                    .tableName(NVI_TABLE_NAME)
                    .filterExpression("not contains (#PK, :TYPE) ")
-                   .expressionAttributeNames(Map.of("#PK", "PrimaryKeyHashKey"))
-                   .expressionAttributeValues(Map.of(":TYPE", AttributeValue.fromS("CandidateUniquenessEntry")))
+                   .expressionAttributeNames(Map.of("#PK", PRIMARY_KEY_HASH_KEY))
+                   .expressionAttributeValues(Map.of(":TYPE", AttributeValue.fromS(CANDIDATE_UNIQUENESS_ENTRY)))
                    .exclusiveStartKey(start)
                    .limit(pageSize)
                    .build();
+    }
+
+    private static Map<String, AttributeValue> toAttributeMap(Map<String, String> startMarker) {
+        return startMarker.entrySet()
+                   .stream()
+                   .collect(toMap(Map.Entry::getKey, e -> AttributeValue.builder().s(e.getValue()).build()));
+    }
+
+    private static Map<String, String> toStringMap(Map<String, AttributeValue> startMarker) {
+        return startMarker.entrySet()
+                   .stream()
+                   .collect(toMap(Map.Entry::getKey, e -> e.getValue().s()));
     }
 
     public Candidate create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
