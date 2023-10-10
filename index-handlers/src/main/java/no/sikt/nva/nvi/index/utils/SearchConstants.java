@@ -1,7 +1,5 @@
 package no.sikt.nva.nvi.index.utils;
 
-import static java.util.Objects.nonNull;
-import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.index.aws.CandidateQuery;
 import no.sikt.nva.nvi.index.aws.CandidateQuery.QueryFilterType;
@@ -50,13 +48,10 @@ public final class SearchConstants {
     }
 
     public static Query constructQuery(CandidateSearchParameters params) {
-        var affiliationsList = nonNull(params.affiliations()) && !params.affiliations().isEmpty()
-                                  ? List.of(params.affiliations().split(","))
-                                  : List.<String>of();
         var filterType = QueryFilterType.parse(params.filter())
                              .orElseThrow(() -> new IllegalStateException("unknown filter " + params.filter()));
         return new CandidateQuery.Builder()
-                        .withInstitutions(affiliationsList)
+                        .withInstitutions(params.affiliations())
                         .withExcludeSubUnits(params.excludeSubUnits())
                         .withFilter(filterType)
                         .withUsername(params.username())

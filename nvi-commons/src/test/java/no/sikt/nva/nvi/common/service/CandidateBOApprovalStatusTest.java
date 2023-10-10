@@ -27,7 +27,6 @@ import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index.utils;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_FILTER;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_AFFILIATIONS;
+import static nva.commons.apigateway.RestRequestHandler.COMMA;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.commons.json.JsonUtils;
@@ -61,10 +63,12 @@ public final class PaginatedResultConverter {
         return paginatedSearchResult;
     }
 
-    private static Map<String, String> getQueryParameters(String institutions, boolean excludeSubUnits, String filter) {
+    private static Map<String, String> getQueryParameters(List<URI> affiliations, boolean excludeSubUnits,
+                                                          String filter) {
         var queryParams = new HashMap();
-        if (Objects.nonNull(institutions)) {
-            queryParams.put(QUERY_PARAM_AFFILIATIONS, institutions);
+        if (Objects.nonNull(affiliations)) {
+            queryParams.put(QUERY_PARAM_AFFILIATIONS, affiliations.stream().map(URI::toString)
+                                                               .collect(Collectors.joining(COMMA)));
         }
         if (excludeSubUnits) {
             queryParams.put(QUERY_PARAM_EXCLUDE_SUB_UNITS, String.valueOf(true));
