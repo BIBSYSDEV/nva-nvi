@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MONTH;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_DATE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_YEAR;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
+import static no.sikt.nva.nvi.evaluator.calculator.PointCalculator.calculatePoints;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -15,7 +16,6 @@ import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
-import no.sikt.nva.nvi.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.evaluator.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.evaluator.model.CandidateType;
 import no.sikt.nva.nvi.evaluator.model.NonNviCandidate;
@@ -48,12 +48,9 @@ public class EvaluatorService {
             var nviCandidate = constructNviCandidate(publication, verifiedCreatorsWithNviInstitutions, pointCalculation,
                                                      publicationId);
             return constructMessage(publicationBucketUri, nviCandidate);
+        } else {
+            return constructMessage(publicationBucketUri, new NonNviCandidate(publicationId));
         }
-        return constructMessage(publicationBucketUri, new NonNviCandidate(publicationId));
-    }
-
-    private static PointCalculation calculatePoints(JsonNode jsonNode, Map<URI, List<URI>> nviCreators) {
-        return PointCalculator.calculatePoints(jsonNode, nviCreators);
     }
 
     private static NviCandidate constructNviCandidate(JsonNode jsonNode,

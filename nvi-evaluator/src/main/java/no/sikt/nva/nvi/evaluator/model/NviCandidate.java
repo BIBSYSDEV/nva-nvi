@@ -11,6 +11,11 @@ import java.util.Map;
 @JsonSerialize
 public record NviCandidate(CandidateDetails candidateDetails) implements CandidateType {
 
+    @Override
+    public URI publicationId() {
+        return candidateDetails().publicationId();
+    }
+
     public record CandidateDetails(URI publicationId,
                                    String instanceType,
                                    PublicationDate publicationDate,
