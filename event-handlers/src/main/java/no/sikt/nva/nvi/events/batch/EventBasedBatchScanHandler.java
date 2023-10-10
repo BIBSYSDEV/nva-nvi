@@ -38,10 +38,10 @@ public class EventBasedBatchScanHandler extends EventHandler<ScanDatabaseRequest
     @Override
     protected ListingResult processInput(ScanDatabaseRequest input, AwsEventBridgeEvent<ScanDatabaseRequest> event,
                                 Context context) {
-        logger.info("Query starting point:" + input.startMarker());
+        logger.info("Query starting point: {}", input.startMarker());
 
         var batchResult = nviService.refresh(input.pageSize(), input.startMarker());
-        logger.info("Batch result:" + batchResult);
+        logger.info("Batch result: {}", batchResult);
         if (batchResult.shouldContinueScan()) {
             sendEventToInvokeNewRefreshRowVersionExecution(input, context, batchResult);
         }
