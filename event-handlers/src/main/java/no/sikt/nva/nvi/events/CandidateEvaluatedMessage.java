@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import no.sikt.nva.nvi.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.events.NviCandidate.CandidateDetails.Creator;
 
 @JsonAutoDetect(fieldVisibility = Visibility.ANY)
@@ -74,8 +75,7 @@ public record CandidateEvaluatedMessage(
     public PublicationDate publicationDate() {
         if (isNviCandidate()) {
             var nviCandidate = (NviCandidate) candidate;
-            var publicationDate = nviCandidate.candidateDetails().publicationDate();
-            return new PublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
+            return mapToPublicationDate(nviCandidate.candidateDetails().publicationDate());
         }
         return null;
     }
@@ -92,6 +92,10 @@ public record CandidateEvaluatedMessage(
     @Override
     public int creatorCount() {
         return 0;
+    }
+
+    private static PublicationDate mapToPublicationDate(CandidateDetails.PublicationDate publicationDate1) {
+        return new PublicationDate(publicationDate1.year(), publicationDate1.month(), publicationDate1.day());
     }
 
     private boolean isNviCandidate() {
