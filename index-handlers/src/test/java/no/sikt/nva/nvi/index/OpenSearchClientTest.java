@@ -142,21 +142,6 @@ public class OpenSearchClientTest {
     }
 
     @Test
-    void shouldReturnEverythingIfYearFilterAndAffiliationsAreNotSet() throws IOException, InterruptedException {
-        addDocumentsToIndex(singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), "1234"),
-                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), "12345"));
-
-        int totalNumberOfDocuments = 2;
-        var searchParameters = CandidateSearchParameters.builder().withAffiliations(List.of(SIKT_INSTITUTION_ID))
-                                   .withCustomer(CUSTOMER).withUsername(USERNAME).build();
-        var searchResponse = openSearchClient.search(searchParameters);
-
-        assertThat(extractTotalNumberOfHits(searchResponse), is(equalTo(totalNumberOfDocuments)));
-        assertThat(searchResponse.hits().hits().size(), is(equalTo(totalNumberOfDocuments)));
-    }
-
-
-    @Test
     void shouldDeleteIndexAndThrowExceptionWhenSearchingInNonExistentIndex() throws IOException, InterruptedException {
         var document = singleNviCandidateIndexDocument();
         addDocumentsToIndex(document);
@@ -366,7 +351,7 @@ public class OpenSearchClientTest {
                                                                                                 String year) {
         var approval = new Approval(customer, Map.of(), randomStatus(), null);
         return new NviCandidateIndexDocument(randomUri(), randomString(),
-                                             randomPublicationDetailsWithYearAndCurator(year, customer),
+                                             randomPublicationDetailsWithYearAndContributor(year, customer),
                                              List.of(approval), 1, TestUtils.randomBigDecimal());
     }
 
@@ -391,7 +376,7 @@ public class OpenSearchClientTest {
                                       List.of());
     }
 
-    private static PublicationDetails randomPublicationDetailsWithYearAndCurator(String year, String affiliation) {
+    private static PublicationDetails randomPublicationDetailsWithYearAndContributor(String year, String affiliation) {
         return new PublicationDetails(randomString(), randomString(), randomString(),
                                       PublicationDate.builder().withYear(year).build(),
                                       List.of(new Contributor.Builder().withRole("Creator")

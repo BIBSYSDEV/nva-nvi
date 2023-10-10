@@ -8,13 +8,17 @@ import static no.sikt.nva.nvi.index.utils.PaginatedResultConverter.toPaginatedRe
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.google.common.collect.Sets;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
@@ -64,7 +68,17 @@ public class SearchNviCandidatesHandler
     protected PaginatedSearchResult<NviCandidateIndexDocument> processInput(Void input, RequestInfo requestInfo,
                                                                             Context context)
         throws UnauthorizedException {
+        var candidateSearchParameters = getCandidateSearchParameters(requestInfo);
+        assertUserIsAllowedToSearchAffiliations(candidateSearchParameters.affiliations(),
+                                                candidateSearchParameters.customer());
 
+        return attempt(() -> openSearchClient.search(candidateSearchParameters))
+                   .map(searchResponse -> toPaginatedResult(searchResponse, candidateSearchParameters))
+                   .orElseThrow();
+    }
+
+    private CandidateSearchParameters getCandidateSearchParameters(RequestInfo requestInfo)
+        throws UnauthorizedException {
         var offset = extractQueryParamOffsetOrDefault(requestInfo);
         var size = extractQueryParamSizeOrDefault(requestInfo);
         var filter = extractQueryParamFilterOrDefault(requestInfo);
@@ -79,10 +93,7 @@ public class SearchNviCandidatesHandler
 
         var candidateSearchParameters = new CandidateSearchParameters(affiliations, excludeSubUnits, filter, username,
                                                                       year, topLevelOrg, offset, size);
-
-        return attempt(() -> openSearchClient.search(candidateSearchParameters))
-                   .map(searchResponse -> toPaginatedResult(searchResponse, candidateSearchParameters))
-                   .orElseThrow();
+        return candidateSearchParameters;
     }
 
     private void assertUserIsAllowedToSearchAffiliations(List<URI> affiliations, URI topLevelOrg)
@@ -91,18 +102,18 @@ public class SearchNviCandidatesHandler
                 Optional::orElseThrow)
                           .map(str -> createModel(dtoObjectMapper.readTree(str)))
                           .map(model -> model.listObjectsOfProperty(model.createProperty(HAS_PART_PROPERTY)))
-                          .map(nodeIterator -> nodeIterator.toList().stream().map(RDFNode::toString).toList())
-                          .orElseThrow();
+                          .map(node -> node.toList().stream().map(RDFNode::toString))
+                          .map(s -> Stream.concat(s, Stream.of(topLevelOrg.toString())))
+                          .orElseThrow()
+                          .collect(Collectors.toSet());
 
-        var illegal = affiliations
-                          .stream()
-                          .filter(a -> !a.equals(topLevelOrg) && !allowed.contains(a.toString()))
-                          .toList();
+        var illegal = Sets.difference(new HashSet<>(affiliations.stream().map(URI::toString)
+                                                               .collect(Collectors.toSet())), allowed);
 
         if (!illegal.isEmpty()) {
             throw new UnauthorizedException(
                 String.format(USER_IS_NOT_ALLOWED_TO_SEARCH_FOR_AFFILIATIONS_S,
-                              illegal.stream().map(URI::toString).collect(Collectors.joining(COMMA_AND_SPACE)))
+                              String.join(COMMA_AND_SPACE, illegal))
             );
         }
     }
