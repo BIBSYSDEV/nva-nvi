@@ -21,6 +21,7 @@ public record NviCandidate(CandidateDetails candidateDetails) implements Candida
                                    BigDecimal basePoints,
                                    boolean isInternationalCollaboration,
                                    BigDecimal collaborationFactor,
+                                   int creatorShareCount,
                                    Map<URI, BigDecimal> institutionPoints) {
 
         public static Builder builder() {
@@ -50,6 +51,7 @@ public record NviCandidate(CandidateDetails candidateDetails) implements Candida
             private BigDecimal basePoints;
             private boolean isInternationalCollaboration;
             private BigDecimal collaborationFactor;
+            private int creatorShareCount;
             private Map<URI, BigDecimal> institutionPoints;
 
             private Builder() {
@@ -110,10 +112,15 @@ public record NviCandidate(CandidateDetails candidateDetails) implements Candida
                 return this;
             }
 
+            public Builder withCreatorShareCount(Integer creatorShareCount) {
+                this.creatorShareCount = creatorShareCount;
+                return this;
+            }
+
             public CandidateDetails build() {
                 return new CandidateDetails(publicationId, instanceType, publicationDate, verifiedCreators, channelType,
                                             publicationChannelId, level, basePoints, isInternationalCollaboration,
-                                            collaborationFactor, institutionPoints);
+                                            collaborationFactor, creatorShareCount, institutionPoints);
             }
         }
     }

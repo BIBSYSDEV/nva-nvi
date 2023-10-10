@@ -453,21 +453,27 @@ class EvaluateNviCandidateHandlerTest {
     private static NviCandidate createExpectedCandidate(String instanceType, Map<URI, BigDecimal> institutionPoints,
                                                         PublicationChannel channelType, String level,
                                                         BigDecimal basePoints) {
+        var verifiedCreators = List.of(new Creator(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID)));
         return new NviCandidate(CandidateDetails.builder()
                                     .withPublicationId(HARDCODED_PUBLICATION_ID)
                                     .withPublicationDate(HARDCODED_PUBLICATION_DATE)
                                     .withInstanceType(instanceType)
                                     .withChannelType(channelType.value())
                                     .withLevel(level)
-                                    .withPublicationChannelId(
-                                        EvaluateNviCandidateHandlerTest.HARDCODED_PUBLICATION_CHANNEL_ID)
+                                    .withPublicationChannelId(HARDCODED_PUBLICATION_CHANNEL_ID)
                                     .withIsInternationalCollaboration(false)
                                     .withCollaborationFactor(BigDecimal.ONE.setScale(1, ROUNDING_MODE))
+                                    .withCreatorShareCount(countCreatorShares(verifiedCreators))
                                     .withBasePoints(basePoints)
-                                    .withVerifiedCreators(List.of(
-                                        new Creator(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID))))
+                                    .withVerifiedCreators(verifiedCreators)
                                     .withInstitutionPoints(institutionPoints)
                                     .build());
+    }
+
+    private static int countCreatorShares(List<Creator> verifiedCreators) {
+        return (int) verifiedCreators.stream()
+                         .mapToLong(creator -> creator.nviInstitutions().size())
+                         .sum();
     }
 
     private static String getHardCodedCristinOrgResponse() {
