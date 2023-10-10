@@ -69,6 +69,7 @@ public class EvaluatorService {
                                     .withLevel(pointCalculation.level().value())
                                     .withIsInternationalCollaboration(pointCalculation.isInternationalCollaboration())
                                     .withCollaborationFactor(pointCalculation.collaborationFactor())
+                                    .withCreatorShareCount(pointCalculation.creatorShareCount())
                                     .withInstitutionPoints(pointCalculation.institutionPoints())
                                     .withVerifiedCreators(mapToCreators(verifiedCreatorsWithNviInstitutions))
                                     .build());

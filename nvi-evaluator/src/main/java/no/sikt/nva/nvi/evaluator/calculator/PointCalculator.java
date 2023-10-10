@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
 public final class PointCalculator {
 
     public static final String ERROR_MSG_EXTRACT_PUBLICATION_CONTEXT = "Could not extract publication channel for "
-                                                                       + "instanceType {}, candidate: {}";
+                                                                       + "candidate: {}. Error: {}";
     public static final String COUNTRY_CODE_NORWAY = "NO";
     public static final String ROLE_CREATOR = "Creator";
     private static final Logger LOGGER = LoggerFactory.getLogger(PointCalculator.class);
@@ -90,26 +90,35 @@ public final class PointCalculator {
     public static PointCalculation calculatePoints(JsonNode jsonNode,
                                                    Map<URI, List<URI>> nviCreatorsWithInstitutionIds) {
         var instanceType = extractInstanceType(jsonNode);
-        var channelLevel = extractChannel(instanceType, jsonNode);
-        var instanceTypeAndLevelPoints = getInstanceTypeAndLevelPoints(instanceType, channelLevel.type(),
-                                                                       channelLevel.level());
-        boolean internationalCollaboration = isInternationalCollaboration(jsonNode);
+        var publicationChannel = extractChannel(instanceType, jsonNode);
+        return calculatePoints(nviCreatorsWithInstitutionIds, instanceType, publicationChannel,
+                               getInstanceTypeAndLevelPoints(instanceType, publicationChannel.type(),
+                                                             publicationChannel.level()),
+                               isInternationalCollaboration(jsonNode), countCreatorShares(jsonNode));
+    }
+
+    private static PointCalculation calculatePoints(Map<URI, List<URI>> nviCreatorsWithInstitutionIds,
+                                                    InstanceType instanceType, Channel channelLevel,
+                                                    BigDecimal instanceTypeAndLevelPoints,
+                                                    boolean internationalCollaboration, int creatorShareCount) {
         return new PointCalculation(instanceType, channelLevel.type(), channelLevel.id(), channelLevel.level(),
                                     internationalCollaboration, internationalCollaboration
                                                                     ? INTERNATIONAL_COLLABORATION_FACTOR
                                                                     : NOT_INTERNATIONAL_COLLABORATION_FACTOR,
                                     instanceTypeAndLevelPoints,
-                                    calculatePoints(instanceTypeAndLevelPoints,
-                                                    countCreatorShares(jsonNode),
-                                                    internationalCollaboration,
-                                                    countInstitutionCreatorShares(
-                                                        nviCreatorsWithInstitutionIds)));
+                                    creatorShareCount,
+                                    calculatePointsForAllInstitutions(instanceTypeAndLevelPoints,
+                                                                      creatorShareCount,
+                                                                      internationalCollaboration,
+                                                                      countInstitutionCreatorShares(
+                                                                          nviCreatorsWithInstitutionIds)));
     }
 
-    private static Map<URI, BigDecimal> calculatePoints(BigDecimal instanceTypeAndLevelPoints, int creatorShareCount,
-                                                        boolean isInternationalCollaboration,
-                                                        Map<URI, Long> institutionCreatorShareCounts) {
-        return institutionCreatorShareCounts.entrySet()
+    private static Map<URI, BigDecimal> calculatePointsForAllInstitutions(BigDecimal instanceTypeAndLevelPoints,
+                                                                          int creatorShareCount,
+                                                                          boolean isInternationalCollaboration,
+                                                                          Map<URI, Long> institutionCreatorShareCount) {
+        return institutionCreatorShareCount.entrySet()
                    .stream()
                    .collect(Collectors.toMap(
                        Entry::getKey,

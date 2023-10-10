@@ -11,6 +11,7 @@ public record PointCalculation(InstanceType instanceType,
                                boolean isInternationalCollaboration,
                                BigDecimal collaborationFactor,
                                BigDecimal basePoints,
+                               int creatorShareCount,
                                Map<URI, BigDecimal> institutionPoints) {
 
 }
