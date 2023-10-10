@@ -53,14 +53,14 @@ public class CandidateCalculator {
         this.uriRetriever = uriRetriever;
     }
 
-    public Map<URI, List<URI>> getVerifiedCreatorsWithNviInstitutionsIfExists(JsonNode body) {
-        var model = createModel(body);
+    public Map<URI, List<URI>> getVerifiedCreatorsWithNviInstitutionsIfExists(JsonNode publication) {
+        var model = createModel(publication);
 
         if (!isNviCandidate(model)) {
             return Map.of();
         }
 
-        var verifiedCreatorsWithNviInstitutions = getVerifiedCreatorsWithNviInstitutions(body);
+        var verifiedCreatorsWithNviInstitutions = getVerifiedCreatorsWithNviInstitutions(publication);
 
         return verifiedCreatorsWithNviInstitutions.isEmpty()
                    ? Map.of()

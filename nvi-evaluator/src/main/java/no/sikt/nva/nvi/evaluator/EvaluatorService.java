@@ -38,14 +38,14 @@ public class EvaluatorService {
     }
 
     public CandidateEvaluatedMessage evaluateCandidacy(EventReference input) {
-        var jsonNode = extractBodyFromContent(storageReader.read(input));
+        var publication = extractBodyFromContent(storageReader.read(input));
         var publicationBucketUri = input.getUri();
-        var publicationId = extractPublicationId(jsonNode);
+        var publicationId = extractPublicationId(publication);
         var verifiedCreatorsWithNviInstitutions = candidateCalculator.getVerifiedCreatorsWithNviInstitutionsIfExists(
-            jsonNode);
+            publication);
         if (!verifiedCreatorsWithNviInstitutions.isEmpty()) {
-            var pointCalculation = calculatePoints(jsonNode, verifiedCreatorsWithNviInstitutions);
-            var nviCandidate = constructNviCandidate(jsonNode, verifiedCreatorsWithNviInstitutions, pointCalculation,
+            var pointCalculation = calculatePoints(publication, verifiedCreatorsWithNviInstitutions);
+            var nviCandidate = constructNviCandidate(publication, verifiedCreatorsWithNviInstitutions, pointCalculation,
                                                      publicationId);
             return constructMessage(publicationBucketUri, nviCandidate);
         }
