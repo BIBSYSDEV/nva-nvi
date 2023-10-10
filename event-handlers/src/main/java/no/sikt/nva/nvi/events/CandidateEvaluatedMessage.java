@@ -2,24 +2,21 @@ package no.sikt.nva.nvi.events;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
-import no.sikt.nva.nvi.events.CandidateDetails.Creator;
 
 @JsonAutoDetect(fieldVisibility = Visibility.ANY)
 @JsonSerialize
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 public record CandidateEvaluatedMessage(
-    CandidateStatus status,
     URI publicationBucketUri,
-    CandidateDetails candidateDetails,
-    Map<URI, BigDecimal> institutionPoints
+    CandidateType candidate
 ) implements UpsertCandidateRequest {
 
     public static Builder builder() {
@@ -28,12 +25,12 @@ public record CandidateEvaluatedMessage(
 
     @Override
     public URI publicationId() {
-        return candidateDetails.publicationId();
+        return candidate().publicationId();
     }
 
     @Override
     public boolean isApplicable() {
-        return CandidateStatus.CANDIDATE.equals(status);
+        return false;
     }
 
     @Override
@@ -43,30 +40,27 @@ public record CandidateEvaluatedMessage(
 
     @Override
     public Map<URI, List<URI>> creators() {
-        return candidateDetails.verifiedCreators() != null
-                   ? candidateDetails.verifiedCreators().stream()
-                         .collect(Collectors.toMap(Creator::id, Creator::nviInstitutions))
-                   : Collections.emptyMap();
+        return null;
     }
 
     @Override
     public String level() {
-        return candidateDetails.level();
+        return null;
     }
 
     @Override
     public String instanceType() {
-        return candidateDetails.instanceType();
+        return null;
     }
 
     @Override
     public PublicationDate publicationDate() {
-        return mapToPublicationDate(candidateDetails.publicationDate());
+        return null;
     }
 
     @Override
     public Map<URI, BigDecimal> points() {
-        return institutionPoints != null ? institutionPoints : Collections.emptyMap();
+        return null;
     }
 
     @Override
@@ -74,26 +68,12 @@ public record CandidateEvaluatedMessage(
         return 0;
     }
 
-    private PublicationDate mapToPublicationDate(CandidateDetails.PublicationDate publicationDate) {
-        return publicationDate != null
-                   ? new PublicationDate(publicationDate.year(), publicationDate.month(),
-                                         publicationDate.day())
-                   : null;
-    }
-
     public static final class Builder {
 
-        private CandidateStatus status;
         private URI publicationBucketUri;
-        private CandidateDetails candidateDetails;
-        private Map<URI, BigDecimal> institutionPoints;
+        private CandidateType candidate;
 
         private Builder() {
-        }
-
-        public Builder withStatus(CandidateStatus status) {
-            this.status = status;
-            return this;
         }
 
         public Builder withPublicationBucketUri(URI publicationBucketUri) {
@@ -101,18 +81,13 @@ public record CandidateEvaluatedMessage(
             return this;
         }
 
-        public Builder withCandidateDetails(CandidateDetails candidateDetails) {
-            this.candidateDetails = candidateDetails;
-            return this;
-        }
-
-        public Builder withInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
-            this.institutionPoints = institutionPoints;
+        public Builder withCandidateType(CandidateType candidate) {
+            this.candidate = candidate;
             return this;
         }
 
         public CandidateEvaluatedMessage build() {
-            return new CandidateEvaluatedMessage(status, publicationBucketUri, candidateDetails, institutionPoints);
+            return new CandidateEvaluatedMessage(publicationBucketUri, candidate);
         }
     }
 }
