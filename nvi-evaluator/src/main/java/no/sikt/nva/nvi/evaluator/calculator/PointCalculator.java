@@ -195,11 +195,19 @@ public final class PointCalculator {
     }
 
     private static int countCreatorShares(JsonNode jsonNode) {
-        return streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR))
-                   .filter(PointCalculator::isCreator)
-                   .flatMap(contributor -> streamNode(contributor.at(JSON_PTR_AFFILIATIONS)))
-                   .map(node -> 1)
-                   .reduce(0, Integer::sum);
+        var creatorAffiliationCombinations = streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR))
+                                                 .filter(PointCalculator::isCreator)
+                                                 .flatMap(
+                                                     contributor -> streamNode(contributor.at(JSON_PTR_AFFILIATIONS)))
+                                                 .map(node -> 1)
+                                                 .reduce(0, Integer::sum);
+        var creatorsWithoutAffiliations = streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR))
+                                              .filter(PointCalculator::isCreator)
+                                              .filter(
+                                                  contributor -> extractAffiliations(contributor).findAny().isEmpty())
+                                              .map(node -> 1)
+                                              .reduce(0, Integer::sum);
+        return creatorAffiliationCombinations + creatorsWithoutAffiliations;
     }
 
     private static InstanceType extractInstanceType(JsonNode jsonNode) {
