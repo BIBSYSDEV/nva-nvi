@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.evaluator.model;
+package no.sikt.nva.nvi.events;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -13,20 +13,14 @@ public record NviCandidate(CandidateDetails candidateDetails) implements Candida
 
     @Override
     public URI publicationId() {
-        return candidateDetails().publicationId();
+        return candidateDetails.publicationId;
     }
 
     public record CandidateDetails(URI publicationId,
                                    String instanceType,
                                    PublicationDate publicationDate,
                                    List<Creator> verifiedCreators,
-                                   String channelType,
-                                   URI publicationChannelId,
                                    String level,
-                                   BigDecimal basePoints,
-                                   boolean isInternationalCollaboration,
-                                   BigDecimal collaborationFactor,
-                                   int creatorShareCount,
                                    Map<URI, BigDecimal> institutionPoints) {
 
         public static Builder builder() {
@@ -48,15 +42,9 @@ public record NviCandidate(CandidateDetails candidateDetails) implements Candida
 
             private URI publicationId;
             private String instanceType;
-            private NviCandidate.CandidateDetails.PublicationDate publicationDate;
-            private List<NviCandidate.CandidateDetails.Creator> verifiedCreators;
-            private String channelType;
-            private URI publicationChannelId;
+            private PublicationDate publicationDate;
+            private List<Creator> verifiedCreators;
             private String level;
-            private BigDecimal basePoints;
-            private boolean isInternationalCollaboration;
-            private BigDecimal collaborationFactor;
-            private int creatorShareCount;
             private Map<URI, BigDecimal> institutionPoints;
 
             private Builder() {
@@ -82,33 +70,8 @@ public record NviCandidate(CandidateDetails candidateDetails) implements Candida
                 return this;
             }
 
-            public Builder withChannelType(String channelType) {
-                this.channelType = channelType;
-                return this;
-            }
-
-            public Builder withPublicationChannelId(URI publicationChannelId) {
-                this.publicationChannelId = publicationChannelId;
-                return this;
-            }
-
             public Builder withLevel(String level) {
                 this.level = level;
-                return this;
-            }
-
-            public Builder withBasePoints(BigDecimal basePoints) {
-                this.basePoints = basePoints;
-                return this;
-            }
-
-            public Builder withIsInternationalCollaboration(boolean isInternationalCollaboration) {
-                this.isInternationalCollaboration = isInternationalCollaboration;
-                return this;
-            }
-
-            public Builder withCollaborationFactor(BigDecimal collaborationFactor) {
-                this.collaborationFactor = collaborationFactor;
                 return this;
             }
 
@@ -117,15 +80,9 @@ public record NviCandidate(CandidateDetails candidateDetails) implements Candida
                 return this;
             }
 
-            public Builder withCreatorShareCount(Integer creatorShareCount) {
-                this.creatorShareCount = creatorShareCount;
-                return this;
-            }
-
             public CandidateDetails build() {
-                return new CandidateDetails(publicationId, instanceType, publicationDate, verifiedCreators, channelType,
-                                            publicationChannelId, level, basePoints, isInternationalCollaboration,
-                                            collaborationFactor, creatorShareCount, institutionPoints);
+                return new CandidateDetails(publicationId, instanceType, publicationDate, verifiedCreators,
+                                            level, institutionPoints);
             }
         }
     }

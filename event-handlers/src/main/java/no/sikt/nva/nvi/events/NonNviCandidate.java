@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.evaluator.model;
+package no.sikt.nva.nvi.events;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;

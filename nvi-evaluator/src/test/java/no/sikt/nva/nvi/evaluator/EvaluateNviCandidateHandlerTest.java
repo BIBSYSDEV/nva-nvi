@@ -1,8 +1,13 @@
 package no.sikt.nva.nvi.evaluator;
 
+import static java.math.BigDecimal.ONE;
 import static no.sikt.nva.nvi.evaluator.TestUtils.createResponse;
 import static no.sikt.nva.nvi.evaluator.TestUtils.createS3Event;
-import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
+import static no.sikt.nva.nvi.evaluator.model.InstanceType.ACADEMIC_ARTICLE;
+import static no.sikt.nva.nvi.evaluator.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
+import static no.sikt.nva.nvi.evaluator.model.InstanceType.ACADEMIC_MONOGRAPH;
+import static no.sikt.nva.nvi.evaluator.model.PublicationChannel.JOURNAL;
+import static no.sikt.nva.nvi.evaluator.model.PublicationChannel.SERIES;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -12,12 +17,12 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -31,10 +36,14 @@ import java.util.Optional;
 import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.evaluator.model.CandidateEvaluatedMessage;
-import no.sikt.nva.nvi.evaluator.model.CandidateStatus;
+import no.sikt.nva.nvi.evaluator.model.InstanceType;
+import no.sikt.nva.nvi.evaluator.model.Level;
+import no.sikt.nva.nvi.evaluator.model.NonNviCandidate;
+import no.sikt.nva.nvi.evaluator.model.NviCandidate;
 import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails.Creator;
 import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails.PublicationDate;
+import no.sikt.nva.nvi.evaluator.model.PublicationChannel;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.s3.S3Driver;
@@ -52,6 +61,10 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 class EvaluateNviCandidateHandlerTest {
 
     public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
+    public static final PublicationDate HARDCODED_PUBLICATION_DATE = new PublicationDate(null, null, "2023");
+    public static final URI HARDCODED_PUBLICATION_CHANNEL_ID = URI.create("https://api.dev.nva.aws.unit"
+                                                                          + ".no/publication-channels/series/490845"
+                                                                          + "/2023");
     private static final String CRISTIN_API_ORGANIZATION_RESPONSE_JSON = "cristinApiOrganizationResponse.json";
     private static final URI HARDCODED_CREATOR_ID = URI.create("https://api.dev.nva.aws.unit.no/cristin/person/997998");
     private static final String ACADEMIC_CHAPTER_PATH = "candidate_academicChapter.json";
@@ -144,24 +157,6 @@ class EvaluateNviCandidateHandlerTest {
     }
 
     @Test
-    void shouldCreateNewCandidateEventOnValidAcademicArticle() throws IOException {
-        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var content = IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH);
-        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        assertThat(sentMessages, hasSize(1));
-        var message = sentMessages.get(0);
-        var messageBody =
-            attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicArticle",
-                                                                   BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE),
-                                                                   fileUri);
-        assertEquals(expectedEvaluatedMessage, messageBody);
-    }
-
-    @Test
     void shouldCreateNewCandidateWithPointsOnlyForNviInstitutions() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         mockCristinResponseAndCustomerApiResponseForNonNviInstitution();
@@ -170,15 +165,24 @@ class EvaluateNviCandidateHandlerTest {
                                           content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        assertThat(sentMessages, hasSize(1));
-        var message = sentMessages.get(0);
-        var messageBody =
-            attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicArticle",
-                                                                   BigDecimal.valueOf(0.7071)
-                                                                       .setScale(SCALE, ROUNDING_MODE),
-                                                                   fileUri);
+        var messageBody = getMessageBody();
+        var institutionPoints = ((NviCandidate) messageBody.candidate()).candidateDetails().institutionPoints();
+        assertEquals(1, institutionPoints.size());
+        assertTrue(institutionPoints.containsKey(CRISTIN_NVI_ORG_TOP_LEVEL_ID));
+    }
+
+    @Test
+    void shouldCreateNewCandidateEventOnValidAcademicArticle() throws IOException {
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+        var content = IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH);
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), content);
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, output, context);
+        var messageBody = getMessageBody();
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_ARTICLE.getValue(),
+                                                                   BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE),
+                                                                   fileUri, JOURNAL,
+                                                                   ONE);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -189,15 +193,12 @@ class EvaluateNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_CHAPTER_PATH), content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        assertThat(sentMessages, hasSize(1));
-        var message = sentMessages.get(0);
-        var messageBody =
-            attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicChapter",
+        var messageBody = getMessageBody();
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(InstanceType.ACADEMIC_CHAPTER.getValue(),
                                                                    BigDecimal.valueOf(1)
                                                                        .setScale(SCALE, ROUNDING_MODE),
-                                                                   fileUri);
+                                                                   fileUri, SERIES,
+                                                                   ONE);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -208,14 +209,11 @@ class EvaluateNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_MONOGRAPH_JSON_PATH), content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        assertThat(sentMessages, hasSize(1));
-        var message = sentMessages.get(0);
-        var messageBody =
-            attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicMonograph",
+        var messageBody = getMessageBody();
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_MONOGRAPH.getValue(),
                                                                    BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE),
-                                                                   fileUri);
+                                                                   fileUri, SERIES,
+                                                                   BigDecimal.valueOf(5));
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -226,14 +224,11 @@ class EvaluateNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_LITERATURE_REVIEW_JSON_PATH), content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        assertThat(sentMessages, hasSize(1));
-        var message = sentMessages.get(0);
-        var messageBody =
-            attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage("AcademicLiteratureReview",
+        var messageBody = getMessageBody();
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_LITERATURE_REVIEW.getValue(),
                                                                    BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE),
-                                                                   fileUri);
+                                                                   fileUri, JOURNAL,
+                                                                   ONE);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -244,15 +239,10 @@ class EvaluateNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        assertThat(sentMessages, hasSize(1));
-        var message = sentMessages.get(0);
-        assertThat(message.messageBody(), containsString(fileUri.toString()));
-        var body =
-            attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class))
-                .orElseThrow();
-        assertThat(body.institutionPoints(), notNullValue());
-        assertThat(body.institutionPoints().get(CRISTIN_NVI_ORG_TOP_LEVEL_ID),
+        var body = getMessageBody(fileUri);
+        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        assertThat(institutionPoints, notNullValue());
+        assertThat(institutionPoints.get(CRISTIN_NVI_ORG_TOP_LEVEL_ID),
                    is(equalTo(BigDecimal.valueOf(1).setScale(4, RoundingMode.HALF_UP))));
     }
 
@@ -263,15 +253,10 @@ class EvaluateNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        assertThat(sentMessages, hasSize(1));
-        var message = sentMessages.get(0);
-        assertThat(message.messageBody(), containsString(fileUri.toString()));
-        var body =
-            attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class))
-                .orElseThrow();
-        assertThat(body.institutionPoints(), notNullValue());
-        assertThat(body.institutionPoints().get(CRISTIN_NVI_ORG_TOP_LEVEL_ID), notNullValue());
+        var body = getMessageBody(fileUri);
+        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        assertThat(institutionPoints, notNullValue());
+        assertThat(institutionPoints.get(CRISTIN_NVI_ORG_TOP_LEVEL_ID), notNullValue());
     }
 
     @Test
@@ -323,9 +308,8 @@ class EvaluateNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        var candidate = getSingleCandidateResponse(sentMessages);
-        assertThat(candidate.status(), is(equalTo(CandidateStatus.NON_CANDIDATE)));
+        var candidate = getMessageBody();
+        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
     }
 
     @Test
@@ -335,9 +319,8 @@ class EvaluateNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        var candidate = getSingleCandidateResponse(sentMessages);
-        assertThat(candidate.status(), is(equalTo(CandidateStatus.NON_CANDIDATE)));
+        var candidate = getMessageBody();
+        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
     }
 
     @Test
@@ -347,10 +330,9 @@ class EvaluateNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        var candidate = getSingleCandidateResponse(sentMessages);
-        assertThat(candidate.status(), is(equalTo(CandidateStatus.NON_CANDIDATE)));
-        assertThat(candidate.candidateDetails().publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
+        var candidate = getMessageBody();
+        var nonNviCandidate = (NonNviCandidate) candidate.candidate();
+        assertThat(nonNviCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
     }
 
     @Test
@@ -360,9 +342,8 @@ class EvaluateNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        var candidate = getSingleCandidateResponse(sentMessages);
-        assertThat(candidate.status(), is(equalTo(CandidateStatus.NON_CANDIDATE)));
+        var candidate = getMessageBody();
+        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
     }
 
     @Test
@@ -372,9 +353,8 @@ class EvaluateNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        var candidate = getSingleCandidateResponse(sentMessages);
-        assertThat(candidate.status(), is(equalTo(CandidateStatus.NON_CANDIDATE)));
+        var candidate = getMessageBody();
+        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
     }
 
     @Test
@@ -392,9 +372,8 @@ class EvaluateNviCandidateHandlerTest {
                                           IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        var candidate = getSingleCandidateResponse(sentMessages);
-        assertThat(candidate.status(), is(equalTo(CandidateStatus.NON_CANDIDATE)));
+        var candidate = getMessageBody();
+        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
     }
 
     @Test
@@ -459,34 +438,68 @@ class EvaluateNviCandidateHandlerTest {
     }
 
     private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(String instanceType,
-                                                                         BigDecimal points, URI bucketUri) {
+                                                                         BigDecimal points, URI bucketUri,
+                                                                         PublicationChannel publicationChannel,
+                                                                         BigDecimal basePoints) {
         return CandidateEvaluatedMessage.builder()
-                   .withStatus(CandidateStatus.CANDIDATE)
-                   .withCandidateDetails(createExpectedCandidateDetails(instanceType))
-                   .withInstitutionPoints(
-                       Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID, points.setScale(SCALE, RoundingMode.HALF_UP)))
+                   .withCandidateType(createExpectedCandidate(instanceType,
+                                                              Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID,
+                                                                     points.setScale(SCALE, RoundingMode.HALF_UP)),
+                                                              publicationChannel, Level.LEVEL_ONE.getValue(),
+                                                              basePoints))
                    .withPublicationBucketUri(bucketUri).build();
     }
 
-    private static CandidateDetails createExpectedCandidateDetails(String instanceType) {
-        return new CandidateDetails(HARDCODED_PUBLICATION_ID, instanceType, "1",
-                                    new PublicationDate(null, null, "2023"),
-                                    List.of(new Creator(EvaluateNviCandidateHandlerTest.HARDCODED_CREATOR_ID,
-                                                        List.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID))));
+    private static NviCandidate createExpectedCandidate(String instanceType, Map<URI, BigDecimal> institutionPoints,
+                                                        PublicationChannel channelType, String level,
+                                                        BigDecimal basePoints) {
+        var verifiedCreators = List.of(new Creator(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID)));
+        return new NviCandidate(CandidateDetails.builder()
+                                    .withPublicationId(HARDCODED_PUBLICATION_ID)
+                                    .withPublicationDate(HARDCODED_PUBLICATION_DATE)
+                                    .withInstanceType(instanceType)
+                                    .withChannelType(channelType.getValue())
+                                    .withLevel(level)
+                                    .withPublicationChannelId(HARDCODED_PUBLICATION_CHANNEL_ID)
+                                    .withIsInternationalCollaboration(false)
+                                    .withCollaborationFactor(BigDecimal.ONE.setScale(1, ROUNDING_MODE))
+                                    .withCreatorShareCount(countCreatorShares(verifiedCreators))
+                                    .withBasePoints(basePoints)
+                                    .withVerifiedCreators(verifiedCreators)
+                                    .withInstitutionPoints(institutionPoints)
+                                    .build());
+    }
+
+    private static int countCreatorShares(List<Creator> verifiedCreators) {
+        return (int) verifiedCreators.stream()
+                         .mapToLong(creator -> creator.nviInstitutions().size())
+                         .sum();
     }
 
     private static String getHardCodedCristinOrgResponse() {
         return IoUtils.stringFromResources(Path.of(CRISTIN_API_ORGANIZATION_RESPONSE_JSON));
     }
 
-    private static CandidateEvaluatedMessage getSingleCandidateResponse(List<SendMessageRequest> sentMessages)
-        throws JsonProcessingException {
-        return dtoObjectMapper.readValue(sentMessages.get(0).messageBody(), CandidateEvaluatedMessage.class);
-    }
-
     private static void assertThatMessageIsInDlq(List<SendMessageRequest> sentMessages) {
         assertThat(sentMessages, hasSize(1));
         assertThat(sentMessages.get(0).messageBody(), containsString("Exception"));
+    }
+
+    private CandidateEvaluatedMessage getMessageBody(URI fileUri) {
+        var sentMessages = sqsClient.getSentMessages();
+        assertThat(sentMessages, hasSize(1));
+        var message = sentMessages.get(0);
+        assertThat(message.messageBody(), containsString(fileUri.toString()));
+        return attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class))
+                   .orElseThrow();
+    }
+
+    private CandidateEvaluatedMessage getMessageBody() {
+        var sentMessages = sqsClient.getSentMessages();
+        assertThat(sentMessages, hasSize(1));
+        var message = sentMessages.get(0);
+        return attempt(
+            () -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
     }
 
     private void mockCristinResponseAndCustomerApiResponseForNonNviInstitution() {

@@ -54,7 +54,8 @@ class PointCalculatorTest {
                                                       ROLE_CREATOR)),
             getInstanceTypeReference(parameters));
 
-        var institutionPoints = calculatePoints(expandedResource, Map.of(creator, List.of(institutionId)));
+        var institutionPoints = calculatePoints(expandedResource,
+                                                Map.of(creator, List.of(institutionId))).institutionPoints();
 
         assertThat(institutionPoints.get(institutionId), is(equalTo(parameters.institution1Points())));
     }
@@ -73,8 +74,8 @@ class PointCalculatorTest {
                                                                       creator1Institutions,
                                                                       creator2Institutions);
 
-        var pointsMap = calculatePoints(expandedResource,
-                                        Map.of(creator1, creator1Institutions, creator2, creator2Institutions));
+        var pointsMap = calculatePoints(expandedResource, Map.of(creator1, creator1Institutions, creator2,
+                                                                 creator2Institutions)).institutionPoints();
 
         assertThat(pointsMap.get(nviInstitution1), is(equalTo(parameters.institution1Points())));
         assertThat(pointsMap.get(nviInstitution2), is(equalTo(parameters.institution2Points())));
@@ -99,8 +100,8 @@ class PointCalculatorTest {
                                    ROLE_CREATOR)),
             getInstanceTypeReference(parameters));
 
-        var pointsMap = calculatePoints(expandedResource,
-                                        Map.of(creator1, creator1Institutions, creator2, creator2Institutions));
+        var pointsMap = calculatePoints(expandedResource, Map.of(creator1, creator1Institutions, creator2,
+                                                                 creator2Institutions)).institutionPoints();
 
         assertThat(pointsMap.get(nviInstitution1), is(equalTo(parameters.institution1Points())));
         assertThat(pointsMap.get(nviInstitution2), is(equalTo(parameters.institution2Points())));
@@ -117,7 +118,8 @@ class PointCalculatorTest {
                                                                              createJournalReference("AcademicArticle",
                                                                                                     "1"));
 
-        var institutionPoints = calculatePoints(expandedResource, Map.of(creatorId, List.of(institutionId)));
+        var institutionPoints = calculatePoints(expandedResource,
+                                                Map.of(creatorId, List.of(institutionId))).institutionPoints();
 
         assertThat(institutionPoints.get(institutionId), is(equalTo(asBigDecimal("1"))));
     }
@@ -132,7 +134,8 @@ class PointCalculatorTest {
                                                                              createJournalReference("AcademicArticle",
                                                                                                     "1"));
 
-        var institutionPoints = calculatePoints(expandedResource, Map.of(creatorId, List.of(institutionId)));
+        var institutionPoints = calculatePoints(expandedResource,
+                                                Map.of(creatorId, List.of(institutionId))).institutionPoints();
 
         assertThat(institutionPoints.get(institutionId), is(equalTo(asBigDecimal("1"))));
     }

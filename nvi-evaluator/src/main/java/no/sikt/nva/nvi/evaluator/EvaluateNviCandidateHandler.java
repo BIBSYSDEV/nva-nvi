@@ -23,8 +23,8 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
 
     public static final String BACKEND_CLIENT_AUTH_URL = new Environment().readEnv("BACKEND_CLIENT_AUTH_URL");
     public static final String BACKEND_CLIENT_SECRET_NAME = new Environment().readEnv("BACKEND_CLIENT_SECRET_NAME");
+    public static final String EVALUATION_MESSAGE = "Nvi candidacy has been evaluated for publication: {}. Type: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateNviCandidateHandler.class);
-    public static final String EVALUATION_MESSAGE = "Nvi candidacy has been evaluated for publication: {}";
     private final EvaluatorService evaluatorService;
     private final QueueClient<SendMessageResponse> queueClient;
 
@@ -50,7 +50,7 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
         try {
             var message = evaluatorService.evaluateCandidacy(input);
             sendMessage(message);
-            LOGGER.info(EVALUATION_MESSAGE, message.candidateDetails().publicationId());
+            LOGGER.info(EVALUATION_MESSAGE, message.candidate().publicationId(), message.candidate().getClass());
         } catch (Exception e) {
             var msg = "Failure while calculating NVI Candidate: %s, ex: %s, msg: %s".formatted(input.getUri(),
                                                                                                e.getClass(),

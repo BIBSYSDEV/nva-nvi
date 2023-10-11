@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.evaluator.model;
+package no.sikt.nva.nvi.events;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -14,4 +14,5 @@ import java.net.URI;
 public sealed interface CandidateType permits NonNviCandidate, NviCandidate {
 
     URI publicationId();
+
 }

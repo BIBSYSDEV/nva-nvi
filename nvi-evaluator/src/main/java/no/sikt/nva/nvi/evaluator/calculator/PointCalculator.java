@@ -14,6 +14,15 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
+import static no.sikt.nva.nvi.evaluator.model.InstanceType.ACADEMIC_ARTICLE;
+import static no.sikt.nva.nvi.evaluator.model.InstanceType.ACADEMIC_CHAPTER;
+import static no.sikt.nva.nvi.evaluator.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
+import static no.sikt.nva.nvi.evaluator.model.InstanceType.ACADEMIC_MONOGRAPH;
+import static no.sikt.nva.nvi.evaluator.model.Level.LEVEL_ONE;
+import static no.sikt.nva.nvi.evaluator.model.Level.LEVEL_TWO;
+import static no.sikt.nva.nvi.evaluator.model.PublicationChannel.JOURNAL;
+import static no.sikt.nva.nvi.evaluator.model.PublicationChannel.PUBLISHER;
+import static no.sikt.nva.nvi.evaluator.model.PublicationChannel.SERIES;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -28,81 +37,89 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import no.sikt.nva.nvi.evaluator.model.InstanceType;
+import no.sikt.nva.nvi.evaluator.model.Level;
+import no.sikt.nva.nvi.evaluator.model.PointCalculation;
+import no.sikt.nva.nvi.evaluator.model.PublicationChannel;
 
 public final class PointCalculator {
 
-    public static final String ERROR_MSG_EXTRACT_PUBLICATION_CONTEXT = "Could not extract publication channel for "
-                                                                       + "instanceType {}, candidate: {}";
     public static final String COUNTRY_CODE_NORWAY = "NO";
     public static final String ROLE_CREATOR = "Creator";
-    private static final Logger LOGGER = LoggerFactory.getLogger(PointCalculator.class);
     private static final int SCALE = 10;
     private static final int RESULT_SCALE = 4;
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private static final MathContext MATH_CONTEXT = new MathContext(SCALE, ROUNDING_MODE);
     private static final BigDecimal INTERNATIONAL_COLLABORATION_FACTOR =
-        new BigDecimal("1.3").setScale(SCALE, ROUNDING_MODE);
+        new BigDecimal("1.3").setScale(1, ROUNDING_MODE);
     private static final BigDecimal NOT_INTERNATIONAL_COLLABORATION_FACTOR =
-        BigDecimal.ONE.setScale(SCALE, ROUNDING_MODE);
-    private static final String ACADEMIC_MONOGRAPH = "AcademicMonograph";
-    private static final String ACADEMIC_CHAPTER = "AcademicChapter";
-    private static final String ACADEMIC_ARTICLE = "AcademicArticle";
-    private static final String ACADEMIC_LITERATURE_REVIEW = "AcademicLiteratureReview";
-    private static final String LEVEL_ONE = "1";
-    private static final String LEVEL_TWO = "2";
-    private static final String SERIES = "Series";
-    private static final String JOURNAL = "Journal";
-    private static final String PUBLISHER = "Publisher";
-    private static final Map<String, Map<String, Map<String, BigDecimal>>> INSTANCE_TYPE_AND_LEVEL_POINT_MAP =
-        Map.of(
-            ACADEMIC_MONOGRAPH, Map.of(
-                PUBLISHER, Map.of(
-                    LEVEL_ONE, BigDecimal.valueOf(5),
-                    LEVEL_TWO, BigDecimal.valueOf(8)),
-                SERIES, Map.of(
-                    LEVEL_ONE, BigDecimal.valueOf(5),
-                    LEVEL_TWO, BigDecimal.valueOf(8))),
-            ACADEMIC_CHAPTER, Map.of(
-                PUBLISHER, Map.of(
-                    LEVEL_ONE, BigDecimal.valueOf(0.7),
-                    LEVEL_TWO, BigDecimal.valueOf(1)),
-                SERIES, Map.of(
-                    LEVEL_ONE, BigDecimal.valueOf(1),
-                    LEVEL_TWO, BigDecimal.valueOf(3))),
-            ACADEMIC_ARTICLE, Map.of(
-                JOURNAL, Map.of(
-                    LEVEL_ONE, BigDecimal.valueOf(1),
-                    LEVEL_TWO, BigDecimal.valueOf(3))),
-            ACADEMIC_LITERATURE_REVIEW, Map.of(
-                JOURNAL, Map.of(
-                    LEVEL_ONE, BigDecimal.valueOf(1),
-                    LEVEL_TWO, BigDecimal.valueOf(3))));
+        BigDecimal.ONE.setScale(1, ROUNDING_MODE);
+    private static final Map<InstanceType, Map<PublicationChannel, Map<Level, BigDecimal>>>
+        INSTANCE_TYPE_AND_LEVEL_POINT_MAP = Map.of(
+        ACADEMIC_MONOGRAPH, Map.of(
+            PUBLISHER, Map.of(
+                LEVEL_ONE, BigDecimal.valueOf(5),
+                LEVEL_TWO, BigDecimal.valueOf(8)),
+            SERIES, Map.of(
+                LEVEL_ONE, BigDecimal.valueOf(5),
+                LEVEL_TWO, BigDecimal.valueOf(8))),
+        ACADEMIC_CHAPTER, Map.of(
+            PUBLISHER, Map.of(
+                LEVEL_ONE, BigDecimal.valueOf(0.7),
+                LEVEL_TWO, BigDecimal.valueOf(1)),
+            SERIES, Map.of(
+                LEVEL_ONE, BigDecimal.valueOf(1),
+                LEVEL_TWO, BigDecimal.valueOf(3))),
+        ACADEMIC_ARTICLE, Map.of(
+            JOURNAL, Map.of(
+                LEVEL_ONE, BigDecimal.valueOf(1),
+                LEVEL_TWO, BigDecimal.valueOf(3))),
+        ACADEMIC_LITERATURE_REVIEW, Map.of(
+            JOURNAL, Map.of(
+                LEVEL_ONE, BigDecimal.valueOf(1),
+                LEVEL_TWO, BigDecimal.valueOf(3))));
 
     private PointCalculator() {
     }
 
-    public static Map<URI, BigDecimal> calculatePoints(JsonNode jsonNode,
-                                                       Map<URI, List<URI>> nviCreatorsWithInstitutionIds) {
-        return calculatePoints(calculateInstanceTypeAndLevelPoints(jsonNode),
-                               countCreatorShares(jsonNode),
-                               isInternationalCollaboration(jsonNode),
-                               countInstitutionCreatorShares(nviCreatorsWithInstitutionIds));
+    public static PointCalculation calculatePoints(JsonNode jsonNode,
+                                                   Map<URI, List<URI>> nviCreatorsWithInstitutionIds) {
+        var instanceType = extractInstanceType(jsonNode);
+        var publicationChannel = extractChannel(instanceType, jsonNode);
+        return calculatePoints(nviCreatorsWithInstitutionIds, instanceType, publicationChannel,
+                               getInstanceTypeAndLevelPoints(instanceType, publicationChannel),
+                               isInternationalCollaboration(jsonNode), countCreatorShares(jsonNode));
     }
 
-    private static Map<URI, BigDecimal> calculatePoints(BigDecimal instanceTypeAndLevelPoints, int creatorShareCount,
-                                                        boolean isInternationalCollaboration,
-                                                        Map<URI, Long> institutionCreatorShareCounts) {
-        return institutionCreatorShareCounts.entrySet()
+    private static PointCalculation calculatePoints(Map<URI, List<URI>> nviCreatorsWithInstitutionIds,
+                                                    InstanceType instanceType, Channel channel,
+                                                    BigDecimal instanceTypeAndLevelPoints,
+                                                    boolean internationalCollaboration, int creatorShareCount) {
+        return new PointCalculation(instanceType, channel.type(), channel.id(), channel.level(),
+                                    internationalCollaboration, internationalCollaboration
+                                                                    ? INTERNATIONAL_COLLABORATION_FACTOR
+                                                                    : NOT_INTERNATIONAL_COLLABORATION_FACTOR,
+                                    instanceTypeAndLevelPoints,
+                                    creatorShareCount,
+                                    calculatePointsForAllInstitutions(instanceTypeAndLevelPoints,
+                                                                      creatorShareCount,
+                                                                      internationalCollaboration,
+                                                                      countInstitutionCreatorShares(
+                                                                          nviCreatorsWithInstitutionIds)));
+    }
+
+    private static Map<URI, BigDecimal> calculatePointsForAllInstitutions(BigDecimal instanceTypeAndLevelPoints,
+                                                                          int creatorShareCount,
+                                                                          boolean isInternationalCollaboration,
+                                                                          Map<URI, Long> institutionCreatorShareCount) {
+        return institutionCreatorShareCount.entrySet()
                    .stream()
-                   .collect(Collectors.toMap(
-                       Entry::getKey,
-                       entry -> calculateInstitutionPoints(
-                           instanceTypeAndLevelPoints,
-                           isInternationalCollaboration,
-                           entry.getValue(),
-                           creatorShareCount)));
+                   .collect(Collectors.toMap(Entry::getKey,
+                                             entry -> calculateInstitutionPoints(
+                                                 instanceTypeAndLevelPoints,
+                                                 isInternationalCollaboration,
+                                                 entry.getValue(),
+                                                 creatorShareCount)));
     }
 
     private static BigDecimal calculateInstitutionPoints(BigDecimal instanceTypeAndLevelPoints,
@@ -118,15 +135,8 @@ public final class PointCalculator {
                    .setScale(RESULT_SCALE, ROUNDING_MODE);
     }
 
-    private static BigDecimal calculateInstanceTypeAndLevelPoints(JsonNode jsonNode) {
-        var instanceType = extractInstanceType(jsonNode);
-        var channelLevel = extractChannelLevel(instanceType, jsonNode);
-        return getInstanceTypeAndLevelPoints(instanceType, channelLevel.type(), channelLevel.level());
-    }
-
-    private static BigDecimal getInstanceTypeAndLevelPoints(String instanceType,
-                                                            String channelType, String level) {
-        return INSTANCE_TYPE_AND_LEVEL_POINT_MAP.get(instanceType).get(channelType).get(level);
+    private static BigDecimal getInstanceTypeAndLevelPoints(InstanceType instanceType, Channel channel) {
+        return INSTANCE_TYPE_AND_LEVEL_POINT_MAP.get(instanceType).get(channel.type()).get(channel.level());
     }
 
     private static boolean isInternationalCollaboration(JsonNode jsonNode) {
@@ -192,21 +202,17 @@ public final class PointCalculator {
                    .reduce(0, Integer::sum);
     }
 
-    private static String extractInstanceType(JsonNode jsonNode) {
-        return extractJsonNodeTextValue(jsonNode, JSON_PTR_INSTANCE_TYPE);
+    private static InstanceType extractInstanceType(JsonNode jsonNode) {
+        return InstanceType.parse(extractJsonNodeTextValue(jsonNode, JSON_PTR_INSTANCE_TYPE));
     }
 
-    private static ChannelLevel extractChannelLevel(String instanceType, JsonNode jsonNode) {
+    private static Channel extractChannel(InstanceType instanceType, JsonNode jsonNode) {
         var channel = switch (instanceType) {
             case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW -> jsonNode.at(JSON_PTR_PUBLICATION_CONTEXT).toString();
             case ACADEMIC_MONOGRAPH -> extractAcademicMonographChannel(jsonNode);
             case ACADEMIC_CHAPTER -> extractAcademicChapterChannel(jsonNode);
-            default -> {
-                LOGGER.error(ERROR_MSG_EXTRACT_PUBLICATION_CONTEXT, instanceType, jsonNode.toString());
-                throw new IllegalArgumentException();
-            }
         };
-        return attempt(() -> dtoObjectMapper.readValue(channel, ChannelLevel.class)).orElseThrow();
+        return attempt(() -> dtoObjectMapper.readValue(channel, Channel.class)).orElseThrow();
     }
 
     private static String extractAcademicChapterChannel(JsonNode jsonNode) {
@@ -229,7 +235,7 @@ public final class PointCalculator {
         return StreamSupport.stream(jsonNode.at(jsonPtr).spliterator(), false);
     }
 
-    private record ChannelLevel(String type, String level) {
+    private record Channel(URI id, PublicationChannel type, Level level) {
 
     }
 }
