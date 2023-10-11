@@ -26,6 +26,7 @@ import static no.sikt.nva.nvi.evaluator.model.PublicationChannel.SERIES;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
@@ -85,6 +86,8 @@ public final class PointCalculator {
     public static PointCalculation calculatePoints(JsonNode jsonNode,
                                                    Map<URI, List<URI>> nviCreatorsWithInstitutionIds) {
         var instanceType = extractInstanceType(jsonNode);
+        //TODO: Remove when migrating to publication channels v2
+        massiveHackToFixObjectsWithMultipleTypes(jsonNode);
         var publicationChannel = extractChannel(instanceType, jsonNode);
         return calculatePoints(nviCreatorsWithInstitutionIds, instanceType, publicationChannel,
                                getInstanceTypeAndLevelPoints(instanceType, publicationChannel),
@@ -249,6 +252,22 @@ public final class PointCalculator {
 
     private static Stream<JsonNode> getJsonNodeStream(JsonNode jsonNode, String jsonPtr) {
         return StreamSupport.stream(jsonNode.at(jsonPtr).spliterator(), false);
+    }
+
+    @Deprecated
+    private static void massiveHackToFixObjectsWithMultipleTypes(JsonNode jsonNode) {
+        var series = jsonNode.at(JSON_PTR_SERIES);
+        if (!series.isMissingNode() && series.at("/type").isArray()) {
+            var seriesObject = (ObjectNode) series;
+            seriesObject.remove("type");
+            seriesObject.put("type", "Series");
+        }
+        var chapterSeries = jsonNode.at(JSON_PTR_CHAPTER_SERIES);
+        if (!chapterSeries.isMissingNode() && chapterSeries.at("/type").isArray()) {
+            var chapterSeriesObject = (ObjectNode) chapterSeries;
+            chapterSeriesObject.remove("type");
+            chapterSeriesObject.put("type", "Series");
+        }
     }
 
     private record Channel(URI id, PublicationChannel type, Level level) {
