@@ -355,8 +355,12 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         }
 
         public NviPeriodDao findDaoByPublishingYear(String publishingYear) {
+            var queryObj = NviPeriodDao.builder()
+                .nviPeriod(DbNviPeriod.builder().publishingYear(publishingYear).build())
+                .identifier(publishingYear)
+                .version(null)
+                .build();
 
-            var queryObj = new NviPeriodDao(DbNviPeriod.builder().publishingYear(publishingYear).build());
             return this.nviPeriodTable.getItem(queryObj);
         }
     }

@@ -293,7 +293,7 @@ public class CandidateRepository extends DynamoRepository {
     }
 
     private static NoteDao newNoteDao(UUID candidateIdentifier, DbNote dbNote) {
-        return NoteDao.builder().identifier(candidateIdentifier).note(newDbNote(dbNote)).build();
+        return NoteDao.builder().identifier(candidateIdentifier).version(randomUUID().toString()).note(newDbNote(dbNote)).build();
     }
 
     private static DbNote newDbNote(DbNote dbNote) {

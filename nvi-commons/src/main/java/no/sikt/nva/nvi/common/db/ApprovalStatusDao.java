@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.db;
 
 import static java.util.Objects.nonNull;
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
@@ -60,6 +61,7 @@ public record ApprovalStatusDao(UUID identifier,
     public ApprovalStatusDao.Builder copy() {
         return builder()
                    .identifier(identifier)
+                   .version(randomUUID().toString())
                    .approvalStatus(approvalStatus.copy().build());
     }
 
@@ -122,7 +124,6 @@ public record ApprovalStatusDao(UUID identifier,
             return this;
         }
 
-        @JacocoGenerated
         public Builder version(String version) {
             this.builderVersion = version;
             return this;
@@ -143,7 +144,7 @@ public record ApprovalStatusDao(UUID identifier,
 
         @DynamoDbIgnore
         public ApprovalStatusDao toDao(UUID candidateIdentifier) {
-            return new ApprovalStatusDao(candidateIdentifier, this, null);
+            return ApprovalStatusDao.builder().identifier(candidateIdentifier).approvalStatus(this).version(randomUUID().toString()).build();
         }
 
         @DynamoDbIgnore

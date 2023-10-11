@@ -34,8 +34,6 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.PeriodStatus;
-import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
@@ -187,12 +185,6 @@ public final class TestUtils {
         return nviPeriodRepository;
     }
 
-    public static PeriodStatus randomPeriodStatus() {
-        return new PeriodStatus(ZonedDateTime.now().plusMonths(1).toInstant(),
-                                ZonedDateTime.now().plusMonths(10).toInstant(),
-                                Status.OPEN_PERIOD);
-    }
-
     public static NviService nviServiceReturningNotStartedPeriod(DynamoDbClient client, int year) {
         var nviPeriodRepository = mock(PeriodRepository.class);
         var nviService = new NviService(nviPeriodRepository, new CandidateRepository(client));
@@ -227,9 +219,11 @@ public final class TestUtils {
                            .mapToObj(i -> randomUri())
                            .collect(Collectors.toMap(Function.identity(), e -> List.of(institutions)));
 
+        var points = Arrays.stream(institutions)
+                         .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal()));
+
         return createUpsertCandidateRequest(publicationId, isApplicable, creators, instanceType,
-                                            DbLevel.LEVEL_TWO,
-                                            institutions);
+                                            DbLevel.LEVEL_TWO, points);
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
@@ -237,10 +231,9 @@ public final class TestUtils {
                                                                       Map<URI, List<URI>> creators,
                                                                       final InstanceType instanceType,
                                                                       DbLevel level,
-                                                                      URI... institutions) {
+                                                                      Map<URI, BigDecimal> points) {
 
-        var points = Arrays.stream(institutions)
-                         .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal()));
+
         return new UpsertCandidateRequest() {
 
             @Override

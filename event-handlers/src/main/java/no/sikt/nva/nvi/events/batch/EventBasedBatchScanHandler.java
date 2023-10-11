@@ -37,7 +37,7 @@ public class EventBasedBatchScanHandler extends EventHandler<ScanDatabaseRequest
 
     @Override
     protected ListingResult processInput(ScanDatabaseRequest input, AwsEventBridgeEvent<ScanDatabaseRequest> event,
-                                Context context) {
+                                         Context context) {
         logger.info("Query starting point: {}", input.startMarker());
 
         var batchResult = nviService.refresh(input.pageSize(), input.startMarker());
@@ -50,25 +50,18 @@ public class EventBasedBatchScanHandler extends EventHandler<ScanDatabaseRequest
 
     @JacocoGenerated
     private static EventBridgeClient defaultEventBridgeClient() {
-        return EventBridgeClient.builder()
-                   .httpClientBuilder(UrlConnectionHttpClient.builder())
-                   .build();
+        return EventBridgeClient.builder().httpClientBuilder(UrlConnectionHttpClient.builder()).build();
     }
 
-    private void sendEventToInvokeNewRefreshRowVersionExecution(ScanDatabaseRequest input,
-                                                                Context context,
+    private void sendEventToInvokeNewRefreshRowVersionExecution(ScanDatabaseRequest input, Context context,
                                                                 ListingResult result) {
-        var newEvent = input
-                                             .newScanDatabaseRequest(result.startMarker())
-                                             .createNewEventEntry(EVENT_BUS_NAME, DETAIL_TYPE,
-                                                                  context.getInvokedFunctionArn());
+        var newEvent = input.newScanDatabaseRequest(result.startMarker())
+                           .createNewEventEntry(EVENT_BUS_NAME, DETAIL_TYPE, context.getInvokedFunctionArn());
         sendEvent(newEvent);
     }
 
     private void sendEvent(PutEventsRequestEntry putEventRequestEntry) {
-        var putEventRequest = PutEventsRequest.builder()
-                                               .entries(putEventRequestEntry)
-                                               .build();
+        var putEventRequest = PutEventsRequest.builder().entries(putEventRequestEntry).build();
         eventBridgeClient.putEvents(putEventRequest);
     }
 }

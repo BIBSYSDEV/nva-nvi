@@ -23,10 +23,6 @@ public record NviPeriodDao(
 
     public static final String TYPE = "PERIOD";
 
-    public NviPeriodDao(DbNviPeriod nviPeriod) {
-        this(nviPeriod.publishingYear(), nviPeriod, null);
-    }
-
     public static Builder builder() {
         return new Builder();
     }
@@ -86,7 +82,6 @@ public record NviPeriodDao(
             return this;
         }
 
-        @JacocoGenerated
         public Builder version(String version) {
             this.builderVersion = version;
             return this;

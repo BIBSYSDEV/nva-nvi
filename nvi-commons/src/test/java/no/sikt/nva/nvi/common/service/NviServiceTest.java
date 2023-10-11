@@ -32,11 +32,13 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
@@ -57,11 +59,14 @@ import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 
 public class NviServiceTest extends LocalDynamoTest {
 
     public static final int YEAR = ZonedDateTime.now().getYear();
+    private static final int FIRST_ROW = 0;
+    private static final int SECOND_ROW = 1;
     private NviService nviService;
     private CandidateRepositoryHelper candidateRepository;
 
@@ -245,6 +250,23 @@ public class NviServiceTest extends LocalDynamoTest {
             originalPeriod.copy().reportingDate(originalPeriod.reportingDate().plusSeconds(500)).build());
         var fetchedPeriod = nviService.getPeriod(originalPeriod.publishingYear());
         assertThat(fetchedPeriod, is(not(equalTo(originalPeriod))));
+    }
+
+    @Test
+    void shouldNotAllowNviPeriodReportingDateInInPast() {
+        var originalPeriod = createPeriod(String.valueOf(ZonedDateTime.now().getYear()));
+        nviService.createPeriod(originalPeriod);
+        var updatedPeriod = originalPeriod.copy().reportingDate(ZonedDateTime.now().minusWeeks(10).toInstant()).build();
+
+        assertThrows(IllegalArgumentException.class, () -> nviService.updatePeriod(updatedPeriod));
+    }
+
+    @Test
+    void shouldNotAllowNviPeriodStartAfterReportingDate() {
+        var originalPeriod = createPeriod(String.valueOf(ZonedDateTime.now().getYear()));
+        nviService.createPeriod(originalPeriod);
+        var updatedPeriod = originalPeriod.copy().startDate(ZonedDateTime.now().plusYears(1).toInstant()).build();
+        assertThrows(IllegalArgumentException.class, () -> nviService.updatePeriod(updatedPeriod));
     }
 
     @Test
@@ -483,40 +505,53 @@ public class NviServiceTest extends LocalDynamoTest {
 
     @Test
     public void refreshVersionShouldContinue() {
-        candidateRepository.create(randomCandidate(), List.of());
-        candidateRepository.create(randomCandidate(), List.of());
-        candidateRepository.create(randomCandidate(), List.of());
+        IntStream.range(0, 3).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
+
         var result = nviService.refresh(1, null);
         assertThat(result.shouldContinueScan(), is(equalTo(true)));
     }
 
     @Test
     public void shouldWriteVersionOnRefreshWithStartMarker() {
-        candidateRepository.create(randomCandidate(), List.of());
-        candidateRepository.create(randomCandidate(), List.of());
+        IntStream.range(0, 2).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
 
-        // Read candidates with scan to know the order for later comparison
-        var candidates =
-            localDynamo.scan(ScanRequest.builder().tableName(ApplicationConstants.NVI_TABLE_NAME).build())
-                .items()
-                .stream()
-                .filter(a -> a.get("type").s().equals("CANDIDATE")).toList();
+        var candidates = getCandidatesInOrder();
 
-        var identifierForFirstRow = UUID.fromString(candidates.get(0).get("identifier").s());
-        var identifierForSecondRow = UUID.fromString(candidates.get(1).get("identifier").s());
+        List<CandidateDao> originalRows = getCandidateDaos(candidates);
 
-        var candidate1Original = candidateRepository.findDaoById(identifierForFirstRow);
-        var candidate2Original = candidateRepository.findDaoById(identifierForSecondRow);
+        nviService.refresh(1000, getStartMarker(originalRows.get(FIRST_ROW)));
 
-        nviService.refresh(1000, Map.of(
-            "PrimaryKeyRangeKey", candidate1Original.primaryKeyHashKey(),
-            "PrimaryKeyHashKey", candidate1Original.primaryKeyHashKey()));
+        var modifiedRows = getCandidateDaos(candidates);
 
-        var candidate1Modified = candidateRepository.findDaoById(identifierForFirstRow);
-        var candidate2Modified = candidateRepository.findDaoById(identifierForSecondRow);
+        assertThat(modifiedRows.get(FIRST_ROW).version(), is(equalTo(originalRows.get(FIRST_ROW).version())));
+        assertThat(modifiedRows.get(SECOND_ROW).version(), is(not(equalTo(originalRows.get(SECOND_ROW).version()))));
+    }
 
-        assertThat(candidate1Modified.version(), is(equalTo(candidate1Original.version())));
-        assertThat(candidate2Modified.version(), is(not(equalTo(candidate2Original.version()))));
+    private List<CandidateDao> getCandidateDaos(List<Map<String, AttributeValue>> candidates) {
+        return Arrays.asList(candidateRepository.findDaoById(getIdentifier(candidates, 0)),
+                             candidateRepository.findDaoById(getIdentifier(candidates, 1)));
+    }
+
+    private static Map<String, String> getStartMarker(CandidateDao dao) {
+        return getStartMarker(dao.primaryKeyHashKey(),
+                              dao.primaryKeyHashKey());
+    }
+
+    private static Map<String, String> getStartMarker(String primaryKeyHashKey, String primaryKeyRangeKey) {
+        return Map.of("PrimaryKeyRangeKey", primaryKeyHashKey, "PrimaryKeyHashKey",
+                      primaryKeyRangeKey);
+    }
+
+    private static UUID getIdentifier(List<Map<String, AttributeValue>> candidates, int index) {
+        return UUID.fromString(candidates.get(index).get("identifier").s());
+    }
+
+    private List<Map<String, AttributeValue>> getCandidatesInOrder() {
+        return localDynamo.scan(ScanRequest.builder().tableName(ApplicationConstants.NVI_TABLE_NAME).build())
+                   .items()
+                   .stream()
+                   .filter(a -> a.get("type").s().equals("CANDIDATE"))
+                   .toList();
     }
 
     public static class CandidateRepositoryHelper extends CandidateRepository {

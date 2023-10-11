@@ -87,7 +87,6 @@ public record NoteDao(UUID identifier,
             return this;
         }
 
-        @JacocoGenerated
         public Builder version(String version) {
             this.builderVersion = version;
             return this;
