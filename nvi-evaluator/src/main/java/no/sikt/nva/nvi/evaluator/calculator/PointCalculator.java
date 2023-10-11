@@ -195,27 +195,27 @@ public final class PointCalculator {
     }
 
     private static int countCreatorShares(JsonNode jsonNode) {
-        return Integer.sum(countCreatorAffiliations(jsonNode), countCreatorsWithoutAffiliations(jsonNode));
+        var creators = extractCreatorNodes(jsonNode);
+        return Integer.sum(countAffiliations(creators), countCreatorsWithoutAffiliations(creators));
     }
 
-    private static Integer countCreatorsWithoutAffiliations(JsonNode jsonNode) {
-        return streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR))
-                   .filter(PointCalculator::isCreator)
+    private static List<JsonNode> extractCreatorNodes(JsonNode jsonNode) {
+        return streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR)).filter(PointCalculator::isCreator).toList();
+    }
+
+    private static Integer countCreatorsWithoutAffiliations(List<JsonNode> creators) {
+        return creators.stream()
                    .filter(PointCalculator::doesNotHaveAffiliations)
                    .map(node -> 1)
                    .reduce(0, Integer::sum);
     }
 
-    private static boolean doesNotHaveAffiliations(JsonNode contributor) {
-        return contributor.at(JSON_PTR_AFFILIATIONS).isEmpty();
+    private static Integer countAffiliations(List<JsonNode> creators) {
+        return creators.stream().flatMap(PointCalculator::extractAffiliations).map(node -> 1).reduce(0, Integer::sum);
     }
 
-    private static Integer countCreatorAffiliations(JsonNode jsonNode) {
-        return streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR))
-                   .filter(PointCalculator::isCreator)
-                   .flatMap(PointCalculator::extractAffiliations)
-                   .map(node -> 1)
-                   .reduce(0, Integer::sum);
+    private static boolean doesNotHaveAffiliations(JsonNode contributor) {
+        return contributor.at(JSON_PTR_AFFILIATIONS).isEmpty();
     }
 
     private static InstanceType extractInstanceType(JsonNode jsonNode) {
