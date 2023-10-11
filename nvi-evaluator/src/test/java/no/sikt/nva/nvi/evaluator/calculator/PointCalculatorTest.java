@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -147,6 +148,22 @@ class PointCalculatorTest {
         assertThat(institutionPoints.get(institutionId), is(equalTo(asBigDecimal("1"))));
     }
 
+    @Test
+    void shouldCountOneCreatorShareForCreatorsWithoutAffiliations() {
+        var nviCreatorId = randomUri();
+        var nviInstitutionId = randomUri();
+        var expandedResource = createExpandedResourceWithCreatorWithoutAffiliation(nviCreatorId,
+                                                                                   nviInstitutionId,
+                                                                                   createJournalReference(
+                                                                                       "AcademicArticle",
+                                                                                       "1"));
+
+        var institutionPoints = calculatePoints(expandedResource,
+                                                Map.of(nviCreatorId, List.of(nviInstitutionId))).institutionPoints();
+
+        assertThat(institutionPoints.get(nviInstitutionId), is(equalTo(asBigDecimal("0.7071"))));
+    }
+
     private static JsonNode createExpandedResourceWithManyCreators(PointParameters parameters, URI creator1,
                                                                    URI creator2,
                                                                    List<URI> creator1Institutions,
@@ -158,7 +175,7 @@ class PointCalculatorTest {
             getContributorNode(creator2, true, addCountryCode(creator2Institutions, COUNTRY_CODE_NO), ROLE_CREATOR),
             getContributorNode(randomUri(), false,
                                addCountryCode(createRandomInstitutions(parameters, 3), countryCodeForNonNviCreators),
-                               ROLE_CREATOR)
+                               parameters.creatorShareCount() == 3 ? SOME_OTHER_ROLE : ROLE_CREATOR)
         );
         return createExpandedResource(randomUri(), contributorNodes, getInstanceTypeReference(parameters));
     }
@@ -178,6 +195,20 @@ class PointCalculatorTest {
                                           getContributorNode(creator2, true, Map.of(creator2InstitutionId,
                                                                                     creator2InstitutionCountry),
                                                              creator2Role)),
+                                      reference);
+    }
+
+    private static JsonNode createExpandedResourceWithCreatorWithoutAffiliation(URI creator1,
+                                                                                URI creator1InstitutionId,
+                                                                                JsonNode reference) {
+        return createExpandedResource(randomUri(),
+                                      createContributorNodes(
+                                          getContributorNode(creator1, true,
+                                                             Map.of(creator1InstitutionId,
+                                                                    PointCalculatorTest.COUNTRY_CODE_NO),
+                                                             ROLE_CREATOR),
+                                          getContributorNode(randomUri(), true, Collections.emptyMap(),
+                                                             ROLE_CREATOR)),
                                       reference);
     }
 
