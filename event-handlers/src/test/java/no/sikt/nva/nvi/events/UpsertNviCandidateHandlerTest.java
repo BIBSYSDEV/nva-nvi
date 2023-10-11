@@ -182,8 +182,8 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                                          DbLevel.values()).getValue())
                                                                      .withPublicationDate(randomPublicationDate())
                                                                      .withVerifiedCreators(List.of(randomCreator()))
-                                                                     .build())).
-                             build());
+                                                                     .build()))
+                             .build());
     }
 
     private static CandidateDetails.PublicationDate randomPublicationDate() {

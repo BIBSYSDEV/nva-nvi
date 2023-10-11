@@ -16,12 +16,12 @@ public enum InstanceType {
 
     public static InstanceType parse(String value) {
         return Arrays.stream(InstanceType.values())
-                   .filter(instanceType -> instanceType.value().equalsIgnoreCase(value))
+                   .filter(instanceType -> instanceType.getValue().equalsIgnoreCase(value))
                    .findFirst()
                    .orElseThrow();
     }
 
-    public String value() {
+    public String getValue() {
         return value;
     }
 }

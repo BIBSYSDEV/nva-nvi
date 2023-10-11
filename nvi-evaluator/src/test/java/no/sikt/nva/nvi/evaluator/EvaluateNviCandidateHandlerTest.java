@@ -179,7 +179,7 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var messageBody = getMessageBody();
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_ARTICLE.value(),
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_ARTICLE.getValue(),
                                                                    BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE),
                                                                    fileUri, JOURNAL,
                                                                    ONE);
@@ -194,7 +194,7 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var messageBody = getMessageBody();
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(InstanceType.ACADEMIC_CHAPTER.value(),
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(InstanceType.ACADEMIC_CHAPTER.getValue(),
                                                                    BigDecimal.valueOf(1)
                                                                        .setScale(SCALE, ROUNDING_MODE),
                                                                    fileUri, SERIES,
@@ -210,7 +210,7 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var messageBody = getMessageBody();
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_MONOGRAPH.value(),
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_MONOGRAPH.getValue(),
                                                                    BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE),
                                                                    fileUri, SERIES,
                                                                    BigDecimal.valueOf(5));
@@ -225,7 +225,7 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var messageBody = getMessageBody();
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_LITERATURE_REVIEW.value(),
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_LITERATURE_REVIEW.getValue(),
                                                                    BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE),
                                                                    fileUri, JOURNAL,
                                                                    ONE);
@@ -445,7 +445,7 @@ class EvaluateNviCandidateHandlerTest {
                    .withCandidateType(createExpectedCandidate(instanceType,
                                                               Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID,
                                                                      points.setScale(SCALE, RoundingMode.HALF_UP)),
-                                                              publicationChannel, Level.LEVEL_ONE.value(),
+                                                              publicationChannel, Level.LEVEL_ONE.getValue(),
                                                               basePoints))
                    .withPublicationBucketUri(bucketUri).build();
     }
@@ -458,7 +458,7 @@ class EvaluateNviCandidateHandlerTest {
                                     .withPublicationId(HARDCODED_PUBLICATION_ID)
                                     .withPublicationDate(HARDCODED_PUBLICATION_DATE)
                                     .withInstanceType(instanceType)
-                                    .withChannelType(channelType.value())
+                                    .withChannelType(channelType.getValue())
                                     .withLevel(level)
                                     .withPublicationChannelId(HARDCODED_PUBLICATION_CHANNEL_ID)
                                     .withIsInternationalCollaboration(false)
