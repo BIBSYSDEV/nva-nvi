@@ -213,7 +213,7 @@ public final class PointCalculator {
     private static Integer countCreatorAffiliations(JsonNode jsonNode) {
         return streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR))
                    .filter(PointCalculator::isCreator)
-                   .flatMap(contributor -> streamNode(contributor.at(JSON_PTR_AFFILIATIONS)))
+                   .flatMap(PointCalculator::extractAffiliations)
                    .map(node -> 1)
                    .reduce(0, Integer::sum);
     }
