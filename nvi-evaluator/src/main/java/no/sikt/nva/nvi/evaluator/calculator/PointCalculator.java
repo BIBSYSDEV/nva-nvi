@@ -195,19 +195,27 @@ public final class PointCalculator {
     }
 
     private static int countCreatorShares(JsonNode jsonNode) {
-        var creatorAffiliationCombinations = streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR))
-                                                 .filter(PointCalculator::isCreator)
-                                                 .flatMap(
-                                                     contributor -> streamNode(contributor.at(JSON_PTR_AFFILIATIONS)))
-                                                 .map(node -> 1)
-                                                 .reduce(0, Integer::sum);
-        var creatorsWithoutAffiliations = streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR))
-                                              .filter(PointCalculator::isCreator)
-                                              .filter(
-                                                  contributor -> extractAffiliations(contributor).findAny().isEmpty())
-                                              .map(node -> 1)
-                                              .reduce(0, Integer::sum);
-        return creatorAffiliationCombinations + creatorsWithoutAffiliations;
+        return Integer.sum(countCreatorAffiliations(jsonNode), countCreatorsWithoutAffiliations(jsonNode));
+    }
+
+    private static Integer countCreatorsWithoutAffiliations(JsonNode jsonNode) {
+        return streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR))
+                   .filter(PointCalculator::isCreator)
+                   .filter(PointCalculator::doesNotHaveAffiliations)
+                   .map(node -> 1)
+                   .reduce(0, Integer::sum);
+    }
+
+    private static boolean doesNotHaveAffiliations(JsonNode contributor) {
+        return contributor.at(JSON_PTR_AFFILIATIONS).isEmpty();
+    }
+
+    private static Integer countCreatorAffiliations(JsonNode jsonNode) {
+        return streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR))
+                   .filter(PointCalculator::isCreator)
+                   .flatMap(contributor -> streamNode(contributor.at(JSON_PTR_AFFILIATIONS)))
+                   .map(node -> 1)
+                   .reduce(0, Integer::sum);
     }
 
     private static InstanceType extractInstanceType(JsonNode jsonNode) {
