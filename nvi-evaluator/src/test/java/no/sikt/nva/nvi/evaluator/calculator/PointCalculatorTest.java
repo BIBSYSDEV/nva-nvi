@@ -168,7 +168,7 @@ class PointCalculatorTest {
             getContributorNode(creator2, true, addCountryCode(creator2Institutions, COUNTRY_CODE_NO), ROLE_CREATOR),
             getContributorNode(randomUri(), false,
                                addCountryCode(createRandomInstitutions(parameters, 3), countryCodeForNonNviCreators),
-                               ROLE_CREATOR)
+                               parameters.creatorShareCount() == 3 ? SOME_OTHER_ROLE : ROLE_CREATOR)
         );
         return createExpandedResource(randomUri(), contributorNodes, getInstanceTypeReference(parameters));
     }
