@@ -105,7 +105,8 @@ public final class PointCalculator {
                                                                       creatorShareCount,
                                                                       internationalCollaboration,
                                                                       countInstitutionCreatorShares(
-                                                                          nviCreatorsWithInstitutionIds)));
+                                                                          nviCreatorsWithInstitutionIds)),
+                                    null);
     }
 
     private static Map<URI, BigDecimal> calculatePointsForAllInstitutions(BigDecimal instanceTypeAndLevelPoints,
