@@ -208,7 +208,7 @@ class PointCalculatorTest {
             new PointParameters("AcademicChapter", "Series", "2", false, 5, asBigDecimal("1.8974"),
                                 asBigDecimal("1.3416"), asBigDecimal("6.7082")),
             new PointParameters("AcademicArticle", "Journal", "1", false, 7, asBigDecimal("0.5345"),
-                                asBigDecimal("0.3780"), asBigDecimal("2.6457")),
+                                asBigDecimal("0.3780"), asBigDecimal("2.6458")),
             new PointParameters("AcademicArticle", "Journal", "2", false, 7, asBigDecimal("1.6036"),
                                 asBigDecimal("1.1339"), asBigDecimal("7.9373")),
             new PointParameters("AcademicLiteratureReview", "Journal", "1", true, 8, asBigDecimal("0.6500"),
