@@ -87,32 +87,37 @@ public final class PointCalculator {
         var instanceType = extractInstanceType(jsonNode);
         var publicationChannel = extractChannel(instanceType, jsonNode);
         return calculatePoints(nviCreatorsWithInstitutionIds, instanceType, publicationChannel,
-                               getInstanceTypeAndLevelPoints(instanceType, publicationChannel),
                                isInternationalCollaboration(jsonNode), countCreatorShares(jsonNode));
     }
 
     private static PointCalculation calculatePoints(Map<URI, List<URI>> nviCreatorsWithInstitutionIds,
                                                     InstanceType instanceType, Channel channel,
-                                                    BigDecimal instanceTypeAndLevelPoints,
                                                     boolean internationalCollaboration, int creatorShareCount) {
+        var basePoints = getInstanceTypeAndLevelPoints(instanceType, channel);
+        var collaborationFactor = getInternationalCollaborationFactor(internationalCollaboration);
+        var institutionPoints = calculatePointsForAllInstitutions(basePoints, creatorShareCount,
+                                                                  internationalCollaboration,
+                                                                  nviCreatorsWithInstitutionIds);
+        var totalPoints = calculateTotalPoints(collaborationFactor, basePoints, BigDecimal.valueOf(creatorShareCount));
         return new PointCalculation(instanceType, channel.type(), channel.id(), channel.level(),
-                                    internationalCollaboration, internationalCollaboration
-                                                                    ? INTERNATIONAL_COLLABORATION_FACTOR
-                                                                    : NOT_INTERNATIONAL_COLLABORATION_FACTOR,
-                                    instanceTypeAndLevelPoints,
+                                    internationalCollaboration, collaborationFactor,
+                                    basePoints,
                                     creatorShareCount,
-                                    calculatePointsForAllInstitutions(instanceTypeAndLevelPoints,
-                                                                      creatorShareCount,
-                                                                      internationalCollaboration,
-                                                                      countInstitutionCreatorShares(
-                                                                          nviCreatorsWithInstitutionIds)),
-                                    null);
+                                    institutionPoints,
+                                    totalPoints);
+    }
+
+    private static BigDecimal calculateTotalPoints(BigDecimal internationalCollaborationFactor, BigDecimal basePoints,
+                                                   BigDecimal creatorShareCount) {
+        return executeNviFormula(basePoints, internationalCollaborationFactor, creatorShareCount);
     }
 
     private static Map<URI, BigDecimal> calculatePointsForAllInstitutions(BigDecimal instanceTypeAndLevelPoints,
                                                                           int creatorShareCount,
                                                                           boolean isInternationalCollaboration,
-                                                                          Map<URI, Long> institutionCreatorShareCount) {
+                                                                          Map<URI, List<URI>>
+                                                                              nviCreatorsWithInstitutionIds) {
+        var institutionCreatorShareCount = countInstitutionCreatorShares(nviCreatorsWithInstitutionIds);
         return institutionCreatorShareCount.entrySet()
                    .stream()
                    .collect(Collectors.toMap(Entry::getKey,
@@ -129,10 +134,13 @@ public final class PointCalculator {
         var internationalFactor = getInternationalCollaborationFactor(isInternationalCollaboration);
         var institutionContributorFraction = divideInstitutionShareOnTotalShares(institutionCreatorShareCount,
                                                                                  creatorShareCount);
-        var creatorFactor = institutionContributorFraction.sqrt(MATH_CONTEXT).setScale(SCALE, ROUNDING_MODE);
-        return instanceTypeAndLevelPoints
-                   .multiply(internationalFactor)
-                   .multiply(creatorFactor)
+        return executeNviFormula(instanceTypeAndLevelPoints, internationalFactor, institutionContributorFraction);
+    }
+
+    private static BigDecimal executeNviFormula(BigDecimal basePoints, BigDecimal internationalFactor,
+                                                BigDecimal creatorShareCount) {
+        return basePoints.multiply(internationalFactor)
+                   .multiply(creatorShareCount.sqrt(MATH_CONTEXT).setScale(SCALE, ROUNDING_MODE))
                    .setScale(RESULT_SCALE, ROUNDING_MODE);
     }
 
