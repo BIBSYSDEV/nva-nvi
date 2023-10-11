@@ -2,9 +2,10 @@ package no.sikt.nva.nvi.index.model;
 
 import static nva.commons.core.StringUtils.EMPTY_STRING;
 import java.net.URI;
+import java.util.List;
 import nva.commons.core.JacocoGenerated;
 
-public record CandidateSearchParameters(String affiliations, boolean excludeSubUnits, String filter, String username,
+public record CandidateSearchParameters(List<URI> affiliations, boolean excludeSubUnits, String filter, String username,
                                         String year, URI customer, int offset, int size) {
     public static Builder builder() {
         return new Builder();
@@ -13,7 +14,7 @@ public record CandidateSearchParameters(String affiliations, boolean excludeSubU
     @JacocoGenerated
     public static final class Builder {
 
-        private String affiliations;
+        private List<URI> affiliations;
         private boolean excludeSubUnits;
         private String filter = EMPTY_STRING;
         private String username;
@@ -25,7 +26,7 @@ public record CandidateSearchParameters(String affiliations, boolean excludeSubU
         public Builder() {
         }
 
-        public Builder withAffiliations(String affiliations) {
+        public Builder withAffiliations(List<URI> affiliations) {
             this.affiliations = affiliations;
             return this;
         }

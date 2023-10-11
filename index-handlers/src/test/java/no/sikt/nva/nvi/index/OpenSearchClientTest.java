@@ -42,9 +42,11 @@ import java.util.Random;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
+import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
@@ -77,8 +79,10 @@ public class OpenSearchClientTest {
     public static final int DELAY_ON_INDEX = 2000;
     public static final String YEAR = "2023";
     public static final String UNEXISTING_FILTER = "unexisting-filter";
-    public static final String NTNU_INSTITUTION_ID = "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0";
-    public static final String SIKT_INSTITUTION_ID = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0";
+    public static final URI NTNU_INSTITUTION_ID
+        = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
+    public static final URI SIKT_INSTITUTION_ID
+        = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     private static RestClient restClient;
     private static OpenSearchClient openSearchClient;
 
@@ -127,7 +131,8 @@ public class OpenSearchClientTest {
         int size = 10;
         var searchParameters =
             CandidateSearchParameters.builder()
-                .withUsername(USERNAME).withCustomer(CUSTOMER).withYear(YEAR).withOffset(offset).withSize(size).build();
+                .withUsername(USERNAME).withAffiliations(List.of(CUSTOMER)).withCustomer(CUSTOMER)
+                .withYear(YEAR).withOffset(offset).withSize(size).build();
         var searchResponse = openSearchClient.search(searchParameters);
 
         assertThat(extractTotalNumberOfHits(searchResponse), is(equalTo(totalNumberOfDocuments)));
@@ -135,21 +140,6 @@ public class OpenSearchClientTest {
         int expectedNumberOfHitsReturned = totalNumberOfDocuments - offset;
         assertThat(searchResponse.hits().hits().size(), is(equalTo(expectedNumberOfHitsReturned)));
     }
-
-    @Test
-    void shouldReturnEverythingIfYearFilterAndAffiliationsAreNotSet() throws IOException, InterruptedException {
-        addDocumentsToIndex(singleNviCandidateIndexDocumentWithCustomerAndYear(randomString(), "1234"),
-                            singleNviCandidateIndexDocumentWithCustomerAndYear(randomString(), "12345"));
-
-        int totalNumberOfDocuments = 2;
-        var searchParameters = CandidateSearchParameters.builder()
-                                   .withCustomer(CUSTOMER).withUsername(USERNAME).build();
-        var searchResponse = openSearchClient.search(searchParameters);
-
-        assertThat(extractTotalNumberOfHits(searchResponse), is(equalTo(totalNumberOfDocuments)));
-        assertThat(searchResponse.hits().hits().size(), is(equalTo(totalNumberOfDocuments)));
-    }
-
 
     @Test
     void shouldDeleteIndexAndThrowExceptionWhenSearchingInNonExistentIndex() throws IOException, InterruptedException {
@@ -195,7 +185,7 @@ public class OpenSearchClientTest {
                             documentFromString("document_rejected.json"),
                             documentFromString("document_rejected_collaboration.json"));
 
-        var searchParameters = defaultSearchParameters().build();
+        var searchParameters = defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_ID)).build();
         var searchResponse =
             openSearchClient.search(searchParameters);
         var docCount = getDocCount(searchResponse, entry.getKey());
@@ -212,7 +202,7 @@ public class OpenSearchClientTest {
         );
 
 
-        var searchParameters = defaultSearchParameters().withAffiliations(SIKT_INSTITUTION_ID).build();
+        var searchParameters = defaultSearchParameters().withAffiliations(List.of(SIKT_INSTITUTION_ID)).build();
         var searchResponse =
             openSearchClient.search(searchParameters);
 
@@ -225,7 +215,7 @@ public class OpenSearchClientTest {
         addDocumentsToIndex(documentFromString("document_with_contributor_from_ntnu_subunit.json")
         );
 
-        var searchParameters = defaultSearchParameters().withAffiliations(NTNU_INSTITUTION_ID).build();
+        var searchParameters = defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_ID)).build();
         var searchResponse =
             openSearchClient.search(searchParameters);
 
@@ -241,7 +231,7 @@ public class OpenSearchClientTest {
                             documentFromString("document_with_contributor_from_sikt_but_not_creator.json")
         );
 
-        var searchParameters = defaultSearchParameters().withAffiliations(NTNU_INSTITUTION_ID).build();
+        var searchParameters = defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_ID)).build();
         var searchResponse =
             openSearchClient.search(searchParameters);
 
@@ -257,7 +247,7 @@ public class OpenSearchClientTest {
         addDocumentsToIndex(subUnitDoc, topLevelDoc);
 
         var searchParameters =
-            defaultSearchParameters().withAffiliations(NTNU_INSTITUTION_ID).withExcludeSubUnits(true).build();
+            defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_ID)).withExcludeSubUnits(true).build();
         var searchResponse =
             openSearchClient.search(searchParameters);
 
@@ -277,7 +267,8 @@ public class OpenSearchClientTest {
                             documentFromString("document_rejected.json"),
                             documentFromString("document_rejected_collaboration.json"));
 
-        var searchParameters = defaultSearchParameters().withFilter(entry.getKey()).build();
+        var searchParameters =
+            defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_ID)).withFilter(entry.getKey()).build();
 
         var searchResponse =
             openSearchClient.search(searchParameters);
@@ -293,7 +284,7 @@ public class OpenSearchClientTest {
         addDocumentsToIndex(document,
                             singleNviCandidateIndexDocumentWithCustomerAndYear(customer.toString(), randomString()));
 
-        var searchParameters = defaultSearchParameters().withYear(year).build();
+        var searchParameters = defaultSearchParameters().withAffiliations(List.of(customer)).withYear(year).build();
 
         var searchResponse =
             openSearchClient.search(searchParameters);
@@ -315,7 +306,7 @@ public class OpenSearchClientTest {
                             documentFromString("document_rejected_collaboration.json"));
 
         var searchParameters =
-            defaultSearchParameters().withFilter(entry.getKey()).withAffiliations(NTNU_INSTITUTION_ID).build();
+            defaultSearchParameters().withFilter(entry.getKey()).withAffiliations(List.of(NTNU_INSTITUTION_ID)).build();
         var searchResponse =
             openSearchClient.search(searchParameters);
 
@@ -359,7 +350,8 @@ public class OpenSearchClientTest {
     private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomerAndYear(String customer,
                                                                                                 String year) {
         var approval = new Approval(customer, Map.of(), randomStatus(), null);
-        return new NviCandidateIndexDocument(randomUri(), randomString(), randomPublicationDetailsWithYear(year),
+        return new NviCandidateIndexDocument(randomUri(), randomString(),
+                                             randomPublicationDetailsWithYearAndContributor(year, customer),
                                              List.of(approval), 1, TestUtils.randomBigDecimal());
     }
 
@@ -384,10 +376,12 @@ public class OpenSearchClientTest {
                                       List.of());
     }
 
-    private static PublicationDetails randomPublicationDetailsWithYear(String year) {
+    private static PublicationDetails randomPublicationDetailsWithYearAndContributor(String year, String affiliation) {
         return new PublicationDetails(randomString(), randomString(), randomString(),
                                       PublicationDate.builder().withYear(year).build(),
-                                      List.of());
+                                      List.of(new Contributor.Builder().withRole("Creator")
+                                                  .withAffiliations(List.of(
+                                                      new Affiliation(affiliation, List.of()))).build()));
     }
 
     private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {
@@ -427,6 +421,7 @@ public class OpenSearchClientTest {
 
     private static CandidateSearchParameters.Builder defaultSearchParameters() {
         return CandidateSearchParameters.builder()
+                   .withAffiliations(List.of())
                    .withCustomer(CUSTOMER).withUsername(USERNAME).withYear(YEAR);
     }
 

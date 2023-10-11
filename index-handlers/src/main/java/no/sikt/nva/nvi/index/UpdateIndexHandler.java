@@ -95,6 +95,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         return CANDIDATE_TYPE.equals(extractRecordType(record));
     }
 
+    @JacocoGenerated
     private static AuthorizedBackendUriRetriever defaultUriRetriver() {
         return new AuthorizedBackendUriRetriever(new Environment().readEnv("BACKEND_CLIENT_AUTH_URL"),
                                                  new Environment().readEnv("BACKEND_CLIENT_SECRET_NAME"));

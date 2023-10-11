@@ -25,6 +25,7 @@ import java.util.Optional;
 import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.evaluator.model.CandidateEvaluatedMessage;
+import no.sikt.nva.nvi.evaluator.model.NviCandidate;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.s3.S3Driver;
@@ -37,7 +38,7 @@ import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class EvaluateNviCandidateTestWithCristinData {
+public class EvaluateNviCandidateWithCristinDataTest {
 
     private static final Environment ENVIRONMENT = new Environment();
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
@@ -90,8 +91,9 @@ public class EvaluateNviCandidateTestWithCristinData {
 
         handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicArticle.json"), output, context);
         var body = getCandidateEvaluatedMessage();
-        assertThat(body.institutionPoints().get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8165))));
-        assertThat(body.institutionPoints().get(ST_OLAVS_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5774))));
+        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8165))));
+        assertThat(institutionPoints.get(ST_OLAVS_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5774))));
     }
 
     @Test
@@ -102,7 +104,8 @@ public class EvaluateNviCandidateTestWithCristinData {
 
         handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicMonograph.json"), output, context);
         var body = getCandidateEvaluatedMessage();
-        assertThat(body.institutionPoints().get(UIO_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(3.7528))));
+        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        assertThat(institutionPoints.get(UIO_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(3.7528))));
     }
 
     @Test
@@ -113,7 +116,8 @@ public class EvaluateNviCandidateTestWithCristinData {
 
         handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicLiteratureReview.json"), output, context);
         var body = getCandidateEvaluatedMessage();
-        assertThat(body.institutionPoints().get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(1.5922))));
+        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(1.5922))));
     }
 
     @Test
@@ -124,8 +128,9 @@ public class EvaluateNviCandidateTestWithCristinData {
 
         handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicChapter.json"), output, context);
         var body = getCandidateEvaluatedMessage();
-        assertThat(body.institutionPoints().get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8660))));
-        assertThat(body.institutionPoints().get(SINTEF_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5000))));
+        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8660))));
+        assertThat(institutionPoints.get(SINTEF_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5000))));
     }
 
     private static BigDecimal scaledBigDecimal(double val) {

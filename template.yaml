@@ -390,6 +390,8 @@ Resources:
         Variables:
           ALLOWED_ORIGIN: '*'
           COGNITO_HOST: !Ref CognitoAuthorizationUri
+          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
+          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
       Events:
         GetEvent:
           Type: Api

@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.index.aws;
 
-import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.APPROVED;
@@ -20,10 +19,9 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DETAILS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ROLE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.YEAR;
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.net.URI;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -53,13 +51,13 @@ public class CandidateQuery {
     private final String customer;
     private final String year;
 
-    public CandidateQuery(Collection<String> affiliations,
+    public CandidateQuery(List<URI> affiliations,
                           boolean excludeSubUnits,
                           QueryFilterType filter,
                           String username,
                           String customer,
                           String year) {
-        this.affiliations = nonNull(affiliations) ? new ArrayList<>(affiliations) : emptyList();
+        this.affiliations = affiliations.stream().map(URI::toString).toList();
         this.excludeSubUnits = excludeSubUnits;
         this.filter = filter;
         this.username = username;
@@ -68,21 +66,13 @@ public class CandidateQuery {
     }
 
     public Query toQuery() {
-        var query = specificMatch();
-
-        return query.isEmpty()
-                   ? createMatchAllQuery()
-                   : mustMatch(query.toArray(Query[]::new));
+        return mustMatch(specificMatch().toArray(Query[]::new));
     }
 
     private static Query mustMatch(Query... queries) {
         return new Query.Builder()
                    .bool(new BoolQuery.Builder().must(Arrays.stream(queries).toList()).build())
                    .build();
-    }
-
-    private static Query createMatchAllQuery() {
-        return QueryBuilders.matchAll().build()._toQuery();
     }
 
     private static Query multipleApprovalsQuery() {
@@ -244,9 +234,6 @@ public class CandidateQuery {
     }
 
     private Optional<Query> createInstitutionQuery() {
-        if (affiliations.isEmpty()) {
-            return Optional.empty();
-        }
         return excludeSubUnits
                    ? Optional.of(contributorQueryExcludingSubUnits(affiliations))
                    : Optional.of(contributorQueryIncludingSubUnits(affiliations));
@@ -291,7 +278,7 @@ public class CandidateQuery {
 
     public static class Builder {
 
-        private Collection<String> institutions;
+        private List<URI> institutions;
         private boolean excludeSubUnits;
         private QueryFilterType filter;
         private String username;
@@ -302,7 +289,7 @@ public class CandidateQuery {
             // No-args constructor.
         }
 
-        public Builder withInstitutions(Collection<String> institutions) {
+        public Builder withInstitutions(List<URI> institutions) {
             this.institutions = institutions;
             return this;
         }

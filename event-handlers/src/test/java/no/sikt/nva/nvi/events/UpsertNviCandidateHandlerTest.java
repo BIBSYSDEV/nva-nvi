@@ -49,8 +49,9 @@ import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto.Status;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
-import no.sikt.nva.nvi.events.CandidateDetails.Creator;
-import no.sikt.nva.nvi.events.CandidateDetails.PublicationDate;
+import no.sikt.nva.nvi.events.NviCandidate.CandidateDetails;
+import no.sikt.nva.nvi.events.NviCandidate.CandidateDetails.Creator;
+import no.sikt.nva.nvi.events.NviCandidate.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.events.model.InvalidNviMessageException;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -170,20 +171,20 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
         return Stream.of(CandidateEvaluatedMessage.builder()
-                             .withStatus(randomElement(CandidateStatus.values()))
+                             .withPublicationBucketUri(null)
+                             .withCandidateType(new NviCandidate(CandidateDetails.builder().build()))
+                             .build(),
+                         CandidateEvaluatedMessage.builder()
                              .withPublicationBucketUri(randomUri())
-                             .withCandidateDetails(
-                                 new CandidateDetails(null, randomString(), randomElement(DbLevel.values()).getValue(),
-                                                      randomPublicationDate(), List.of(randomCreator())))
-                             .build(), CandidateEvaluatedMessage.builder()
-                                           .withStatus(randomElement(CandidateStatus.values()))
-                                           .withPublicationBucketUri(null)
-                                           .withCandidateDetails(new CandidateDetails(randomUri(), randomString(),
-                                                                                      randomElement(
-                                                                                          DbLevel.values()).getValue(),
-                                                                                      randomPublicationDate(),
-                                                                                      List.of(randomCreator())))
-                                           .build());
+                             .withCandidateType(new NviCandidate(CandidateDetails.builder()
+                                                                     .withPublicationId(null)
+                                                                     .withInstanceType(randomString())
+                                                                     .withLevel(randomElement(
+                                                                         DbLevel.values()).getValue())
+                                                                     .withPublicationDate(randomPublicationDate())
+                                                                     .withVerifiedCreators(List.of(randomCreator()))
+                                                                     .build()))
+                             .build());
     }
 
     private static CandidateDetails.PublicationDate randomPublicationDate() {
@@ -206,17 +207,20 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     private static CandidateEvaluatedMessage createEvalMessage(List<Creator> verifiedCreators,
-                                                               InstanceType instanceType, DbLevel randomLevel,
+                                                               InstanceType instanceType, DbLevel level,
                                                                PublicationDate publicationDate,
                                                                Map<URI, BigDecimal> institutionPoints,
                                                                URI publicationId, URI publicationBucketUri) {
         return CandidateEvaluatedMessage.builder()
-                   .withStatus(CandidateStatus.CANDIDATE)
                    .withPublicationBucketUri(publicationBucketUri)
-                   .withCandidateDetails(
-                       new CandidateDetails(publicationId, instanceType.getValue(), randomLevel.getValue(),
-                                            publicationDate, verifiedCreators))
-                   .withInstitutionPoints(institutionPoints)
+                   .withCandidateType(new NviCandidate(CandidateDetails.builder()
+                                                           .withPublicationId(publicationId)
+                                                           .withInstanceType(instanceType.getValue())
+                                                           .withLevel(level.getValue())
+                                                           .withPublicationDate(publicationDate)
+                                                           .withVerifiedCreators(verifiedCreators)
+                                                           .withInstitutionPoints(institutionPoints)
+                                                           .build()))
                    .build();
     }
 
@@ -231,13 +235,19 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(UpsertCandidateRequest request,
                                                                                URI institutionId) {
         var creatorId = request.creators().keySet().stream().toList().get(0);
-        return new CandidateEvaluatedMessage(CandidateStatus.CANDIDATE, request.publicationBucketUri(),
-                                             new CandidateDetails(request.publicationId(), request.instanceType(),
-                                                                  request.level(),
-                                                                  new PublicationDate(null, "3", Year.now().toString()),
-                                                                  List.of(
-                                                                      new Creator(creatorId, List.of(institutionId)))),
-                                             request.points());
+        return new CandidateEvaluatedMessage(request.publicationBucketUri(),
+                                             new NviCandidate(CandidateDetails.builder()
+                                                                  .withPublicationId(request.publicationId())
+                                                                  .withInstanceType(request.instanceType())
+                                                                  .withLevel(request.level())
+                                                                  .withPublicationDate(
+                                                                      new PublicationDate(null, "3",
+                                                                                          Year.now().toString()))
+                                                                  .withVerifiedCreators(
+                                                                      List.of(new Creator(creatorId,
+                                                                                          List.of(institutionId))))
+                                                                  .withInstitutionPoints(request.points())
+                                                                  .build()));
     }
 
     private Map<URI, DbApprovalStatus> getAprovalMaps(CandidateBO dto) {
@@ -270,12 +280,8 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     private CandidateEvaluatedMessage nonCandidateMessageForExistingCandidate(CandidateDto candidate) {
         return CandidateEvaluatedMessage.builder()
-                   .withStatus(CandidateStatus.NON_CANDIDATE)
                    .withPublicationBucketUri(generateS3BucketUri(candidate.identifier()))
-                   .withInstitutionPoints(null)
-                   .withCandidateDetails(new CandidateDetails(candidate.publicationId(), null, null,
-                                                              new PublicationDate(null, null, Year.now().toString()),
-                                                              null))
+                   .withCandidateType(new NonNviCandidate(candidate.publicationId()))
                    .build();
     }
 

@@ -52,7 +52,7 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
     private static void validateMessage(CandidateEvaluatedMessage message) {
         attempt(() -> {
             Objects.requireNonNull(message.publicationBucketUri());
-            Objects.requireNonNull(message.candidateDetails().publicationId());
+            Objects.requireNonNull(message.candidate().publicationId());
             return message;
         }).orElseThrow(failure -> new InvalidNviMessageException(INVALID_NVI_CANDIDATE_MESSAGE));
     }
@@ -60,7 +60,7 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
     private void upsertNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
         validateMessage(evaluatedCandidate);
         CandidateBO.fromRequest(evaluatedCandidate, repository, periodRepository);
-        LOGGER.info(PERSISTANCE_MESSAGE, evaluatedCandidate.candidateDetails().publicationId());
+        LOGGER.info(PERSISTANCE_MESSAGE, evaluatedCandidate.candidate().publicationId());
     }
 
     private CandidateEvaluatedMessage parseBody(String body) {

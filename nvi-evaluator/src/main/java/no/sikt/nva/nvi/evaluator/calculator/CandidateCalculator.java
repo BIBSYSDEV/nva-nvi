@@ -5,19 +5,9 @@ import static no.sikt.nva.nvi.common.utils.GraphUtils.isNviCandidate;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_ID;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_VERIFICATION_STATUS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_PUBLISHER_LEVEL;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_DAY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_INSTANCE_TYPE;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MONTH;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT_LEVEL;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_DATE;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLISHER_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ROLE_TYPE;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_LEVEL;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_YEAR;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -28,22 +18,15 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import no.sikt.nva.nvi.evaluator.model.CandidateType;
 import no.sikt.nva.nvi.evaluator.model.CustomerResponse;
-import no.sikt.nva.nvi.evaluator.model.NonNviCandidate;
-import no.sikt.nva.nvi.evaluator.model.NviCandidate;
-import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails;
-import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails.Creator;
-import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.evaluator.model.Organization;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import nva.commons.core.Environment;
@@ -64,10 +47,6 @@ public class CandidateCalculator {
     private static final String ERROR_COULD_NOT_FETCH_CRISTIN_ORG = COULD_NOT_FETCH_CRISTIN_ORG_MESSAGE + "{}. "
                                                                     + "Response code: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(CandidateCalculator.class);
-    private static final String ACADEMIC_MONOGRAPH = "AcademicMonograph";
-    private static final String ACADEMIC_CHAPTER = "AcademicChapter";
-    private static final String ACADEMIC_ARTICLE = "AcademicArticle";
-    private static final String ACADEMIC_LITERATURE_REVIEW = "AcademicLiteratureReview";
     private static final String API_HOST = new Environment().readEnv("API_HOST");
     private final AuthorizedBackendUriRetriever uriRetriever;
 
@@ -75,28 +54,22 @@ public class CandidateCalculator {
         this.uriRetriever = uriRetriever;
     }
 
-    public CandidateType calculateNviType(JsonNode body) {
-        var model = createModel(body);
+    public Map<URI, List<URI>> getVerifiedCreatorsWithNviInstitutionsIfExists(JsonNode publication) {
+        var model = createModel(publication);
 
         if (!isNviCandidate(model)) {
-            return createNonCandidateResponse(body);
+            return Collections.emptyMap();
         }
 
-        var verifiedCreatorsWithNviInstitutions = getVerifiedCreatorsWithNviInstitutions(body);
+        var verifiedCreatorsWithNviInstitutions = getVerifiedCreatorsWithNviInstitutions(publication);
 
         return verifiedCreatorsWithNviInstitutions.isEmpty()
-                   ? createNonCandidateResponse(body)
-                   : createCandidateResponse(verifiedCreatorsWithNviInstitutions, body);
+                   ? Collections.emptyMap()
+                   : verifiedCreatorsWithNviInstitutions;
     }
-
-
 
     private static boolean doesNotHaveNviInstitutions(Entry<URI, List<URI>> entry) {
         return !entry.getValue().isEmpty();
-    }
-
-    private static NonNviCandidate createNonCandidateResponse(JsonNode publication) {
-        return new NonNviCandidate.Builder().withPublicationId(extractId(publication)).build();
     }
 
     private static URI createCustomerApiUri(String institutionId) {
@@ -143,52 +116,6 @@ public class CandidateCalculator {
                    .orElse(failure -> false);
     }
 
-    private static String extractInstanceType(JsonNode publication) {
-        return extractJsonNodeTextValue(publication, JSON_PTR_INSTANCE_TYPE);
-    }
-
-    private static PublicationDate extractPublicationDate(JsonNode publication) {
-        return mapToPublicationDate(publication.at(JSON_PTR_PUBLICATION_DATE));
-    }
-
-    private static PublicationDate mapToPublicationDate(JsonNode publicationDateNode) {
-        var year = publicationDateNode.at(JSON_PTR_YEAR);
-        var month = publicationDateNode.at(JSON_PTR_MONTH);
-        var day = publicationDateNode.at(JSON_PTR_DAY);
-
-        return Optional.of(new PublicationDate(day.textValue(), month.textValue(), year.textValue()))
-                   .orElse(new PublicationDate(null, null, year.textValue()));
-    }
-
-    private static List<Creator> mapToCreatorList(Map<URI, List<URI>> verifiedCreatorsWithNviInstitutions) {
-        return verifiedCreatorsWithNviInstitutions.entrySet()
-                   .stream()
-                   .map(entry -> new Creator(entry.getKey(), entry.getValue()))
-                   .toList();
-    }
-
-    private static String extractLevel(String instanceType, JsonNode jsonNode) {
-        return switch (instanceType) {
-            case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
-                extractJsonNodeTextValue(jsonNode, JSON_PTR_PUBLICATION_CONTEXT_LEVEL);
-            case ACADEMIC_MONOGRAPH -> extractAcademicMonographLevel(jsonNode);
-            case ACADEMIC_CHAPTER -> extractAcademicChapterLevel(jsonNode);
-            default -> throw new IllegalArgumentException();
-        };
-    }
-
-    private static String extractAcademicChapterLevel(JsonNode jsonNode) {
-        var seriesLevel = extractJsonNodeTextValue(jsonNode, JSON_PTR_CHAPTER_SERIES_LEVEL);
-        var publisherLevel = extractJsonNodeTextValue(jsonNode, JSON_PTR_CHAPTER_PUBLISHER_LEVEL);
-        return Objects.nonNull(seriesLevel) ? seriesLevel : publisherLevel;
-    }
-
-    private static String extractAcademicMonographLevel(JsonNode jsonNode) {
-        var seriesLevel = extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_LEVEL);
-        var publisherLevel = extractJsonNodeTextValue(jsonNode, JSON_PTR_PUBLISHER_LEVEL);
-        return Objects.nonNull(seriesLevel) ? seriesLevel : publisherLevel;
-    }
-
     private static Stream<JsonNode> getJsonNodeStream(JsonNode jsonNode, String jsonPtr) {
         return StreamSupport.stream(jsonNode.at(jsonPtr).spliterator(), false);
     }
@@ -218,16 +145,6 @@ public class CandidateCalculator {
                    .map(Organization::id)
                    .filter(this::isNviInstitution)
                    .toList();
-    }
-
-    private CandidateType createCandidateResponse(Map<URI, List<URI>> verifiedCreatorsWithNviInstitutions,
-                                                  JsonNode body) {
-        var instanceType = extractInstanceType(body);
-        return new NviCandidate(new CandidateDetails(URI.create(extractJsonNodeTextValue(body, JSON_PTR_ID)),
-                                                     instanceType,
-                                                     extractLevel(instanceType, body),
-                                                     extractPublicationDate(body),
-                                                     mapToCreatorList(verifiedCreatorsWithNviInstitutions)));
     }
 
     private Organization fetchOrganization(URI organizationId) {
