@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import java.util.Collection;
 import java.util.List;
@@ -14,7 +15,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 public class PeriodRepository extends DynamoRepository {
 
     public static final String PERIOD = "PERIOD";
-    private final DynamoDbTable<NviPeriodDao> nviPeriodTable;
+    protected final DynamoDbTable<NviPeriodDao> nviPeriodTable;
 
     public PeriodRepository(DynamoDbClient client) {
         super(client);
@@ -22,7 +23,11 @@ public class PeriodRepository extends DynamoRepository {
     }
 
     public DbNviPeriod save(DbNviPeriod nviPeriod) {
-        var nviPeriodDao = new NviPeriodDao(nviPeriod);
+        var nviPeriodDao = NviPeriodDao.builder()
+                               .identifier(nviPeriod.publishingYear())
+                               .nviPeriod(nviPeriod)
+                               .version(randomUUID().toString())
+                               .build();
 
         this.nviPeriodTable.putItem(nviPeriodDao);
 
@@ -31,7 +36,10 @@ public class PeriodRepository extends DynamoRepository {
     }
 
     public Optional<DbNviPeriod> findByPublishingYear(String publishingYear) {
-        var queryObj = new NviPeriodDao(DbNviPeriod.builder().publishingYear(publishingYear).build());
+        var queryObj = NviPeriodDao.builder()
+                           .nviPeriod(DbNviPeriod.builder().publishingYear(publishingYear).build())
+                           .identifier(publishingYear)
+                           .build();
         var fetched = this.nviPeriodTable.getItem(queryObj);
         return Optional.ofNullable(fetched).map(NviPeriodDao::nviPeriod);
     }
@@ -44,7 +52,7 @@ public class PeriodRepository extends DynamoRepository {
                    .toList();
     }
 
-    private static BeginsWithConditional beginsWithPeriodQuery() {
+    protected static BeginsWithConditional beginsWithPeriodQuery() {
         return new BeginsWithConditional(Key.builder()
                                              .partitionValue(PERIOD)
                                              .sortValue(PERIOD)

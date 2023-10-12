@@ -7,11 +7,14 @@ dependencies {
     implementation project(':nvi-commons')
     implementation libs.nva.json
     implementation libs.nva.core
+    implementation libs.nva.eventhandlers
 
     implementation libs.aws.lambda.java.core
     implementation libs.aws.lambda.events
     implementation libs.aws.sdk2.sqs
+    implementation libs.aws.sdk2.eventbridge
     implementation libs.aws.sdk2.dynamodb
+    implementation libs.aws.sdk2.urlconnectionclient
 
     implementation libs.jackson.core
     implementation libs.jackson.databind
@@ -27,10 +30,12 @@ dependencies {
 
 test {
     useJUnitPlatform()
-    environment "API_HOST", "example.org"
-    environment "CUSTOM_DOMAIN_BASE_PATH", "example.org"
+    environment ("OUTPUT_EVENT_TOPIC", "someTopic")
+    environment ("EVENT_BUS_NAME", "someEvent")
+    environment ("API_HOST", "example.org")
     environment("SEARCH_INFRASTRUCTURE_API_HOST", "localhost")
     environment("SEARCH_INFRASTRUCTURE_AUTH_URI", "localhost")
     environment("SEARCH_INFRASTRUCTURE_API_URI", "localhost")
     environment("NVI_TABLE_NAME", "some-table")
+    environment ("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
 }

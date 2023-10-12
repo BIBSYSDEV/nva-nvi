@@ -16,15 +16,12 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 @DynamoDbImmutable(builder = NviPeriodDao.Builder.class)
 public record NviPeriodDao(
 
-    String identifier, @DynamoDbAttribute(DATA_FIELD) DbNviPeriod nviPeriod) implements DynamoEntryWithRangeKey {
+    String identifier, @DynamoDbAttribute(DATA_FIELD) DbNviPeriod nviPeriod, String version)
+    implements DynamoEntryWithRangeKey {
 
     public static final TableSchema<NviPeriodDao> TABLE_SCHEMA = TableSchema.fromClass(NviPeriodDao.class);
 
     public static final String TYPE = "PERIOD";
-
-    public NviPeriodDao(DbNviPeriod nviPeriod) {
-        this(nviPeriod.publishingYear(), nviPeriod);
-    }
 
     public static Builder builder() {
         return new Builder();
@@ -55,6 +52,7 @@ public record NviPeriodDao(
 
         private String builderIdentifier;
         private DbNviPeriod builderNviPeriod;
+        private String builderVersion;
 
         private Builder() {
         }
@@ -84,8 +82,13 @@ public record NviPeriodDao(
             return this;
         }
 
+        public Builder version(String version) {
+            this.builderVersion = version;
+            return this;
+        }
+
         public NviPeriodDao build() {
-            return new NviPeriodDao(builderIdentifier, builderNviPeriod);
+            return new NviPeriodDao(builderIdentifier, builderNviPeriod, builderVersion);
         }
     }
 

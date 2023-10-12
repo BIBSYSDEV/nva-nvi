@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.events;
+package no.sikt.nva.nvi.events.model;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import no.sikt.nva.nvi.events.CandidateType;
+import no.sikt.nva.nvi.events.NviCandidate;
 import no.sikt.nva.nvi.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.events.NviCandidate.CandidateDetails.Creator;
 

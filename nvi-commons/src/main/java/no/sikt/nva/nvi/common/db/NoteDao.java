@@ -15,7 +15,8 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 @DynamoDbImmutable(builder = NoteDao.Builder.class)
 public record NoteDao(UUID identifier,
                       @DynamoDbAttribute(DATA_FIELD)
-                      DbNote note
+                      DbNote note,
+                      String version
 ) implements DynamoEntryWithRangeKey {
 
     public static final String TYPE = "NOTE";
@@ -56,6 +57,7 @@ public record NoteDao(UUID identifier,
         // And in records that obj.identifer() not obj.getIdentifier()
         private UUID builderIdentifier;
         private DbNote builderNote;
+        private String builderVersion;
 
         private Builder() {
         }
@@ -85,8 +87,13 @@ public record NoteDao(UUID identifier,
             return this;
         }
 
+        public Builder version(String version) {
+            this.builderVersion = version;
+            return this;
+        }
+
         public NoteDao build() {
-            return new NoteDao(builderIdentifier, builderNote);
+            return new NoteDao(builderIdentifier, builderNote, builderVersion);
         }
     }
 

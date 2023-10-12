@@ -19,11 +19,12 @@ public class DynamoRepository {
     private static final String SORT_KEY_NAME_PLACEHOLDER = "#sortKey";
     private static final Logger logger = LoggerFactory.getLogger(DynamoRepository.class);
     final DynamoDbEnhancedClient client;
+    final DynamoDbClient defaultClient;
 
     protected DynamoRepository(DynamoDbClient client) {
+        this.defaultClient = client;
         this.client = DynamoDbEnhancedClient.builder().dynamoDbClient(client).build();
     }
-
 
     private static String keyNotExistsCondition() {
         return String.format("attribute_not_exists(%s) AND attribute_not_exists(%s)",

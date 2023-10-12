@@ -12,13 +12,14 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 @DynamoDbImmutable(builder = CandidateUniquenessEntryDao.Builder.class)
 public record CandidateUniquenessEntryDao(
     String partitionKey,
-    String sortKey
+    String sortKey,
+    String version
 ) implements DynamoEntryWithRangeKey {
 
     public static final String TYPE = "CandidateUniquenessEntry";
 
     public CandidateUniquenessEntryDao(String identifier) {
-        this(pk0(identifier), pk0(identifier));
+        this(pk0(identifier), pk0(identifier), null);
     }
 
     @JacocoGenerated
@@ -59,6 +60,7 @@ public record CandidateUniquenessEntryDao(
 
         private String builderPartitionKey;
         private String builderSortKey;
+        private String builderVersion;
 
         private Builder() {
         }
@@ -91,8 +93,13 @@ public record CandidateUniquenessEntryDao(
             return this;
         }
 
+        public Builder version(String version) {
+            this.builderVersion = version;
+            return this;
+        }
+
         public CandidateUniquenessEntryDao build() {
-            return new CandidateUniquenessEntryDao(builderPartitionKey, builderSortKey);
+            return new CandidateUniquenessEntryDao(builderPartitionKey, builderSortKey, builderVersion);
         }
     }
 }
