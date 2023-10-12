@@ -69,6 +69,7 @@ public class EvaluatorService {
                                     .withCreatorShareCount(pointCalculation.creatorShareCount())
                                     .withInstitutionPoints(pointCalculation.institutionPoints())
                                     .withVerifiedCreators(mapToCreators(verifiedCreatorsWithNviInstitutions))
+                                    .withTotalPoints(pointCalculation.totalPoints())
                                     .build());
     }
 
