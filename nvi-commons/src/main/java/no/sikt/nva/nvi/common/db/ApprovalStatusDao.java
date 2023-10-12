@@ -144,7 +144,11 @@ public record ApprovalStatusDao(UUID identifier,
 
         @DynamoDbIgnore
         public ApprovalStatusDao toDao(UUID candidateIdentifier) {
-            return ApprovalStatusDao.builder().identifier(candidateIdentifier).approvalStatus(this).version(randomUUID().toString()).build();
+            return ApprovalStatusDao.builder()
+                       .identifier(candidateIdentifier)
+                       .approvalStatus(this)
+                       .version(randomUUID().toString())
+                       .build();
         }
 
         @DynamoDbIgnore

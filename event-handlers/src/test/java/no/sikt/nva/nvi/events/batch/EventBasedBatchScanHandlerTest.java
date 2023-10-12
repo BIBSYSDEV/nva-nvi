@@ -78,7 +78,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         var db = initializeTestDatabase();
         candidateRepository = new NviCandidateRepositoryHelper(db);
         periodRepository = new NviPeriodRepositoryHelper(db);
-        NviService nviService = new NviService(periodRepository, candidateRepository);
+        var nviService = new NviService(periodRepository, candidateRepository);
         this.handler = new EventBasedBatchScanHandler(nviService, eventBridgeClient);
     }
 
@@ -241,10 +241,11 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     }
 
     private boolean isSameVersionAsRepositoryCopy(ApprovalStatusDao dao) {
-        return Objects.equals(dao.version(), candidateRepository.findApprovalDaoByIdAndInstitutionId(dao.identifier(),
-                                                                                                     dao.approvalStatus()
-                                                                                                         .institutionId())
-                                                 .version());
+        return Objects.equals(dao.version(),
+                              candidateRepository.findApprovalDaoByIdAndInstitutionId(dao.identifier(),
+                                                                                      dao.approvalStatus()
+                                                                                          .institutionId())
+                                  .version());
     }
 
     private boolean isSameVersionAsRepositoryCopy(NviPeriodDao item) {
@@ -356,9 +357,9 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
 
         public NviPeriodDao findDaoByPublishingYear(String publishingYear) {
             var queryObj = NviPeriodDao.builder()
-                .nviPeriod(DbNviPeriod.builder().publishingYear(publishingYear).build())
-                .identifier(publishingYear)
-                .build();
+                               .nviPeriod(DbNviPeriod.builder().publishingYear(publishingYear).build())
+                               .identifier(publishingYear)
+                               .build();
 
             return this.nviPeriodTable.getItem(queryObj);
         }
