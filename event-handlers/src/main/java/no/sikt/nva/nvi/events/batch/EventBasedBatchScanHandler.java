@@ -1,13 +1,13 @@
 package no.sikt.nva.nvi.events.batch;
 
 import static no.sikt.nva.nvi.common.service.NviService.defaultNviService;
-import static no.sikt.nva.nvi.events.batch.BatchScanStartHandler.EVENT_BUS_NAME;
 import com.amazonaws.services.lambda.runtime.Context;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
 import no.unit.nva.events.handlers.EventHandler;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,8 +18,8 @@ import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
 public class EventBasedBatchScanHandler extends EventHandler<ScanDatabaseRequest, ListingResult> {
 
-    public static final String DETAIL_TYPE = "NO_DETAIL_TYPE";
-
+    private static final String DETAIL_TYPE = "NO_DETAIL_TYPE";
+    private static final String EVENT_BUS_NAME = new Environment().readEnv("EVENT_BUS_NAME");
     private final NviService nviService;
     private final EventBridgeClient eventBridgeClient;
     private final Logger logger = LoggerFactory.getLogger(EventBasedBatchScanHandler.class);
