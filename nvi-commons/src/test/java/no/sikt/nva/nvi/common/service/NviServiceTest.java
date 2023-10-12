@@ -517,7 +517,7 @@ public class NviServiceTest extends LocalDynamoTest {
 
         var candidates = getCandidatesInOrder();
 
-        List<CandidateDao> originalRows = getCandidateDaos(candidates);
+        var originalRows = getCandidateDaos(candidates);
 
         nviService.refresh(1000, getStartMarker(originalRows.get(FIRST_ROW)));
 

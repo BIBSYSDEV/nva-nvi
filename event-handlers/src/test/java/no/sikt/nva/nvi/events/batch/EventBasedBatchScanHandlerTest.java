@@ -358,7 +358,6 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
             var queryObj = NviPeriodDao.builder()
                 .nviPeriod(DbNviPeriod.builder().publishingYear(publishingYear).build())
                 .identifier(publishingYear)
-                .version(null)
                 .build();
 
             return this.nviPeriodTable.getItem(queryObj);

@@ -39,7 +39,6 @@ public class PeriodRepository extends DynamoRepository {
         var queryObj = NviPeriodDao.builder()
                            .nviPeriod(DbNviPeriod.builder().publishingYear(publishingYear).build())
                            .identifier(publishingYear)
-                           .version(null)
                            .build();
         var fetched = this.nviPeriodTable.getItem(queryObj);
         return Optional.ofNullable(fetched).map(NviPeriodDao::nviPeriod);
