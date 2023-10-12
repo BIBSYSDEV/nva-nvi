@@ -18,8 +18,8 @@ import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
 public class EventBasedBatchScanHandler extends EventHandler<ScanDatabaseRequest, ListingResult> {
 
-    public static final String DETAIL_TYPE = "NO_DETAIL_TYPE";
-    public static final String EVENT_BUS_NAME = new Environment().readEnv("EVENT_BUS_NAME");
+    private static final String DETAIL_TYPE = "NO_DETAIL_TYPE";
+    private static final String EVENT_BUS_NAME = new Environment().readEnv("EVENT_BUS_NAME");
     private final NviService nviService;
     private final EventBridgeClient eventBridgeClient;
     private final Logger logger = LoggerFactory.getLogger(EventBasedBatchScanHandler.class);

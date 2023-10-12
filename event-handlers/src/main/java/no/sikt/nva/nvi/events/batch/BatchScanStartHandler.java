@@ -13,10 +13,10 @@ import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
 
 public class BatchScanStartHandler implements RequestStreamHandler {
 
-    public static final String EVENT_BUS_NAME = new Environment().readEnv("EVENT_BUS_NAME");
-    public static final String OUTPUT_EVENT_TOPIC = "OUTPUT_EVENT_TOPIC";
-    public static final String TOPIC = new Environment().readEnv(OUTPUT_EVENT_TOPIC);
-    public static final String DETAIL_TYPE = "NO_DETAIL_TYPE";
+    private static final String EVENT_BUS_NAME = new Environment().readEnv("EVENT_BUS_NAME");
+    private static final String OUTPUT_EVENT_TOPIC = "OUTPUT_EVENT_TOPIC";
+    private static final String TOPIC = new Environment().readEnv(OUTPUT_EVENT_TOPIC);
+    private static final String DETAIL_TYPE = "NO_DETAIL_TYPE";
     private final EventBridgeClient client;
 
     @JacocoGenerated
