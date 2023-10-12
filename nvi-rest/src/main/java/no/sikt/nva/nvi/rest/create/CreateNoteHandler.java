@@ -47,7 +47,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         var username = RequestUtil.getUsername(requestInfo);
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
         return attempt(() -> CandidateBO.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository))
-                   .map(this::isApplicable)
+                   .map(this::checkIfApplicable)
                    .map(candidate -> candidate.createNote(new CreateNoteRequest(input.text(), username.value())))
                    .map(CandidateBO::toDto)
                    .orElseThrow(ExceptionMapper::map);
@@ -58,7 +58,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         return HttpURLConnection.HTTP_OK;
     }
 
-    private CandidateBO isApplicable(CandidateBO candidate) {
+    private CandidateBO checkIfApplicable(CandidateBO candidate) {
         if (candidate.isApplicable()) {
             return candidate;
         }
