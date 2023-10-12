@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.events;
+package no.sikt.nva.nvi.events.model;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;

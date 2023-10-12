@@ -91,7 +91,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
 
         handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicArticle.json"), output, context);
         var body = getCandidateEvaluatedMessage();
-        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        var institutionPoints = ((NviCandidate) body.candidate()).institutionPoints();
         assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8165))));
         assertThat(institutionPoints.get(ST_OLAVS_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5774))));
     }
@@ -104,7 +104,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
 
         handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicMonograph.json"), output, context);
         var body = getCandidateEvaluatedMessage();
-        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        var institutionPoints = ((NviCandidate) body.candidate()).institutionPoints();
         assertThat(institutionPoints.get(UIO_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(3.7528))));
     }
 
@@ -116,7 +116,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
 
         handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicLiteratureReview.json"), output, context);
         var body = getCandidateEvaluatedMessage();
-        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        var institutionPoints = ((NviCandidate) body.candidate()).institutionPoints();
         assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(1.5922))));
     }
 
@@ -128,7 +128,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
 
         handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicChapter.json"), output, context);
         var body = getCandidateEvaluatedMessage();
-        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        var institutionPoints = ((NviCandidate) body.candidate()).institutionPoints();
         assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8660))));
         assertThat(institutionPoints.get(SINTEF_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5000))));
     }
