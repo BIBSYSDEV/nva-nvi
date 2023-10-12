@@ -461,7 +461,8 @@ class EvaluateNviCandidateHandlerTest {
     private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(String instanceType,
                                                                          BigDecimal points, URI bucketUri,
                                                                          PublicationChannel publicationChannel,
-                                                                         BigDecimal basePoints, BigDecimal totalPoints) {
+                                                                         BigDecimal basePoints,
+                                                                         BigDecimal totalPoints) {
         return CandidateEvaluatedMessage.builder()
                    .withCandidateType(createExpectedCandidate(instanceType,
                                                               Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID,
