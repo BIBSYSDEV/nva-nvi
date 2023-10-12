@@ -6,6 +6,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -22,6 +23,7 @@ import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
+import no.sikt.nva.nvi.common.model.ListingResult;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -42,8 +44,8 @@ public class NviService {
         this.periodRepository = new PeriodRepository(dynamoDbClient);
     }
 
-    public NviService(DynamoDbClient dynamoDbClient, PeriodRepository periodRepository) {
-        this.candidateRepository = new CandidateRepository(dynamoDbClient);
+    public NviService(PeriodRepository periodRepository, CandidateRepository candidateRepository) {
+        this.candidateRepository = candidateRepository;
         this.periodRepository = periodRepository;
     }
 
@@ -112,6 +114,10 @@ public class NviService {
                        .map(this::injectPeriodStatus).orElseThrow();
         }
         throw new IllegalArgumentException("User not allowed to remove others note.");
+    }
+
+    public ListingResult refresh(int pageSize, Map<String, String> startMarker) {
+        return candidateRepository.refresh(pageSize, startMarker);
     }
 
     private static boolean isNoteOwner(String requestUsername, DbNote note) {

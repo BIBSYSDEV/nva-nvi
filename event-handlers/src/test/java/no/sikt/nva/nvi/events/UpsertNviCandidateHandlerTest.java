@@ -53,6 +53,7 @@ import no.sikt.nva.nvi.events.NviCandidate.CandidateDetails;
 import no.sikt.nva.nvi.events.NviCandidate.CandidateDetails.Creator;
 import no.sikt.nva.nvi.events.NviCandidate.CandidateDetails.PublicationDate;
 import no.sikt.nva.nvi.events.model.InvalidNviMessageException;
+import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import nva.commons.core.Environment;

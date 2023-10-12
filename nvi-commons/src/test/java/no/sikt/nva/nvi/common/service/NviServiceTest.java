@@ -32,12 +32,15 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
@@ -50,21 +53,27 @@ import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
+import no.sikt.nva.nvi.common.utils.ApplicationConstants;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 
 public class NviServiceTest extends LocalDynamoTest {
 
     public static final int YEAR = ZonedDateTime.now().getYear();
+    private static final int FIRST_ROW = 0;
+    private static final int SECOND_ROW = 1;
     private NviService nviService;
-    private CandidateRepository candidateRepository;
+    private CandidateRepositoryHelper candidateRepository;
 
     @BeforeEach
     void setup() {
         localDynamo = initializeTestDatabase();
-        candidateRepository = new CandidateRepository(localDynamo);
+        candidateRepository = new CandidateRepositoryHelper(localDynamo);
         nviService = TestUtils.nviServiceReturningOpenPeriod(localDynamo, YEAR);
     }
 
@@ -241,6 +250,23 @@ public class NviServiceTest extends LocalDynamoTest {
             originalPeriod.copy().reportingDate(originalPeriod.reportingDate().plusSeconds(500)).build());
         var fetchedPeriod = nviService.getPeriod(originalPeriod.publishingYear());
         assertThat(fetchedPeriod, is(not(equalTo(originalPeriod))));
+    }
+
+    @Test
+    void shouldNotAllowNviPeriodReportingDateInInPast() {
+        var originalPeriod = createPeriod(String.valueOf(ZonedDateTime.now().getYear()));
+        nviService.createPeriod(originalPeriod);
+        var updatedPeriod = originalPeriod.copy().reportingDate(ZonedDateTime.now().minusWeeks(10).toInstant()).build();
+
+        assertThrows(IllegalArgumentException.class, () -> nviService.updatePeriod(updatedPeriod));
+    }
+
+    @Test
+    void shouldNotAllowNviPeriodStartAfterReportingDate() {
+        var originalPeriod = createPeriod(String.valueOf(ZonedDateTime.now().getYear()));
+        nviService.createPeriod(originalPeriod);
+        var updatedPeriod = originalPeriod.copy().startDate(ZonedDateTime.now().plusYears(1).toInstant()).build();
+        assertThrows(IllegalArgumentException.class, () -> nviService.updatePeriod(updatedPeriod));
     }
 
     @Test
@@ -461,6 +487,84 @@ public class NviServiceTest extends LocalDynamoTest {
         var candidate = nviService.upsertCandidate(randomCandidateWithPublicationYear(YEAR)).orElseThrow();
         var note = new DbNote(randomUUID(), randomUsername(), randomString(), Instant.now());
         assertThrows(IllegalStateException.class, () -> nviService.createNote(candidate.identifier(), note));
+    }
+
+    @Test
+    public void shouldWriteVersionOnRefreshWhenStartMarkerIsNotSet() {
+        var originalCandidate = randomCandidate();
+        var candidate = candidateRepository.create(originalCandidate, List.of());
+        var original = candidateRepository.findDaoById(candidate.identifier());
+        var result = nviService.refresh(10, null);
+        var modified = candidateRepository.findDaoById(candidate.identifier());
+        assertThat(modified.version(), is(not(equalTo(original.version()))));
+        assertThat(result.startMarker().size(), is(equalTo(0)));
+        assertThat(result.totalItem(), is(equalTo(1)));
+        assertThat(result.shouldContinueScan(), is(equalTo(false)));
+        assertThat(result.unprocessedItemsForTable(), is(equalTo(0)));
+    }
+
+    @Test
+    public void refreshVersionShouldContinue() {
+        IntStream.range(0, 3).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
+
+        var result = nviService.refresh(1, null);
+        assertThat(result.shouldContinueScan(), is(equalTo(true)));
+    }
+
+    @Test
+    public void shouldWriteVersionOnRefreshWithStartMarker() {
+        IntStream.range(0, 2).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
+
+        var candidates = getCandidatesInOrder();
+
+        var originalRows = getCandidateDaos(candidates);
+
+        nviService.refresh(1000, getStartMarker(originalRows.get(FIRST_ROW)));
+
+        var modifiedRows = getCandidateDaos(candidates);
+
+        assertThat(modifiedRows.get(FIRST_ROW).version(), is(equalTo(originalRows.get(FIRST_ROW).version())));
+        assertThat(modifiedRows.get(SECOND_ROW).version(), is(not(equalTo(originalRows.get(SECOND_ROW).version()))));
+    }
+
+    private List<CandidateDao> getCandidateDaos(List<Map<String, AttributeValue>> candidates) {
+        return Arrays.asList(candidateRepository.findDaoById(getIdentifier(candidates, 0)),
+                             candidateRepository.findDaoById(getIdentifier(candidates, 1)));
+    }
+
+    private static Map<String, String> getStartMarker(CandidateDao dao) {
+        return getStartMarker(dao.primaryKeyHashKey(),
+                              dao.primaryKeyHashKey());
+    }
+
+    private static Map<String, String> getStartMarker(String primaryKeyHashKey, String primaryKeyRangeKey) {
+        return Map.of("PrimaryKeyRangeKey", primaryKeyHashKey, "PrimaryKeyHashKey",
+                      primaryKeyRangeKey);
+    }
+
+    private static UUID getIdentifier(List<Map<String, AttributeValue>> candidates, int index) {
+        return UUID.fromString(candidates.get(index).get("identifier").s());
+    }
+
+    private List<Map<String, AttributeValue>> getCandidatesInOrder() {
+        return localDynamo.scan(ScanRequest.builder().tableName(ApplicationConstants.NVI_TABLE_NAME).build())
+                   .items()
+                   .stream()
+                   .filter(a -> a.get("type").s().equals("CANDIDATE"))
+                   .toList();
+    }
+
+    public static class CandidateRepositoryHelper extends CandidateRepository {
+
+        public CandidateRepositoryHelper(DynamoDbClient client) {
+            super(client);
+        }
+
+        public CandidateDao findDaoById(UUID id) {
+            return Optional.of(CandidateDao.builder().identifier(id).build())
+                       .map(candidateTable::getItem)
+                       .orElseThrow();
+        }
     }
 
     private static UUID getNoteIdentifier(Candidate candidateWith2Notes, Username user) {

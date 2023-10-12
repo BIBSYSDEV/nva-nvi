@@ -11,6 +11,7 @@ import java.util.Objects;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.InvalidNviMessageException;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
