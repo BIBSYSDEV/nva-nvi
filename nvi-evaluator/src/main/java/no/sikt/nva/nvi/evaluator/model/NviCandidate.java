@@ -27,7 +27,8 @@ public record NviCandidate(CandidateDetails candidateDetails) implements Candida
                                    boolean isInternationalCollaboration,
                                    BigDecimal collaborationFactor,
                                    int creatorShareCount,
-                                   Map<URI, BigDecimal> institutionPoints) {
+                                   Map<URI, BigDecimal> institutionPoints,
+                                   BigDecimal totalPoints) {
 
         public static Builder builder() {
             return new Builder();
@@ -48,8 +49,8 @@ public record NviCandidate(CandidateDetails candidateDetails) implements Candida
 
             private URI publicationId;
             private String instanceType;
-            private NviCandidate.CandidateDetails.PublicationDate publicationDate;
-            private List<NviCandidate.CandidateDetails.Creator> verifiedCreators;
+            private PublicationDate publicationDate;
+            private List<Creator> verifiedCreators;
             private String channelType;
             private URI publicationChannelId;
             private String level;
@@ -58,6 +59,7 @@ public record NviCandidate(CandidateDetails candidateDetails) implements Candida
             private BigDecimal collaborationFactor;
             private int creatorShareCount;
             private Map<URI, BigDecimal> institutionPoints;
+            private BigDecimal totalPoints;
 
             private Builder() {
             }
@@ -112,20 +114,25 @@ public record NviCandidate(CandidateDetails candidateDetails) implements Candida
                 return this;
             }
 
+            public Builder withCreatorShareCount(int creatorShareCount) {
+                this.creatorShareCount = creatorShareCount;
+                return this;
+            }
+
             public Builder withInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
                 this.institutionPoints = institutionPoints;
                 return this;
             }
 
-            public Builder withCreatorShareCount(Integer creatorShareCount) {
-                this.creatorShareCount = creatorShareCount;
+            public Builder withTotalPoints(BigDecimal totalPoints) {
+                this.totalPoints = totalPoints;
                 return this;
             }
 
             public CandidateDetails build() {
                 return new CandidateDetails(publicationId, instanceType, publicationDate, verifiedCreators, channelType,
                                             publicationChannelId, level, basePoints, isInternationalCollaboration,
-                                            collaborationFactor, creatorShareCount, institutionPoints);
+                                            collaborationFactor, creatorShareCount, institutionPoints, totalPoints);
             }
         }
     }
