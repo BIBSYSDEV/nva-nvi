@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.PART_OF_PROPERTY;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
@@ -25,6 +26,7 @@ import java.math.RoundingMode;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,6 +49,8 @@ import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import org.apache.jena.rdf.model.RDFNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class NviCandidateIndexDocumentGenerator {
 
@@ -54,6 +58,7 @@ public final class NviCandidateIndexDocumentGenerator {
     private static final int POINTS_SCALE = 4;
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private final AuthorizedBackendUriRetriever uriRetriever;
+    private static final Logger LOGGER = LoggerFactory.getLogger(NviCandidateIndexDocumentGenerator.class);
 
     public NviCandidateIndexDocumentGenerator(AuthorizedBackendUriRetriever uriRetriever) {
         this.uriRetriever = uriRetriever;
@@ -144,11 +149,19 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private List<Affiliation> extractAffiliations(JsonNode contributor) {
-        return streamNode(contributor.at(JSON_PTR_AFFILIATIONS)).map(this::extractAffiliation).toList();
+        return streamNode(contributor.at(JSON_PTR_AFFILIATIONS)).map(this::extractAffiliation)
+                   .filter(Objects::nonNull)
+                   .toList();
     }
 
     private Affiliation extractAffiliation(JsonNode affiliation) {
         var id = extractJsonNodeTextValue(affiliation, JSON_PTR_ID);
+
+        if (isNull(id)) {
+            LOGGER.info("Skipping extraction of affiliation because of missing id: {}", affiliation);
+            return null;
+        }
+
         return attempt(() -> this.uriRetriever.getRawContent(URI.create(id), APPLICATION_JSON)).map(
                 Optional::orElseThrow)
                    .map(str -> createModel(dtoObjectMapper.readTree(str)))
