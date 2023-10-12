@@ -44,6 +44,7 @@ public class SearchNviCandidatesHandler
     private static final int DEFAULT_QUERY_SIZE = 10;
     private static final int DEFAULT_OFFSET_SIZE = 0;
     public static final String QUERY_PARAM_YEAR = "year";
+    public static final String QUERY_PARAM_CATEGORY = "category";
     public static final String USER_IS_NOT_ALLOWED_TO_SEARCH_FOR_AFFILIATIONS_S
         = "User is not allowed to search for affiliations: %s";
     public static final String COMMA_AND_SPACE = ", ";
@@ -88,11 +89,12 @@ public class SearchNviCandidatesHandler
                                .orElse(List.of(topLevelOrg));
         var username = requestInfo.getUserName();
         var year = extractQueryParamPublicationDateOrDefault(requestInfo);
+        var category = extractQueryParamCategoryOrDefault(requestInfo);
 
         assertUserIsAllowedToSearchAffiliations(affiliations, topLevelOrg);
 
         var candidateSearchParameters = new CandidateSearchParameters(affiliations, excludeSubUnits, filter, username,
-                                                                      year, topLevelOrg, offset, size);
+                                                                      year, category, topLevelOrg, offset, size);
         return candidateSearchParameters;
     }
 
@@ -156,6 +158,11 @@ public class SearchNviCandidatesHandler
     private static String extractQueryParamFilterOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
                    .getOrDefault(QUERY_PARAM_FILTER, DEFAULT_FILTER);
+    }
+
+    private static String extractQueryParamCategoryOrDefault(RequestInfo requestInfo) {
+        return requestInfo.getQueryParameters()
+            .getOrDefault(QUERY_PARAM_CATEGORY, null);
     }
 
     @JacocoGenerated
