@@ -99,7 +99,7 @@ class CandidateBOTest extends LocalDynamoTest {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
         var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
-        var fetchedCandidate = CandidateBO.fromRequest(candidate::publicationId, candidateRepository, periodRepository);
+        var fetchedCandidate = CandidateBO.fromRequest(candidate::getPublicationId, candidateRepository, periodRepository);
         assertThat(fetchedCandidate.identifier(), is(equalTo(candidate.identifier())));
     }
 
@@ -159,7 +159,7 @@ class CandidateBOTest extends LocalDynamoTest {
                                                          institutionToApprove, randomUri(), institutionToReject);
         var tempCandidateBO = CandidateBO.fromRequest(createRequest, candidateRepository, periodRepository)
                                   .orElseThrow();
-        var updateRequest = createUpsertCandidateRequest(tempCandidateBO.publicationId(), false, 4,
+        var updateRequest = createUpsertCandidateRequest(tempCandidateBO.getPublicationId(), false, 4,
                                                          InstanceType.ACADEMIC_MONOGRAPH, false, null, null, null, 0,
                                                          null, null, institutionToApprove,
                                                          randomUri(), institutionToReject);
@@ -173,7 +173,7 @@ class CandidateBOTest extends LocalDynamoTest {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
         var tempCandidateBO = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                                   .orElseThrow();
-        var updateRequest = createUpsertCandidateRequest(tempCandidateBO.publicationId(), false, 4,
+        var updateRequest = createUpsertCandidateRequest(tempCandidateBO.getPublicationId(), false, 4,
                                                          InstanceType.ACADEMIC_MONOGRAPH, false, null, null, null, 0,
                                                          null, null, randomUri(), randomUri(),
                                                          randomUri());
@@ -238,7 +238,7 @@ class CandidateBOTest extends LocalDynamoTest {
             new UpdateStatusRequest(Arrays.stream(arguments.institutionIds()).findFirst().orElseThrow(),
                                     DbStatus.APPROVED, randomString(), randomString()));
 
-        var newUpsertRequest = createUpsertCandidateRequest(candidate.publicationId(), true,
+        var newUpsertRequest = createUpsertCandidateRequest(candidate.getPublicationId(), true,
                                                             getCreators(arguments.institutionIds()), arguments.type(),
                                                             arguments.level(),
                                                             getPointsOriginal(arguments.institutionIds()),

@@ -136,7 +136,7 @@ public final class CandidateBO {
         return identifier;
     }
 
-    public URI publicationId() {
+    public URI getPublicationId() {
         return publicationId;
     }
 
