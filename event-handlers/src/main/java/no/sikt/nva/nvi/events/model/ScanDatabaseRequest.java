@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.Map;
-import no.sikt.nva.nvi.events.batch.BatchScanStartHandler.EventDetail;
 import no.unit.nva.commons.json.JsonSerializable;
 import no.unit.nva.commons.json.JsonUtils;
 import org.slf4j.Logger;

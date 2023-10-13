@@ -12,10 +12,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
-import no.sikt.nva.nvi.events.CandidateType;
-import no.sikt.nva.nvi.events.NviCandidate;
-import no.sikt.nva.nvi.events.NviCandidate.CandidateDetails;
-import no.sikt.nva.nvi.events.NviCandidate.CandidateDetails.Creator;
+import no.sikt.nva.nvi.events.model.NviCandidate.Creator;
 
 @JsonAutoDetect(fieldVisibility = Visibility.ANY)
 @JsonSerialize
@@ -48,8 +45,7 @@ public record CandidateEvaluatedMessage(
     public Map<URI, List<URI>> creators() {
         if (isNviCandidate()) {
             var nviCandidate = (NviCandidate) candidate;
-            return nviCandidate.candidateDetails()
-                       .verifiedCreators()
+            return nviCandidate.verifiedCreators()
                        .stream()
                        .collect(Collectors.toMap(Creator::id, Creator::nviInstitutions));
         }
@@ -60,7 +56,7 @@ public record CandidateEvaluatedMessage(
     public String level() {
         if (isNviCandidate()) {
             var nviCandidate = (NviCandidate) candidate;
-            return nviCandidate.candidateDetails().level();
+            return nviCandidate.level();
         }
         return null;
     }
@@ -69,7 +65,7 @@ public record CandidateEvaluatedMessage(
     public String instanceType() {
         if (isNviCandidate()) {
             var nviCandidate = (NviCandidate) candidate;
-            return nviCandidate.candidateDetails().instanceType();
+            return nviCandidate.instanceType();
         }
         return null;
     }
@@ -78,7 +74,7 @@ public record CandidateEvaluatedMessage(
     public PublicationDate publicationDate() {
         if (isNviCandidate()) {
             var nviCandidate = (NviCandidate) candidate;
-            return mapToPublicationDate(nviCandidate.candidateDetails().publicationDate());
+            return mapToPublicationDate(nviCandidate.publicationDate());
         }
         return null;
     }
@@ -87,7 +83,7 @@ public record CandidateEvaluatedMessage(
     public Map<URI, BigDecimal> points() {
         if (isNviCandidate()) {
             var nviCandidate = (NviCandidate) candidate;
-            return nviCandidate.candidateDetails().institutionPoints();
+            return nviCandidate.institutionPoints();
         }
         return Collections.emptyMap();
     }
@@ -97,7 +93,7 @@ public record CandidateEvaluatedMessage(
         return 0;
     }
 
-    private static PublicationDate mapToPublicationDate(CandidateDetails.PublicationDate publicationDate) {
+    private static PublicationDate mapToPublicationDate(NviCandidate.PublicationDate publicationDate) {
         return new PublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
     }
 

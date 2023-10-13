@@ -40,9 +40,8 @@ import no.sikt.nva.nvi.evaluator.model.InstanceType;
 import no.sikt.nva.nvi.evaluator.model.Level;
 import no.sikt.nva.nvi.evaluator.model.NonNviCandidate;
 import no.sikt.nva.nvi.evaluator.model.NviCandidate;
-import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails;
-import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails.Creator;
-import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails.PublicationDate;
+import no.sikt.nva.nvi.evaluator.model.NviCandidate.Creator;
+import no.sikt.nva.nvi.evaluator.model.NviCandidate.PublicationDate;
 import no.sikt.nva.nvi.evaluator.model.PublicationChannel;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
@@ -166,7 +165,7 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var messageBody = getMessageBody();
-        var institutionPoints = ((NviCandidate) messageBody.candidate()).candidateDetails().institutionPoints();
+        var institutionPoints = ((NviCandidate) messageBody.candidate()).institutionPoints();
         assertEquals(1, institutionPoints.size());
         assertTrue(institutionPoints.containsKey(CRISTIN_NVI_ORG_TOP_LEVEL_ID));
     }
@@ -261,7 +260,7 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var body = getMessageBody(fileUri);
-        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        var institutionPoints = ((NviCandidate) body.candidate()).institutionPoints();
         assertThat(institutionPoints, notNullValue());
         assertThat(institutionPoints.get(CRISTIN_NVI_ORG_TOP_LEVEL_ID),
                    is(equalTo(BigDecimal.valueOf(1).setScale(4, RoundingMode.HALF_UP))));
@@ -275,7 +274,7 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var body = getMessageBody(fileUri);
-        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        var institutionPoints = ((NviCandidate) body.candidate()).institutionPoints();
         assertThat(institutionPoints, notNullValue());
         assertThat(institutionPoints.get(CRISTIN_NVI_ORG_TOP_LEVEL_ID), notNullValue());
     }
@@ -476,21 +475,21 @@ class EvaluateNviCandidateHandlerTest {
                                                         PublicationChannel channelType, String level,
                                                         BigDecimal basePoints, BigDecimal totalPoints) {
         var verifiedCreators = List.of(new Creator(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID)));
-        return new NviCandidate(CandidateDetails.builder()
-                                    .withPublicationId(HARDCODED_PUBLICATION_ID)
-                                    .withPublicationDate(HARDCODED_PUBLICATION_DATE)
-                                    .withInstanceType(instanceType)
-                                    .withChannelType(channelType.getValue())
-                                    .withLevel(level)
-                                    .withPublicationChannelId(HARDCODED_PUBLICATION_CHANNEL_ID)
-                                    .withIsInternationalCollaboration(false)
-                                    .withCollaborationFactor(BigDecimal.ONE.setScale(1, ROUNDING_MODE))
-                                    .withCreatorShareCount(countCreatorShares(verifiedCreators))
-                                    .withBasePoints(basePoints)
-                                    .withVerifiedCreators(verifiedCreators)
-                                    .withInstitutionPoints(institutionPoints)
-                                    .withTotalPoints(totalPoints)
-                                    .build());
+        return NviCandidate.builder()
+                   .withPublicationId(HARDCODED_PUBLICATION_ID)
+                   .withPublicationDate(HARDCODED_PUBLICATION_DATE)
+                   .withInstanceType(instanceType)
+                   .withChannelType(channelType.getValue())
+                   .withLevel(level)
+                   .withPublicationChannelId(HARDCODED_PUBLICATION_CHANNEL_ID)
+                   .withIsInternationalCollaboration(false)
+                   .withCollaborationFactor(BigDecimal.ONE.setScale(1, ROUNDING_MODE))
+                   .withCreatorShareCount(countCreatorShares(verifiedCreators))
+                   .withBasePoints(basePoints)
+                   .withVerifiedCreators(verifiedCreators)
+                   .withInstitutionPoints(institutionPoints)
+                   .withTotalPoints(totalPoints)
+                   .build();
     }
 
     private static int countCreatorShares(List<Creator> verifiedCreators) {
