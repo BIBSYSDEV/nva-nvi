@@ -52,7 +52,7 @@ import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
-import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
+import no.sikt.nva.nvi.common.service.exception.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.utils.ApplicationConstants;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;

@@ -37,7 +37,7 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
-import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.service.requests.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
@@ -49,12 +49,11 @@ public final class TestUtils {
     public static final int SCALE = 10;
     public static final BigDecimal MIN_BIG_DECIMAL = BigDecimal.ZERO;
     public static final BigDecimal MAX_BIG_DECIMAL = BigDecimal.TEN;
+    public static final int CURRENT_YEAR = Year.now().getValue();
     private static final String BUCKET_HOST = "example.org";
     private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
     private static final String PUBLICATION_API_PATH = "publication";
     private static final String API_HOST = "example.com";
-
-    public static final int CURRENT_YEAR = Year.now().getValue();
 
     private TestUtils() {
     }
@@ -151,7 +150,7 @@ public final class TestUtils {
         var nviPeriodRepository = mock(PeriodRepository.class);
         var nviService = new NviService(nviPeriodRepository, new CandidateRepository(client));
         var period = DbNviPeriod.builder().publishingYear(String.valueOf(year)).startDate(Instant.now())
-                .reportingDate(Instant.now()).build();
+                         .reportingDate(Instant.now()).build();
         when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
         return nviService;
     }
@@ -207,13 +206,19 @@ public final class TestUtils {
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI... institutions) {
-        return createUpsertCandidateRequest(randomUri(), true, 1, InstanceType.ACADEMIC_MONOGRAPH,
-                                            institutions);
+        return createUpsertCandidateRequest(randomUri(), true, 1, InstanceType.ACADEMIC_MONOGRAPH, randomBoolean(),
+                                            randomString(), randomUri(), randomBigDecimal(), randomInteger(),
+                                            randomBigDecimal(), randomBigDecimal(), institutions);
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
                                                                       boolean isApplicable, int creatorCount,
                                                                       final InstanceType instanceType,
+                                                                      boolean isInternationalCollaboration,
+                                                                      String channelType, URI channelId,
+                                                                      BigDecimal collaborationFactor,
+                                                                      int creatorShareCount, BigDecimal basePoints,
+                                                                      BigDecimal totalPoints,
                                                                       URI... institutions) {
         var creators = IntStream.of(creatorCount)
                            .mapToObj(i -> randomUri())
@@ -223,7 +228,8 @@ public final class TestUtils {
                          .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal()));
 
         return createUpsertCandidateRequest(publicationId, isApplicable, creators, instanceType,
-                                            DbLevel.LEVEL_TWO, points);
+                                            DbLevel.LEVEL_TWO, points, isInternationalCollaboration, channelType,
+                                            channelId, collaborationFactor, creatorShareCount, basePoints, totalPoints);
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
@@ -231,8 +237,12 @@ public final class TestUtils {
                                                                       Map<URI, List<URI>> creators,
                                                                       final InstanceType instanceType,
                                                                       DbLevel level,
-                                                                      Map<URI, BigDecimal> points) {
-
+                                                                      Map<URI, BigDecimal> points,
+                                                                      final boolean isInternationalCollaboration,
+                                                                      final String channelType, URI channelId,
+                                                                      BigDecimal collaborationFactor,
+                                                                      int creatorShareCount, BigDecimal basePoints,
+                                                                      BigDecimal totalPoints) {
 
         return new UpsertCandidateRequest() {
 
@@ -252,13 +262,23 @@ public final class TestUtils {
             }
 
             @Override
-            public boolean isInternationalCooperation() {
-                return false;
+            public boolean isInternationalCollaboration() {
+                return isInternationalCollaboration;
             }
 
             @Override
             public Map<URI, List<URI>> creators() {
                 return creators;
+            }
+
+            @Override
+            public String channelType() {
+                return channelType;
+            }
+
+            @Override
+            public URI channelId() {
+                return channelId;
             }
 
             @Override
@@ -277,8 +297,28 @@ public final class TestUtils {
             }
 
             @Override
-            public Map<URI, BigDecimal> points() {
+            public BigDecimal collaborationFactor() {
+                return collaborationFactor;
+            }
+
+            @Override
+            public int creatorShareCount() {
+                return creatorShareCount;
+            }
+
+            @Override
+            public BigDecimal basePoints() {
+                return basePoints;
+            }
+
+            @Override
+            public Map<URI, BigDecimal> institutionPoints() {
                 return points;
+            }
+
+            @Override
+            public BigDecimal totalPoints() {
+                return totalPoints;
             }
 
             @Override

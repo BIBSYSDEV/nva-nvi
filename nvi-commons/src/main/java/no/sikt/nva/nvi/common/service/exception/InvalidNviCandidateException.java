@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.model;
+package no.sikt.nva.nvi.common.service.exception;
 
 public class InvalidNviCandidateException extends RuntimeException {
 

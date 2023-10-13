@@ -41,20 +41,20 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
-import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.model.business.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto.Status;
+import no.sikt.nva.nvi.common.service.requests.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
+import no.sikt.nva.nvi.events.model.InvalidNviMessageException;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.Creator;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
-import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
-import no.sikt.nva.nvi.events.model.InvalidNviMessageException;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import nva.commons.core.Environment;
@@ -143,7 +143,8 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var publicationId = generatePublicationId(identifier);
         var dto = CandidateBO.fromRequest(
             createUpsertCandidateRequest(publicationId, true, 1,
-                                         InstanceType.ACADEMIC_ARTICLE, delete, keep),
+                                         InstanceType.ACADEMIC_ARTICLE, false, null, null, null, 0, null, null, delete,
+                                         keep),
             candidateRepository, periodRepository).orElseThrow();
         var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));
         handler.handleRequest(sqsEvent, CONTEXT);
@@ -247,7 +248,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                  .withVerifiedCreators(
                                                      List.of(new Creator(creatorId,
                                                                          List.of(institutionId))))
-                                                 .withInstitutionPoints(request.points())
+                                                 .withInstitutionPoints(request.institutionPoints())
                                                  .build());
     }
 

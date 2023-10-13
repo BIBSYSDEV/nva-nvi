@@ -37,7 +37,7 @@ import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.ListingResult;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.model.business.CandidateBO;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -280,7 +280,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
                    .map(item -> CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
                                                         periodRepository))
                    .map(Optional::orElseThrow)
-                   .map(a -> a.createNote(new CreateNoteRequest(randomString(), randomString())));
+                   .map(a -> a.createNote(new CreateNoteRequest(randomString(), randomString()), candidateRepository));
     }
 
     private InputStream eventToInputStream(ScanDatabaseRequest scanDatabaseRequest) {

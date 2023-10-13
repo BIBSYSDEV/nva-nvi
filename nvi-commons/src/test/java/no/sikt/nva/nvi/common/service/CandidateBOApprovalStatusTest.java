@@ -22,9 +22,10 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
-import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
-import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
-import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.service.exception.InvalidNviCandidateException;
+import no.sikt.nva.nvi.common.service.requests.UpdateAssigneeRequest;
+import no.sikt.nva.nvi.common.service.requests.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.model.business.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -95,7 +96,8 @@ public class CandidateBOApprovalStatusTest extends LocalDynamoTest {
     void shouldResetApprovalWhenChangingToPending(DbStatus oldStatus) {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri(), true, 1,
-                                                                  InstanceType.ACADEMIC_MONOGRAPH, institutionId);
+                                                                  InstanceType.ACADEMIC_MONOGRAPH, false, null, null,
+                                                                  null, 0, null, null, institutionId);
         var candidateBO = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                               .orElseThrow();
         var assignee = randomString();
@@ -132,7 +134,8 @@ public class CandidateBOApprovalStatusTest extends LocalDynamoTest {
         var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
         var updateRequest = createUpsertCandidateRequest(candidate.toDto().publicationId(),
-                                                         true, 2, InstanceType.ACADEMIC_MONOGRAPH, randomUri(),
+                                                         true, 2, InstanceType.ACADEMIC_MONOGRAPH, false, null, null,
+                                                         null, 0, null, null, randomUri(),
                                                          randomUri(), randomUri());
         var updatedCandidate = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository)
                                    .orElseThrow();
@@ -148,7 +151,7 @@ public class CandidateBOApprovalStatusTest extends LocalDynamoTest {
         CandidateBO.fromRequest(createCandidateRequest, candidateRepository, periodRepository);
         var updateRequest = createUpsertCandidateRequest(
             createCandidateRequest.publicationId(), true, 2,
-            InstanceType.ACADEMIC_MONOGRAPH, keepInstitutionId,
+            InstanceType.ACADEMIC_MONOGRAPH, false, null, null, null, 0, null, null, keepInstitutionId,
             randomUri());
         var updatedCandidate = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository)
                                    .orElseThrow();
@@ -168,7 +171,8 @@ public class CandidateBOApprovalStatusTest extends LocalDynamoTest {
         var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
         var updateRequest = createUpsertCandidateRequest(candidate.toDto().publicationId(),
-                                                         false, 2, InstanceType.ACADEMIC_MONOGRAPH, randomUri());
+                                                         false, 2, InstanceType.ACADEMIC_MONOGRAPH, false, null, null,
+                                                         null, 0, null, null, randomUri());
         var updatedCandidate = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository)
                                    .orElseThrow();
         assertThat(updatedCandidate.identifier(), is(equalTo(candidate.identifier())));
@@ -181,7 +185,8 @@ public class CandidateBOApprovalStatusTest extends LocalDynamoTest {
         var candidateBO = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                               .orElseThrow();
         var updateRequest = createUpsertCandidateRequest(candidateBO.toDto().publicationId(),
-                                                         true, 2, InstanceType.NON_CANDIDATE, randomUri());
+                                                         true, 2, InstanceType.NON_CANDIDATE, false, null, null, null,
+                                                         0, null, null, randomUri());
         assertThrows(InvalidNviCandidateException.class,
                      () -> CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository));
     }

@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.events.model.NviCandidate.Creator;
+import nva.commons.core.JacocoGenerated;
 
 @JsonAutoDetect(fieldVisibility = Visibility.ANY)
 @JsonSerialize
@@ -37,7 +38,7 @@ public record CandidateEvaluatedMessage(
     }
 
     @Override
-    public boolean isInternationalCooperation() {
+    public boolean isInternationalCollaboration() {
         return false;
     }
 
@@ -53,6 +54,18 @@ public record CandidateEvaluatedMessage(
     }
 
     @Override
+    @JacocoGenerated //Work in progress NP-45386
+    public String channelType() {
+        return null;
+    }
+
+    @Override
+    @JacocoGenerated //Work in progress NP-45386
+    public URI channelId() {
+        return null;
+    }
+
+    @Override
     public String level() {
         if (isNviCandidate()) {
             var nviCandidate = (NviCandidate) candidate;
@@ -62,6 +75,7 @@ public record CandidateEvaluatedMessage(
     }
 
     @Override
+    @JacocoGenerated //Work in progress NP-45386
     public String instanceType() {
         if (isNviCandidate()) {
             var nviCandidate = (NviCandidate) candidate;
@@ -80,12 +94,36 @@ public record CandidateEvaluatedMessage(
     }
 
     @Override
-    public Map<URI, BigDecimal> points() {
+    @JacocoGenerated //Work in progress NP-45386
+    public BigDecimal collaborationFactor() {
+        return null;
+    }
+
+    @Override
+    @JacocoGenerated //Work in progress NP-45386
+    public int creatorShareCount() {
+        return 0;
+    }
+
+    @Override
+    @JacocoGenerated //Work in progress NP-45386
+    public BigDecimal basePoints() {
+        return null;
+    }
+
+    @Override
+    public Map<URI, BigDecimal> institutionPoints() {
         if (isNviCandidate()) {
             var nviCandidate = (NviCandidate) candidate;
             return nviCandidate.institutionPoints();
         }
         return Collections.emptyMap();
+    }
+
+    @Override
+    @JacocoGenerated //Work in progress NP-45386
+    public BigDecimal totalPoints() {
+        return null;
     }
 
     @Override

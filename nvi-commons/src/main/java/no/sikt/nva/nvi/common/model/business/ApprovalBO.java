@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.service;
+package no.sikt.nva.nvi.common.model.business;
 
 import static java.util.Objects.isNull;
 import java.net.URI;
@@ -9,9 +9,9 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.model.Username;
-import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
-import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
-import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.service.requests.UpdateApprovalRequest;
+import no.sikt.nva.nvi.common.service.requests.UpdateAssigneeRequest;
+import no.sikt.nva.nvi.common.service.requests.UpdateStatusRequest;
 import nva.commons.core.JacocoGenerated;
 
 public class ApprovalBO {

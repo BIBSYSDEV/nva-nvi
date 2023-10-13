@@ -25,7 +25,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.model.business.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.rest.create.NviNoteRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -104,7 +104,7 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
     void shouldReturnConflictWhenRemovingNoteAndReportingPeriodIsClosed() throws IOException {
         var candidate = createCandidate();
         var user = randomString();
-        candidate.createNote(new CreateNoteRequest(randomString(), user));
+        candidate.createNote(new CreateNoteRequest(randomString(), user), candidateRepository);
         var noteId = candidate.toDto().notes().get(0).identifier();
         var request = createRequest(candidate.identifier(), noteId, user).build();
         handler = new RemoveNoteHandler(candidateRepository, periodRepositoryReturningClosedPeriod(YEAR));
@@ -125,7 +125,7 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
     }
 
     private CandidateBO createNote(CandidateBO candidate, Username user) {
-        return candidate.createNote(new CreateNoteRequest(randomString(), user.value()));
+        return candidate.createNote(new CreateNoteRequest(randomString(), user.value()), candidateRepository);
     }
 
     private CandidateBO createCandidate() {

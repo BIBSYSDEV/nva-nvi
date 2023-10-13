@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.service;
+package no.sikt.nva.nvi.common.model.business;
 
 import static java.util.Objects.isNull;
 import java.util.UUID;

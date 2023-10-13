@@ -10,7 +10,7 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.model.business.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
 import no.sikt.nva.nvi.utils.RequestUtil;
@@ -46,7 +46,8 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         var username = RequestUtil.getUsername(requestInfo);
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
         return attempt(() -> CandidateBO.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository))
-                   .map(candidate -> candidate.createNote(new CreateNoteRequest(input.text(), username.value())))
+                   .map(candidate -> candidate.createNote(new CreateNoteRequest(input.text(), username.value()),
+                                                          candidateRepository))
                    .map(CandidateBO::toDto)
                    .orElseThrow(ExceptionMapper::map);
     }

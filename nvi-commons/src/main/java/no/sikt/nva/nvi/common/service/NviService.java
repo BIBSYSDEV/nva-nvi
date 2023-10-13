@@ -22,7 +22,7 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
-import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
+import no.sikt.nva.nvi.common.service.exception.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;

@@ -47,8 +47,8 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
-import no.sikt.nva.nvi.common.service.ApprovalBO;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.model.business.ApprovalBO;
+import no.sikt.nva.nvi.common.model.business.CandidateBO;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.Approval;
@@ -250,7 +250,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         return new PublicationDetails(
             "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
             "AcademicArticle", "Demo nvi candidate", new PublicationDate("2023", "6", "4"), List.of(
-                new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
+            new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
                 .withName("Mona Ullah")
                 .withRole("Creator")
                 .withAffiliations(List.of(constructAffiliation()))
@@ -261,7 +261,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         return new PublicationDetails(
             "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
             "AcademicArticle", "Demo nvi candidate", publicationDate, List.of(
-                new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
+            new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
                 .withName("Mona Ullah")
                 .withRole("Creator")
                 .withAffiliations(List.of(constructAffiliation()))
@@ -318,7 +318,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .identifier(candidate.identifier())
                    .candidate(DbCandidate.builder()
                                   .publicationId(candidate.publicationId())
-                                  .points(candidate.getPoints())
+                                  .points(mapToDbPoints(candidate.getPoints()))
                                   .applicable(candidate.isApplicable())
                                   .creatorCount(1)
                                   .instanceType(InstanceType.ACADEMIC_ARTICLE)
@@ -331,6 +331,13 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                   .publicationBucketUri(candidate.getBucketUri())
                                   .build())
                    .build();
+    }
+
+    private List<DbInstitutionPoints> mapToDbPoints(Map<URI, BigDecimal> points) {
+        return points.entrySet()
+                   .stream()
+                   .map(entry -> new DbInstitutionPoints(entry.getKey(), entry.getValue()))
+                   .toList();
     }
 
     private List<ApprovalStatusDao> getApproval(CandidateBO persistedCandidate) {
@@ -378,9 +385,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private BigDecimal sumPoint(List<DbInstitutionPoints> points) {
-        return points.stream()
-                   .map(DbInstitutionPoints::points)
+    private BigDecimal sumPoint(Map<URI, BigDecimal> points) {
+        return points.values().stream()
                    .reduce(BigDecimal.ZERO, BigDecimal::add)
                    .setScale(POINTS_SCALE, ROUNDING_MODE);
     }

@@ -4,7 +4,7 @@ import static java.util.Objects.nonNull;
 import java.net.URI;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
-import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.service.requests.UpdateStatusRequest;
 
 public record NviStatusRequest(UUID candidateId,
                                URI institutionId,

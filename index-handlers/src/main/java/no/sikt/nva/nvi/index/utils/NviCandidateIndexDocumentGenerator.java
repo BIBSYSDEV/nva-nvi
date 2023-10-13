@@ -30,10 +30,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.Username;
-import no.sikt.nva.nvi.common.service.ApprovalBO;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.model.business.ApprovalBO;
+import no.sikt.nva.nvi.common.model.business.CandidateBO;
 import no.sikt.nva.nvi.common.utils.JsonPointers;
 import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.Approval;
@@ -83,9 +82,8 @@ public final class NviCandidateIndexDocumentGenerator {
                    .collect(Collectors.toList());
     }
 
-    private BigDecimal sumPoints(List<DbInstitutionPoints> points) {
-        return points.stream()
-                   .map(DbInstitutionPoints::points)
+    private BigDecimal sumPoints(Map<URI, BigDecimal> points) {
+        return points.values().stream()
                    .reduce(BigDecimal.ZERO, BigDecimal::add)
                    .setScale(POINTS_SCALE, ROUNDING_MODE);
     }
