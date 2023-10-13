@@ -20,7 +20,8 @@ public record NviCandidate(URI publicationId,
                            boolean isInternationalCollaboration,
                            BigDecimal collaborationFactor,
                            int creatorShareCount,
-                           Map<URI, BigDecimal> institutionPoints) implements CandidateType {
+                           Map<URI, BigDecimal> institutionPoints,
+                           BigDecimal totalPoints) implements CandidateType {
 
     public static Builder builder() {
         return new Builder();
@@ -51,6 +52,7 @@ public record NviCandidate(URI publicationId,
         private BigDecimal collaborationFactor;
         private int creatorShareCount;
         private Map<URI, BigDecimal> institutionPoints;
+        private BigDecimal totalPoints;
 
         private Builder() {
         }
@@ -115,10 +117,15 @@ public record NviCandidate(URI publicationId,
             return this;
         }
 
+        public Builder withTotalPoints(BigDecimal totalPoints) {
+            this.totalPoints = totalPoints;
+            return this;
+        }
+
         public NviCandidate build() {
             return new NviCandidate(publicationId, instanceType, publicationDate, verifiedCreators, channelType,
                                     publicationChannelId, level, basePoints, isInternationalCollaboration,
-                                    collaborationFactor, creatorShareCount, institutionPoints);
+                                    collaborationFactor, creatorShareCount, institutionPoints, totalPoints);
         }
     }
 }

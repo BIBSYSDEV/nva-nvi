@@ -55,10 +55,11 @@ class PointCalculatorTest {
                                                       ROLE_CREATOR)),
             getInstanceTypeReference(parameters));
 
-        var institutionPoints = calculatePoints(expandedResource,
-                                                Map.of(creator, List.of(institutionId))).institutionPoints();
+        var pointCalculation = calculatePoints(expandedResource, Map.of(creator, List.of(institutionId)));
 
-        assertThat(institutionPoints.get(institutionId), is(equalTo(parameters.institution1Points())));
+        assertThat(pointCalculation.institutionPoints().get(institutionId),
+                   is(equalTo(parameters.institution1Points())));
+        assertThat(pointCalculation.totalPoints(), is(equalTo(parameters.totalPoints())));
     }
 
     @ParameterizedTest(name = "Should calculate points correctly for co-publishing cases where two creators are "
@@ -75,11 +76,14 @@ class PointCalculatorTest {
                                                                       creator1Institutions,
                                                                       creator2Institutions);
 
-        var pointsMap = calculatePoints(expandedResource, Map.of(creator1, creator1Institutions, creator2,
-                                                                 creator2Institutions)).institutionPoints();
+        var pointCalculation = calculatePoints(expandedResource, Map.of(creator1, creator1Institutions, creator2,
+                                                                        creator2Institutions));
 
-        assertThat(pointsMap.get(nviInstitution1), is(equalTo(parameters.institution1Points())));
-        assertThat(pointsMap.get(nviInstitution2), is(equalTo(parameters.institution2Points())));
+        assertThat(pointCalculation.institutionPoints().get(nviInstitution1),
+                   is(equalTo(parameters.institution1Points())));
+        assertThat(pointCalculation.institutionPoints().get(nviInstitution2),
+                   is(equalTo(parameters.institution2Points())));
+        assertThat(pointCalculation.totalPoints(), is(equalTo(parameters.totalPoints())));
     }
 
     @ParameterizedTest(name = "Should calculate points correctly for co-publishing cases where two creators are "
@@ -101,11 +105,14 @@ class PointCalculatorTest {
                                    ROLE_CREATOR)),
             getInstanceTypeReference(parameters));
 
-        var pointsMap = calculatePoints(expandedResource, Map.of(creator1, creator1Institutions, creator2,
-                                                                 creator2Institutions)).institutionPoints();
+        var pointCalculation = calculatePoints(expandedResource, Map.of(creator1, creator1Institutions, creator2,
+                                                                        creator2Institutions));
 
-        assertThat(pointsMap.get(nviInstitution1), is(equalTo(parameters.institution1Points())));
-        assertThat(pointsMap.get(nviInstitution2), is(equalTo(parameters.institution2Points())));
+        assertThat(pointCalculation.institutionPoints().get(nviInstitution1),
+                   is(equalTo(parameters.institution1Points())));
+        assertThat(pointCalculation.institutionPoints().get(nviInstitution2),
+                   is(equalTo(parameters.institution2Points())));
+        assertThat(pointCalculation.totalPoints(), is(equalTo(parameters.totalPoints())));
     }
 
     @Test
@@ -215,47 +222,57 @@ class PointCalculatorTest {
         return Stream.of(
             //example from cristin calculations, publicationYear 2022
             new PointParameters("AcademicArticle", "Journal", "1", false, 2, asBigDecimal("0.7071"),
-                                asBigDecimal("0.7071"))
+                                asBigDecimal("0.7071"), asBigDecimal("1.4142"))
         );
     }
 
     private static Stream<PointParameters> twoCreatorsAffiliatedWithOneInstitutionPointProvider() {
         return Stream.of(
             new PointParameters("AcademicMonograph", "Series", "1", false, 3, asBigDecimal("4.0825"),
-                                asBigDecimal("2.8868")),
+                                asBigDecimal("2.8868"), asBigDecimal("8.6603")),
             new PointParameters("AcademicMonograph", "Series", "2", true, 4, asBigDecimal("7.3539"),
-                                asBigDecimal("5.2000")),
+                                asBigDecimal("5.2000"), asBigDecimal("20.8000")),
             new PointParameters("AcademicMonograph", "Series", "2", false, 4, asBigDecimal("5.6569"),
-                                asBigDecimal("4.0000")),
+                                asBigDecimal("4.0000"), asBigDecimal("16")),
             new PointParameters("AcademicChapter", "Series", "1", true, 5, asBigDecimal("0.8222"),
-                                asBigDecimal("0.5814")),
+                                asBigDecimal("0.5814"), asBigDecimal("2.9069")),
             new PointParameters("AcademicChapter", "Series", "2", false, 5, asBigDecimal("1.8974"),
-                                asBigDecimal("1.3416")),
+                                asBigDecimal("1.3416"), asBigDecimal("6.7082")),
             new PointParameters("AcademicArticle", "Journal", "1", false, 7, asBigDecimal("0.5345"),
-                                asBigDecimal("0.3780")),
+                                asBigDecimal("0.3780"), asBigDecimal("2.6458")),
             new PointParameters("AcademicArticle", "Journal", "2", false, 7, asBigDecimal("1.6036"),
-                                asBigDecimal("1.1339")),
+                                asBigDecimal("1.1339"), asBigDecimal("7.9373")),
             new PointParameters("AcademicLiteratureReview", "Journal", "1", true, 8, asBigDecimal("0.6500"),
-                                asBigDecimal("0.4596")),
+                                asBigDecimal("0.4596"), asBigDecimal("3.6770")),
             new PointParameters("AcademicLiteratureReview", "Journal", "2", true, 8, asBigDecimal("1.9500"),
-                                asBigDecimal("1.3789"))
+                                asBigDecimal("1.3789"), asBigDecimal("11.0309"))
         );
     }
 
     private static Stream<PointParameters> singleCreatorSingleInstitutionPointProvider() {
         return Stream.of(
-            new PointParameters("AcademicMonograph", "Series", "1", false, 1, asBigDecimal("5"), null),
-            new PointParameters("AcademicMonograph", "Series", "2", false, 1, asBigDecimal("8"), null),
-            new PointParameters("AcademicMonograph", "Publisher", "1", false, 1, asBigDecimal("5"), null),
-            new PointParameters("AcademicMonograph", "Publisher", "2", false, 1, asBigDecimal("8"), null),
-            new PointParameters("AcademicChapter", "Series", "1", false, 1, asBigDecimal("1"), null),
-            new PointParameters("AcademicChapter", "Series", "2", false, 1, asBigDecimal("3"), null),
-            new PointParameters("AcademicChapter", "Publisher", "1", false, 1, asBigDecimal("0.7"), null),
-            new PointParameters("AcademicChapter", "Publisher", "2", false, 1, asBigDecimal("1"), null),
-            new PointParameters("AcademicArticle", "Journal", "1", false, 1, asBigDecimal("1"), null),
-            new PointParameters("AcademicArticle", "Journal", "2", false, 1, asBigDecimal("3"), null),
-            new PointParameters("AcademicLiteratureReview", "Journal", "1", false, 1, asBigDecimal("1"), null),
-            new PointParameters("AcademicLiteratureReview", "Journal", "2", false, 1, asBigDecimal("3"), null)
+            new PointParameters("AcademicMonograph", "Series", "1", false, 1, asBigDecimal("5"), null,
+                                asBigDecimal("5")),
+            new PointParameters("AcademicMonograph", "Series", "2", false, 1, asBigDecimal("8"), null,
+                                asBigDecimal("8")),
+            new PointParameters("AcademicMonograph", "Publisher", "1", false, 1, asBigDecimal("5"), null,
+                                asBigDecimal("5")),
+            new PointParameters("AcademicMonograph", "Publisher", "2", false, 1, asBigDecimal("8"), null,
+                                asBigDecimal("8")),
+            new PointParameters("AcademicChapter", "Series", "1", false, 1, asBigDecimal("1"), null, asBigDecimal("1")),
+            new PointParameters("AcademicChapter", "Series", "2", false, 1, asBigDecimal("3"), null, asBigDecimal("3")),
+            new PointParameters("AcademicChapter", "Publisher", "1", false, 1, asBigDecimal("0.7"), null,
+                                asBigDecimal("0.7")),
+            new PointParameters("AcademicChapter", "Publisher", "2", false, 1, asBigDecimal("1"), null,
+                                asBigDecimal("1")),
+            new PointParameters("AcademicArticle", "Journal", "1", false, 1, asBigDecimal("1"), null,
+                                asBigDecimal("1")),
+            new PointParameters("AcademicArticle", "Journal", "2", false, 1, asBigDecimal("3"), null,
+                                asBigDecimal("3")),
+            new PointParameters("AcademicLiteratureReview", "Journal", "1", false, 1, asBigDecimal("1"), null,
+                                asBigDecimal("1")),
+            new PointParameters("AcademicLiteratureReview", "Journal", "2", false, 1, asBigDecimal("3"), null,
+                                asBigDecimal("3"))
         );
     }
 
@@ -385,7 +402,7 @@ class PointCalculatorTest {
     private record PointParameters(String instanceType, String channelType, String level,
                                    boolean isInternationalCollaboration,
                                    int creatorShareCount, BigDecimal institution1Points,
-                                   BigDecimal institution2Points
+                                   BigDecimal institution2Points, BigDecimal totalPoints
     ) {
 
     }
