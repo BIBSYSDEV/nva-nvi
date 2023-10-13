@@ -2,6 +2,9 @@ package no.sikt.nva.nvi.rest.create;
 
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -19,8 +22,8 @@ import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.model.business.CandidateBO;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
+import no.sikt.nva.nvi.common.model.business.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
@@ -105,7 +108,11 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         var candidateBO = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
                                                   candidateRepository, periodRepository).orElseThrow();
         var nonCandidate = CandidateBO.fromRequest(
-            createUpsertCandidateRequest(candidateBO.publicationId(), false, 0, InstanceType.NON_CANDIDATE),
+            createUpsertCandidateRequest(candidateBO.publicationId(), false, 0, InstanceType.NON_CANDIDATE,
+                                         randomBoolean(),
+                                         randomString(), randomUri(), randomBigDecimal(),
+                                         randomInteger(),
+                                         randomBigDecimal(), randomBigDecimal()),
             candidateRepository, periodRepository).orElseThrow();
         var request = createRequest(nonCandidate.identifier(), randomNote(), randomString());
         handler.handleRequest(request, output, context);
