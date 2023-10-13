@@ -21,7 +21,7 @@ public record NviCandidate(URI publicationId,
                            BigDecimal collaborationFactor,
                            int creatorShareCount,
                            Map<URI, BigDecimal> institutionPoints,
-                           BigDecimal totalPoints)) implements CandidateType {
+                           BigDecimal totalPoints) implements CandidateType {
 
     public static Builder builder() {
         return new Builder();
