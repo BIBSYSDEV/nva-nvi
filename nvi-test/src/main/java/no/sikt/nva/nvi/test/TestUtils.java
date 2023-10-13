@@ -222,7 +222,10 @@ public final class TestUtils {
                          .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal()));
 
         return createUpsertCandidateRequest(publicationId, isApplicable, creators, instanceType,
-                                            DbLevel.LEVEL_TWO, points);
+                                            DbLevel.LEVEL_TWO, points, randomBoolean(), randomString(), randomInteger(),
+                                            randomUri(), randomUri(),
+                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
+                                            randomBigDecimal(), randomBigDecimal(), randomBigDecimal());
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
@@ -230,14 +233,22 @@ public final class TestUtils {
                                                                       Map<URI, List<URI>> creators,
                                                                       final InstanceType instanceType,
                                                                       DbLevel level,
-                                                                      Map<URI, BigDecimal> points) {
-
+                                                                      Map<URI, BigDecimal> points,
+                                                                      final boolean isInternationalCollaboration,
+                                                                      final String channelType,
+                                                                      final Integer creatorShareCount,
+                                                                      final URI publicationBucketUri,
+                                                                      final URI channelId,
+                                                                      final PublicationDate publicationDate,
+                                                                      final BigDecimal collaborationFactor,
+                                                                      final BigDecimal basePoints,
+                                                                      final BigDecimal totalPoints) {
 
         return new UpsertCandidateRequest() {
 
             @Override
             public URI publicationBucketUri() {
-                return randomUri();
+                return publicationBucketUri;
             }
 
             @Override
@@ -251,13 +262,23 @@ public final class TestUtils {
             }
 
             @Override
-            public boolean isInternationalCooperation() {
-                return false;
+            public boolean isInternationalCollaboration() {
+                return isInternationalCollaboration;
             }
 
             @Override
             public Map<URI, List<URI>> creators() {
                 return creators;
+            }
+
+            @Override
+            public String channelType() {
+                return channelType;
+            }
+
+            @Override
+            public URI channelId() {
+                return channelId;
             }
 
             @Override
@@ -272,17 +293,37 @@ public final class TestUtils {
 
             @Override
             public PublicationDate publicationDate() {
-                return new PublicationDate(String.valueOf(CURRENT_YEAR), null, null);
-            }
-
-            @Override
-            public Map<URI, BigDecimal> points() {
-                return points;
+                return publicationDate;
             }
 
             @Override
             public int creatorCount() {
                 return (int) creators.values().stream().mapToLong(List::size).sum();
+            }
+
+            @Override
+            public int creatorShareCount() {
+                return creatorShareCount;
+            }
+
+            @Override
+            public BigDecimal collaborationFactor() {
+                return collaborationFactor;
+            }
+
+            @Override
+            public BigDecimal basePoints() {
+                return basePoints;
+            }
+
+            @Override
+            public Map<URI, BigDecimal> institutionPoints() {
+                return points;
+            }
+
+            @Override
+            public BigDecimal totalPoints() {
+                return totalPoints;
             }
         };
     }

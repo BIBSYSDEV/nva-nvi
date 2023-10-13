@@ -37,7 +37,7 @@ public record CandidateEvaluatedMessage(
     }
 
     @Override
-    public boolean isInternationalCooperation() {
+    public boolean isInternationalCollaboration() {
         return false;
     }
 
@@ -50,6 +50,16 @@ public record CandidateEvaluatedMessage(
                        .collect(Collectors.toMap(Creator::id, Creator::nviInstitutions));
         }
         return Collections.emptyMap();
+    }
+
+    @Override
+    public String channelType() {
+        return null;
+    }
+
+    @Override
+    public URI channelId() {
+        return null;
     }
 
     @Override
@@ -80,7 +90,7 @@ public record CandidateEvaluatedMessage(
     }
 
     @Override
-    public Map<URI, BigDecimal> points() {
+    public Map<URI, BigDecimal> institutionPoints() {
         if (isNviCandidate()) {
             var nviCandidate = (NviCandidate) candidate;
             return nviCandidate.institutionPoints();
@@ -89,8 +99,28 @@ public record CandidateEvaluatedMessage(
     }
 
     @Override
+    public BigDecimal totalPoints() {
+        return null;
+    }
+
+    @Override
     public int creatorCount() {
         return 0;
+    }
+
+    @Override
+    public int creatorShareCount() {
+        return 0;
+    }
+
+    @Override
+    public BigDecimal collaborationFactor() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal basePoints() {
+        return null;
     }
 
     private static PublicationDate mapToPublicationDate(NviCandidate.PublicationDate publicationDate) {

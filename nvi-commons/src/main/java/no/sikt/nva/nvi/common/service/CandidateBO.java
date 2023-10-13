@@ -239,7 +239,7 @@ public final class CandidateBO {
 
     private static CandidateBO resetCandidate(UpsertCandidateRequest request, CandidateRepository repository,
                                               PeriodRepository periodRepository, CandidateDao existingCandidateDao) {
-        var newApprovals = mapToApprovals(request.points());
+        var newApprovals = mapToApprovals(request.institutionPoints());
         var newCandidateDao = updateCandidateDaoFromRequest(existingCandidateDao, request);
         repository.updateCandidate(existingCandidateDao.identifier(), newCandidateDao, newApprovals);
         var notes = repository.getNotes(existingCandidateDao.identifier());
@@ -270,7 +270,7 @@ public final class CandidateBO {
     }
 
     private static boolean pointsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(request.points(), mapToPointsMap(existingCandidateDao));
+        return !Objects.equals(request.institutionPoints(), mapToPointsMap(existingCandidateDao));
     }
 
     private static boolean creatorsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
@@ -288,7 +288,7 @@ public final class CandidateBO {
     private static CandidateBO createCandidate(UpsertCandidateRequest request, CandidateRepository repository,
                                                PeriodRepository periodRepository) {
         validateCandidate(request);
-        var candidateDao = repository.createDao(mapToCandidate(request), mapToApprovals(request.points()));
+        var candidateDao = repository.createDao(mapToCandidate(request), mapToApprovals(request.institutionPoints()));
         var approvals1 = repository.fetchApprovals(candidateDao.identifier());
         var notes1 = repository.getNotes(candidateDao.identifier());
         var periodStatus1 = getPeriodStatus(periodRepository, candidateDao.candidate().publicationDate().year());
@@ -308,7 +308,7 @@ public final class CandidateBO {
         attempt(() -> {
             assertIsCandidate(candidate);
             Objects.requireNonNull(candidate.publicationBucketUri());
-            Objects.requireNonNull(candidate.points());
+            Objects.requireNonNull(candidate.institutionPoints());
             Objects.requireNonNull(candidate.publicationId());
             Objects.requireNonNull(candidate.creators());
             Objects.requireNonNull(candidate.level());
@@ -370,7 +370,7 @@ public final class CandidateBO {
                    .level(DbLevel.parse(request.level()))
                    .instanceType(InstanceType.parse(request.instanceType()))
                    .publicationDate(mapToPublicationDate(request.publicationDate()))
-                   .points(mapToPoints(request.points()))
+                   .points(mapToPoints(request.institutionPoints()))
                    .build();
     }
 
@@ -400,12 +400,12 @@ public final class CandidateBO {
                    .candidate(candidateDao.candidate()
                                   .copy()
                                   .creators(mapToCreators(request.creators()))
-                                  .points(mapToPoints(request.points()))
+                                  .points(mapToPoints(request.institutionPoints()))
                                   .publicationDate(mapToPublicationDate(request.publicationDate()))
                                   .instanceType(InstanceType.parse(request.instanceType()))
                                   .level(DbLevel.parse(request.level()))
                                   .applicable(request.isApplicable())
-                                  .internationalCollaboration(request.isInternationalCooperation())
+                                  .internationalCollaboration(request.isInternationalCollaboration())
                                   .creatorCount(request.creatorCount())
                                   .build())
                    .version(randomUUID().toString())

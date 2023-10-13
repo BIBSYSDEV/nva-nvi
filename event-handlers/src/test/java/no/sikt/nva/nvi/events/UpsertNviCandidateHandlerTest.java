@@ -247,7 +247,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                  .withVerifiedCreators(
                                                      List.of(new Creator(creatorId,
                                                                          List.of(institutionId))))
-                                                 .withInstitutionPoints(request.points())
+                                                 .withInstitutionPoints(request.institutionPoints())
                                                  .build());
     }
 
