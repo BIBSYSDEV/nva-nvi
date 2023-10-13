@@ -178,10 +178,11 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var messageBody = getMessageBody();
+        var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_ARTICLE.getValue(),
-                                                                   BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE),
+                                                                   expectedPoints,
                                                                    fileUri, JOURNAL,
-                                                                   ONE);
+                                                                   ONE, expectedPoints);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -193,11 +194,11 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var messageBody = getMessageBody();
+        var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(InstanceType.ACADEMIC_CHAPTER.getValue(),
-                                                                   BigDecimal.valueOf(1)
-                                                                       .setScale(SCALE, ROUNDING_MODE),
+                                                                   expectedPoints,
                                                                    fileUri, SERIES,
-                                                                   ONE);
+                                                                   ONE, expectedPoints);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -209,10 +210,11 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var messageBody = getMessageBody();
+        var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_MONOGRAPH.getValue(),
-                                                                   BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE),
+                                                                   expectedPoints,
                                                                    fileUri, SERIES,
-                                                                   BigDecimal.valueOf(5));
+                                                                   BigDecimal.valueOf(5), expectedPoints);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -226,10 +228,11 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var messageBody = getMessageBody();
+        var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_MONOGRAPH.getValue(),
-                                                                   BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE),
+                                                                   expectedPoints,
                                                                    fileUri, SERIES,
-                                                                   BigDecimal.valueOf(5));
+                                                                   BigDecimal.valueOf(5), expectedPoints);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -241,10 +244,11 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var messageBody = getMessageBody();
+        var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_LITERATURE_REVIEW.getValue(),
-                                                                   BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE),
+                                                                   expectedPoints,
                                                                    fileUri, JOURNAL,
-                                                                   ONE);
+                                                                   ONE, expectedPoints);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -456,19 +460,20 @@ class EvaluateNviCandidateHandlerTest {
     private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(String instanceType,
                                                                          BigDecimal points, URI bucketUri,
                                                                          PublicationChannel publicationChannel,
-                                                                         BigDecimal basePoints) {
+                                                                         BigDecimal basePoints,
+                                                                         BigDecimal totalPoints) {
         return CandidateEvaluatedMessage.builder()
                    .withCandidateType(createExpectedCandidate(instanceType,
                                                               Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID,
                                                                      points.setScale(SCALE, RoundingMode.HALF_UP)),
                                                               publicationChannel, Level.LEVEL_ONE.getValue(),
-                                                              basePoints))
+                                                              basePoints, totalPoints))
                    .withPublicationBucketUri(bucketUri).build();
     }
 
     private static NviCandidate createExpectedCandidate(String instanceType, Map<URI, BigDecimal> institutionPoints,
                                                         PublicationChannel channelType, String level,
-                                                        BigDecimal basePoints) {
+                                                        BigDecimal basePoints, BigDecimal totalPoints) {
         var verifiedCreators = List.of(new Creator(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID)));
         return NviCandidate.builder()
                    .withPublicationId(HARDCODED_PUBLICATION_ID)
@@ -483,6 +488,7 @@ class EvaluateNviCandidateHandlerTest {
                    .withBasePoints(basePoints)
                    .withVerifiedCreators(verifiedCreators)
                    .withInstitutionPoints(institutionPoints)
+                   .withTotalPoints(totalPoints)
                    .build();
     }
 
