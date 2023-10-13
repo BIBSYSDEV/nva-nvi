@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.model.business;
 
 import static java.util.Objects.isNull;
+import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NoteDao;
@@ -8,6 +9,7 @@ import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
+import nva.commons.core.JacocoGenerated;
 
 public class NoteBO {
 
@@ -50,6 +52,27 @@ public class NoteBO {
 
     public NoteDao getDao() {
         return dao;
+    }
+
+    @Override
+    @JacocoGenerated
+    public int hashCode() {
+        return dao != null ? dao.hashCode() : 0;
+    }
+
+    @Override
+    @JacocoGenerated
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        NoteBO noteBO = (NoteBO) o;
+
+        return Objects.equals(dao, noteBO.dao);
     }
 
     private static void validate(CreateNoteRequest request) {

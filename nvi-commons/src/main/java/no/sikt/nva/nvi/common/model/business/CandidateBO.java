@@ -63,6 +63,7 @@ public final class CandidateBO {
     private static final PeriodStatus PERIOD_STATUS_NO_PERIOD = PeriodStatus.builder()
                                                                     .withStatus(Status.NO_PERIOD)
                                                                     .build();
+    private final CandidateRepository candidateRepository;
     private final UUID identifier;
     private final URI publicationId;
     private final URI publicationBucketUri;
@@ -79,6 +80,7 @@ public final class CandidateBO {
 
     private CandidateBO(CandidateRepository repository, CandidateDao candidateDao, List<ApprovalStatusDao> approvals,
                         List<NoteDao> notes, PeriodStatus periodStatus) {
+        this.candidateRepository = repository;
         this.identifier = candidateDao.identifier();
         this.approvals = mapToApprovalsMap(repository, approvals);
         this.notes = mapToNotesMap(repository, notes);
@@ -161,9 +163,9 @@ public final class CandidateBO {
         return this;
     }
 
-    public CandidateBO createNote(CreateNoteRequest input, CandidateRepository repository) {
+    public CandidateBO createNote(CreateNoteRequest input) {
         validateCandidateState();
-        var noteBO = NoteBO.fromRequest(input, identifier, repository);
+        var noteBO = NoteBO.fromRequest(input, identifier, candidateRepository);
         notes.put(noteBO.noteId(), noteBO);
         return this;
     }
@@ -195,25 +197,6 @@ public final class CandidateBO {
 
     public PeriodStatus periodStatus() {
         return periodStatus;
-    }
-
-    @Override
-    @JacocoGenerated
-    public int hashCode() {
-        int result = identifier != null ? identifier.hashCode() : 0;
-        result = 31 * result + (publicationId != null ? publicationId.hashCode() : 0);
-        result = 31 * result + (publicationBucketUri != null ? publicationBucketUri.hashCode() : 0);
-        result = 31 * result + (applicable ? 1 : 0);
-        result = 31 * result + (instanceType != null ? instanceType.hashCode() : 0);
-        result = 31 * result + (level != null ? level.hashCode() : 0);
-        result = 31 * result + (publicationDate != null ? publicationDate.hashCode() : 0);
-        result = 31 * result + (internationalCollaboration ? 1 : 0);
-        result = 31 * result + (creators != null ? creators.hashCode() : 0);
-        result = 31 * result + (approvals != null ? approvals.hashCode() : 0);
-        result = 31 * result + (notes != null ? notes.hashCode() : 0);
-        result = 31 * result + (points != null ? points.hashCode() : 0);
-        result = 31 * result + (periodStatus != null ? periodStatus.hashCode() : 0);
-        return result;
     }
 
     @Override
@@ -265,6 +248,25 @@ public final class CandidateBO {
             return false;
         }
         return Objects.equals(periodStatus, that.periodStatus);
+    }
+
+    @Override
+    @JacocoGenerated
+    public int hashCode() {
+        int result = identifier != null ? identifier.hashCode() : 0;
+        result = 31 * result + (publicationId != null ? publicationId.hashCode() : 0);
+        result = 31 * result + (publicationBucketUri != null ? publicationBucketUri.hashCode() : 0);
+        result = 31 * result + (applicable ? 1 : 0);
+        result = 31 * result + (instanceType != null ? instanceType.hashCode() : 0);
+        result = 31 * result + (level != null ? level.hashCode() : 0);
+        result = 31 * result + (publicationDate != null ? publicationDate.hashCode() : 0);
+        result = 31 * result + (internationalCollaboration ? 1 : 0);
+        result = 31 * result + (creators != null ? creators.hashCode() : 0);
+        result = 31 * result + (approvals != null ? approvals.hashCode() : 0);
+        result = 31 * result + (notes != null ? notes.hashCode() : 0);
+        result = 31 * result + (points != null ? points.hashCode() : 0);
+        result = 31 * result + (periodStatus != null ? periodStatus.hashCode() : 0);
+        return result;
     }
 
     private static PeriodStatus calculatePeriodStatusIfApplicable(PeriodRepository periodRepository,

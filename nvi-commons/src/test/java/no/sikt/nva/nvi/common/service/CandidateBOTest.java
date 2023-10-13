@@ -35,14 +35,14 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
-import no.sikt.nva.nvi.common.service.requests.UpdateAssigneeRequest;
-import no.sikt.nva.nvi.common.service.requests.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.model.business.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
+import no.sikt.nva.nvi.common.service.requests.UpdateAssigneeRequest;
+import no.sikt.nva.nvi.common.service.requests.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import nva.commons.core.Environment;
@@ -99,7 +99,8 @@ class CandidateBOTest extends LocalDynamoTest {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
         var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
-        var fetchedCandidate = CandidateBO.fromRequest(candidate::getPublicationId, candidateRepository, periodRepository);
+        var fetchedCandidate = CandidateBO.fromRequest(candidate::getPublicationId, candidateRepository,
+                                                       periodRepository);
         assertThat(fetchedCandidate.identifier(), is(equalTo(candidate.identifier())));
     }
 
@@ -121,8 +122,8 @@ class CandidateBOTest extends LocalDynamoTest {
                                                          null, null, null, 0, null, null,
                                                          institutionToApprove, randomUri(), institutionToReject);
         var candidateBO = CandidateBO.fromRequest(createRequest, candidateRepository, periodRepository).orElseThrow();
-        candidateBO.createNote(createNoteRequest(randomString(), randomString()), candidateRepository)
-            .createNote(createNoteRequest(randomString(), randomString()), candidateRepository)
+        candidateBO.createNote(createNoteRequest(randomString(), randomString()))
+            .createNote(createNoteRequest(randomString(), randomString()))
             .updateApproval(createUpdateStatusRequest(DbStatus.APPROVED, institutionToApprove, randomString()))
             .updateApproval(createUpdateStatusRequest(DbStatus.REJECTED, institutionToReject, randomString()));
         var dto = candidateBO.toDto();

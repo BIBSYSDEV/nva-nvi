@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.model.business;
 import static java.util.Objects.isNull;
 import java.net.URI;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
@@ -27,6 +28,27 @@ public class ApprovalBO {
         this.repository = repository;
         this.identifier = identifier;
         this.original = dbApprovalStatus;
+    }
+
+    @Override
+    @JacocoGenerated
+    public int hashCode() {
+        return original != null ? original.hashCode() : 0;
+    }
+
+    @Override
+    @JacocoGenerated
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        ApprovalBO that = (ApprovalBO) o;
+
+        return Objects.equals(original, that.original);
     }
 
     public URI institutionId() {
