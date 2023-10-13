@@ -14,6 +14,7 @@ import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
 import no.sikt.nva.nvi.utils.RequestUtil;
+import no.sikt.nva.nvi.utils.exception.NotApplicableException;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -46,6 +47,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         var username = RequestUtil.getUsername(requestInfo);
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
         return attempt(() -> CandidateBO.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository))
+                   .map(this::checkIfApplicable)
                    .map(candidate -> candidate.createNote(new CreateNoteRequest(input.text(), username.value())))
                    .map(CandidateBO::toDto)
                    .orElseThrow(ExceptionMapper::map);
@@ -54,6 +56,13 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
     @Override
     protected Integer getSuccessStatusCode(NviNoteRequest input, CandidateDto output) {
         return HttpURLConnection.HTTP_OK;
+    }
+
+    private CandidateBO checkIfApplicable(CandidateBO candidate) {
+        if (candidate.isApplicable()) {
+            return candidate;
+        }
+        throw new NotApplicableException();
     }
 
     private void validate(NviNoteRequest input) throws BadRequestException {

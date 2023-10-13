@@ -49,12 +49,11 @@ public final class TestUtils {
     public static final int SCALE = 10;
     public static final BigDecimal MIN_BIG_DECIMAL = BigDecimal.ZERO;
     public static final BigDecimal MAX_BIG_DECIMAL = BigDecimal.TEN;
+    public static final int CURRENT_YEAR = Year.now().getValue();
     private static final String BUCKET_HOST = "example.org";
     private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
     private static final String PUBLICATION_API_PATH = "publication";
     private static final String API_HOST = "example.com";
-
-    public static final int CURRENT_YEAR = Year.now().getValue();
 
     private TestUtils() {
     }
@@ -151,7 +150,7 @@ public final class TestUtils {
         var nviPeriodRepository = mock(PeriodRepository.class);
         var nviService = new NviService(nviPeriodRepository, new CandidateRepository(client));
         var period = DbNviPeriod.builder().publishingYear(String.valueOf(year)).startDate(Instant.now())
-                .reportingDate(Instant.now()).build();
+                         .reportingDate(Instant.now()).build();
         when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
         return nviService;
     }
@@ -273,7 +272,7 @@ public final class TestUtils {
 
             @Override
             public PublicationDate publicationDate() {
-                return new PublicationDate(String.valueOf(ZonedDateTime.now().getYear()), null, null);
+                return new PublicationDate(String.valueOf(CURRENT_YEAR), null, null);
             }
 
             @Override
