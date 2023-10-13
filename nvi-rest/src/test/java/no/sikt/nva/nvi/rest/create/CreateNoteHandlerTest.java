@@ -14,12 +14,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.time.ZonedDateTime;
+import java.time.Year;
 import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.business.CandidateBO;
+import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
@@ -34,7 +35,7 @@ import org.zalando.problem.Problem;
 
 public class CreateNoteHandlerTest extends LocalDynamoTest {
 
-    public static final int YEAR = ZonedDateTime.now().getYear();
+    public static final int YEAR = Year.now().getValue();
     private Context context;
     private ByteArrayOutputStream output;
     private CreateNoteHandler handler;
@@ -97,6 +98,20 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
         assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_CONFLICT)));
+    }
+
+    @Test
+    void shouldReturn405NotAllowedWhenAddingNoteToNonCandidate() throws IOException {
+        var candidateBO = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
+                                                  candidateRepository, periodRepository).orElseThrow();
+        var nonCandidate = CandidateBO.fromRequest(
+            createUpsertCandidateRequest(candidateBO.publicationId(), false, 0, InstanceType.NON_CANDIDATE),
+            candidateRepository, periodRepository).orElseThrow();
+        var request = createRequest(nonCandidate.identifier(), randomNote(), randomString());
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_BAD_METHOD)));
     }
 
     private InputStream createRequest(UUID identifier, NviNoteRequest body, String userName)

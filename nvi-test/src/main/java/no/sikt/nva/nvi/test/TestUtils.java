@@ -293,7 +293,7 @@ public final class TestUtils {
 
             @Override
             public PublicationDate publicationDate() {
-                return new PublicationDate(String.valueOf(ZonedDateTime.now().getYear()), null, null);
+                return new PublicationDate(String.valueOf(CURRENT_YEAR), null, null);
             }
 
             @Override
