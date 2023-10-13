@@ -14,6 +14,7 @@ import no.sikt.nva.nvi.common.model.business.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
 import no.sikt.nva.nvi.utils.RequestUtil;
+import no.sikt.nva.nvi.utils.exception.NotApplicableException;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
