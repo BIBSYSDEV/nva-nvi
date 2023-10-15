@@ -162,6 +162,12 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     private void addDocumentToIndex(CandidateBO candidate) {
         attempt(() -> storageReader.read(candidate.getBucketUri()))
             .map(blob -> documentGenerator.generateDocument(blob, candidate))
+            .map(indexDocument -> {
+                LOGGER.info("Adding document to index, candidateId: {} publicationId: {}",
+                            indexDocument.identifier(),
+                            indexDocument.publicationDetails().id());
+                return indexDocument;
+            })
             .forEach(openSearchClient::addDocumentToIndex)
             .orElseThrow();
     }
