@@ -3,9 +3,8 @@ package no.sikt.nva.nvi.evaluator;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
-import no.sikt.nva.nvi.common.QueueClient;
 import no.sikt.nva.nvi.evaluator.aws.S3StorageReader;
-import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
+import no.sikt.nva.nvi.evaluator.aws.EvaluateNviCandidateSqsClient;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.evaluator.model.CandidateEvaluatedMessage;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
@@ -17,7 +16,6 @@ import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHandler<EventReference, Void> {
 
@@ -26,18 +24,18 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
     public static final String EVALUATION_MESSAGE = "Nvi candidacy has been evaluated for publication: {}. Type: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateNviCandidateHandler.class);
     private final EvaluatorService evaluatorService;
-    private final QueueClient<SendMessageResponse> queueClient;
+    private final EvaluateNviCandidateSqsClient queueClient;
 
     @JacocoGenerated
     public EvaluateNviCandidateHandler() {
         this(new EvaluatorService(new S3StorageReader(), new CandidateCalculator(
                  new AuthorizedBackendUriRetriever(BACKEND_CLIENT_AUTH_URL, BACKEND_CLIENT_SECRET_NAME))),
-             new SqsMessageClient()
+             new EvaluateNviCandidateSqsClient()
         );
     }
 
     public EvaluateNviCandidateHandler(EvaluatorService evaluatorService,
-                                       QueueClient<SendMessageResponse> queueClient) {
+                                       EvaluateNviCandidateSqsClient queueClient) {
         super(EventReference.class);
         this.evaluatorService = evaluatorService;
         this.queueClient = queueClient;

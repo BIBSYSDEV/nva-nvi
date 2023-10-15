@@ -53,6 +53,9 @@ Parameters:
   BatchScanDLQName:
     Type: String
     Default: BatchScanDLQ
+  UpdateIndexDLQName:
+    Type: String
+    Default: UpdateIndexDLQ
   SearchInfrastructureApiHost:
     Type: String
     Description: Host of external search infrastructure API (SWS).
@@ -97,6 +100,11 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref BatchScanDLQName
+  UpdateIndexDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref UpdateIndexDLQName
+      MessageRetentionPeriod: 43200
 
   #============================= Permissions =======================================================
   NvaNviRole:
@@ -136,6 +144,7 @@ Resources:
                   - !GetAtt NewCandidateQueue.Arn
                   - !GetAtt NewCandidateDLQ.Arn
                   - !GetAtt BatchScanDLQ.Arn
+                  - !GetAtt UpdateIndexDLQ.Arn
         - PolicyName: writeLog
           PolicyDocument:
             Version: 2012-10-17
@@ -263,8 +272,8 @@ Resources:
           BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
           BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-          CANDIDATE_QUEUE_NAME: !Ref NewCandidateQueueName
-          CANDIDATE_DLQ_NAME: !Ref NewCandidateDLQName
+          CANDIDATE_QUEUE_URL: !Ref NewCandidateQueue
+          CANDIDATE_DLQ_URL: !Ref NewCandidateDLQ
       AutoPublishAlias: live
       Events:
         EventBridgeEvent:
@@ -293,6 +302,7 @@ Resources:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
           BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
           BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
+          UPDATE_INDEX_DLQ_QUEUE_URL: !Ref UpdateIndexDLQ
       Events:
         FanoutSource:
           Type: DynamoDB

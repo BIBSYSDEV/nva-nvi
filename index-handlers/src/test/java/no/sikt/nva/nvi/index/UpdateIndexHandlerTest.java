@@ -15,7 +15,10 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
@@ -47,6 +50,8 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
+import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.ApprovalBO;
 import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.index.aws.SearchClient;
@@ -62,6 +67,7 @@ import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.commons.json.JsonUtils;
+import nva.commons.core.Environment;
 import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.logutils.LogUtils;
@@ -81,6 +87,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     private static final int POINTS_SCALE = 4;
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
+    public static final String DLQ_QUEUE_URL = "test_dlq_url";
     private UpdateIndexHandler handler;
     private TestAppender appender;
     private StorageReader<URI> storageReader;
@@ -89,17 +96,23 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private PeriodRepository periodRepository;
     private AuthorizedBackendUriRetriever uriRetriever;
     private NviCandidateIndexDocumentGenerator generator;
+    private QueueClient<NviSendMessageResponse> queueClient;
+    private Environment env;
 
     @BeforeEach
     void setup() {
+        env = mock(Environment.class);
+        when(env.readEnv("UPDATE_INDEX_DLQ_QUEUE_URL")).thenReturn(DLQ_QUEUE_URL);
+
         storageReader = mock(StorageReader.class);
         uriRetriever = mock(AuthorizedBackendUriRetriever.class);
         openSearchClient = new FakeSearchClient();
         candidateRepository = new CandidateRepository(initializeTestDatabase());
         periodRepository = new PeriodRepository(initializeTestDatabase());
         generator = new NviCandidateIndexDocumentGenerator(uriRetriever);
+        queueClient = mock(QueueClient.class);
         handler = new UpdateIndexHandler(storageReader, openSearchClient, candidateRepository, periodRepository,
-                                         generator);
+                                         generator, queueClient, env);
         appender = LogUtils.getTestingAppenderForRootLogger();
 
         when(uriRetriever.getRawContent(any(), any())).thenReturn(
@@ -143,6 +156,19 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         var expectedDocument = constructExpectedDocument(persistedCandidate);
 
         assertThat(document, is(equalTo(expectedDocument)));
+    }
+
+    @Test
+    void indexingFailureShouldBeAddedToDlq()
+        throws JsonProcessingException {
+        var persistedCandidate = randomApplicableCandidate();
+        mockRepositories(persistedCandidate);
+        Optional<CandidateDao> failingCandidateLookup = Optional.empty();
+        when(candidateRepository.findCandidateDaoById(any())).thenReturn(failingCandidateLookup);
+
+        handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
+
+        verify(queueClient, times(1)).sendMessage(any(String.class), eq(DLQ_QUEUE_URL));
     }
 
     @Test
@@ -310,7 +336,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         when(candidateRepository.findCandidateDaoById(any())).thenReturn(Optional.of(toDao(persistedCandidate)));
         when(candidateRepository.fetchApprovals(any())).thenReturn(getApproval(persistedCandidate));
         handler = new UpdateIndexHandler(storageReader, openSearchClient, candidateRepository, periodRepository,
-                                         generator);
+                                         generator, queueClient, env);
     }
 
     private CandidateDao toDao(CandidateBO candidate) {
