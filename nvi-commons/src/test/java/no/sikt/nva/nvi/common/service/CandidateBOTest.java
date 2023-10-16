@@ -15,7 +15,9 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.ZonedDateTime;
@@ -188,21 +190,21 @@ class CandidateBOTest extends LocalDynamoTest {
     }
 
     @Test
-    void toDtoShouldThrowCandidateNotFoundException() {
-        var institutionToReject = randomUri();
-        var institutionToApprove = randomUri();
-        var createRequest = createUpsertCandidateRequest(randomUri(), randomUri(), true,
-                                                         InstanceType.ACADEMIC_MONOGRAPH, 4,
-                                                         institutionToApprove, randomUri(), institutionToReject);
-        var tempCandidateBO = CandidateBO.fromRequest(createRequest, candidateRepository, periodRepository)
-                                  .orElseThrow();
-        var updateRequest = createUpsertCandidateRequest(tempCandidateBO.publicationId(), randomUri(), false,
-                                                         InstanceType.ACADEMIC_MONOGRAPH, 4,
-                                                         institutionToApprove,
-                                                         randomUri(), institutionToReject);
-        var candidateBO = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository).orElseThrow();
+    void shouldReturnTrueIfCandidateIsApplicable() {
+        var createRequest = createUpsertCandidateRequest(randomUri());
+        var candidate = CandidateBO.fromRequest(createRequest, candidateRepository, periodRepository).orElseThrow();
+        assertTrue(candidate.isApplicable());
+    }
 
-        assertThrows(CandidateNotFoundException.class, candidateBO::toDto);
+    @Test
+    void shouldReturnFalseIfCandidateIsNotApplicable() {
+        var createRequest = createUpsertCandidateRequest(randomUri());
+        var candidate = CandidateBO.fromRequest(createRequest, candidateRepository, periodRepository).orElseThrow();
+        var nonCandidate = CandidateBO.fromRequest(
+            createUpsertCandidateRequest(candidate.publicationId(), randomUri(), false,
+                                         InstanceType.ACADEMIC_MONOGRAPH, 4, randomUri()), candidateRepository,
+            periodRepository).orElseThrow();
+        assertFalse(nonCandidate.isApplicable());
     }
 
     @Test

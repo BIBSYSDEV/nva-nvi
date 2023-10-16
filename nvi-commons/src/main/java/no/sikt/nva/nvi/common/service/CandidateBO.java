@@ -132,18 +132,14 @@ public final class CandidateBO {
     }
 
     public CandidateDto toDto() {
-        if (isApplicable()) {
-            return CandidateDto.builder()
-                       .withId(constructId(identifier))
-                       .withIdentifier(identifier)
-                       .withPublicationId(candidateDao.candidate().publicationId())
-                       .withApprovalStatuses(mapToApprovalDtos())
-                       .withNotes(mapToNoteDtos())
-                       .withPeriodStatus(mapToPeriodStatusDto())
-                       .build();
-        } else {
-            throw new CandidateNotFoundException();
-        }
+        return CandidateDto.builder()
+                   .withId(constructId(identifier))
+                   .withIdentifier(identifier)
+                   .withPublicationId(candidateDao.candidate().publicationId())
+                   .withApprovalStatuses(mapToApprovalDtos())
+                   .withNotes(mapToNoteDtos())
+                   .withPeriodStatus(mapToPeriodStatusDto())
+                   .build();
     }
 
     public CandidateBO updateApproval(UpdateApprovalRequest input) {
