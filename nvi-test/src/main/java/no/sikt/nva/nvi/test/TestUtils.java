@@ -34,6 +34,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
@@ -222,7 +223,9 @@ public final class TestUtils {
                          .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal()));
 
         return createUpsertCandidateRequest(publicationId, isApplicable, creators, instanceType,
-                                            DbLevel.LEVEL_TWO, points, randomBoolean(), randomString(), randomInteger(),
+                                            DbLevel.LEVEL_TWO, points, randomBoolean(),
+                                            randomElement(ChannelType.values()).getValue(),
+                                            randomInteger(),
                                             randomUri(), randomUri(),
                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
                                             randomBigDecimal(), randomBigDecimal(), randomBigDecimal());

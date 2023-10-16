@@ -38,6 +38,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
@@ -111,22 +112,26 @@ class CandidateBOTest extends LocalDynamoTest {
         var candidate = CandidateBO.fromRequest(request, candidateRepository, periodRepository)
                             .orElseThrow();
         var expectedCandidate = new CandidateDao(candidate.identifier(),
-                                                    DbCandidate.builder()
-                                                        .publicationId(request.publicationId())
-                                                        .applicable(request.isApplicable())
-                                                        .instanceType(InstanceType.parse(request.instanceType()))
-                                                        .creators(mapToDbCreators(request.creators()))
-                                                        .internationalCollaboration(
-                                                            request.isInternationalCollaboration())
-                                                        .level(DbLevel.parse(request.level()))
-                                                        .points(mapToDbInstitutionPoints(request.institutionPoints()))
-                                                        .publicationBucketUri(request.publicationBucketUri())
-                                                        .publicationDate(
-                                                            mapToDbPublicationDate(request.publicationDate()))
-                                                        .build(), randomString()).candidate();
+                                                 DbCandidate.builder()
+                                                     .publicationId(request.publicationId())
+                                                     .publicationBucketUri(request.publicationBucketUri())
+                                                     .publicationDate(mapToDbPublicationDate(request.publicationDate()))
+                                                     .applicable(request.isApplicable())
+                                                     .instanceType(InstanceType.parse(request.instanceType()))
+                                                     .channelType(ChannelType.parse(request.channelType()))
+                                                     .channelId(request.channelId())
+                                                     .level(DbLevel.parse(request.level()))
+                                                     .basePoints(request.basePoints())
+                                                     .internationalCollaboration(request.isInternationalCollaboration())
+                                                     .collaborationFactor(request.collaborationFactor())
+                                                     .creators(mapToDbCreators(request.creators()))
+                                                     .creatorShareCount(request.creatorShareCount())
+                                                     .points(mapToDbInstitutionPoints(request.institutionPoints()))
+                                                     .totalPoints(request.totalPoints())
+                                                     .build(), randomString()).candidate();
         var actualPersistedCandidate = candidateRepository.findCandidateDaoById(candidate.identifier())
-                                     .orElseThrow()
-                                     .candidate();
+                                           .orElseThrow()
+                                           .candidate();
         assertEquals(expectedCandidate, actualPersistedCandidate);
     }
 
