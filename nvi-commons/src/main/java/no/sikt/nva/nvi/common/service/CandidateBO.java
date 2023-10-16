@@ -28,6 +28,7 @@ import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
@@ -51,10 +52,10 @@ import nva.commons.core.paths.UriWrapper;
 
 public final class CandidateBO {
 
-    public static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
-    public static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
-                                                           + " forbidden!";
-    public static final String DELETE_MESSAGE_ERROR = "Can not delete message you does not own!";
+    private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
+    private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
+                                                            + " forbidden!";
+    private static final String DELETE_MESSAGE_ERROR = "Can not delete message you does not own!";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
@@ -130,10 +131,6 @@ public final class CandidateBO {
         return candidateDao.candidate().publicationId();
     }
 
-    PeriodStatus periodStatus() {
-        return periodStatus;
-    }
-
     public CandidateDto toDto() {
         if (isApplicable()) {
             return CandidateDto.builder()
@@ -185,6 +182,10 @@ public final class CandidateBO {
     @JacocoGenerated
     public URI getBucketUri() {
         return candidateDao.candidate().publicationBucketUri();
+    }
+
+    PeriodStatus periodStatus() {
+        return periodStatus;
     }
 
     private static PeriodStatus calculatePeriodStatusIfApplicable(PeriodRepository periodRepository,
@@ -367,11 +368,17 @@ public final class CandidateBO {
                    .publicationBucketUri(request.publicationBucketUri())
                    .applicable(request.isApplicable())
                    .creators(mapToCreators(request.creators()))
+                   .creatorShareCount(request.creatorShareCount())
+                   .channelType(ChannelType.parse(request.channelType()))
+                   .channelId(request.channelId())
                    .level(DbLevel.parse(request.level()))
                    .instanceType(InstanceType.parse(request.instanceType()))
                    .publicationDate(mapToPublicationDate(request.publicationDate()))
-                   .points(mapToPoints(request.institutionPoints()))
                    .internationalCollaboration(request.isInternationalCollaboration())
+                   .collaborationFactor(request.collaborationFactor())
+                   .basePoints(request.basePoints())
+                   .points(mapToPoints(request.institutionPoints()))
+                   .totalPoints(request.totalPoints())
                    .build();
     }
 

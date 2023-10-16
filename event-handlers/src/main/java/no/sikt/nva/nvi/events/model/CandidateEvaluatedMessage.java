@@ -58,11 +58,19 @@ public record CandidateEvaluatedMessage(
 
     @Override
     public String channelType() {
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            return nviCandidate.channelType();
+        }
         return null;
     }
 
     @Override
     public URI channelId() {
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            return nviCandidate.publicationChannelId();
+        }
         return null;
     }
 
@@ -94,6 +102,38 @@ public record CandidateEvaluatedMessage(
     }
 
     @Override
+    public int creatorCount() {
+        return 0;
+    }
+
+    @Override
+    public int creatorShareCount() {
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            return nviCandidate.creatorShareCount();
+        }
+        return 0;
+    }
+
+    @Override
+    public BigDecimal collaborationFactor() {
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            return nviCandidate.collaborationFactor();
+        }
+        return null;
+    }
+
+    @Override
+    public BigDecimal basePoints() {
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            return nviCandidate.basePoints();
+        }
+        return null;
+    }
+
+    @Override
     public Map<URI, BigDecimal> institutionPoints() {
         if (isNviCandidate()) {
             var nviCandidate = (NviCandidate) candidate;
@@ -104,26 +144,10 @@ public record CandidateEvaluatedMessage(
 
     @Override
     public BigDecimal totalPoints() {
-        return null;
-    }
-
-    @Override
-    public int creatorCount() {
-        return 0;
-    }
-
-    @Override
-    public int creatorShareCount() {
-        return 0;
-    }
-
-    @Override
-    public BigDecimal collaborationFactor() {
-        return null;
-    }
-
-    @Override
-    public BigDecimal basePoints() {
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            return nviCandidate.totalPoints();
+        }
         return null;
     }
 

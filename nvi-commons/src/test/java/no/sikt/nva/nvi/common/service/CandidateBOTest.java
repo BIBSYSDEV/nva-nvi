@@ -107,7 +107,7 @@ class CandidateBOTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldSaveCandidateWithCorrectData() {
+    void shouldSaveCandidateWithCorrectDataFromUpsertRequest() {
         var request = createUpsertCandidateRequest(randomUri());
         var candidate = CandidateBO.fromRequest(request, candidateRepository, periodRepository)
                             .orElseThrow();
