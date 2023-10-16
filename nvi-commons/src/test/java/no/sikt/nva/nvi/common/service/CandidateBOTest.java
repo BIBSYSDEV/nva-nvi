@@ -14,6 +14,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -113,7 +114,6 @@ class CandidateBOTest extends LocalDynamoTest {
                                                     DbCandidate.builder()
                                                         .publicationId(request.publicationId())
                                                         .applicable(request.isApplicable())
-                                                        .creatorCount(request.creatorCount())
                                                         .instanceType(InstanceType.parse(request.instanceType()))
                                                         .creators(mapToDbCreators(request.creators()))
                                                         .internationalCollaboration(
@@ -127,7 +127,7 @@ class CandidateBOTest extends LocalDynamoTest {
         var actualPersistedCandidate = candidateRepository.findCandidateDaoById(candidate.identifier())
                                      .orElseThrow()
                                      .candidate();
-        assertThat(expectedCandidate, is(equalTo(actualPersistedCandidate.internationalCollaboration())));
+        assertEquals(expectedCandidate, actualPersistedCandidate);
     }
 
     @Test

@@ -371,6 +371,7 @@ public final class CandidateBO {
                    .instanceType(InstanceType.parse(request.instanceType()))
                    .publicationDate(mapToPublicationDate(request.publicationDate()))
                    .points(mapToPoints(request.institutionPoints()))
+                   .internationalCollaboration(request.isInternationalCollaboration())
                    .build();
     }
 

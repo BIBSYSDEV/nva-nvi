@@ -38,6 +38,10 @@ public record CandidateEvaluatedMessage(
 
     @Override
     public boolean isInternationalCollaboration() {
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            return nviCandidate.isInternationalCollaboration();
+        }
         return false;
     }
 
