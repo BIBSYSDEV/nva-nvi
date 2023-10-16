@@ -103,9 +103,10 @@ class CandidateBOTest extends LocalDynamoTest {
     void shouldReturnCandidateWhenExists() {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
         var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
-                            .orElseThrow();
-        var fetchedCandidate = CandidateBO.fromRequest(candidate::identifier, candidateRepository, periodRepository);
-        assertThat(fetchedCandidate.identifier(), is(equalTo(candidate.identifier())));
+                            .orElseThrow().toDto();
+        var fetchedCandidate = CandidateBO.fromRequest(candidate::identifier, candidateRepository, periodRepository)
+                                   .toDto();
+        assertThat(fetchedCandidate, is(equalTo(candidate)));
     }
 
     @Test

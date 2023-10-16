@@ -66,20 +66,26 @@ public final class CandidateBO {
                                                                     .build();
     private final CandidateRepository repository;
     private final UUID identifier;
-    private final CandidateDao candidateDao;
+    private final URI publicationId;
+    private final URI publicationBucketUri;
+    private final boolean applicable;
     private final Map<URI, ApprovalBO> approvals;
     private final Map<UUID, NoteBO> notes;
-    private final Map<URI, BigDecimal> points;
+    private final Map<URI, BigDecimal> institutionPoints;
+    private final BigDecimal totalPoints;
     private final PeriodStatus periodStatus;
 
     private CandidateBO(CandidateRepository repository, CandidateDao candidateDao, List<ApprovalStatusDao> approvals,
                         List<NoteDao> notes, PeriodStatus periodStatus) {
         this.repository = repository;
         this.identifier = candidateDao.identifier();
-        this.candidateDao = candidateDao;
+        this.publicationId = candidateDao.candidate().publicationId();
+        this.publicationBucketUri = candidateDao.candidate().publicationBucketUri();
+        this.applicable = candidateDao.candidate().applicable();
         this.approvals = mapToApprovalsMap(repository, approvals);
         this.notes = mapToNotesMap(repository, notes);
-        this.points = mapToPointsMap(candidateDao);
+        this.institutionPoints = mapToPointsMap(candidateDao);
+        this.totalPoints = candidateDao.candidate().totalPoints();
         this.periodStatus = periodStatus;
     }
 
@@ -117,6 +123,10 @@ public final class CandidateBO {
         return Optional.empty();
     }
 
+    public BigDecimal getTotalPoints() {
+        return totalPoints;
+    }
+
     @JacocoGenerated
     public Map<URI, ApprovalBO> getApprovals() {
         return new HashMap<>(approvals);
@@ -128,14 +138,14 @@ public final class CandidateBO {
     }
 
     public URI publicationId() {
-        return candidateDao.candidate().publicationId();
+        return publicationId;
     }
 
     public CandidateDto toDto() {
         return CandidateDto.builder()
                    .withId(constructId(identifier))
                    .withIdentifier(identifier)
-                   .withPublicationId(candidateDao.candidate().publicationId())
+                   .withPublicationId(publicationId)
                    .withApprovalStatuses(mapToApprovalDtos())
                    .withNotes(mapToNoteDtos())
                    .withPeriodStatus(mapToPeriodStatusDto())
@@ -167,17 +177,17 @@ public final class CandidateBO {
     }
 
     public boolean isApplicable() {
-        return candidateDao.candidate().applicable();
+        return applicable;
     }
 
     @JacocoGenerated
-    public List<DbInstitutionPoints> getPoints() {
-        return candidateDao.candidate().points();
+    public Map<URI, BigDecimal> getInstitutionPoints() {
+        return institutionPoints;
     }
 
     @JacocoGenerated
     public URI getBucketUri() {
-        return candidateDao.candidate().publicationBucketUri();
+        return publicationBucketUri;
     }
 
     PeriodStatus periodStatus() {
@@ -467,7 +477,7 @@ public final class CandidateBO {
                    .withAssignee(mapToUsernameString(approval.assignee()))
                    .withFinalizedBy(mapToUsernameString(approval.finalizedBy()))
                    .withFinalizedDate(approval.finalizedDate())
-                   .withPoints(points.get(approval.institutionId()))
+                   .withPoints(institutionPoints.get(approval.institutionId()))
                    .withReason(approval.reason())
                    .build();
     }

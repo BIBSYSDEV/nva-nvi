@@ -20,7 +20,6 @@ import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
-import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.util.List;
@@ -30,7 +29,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.ApprovalBO;
 import no.sikt.nva.nvi.common.service.CandidateBO;
@@ -72,7 +70,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withApprovals(approvals)
                    .withPublicationDetails(extractPublicationDetails(resource))
                    .withNumberOfApprovals(approvals.size())
-                   .withPoints(sumPoints(candidate.getPoints()))
+                   .withPoints(candidate.getTotalPoints())
                    .build();
     }
 
@@ -81,13 +79,6 @@ public final class NviCandidateIndexDocumentGenerator {
                    .stream()
                    .map(approvalBO -> approvalBO.approval().approvalStatus())
                    .collect(Collectors.toList());
-    }
-
-    private BigDecimal sumPoints(List<DbInstitutionPoints> points) {
-        return points.stream()
-                   .map(DbInstitutionPoints::points)
-                   .reduce(BigDecimal.ZERO, BigDecimal::add)
-                   .setScale(POINTS_SCALE, ROUNDING_MODE);
     }
 
     private List<Approval> createApprovals(JsonNode resource, List<DbApprovalStatus> approvals) {

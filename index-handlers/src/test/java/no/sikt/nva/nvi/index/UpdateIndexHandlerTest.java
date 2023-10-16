@@ -24,8 +24,6 @@ import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeVal
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.StreamRecord;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -66,6 +64,7 @@ import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -79,8 +78,6 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private static final String CANDIDATE = IoUtils.stringFromResources(Path.of("candidate.json"));
     private static final URI INSTITUTION_ID_FROM_EVENT = URI.create(
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
-    private static final int POINTS_SCALE = 4;
-    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private UpdateIndexHandler handler;
     private TestAppender appender;
     private StorageReader<URI> storageReader;
@@ -250,7 +247,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         return new PublicationDetails(
             "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
             "AcademicArticle", "Demo nvi candidate", new PublicationDate("2023", "6", "4"), List.of(
-                new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
+            new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
                 .withName("Mona Ullah")
                 .withRole("Creator")
                 .withAffiliations(List.of(constructAffiliation()))
@@ -261,7 +258,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         return new PublicationDetails(
             "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
             "AcademicArticle", "Demo nvi candidate", publicationDate, List.of(
-                new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
+            new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
                 .withName("Mona Ullah")
                 .withRole("Creator")
                 .withAffiliations(List.of(constructAffiliation()))
@@ -303,6 +300,16 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .withNewImage(Map.of(randomString(), new AttributeValue(randomString())));
     }
 
+    @NotNull
+    private static List<DbInstitutionPoints> mapToInstitutionPoints(CandidateBO candidate) {
+        return candidate.getInstitutionPoints()
+                   .entrySet()
+                   .stream()
+                   .map(institutionPoints -> new DbInstitutionPoints(institutionPoints.getKey(),
+                                                                     institutionPoints.getValue()))
+                   .toList();
+    }
+
     private void mockRepositories(CandidateBO persistedCandidate) {
         candidateRepository = mock(CandidateRepository.class);
         periodRepository = mock(PeriodRepository.class);
@@ -318,7 +325,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .identifier(candidate.identifier())
                    .candidate(DbCandidate.builder()
                                   .publicationId(candidate.publicationId())
-                                  .points(candidate.getPoints())
+                                  .points(mapToInstitutionPoints(candidate))
                                   .applicable(candidate.isApplicable())
                                   .creatorCount(1)
                                   .instanceType(InstanceType.ACADEMIC_ARTICLE)
@@ -362,7 +369,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .withApprovals(constructExpectedApprovals(candidate.getApprovals()))
                    .withPublicationDetails(constructPublicationDetails())
                    .withNumberOfApprovals(candidate.getApprovals().size())
-                   .withPoints(sumPoint(candidate.getPoints()))
+                   .withPoints(candidate.getTotalPoints())
                    .build();
     }
 
@@ -374,15 +381,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .withApprovals(constructExpectedApprovals(candidate.getApprovals()))
                    .withPublicationDetails(constructPublicationDetailsWithPublicationDate(publicationDate))
                    .withNumberOfApprovals(candidate.getApprovals().size())
-                   .withPoints(sumPoint(candidate.getPoints()))
+                   .withPoints(candidate.getTotalPoints())
                    .build();
-    }
-
-    private BigDecimal sumPoint(List<DbInstitutionPoints> points) {
-        return points.stream()
-                   .map(DbInstitutionPoints::points)
-                   .reduce(BigDecimal.ZERO, BigDecimal::add)
-                   .setScale(POINTS_SCALE, ROUNDING_MODE);
     }
 
     private static class FakeSearchClient implements SearchClient<NviCandidateIndexDocument> {
