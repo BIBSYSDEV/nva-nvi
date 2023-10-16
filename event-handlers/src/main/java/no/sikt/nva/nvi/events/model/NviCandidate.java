@@ -6,12 +6,15 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
 public record NviCandidate(URI publicationId,
+                           URI publicationBucketUri,
                            String instanceType,
-                           PublicationDate publicationDate,
+                           PublicationDate date,
                            List<Creator> verifiedCreators,
                            String channelType,
                            URI publicationChannelId,
@@ -21,10 +24,32 @@ public record NviCandidate(URI publicationId,
                            BigDecimal collaborationFactor,
                            int creatorShareCount,
                            Map<URI, BigDecimal> institutionPoints,
-                           BigDecimal totalPoints) implements CandidateType {
+                           BigDecimal totalPoints) implements CandidateType, UpsertCandidateRequest {
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    @Override
+    public boolean isApplicable() {
+        return true;
+    }
+
+    @Override
+    public Map<URI, List<URI>> creators() {
+        return verifiedCreators().stream().collect(Collectors.toMap(Creator::id, Creator::nviInstitutions));
+    }
+
+    @Override
+    public no.sikt.nva.nvi.common.service.requests.PublicationDate publicationDate() {
+        return mapToPublicationDate(date);
+    }
+
+    private static no.sikt.nva.nvi.common.service.requests.PublicationDate mapToPublicationDate(
+        PublicationDate publicationDate) {
+        return new no.sikt.nva.nvi.common.service.requests.PublicationDate(publicationDate.year(),
+                                                                           publicationDate.month(),
+                                                                           publicationDate.day());
     }
 
     public record Creator(URI id,
@@ -41,8 +66,9 @@ public record NviCandidate(URI publicationId,
     public static final class Builder {
 
         private URI publicationId;
+        private URI publicationBucketUri;
         private String instanceType;
-        private PublicationDate publicationDate;
+        private PublicationDate date;
         private List<Creator> verifiedCreators;
         private String channelType;
         private URI publicationChannelId;
@@ -62,13 +88,18 @@ public record NviCandidate(URI publicationId,
             return this;
         }
 
+        public Builder withPublicationBucketUri(URI publicationBucketUri) {
+            this.publicationBucketUri = publicationBucketUri;
+            return this;
+        }
+
         public Builder withInstanceType(String instanceType) {
             this.instanceType = instanceType;
             return this;
         }
 
-        public Builder withPublicationDate(PublicationDate publicationDate) {
-            this.publicationDate = publicationDate;
+        public Builder withPublicationDate(PublicationDate date) {
+            this.date = date;
             return this;
         }
 
@@ -123,8 +154,8 @@ public record NviCandidate(URI publicationId,
         }
 
         public NviCandidate build() {
-            return new NviCandidate(publicationId, instanceType, publicationDate, verifiedCreators, channelType,
-                                    publicationChannelId, level, basePoints, isInternationalCollaboration,
+            return new NviCandidate(publicationId, publicationBucketUri, instanceType, date, verifiedCreators,
+                                    channelType, publicationChannelId, level, basePoints, isInternationalCollaboration,
                                     collaborationFactor, creatorShareCount, institutionPoints, totalPoints);
         }
     }

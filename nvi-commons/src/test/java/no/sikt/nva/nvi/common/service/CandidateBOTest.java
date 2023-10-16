@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.service;
 import static no.sikt.nva.nvi.test.TestUtils.createNoteRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -143,10 +144,9 @@ class CandidateBOTest extends LocalDynamoTest {
 
     @Test
     void shouldDoNothingIfCreateRequestIsForNonCandidateThatDoesNotExist() {
-        var updateRequest = createUpsertCandidateRequest(randomUri(), randomUri(), false, InstanceType.NON_CANDIDATE, 2,
-                                                         randomUri());
+        var updateRequest = createUpsertNonCandidateRequest(randomUri());
 
-        var optionalCandidate = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository);
+        var optionalCandidate = CandidateBO.fromRequest(updateRequest, candidateRepository);
         assertThat(optionalCandidate, is(equalTo(Optional.empty())));
     }
 
@@ -329,7 +329,7 @@ class CandidateBOTest extends LocalDynamoTest {
                                     .applicable(request.isApplicable())
                                     .instanceType(InstanceType.parse(request.instanceType()))
                                     .channelType(ChannelType.parse(request.channelType()))
-                                    .channelId(request.channelId())
+                                    .channelId(request.publicationChannelId())
                                     .level(DbLevel.parse(request.level()))
                                     .basePoints(request.basePoints())
                                     .internationalCollaboration(request.isInternationalCollaboration())
@@ -389,7 +389,7 @@ class CandidateBOTest extends LocalDynamoTest {
             }
 
             @Override
-            public URI channelId() {
+            public URI publicationChannelId() {
                 return null;
             }
 

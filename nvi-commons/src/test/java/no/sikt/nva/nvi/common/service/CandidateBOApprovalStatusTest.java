@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.service;
 
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningNotOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
@@ -169,10 +170,8 @@ public class CandidateBOApprovalStatusTest extends LocalDynamoTest {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
         var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
-        var updateRequest = createUpsertCandidateRequest(candidate.toDto().publicationId(),
-                                                         randomUri(), false, InstanceType.ACADEMIC_MONOGRAPH, 2,
-                                                         randomUri());
-        var updatedCandidate = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository)
+        var updateRequest = createUpsertNonCandidateRequest(candidate.toDto().publicationId());
+        var updatedCandidate = CandidateBO.fromRequest(updateRequest, candidateRepository)
                                    .orElseThrow();
         assertThat(updatedCandidate.identifier(), is(equalTo(candidate.identifier())));
         assertThat(updatedCandidate.getApprovals().size(), is(equalTo(0)));

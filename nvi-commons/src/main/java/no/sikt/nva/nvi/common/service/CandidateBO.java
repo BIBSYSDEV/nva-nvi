@@ -46,6 +46,7 @@ import no.sikt.nva.nvi.common.service.requests.FetchByPublicationRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import no.sikt.nva.nvi.common.service.requests.UpsertNonCandidateRequest;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
@@ -105,13 +106,17 @@ public final class CandidateBO {
 
     public static Optional<CandidateBO> fromRequest(UpsertCandidateRequest request, CandidateRepository repository,
                                                     PeriodRepository periodRepository) {
-        if (isNewCandidate(request, repository)) {
+        if (isNotExistingCandidate(request, repository)) {
             return Optional.of(createCandidate(request, repository, periodRepository));
         }
-        if (shouldBeUpdated(request, repository)) {
+        if (isExistingCandidate(request.publicationId(), repository)) {
             return Optional.of(updateCandidate(request, repository, periodRepository));
         }
-        if (shouldBeDeleted(request, repository)) {
+        return Optional.empty();
+    }
+
+    public static Optional<CandidateBO> fromRequest(UpsertNonCandidateRequest request, CandidateRepository repository) {
+        if (isExistingCandidate(request.publicationId(), repository)) {
             return Optional.of(deleteCandidate(request, repository));
         }
         return Optional.empty();
@@ -196,30 +201,18 @@ public final class CandidateBO {
                    : PERIOD_STATUS_NO_PERIOD;
     }
 
-    private static boolean shouldBeDeleted(UpsertCandidateRequest request, CandidateRepository repository) {
-        return !request.isApplicable() && isExistingCandidate(request, repository);
-    }
-
-    private static boolean shouldBeUpdated(UpsertCandidateRequest request, CandidateRepository repository) {
-        return request.isApplicable() && isExistingCandidate(request, repository);
-    }
-
-    private static boolean isNewCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
-        return request.isApplicable() && isNotExistingCandidate(request, repository);
-    }
-
     private static boolean isNotExistingCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
-        return !isExistingCandidate(request, repository);
+        return !isExistingCandidate(request.publicationId(), repository);
     }
 
     private static boolean isNotNoteOwner(String username, NoteDao dao) {
         return !dao.note().user().value().equals(username);
     }
 
-    private static CandidateBO deleteCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
+    private static CandidateBO deleteCandidate(UpsertNonCandidateRequest request, CandidateRepository repository) {
         var existingCandidateDao = repository.findByPublicationIdDao(request.publicationId())
                                        .orElseThrow(CandidateNotFoundException::new);
-        var nonApplicableCandidate = updateCandidateToNonApplicable(existingCandidateDao, request);
+        var nonApplicableCandidate = updateCandidateToNonApplicable(existingCandidateDao);
         repository.updateCandidateAndRemovingApprovals(existingCandidateDao.identifier(), nonApplicableCandidate);
 
         return new CandidateBO(repository, nonApplicableCandidate, Collections.emptyList(), Collections.emptyList(),
@@ -370,7 +363,7 @@ public final class CandidateBO {
                    .creators(mapToCreators(request.creators()))
                    .creatorShareCount(request.creatorShareCount())
                    .channelType(ChannelType.parse(request.channelType()))
-                   .channelId(request.channelId())
+                   .channelId(request.publicationChannelId())
                    .level(DbLevel.parse(request.level()))
                    .instanceType(InstanceType.parse(request.instanceType()))
                    .publicationDate(mapToPublicationDate(request.publicationDate()))
@@ -391,7 +384,7 @@ public final class CandidateBO {
                                   .creators(mapToCreators(request.creators()))
                                   .creatorShareCount(request.creatorShareCount())
                                   .channelType(ChannelType.parse(request.channelType()))
-                                  .channelId(request.channelId())
+                                  .channelId(request.publicationChannelId())
                                   .level(DbLevel.parse(request.level()))
                                   .instanceType(InstanceType.parse(request.instanceType()))
                                   .publicationDate(mapToPublicationDate(request.publicationDate()))
@@ -421,14 +414,13 @@ public final class CandidateBO {
         return creators.entrySet().stream().map(e -> new DbCreator(e.getKey(), e.getValue())).toList();
     }
 
-    private static boolean isExistingCandidate(UpsertCandidateRequest publicationId, CandidateRepository repository) {
-        return repository.findByPublicationId(publicationId.publicationId()).isPresent();
+    private static boolean isExistingCandidate(URI publicationId, CandidateRepository repository) {
+        return repository.findByPublicationId(publicationId).isPresent();
     }
 
-    private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao,
-                                                               UpsertCandidateRequest request) {
+    private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao) {
         return candidateDao.copy()
-                   .candidate(candidateDao.candidate().copy().applicable(request.isApplicable()).build())
+                   .candidate(candidateDao.candidate().copy().applicable(false).build())
                    .build();
     }
 

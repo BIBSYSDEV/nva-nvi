@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.rest.fetch;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -13,12 +14,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -88,14 +87,11 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     private CandidateBO setUpNonApplicableCandidate() {
-        URI institutionId = randomUri();
         var candidate =
-            CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository, periodRepository)
                 .orElseThrow();
-        return CandidateBO.fromRequest(createUpsertCandidateRequest(candidate.publicationId(),
-                                                                    randomUri(), false, InstanceType.NON_CANDIDATE, 0,
-                                                                    institutionId),
-                                       candidateRepository, periodRepository).orElseThrow();
+        return CandidateBO.fromRequest(createUpsertNonCandidateRequest(candidate.publicationId()), candidateRepository)
+                   .orElseThrow();
     }
 
     private GatewayResponse<CandidateDto> getGatewayResponse()

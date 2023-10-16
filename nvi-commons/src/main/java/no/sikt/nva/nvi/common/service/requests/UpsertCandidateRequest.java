@@ -19,7 +19,7 @@ public interface UpsertCandidateRequest {
 
     String channelType();
 
-    URI channelId();
+    URI publicationChannelId();
 
     String level();
 
