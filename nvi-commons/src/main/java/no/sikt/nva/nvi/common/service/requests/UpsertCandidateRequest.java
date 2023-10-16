@@ -13,9 +13,13 @@ public interface UpsertCandidateRequest {
 
     boolean isApplicable();
 
-    boolean isInternationalCooperation();
+    boolean isInternationalCollaboration();
 
     Map<URI, List<URI>> creators();
+
+    String channelType();
+
+    URI channelId();
 
     String level();
 
@@ -23,7 +27,13 @@ public interface UpsertCandidateRequest {
 
     PublicationDate publicationDate();
 
-    Map<URI, BigDecimal> points();
+    int creatorShareCount();
 
-    int creatorCount();
+    BigDecimal collaborationFactor();
+
+    BigDecimal basePoints();
+
+    Map<URI, BigDecimal> institutionPoints();
+
+    BigDecimal totalPoints();
 }

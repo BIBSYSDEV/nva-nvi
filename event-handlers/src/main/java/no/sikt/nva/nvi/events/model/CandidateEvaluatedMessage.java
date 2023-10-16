@@ -37,7 +37,11 @@ public record CandidateEvaluatedMessage(
     }
 
     @Override
-    public boolean isInternationalCooperation() {
+    public boolean isInternationalCollaboration() {
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            return nviCandidate.isInternationalCollaboration();
+        }
         return false;
     }
 
@@ -50,6 +54,24 @@ public record CandidateEvaluatedMessage(
                        .collect(Collectors.toMap(Creator::id, Creator::nviInstitutions));
         }
         return Collections.emptyMap();
+    }
+
+    @Override
+    public String channelType() {
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            return nviCandidate.channelType();
+        }
+        return null;
+    }
+
+    @Override
+    public URI channelId() {
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            return nviCandidate.publicationChannelId();
+        }
+        return null;
     }
 
     @Override
@@ -80,7 +102,34 @@ public record CandidateEvaluatedMessage(
     }
 
     @Override
-    public Map<URI, BigDecimal> points() {
+    public int creatorShareCount() {
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            return nviCandidate.creatorShareCount();
+        }
+        return 0;
+    }
+
+    @Override
+    public BigDecimal collaborationFactor() {
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            return nviCandidate.collaborationFactor();
+        }
+        return null;
+    }
+
+    @Override
+    public BigDecimal basePoints() {
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            return nviCandidate.basePoints();
+        }
+        return null;
+    }
+
+    @Override
+    public Map<URI, BigDecimal> institutionPoints() {
         if (isNviCandidate()) {
             var nviCandidate = (NviCandidate) candidate;
             return nviCandidate.institutionPoints();
@@ -89,8 +138,12 @@ public record CandidateEvaluatedMessage(
     }
 
     @Override
-    public int creatorCount() {
-        return 0;
+    public BigDecimal totalPoints() {
+        if (isNviCandidate()) {
+            var nviCandidate = (NviCandidate) candidate;
+            return nviCandidate.totalPoints();
+        }
+        return null;
     }
 
     private static PublicationDate mapToPublicationDate(NviCandidate.PublicationDate publicationDate) {

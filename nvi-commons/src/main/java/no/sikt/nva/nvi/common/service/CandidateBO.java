@@ -28,6 +28,7 @@ import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
@@ -51,10 +52,10 @@ import nva.commons.core.paths.UriWrapper;
 
 public final class CandidateBO {
 
-    public static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
-    public static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
-                                                           + " forbidden!";
-    public static final String DELETE_MESSAGE_ERROR = "Can not delete message you does not own!";
+    private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
+    private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
+                                                            + " forbidden!";
+    private static final String DELETE_MESSAGE_ERROR = "Can not delete message you does not own!";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
@@ -130,10 +131,6 @@ public final class CandidateBO {
         return candidateDao.candidate().publicationId();
     }
 
-    PeriodStatus periodStatus() {
-        return periodStatus;
-    }
-
     public CandidateDto toDto() {
         if (isApplicable()) {
             return CandidateDto.builder()
@@ -185,6 +182,10 @@ public final class CandidateBO {
     @JacocoGenerated
     public URI getBucketUri() {
         return candidateDao.candidate().publicationBucketUri();
+    }
+
+    PeriodStatus periodStatus() {
+        return periodStatus;
     }
 
     private static PeriodStatus calculatePeriodStatusIfApplicable(PeriodRepository periodRepository,
@@ -239,7 +240,7 @@ public final class CandidateBO {
 
     private static CandidateBO resetCandidate(UpsertCandidateRequest request, CandidateRepository repository,
                                               PeriodRepository periodRepository, CandidateDao existingCandidateDao) {
-        var newApprovals = mapToApprovals(request.points());
+        var newApprovals = mapToApprovals(request.institutionPoints());
         var newCandidateDao = updateCandidateDaoFromRequest(existingCandidateDao, request);
         repository.updateCandidate(existingCandidateDao.identifier(), newCandidateDao, newApprovals);
         var notes = repository.getNotes(existingCandidateDao.identifier());
@@ -270,7 +271,7 @@ public final class CandidateBO {
     }
 
     private static boolean pointsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(request.points(), mapToPointsMap(existingCandidateDao));
+        return !Objects.equals(request.institutionPoints(), mapToPointsMap(existingCandidateDao));
     }
 
     private static boolean creatorsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
@@ -288,7 +289,7 @@ public final class CandidateBO {
     private static CandidateBO createCandidate(UpsertCandidateRequest request, CandidateRepository repository,
                                                PeriodRepository periodRepository) {
         validateCandidate(request);
-        var candidateDao = repository.createDao(mapToCandidate(request), mapToApprovals(request.points()));
+        var candidateDao = repository.createDao(mapToCandidate(request), mapToApprovals(request.institutionPoints()));
         var approvals1 = repository.fetchApprovals(candidateDao.identifier());
         var notes1 = repository.getNotes(candidateDao.identifier());
         var periodStatus1 = getPeriodStatus(periodRepository, candidateDao.candidate().publicationDate().year());
@@ -308,7 +309,7 @@ public final class CandidateBO {
         attempt(() -> {
             assertIsCandidate(candidate);
             Objects.requireNonNull(candidate.publicationBucketUri());
-            Objects.requireNonNull(candidate.points());
+            Objects.requireNonNull(candidate.institutionPoints());
             Objects.requireNonNull(candidate.publicationId());
             Objects.requireNonNull(candidate.creators());
             Objects.requireNonNull(candidate.level());
@@ -367,10 +368,40 @@ public final class CandidateBO {
                    .publicationBucketUri(request.publicationBucketUri())
                    .applicable(request.isApplicable())
                    .creators(mapToCreators(request.creators()))
+                   .creatorShareCount(request.creatorShareCount())
+                   .channelType(ChannelType.parse(request.channelType()))
+                   .channelId(request.channelId())
                    .level(DbLevel.parse(request.level()))
                    .instanceType(InstanceType.parse(request.instanceType()))
                    .publicationDate(mapToPublicationDate(request.publicationDate()))
-                   .points(mapToPoints(request.points()))
+                   .internationalCollaboration(request.isInternationalCollaboration())
+                   .collaborationFactor(request.collaborationFactor())
+                   .basePoints(request.basePoints())
+                   .points(mapToPoints(request.institutionPoints()))
+                   .totalPoints(request.totalPoints())
+                   .build();
+    }
+
+    private static CandidateDao updateCandidateDaoFromRequest(CandidateDao candidateDao,
+                                                              UpsertCandidateRequest request) {
+        return candidateDao.copy()
+                   .candidate(candidateDao.candidate()
+                                  .copy()
+                                  .applicable(request.isApplicable())
+                                  .creators(mapToCreators(request.creators()))
+                                  .creatorShareCount(request.creatorShareCount())
+                                  .channelType(ChannelType.parse(request.channelType()))
+                                  .channelId(request.channelId())
+                                  .level(DbLevel.parse(request.level()))
+                                  .instanceType(InstanceType.parse(request.instanceType()))
+                                  .publicationDate(mapToPublicationDate(request.publicationDate()))
+                                  .internationalCollaboration(request.isInternationalCollaboration())
+                                  .collaborationFactor(request.collaborationFactor())
+                                  .basePoints(request.basePoints())
+                                  .points(mapToPoints(request.institutionPoints()))
+                                  .totalPoints(request.totalPoints())
+                                  .build())
+                   .version(randomUUID().toString())
                    .build();
     }
 
@@ -392,24 +423,6 @@ public final class CandidateBO {
 
     private static boolean isExistingCandidate(UpsertCandidateRequest publicationId, CandidateRepository repository) {
         return repository.findByPublicationId(publicationId.publicationId()).isPresent();
-    }
-
-    private static CandidateDao updateCandidateDaoFromRequest(CandidateDao candidateDao,
-                                                              UpsertCandidateRequest request) {
-        return candidateDao.copy()
-                   .candidate(candidateDao.candidate()
-                                  .copy()
-                                  .creators(mapToCreators(request.creators()))
-                                  .points(mapToPoints(request.points()))
-                                  .publicationDate(mapToPublicationDate(request.publicationDate()))
-                                  .instanceType(InstanceType.parse(request.instanceType()))
-                                  .level(DbLevel.parse(request.level()))
-                                  .applicable(request.isApplicable())
-                                  .internationalCollaboration(request.isInternationalCooperation())
-                                  .creatorCount(request.creatorCount())
-                                  .build())
-                   .version(randomUUID().toString())
-                   .build();
     }
 
     private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao,

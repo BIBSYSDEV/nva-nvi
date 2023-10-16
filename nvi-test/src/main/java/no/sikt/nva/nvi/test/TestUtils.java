@@ -34,6 +34,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
@@ -206,13 +207,13 @@ public final class TestUtils {
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI... institutions) {
-        return createUpsertCandidateRequest(randomUri(), true, 1, InstanceType.ACADEMIC_MONOGRAPH,
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, InstanceType.ACADEMIC_MONOGRAPH, 1,
                                             institutions);
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
-                                                                      boolean isApplicable, int creatorCount,
-                                                                      final InstanceType instanceType,
+                                                                      URI publicationBucketUri, boolean isApplicable,
+                                                                      final InstanceType instanceType, int creatorCount,
                                                                       URI... institutions) {
         var creators = IntStream.of(creatorCount)
                            .mapToObj(i -> randomUri())
@@ -221,23 +222,35 @@ public final class TestUtils {
         var points = Arrays.stream(institutions)
                          .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal()));
 
-        return createUpsertCandidateRequest(publicationId, isApplicable, creators, instanceType,
-                                            DbLevel.LEVEL_TWO, points);
+        return createUpsertCandidateRequest(publicationId, publicationBucketUri, isApplicable,
+                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null), creators,
+                                            instanceType,
+                                            randomElement(ChannelType.values()).getValue(), randomUri(),
+                                            DbLevel.LEVEL_TWO, points,
+                                            randomInteger(), randomBoolean(),
+                                            randomBigDecimal(), randomBigDecimal(), randomBigDecimal());
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
+                                                                      final URI publicationBucketUri,
                                                                       boolean isApplicable,
+                                                                      final PublicationDate publicationDate,
                                                                       Map<URI, List<URI>> creators,
                                                                       final InstanceType instanceType,
+                                                                      final String channelType, final URI channelId,
                                                                       DbLevel level,
-                                                                      Map<URI, BigDecimal> points) {
-
+                                                                      Map<URI, BigDecimal> points,
+                                                                      final Integer creatorShareCount,
+                                                                      final boolean isInternationalCollaboration,
+                                                                      final BigDecimal collaborationFactor,
+                                                                      final BigDecimal basePoints,
+                                                                      final BigDecimal totalPoints) {
 
         return new UpsertCandidateRequest() {
 
             @Override
             public URI publicationBucketUri() {
-                return randomUri();
+                return publicationBucketUri;
             }
 
             @Override
@@ -251,13 +264,23 @@ public final class TestUtils {
             }
 
             @Override
-            public boolean isInternationalCooperation() {
-                return false;
+            public boolean isInternationalCollaboration() {
+                return isInternationalCollaboration;
             }
 
             @Override
             public Map<URI, List<URI>> creators() {
                 return creators;
+            }
+
+            @Override
+            public String channelType() {
+                return channelType;
+            }
+
+            @Override
+            public URI channelId() {
+                return channelId;
             }
 
             @Override
@@ -272,17 +295,32 @@ public final class TestUtils {
 
             @Override
             public PublicationDate publicationDate() {
-                return new PublicationDate(String.valueOf(CURRENT_YEAR), null, null);
+                return publicationDate;
             }
 
             @Override
-            public Map<URI, BigDecimal> points() {
+            public int creatorShareCount() {
+                return creatorShareCount;
+            }
+
+            @Override
+            public BigDecimal collaborationFactor() {
+                return collaborationFactor;
+            }
+
+            @Override
+            public BigDecimal basePoints() {
+                return basePoints;
+            }
+
+            @Override
+            public Map<URI, BigDecimal> institutionPoints() {
                 return points;
             }
 
             @Override
-            public int creatorCount() {
-                return (int) creators.values().stream().mapToLong(List::size).sum();
+            public BigDecimal totalPoints() {
+                return totalPoints;
             }
         };
     }
