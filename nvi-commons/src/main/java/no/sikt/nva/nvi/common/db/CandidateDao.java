@@ -197,12 +197,18 @@ public record CandidateDao(
                        .publicationBucketUri(publicationBucketUri)
                        .applicable(applicable)
                        .instanceType(instanceType)
+                       .channelType(channelType)
+                       .channelId(channelId)
                        .level(level)
                        .publicationDate(publicationDate.copy())
                        .internationalCollaboration(internationalCollaboration)
+                       .collaborationFactor(collaborationFactor)
                        .creatorCount(creatorCount)
+                       .creatorShareCount(creatorShareCount)
                        .creators(creators.stream().map(DbCreator::copy).toList())
-                       .points(points.stream().map(DbInstitutionPoints::copy).toList());
+                       .basePoints(basePoints)
+                       .points(points.stream().map(DbInstitutionPoints::copy).toList())
+                       .totalPoints(totalPoints);
         }
 
         public static final class Builder {
