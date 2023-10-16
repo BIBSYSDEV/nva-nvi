@@ -27,6 +27,7 @@ public interface UpsertCandidateRequest {
 
     PublicationDate publicationDate();
 
+    @Deprecated
     int creatorCount();
 
     int creatorShareCount();

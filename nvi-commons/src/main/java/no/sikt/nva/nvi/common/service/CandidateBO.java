@@ -414,7 +414,6 @@ public final class CandidateBO {
                                   .level(DbLevel.parse(request.level()))
                                   .applicable(request.isApplicable())
                                   .internationalCollaboration(request.isInternationalCollaboration())
-                                  .creatorCount(request.creatorCount())
                                   .build())
                    .version(randomUUID().toString())
                    .build();

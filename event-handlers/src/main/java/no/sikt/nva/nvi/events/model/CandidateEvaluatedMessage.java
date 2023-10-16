@@ -102,6 +102,7 @@ public record CandidateEvaluatedMessage(
     }
 
     @Override
+    @Deprecated
     public int creatorCount() {
         return 0;
     }
