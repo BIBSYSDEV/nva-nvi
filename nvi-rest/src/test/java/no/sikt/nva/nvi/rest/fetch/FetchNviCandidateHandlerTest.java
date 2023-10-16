@@ -22,6 +22,7 @@ import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.ContentType;
@@ -94,6 +95,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
                 .orElseThrow();
         return CandidateBO.fromRequest(createUpsertCandidateRequest(candidate.publicationId(),
                                                                     randomUri(), false, InstanceType.NON_CANDIDATE, 0,
+                                                                    TestUtils.randomBigDecimal(),
                                                                     institutionId),
                                        candidateRepository, periodRepository).orElseThrow();
     }

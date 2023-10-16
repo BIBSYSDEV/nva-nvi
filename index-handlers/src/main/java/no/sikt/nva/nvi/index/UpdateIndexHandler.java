@@ -138,7 +138,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     private void addDocumentToIndex(CandidateBO candidate) {
-        attempt(() -> storageReader.read(candidate.getBucketUri()))
+        attempt(() -> storageReader.read(candidate.bucketUri()))
             .map(blob -> documentGenerator.generateDocument(blob, candidate))
             .forEach(openSearchClient::addDocumentToIndex)
             .orElseThrow();

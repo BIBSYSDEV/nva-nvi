@@ -20,7 +20,6 @@ import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
-import java.math.RoundingMode;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -49,8 +48,6 @@ import org.apache.jena.rdf.model.RDFNode;
 public final class NviCandidateIndexDocumentGenerator {
 
     public static final String APPLICATION_JSON = "application/json";
-    private static final int POINTS_SCALE = 4;
-    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private final AuthorizedBackendUriRetriever uriRetriever;
 
     public NviCandidateIndexDocumentGenerator(AuthorizedBackendUriRetriever uriRetriever) {
@@ -70,7 +67,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withApprovals(approvals)
                    .withPublicationDetails(extractPublicationDetails(resource))
                    .withNumberOfApprovals(approvals.size())
-                   .withPoints(candidate.getTotalPoints())
+                   .withPoints(candidate.totalPoints())
                    .build();
     }
 

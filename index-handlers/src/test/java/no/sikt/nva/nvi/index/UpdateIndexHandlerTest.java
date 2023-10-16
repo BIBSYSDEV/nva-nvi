@@ -335,8 +335,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                   .publicationDate(new DbPublicationDate("2023", "6", "4"))
                                   .internationalCollaboration(false)
                                   .level(DbLevel.LEVEL_ONE)
-                                  .publicationBucketUri(candidate.getBucketUri())
-                                  .totalPoints(candidate.getTotalPoints())
+                                  .publicationBucketUri(candidate.bucketUri())
+                                  .totalPoints(candidate.totalPoints())
                                   .build())
                    .build();
     }
@@ -370,7 +370,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .withApprovals(constructExpectedApprovals(candidate.getApprovals()))
                    .withPublicationDetails(constructPublicationDetails())
                    .withNumberOfApprovals(candidate.getApprovals().size())
-                   .withPoints(candidate.getTotalPoints())
+                   .withPoints(candidate.totalPoints())
                    .build();
     }
 
@@ -382,7 +382,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .withApprovals(constructExpectedApprovals(candidate.getApprovals()))
                    .withPublicationDetails(constructPublicationDetailsWithPublicationDate(publicationDate))
                    .withNumberOfApprovals(candidate.getApprovals().size())
-                   .withPoints(candidate.getTotalPoints())
+                   .withPoints(candidate.totalPoints())
                    .build();
     }
 

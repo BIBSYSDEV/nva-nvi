@@ -2,8 +2,8 @@ package no.sikt.nva.nvi.common.service.dto;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.math.BigDecimal;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,6 +14,7 @@ public record CandidateDto(
     UUID identifier,
     URI publicationId,
     List<ApprovalStatus> approvalStatuses,
+    BigDecimal undistributedPoints,
     List<NoteDto> notes,
     PeriodStatusDto periodStatus) {
 
@@ -26,8 +27,9 @@ public record CandidateDto(
         private URI id;
         private UUID identifier;
         private URI publicationId;
-        private List<ApprovalStatus> approvalStatuses = new ArrayList<>();
-        private List<NoteDto> notes = new ArrayList<>();
+        private List<ApprovalStatus> approvalStatuses;
+        private BigDecimal undistributedPoints;
+        private List<NoteDto> notes;
         private PeriodStatusDto periodStatus;
 
         private Builder() {
@@ -53,6 +55,11 @@ public record CandidateDto(
             return this;
         }
 
+        public Builder withUndistributedPoints(BigDecimal undistributedPoints) {
+            this.undistributedPoints = undistributedPoints;
+            return this;
+        }
+
         public Builder withNotes(List<NoteDto> notes) {
             this.notes = notes;
             return this;
@@ -64,7 +71,8 @@ public record CandidateDto(
         }
 
         public CandidateDto build() {
-            return new CandidateDto(id, identifier, publicationId, approvalStatuses, notes, periodStatus);
+            return new CandidateDto(id, identifier, publicationId, approvalStatuses, undistributedPoints, notes,
+                                    periodStatus);
         }
     }
 }

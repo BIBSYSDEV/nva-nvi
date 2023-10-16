@@ -4,6 +4,7 @@ import static java.util.UUID.randomUUID;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -64,6 +65,8 @@ public final class CandidateBO {
     private static final PeriodStatus PERIOD_STATUS_NO_PERIOD = PeriodStatus.builder()
                                                                     .withStatus(Status.NO_PERIOD)
                                                                     .build();
+    private static final int POINTS_SCALE = 4;
+    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private final CandidateRepository repository;
     private final UUID identifier;
     private final URI publicationId;
@@ -123,22 +126,32 @@ public final class CandidateBO {
         return Optional.empty();
     }
 
-    public BigDecimal getTotalPoints() {
-        return totalPoints;
-    }
-
-    @JacocoGenerated
-    public Map<URI, ApprovalBO> getApprovals() {
-        return new HashMap<>(approvals);
-    }
-
-    @JacocoGenerated
     public UUID identifier() {
         return identifier;
     }
 
     public URI publicationId() {
         return publicationId;
+    }
+
+    public URI bucketUri() {
+        return publicationBucketUri;
+    }
+
+    public boolean isApplicable() {
+        return applicable;
+    }
+
+    public Map<URI, BigDecimal> getInstitutionPoints() {
+        return institutionPoints;
+    }
+
+    public Map<URI, ApprovalBO> getApprovals() {
+        return new HashMap<>(approvals);
+    }
+
+    public BigDecimal totalPoints() {
+        return totalPoints;
     }
 
     public CandidateDto toDto() {
@@ -149,6 +162,7 @@ public final class CandidateBO {
                    .withApprovalStatuses(mapToApprovalDtos())
                    .withNotes(mapToNoteDtos())
                    .withPeriodStatus(mapToPeriodStatusDto())
+                   .withUndistributedPoints(calculateUndistributedPoints())
                    .build();
     }
 
@@ -174,20 +188,6 @@ public final class CandidateBO {
             return null;
         });
         return this;
-    }
-
-    public boolean isApplicable() {
-        return applicable;
-    }
-
-    @JacocoGenerated
-    public Map<URI, BigDecimal> getInstitutionPoints() {
-        return institutionPoints;
-    }
-
-    @JacocoGenerated
-    public URI getBucketUri() {
-        return publicationBucketUri;
     }
 
     PeriodStatus periodStatus() {
@@ -320,6 +320,7 @@ public final class CandidateBO {
             Objects.requireNonNull(candidate.creators());
             Objects.requireNonNull(candidate.level());
             Objects.requireNonNull(candidate.publicationDate());
+            Objects.requireNonNull(candidate.totalPoints());
             return candidate;
         }).orElseThrow(failure -> new InvalidNviCandidateException(INVALID_CANDIDATE_MESSAGE));
     }
@@ -440,6 +441,14 @@ public final class CandidateBO {
 
     private static String mapToUsernameString(Username assignee) {
         return assignee != null ? assignee.value() : null;
+    }
+
+    private BigDecimal calculateUndistributedPoints() {
+        return totalPoints.subtract(sumDistributedPoints()).setScale(POINTS_SCALE, ROUNDING_MODE);
+    }
+
+    private BigDecimal sumDistributedPoints() {
+        return institutionPoints.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private void validateNoteOwner(String username, NoteDao dao) {
