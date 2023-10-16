@@ -207,13 +207,13 @@ public final class TestUtils {
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI... institutions) {
-        return createUpsertCandidateRequest(randomUri(), true, 1, InstanceType.ACADEMIC_MONOGRAPH,
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, InstanceType.ACADEMIC_MONOGRAPH, 1,
                                             institutions);
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
-                                                                      boolean isApplicable, int creatorCount,
-                                                                      final InstanceType instanceType,
+                                                                      URI publicationBucketUri, boolean isApplicable,
+                                                                      final InstanceType instanceType, int creatorCount,
                                                                       URI... institutions) {
         var creators = IntStream.of(creatorCount)
                            .mapToObj(i -> randomUri())
@@ -222,27 +222,26 @@ public final class TestUtils {
         var points = Arrays.stream(institutions)
                          .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal()));
 
-        return createUpsertCandidateRequest(publicationId, isApplicable, creators, instanceType,
-                                            DbLevel.LEVEL_TWO, points, randomBoolean(),
-                                            randomElement(ChannelType.values()).getValue(),
-                                            randomInteger(),
-                                            randomUri(), randomUri(),
-                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
+        return createUpsertCandidateRequest(publicationId, publicationBucketUri, isApplicable,
+                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null), creators,
+                                            instanceType,
+                                            randomElement(ChannelType.values()).getValue(), randomUri(),
+                                            DbLevel.LEVEL_TWO, points,
+                                            randomInteger(), randomBoolean(),
                                             randomBigDecimal(), randomBigDecimal(), randomBigDecimal());
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
+                                                                      final URI publicationBucketUri,
                                                                       boolean isApplicable,
+                                                                      final PublicationDate publicationDate,
                                                                       Map<URI, List<URI>> creators,
                                                                       final InstanceType instanceType,
+                                                                      final String channelType, final URI channelId,
                                                                       DbLevel level,
                                                                       Map<URI, BigDecimal> points,
-                                                                      final boolean isInternationalCollaboration,
-                                                                      final String channelType,
                                                                       final Integer creatorShareCount,
-                                                                      final URI publicationBucketUri,
-                                                                      final URI channelId,
-                                                                      final PublicationDate publicationDate,
+                                                                      final boolean isInternationalCollaboration,
                                                                       final BigDecimal collaborationFactor,
                                                                       final BigDecimal basePoints,
                                                                       final BigDecimal totalPoints) {
