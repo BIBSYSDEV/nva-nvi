@@ -121,14 +121,7 @@ class CandidateBOTest extends LocalDynamoTest {
 
     @Test
     void shouldPersistUpdatedCandidateWithCorrectDataFromUpsertRequest() {
-        var institutionId = randomUri();
-        var insertRequest = createUpsertCandidateRequest(institutionId);
-        CandidateBO.fromRequest(insertRequest, candidateRepository, periodRepository);
-        var updateRequest = createUpsertCandidateRequest(insertRequest.publicationId(),
-                                                         insertRequest.publicationBucketUri(), true,
-                                                         InstanceType.parse(insertRequest.instanceType()),
-                                                         insertRequest.creators().size(),
-                                                         institutionId);
+        var updateRequest = getUpdateRequestForExistingCandidate();
         var candidateIdentifier = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository)
                                       .orElseThrow()
                                       .identifier();
@@ -314,6 +307,17 @@ class CandidateBOTest extends LocalDynamoTest {
 
     private static URI constructId(UUID identifier) {
         return new UriWrapper(HTTPS, API_DOMAIN).addChild(BASE_PATH, "candidate", identifier.toString()).getUri();
+    }
+
+    private UpsertCandidateRequest getUpdateRequestForExistingCandidate() {
+        var institutionId = randomUri();
+        var insertRequest = createUpsertCandidateRequest(institutionId);
+        CandidateBO.fromRequest(insertRequest, candidateRepository, periodRepository);
+        return createUpsertCandidateRequest(insertRequest.publicationId(),
+                                            insertRequest.publicationBucketUri(), true,
+                                            InstanceType.parse(insertRequest.instanceType()),
+                                            insertRequest.creators().size(),
+                                            institutionId);
     }
 
     private DbCandidate generateExpectedCandidate(UUID identifier, UpsertCandidateRequest request) {

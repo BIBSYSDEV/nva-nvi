@@ -382,26 +382,6 @@ public final class CandidateBO {
                    .build();
     }
 
-    private static List<DbInstitutionPoints> mapToPoints(Map<URI, BigDecimal> points) {
-        return points.entrySet().stream().map(e -> new DbInstitutionPoints(e.getKey(), e.getValue())).toList();
-    }
-
-    private static DbPublicationDate mapToPublicationDate(PublicationDate publicationDate) {
-        return DbPublicationDate.builder()
-                   .year(publicationDate.year())
-                   .month(publicationDate.month())
-                   .day(publicationDate.day())
-                   .build();
-    }
-
-    private static List<DbCreator> mapToCreators(Map<URI, List<URI>> creators) {
-        return creators.entrySet().stream().map(e -> new DbCreator(e.getKey(), e.getValue())).toList();
-    }
-
-    private static boolean isExistingCandidate(UpsertCandidateRequest publicationId, CandidateRepository repository) {
-        return repository.findByPublicationId(publicationId.publicationId()).isPresent();
-    }
-
     private static CandidateDao updateCandidateDaoFromRequest(CandidateDao candidateDao,
                                                               UpsertCandidateRequest request) {
         return candidateDao.copy()
@@ -423,6 +403,26 @@ public final class CandidateBO {
                                   .build())
                    .version(randomUUID().toString())
                    .build();
+    }
+
+    private static List<DbInstitutionPoints> mapToPoints(Map<URI, BigDecimal> points) {
+        return points.entrySet().stream().map(e -> new DbInstitutionPoints(e.getKey(), e.getValue())).toList();
+    }
+
+    private static DbPublicationDate mapToPublicationDate(PublicationDate publicationDate) {
+        return DbPublicationDate.builder()
+                   .year(publicationDate.year())
+                   .month(publicationDate.month())
+                   .day(publicationDate.day())
+                   .build();
+    }
+
+    private static List<DbCreator> mapToCreators(Map<URI, List<URI>> creators) {
+        return creators.entrySet().stream().map(e -> new DbCreator(e.getKey(), e.getValue())).toList();
+    }
+
+    private static boolean isExistingCandidate(UpsertCandidateRequest publicationId, CandidateRepository repository) {
+        return repository.findByPublicationId(publicationId.publicationId()).isPresent();
     }
 
     private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao,
