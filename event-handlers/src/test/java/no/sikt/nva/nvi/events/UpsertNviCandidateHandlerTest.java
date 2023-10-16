@@ -277,7 +277,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     private Map<URI, DbApprovalStatus> getAprovalMaps(CandidateBO dto) {
-        return candidateRepository.fetchApprovals(dto.identifier())
+        return candidateRepository.fetchApprovals(dto.getIdentifier())
                    .stream()
                    .map(ApprovalStatusDao::approvalStatus)
                    .collect(Collectors.toMap(DbApprovalStatus::institutionId, Function.identity()));

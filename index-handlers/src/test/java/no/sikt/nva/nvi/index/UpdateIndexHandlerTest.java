@@ -246,12 +246,12 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private static PublicationDetails constructPublicationDetails() {
         return new PublicationDetails(
             "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
-            "AcademicArticle", "Demo nvi candidate", new PublicationDate("2023", "6", "4"), List.of(
-            new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
-                .withName("Mona Ullah")
-                .withRole("Creator")
-                .withAffiliations(List.of(constructAffiliation()))
-                .build()));
+            "AcademicArticle", "Demo nvi candidate", new PublicationDate("2023", "6", "4"),
+            List.of(new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
+                        .withName("Mona Ullah")
+                        .withRole("Creator")
+                        .withAffiliations(List.of(constructAffiliation()))
+                        .build()));
     }
 
     private static PublicationDetails constructPublicationDetailsWithPublicationDate(PublicationDate publicationDate) {
@@ -322,9 +322,9 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
 
     private CandidateDao toDao(CandidateBO candidate) {
         return CandidateDao.builder()
-                   .identifier(candidate.identifier())
+                   .identifier(candidate.getIdentifier())
                    .candidate(DbCandidate.builder()
-                                  .publicationId(candidate.publicationId())
+                                  .publicationId(candidate.getPublicationId())
                                   .points(mapToInstitutionPoints(candidate))
                                   .applicable(candidate.isApplicable())
                                   .creatorCount(1)
@@ -335,8 +335,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                   .publicationDate(new DbPublicationDate("2023", "6", "4"))
                                   .internationalCollaboration(false)
                                   .level(DbLevel.LEVEL_ONE)
-                                  .publicationBucketUri(candidate.bucketUri())
-                                  .totalPoints(candidate.totalPoints())
+                                  .publicationBucketUri(candidate.getPublicationBucketUri())
+                                  .totalPoints(candidate.getTotalPoints())
                                   .build())
                    .build();
     }
@@ -359,18 +359,18 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private DynamodbStreamRecord createDynamoDbRecord(CandidateBO candidate) throws JsonProcessingException {
         return JsonUtils.dtoObjectMapper.readValue(IoUtils.stringFromResources(Path.of("genericDynamoDbRecord.json"))
                                                        .replace("__REPLACE_IDENTIFIER__",
-                                                                candidate.identifier().toString()),
+                                                                candidate.getIdentifier().toString()),
                                                    DynamodbStreamRecord.class);
     }
 
     private NviCandidateIndexDocument constructExpectedDocument(CandidateBO candidate) {
         return new NviCandidateIndexDocument.Builder().withContext(
                 URI.create("https://bibsysdev.github.io/src/nvi-context.json"))
-                   .withIdentifier(candidate.identifier().toString())
+                   .withIdentifier(candidate.getIdentifier().toString())
                    .withApprovals(constructExpectedApprovals(candidate.getApprovals()))
                    .withPublicationDetails(constructPublicationDetails())
                    .withNumberOfApprovals(candidate.getApprovals().size())
-                   .withPoints(candidate.totalPoints())
+                   .withPoints(candidate.getTotalPoints())
                    .build();
     }
 
@@ -378,11 +378,11 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                                                                    PublicationDate publicationDate) {
         return new NviCandidateIndexDocument.Builder().withContext(
                 URI.create("https://bibsysdev.github.io/src/nvi-context.json"))
-                   .withIdentifier(candidate.identifier().toString())
+                   .withIdentifier(candidate.getIdentifier().toString())
                    .withApprovals(constructExpectedApprovals(candidate.getApprovals()))
                    .withPublicationDetails(constructPublicationDetailsWithPublicationDate(publicationDate))
                    .withNumberOfApprovals(candidate.getApprovals().size())
-                   .withPoints(candidate.totalPoints())
+                   .withPoints(candidate.getTotalPoints())
                    .build();
     }
 

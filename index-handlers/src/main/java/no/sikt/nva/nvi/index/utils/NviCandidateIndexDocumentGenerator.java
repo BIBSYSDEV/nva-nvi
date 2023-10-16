@@ -63,11 +63,11 @@ public final class NviCandidateIndexDocumentGenerator {
     private NviCandidateIndexDocument createNviCandidateIndexDocument(JsonNode resource, CandidateBO candidate) {
         var approvals = createApprovals(resource, toDbApprovals(candidate.getApprovals()));
         return new NviCandidateIndexDocument.Builder().withContext(URI.create(Contexts.NVI_CONTEXT))
-                   .withIdentifier(candidate.identifier().toString())
+                   .withIdentifier(candidate.getIdentifier().toString())
                    .withApprovals(approvals)
                    .withPublicationDetails(extractPublicationDetails(resource))
                    .withNumberOfApprovals(approvals.size())
-                   .withPoints(candidate.totalPoints())
+                   .withPoints(candidate.getTotalPoints())
                    .build();
     }
 

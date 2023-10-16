@@ -211,17 +211,17 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     }
 
     private List<ApprovalStatusDao> generateCandidatesWithApprovalStatuses() {
-        return createRandomCandidates(10).map(CandidateBO::identifier)
+        return createRandomCandidates(10).map(CandidateBO::getIdentifier)
                    .flatMap(candidateRepository::findApprovalDaosByCandidateId)
                    .toList();
     }
 
     private List<CandidateDao> generatedRepositoryCandidates() {
-        return createRandomCandidates(10).map(CandidateBO::identifier).map(candidateRepository::findDaoById).toList();
+        return createRandomCandidates(10).map(CandidateBO::getIdentifier).map(candidateRepository::findDaoById).toList();
     }
 
     private List<NoteDao> generateRepositoryCandidatesWithNotes() {
-        return createRandomCandidates(10).map(CandidateBO::identifier)
+        return createRandomCandidates(10).map(CandidateBO::getIdentifier)
                    .flatMap(candidateRepository::findNoteDaosByCandidateId)
                    .toList();
     }
@@ -229,7 +229,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     private boolean isSameBodyAsRepositoryCopy(CandidateBO item) {
         //TODO: should replace this comparison with the actual data field (equals in CandidateBO?)
         return item.toDto()
-                   .equals(CandidateBO.fromRequest(item::identifier, candidateRepository, periodRepository).toDto());
+                   .equals(CandidateBO.fromRequest(item::getIdentifier, candidateRepository, periodRepository).toDto());
     }
 
     private boolean isSameVersionAsRepositoryCopy(CandidateDao dao) {

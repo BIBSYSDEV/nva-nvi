@@ -60,7 +60,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnNotFoundWhenCandidateExistsButNotApplicable() throws IOException {
         var nonApplicableCandidate = setUpNonApplicableCandidate();
-        handler.handleRequest(createRequest(nonApplicableCandidate.identifier()), output, CONTEXT);
+        handler.handleRequest(createRequest(nonApplicableCandidate.getIdentifier()), output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
 
         assertEquals(HttpStatus.SC_NOT_FOUND, gatewayResponse.getStatusCode());
@@ -71,7 +71,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
         var candidate =
             CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository, periodRepository)
                 .orElseThrow();
-        var request = createRequest(candidate.identifier());
+        var request = createRequest(candidate.getIdentifier());
 
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -93,7 +93,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
         var candidate =
             CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
-        return CandidateBO.fromRequest(createUpsertCandidateRequest(candidate.publicationId(),
+        return CandidateBO.fromRequest(createUpsertCandidateRequest(candidate.getPublicationId(),
                                                                     randomUri(), false, InstanceType.NON_CANDIDATE, 0,
                                                                     TestUtils.randomBigDecimal(),
                                                                     institutionId),

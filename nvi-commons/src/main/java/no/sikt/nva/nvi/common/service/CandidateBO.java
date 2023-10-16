@@ -126,15 +126,15 @@ public final class CandidateBO {
         return Optional.empty();
     }
 
-    public UUID identifier() {
+    public UUID getIdentifier() {
         return identifier;
     }
 
-    public URI publicationId() {
+    public URI getPublicationId() {
         return publicationId;
     }
 
-    public URI bucketUri() {
+    public URI getPublicationBucketUri() {
         return publicationBucketUri;
     }
 
@@ -150,7 +150,7 @@ public final class CandidateBO {
         return new HashMap<>(approvals);
     }
 
-    public BigDecimal totalPoints() {
+    public BigDecimal getTotalPoints() {
         return totalPoints;
     }
 
