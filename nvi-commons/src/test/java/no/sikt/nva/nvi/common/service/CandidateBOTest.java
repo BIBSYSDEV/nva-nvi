@@ -109,27 +109,11 @@ class CandidateBOTest extends LocalDynamoTest {
     @Test
     void shouldSaveCandidateWithCorrectDataFromUpsertRequest() {
         var request = createUpsertCandidateRequest(randomUri());
-        var candidate = CandidateBO.fromRequest(request, candidateRepository, periodRepository)
-                            .orElseThrow();
-        var expectedCandidate = new CandidateDao(candidate.identifier(),
-                                                 DbCandidate.builder()
-                                                     .publicationId(request.publicationId())
-                                                     .publicationBucketUri(request.publicationBucketUri())
-                                                     .publicationDate(mapToDbPublicationDate(request.publicationDate()))
-                                                     .applicable(request.isApplicable())
-                                                     .instanceType(InstanceType.parse(request.instanceType()))
-                                                     .channelType(ChannelType.parse(request.channelType()))
-                                                     .channelId(request.channelId())
-                                                     .level(DbLevel.parse(request.level()))
-                                                     .basePoints(request.basePoints())
-                                                     .internationalCollaboration(request.isInternationalCollaboration())
-                                                     .collaborationFactor(request.collaborationFactor())
-                                                     .creators(mapToDbCreators(request.creators()))
-                                                     .creatorShareCount(request.creatorShareCount())
-                                                     .points(mapToDbInstitutionPoints(request.institutionPoints()))
-                                                     .totalPoints(request.totalPoints())
-                                                     .build(), randomString()).candidate();
-        var actualPersistedCandidate = candidateRepository.findCandidateDaoById(candidate.identifier())
+        var candidateIdentifier = CandidateBO.fromRequest(request, candidateRepository, periodRepository)
+                                      .orElseThrow()
+                                      .identifier();
+        var expectedCandidate = generateExpectedCandidate(candidateIdentifier, request);
+        var actualPersistedCandidate = candidateRepository.findCandidateDaoById(candidateIdentifier)
                                            .orElseThrow()
                                            .candidate();
         assertEquals(expectedCandidate, actualPersistedCandidate);
@@ -304,6 +288,27 @@ class CandidateBOTest extends LocalDynamoTest {
 
     private static URI constructId(UUID identifier) {
         return new UriWrapper(HTTPS, API_DOMAIN).addChild(BASE_PATH, "candidate", identifier.toString()).getUri();
+    }
+
+    private DbCandidate generateExpectedCandidate(UUID identifier, UpsertCandidateRequest request) {
+        return new CandidateDao(identifier,
+                                DbCandidate.builder()
+                                    .publicationId(request.publicationId())
+                                    .publicationBucketUri(request.publicationBucketUri())
+                                    .publicationDate(mapToDbPublicationDate(request.publicationDate()))
+                                    .applicable(request.isApplicable())
+                                    .instanceType(InstanceType.parse(request.instanceType()))
+                                    .channelType(ChannelType.parse(request.channelType()))
+                                    .channelId(request.channelId())
+                                    .level(DbLevel.parse(request.level()))
+                                    .basePoints(request.basePoints())
+                                    .internationalCollaboration(request.isInternationalCollaboration())
+                                    .collaborationFactor(request.collaborationFactor())
+                                    .creators(mapToDbCreators(request.creators()))
+                                    .creatorShareCount(request.creatorShareCount())
+                                    .points(mapToDbInstitutionPoints(request.institutionPoints()))
+                                    .totalPoints(request.totalPoints())
+                                    .build(), randomString()).candidate();
     }
 
     private DbPublicationDate mapToDbPublicationDate(PublicationDate publicationDate) {
