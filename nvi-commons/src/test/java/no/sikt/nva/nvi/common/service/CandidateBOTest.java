@@ -107,12 +107,31 @@ class CandidateBOTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldSaveCandidateWithCorrectDataFromUpsertRequest() {
+    void shouldPersistNewCandidateWithCorrectDataFromUpsertRequest() {
         var request = createUpsertCandidateRequest(randomUri());
         var candidateIdentifier = CandidateBO.fromRequest(request, candidateRepository, periodRepository)
                                       .orElseThrow()
                                       .identifier();
         var expectedCandidate = generateExpectedCandidate(candidateIdentifier, request);
+        var actualPersistedCandidate = candidateRepository.findCandidateDaoById(candidateIdentifier)
+                                           .orElseThrow()
+                                           .candidate();
+        assertEquals(expectedCandidate, actualPersistedCandidate);
+    }
+
+    @Test
+    void shouldPersistUpdatedCandidateWithCorrectDataFromUpsertRequest() {
+        var institutionId = randomUri();
+        var insertRequest = createUpsertCandidateRequest(institutionId);
+        CandidateBO.fromRequest(insertRequest, candidateRepository, periodRepository);
+        var updateRequest = createUpsertCandidateRequest(insertRequest.publicationId(), true,
+                                                         insertRequest.creators().size(),
+                                                         InstanceType.parse(insertRequest.instanceType()),
+                                                         institutionId);
+        var candidateIdentifier = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository)
+                                      .orElseThrow()
+                                      .identifier();
+        var expectedCandidate = generateExpectedCandidate(candidateIdentifier, updateRequest);
         var actualPersistedCandidate = candidateRepository.findCandidateDaoById(candidateIdentifier)
                                            .orElseThrow()
                                            .candidate();
