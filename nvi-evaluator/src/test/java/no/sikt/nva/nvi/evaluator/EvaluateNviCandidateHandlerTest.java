@@ -344,6 +344,17 @@ class EvaluateNviCandidateHandlerTest {
     }
 
     @Test
+    void shouldCreateNonCandidateWhenPublicationYearBefore2022() throws IOException {
+        var path = "candidate_publicationDate_before_2022.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, output, context);
+        var candidate = getMessageBody();
+        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
+    }
+
+    @Test
     void shouldCreateNonCandidateEventWhenPublicationIsNotPublished() throws IOException {
         var path = "nonCandidate_notPublished.json";
         var content = IoUtils.inputStreamFromResources(path);
