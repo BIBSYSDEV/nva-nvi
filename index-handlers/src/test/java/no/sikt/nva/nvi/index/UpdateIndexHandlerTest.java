@@ -336,6 +336,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                   .internationalCollaboration(false)
                                   .level(DbLevel.LEVEL_ONE)
                                   .publicationBucketUri(candidate.getBucketUri())
+                                  .totalPoints(candidate.getTotalPoints())
                                   .build())
                    .build();
     }
