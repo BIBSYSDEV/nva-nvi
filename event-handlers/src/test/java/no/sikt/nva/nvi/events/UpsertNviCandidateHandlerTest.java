@@ -6,7 +6,9 @@ import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomInstanceTypeExcluding;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -40,6 +42,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.CandidateBO;
@@ -49,12 +52,12 @@ import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto.Status;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
+import no.sikt.nva.nvi.events.model.InvalidNviMessageException;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.Creator;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
-import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
-import no.sikt.nva.nvi.events.model.InvalidNviMessageException;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import nva.commons.core.Environment;
@@ -217,9 +220,16 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withCandidateType(NviCandidate.builder()
                                           .withPublicationId(publicationId)
                                           .withInstanceType(instanceType.getValue())
+                                          .withChannelType(randomElement(ChannelType.values()).getValue())
+                                          .withPublicationChannelId(randomUri())
                                           .withLevel(level.getValue())
                                           .withPublicationDate(publicationDate)
                                           .withVerifiedCreators(verifiedCreators)
+                                          .withIsInternationalCollaboration(randomBoolean())
+                                          .withCollaborationFactor(randomBigDecimal())
+                                          .withCreatorShareCount(randomInteger())
+                                          .withBasePoints(randomBigDecimal())
+                                          .withTotalPoints(randomBigDecimal())
                                           .withInstitutionPoints(institutionPoints)
                                           .build())
                    .build();

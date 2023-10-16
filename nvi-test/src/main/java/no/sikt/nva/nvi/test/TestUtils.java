@@ -299,11 +299,6 @@ public final class TestUtils {
             }
 
             @Override
-            public int creatorCount() {
-                return (int) creators.values().stream().mapToLong(List::size).sum();
-            }
-
-            @Override
             public int creatorShareCount() {
                 return creatorShareCount;
             }

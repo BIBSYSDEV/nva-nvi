@@ -102,12 +102,6 @@ public record CandidateEvaluatedMessage(
     }
 
     @Override
-    @Deprecated
-    public int creatorCount() {
-        return 0;
-    }
-
-    @Override
     public int creatorShareCount() {
         if (isNviCandidate()) {
             var nviCandidate = (NviCandidate) candidate;
