@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
@@ -14,7 +15,7 @@ import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 public record NviCandidate(URI publicationId,
                            URI publicationBucketUri,
                            String instanceType,
-                           PublicationDate date,
+                           @JsonProperty("publicationDate") PublicationDate date,
                            List<Creator> verifiedCreators,
                            String channelType,
                            URI publicationChannelId,
@@ -52,14 +53,11 @@ public record NviCandidate(URI publicationId,
                                                                            publicationDate.day());
     }
 
-    public record Creator(URI id,
-                          List<URI> nviInstitutions) {
+    public record Creator(URI id, List<URI> nviInstitutions) {
 
     }
 
-    public record PublicationDate(String day,
-                                  String month,
-                                  String year) {
+    public record PublicationDate(String day, String month, String year) {
 
     }
 
