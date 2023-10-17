@@ -118,7 +118,6 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var publicationId = generatePublicationId(identifier);
         var publicationBucketUri = generateS3BucketUri(identifier);
         var totalPoints = randomBigDecimal();
-        var undistributedPoints = calculateUndistributedPoints(institutionPoints, totalPoints);
 
         var sqsEvent = createEvent(creators, instanceType, randomLevel, publicationDate, institutionPoints,
                                    publicationId, publicationBucketUri, totalPoints);
@@ -127,7 +126,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var fetchedCandidate = CandidateBO.fromRequest(() -> publicationId, candidateRepository, periodRepository)
                                    .toDto();
         var expectedResponse = createResponse(fetchedCandidate.identifier(), publicationId, institutionPoints,
-                                              undistributedPoints);
+                                              totalPoints);
 
         assertThat(fetchedCandidate, is(equalTo(expectedResponse)));
     }
@@ -284,7 +283,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     private CandidateDto createResponse(UUID identifier, URI publicationId, Map<URI, BigDecimal> institutionPoints,
-                                        BigDecimal undistributedPoints) {
+                                        BigDecimal totalPoints) {
         var id = new UriWrapper(HTTPS, API_DOMAIN).addChild(BASE_PATH, CANDIDATE_PATH, identifier.toString()).getUri();
         var period = periodRepository.findByPublishingYear(Year.now().toString()).orElseThrow();
         return CandidateDto.builder()
@@ -294,7 +293,8 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withNotes(List.of())
                    .withApprovalStatuses(institutionPoints.entrySet().stream().map(this::mapToApprovalStatus).toList())
                    .withPeriodStatus(toPeriodStatus(period))
-                   .withUndistributedPoints(undistributedPoints)
+                   .withUndistributedPoints(calculateUndistributedPoints(institutionPoints, totalPoints))
+                   .withTotalPoints(totalPoints)
                    .build();
     }
 

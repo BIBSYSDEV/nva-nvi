@@ -184,6 +184,7 @@ class CandidateBOTest extends LocalDynamoTest {
             assertThat(dto.notes().size(), is(2));
             assertThat(dto.undistributedPoints(),
                        is(equalTo(calculateExpectedUndistributedPoints(totalPoints, approvalMap))));
+            assertThat(dto.totalPoints(), is(equalTo(totalPoints)));
             var note = dto.notes().get(0);
             assertThat(note.text(), is(notNullValue()));
             assertThat(note.user(), is(notNullValue()));

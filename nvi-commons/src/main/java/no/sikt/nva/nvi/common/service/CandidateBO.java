@@ -163,6 +163,7 @@ public final class CandidateBO {
                    .withNotes(mapToNoteDtos())
                    .withPeriodStatus(mapToPeriodStatusDto())
                    .withUndistributedPoints(calculateUndistributedPoints())
+                   .withTotalPoints(totalPoints)
                    .build();
     }
 
