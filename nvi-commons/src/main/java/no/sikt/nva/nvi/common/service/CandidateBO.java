@@ -231,11 +231,15 @@ public final class CandidateBO {
         validateCandidate(request);
         var existingCandidateDao = repository.findByPublicationIdDao(request.publicationId())
                                        .orElseThrow(CandidateNotFoundException::new);
-        if (shouldResetCandidate(request, existingCandidateDao)) {
+        if (shouldResetCandidate(request, existingCandidateDao) || isNotApplicable(existingCandidateDao)) {
             return resetCandidate(request, repository, periodRepository, existingCandidateDao);
         } else {
             return updateCandidateKeepingApprovalsAndNotes(request, repository, periodRepository, existingCandidateDao);
         }
+    }
+
+    private static boolean isNotApplicable(CandidateDao existingCandidateDao) {
+        return !existingCandidateDao.candidate().applicable();
     }
 
     private static CandidateBO resetCandidate(UpsertCandidateRequest request, CandidateRepository repository,
