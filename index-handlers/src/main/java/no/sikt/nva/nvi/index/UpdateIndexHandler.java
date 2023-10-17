@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -26,7 +27,6 @@ import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
-import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
@@ -35,12 +35,13 @@ import org.slf4j.LoggerFactory;
 @JacocoGenerated
 public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
-    public static final String COULD_NOT_UPDATE_INDEX_MESSAGE = "Could not update index for record: {}";
+    private static final String COULD_NOT_UPDATE_INDEX_MESSAGE = "Could not update index for record: {}";
     private static final String CANDIDATE_TYPE = "CANDIDATE";
     private static final String APPROVAL_TYPE = "APPROVAL_STATUS";
     private static final String PRIMARY_KEY_DELIMITER = "#";
     private static final String IDENTIFIER = "identifier";
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateIndexHandler.class);
+    private static final String UPDATE_INDEX_DLQ_QUEUE_URL = "UPDATE_INDEX_DLQ_QUEUE_URL";
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
     private final StorageReader<URI> storageReader;
     private final CandidateRepository candidateRepository;
@@ -53,7 +54,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     public UpdateIndexHandler() {
         this(new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")), defaultOpenSearchClient(),
              new CandidateRepository(defaultDynamoClient()), new PeriodRepository(defaultDynamoClient()),
-             new NviCandidateIndexDocumentGenerator(defaultUriRetriver(new Environment())), new NviQueueClient(),
+             new NviCandidateIndexDocumentGenerator(defaultUriRetriever(new Environment())), new NviQueueClient(),
              new Environment());
     }
 
@@ -68,7 +69,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         this.periodRepository = periodRepository;
         this.documentGenerator = documentGenerator;
         this.queueClient = queueClient;
-        this.dlqUrl = environment.readEnv("UPDATE_INDEX_DLQ_QUEUE_URL");
+        this.dlqUrl = environment.readEnv(UPDATE_INDEX_DLQ_QUEUE_URL);
     }
 
     public Void handleRequest(DynamodbEvent event, Context context) {
@@ -106,13 +107,19 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     @JacocoGenerated
-    private static AuthorizedBackendUriRetriever defaultUriRetriver(Environment env) {
+    private static AuthorizedBackendUriRetriever defaultUriRetriever(Environment env) {
         return new AuthorizedBackendUriRetriever(env.readEnv("BACKEND_CLIENT_AUTH_URL"),
                                                  env.readEnv("BACKEND_CLIENT_SECRET_NAME"));
     }
 
     private static String getRecordThatCouldNotBeIndexed(DynamodbStreamRecord record) {
-        return attempt(() -> JsonUtils.dtoObjectMapper.writeValueAsString(record)).orElseThrow();
+        return attempt(() -> dtoObjectMapper.writeValueAsString(record)).orElseThrow();
+    }
+
+    private static String getStackTrace(Exception e) {
+        var sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw));
+        return sw.toString();
     }
 
     private boolean isCandidateOrApproval(DynamodbStreamRecord record) {
@@ -130,20 +137,12 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
             }
         } catch (Exception e) {
             LOGGER.error("updateIndex failed", e);
-
             LOGGER.error(COULD_NOT_UPDATE_INDEX_MESSAGE, getRecordThatCouldNotBeIndexed(record));
-
-            attempt(() -> queueClient.sendMessage(JsonUtils.dtoObjectMapper.writeValueAsString(Map.of(
+            attempt(() -> queueClient.sendMessage(dtoObjectMapper.writeValueAsString(Map.of(
                 "exception", getStackTrace(e),
                 "dynamodb", record
             )), dlqUrl));
         }
-    }
-
-    private static String getStackTrace(Exception e) {
-        var sw = new StringWriter();
-        e.printStackTrace(new PrintWriter(sw));
-        return sw.toString();
     }
 
     private CandidateBO fetchCandidate(UUID candidateIdentifier) {

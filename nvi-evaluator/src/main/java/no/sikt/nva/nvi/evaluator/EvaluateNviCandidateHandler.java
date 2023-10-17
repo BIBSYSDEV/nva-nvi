@@ -3,8 +3,10 @@ package no.sikt.nva.nvi.evaluator;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
+import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
+import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.evaluator.aws.S3StorageReader;
-import no.sikt.nva.nvi.evaluator.aws.EvaluateNviCandidateSqsClient;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.evaluator.model.CandidateEvaluatedMessage;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
@@ -19,26 +21,32 @@ import org.slf4j.LoggerFactory;
 
 public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHandler<EventReference, Void> {
 
-    public static final String BACKEND_CLIENT_AUTH_URL = new Environment().readEnv("BACKEND_CLIENT_AUTH_URL");
-    public static final String BACKEND_CLIENT_SECRET_NAME = new Environment().readEnv("BACKEND_CLIENT_SECRET_NAME");
-    public static final String EVALUATION_MESSAGE = "Nvi candidacy has been evaluated for publication: {}. Type: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateNviCandidateHandler.class);
+    private static final String BACKEND_CLIENT_AUTH_URL = "BACKEND_CLIENT_AUTH_URL";
+    private static final String BACKEND_CLIENT_SECRET_NAME = "BACKEND_CLIENT_SECRET_NAME";
+    private static final String ENV_CANDIDATE_QUEUE_URL = "CANDIDATE_QUEUE_URL";
+    private static final String ENV_CANDIDATE_DLQ_URL = "CANDIDATE_DLQ_URL";
+    private static final String EVALUATION_MESSAGE = "Nvi candidacy has been evaluated for publication: {}. Type: {}";
+    private static final String FAILURE_MESSAGE = "Failure while calculating NVI Candidate: %s, ex: %s, msg: %s";
     private final EvaluatorService evaluatorService;
-    private final EvaluateNviCandidateSqsClient queueClient;
+    private final QueueClient<NviSendMessageResponse> queueClient;
+    private final String queueUrl;
+    private final String dlqUrl;
 
     @JacocoGenerated
     public EvaluateNviCandidateHandler() {
-        this(new EvaluatorService(new S3StorageReader(), new CandidateCalculator(
-                 new AuthorizedBackendUriRetriever(BACKEND_CLIENT_AUTH_URL, BACKEND_CLIENT_SECRET_NAME))),
-             new EvaluateNviCandidateSqsClient()
-        );
+        this(new EvaluatorService(new S3StorageReader(),
+                                  new CandidateCalculator(defaultUriRetriever(new Environment()))),
+             new NviQueueClient(), new Environment());
     }
 
     public EvaluateNviCandidateHandler(EvaluatorService evaluatorService,
-                                       EvaluateNviCandidateSqsClient queueClient) {
+                                       QueueClient<NviSendMessageResponse> queueClient, Environment environment) {
         super(EventReference.class);
         this.evaluatorService = evaluatorService;
         this.queueClient = queueClient;
+        this.queueUrl = environment.readEnv(ENV_CANDIDATE_QUEUE_URL);
+        this.dlqUrl = environment.readEnv(ENV_CANDIDATE_DLQ_URL);
     }
 
     @Override
@@ -50,16 +58,21 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
             sendMessage(message);
             LOGGER.info(EVALUATION_MESSAGE, message.candidate().publicationId(), message.candidate().getClass());
         } catch (Exception e) {
-            var msg = "Failure while calculating NVI Candidate: %s, ex: %s, msg: %s".formatted(input.getUri(),
-                                                                                               e.getClass(),
-                                                                                               e.getMessage());
+            var msg = FAILURE_MESSAGE.formatted(input.getUri(), e.getClass(), e.getMessage());
             LOGGER.error(msg, e);
-            queueClient.sendDlq(msg);
+            queueClient.sendMessage(msg, dlqUrl);
         }
         return null;
     }
 
-    private void sendMessage(CandidateEvaluatedMessage c) {
-        attempt(() -> dtoObjectMapper.writeValueAsString(c)).map(queueClient::sendMessage).orElseThrow();
+    @JacocoGenerated
+    private static AuthorizedBackendUriRetriever defaultUriRetriever(Environment env) {
+        return new AuthorizedBackendUriRetriever(env.readEnv(BACKEND_CLIENT_AUTH_URL),
+                                                 env.readEnv(BACKEND_CLIENT_SECRET_NAME));
+    }
+
+    private void sendMessage(CandidateEvaluatedMessage evaluatedCandidate) {
+        attempt(() -> dtoObjectMapper.writeValueAsString(evaluatedCandidate)).map(
+            message -> queueClient.sendMessage(message, queueUrl)).orElseThrow();
     }
 }
