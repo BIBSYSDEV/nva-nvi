@@ -155,11 +155,11 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     private void removeDocumentFromIndex(CandidateBO candidate) {
-        openSearchClient.removeDocumentFromIndex(toIndexDocumentWithId(candidate.identifier()));
+        openSearchClient.removeDocumentFromIndex(toIndexDocumentWithId(candidate.getIdentifier()));
     }
 
     private void addDocumentToIndex(CandidateBO candidate) {
-        attempt(() -> storageReader.read(candidate.getBucketUri()))
+        attempt(() -> storageReader.read(candidate.getPublicationBucketUri()))
             .map(blob -> documentGenerator.generateDocument(blob, candidate))
             .map(indexDocument -> {
                 LOGGER.info("Adding document to index, candidateId: {} publicationId: {}",

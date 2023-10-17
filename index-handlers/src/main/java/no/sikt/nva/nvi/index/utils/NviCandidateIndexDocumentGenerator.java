@@ -21,8 +21,6 @@ import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +30,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.ApprovalBO;
 import no.sikt.nva.nvi.common.service.CandidateBO;
@@ -54,11 +51,9 @@ import org.slf4j.LoggerFactory;
 
 public final class NviCandidateIndexDocumentGenerator {
 
-    public static final String APPLICATION_JSON = "application/json";
-    private static final int POINTS_SCALE = 4;
-    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
-    private final AuthorizedBackendUriRetriever uriRetriever;
     private static final Logger LOGGER = LoggerFactory.getLogger(NviCandidateIndexDocumentGenerator.class);
+    private static final String APPLICATION_JSON = "application/json";
+    private final AuthorizedBackendUriRetriever uriRetriever;
 
     public NviCandidateIndexDocumentGenerator(AuthorizedBackendUriRetriever uriRetriever) {
         this.uriRetriever = uriRetriever;
@@ -73,11 +68,11 @@ public final class NviCandidateIndexDocumentGenerator {
     private NviCandidateIndexDocument createNviCandidateIndexDocument(JsonNode resource, CandidateBO candidate) {
         var approvals = createApprovals(resource, toDbApprovals(candidate.getApprovals()));
         return new NviCandidateIndexDocument.Builder().withContext(URI.create(Contexts.NVI_CONTEXT))
-                   .withIdentifier(candidate.identifier().toString())
+                   .withIdentifier(candidate.getIdentifier().toString())
                    .withApprovals(approvals)
                    .withPublicationDetails(extractPublicationDetails(resource))
                    .withNumberOfApprovals(approvals.size())
-                   .withPoints(sumPoints(candidate.getPoints()))
+                   .withPoints(candidate.getTotalPoints())
                    .build();
     }
 
@@ -86,13 +81,6 @@ public final class NviCandidateIndexDocumentGenerator {
                    .stream()
                    .map(approvalBO -> approvalBO.approval().approvalStatus())
                    .collect(Collectors.toList());
-    }
-
-    private BigDecimal sumPoints(List<DbInstitutionPoints> points) {
-        return points.stream()
-                   .map(DbInstitutionPoints::points)
-                   .reduce(BigDecimal.ZERO, BigDecimal::add)
-                   .setScale(POINTS_SCALE, ROUNDING_MODE);
     }
 
     private List<Approval> createApprovals(JsonNode resource, List<DbApprovalStatus> approvals) {

@@ -79,7 +79,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         var theNote = "The note";
         var userName = randomString();
 
-        var request = createRequest(candidate.identifier(), new NviNoteRequest(theNote), userName);
+        var request = createRequest(candidate.getIdentifier(), new NviNoteRequest(theNote), userName);
         handler.handleRequest(request, output, context);
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var actualNote = gatewayResponse.getBodyObject(CandidateDto.class).notes().get(0);
@@ -92,7 +92,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
     void shouldReturnConflictWhenCreatingNoteAndReportingPeriodIsClosed() throws IOException {
         var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
                                                 periodRepository).orElseThrow();
-        var request = createRequest(candidate.identifier(), new NviNoteRequest(randomString()), randomString());
+        var request = createRequest(candidate.getIdentifier(), new NviNoteRequest(randomString()), randomString());
         var handler = new CreateNoteHandler(candidateRepository, periodRepositoryReturningClosedPeriod(YEAR));
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -105,9 +105,10 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         var candidateBO = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
                                                   candidateRepository, periodRepository).orElseThrow();
         var nonCandidate = CandidateBO.fromRequest(
-            createUpsertCandidateRequest(candidateBO.publicationId(), randomUri(), false, InstanceType.NON_CANDIDATE, 0),
+            createUpsertCandidateRequest(candidateBO.getPublicationId(), randomUri(), false, InstanceType.NON_CANDIDATE,
+                                         0, TestUtils.randomBigDecimal()),
             candidateRepository, periodRepository).orElseThrow();
-        var request = createRequest(nonCandidate.identifier(), randomNote(), randomString());
+        var request = createRequest(nonCandidate.getIdentifier(), randomNote(), randomString());
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 

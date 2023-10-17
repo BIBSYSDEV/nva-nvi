@@ -50,6 +50,9 @@ public final class TestUtils {
     public static final int SCALE = 10;
     public static final BigDecimal MIN_BIG_DECIMAL = BigDecimal.ZERO;
     public static final BigDecimal MAX_BIG_DECIMAL = BigDecimal.TEN;
+
+    public static final int POINTS_SCALE = 4;
+    public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     public static final int CURRENT_YEAR = Year.now().getValue();
     private static final String BUCKET_HOST = "example.org";
     private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
@@ -208,12 +211,14 @@ public final class TestUtils {
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI... institutions) {
         return createUpsertCandidateRequest(randomUri(), randomUri(), true, InstanceType.ACADEMIC_MONOGRAPH, 1,
+                                            randomBigDecimal(),
                                             institutions);
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
                                                                       URI publicationBucketUri, boolean isApplicable,
                                                                       final InstanceType instanceType, int creatorCount,
+                                                                      BigDecimal totalPoints,
                                                                       URI... institutions) {
         var creators = IntStream.of(creatorCount)
                            .mapToObj(i -> randomUri())
@@ -228,7 +233,7 @@ public final class TestUtils {
                                             randomElement(ChannelType.values()).getValue(), randomUri(),
                                             DbLevel.LEVEL_TWO, points,
                                             randomInteger(), randomBoolean(),
-                                            randomBigDecimal(), randomBigDecimal(), randomBigDecimal());
+                                            randomBigDecimal(), randomBigDecimal(), totalPoints);
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
@@ -236,8 +241,8 @@ public final class TestUtils {
                                                                       boolean isApplicable,
                                                                       final PublicationDate publicationDate,
                                                                       Map<URI, List<URI>> creators,
-                                                                      final InstanceType instanceType,
-                                                                      final String channelType, final URI channelId,
+                                                                      InstanceType instanceType,
+                                                                      String channelType, URI channelId,
                                                                       DbLevel level,
                                                                       Map<URI, BigDecimal> points,
                                                                       final Integer creatorShareCount,

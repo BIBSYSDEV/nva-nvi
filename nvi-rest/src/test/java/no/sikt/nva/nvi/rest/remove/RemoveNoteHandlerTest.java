@@ -73,7 +73,7 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
         var user = randomUsername();
         var candidateWithNote = createNote(candidate, user);
         var noteId = candidateWithNote.toDto().notes().get(0).identifier();
-        var request = createRequest(candidate.identifier(), noteId, randomString()).build();
+        var request = createRequest(candidate.getIdentifier(), noteId, randomString()).build();
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -85,7 +85,7 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
         var user = randomUsername();
         var candidateWithNote = createNote(candidate, user);
         var noteId = candidateWithNote.toDto().notes().get(0).identifier();
-        var request = createRequest(candidate.identifier(), noteId, user.value()).build();
+        var request = createRequest(candidate.getIdentifier(), noteId, user.value()).build();
         handler.handleRequest(request, output, context);
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var body = gatewayResponse.getBodyObject(CandidateDto.class);
@@ -106,7 +106,7 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
         var user = randomString();
         candidate.createNote(new CreateNoteRequest(randomString(), user));
         var noteId = candidate.toDto().notes().get(0).identifier();
-        var request = createRequest(candidate.identifier(), noteId, user).build();
+        var request = createRequest(candidate.getIdentifier(), noteId, user).build();
         handler = new RemoveNoteHandler(candidateRepository, periodRepositoryReturningClosedPeriod(YEAR));
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);

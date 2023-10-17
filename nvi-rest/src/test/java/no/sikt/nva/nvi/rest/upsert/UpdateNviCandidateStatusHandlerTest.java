@@ -91,7 +91,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var institutionId = randomUri();
         var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository,
                                                 periodRepository).orElseThrow();
-        var request = createUnauthorizedRequest(candidate.identifier(), institutionId);
+        var request = createUnauthorizedRequest(candidate.getIdentifier(), institutionId);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -107,7 +107,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var candidate =
             CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
-        var request = createRequest(candidate.identifier(), institutionId, APPROVED);
+        var request = createRequest(candidate.getIdentifier(), institutionId, APPROVED);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -123,7 +123,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var candidate =
             CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
-        var request = createRequest(candidate.identifier(), institutionId, APPROVED);
+        var request = createRequest(candidate.getIdentifier(), institutionId, APPROVED);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -136,7 +136,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var candidate =
             CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
-        var request = createRequestWithoutReason(candidate.identifier(), institutionId, REJECTED);
+        var request = createRequestWithoutReason(candidate.getIdentifier(), institutionId, REJECTED);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -152,7 +152,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
             CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         candidate.updateApproval(createStatusRequest(oldStatus));
-        var request = createRequest(candidate.identifier(), institutionId,
+        var request = createRequest(candidate.getIdentifier(), institutionId,
                                     NviApprovalStatus.parse(newStatus.getValue()));
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -170,7 +170,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
                 .orElseThrow();
         candidate.updateApproval(createStatusRequest(oldStatus));
         var newStatus = PENDING;
-        var request = createRequest(candidate.identifier(), institutionId, newStatus);
+        var request = createRequest(candidate.getIdentifier(), institutionId, newStatus);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var candidateResponse = response.getBodyObject(CandidateDto.class);
@@ -190,8 +190,8 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         candidate.updateApproval(createStatusRequest(oldStatus));
         var rejectionReason = randomString();
         var newStatus = REJECTED;
-        var requestBody = new NviStatusRequest(candidate.identifier(), institutionId, newStatus, rejectionReason);
-        var request = createRequest(candidate.identifier(), institutionId, requestBody, randomString());
+        var requestBody = new NviStatusRequest(candidate.getIdentifier(), institutionId, newStatus, rejectionReason);
+        var request = createRequest(candidate.getIdentifier(), institutionId, requestBody, randomString());
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var candidateResponse = response.getBodyObject(CandidateDto.class);
@@ -209,7 +209,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
             CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         candidate.updateApproval(createStatusRequest(DbStatus.REJECTED));
-        var request = createRequest(candidate.identifier(), institutionId,
+        var request = createRequest(candidate.getIdentifier(), institutionId,
                                     NviApprovalStatus.parse(newStatus.getValue()));
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -227,8 +227,8 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
             CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         var assignee = randomString();
-        var requestBody = new NviStatusRequest(candidate.identifier(), institutionId, APPROVED, null);
-        var request = createRequest(candidate.identifier(), institutionId, requestBody, assignee);
+        var requestBody = new NviStatusRequest(candidate.getIdentifier(), institutionId, APPROVED, null);
+        var request = createRequest(candidate.getIdentifier(), institutionId, requestBody, assignee);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var candidateResponse = response.getBodyObject(CandidateDto.class);

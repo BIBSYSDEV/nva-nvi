@@ -40,7 +40,7 @@ public class CandidateBONotesTest extends LocalDynamoTest {
         var noteRequest = createNoteRequest(randomString(), randomString());
         candidate.createNote(noteRequest);
 
-        var actualNote = CandidateBO.fromRequest(candidate::identifier, candidateRepository, periodRepository)
+        var actualNote = CandidateBO.fromRequest(candidate::getIdentifier, candidateRepository, periodRepository)
                              .toDto()
                              .notes()
                              .get(0);
