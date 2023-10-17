@@ -482,16 +482,18 @@ class EvaluateNviCandidateHandlerTest {
                                                               Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID,
                                                                      points.setScale(SCALE, RoundingMode.HALF_UP)),
                                                               publicationChannel, Level.LEVEL_ONE.getValue(),
-                                                              basePoints, totalPoints))
-                   .withPublicationBucketUri(bucketUri).build();
+                                                              basePoints, totalPoints, bucketUri))
+                   .build();
     }
 
     private static NviCandidate createExpectedCandidate(String instanceType, Map<URI, BigDecimal> institutionPoints,
                                                         PublicationChannel channelType, String level,
-                                                        BigDecimal basePoints, BigDecimal totalPoints) {
+                                                        BigDecimal basePoints, BigDecimal totalPoints,
+                                                        URI publicationBucketUri) {
         var verifiedCreators = List.of(new Creator(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID)));
         return NviCandidate.builder()
                    .withPublicationId(HARDCODED_PUBLICATION_ID)
+                   .withPublicationBucketUri(publicationBucketUri)
                    .withPublicationDate(HARDCODED_PUBLICATION_DATE)
                    .withInstanceType(instanceType)
                    .withChannelType(channelType.getValue())

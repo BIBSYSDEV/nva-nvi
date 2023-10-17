@@ -42,6 +42,7 @@ import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import no.sikt.nva.nvi.common.service.requests.UpsertNonCandidateRequest;
 import nva.commons.core.paths.UriWrapper;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -200,6 +201,10 @@ public final class TestUtils {
         return nviService;
     }
 
+    public static UpsertNonCandidateRequest createUpsertNonCandidateRequest(URI publicationId) {
+        return () -> publicationId;
+    }
+
     public static UpdateStatusRequest createUpdateStatusRequest(DbStatus status, URI institutionId, String username) {
         return UpdateStatusRequest.builder()
                    .withReason(DbStatus.REJECTED.equals(status) ? randomString() : null)
@@ -284,7 +289,7 @@ public final class TestUtils {
             }
 
             @Override
-            public URI channelId() {
+            public URI publicationChannelId() {
                 return channelId;
             }
 
