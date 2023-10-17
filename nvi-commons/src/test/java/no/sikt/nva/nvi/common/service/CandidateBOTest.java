@@ -145,7 +145,8 @@ class CandidateBOTest extends LocalDynamoTest {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
         var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
-        var fetchedCandidate = CandidateBO.fromRequest(candidate::getPublicationId, candidateRepository, periodRepository);
+        var fetchedCandidate = CandidateBO.fromRequest(candidate::getPublicationId, candidateRepository,
+                                                       periodRepository);
         assertThat(fetchedCandidate.getIdentifier(), is(equalTo(candidate.getIdentifier())));
     }
 
@@ -233,7 +234,8 @@ class CandidateBOTest extends LocalDynamoTest {
                                                          randomUri(), randomUri(),
                                                          randomUri());
         var candidateBO = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository).orElseThrow();
-        var fetchedCandidate = CandidateBO.fromRequest(candidateBO::getIdentifier, candidateRepository, periodRepository);
+        var fetchedCandidate = CandidateBO.fromRequest(candidateBO::getIdentifier, candidateRepository,
+                                                       periodRepository);
         assertThat(fetchedCandidate.periodStatus().status(), is(equalTo(Status.NO_PERIOD)));
     }
 
