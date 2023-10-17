@@ -276,7 +276,7 @@ class CandidateBOTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldResetApprovalsWhenUpdatingNonCandidate() {
+    void shouldResetApprovalsWhenNonCandidateBecomesCandidate() {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
         var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
