@@ -8,7 +8,7 @@ import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
-import static no.sikt.nva.nvi.test.TestUtils.randomInstanceType;
+import static no.sikt.nva.nvi.test.TestUtils.randomInstanceTypeExcluding;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
@@ -212,7 +212,8 @@ class CandidateBOTest extends LocalDynamoTest {
         var createRequest = createUpsertCandidateRequest(publicationId, publicationBucketUri,
                                                          isApplicable,
                                                          new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
-                                                         creators, randomInstanceType(),
+                                                         creators,
+                                                         randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE),
                                                          randomElement(ChannelType.values()).getValue(), randomUri(),
                                                          DbLevel.LEVEL_TWO, points, randomInteger(10), randomBoolean(),
                                                          randomBigDecimal(), randomBigDecimal(), totalPoints);
