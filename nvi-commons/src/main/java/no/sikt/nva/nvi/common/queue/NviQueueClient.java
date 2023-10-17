@@ -31,20 +31,20 @@ public class NviQueueClient implements QueueClient<NviSendMessageResponse> {
     }
 
     @JacocoGenerated
+    protected static SqsClient defaultSqsClient() {
+        return SqsClient.builder()
+                   .region(ApplicationConstants.REGION)
+                   .httpClient(httpClientForConcurrentQueries())
+                   .build();
+    }
+
+    @JacocoGenerated
     private static SdkHttpClient httpClientForConcurrentQueries() {
         return ApacheHttpClient.builder()
                    .useIdleConnectionReaper(true)
                    .maxConnections(MAX_CONNECTIONS)
                    .connectionMaxIdleTime(Duration.ofMinutes(IDLE_TIME))
                    .connectionTimeout(Duration.ofMinutes(TIMEOUT_TIME))
-                   .build();
-    }
-
-    @JacocoGenerated
-    protected static SqsClient defaultSqsClient() {
-        return SqsClient.builder()
-                   .region(ApplicationConstants.REGION)
-                   .httpClient(httpClientForConcurrentQueries())
                    .build();
     }
 
@@ -56,8 +56,6 @@ public class NviQueueClient implements QueueClient<NviSendMessageResponse> {
     }
 
     private NviSendMessageResponse createResponse(SendMessageResponse response) {
-        return NviSendMessageResponse.builder()
-                   .messageId(response.messageId())
-                   .build();
+        return new NviSendMessageResponse(response.messageId());
     }
 }

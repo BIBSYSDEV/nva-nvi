@@ -35,12 +35,12 @@ import org.slf4j.LoggerFactory;
 @JacocoGenerated
 public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(UpdateIndexHandler.class);
     private static final String COULD_NOT_UPDATE_INDEX_MESSAGE = "Could not update index for record: {}";
     private static final String CANDIDATE_TYPE = "CANDIDATE";
     private static final String APPROVAL_TYPE = "APPROVAL_STATUS";
     private static final String PRIMARY_KEY_DELIMITER = "#";
     private static final String IDENTIFIER = "identifier";
-    private static final Logger LOGGER = LoggerFactory.getLogger(UpdateIndexHandler.class);
     private static final String UPDATE_INDEX_DLQ_QUEUE_URL = "UPDATE_INDEX_DLQ_QUEUE_URL";
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
     private final StorageReader<URI> storageReader;
@@ -117,9 +117,9 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     private static String getStackTrace(Exception e) {
-        var sw = new StringWriter();
-        e.printStackTrace(new PrintWriter(sw));
-        return sw.toString();
+        var stringWriter = new StringWriter();
+        e.printStackTrace(new PrintWriter(stringWriter));
+        return stringWriter.toString();
     }
 
     private boolean isCandidateOrApproval(DynamodbStreamRecord record) {

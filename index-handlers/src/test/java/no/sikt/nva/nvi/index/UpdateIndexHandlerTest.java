@@ -81,13 +81,13 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 
 class UpdateIndexHandlerTest extends LocalDynamoTest {
 
+    public static final String DLQ_QUEUE_URL = "test_dlq_url";
     private static final Context CONTEXT = mock(Context.class);
     private static final String CANDIDATE = IoUtils.stringFromResources(Path.of("candidate.json"));
     private static final URI INSTITUTION_ID_FROM_EVENT = URI.create(
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     private static final int POINTS_SCALE = 4;
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
-    public static final String DLQ_QUEUE_URL = "test_dlq_url";
     private UpdateIndexHandler handler;
     private TestAppender appender;
     private StorageReader<URI> storageReader;
@@ -161,10 +161,8 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     @Test
     void indexingFailureShouldBeAddedToDlq()
         throws JsonProcessingException {
-        var persistedCandidate = randomApplicableCandidate();
-        mockRepositories(persistedCandidate);
-        Optional<CandidateDao> failingCandidateLookup = Optional.empty();
-        when(candidateRepository.findCandidateDaoById(any())).thenReturn(failingCandidateLookup);
+        mockRepositories(randomApplicableCandidate());
+        when(candidateRepository.findCandidateDaoById(any())).thenReturn(Optional.empty());
 
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
 
@@ -276,7 +274,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         return new PublicationDetails(
             "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
             "AcademicArticle", "Demo nvi candidate", new PublicationDate("2023", "6", "4"), List.of(
-                new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
+            new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
                 .withName("Mona Ullah")
                 .withRole("Creator")
                 .withAffiliations(List.of(constructAffiliation()))
@@ -287,7 +285,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         return new PublicationDetails(
             "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
             "AcademicArticle", "Demo nvi candidate", publicationDate, List.of(
-                new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
+            new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
                 .withName("Mona Ullah")
                 .withRole("Creator")
                 .withAffiliations(List.of(constructAffiliation()))
