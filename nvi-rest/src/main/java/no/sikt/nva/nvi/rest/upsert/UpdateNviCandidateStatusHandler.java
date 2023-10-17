@@ -8,7 +8,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
 import no.sikt.nva.nvi.utils.RequestUtil;
@@ -43,7 +43,7 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
         var username = requestInfo.getUserName();
 
-        return attempt(() -> CandidateBO.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository))
+        return attempt(() -> Candidate.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository))
                    .map(candidate -> candidate.updateApproval(input.toUpdateRequest(username)))
                    .orElseThrow(ExceptionMapper::map)
                    .toDto();

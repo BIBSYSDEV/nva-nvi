@@ -7,7 +7,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
@@ -37,9 +37,9 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
     protected CandidateDto processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER)).map(UUID::fromString)
-                   .map(identifier -> CandidateBO.fromRequest(() -> identifier, candidateRepository, periodRepository))
+                   .map(identifier -> Candidate.fromRequest(() -> identifier, candidateRepository, periodRepository))
                    .map(this::checkIfApplicable)
-                   .map(CandidateBO::toDto)
+                   .map(Candidate::toDto)
                    .orElseThrow(ExceptionMapper::map);
     }
 
@@ -48,7 +48,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
         return HTTP_OK;
     }
 
-    private CandidateBO checkIfApplicable(CandidateBO candidate) {
+    private Candidate checkIfApplicable(Candidate candidate) {
         if (candidate.isApplicable()) {
             return candidate;
         }

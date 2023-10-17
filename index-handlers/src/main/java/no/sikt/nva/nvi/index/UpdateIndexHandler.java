@@ -21,7 +21,7 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageReader;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
@@ -145,8 +145,8 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         }
     }
 
-    private CandidateBO fetchCandidate(UUID candidateIdentifier) {
-        return CandidateBO.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository);
+    private Candidate fetchCandidate(UUID candidateIdentifier) {
+        return Candidate.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository);
     }
 
     private boolean isUpdate(DynamodbStreamRecord record) {
@@ -154,11 +154,11 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         return OperationType.INSERT.equals(eventType) || OperationType.MODIFY.equals(eventType);
     }
 
-    private void removeDocumentFromIndex(CandidateBO candidate) {
+    private void removeDocumentFromIndex(Candidate candidate) {
         openSearchClient.removeDocumentFromIndex(toIndexDocumentWithId(candidate.getIdentifier()));
     }
 
-    private void addDocumentToIndex(CandidateBO candidate) {
+    private void addDocumentToIndex(Candidate candidate) {
         attempt(() -> storageReader.read(candidate.getPublicationBucketUri()))
             .map(blob -> documentGenerator.generateDocument(blob, candidate))
             .map(indexDocument -> {

@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -67,7 +67,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnValidCandidateWhenCandidateExists() throws IOException {
         var candidate =
-            CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository, periodRepository)
+            Candidate.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository, periodRepository)
                 .orElseThrow();
         var request = createRequest(candidate.getIdentifier());
 
@@ -86,12 +86,12 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private CandidateBO setUpNonApplicableCandidate() {
+    private Candidate setUpNonApplicableCandidate() {
         var candidate =
-            CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository, periodRepository)
+            Candidate.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository, periodRepository)
                 .orElseThrow();
-        return CandidateBO.fromRequest(createUpsertNonCandidateRequest(candidate.getPublicationId()),
-                                       candidateRepository).orElseThrow();
+        return Candidate.fromRequest(createUpsertNonCandidateRequest(candidate.getPublicationId()),
+                                     candidateRepository).orElseThrow();
     }
 
     private GatewayResponse<CandidateDto> getGatewayResponse()

@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
@@ -74,8 +74,8 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldAddNoteToCandidateWhenNoteIsValid() throws IOException {
-        var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
-                                                periodRepository).orElseThrow();
+        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
+                                              periodRepository).orElseThrow();
         var theNote = "The note";
         var userName = randomString();
 
@@ -90,8 +90,8 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnConflictWhenCreatingNoteAndReportingPeriodIsClosed() throws IOException {
-        var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
-                                                periodRepository).orElseThrow();
+        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
+                                              periodRepository).orElseThrow();
         var request = createRequest(candidate.getIdentifier(), new NviNoteRequest(randomString()), randomString());
         var handler = new CreateNoteHandler(candidateRepository, periodRepositoryReturningClosedPeriod(YEAR));
         handler.handleRequest(request, output, context);
@@ -102,9 +102,9 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturn405NotAllowedWhenAddingNoteToNonCandidate() throws IOException {
-        var candidateBO = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
-                                                  candidateRepository, periodRepository).orElseThrow();
-        var nonCandidate = CandidateBO.fromRequest(
+        var candidateBO = Candidate.fromRequest(createUpsertCandidateRequest(randomUri()),
+                                                candidateRepository, periodRepository).orElseThrow();
+        var nonCandidate = Candidate.fromRequest(
             createUpsertNonCandidateRequest(candidateBO.getPublicationId()), candidateRepository).orElseThrow();
         var request = createRequest(nonCandidate.getIdentifier(), randomNote(), randomString());
         handler.handleRequest(request, output, context);

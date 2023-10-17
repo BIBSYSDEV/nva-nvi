@@ -49,11 +49,10 @@ import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.service.ApprovalBO;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.model.Approval;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.Affiliation;
-import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.Contributor;
@@ -159,7 +158,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     void indexingFailureShouldBeAddedToDlq()
         throws JsonProcessingException {
         mockRepositories(randomApplicableCandidate());
-        when(candidateRepository.findCandidateDaoById(any())).thenReturn(Optional.empty());
+        when(candidateRepository.findCandidateById(any())).thenReturn(Optional.empty());
 
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
 
@@ -246,16 +245,16 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                   },"""));
     }
 
-    private static List<Approval> constructExpectedApprovals(Map<URI, ApprovalBO> approvals) {
+    private static List<no.sikt.nva.nvi.index.model.Approval> constructExpectedApprovals(Map<URI, Approval> approvals) {
         return approvals.keySet()
                    .stream()
-                   .map(approval -> new Approval(approvals.get(approval).institutionId().toString(), getLabels(),
-                                                 ApprovalStatus.fromValue(approvals.get(approval)
+                   .map(approval -> new no.sikt.nva.nvi.index.model.Approval(approvals.get(approval).institutionId().toString(), getLabels(),
+                                                                             ApprovalStatus.fromValue(approvals.get(approval)
                                                                               .approval()
                                                                               .approvalStatus()
                                                                               .status()
                                                                               .getValue()),
-                                                 Optional.of(approvals.get(approval).approval().approvalStatus())
+                                                                             Optional.of(approvals.get(approval).approval().approvalStatus())
                                                      .map(DbApprovalStatus::assignee)
                                                      .map(Username::value)
                                                      .orElse(null)))
@@ -325,7 +324,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     @NotNull
-    private static List<DbInstitutionPoints> mapToInstitutionPoints(CandidateBO candidate) {
+    private static List<DbInstitutionPoints> mapToInstitutionPoints(Candidate candidate) {
         return candidate.getInstitutionPoints()
                    .entrySet()
                    .stream()
@@ -334,17 +333,17 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .toList();
     }
 
-    private void mockRepositories(CandidateBO persistedCandidate) {
+    private void mockRepositories(Candidate persistedCandidate) {
         candidateRepository = mock(CandidateRepository.class);
         periodRepository = mock(PeriodRepository.class);
         when(storageReader.read(any())).thenReturn(CANDIDATE);
-        when(candidateRepository.findCandidateDaoById(any())).thenReturn(Optional.of(toDao(persistedCandidate)));
+        when(candidateRepository.findCandidateById(any())).thenReturn(Optional.of(toDao(persistedCandidate)));
         when(candidateRepository.fetchApprovals(any())).thenReturn(getApproval(persistedCandidate));
         handler = new UpdateIndexHandler(storageReader, openSearchClient, candidateRepository, periodRepository,
                                          generator, queueClient, env);
     }
 
-    private CandidateDao toDao(CandidateBO candidate) {
+    private CandidateDao toDao(Candidate candidate) {
         return CandidateDao.builder()
                    .identifier(candidate.getIdentifier())
                    .candidate(DbCandidate.builder()
@@ -365,7 +364,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private List<ApprovalStatusDao> getApproval(CandidateBO persistedCandidate) {
+    private List<ApprovalStatusDao> getApproval(Candidate persistedCandidate) {
         var approval = persistedCandidate.getApprovals().get(INSTITUTION_ID_FROM_EVENT);
         return List.of(ApprovalStatusDao.builder()
                            .approvalStatus(DbApprovalStatus.builder()
@@ -375,19 +374,19 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                            .build());
     }
 
-    private CandidateBO randomApplicableCandidate() {
-        return CandidateBO.fromRequest(createUpsertCandidateRequest(INSTITUTION_ID_FROM_EVENT), candidateRepository,
-                                       periodRepository).orElseThrow();
+    private Candidate randomApplicableCandidate() {
+        return Candidate.fromRequest(createUpsertCandidateRequest(INSTITUTION_ID_FROM_EVENT), candidateRepository,
+                                     periodRepository).orElseThrow();
     }
 
-    private DynamodbStreamRecord createDynamoDbRecord(CandidateBO candidate) throws JsonProcessingException {
+    private DynamodbStreamRecord createDynamoDbRecord(Candidate candidate) throws JsonProcessingException {
         return JsonUtils.dtoObjectMapper.readValue(IoUtils.stringFromResources(Path.of("genericDynamoDbRecord.json"))
                                                        .replace("__REPLACE_IDENTIFIER__",
                                                                 candidate.getIdentifier().toString()),
                                                    DynamodbStreamRecord.class);
     }
 
-    private NviCandidateIndexDocument constructExpectedDocument(CandidateBO candidate) {
+    private NviCandidateIndexDocument constructExpectedDocument(Candidate candidate) {
         return new NviCandidateIndexDocument.Builder().withContext(
                 URI.create("https://bibsysdev.github.io/src/nvi-context.json"))
                    .withIdentifier(candidate.getIdentifier().toString())
@@ -398,7 +397,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private NviCandidateIndexDocument constructExpectedDocumentWithPublicationDate(CandidateBO candidate,
+    private NviCandidateIndexDocument constructExpectedDocumentWithPublicationDate(Candidate candidate,
                                                                                    PublicationDate publicationDate) {
         return new NviCandidateIndexDocument.Builder().withContext(
                 URI.create("https://bibsysdev.github.io/src/nvi-context.json"))

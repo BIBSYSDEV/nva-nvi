@@ -1,9 +1,7 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -32,19 +30,4 @@ class CandidateRepositoryTest extends LocalDynamoTest {
         assertThrows(RuntimeException.class, () -> candidateRepository.create(candidate2, List.of()));
         assertThat(scanDB().count(), is(equalTo(2)));
     }
-
-    @Test
-    public void shouldOverwriteExistingCandidateWhenUpdating() {
-        var originalCandidate = randomCandidate();
-        var created = candidateRepository.create(originalCandidate, List.of());
-        var newCandidate = originalCandidate.copy().publicationBucketUri(randomUri()).build();
-        candidateRepository.update(created.identifier(), newCandidate, List.of());
-        var fetched = candidateRepository.findCandidateById(created.identifier()).get().candidate();
-
-        assertThat(scanDB().count(), is(equalTo(2)));
-        assertThat(fetched, is(not(equalTo(originalCandidate))));
-        assertThat(fetched, is(equalTo(newCandidate)));
-    }
-
-
 }

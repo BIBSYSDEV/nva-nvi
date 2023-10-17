@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.service;
+package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Objects.isNull;
 import java.net.URI;
@@ -14,7 +14,7 @@ import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import nva.commons.core.JacocoGenerated;
 
-public class ApprovalBO {
+public class Approval {
 
     public static final String ERROR_MSG_USERNAME_NULL = "Username cannot be null";
     private static final String UNKNOWN_REQUEST_TYPE_MESSAGE = "Unknown request type";
@@ -23,7 +23,7 @@ public class ApprovalBO {
     private final UUID identifier;
     private final ApprovalStatusDao original;
 
-    public ApprovalBO(CandidateRepository repository, UUID identifier, ApprovalStatusDao dbApprovalStatus) {
+    public Approval(CandidateRepository repository, UUID identifier, ApprovalStatusDao dbApprovalStatus) {
         this.repository = repository;
         this.identifier = identifier;
         this.original = dbApprovalStatus;
@@ -37,14 +37,14 @@ public class ApprovalBO {
         return original;
     }
 
-    public ApprovalBO update(UpdateApprovalRequest input) {
+    public Approval update(UpdateApprovalRequest input) {
         if (input instanceof UpdateAssigneeRequest request) {
             var newDao = repository.updateApprovalStatusDao(identifier, updateAssignee(request));
-            return new ApprovalBO(repository, identifier, newDao);
+            return new Approval(repository, identifier, newDao);
         } else if (input instanceof UpdateStatusRequest request) {
             validate((UpdateStatusRequest) input);
             var newDao = repository.updateApprovalStatusDao(identifier, updateStatus(request));
-            return new ApprovalBO(repository, identifier, newDao);
+            return new Approval(repository, identifier, newDao);
         } else {
             throw new IllegalArgumentException(UNKNOWN_REQUEST_TYPE_MESSAGE);
         }

@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.service;
+package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Objects.isNull;
 import java.util.UUID;
@@ -9,26 +9,26 @@ import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 
-public class NoteBO {
+public class Note {
 
     private final CandidateRepository repository;
     private final UUID identifier;
     private final NoteDao dao;
 
-    public NoteBO(CandidateRepository repository, UUID identifier, NoteDao note) {
+    public Note(CandidateRepository repository, UUID identifier, NoteDao note) {
         this.repository = repository;
         this.identifier = identifier;
         this.dao = note;
     }
 
-    public static NoteBO fromRequest(CreateNoteRequest input, UUID candidateIdentifier,
-                                     CandidateRepository repository) {
+    public static Note fromRequest(CreateNoteRequest input, UUID candidateIdentifier,
+                                   CandidateRepository repository) {
         validate(input);
         var noteDao = repository.saveNote(candidateIdentifier, DbNote.builder()
                                                                    .text(input.text())
                                                                    .user(Username.fromString(input.username()))
                                                                    .build());
-        return new NoteBO(repository, candidateIdentifier, noteDao);
+        return new Note(repository, candidateIdentifier, noteDao);
     }
 
     public UUID noteId() {

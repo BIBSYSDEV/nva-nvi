@@ -10,7 +10,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Objects;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.InvalidNviMessageException;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
@@ -61,10 +61,10 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
     private void upsertNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
         validateMessage(evaluatedCandidate);
         if (evaluatedCandidate.candidate() instanceof NviCandidate candidate) {
-            CandidateBO.fromRequest(candidate, repository, periodRepository);
+            Candidate.fromRequest(candidate, repository, periodRepository);
         } else {
             var nonNviCandidate = (NonNviCandidate) evaluatedCandidate.candidate();
-            CandidateBO.fromRequest(nonNviCandidate, repository);
+            Candidate.fromRequest(nonNviCandidate, repository);
         }
         LOGGER.info(PERSISTANCE_MESSAGE, evaluatedCandidate.candidate().publicationId());
     }
