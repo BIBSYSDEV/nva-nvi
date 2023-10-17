@@ -51,9 +51,9 @@ import org.slf4j.LoggerFactory;
 
 public final class NviCandidateIndexDocumentGenerator {
 
-    public static final String APPLICATION_JSON = "application/json";
-    private final AuthorizedBackendUriRetriever uriRetriever;
     private static final Logger LOGGER = LoggerFactory.getLogger(NviCandidateIndexDocumentGenerator.class);
+    private static final String APPLICATION_JSON = "application/json";
+    private final AuthorizedBackendUriRetriever uriRetriever;
 
     public NviCandidateIndexDocumentGenerator(AuthorizedBackendUriRetriever uriRetriever) {
         this.uriRetriever = uriRetriever;

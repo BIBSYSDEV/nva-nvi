@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.index;
 import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType.INSERT;
 import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType.MODIFY;
 import static com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType.REMOVE;
-import static no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator.APPLICATION_JSON;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -80,7 +79,8 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 
 class UpdateIndexHandlerTest extends LocalDynamoTest {
 
-    public static final String DLQ_QUEUE_URL = "test_dlq_url";
+    private static final String DLQ_QUEUE_URL = "test_dlq_url";
+    private static final String APPLICATION_JSON = "application/json";
     private static final Context CONTEXT = mock(Context.class);
     private static final String CANDIDATE = IoUtils.stringFromResources(Path.of("candidate.json"));
     private static final URI INSTITUTION_ID_FROM_EVENT = URI.create(
@@ -283,10 +283,10 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
             "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
             "AcademicArticle", "Demo nvi candidate", publicationDate,
             List.of(new Contributor.Builder().withId("https://api.dev.nva.aws.unit.no/cristin/person/997998")
-                .withName("Mona Ullah")
-                .withRole("Creator")
-                .withAffiliations(List.of(constructAffiliation()))
-                .build()));
+                        .withName("Mona Ullah")
+                        .withRole("Creator")
+                        .withAffiliations(List.of(constructAffiliation()))
+                        .build()));
     }
 
     private static Affiliation constructAffiliation() {
