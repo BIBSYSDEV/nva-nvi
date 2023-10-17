@@ -18,12 +18,15 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.ZonedDateTime;
@@ -256,7 +259,7 @@ class CandidateBOTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldNotResetApprovalsWhenUpdatingFieldsNotEffectingApprovals() {
+    void shouldNotResetApprovalsWhenUpdatingCandidateFieldsNotEffectingApprovals() {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
         var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
@@ -270,6 +273,24 @@ class CandidateBOTest extends LocalDynamoTest {
         var updatedApproval = updatedCandidate.toDto().approvalStatuses().get(0);
 
         assertThat(updatedApproval, is(equalTo(approval)));
+    }
+
+    @Test
+    void shouldResetApprovalsWhenUpdatingNonCandidate() {
+        var institutionId = randomUri();
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
+                            .orElseThrow();
+        var nonCandidate = CandidateBO.fromRequest(createUpsertNonCandidateRequest(candidate.getPublicationId()),
+                                                   candidateRepository).orElseThrow();
+        assertFalse(nonCandidate.isApplicable());
+
+        var updatedCandidate = CandidateBO.fromRequest(
+            createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest), candidateRepository,
+            periodRepository).orElseThrow();
+
+        assertTrue(updatedCandidate.isApplicable());
+        assertThat(updatedCandidate.getApprovals().size(), is(greaterThan(0)));
     }
 
     @ParameterizedTest
