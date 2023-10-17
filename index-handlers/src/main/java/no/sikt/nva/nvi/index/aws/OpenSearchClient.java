@@ -79,11 +79,8 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
             LOGGER.info("Creating index");
             createIndex();
         }
+
         attempt(() -> client.withTransportOptions(getOptions()).index(constructIndexRequest(indexDocument)))
-            .map(indexResponse -> {
-                LOGGER.info("Adding document to index: {}", indexDocument.identifier());
-                return indexDocument;
-            })
             .orElseThrow(failure -> handleFailure("Failed to add/update document from index", failure.getException()));
     }
 

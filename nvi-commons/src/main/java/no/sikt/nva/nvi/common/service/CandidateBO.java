@@ -4,6 +4,7 @@ import static java.util.UUID.randomUUID;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -65,22 +66,30 @@ public final class CandidateBO {
     private static final PeriodStatus PERIOD_STATUS_NO_PERIOD = PeriodStatus.builder()
                                                                     .withStatus(Status.NO_PERIOD)
                                                                     .build();
+    private static final int POINTS_SCALE = 4;
+    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private final CandidateRepository repository;
     private final UUID identifier;
-    private final CandidateDao candidateDao;
+    private final URI publicationId;
+    private final URI publicationBucketUri;
+    private final boolean applicable;
     private final Map<URI, ApprovalBO> approvals;
     private final Map<UUID, NoteBO> notes;
-    private final Map<URI, BigDecimal> points;
+    private final Map<URI, BigDecimal> institutionPoints;
+    private final BigDecimal totalPoints;
     private final PeriodStatus periodStatus;
 
     private CandidateBO(CandidateRepository repository, CandidateDao candidateDao, List<ApprovalStatusDao> approvals,
                         List<NoteDao> notes, PeriodStatus periodStatus) {
         this.repository = repository;
         this.identifier = candidateDao.identifier();
-        this.candidateDao = candidateDao;
+        this.publicationId = candidateDao.candidate().publicationId();
+        this.publicationBucketUri = candidateDao.candidate().publicationBucketUri();
+        this.applicable = candidateDao.candidate().applicable();
         this.approvals = mapToApprovalsMap(repository, approvals);
         this.notes = mapToNotesMap(repository, notes);
-        this.points = mapToPointsMap(candidateDao);
+        this.institutionPoints = mapToPointsMap(candidateDao);
+        this.totalPoints = candidateDao.candidate().totalPoints();
         this.periodStatus = periodStatus;
     }
 
@@ -122,33 +131,45 @@ public final class CandidateBO {
         return Optional.empty();
     }
 
-    @JacocoGenerated
+    public UUID getIdentifier() {
+        return identifier;
+    }
+
+    public URI getPublicationId() {
+        return publicationId;
+    }
+
+    public URI getPublicationBucketUri() {
+        return publicationBucketUri;
+    }
+
+    public boolean isApplicable() {
+        return applicable;
+    }
+
+    public Map<URI, BigDecimal> getInstitutionPoints() {
+        return institutionPoints;
+    }
+
     public Map<URI, ApprovalBO> getApprovals() {
         return new HashMap<>(approvals);
     }
 
-    @JacocoGenerated
-    public UUID identifier() {
-        return identifier;
-    }
-
-    public URI publicationId() {
-        return candidateDao.candidate().publicationId();
+    public BigDecimal getTotalPoints() {
+        return totalPoints;
     }
 
     public CandidateDto toDto() {
-        if (isApplicable()) {
-            return CandidateDto.builder()
-                       .withId(constructId(identifier))
-                       .withIdentifier(identifier)
-                       .withPublicationId(candidateDao.candidate().publicationId())
-                       .withApprovalStatuses(mapToApprovalDtos())
-                       .withNotes(mapToNoteDtos())
-                       .withPeriodStatus(mapToPeriodStatusDto())
-                       .build();
-        } else {
-            throw new CandidateNotFoundException();
-        }
+        return CandidateDto.builder()
+                   .withId(constructId(identifier))
+                   .withIdentifier(identifier)
+                   .withPublicationId(publicationId)
+                   .withApprovalStatuses(mapToApprovalDtos())
+                   .withNotes(mapToNoteDtos())
+                   .withPeriodStatus(mapToPeriodStatusDto())
+                   .withUndistributedPoints(calculateUndistributedPoints())
+                   .withTotalPoints(totalPoints)
+                   .build();
     }
 
     public CandidateBO updateApproval(UpdateApprovalRequest input) {
@@ -173,20 +194,6 @@ public final class CandidateBO {
             return null;
         });
         return this;
-    }
-
-    public boolean isApplicable() {
-        return candidateDao.candidate().applicable();
-    }
-
-    @JacocoGenerated
-    public List<DbInstitutionPoints> getPoints() {
-        return candidateDao.candidate().points();
-    }
-
-    @JacocoGenerated
-    public URI getBucketUri() {
-        return candidateDao.candidate().publicationBucketUri();
     }
 
     PeriodStatus periodStatus() {
@@ -307,6 +314,7 @@ public final class CandidateBO {
             Objects.requireNonNull(candidate.creators());
             Objects.requireNonNull(candidate.level());
             Objects.requireNonNull(candidate.publicationDate());
+            Objects.requireNonNull(candidate.totalPoints());
             return candidate;
         }).orElseThrow(failure -> new InvalidNviCandidateException(INVALID_CANDIDATE_MESSAGE));
     }
@@ -428,6 +436,14 @@ public final class CandidateBO {
         return assignee != null ? assignee.value() : null;
     }
 
+    private BigDecimal calculateUndistributedPoints() {
+        return totalPoints.subtract(sumDistributedPoints()).setScale(POINTS_SCALE, ROUNDING_MODE);
+    }
+
+    private BigDecimal sumDistributedPoints() {
+        return institutionPoints.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
     private void validateNoteOwner(String username, NoteDao dao) {
         if (isNotNoteOwner(username, dao)) {
             throw new UnauthorizedOperationException(DELETE_MESSAGE_ERROR);
@@ -463,7 +479,7 @@ public final class CandidateBO {
                    .withAssignee(mapToUsernameString(approval.assignee()))
                    .withFinalizedBy(mapToUsernameString(approval.finalizedBy()))
                    .withFinalizedDate(approval.finalizedDate())
-                   .withPoints(points.get(approval.institutionId()))
+                   .withPoints(institutionPoints.get(approval.institutionId()))
                    .withReason(approval.reason())
                    .build();
     }

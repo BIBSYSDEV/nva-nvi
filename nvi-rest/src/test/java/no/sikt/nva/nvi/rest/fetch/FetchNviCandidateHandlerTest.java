@@ -21,6 +21,7 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.ContentType;
@@ -58,7 +59,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnNotFoundWhenCandidateExistsButNotApplicable() throws IOException {
         var nonApplicableCandidate = setUpNonApplicableCandidate();
-        handler.handleRequest(createRequest(nonApplicableCandidate.identifier()), output, CONTEXT);
+        handler.handleRequest(createRequest(nonApplicableCandidate.getIdentifier()), output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
 
         assertEquals(HttpStatus.SC_NOT_FOUND, gatewayResponse.getStatusCode());
@@ -69,7 +70,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
         var candidate =
             CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository, periodRepository)
                 .orElseThrow();
-        var request = createRequest(candidate.identifier());
+        var request = createRequest(candidate.getIdentifier());
 
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);

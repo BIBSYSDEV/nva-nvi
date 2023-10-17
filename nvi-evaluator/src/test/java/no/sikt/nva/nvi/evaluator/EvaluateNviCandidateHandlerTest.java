@@ -33,7 +33,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
+import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.evaluator.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.evaluator.model.InstanceType;
@@ -48,6 +48,7 @@ import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import no.unit.nva.stubs.FakeSecretsManagerClient;
+import nva.commons.core.Environment;
 import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
@@ -96,21 +97,24 @@ class EvaluateNviCandidateHandlerTest {
 
     @BeforeEach
     void setUp() {
+        var env = mock(Environment.class);
+        when(env.readEnv("CANDIDATE_QUEUE_URL")).thenReturn("My test candidate queue url");
+        when(env.readEnv("CANDIDATE_DLQ_URL")).thenReturn("My test candidate dlq url");
         notFoundResponse = createResponse(404, StringUtils.EMPTY_STRING);
         badResponse = createResponse(500, StringUtils.EMPTY_STRING);
         okResponse = createResponse(200, CUSTOMER_API_NVI_RESPONSE);
         var s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, BUCKET_NAME);
         sqsClient = new FakeSqsClient();
-        SqsMessageClient queueClient = new SqsMessageClient(sqsClient);
+        var queueClient = new NviQueueClient(sqsClient);
         var secretsManagerClient = new FakeSecretsManagerClient();
         var credentials = new BackendClientCredentials("id", "secret");
         secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
         uriRetriever = mock(AuthorizedBackendUriRetriever.class);
         var calculator = new CandidateCalculator(uriRetriever);
-        FakeStorageReader storageReader = new FakeStorageReader(s3Client);
+        var storageReader = new FakeStorageReader(s3Client);
         var evaluatorService = new EvaluatorService(storageReader, calculator);
-        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient);
+        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
         output = new ByteArrayOutputStream();
     }
 
@@ -335,6 +339,17 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldCreateNonCandidateEventWhenIdentityIsNotVerified() throws IOException {
         var path = "nonCandidate_nonVerified.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, output, context);
+        var candidate = getMessageBody();
+        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
+    }
+
+    @Test
+    void shouldCreateNonCandidateWhenPublicationYearBefore2022() throws IOException {
+        var path = "candidate_publicationDate_before_2022.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
         var event = createS3Event(fileUri);
