@@ -105,8 +105,8 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         var candidateBO = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
                                                   candidateRepository, periodRepository).orElseThrow();
         var nonCandidate = CandidateBO.fromRequest(
-            createUpsertNonCandidateRequest(candidateBO.publicationId()), candidateRepository).orElseThrow();
-        var request = createRequest(nonCandidate.identifier(), randomNote(), randomString());
+            createUpsertNonCandidateRequest(candidateBO.getPublicationId()), candidateRepository).orElseThrow();
+        var request = createRequest(nonCandidate.getIdentifier(), randomNote(), randomString());
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
