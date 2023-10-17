@@ -62,8 +62,8 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         validateMessage(evaluatedCandidate);
         if (evaluatedCandidate.candidate() instanceof NviCandidate candidate) {
             CandidateBO.fromRequest(candidate, repository, periodRepository);
-        }
-        if (evaluatedCandidate.candidate() instanceof NonNviCandidate nonNviCandidate) {
+        } else {
+            var nonNviCandidate = (NonNviCandidate) evaluatedCandidate.candidate();
             CandidateBO.fromRequest(nonNviCandidate, repository);
         }
         LOGGER.info(PERSISTANCE_MESSAGE, evaluatedCandidate.candidate().publicationId());

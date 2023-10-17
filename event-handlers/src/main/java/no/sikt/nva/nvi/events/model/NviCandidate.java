@@ -96,7 +96,7 @@ public record NviCandidate(URI publicationId,
             return this;
         }
 
-        public Builder withPublicationDate(PublicationDate date) {
+        public Builder withDate(PublicationDate date) {
             this.date = date;
             return this;
         }

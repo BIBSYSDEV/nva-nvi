@@ -180,7 +180,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                     .withInstanceType(randomString())
                                                     .withLevel(randomElement(
                                                         DbLevel.values()).getValue())
-                                                    .withPublicationDate(randomPublicationDate())
+                                                    .withDate(randomPublicationDate())
                                                     .withVerifiedCreators(List.of(randomCreator()))
                                                     .build())
                              .build());
@@ -218,7 +218,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                           .withChannelType(randomElement(ChannelType.values()).getValue())
                                           .withPublicationChannelId(randomUri())
                                           .withLevel(level.getValue())
-                                          .withPublicationDate(publicationDate)
+                                          .withDate(publicationDate)
                                           .withVerifiedCreators(verifiedCreators)
                                           .withIsInternationalCollaboration(randomBoolean())
                                           .withCollaborationFactor(randomBigDecimal())
@@ -246,7 +246,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withPublicationBucketUri(request.publicationBucketUri())
                    .withInstanceType(request.instanceType())
                    .withLevel(request.level())
-                   .withPublicationDate(
+                   .withDate(
                        new PublicationDate(null, "3",
                                            Year.now().toString()))
                    .withVerifiedCreators(
