@@ -84,7 +84,7 @@ Resources:
   InternalBus:
     Type: AWS::Events::EventBus
     Properties:
-      Name: !Join [ '',[ 'nvi-internal-bus',!Ref Suffix ]   ]
+      Name: !Join [ '',[ 'nvi-internal-bus',!Ref Suffix ] ]
 
   #=============================== SQSs ============================================================
   NewCandidateQueue:
@@ -607,21 +607,3 @@ Resources:
             ProjectionType: ALL
       StreamSpecification:
         StreamViewType: NEW_AND_OLD_IMAGES
-
-  #============================= Alarms =========================================================
-
-  UpdateIndexDLQAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmActions:
-        - arn:aws:sns:eu-west-1:750639270376:nva-team-test #TODO: replace with something
-      MetricName: ApproximateNumberOfMessagesVisible
-      Namespace: AWS/SQS
-      Statistic: Average
-      Dimensions:
-        - Name: QueueName
-          Value: !Ref UpdateIndexDLQName
-      Period: 300
-      EvaluationPeriods: 1
-      DatapointsToAlarm: 1
-      Threshold: 0
