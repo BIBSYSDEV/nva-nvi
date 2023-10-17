@@ -228,10 +228,10 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
                    .toList();
     }
 
-    private boolean isSameBodyAsRepositoryCopy(CandidateBO item) {
+    private boolean isSameBodyAsRepositoryCopy(CandidateBO candidate) {
         //TODO: should replace this comparison with the actual data field (equals in CandidateBO?)
-        return item.toDto()
-                   .equals(CandidateBO.fromRequest(item::getIdentifier, candidateRepository, periodRepository).toDto());
+        return candidate.toDto()
+                   .equals(CandidateBO.fromRequest(candidate::getIdentifier, candidateRepository, periodRepository).toDto());
     }
 
     private boolean isSameVersionAsRepositoryCopy(CandidateDao dao) {
