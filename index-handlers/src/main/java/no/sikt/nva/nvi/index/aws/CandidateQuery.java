@@ -59,7 +59,8 @@ public class CandidateQuery {
                           QueryFilterType filter,
                           String username,
                           String customer,
-                          String year, String category) {
+                          String year,
+                          String category) {
         this.affiliations = affiliations.stream().map(URI::toString).toList();
         this.excludeSubUnits = excludeSubUnits;
         this.filter = filter;
@@ -166,9 +167,9 @@ public class CandidateQuery {
     }
 
     private static Query categoryQuery(String category) {
-        return termQuery(Optional.ofNullable(category).orElse(EMPTY_STRING),
-                         jsonPathOf(PUBLICATION_DETAILS, TYPE, KEYWORD));
-
+        return Optional.ofNullable(category)
+            .map(c -> termQuery(c, jsonPathOf(PUBLICATION_DETAILS, TYPE, KEYWORD)))
+            .orElse(null);
     }
 
     private static Query statusQueryWithAssignee(String customer, ApprovalStatus status, boolean hasAssignee) {

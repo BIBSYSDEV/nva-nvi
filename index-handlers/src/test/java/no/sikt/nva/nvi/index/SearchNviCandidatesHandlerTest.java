@@ -68,6 +68,7 @@ public class SearchNviCandidatesHandlerTest {
 
     private static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     private static final String QUERY_PARAM_FILTER = "filter";
+    private static final String QUERY_PARAM_CATEGORY = "category";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
     private static final String CUSTOM_DOMAIN_BASE_PATH = ENVIRONMENT.readEnv(
@@ -152,8 +153,9 @@ public class SearchNviCandidatesHandlerTest {
     void shouldReturnPaginatedSearchResultWithCorrectQueryParamsFilterAndQueryInIdIfGiven() throws IOException {
         mockOpenSearchClient();
         var randomFilter = randomString();
+        var randomCategory = randomString();
         var randomInstitutions = List.of(randomSiktSubUnit(), randomSiktSubUnit());
-        handler.handleRequest(requestWithInstitutionsAndFilter(randomInstitutions, randomFilter), output, context);
+        handler.handleRequest(requestWithInstitutionsAndFilter(randomInstitutions, randomFilter, randomCategory), output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
 
@@ -164,6 +166,7 @@ public class SearchNviCandidatesHandlerTest {
         var expectedExcludeQuery = QUERY_PARAM_EXCLUDE_SUB_UNITS + "=true";
 
         assertThat(actualId, containsString(QUERY_PARAM_FILTER + "=" + randomFilter));
+        assertThat(actualId, containsString(QUERY_PARAM_CATEGORY + "=" + randomCategory));
         assertThat(actualId, containsString(expectedInstitutionQuery));
         assertThat(actualId, containsString(expectedExcludeQuery));
     }
@@ -313,7 +316,7 @@ public class SearchNviCandidatesHandlerTest {
                    .build();
     }
 
-    private InputStream requestWithInstitutionsAndFilter(List<URI> institutions, String filter)
+    private InputStream requestWithInstitutionsAndFilter(List<URI> institutions, String filter, String category)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
                    .withTopLevelCristinOrgId(randomUri())
@@ -321,7 +324,8 @@ public class SearchNviCandidatesHandlerTest {
                    .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS, String.join(COMMA,
                                                     institutions.stream().map(URI::toString).toList()),
                                                QUERY_PARAM_EXCLUDE_SUB_UNITS, "true",
-                                               QUERY_PARAM_FILTER, filter))
+                                               QUERY_PARAM_FILTER, filter,
+                                               QUERY_PARAM_CATEGORY, category))
                    .build();
     }
 

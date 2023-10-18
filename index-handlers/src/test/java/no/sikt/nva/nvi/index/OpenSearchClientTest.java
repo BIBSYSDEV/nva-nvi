@@ -316,7 +316,8 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldReturnSingleDocumentWhenFilteringByCategory() throws InterruptedException, IOException {
-        addDocumentsToIndex(documentFromString("document_pending.json"));
+        addDocumentsToIndex(documentFromString("document_pending.json"),
+                            documentFromString("document_pending_category_degree_bachelor.json"));
 
         var searchParameters =
             defaultSearchParameters().withCategory(CATEGORY).withAffiliations(List.of(NTNU_INSTITUTION_ID)).build();
