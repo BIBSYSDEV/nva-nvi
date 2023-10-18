@@ -66,7 +66,7 @@ public final class PaginatedResultConverter {
     }
 
     private static Map<String, String> getQueryParameters(List<URI> affiliations, boolean excludeSubUnits,
-                                                          String filter, String category  ) {
+                                                          String filter, String category) {
         var queryParams = new HashMap();
         if (Objects.nonNull(affiliations)) {
             queryParams.put(QUERY_PARAM_AFFILIATIONS, affiliations.stream().map(URI::toString)

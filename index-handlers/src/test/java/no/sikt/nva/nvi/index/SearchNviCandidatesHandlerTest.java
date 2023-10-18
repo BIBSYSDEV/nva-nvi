@@ -155,7 +155,8 @@ public class SearchNviCandidatesHandlerTest {
         var randomFilter = randomString();
         var randomCategory = randomString();
         var randomInstitutions = List.of(randomSiktSubUnit(), randomSiktSubUnit());
-        handler.handleRequest(requestWithInstitutionsAndFilter(randomInstitutions, randomFilter, randomCategory), output, context);
+        handler.handleRequest(requestWithInstitutionsAndFilter(randomInstitutions, randomFilter, randomCategory),
+                              output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
 
