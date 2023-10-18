@@ -78,7 +78,8 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldReturnUnauthorizedWhenUserDoesNotBelongToSameInstitutionAsAnyOfCandidateApprovals() throws IOException {
+    void shouldReturnUnauthorizedWhenUserDoesNotBelongToSameInstitutionAsAnyOfCandidateApprovalInstitutions()
+        throws IOException {
         var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
                                                 candidateRepository, periodRepository).orElseThrow();
         var request = createRequest(candidate.getIdentifier(), randomUri(), ACCESS_RIGHT_MANAGE_NVI_CANDIDATES);
@@ -116,13 +117,14 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
         assertEquals(expectedResponse, actualResponse);
     }
 
-    private static InputStream createRequest(UUID publicationId, URI institutionId, String accessRight)
+    private static InputStream createRequest(UUID publicationId, URI cristinInstitutionId, String accessRight)
         throws JsonProcessingException {
+        var customerId = randomUri();
         return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
                    .withHeaders(Map.of(HttpHeader.ACCEPT.asString(), ContentType.APPLICATION_JSON.getMimeType()))
-                   .withCurrentCustomer(institutionId)
-                   .withTopLevelCristinOrgId(institutionId)
-                   .withAccessRights(institutionId, accessRight)
+                   .withCurrentCustomer(customerId)
+                   .withTopLevelCristinOrgId(cristinInstitutionId)
+                   .withAccessRights(customerId, accessRight)
                    .withUserName(randomString())
                    .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, publicationId.toString()))
                    .build();
