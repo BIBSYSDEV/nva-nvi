@@ -162,7 +162,7 @@ public class SearchNviCandidatesHandler
 
     private static String extractQueryParamCategoryOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
-            .getOrDefault(QUERY_PARAM_CATEGORY, null);
+            .getOrDefault(QUERY_PARAM_CATEGORY, StringUtils.EMPTY_STRING);
     }
 
     @JacocoGenerated
