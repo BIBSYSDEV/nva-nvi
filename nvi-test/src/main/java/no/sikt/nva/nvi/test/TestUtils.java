@@ -31,10 +31,10 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.PeriodStatus;
-import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
@@ -42,6 +42,7 @@ import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import no.sikt.nva.nvi.common.service.requests.UpsertNonCandidateRequest;
 import nva.commons.core.paths.UriWrapper;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -50,12 +51,14 @@ public final class TestUtils {
     public static final int SCALE = 10;
     public static final BigDecimal MIN_BIG_DECIMAL = BigDecimal.ZERO;
     public static final BigDecimal MAX_BIG_DECIMAL = BigDecimal.TEN;
+
+    public static final int POINTS_SCALE = 4;
+    public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
+    public static final int CURRENT_YEAR = Year.now().getValue();
     private static final String BUCKET_HOST = "example.org";
     private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
     private static final String PUBLICATION_API_PATH = "publication";
     private static final String API_HOST = "example.com";
-
-    public static final int CURRENT_YEAR = Year.now().getValue();
 
     private TestUtils() {
     }
@@ -138,7 +141,7 @@ public final class TestUtils {
 
     public static NviService nviServiceReturningOpenPeriod(DynamoDbClient client, int year) {
         var nviPeriodRepository = mock(PeriodRepository.class);
-        var nviService = new NviService(client, nviPeriodRepository);
+        var nviService = new NviService(nviPeriodRepository, new CandidateRepository(client));
         var period = DbNviPeriod.builder()
                          .publishingYear(String.valueOf(year))
                          .startDate(Instant.now())
@@ -150,9 +153,9 @@ public final class TestUtils {
 
     public static NviService nviServiceReturningClosedPeriod(DynamoDbClient client, int year) {
         var nviPeriodRepository = mock(PeriodRepository.class);
-        var nviService = new NviService(client, nviPeriodRepository);
+        var nviService = new NviService(nviPeriodRepository, new CandidateRepository(client));
         var period = DbNviPeriod.builder().publishingYear(String.valueOf(year)).startDate(Instant.now())
-                .reportingDate(Instant.now()).build();
+                         .reportingDate(Instant.now()).build();
         when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
         return nviService;
     }
@@ -186,15 +189,9 @@ public final class TestUtils {
         return nviPeriodRepository;
     }
 
-    public static PeriodStatus randomPeriodStatus() {
-        return new PeriodStatus(ZonedDateTime.now().plusMonths(1).toInstant(),
-                                ZonedDateTime.now().plusMonths(10).toInstant(),
-                                Status.OPEN_PERIOD);
-    }
-
     public static NviService nviServiceReturningNotStartedPeriod(DynamoDbClient client, int year) {
         var nviPeriodRepository = mock(PeriodRepository.class);
-        var nviService = new NviService(client, nviPeriodRepository);
+        var nviService = new NviService(nviPeriodRepository, new CandidateRepository(client));
         var period = DbNviPeriod.builder()
                          .publishingYear(String.valueOf(year))
                          .startDate(ZonedDateTime.now().plusMonths(1).toInstant())
@@ -202,6 +199,10 @@ public final class TestUtils {
                          .build();
         when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
         return nviService;
+    }
+
+    public static UpsertNonCandidateRequest createUpsertNonCandidateRequest(URI publicationId) {
+        return () -> publicationId;
     }
 
     public static UpdateStatusRequest createUpdateStatusRequest(DbStatus status, URI institutionId, String username) {
@@ -214,24 +215,52 @@ public final class TestUtils {
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI... institutions) {
-        return createUpsertCandidateRequest(randomUri(), true, 1, InstanceType.ACADEMIC_MONOGRAPH,
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, InstanceType.ACADEMIC_MONOGRAPH, 1,
+                                            randomBigDecimal(),
                                             institutions);
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
-                                                                      boolean isApplicable, int creatorCount,
-                                                                      final InstanceType instanceType,
+                                                                      URI publicationBucketUri, boolean isApplicable,
+                                                                      final InstanceType instanceType, int creatorCount,
+                                                                      BigDecimal totalPoints,
                                                                       URI... institutions) {
         var creators = IntStream.of(creatorCount)
                            .mapToObj(i -> randomUri())
                            .collect(Collectors.toMap(Function.identity(), e -> List.of(institutions)));
+
         var points = Arrays.stream(institutions)
                          .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal()));
+
+        return createUpsertCandidateRequest(publicationId, publicationBucketUri, isApplicable,
+                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null), creators,
+                                            instanceType,
+                                            randomElement(ChannelType.values()).getValue(), randomUri(),
+                                            DbLevel.LEVEL_TWO, points,
+                                            randomInteger(), randomBoolean(),
+                                            randomBigDecimal(), randomBigDecimal(), totalPoints);
+    }
+
+    public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
+                                                                      final URI publicationBucketUri,
+                                                                      boolean isApplicable,
+                                                                      final PublicationDate publicationDate,
+                                                                      Map<URI, List<URI>> creators,
+                                                                      InstanceType instanceType,
+                                                                      String channelType, URI channelId,
+                                                                      DbLevel level,
+                                                                      Map<URI, BigDecimal> points,
+                                                                      final Integer creatorShareCount,
+                                                                      final boolean isInternationalCollaboration,
+                                                                      final BigDecimal collaborationFactor,
+                                                                      final BigDecimal basePoints,
+                                                                      final BigDecimal totalPoints) {
+
         return new UpsertCandidateRequest() {
 
             @Override
             public URI publicationBucketUri() {
-                return randomUri();
+                return publicationBucketUri;
             }
 
             @Override
@@ -245,8 +274,8 @@ public final class TestUtils {
             }
 
             @Override
-            public boolean isInternationalCooperation() {
-                return false;
+            public boolean isInternationalCollaboration() {
+                return isInternationalCollaboration;
             }
 
             @Override
@@ -255,8 +284,18 @@ public final class TestUtils {
             }
 
             @Override
+            public String channelType() {
+                return channelType;
+            }
+
+            @Override
+            public URI publicationChannelId() {
+                return channelId;
+            }
+
+            @Override
             public String level() {
-                return DbLevel.LEVEL_TWO.getValue();
+                return level.getValue();
             }
 
             @Override
@@ -266,17 +305,32 @@ public final class TestUtils {
 
             @Override
             public PublicationDate publicationDate() {
-                return new PublicationDate(String.valueOf(ZonedDateTime.now().getYear()), null, null);
+                return publicationDate;
             }
 
             @Override
-            public Map<URI, BigDecimal> points() {
+            public int creatorShareCount() {
+                return creatorShareCount;
+            }
+
+            @Override
+            public BigDecimal collaborationFactor() {
+                return collaborationFactor;
+            }
+
+            @Override
+            public BigDecimal basePoints() {
+                return basePoints;
+            }
+
+            @Override
+            public Map<URI, BigDecimal> institutionPoints() {
                 return points;
             }
 
             @Override
-            public int creatorCount() {
-                return creatorCount;
+            public BigDecimal totalPoints() {
+                return totalPoints;
             }
         };
     }

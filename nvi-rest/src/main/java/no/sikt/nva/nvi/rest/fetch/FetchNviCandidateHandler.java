@@ -9,6 +9,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -37,6 +38,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
         throws ApiGatewayException {
         return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER)).map(UUID::fromString)
                    .map(identifier -> CandidateBO.fromRequest(() -> identifier, candidateRepository, periodRepository))
+                   .map(this::checkIfApplicable)
                    .map(CandidateBO::toDto)
                    .orElseThrow(ExceptionMapper::map);
     }
@@ -44,5 +46,12 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
     @Override
     protected Integer getSuccessStatusCode(Void input, CandidateDto output) {
         return HTTP_OK;
+    }
+
+    private CandidateBO checkIfApplicable(CandidateBO candidate) {
+        if (candidate.isApplicable()) {
+            return candidate;
+        }
+        throw new CandidateNotFoundException();
     }
 }

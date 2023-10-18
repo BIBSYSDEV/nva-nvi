@@ -50,6 +50,12 @@ Parameters:
   NewCandidateDLQName:
     Type: String
     Default: NewCandidateDLQ
+  BatchScanDLQName:
+    Type: String
+    Default: BatchScanDLQ
+  UpdateIndexDLQName:
+    Type: String
+    Default: UpdateIndexDLQ
   SearchInfrastructureApiHost:
     Type: String
     Description: Host of external search infrastructure API (SWS).
@@ -75,6 +81,11 @@ Resources:
   ApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
 
+  InternalBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Join [ '',[ 'nvi-internal-bus',!Ref Suffix ] ]
+
   #=============================== SQSs ============================================================
   NewCandidateQueue:
     Type: AWS::SQS::Queue
@@ -84,6 +95,15 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref NewCandidateDLQName
+      MessageRetentionPeriod: 43200
+  BatchScanDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref BatchScanDLQName
+  UpdateIndexDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref UpdateIndexDLQName
       MessageRetentionPeriod: 43200
 
   #============================= Permissions =======================================================
@@ -120,8 +140,11 @@ Resources:
                   - sqs:GetQueueUrl
                 Resource:
                   - !Ref EventBusArn
+                  - !GetAtt InternalBus.Arn
                   - !GetAtt NewCandidateQueue.Arn
                   - !GetAtt NewCandidateDLQ.Arn
+                  - !GetAtt BatchScanDLQ.Arn
+                  - !GetAtt UpdateIndexDLQ.Arn
         - PolicyName: writeLog
           PolicyDocument:
             Version: 2012-10-17
@@ -249,8 +272,8 @@ Resources:
           BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
           BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-          CANDIDATE_QUEUE_NAME: !Ref NewCandidateQueueName
-          CANDIDATE_DLQ_NAME: !Ref NewCandidateDLQName
+          CANDIDATE_QUEUE_URL: !Ref NewCandidateQueue
+          CANDIDATE_DLQ_URL: !Ref NewCandidateDLQ
       AutoPublishAlias: live
       Events:
         EventBridgeEvent:
@@ -279,6 +302,7 @@ Resources:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
           BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
           BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
+          UPDATE_INDEX_DLQ_QUEUE_URL: !Ref UpdateIndexDLQ
       Events:
         FanoutSource:
           Type: DynamoDB
@@ -393,6 +417,49 @@ Resources:
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
+
+  NviEventBasedBatchScanHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.batch.EventBasedBatchScanHandler::handleRequest
+      Runtime: java17
+      Role: !GetAtt NvaNviRole.Arn
+      AutoPublishAlias: live
+      Timeout: 900
+      Environment:
+        Variables:
+          EVENT_BUS_NAME: !GetAtt InternalBus.Name
+      Events:
+        EventBridgeEvent:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !GetAtt InternalBus.Name
+            Pattern:
+              detail:
+                topic: [ "NviService.BatchScan" ]
+
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt BatchScanDLQ.Arn
+
+  #==========================Manually triggered functions=============================================
+
+  NviBatchScanStartHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.batch.BatchScanStartHandler::handleRequest
+      Runtime: java17
+      Timeout: 60
+      Role: !GetAtt NvaNviRole.Arn
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          EVENT_BUS_NAME: !GetAtt InternalBus.Name
+          OUTPUT_EVENT_TOPIC: 'NviService.BatchScan'
 
   # ======================= API HANDLERS ========================
 

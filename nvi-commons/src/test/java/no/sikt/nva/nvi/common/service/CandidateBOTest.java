@@ -1,33 +1,55 @@
 package no.sikt.nva.nvi.common.service;
 
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
+import static no.sikt.nva.nvi.test.TestUtils.POINTS_SCALE;
+import static no.sikt.nva.nvi.test.TestUtils.ROUNDING_MODE;
 import static no.sikt.nva.nvi.test.TestUtils.createNoteRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.sikt.nva.nvi.test.TestUtils.randomInstanceTypeExcluding;
+import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
+import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
+import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
@@ -38,10 +60,16 @@ import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class CandidateBOTest extends LocalDynamoTest {
 
@@ -50,6 +78,22 @@ class CandidateBOTest extends LocalDynamoTest {
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
+
+    public static Stream<Arguments> candidateResetCauseProvider() {
+        return Stream.of(Arguments.of(Named.of("change level",
+                                               new CandidateResetCauseArgument(DbLevel.LEVEL_ONE,
+                                                                               InstanceType.ACADEMIC_MONOGRAPH,
+                                                                               URI.create("uri")))),
+                         Arguments.of(Named.of("change type",
+                                               new CandidateResetCauseArgument(DbLevel.LEVEL_TWO,
+                                                                               InstanceType.ACADEMIC_LITERATURE_REVIEW,
+                                                                               URI.create("uri")))),
+                         Arguments.of(Named.of("points changed",
+                                               new CandidateResetCauseArgument(DbLevel.LEVEL_TWO,
+                                                                               InstanceType.ACADEMIC_MONOGRAPH,
+                                                                               randomUri(),
+                                                                               randomUri()))));
+    }
 
     @BeforeEach
     void setup() {
@@ -68,9 +112,36 @@ class CandidateBOTest extends LocalDynamoTest {
     void shouldReturnCandidateWhenExists() {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
         var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
-                            .orElseThrow();
-        var fetchedCandidate = CandidateBO.fromRequest(candidate::identifier, candidateRepository, periodRepository);
-        assertThat(fetchedCandidate.identifier(), is(equalTo(candidate.identifier())));
+                            .orElseThrow().toDto();
+        var fetchedCandidate = CandidateBO.fromRequest(candidate::identifier, candidateRepository, periodRepository)
+                                   .toDto();
+        assertThat(fetchedCandidate, is(equalTo(candidate)));
+    }
+
+    @Test
+    void shouldPersistNewCandidateWithCorrectDataFromUpsertRequest() {
+        var request = createUpsertCandidateRequest(randomUri());
+        var candidateIdentifier = CandidateBO.fromRequest(request, candidateRepository, periodRepository)
+                                      .orElseThrow()
+                                      .getIdentifier();
+        var expectedCandidate = generateExpectedCandidate(candidateIdentifier, request);
+        var actualPersistedCandidate = candidateRepository.findCandidateDaoById(candidateIdentifier)
+                                           .orElseThrow()
+                                           .candidate();
+        assertEquals(expectedCandidate, actualPersistedCandidate);
+    }
+
+    @Test
+    void shouldPersistUpdatedCandidateWithCorrectDataFromUpsertRequest() {
+        var updateRequest = getUpdateRequestForExistingCandidate();
+        var candidateIdentifier = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository)
+                                      .orElseThrow()
+                                      .getIdentifier();
+        var expectedCandidate = generateExpectedCandidate(candidateIdentifier, updateRequest);
+        var actualPersistedCandidate = candidateRepository.findCandidateDaoById(candidateIdentifier)
+                                           .orElseThrow()
+                                           .candidate();
+        assertEquals(expectedCandidate, actualPersistedCandidate);
     }
 
     @Test
@@ -78,16 +149,16 @@ class CandidateBOTest extends LocalDynamoTest {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
         var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
-        var fetchedCandidate = CandidateBO.fromRequest(candidate::publicationId, candidateRepository, periodRepository);
-        assertThat(fetchedCandidate.identifier(), is(equalTo(candidate.identifier())));
+        var fetchedCandidate = CandidateBO.fromRequest(candidate::getPublicationId, candidateRepository,
+                                                       periodRepository);
+        assertThat(fetchedCandidate.getIdentifier(), is(equalTo(candidate.getIdentifier())));
     }
 
     @Test
     void shouldDoNothingIfCreateRequestIsForNonCandidateThatDoesNotExist() {
-        var updateRequest = createUpsertCandidateRequest(randomUri(), false, 2, InstanceType.NON_CANDIDATE,
-                                                         randomUri());
+        var updateRequest = createUpsertNonCandidateRequest(randomUri());
 
-        var optionalCandidate = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository);
+        var optionalCandidate = CandidateBO.fromRequest(updateRequest, candidateRepository);
         assertThat(optionalCandidate, is(equalTo(Optional.empty())));
     }
 
@@ -95,7 +166,9 @@ class CandidateBOTest extends LocalDynamoTest {
     void dontMindMeJustTestingToDto() {
         var institutionToReject = randomUri();
         var institutionToApprove = randomUri();
-        var createRequest = createUpsertCandidateRequest(randomUri(), true, 4, InstanceType.ACADEMIC_MONOGRAPH,
+        var totalPoints = randomBigDecimal();
+        var createRequest = createUpsertCandidateRequest(randomUri(), randomUri(), true,
+                                                         InstanceType.ACADEMIC_MONOGRAPH, 4, totalPoints,
                                                          institutionToApprove, randomUri(), institutionToReject);
         var candidateBO = CandidateBO.fromRequest(createRequest, candidateRepository, periodRepository).orElseThrow();
         candidateBO.createNote(createNoteRequest(randomString(), randomString()))
@@ -109,22 +182,65 @@ class CandidateBOTest extends LocalDynamoTest {
 
         assertAll(() -> {
             assertThat(dto.publicationId(), is(equalTo(createRequest.publicationId())));
-            assertThat(dto.approvalStatuses().size(), is(equalTo(createRequest.points().size())));
+            assertThat(dto.approvalStatuses().size(), is(equalTo(createRequest.institutionPoints().size())));
             assertThat(dto.notes().size(), is(2));
+            assertThat(dto.undistributedPoints(),
+                       is(equalTo(calculateExpectedUndistributedPoints(totalPoints, approvalMap))));
+            assertThat(dto.totalPoints(), is(equalTo(totalPoints)));
             var note = dto.notes().get(0);
             assertThat(note.text(), is(notNullValue()));
             assertThat(note.user(), is(notNullValue()));
             assertThat(note.createdDate(), is(notNullValue()));
-            assertThat(dto.id(), is(equalTo(constructId(candidateBO.identifier()))));
-            assertThat(dto.identifier(), is(equalTo(candidateBO.identifier())));
+            assertThat(dto.id(), is(equalTo(constructId(candidateBO.getIdentifier()))));
+            assertThat(dto.identifier(), is(equalTo(candidateBO.getIdentifier())));
             var periodStatus = getDefaultPeriodStatus();
             assertThat(dto.periodStatus().status(), is(equalTo(periodStatus.status())));
             assertThat(approvalMap.get(institutionToApprove).status(), is(equalTo(NviApprovalStatus.APPROVED)));
             var rejectedAP = approvalMap.get(institutionToReject);
             assertThat(rejectedAP.status(), is(equalTo(NviApprovalStatus.REJECTED)));
             assertThat(rejectedAP.reason(), is(notNullValue()));
-            assertThat(rejectedAP.points(), is(createRequest.points().get(rejectedAP.institutionId())));
+            assertThat(rejectedAP.points(), is(createRequest.institutionPoints().get(rejectedAP.institutionId())));
         });
+    }
+
+    @Test
+    void shouldReturnCandidateWithExpectedData() {
+        var publicationId = randomUri();
+        var publicationBucketUri = randomUri();
+        var isApplicable = true;
+        var institution = randomUri();
+        var creators = Map.of(randomUri(), List.of(institution));
+        var points = Map.of(institution, randomBigDecimal());
+        var totalPoints = randomBigDecimal();
+        var createRequest = createUpsertCandidateRequest(publicationId, publicationBucketUri,
+                                                         isApplicable,
+                                                         new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
+                                                         creators,
+                                                         randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE),
+                                                         randomElement(ChannelType.values()).getValue(), randomUri(),
+                                                         DbLevel.LEVEL_TWO, points, randomInteger(10), randomBoolean(),
+                                                         randomBigDecimal(), randomBigDecimal(), totalPoints);
+        var candidate = CandidateBO.fromRequest(createRequest, candidateRepository, periodRepository).orElseThrow();
+        assertEquals(candidate.getPublicationBucketUri(), publicationBucketUri);
+        assertEquals(candidate.isApplicable(), isApplicable);
+        assertEquals(candidate.getPublicationId(), publicationId);
+        assertEquals(candidate.getTotalPoints(), totalPoints);
+        assertEquals(candidate.getInstitutionPoints(), points);
+    }
+
+    @Test
+    void shouldReturnCandidateWithNoPeriodWhenNotApplicable() {
+        var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
+        var tempCandidateBO = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
+                                  .orElseThrow();
+        var updateRequest = createUpsertCandidateRequest(tempCandidateBO.getPublicationId(), randomUri(), false,
+                                                         InstanceType.ACADEMIC_MONOGRAPH, 4, randomBigDecimal(),
+                                                         randomUri(), randomUri(),
+                                                         randomUri());
+        var candidateBO = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository).orElseThrow();
+        var fetchedCandidate = CandidateBO.fromRequest(candidateBO::getIdentifier, candidateRepository,
+                                                       periodRepository);
+        assertThat(fetchedCandidate.periodStatus().status(), is(equalTo(Status.NO_PERIOD)));
     }
 
     @Test
@@ -143,7 +259,7 @@ class CandidateBOTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldNotResetApprovalsWhenUpdatingFieldsNotEffectingApprovals() {
+    void shouldNotResetApprovalsWhenUpdatingCandidateFieldsNotEffectingApprovals() {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
         var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
@@ -158,7 +274,84 @@ class CandidateBOTest extends LocalDynamoTest {
 
         assertThat(updatedApproval, is(equalTo(approval)));
     }
-    
+
+    @Test
+    void shouldResetApprovalsWhenNonCandidateBecomesCandidate() {
+        var institutionId = randomUri();
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
+                            .orElseThrow();
+        var nonCandidate = CandidateBO.fromRequest(createUpsertNonCandidateRequest(candidate.getPublicationId()),
+                                                   candidateRepository).orElseThrow();
+        assertFalse(nonCandidate.isApplicable());
+
+        var updatedCandidate = CandidateBO.fromRequest(
+            createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest), candidateRepository,
+            periodRepository).orElseThrow();
+
+        assertTrue(updatedCandidate.isApplicable());
+        assertThat(updatedCandidate.getApprovals().size(), is(greaterThan(0)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("candidateResetCauseProvider")
+    @DisplayName("Should reset approvals when updating fields effecting approvals")
+    void shouldResetApprovalsWhenUpdatingFieldsEffectingApprovals(CandidateResetCauseArgument arguments) {
+        URI[] institutionIdsOriginal = new URI[]{URI.create("uri")};
+        DbLevel originalLevel = DbLevel.LEVEL_TWO;
+        InstanceType originalType = InstanceType.ACADEMIC_MONOGRAPH;
+
+        var upsertCandidateRequest = createUpsertCandidateRequest(URI.create("publicationId"), randomUri(), true,
+                                                                  new PublicationDate(
+                                                                      String.valueOf(CURRENT_YEAR), null,
+                                                                      null), getCreators(institutionIdsOriginal),
+                                                                  originalType,
+                                                                  randomString(), randomUri(), originalLevel,
+                                                                  getPointsOriginal(institutionIdsOriginal),
+                                                                  randomInteger(), false,
+                                                                  TestUtils.randomBigDecimal(), null,
+                                                                  randomBigDecimal());
+
+        var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
+                            .orElseThrow();
+
+        candidate.updateApproval(
+            new UpdateStatusRequest(Arrays.stream(arguments.institutionIds()).findFirst().orElseThrow(),
+                                    DbStatus.APPROVED, randomString(), randomString()));
+
+        var newUpsertRequest = createUpsertCandidateRequest(candidate.getPublicationId(), randomUri(), true,
+                                                            new PublicationDate(String.valueOf(CURRENT_YEAR),
+                                                                                null, null),
+                                                            getCreators(arguments.institutionIds()), arguments.type(),
+                                                            randomString(), randomUri(), arguments.level(),
+                                                            getPointsOriginal(arguments.institutionIds()),
+                                                            randomInteger(), false,
+                                                            TestUtils.randomBigDecimal(), null, randomBigDecimal());
+
+        var updatedCandidate = CandidateBO.fromRequest(newUpsertRequest, candidateRepository, periodRepository)
+                                   .orElseThrow();
+        var updatedApproval = updatedCandidate.toDto().approvalStatuses().get(0);
+
+        assertThat(updatedApproval.status(), is(equalTo(NviApprovalStatus.PENDING)));
+    }
+
+    private static BigDecimal calculateExpectedUndistributedPoints(BigDecimal totalPoints,
+                                                                   Map<URI, ApprovalStatus> approvalMap) {
+        return totalPoints.subtract(
+                approvalMap.values().stream().map(ApprovalStatus::points).reduce(BigDecimal.ZERO, BigDecimal::add))
+                   .setScale(
+                       POINTS_SCALE, ROUNDING_MODE);
+    }
+
+    private static Map<URI, BigDecimal> getPointsOriginal(URI[] institutionIdsOriginal) {
+        return Arrays.stream(institutionIdsOriginal)
+                   .collect(Collectors.toMap(Function.identity(), e -> new BigDecimal(1)));
+    }
+
+    private static Map<URI, List<URI>> getCreators(URI[] institutionIdsOriginal) {
+        return Map.of(URI.create("uri"), List.of(institutionIdsOriginal));
+    }
+
     private static PeriodStatusDto getDefaultPeriodStatus() {
         return PeriodStatusDto.fromPeriodStatus(PeriodStatus.builder().withStatus(Status.OPEN_PERIOD).build());
     }
@@ -167,7 +360,52 @@ class CandidateBOTest extends LocalDynamoTest {
         return new UriWrapper(HTTPS, API_DOMAIN).addChild(BASE_PATH, "candidate", identifier.toString()).getUri();
     }
 
-    //TODO; add xDto to DTO classes
+    private UpsertCandidateRequest getUpdateRequestForExistingCandidate() {
+        var institutionId = randomUri();
+        var insertRequest = createUpsertCandidateRequest(institutionId);
+        CandidateBO.fromRequest(insertRequest, candidateRepository, periodRepository);
+        return createUpsertCandidateRequest(insertRequest.publicationId(),
+                                            insertRequest.publicationBucketUri(), true,
+                                            InstanceType.parse(insertRequest.instanceType()),
+                                            insertRequest.creators().size(), randomBigDecimal(),
+                                            institutionId);
+    }
+
+    private DbCandidate generateExpectedCandidate(UUID identifier, UpsertCandidateRequest request) {
+        return new CandidateDao(identifier,
+                                DbCandidate.builder()
+                                    .publicationId(request.publicationId())
+                                    .publicationBucketUri(request.publicationBucketUri())
+                                    .publicationDate(mapToDbPublicationDate(request.publicationDate()))
+                                    .applicable(request.isApplicable())
+                                    .instanceType(InstanceType.parse(request.instanceType()))
+                                    .channelType(ChannelType.parse(request.channelType()))
+                                    .channelId(request.publicationChannelId())
+                                    .level(DbLevel.parse(request.level()))
+                                    .basePoints(request.basePoints())
+                                    .internationalCollaboration(request.isInternationalCollaboration())
+                                    .collaborationFactor(request.collaborationFactor())
+                                    .creators(mapToDbCreators(request.creators()))
+                                    .creatorShareCount(request.creatorShareCount())
+                                    .points(mapToDbInstitutionPoints(request.institutionPoints()))
+                                    .totalPoints(request.totalPoints())
+                                    .build(), randomString()).candidate();
+    }
+
+    private DbPublicationDate mapToDbPublicationDate(PublicationDate publicationDate) {
+        return new DbPublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
+    }
+
+    private List<DbInstitutionPoints> mapToDbInstitutionPoints(Map<URI, BigDecimal> points) {
+        return points.entrySet()
+                   .stream()
+                   .map(entry -> new DbInstitutionPoints(entry.getKey(), entry.getValue()))
+                   .toList();
+    }
+
+    private List<DbCreator> mapToDbCreators(Map<URI, List<URI>> creators) {
+        return creators.entrySet().stream().map(entry -> new DbCreator(entry.getKey(), entry.getValue())).toList();
+    }
 
     private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(UpsertCandidateRequest request) {
         return new UpsertCandidateRequest() {
@@ -187,13 +425,23 @@ class CandidateBOTest extends LocalDynamoTest {
             }
 
             @Override
-            public boolean isInternationalCooperation() {
+            public boolean isInternationalCollaboration() {
                 return false;
             }
 
             @Override
             public Map<URI, List<URI>> creators() {
                 return request.creators();
+            }
+
+            @Override
+            public String channelType() {
+                return null;
+            }
+
+            @Override
+            public URI publicationChannelId() {
+                return null;
             }
 
             @Override
@@ -212,14 +460,35 @@ class CandidateBOTest extends LocalDynamoTest {
             }
 
             @Override
-            public Map<URI, BigDecimal> points() {
-                return request.points();
+            public int creatorShareCount() {
+                return 0;
             }
 
             @Override
-            public int creatorCount() {
-                return 1;
+            public BigDecimal collaborationFactor() {
+                return null;
+            }
+
+            @Override
+            public BigDecimal basePoints() {
+                return null;
+            }
+
+            @Override
+            public Map<URI, BigDecimal> institutionPoints() {
+                return request.institutionPoints();
+            }
+
+            @Override
+            public BigDecimal totalPoints() {
+                return request.totalPoints();
             }
         };
+    }
+
+    //TODO; add xDto to DTO classes
+
+    private record CandidateResetCauseArgument(DbLevel level, InstanceType type, URI... institutionIds) {
+
     }
 }

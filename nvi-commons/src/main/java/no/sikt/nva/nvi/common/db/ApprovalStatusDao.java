@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.db;
 
 import static java.util.Objects.nonNull;
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
@@ -20,7 +21,8 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 
 @DynamoDbImmutable(builder = ApprovalStatusDao.Builder.class)
 public record ApprovalStatusDao(UUID identifier,
-                                @DynamoDbAttribute(DATA_FIELD) DbApprovalStatus approvalStatus
+                                @DynamoDbAttribute(DATA_FIELD) DbApprovalStatus approvalStatus,
+                                String version
 ) implements DynamoEntryWithRangeKey {
 
     public static final String TYPE = "APPROVAL_STATUS";
@@ -59,6 +61,7 @@ public record ApprovalStatusDao(UUID identifier,
     public ApprovalStatusDao.Builder copy() {
         return builder()
                    .identifier(identifier)
+                   .version(randomUUID().toString())
                    .approvalStatus(approvalStatus.copy().build());
     }
 
@@ -91,6 +94,7 @@ public record ApprovalStatusDao(UUID identifier,
 
         private UUID builderIdentifier;
         private DbApprovalStatus builderApprovalStatus;
+        private String builderVersion;
 
         private Builder() {
         }
@@ -120,8 +124,13 @@ public record ApprovalStatusDao(UUID identifier,
             return this;
         }
 
+        public Builder version(String version) {
+            this.builderVersion = version;
+            return this;
+        }
+
         public ApprovalStatusDao build() {
-            return new ApprovalStatusDao(this.builderIdentifier, this.builderApprovalStatus);
+            return new ApprovalStatusDao(this.builderIdentifier, this.builderApprovalStatus, this.builderVersion);
         }
     }
 
@@ -135,7 +144,11 @@ public record ApprovalStatusDao(UUID identifier,
 
         @DynamoDbIgnore
         public ApprovalStatusDao toDao(UUID candidateIdentifier) {
-            return new ApprovalStatusDao(candidateIdentifier, this);
+            return ApprovalStatusDao.builder()
+                       .identifier(candidateIdentifier)
+                       .approvalStatus(this)
+                       .version(randomUUID().toString())
+                       .build();
         }
 
         @DynamoDbIgnore

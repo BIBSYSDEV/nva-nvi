@@ -20,9 +20,8 @@ import no.sikt.nva.nvi.evaluator.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.evaluator.model.CandidateType;
 import no.sikt.nva.nvi.evaluator.model.NonNviCandidate;
 import no.sikt.nva.nvi.evaluator.model.NviCandidate;
-import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails;
-import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails.Creator;
-import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails.PublicationDate;
+import no.sikt.nva.nvi.evaluator.model.NviCandidate.Creator;
+import no.sikt.nva.nvi.evaluator.model.NviCandidate.PublicationDate;
 import no.sikt.nva.nvi.evaluator.model.PointCalculation;
 import no.unit.nva.events.models.EventReference;
 
@@ -46,30 +45,33 @@ public class EvaluatorService {
         if (!verifiedCreatorsWithNviInstitutions.isEmpty()) {
             var pointCalculation = calculatePoints(publication, verifiedCreatorsWithNviInstitutions);
             var nviCandidate = constructNviCandidate(publication, verifiedCreatorsWithNviInstitutions, pointCalculation,
-                                                     publicationId);
-            return constructMessage(publicationBucketUri, nviCandidate);
+                                                     publicationId, publicationBucketUri);
+            return constructMessage(nviCandidate);
         } else {
-            return constructMessage(publicationBucketUri, new NonNviCandidate(publicationId));
+            return constructMessage(new NonNviCandidate(publicationId));
         }
     }
 
     private static NviCandidate constructNviCandidate(JsonNode jsonNode,
                                                       Map<URI, List<URI>> verifiedCreatorsWithNviInstitutions,
-                                                      PointCalculation pointCalculation, URI publicationId) {
-        return new NviCandidate(CandidateDetails.builder()
-                                    .withPublicationId(publicationId)
-                                    .withPublicationDate(extractPublicationDate(jsonNode))
-                                    .withInstanceType(pointCalculation.instanceType().getValue())
-                                    .withBasePoints(pointCalculation.basePoints())
-                                    .withPublicationChannelId(pointCalculation.publicationChannelId())
-                                    .withChannelType(pointCalculation.channelType().getValue())
-                                    .withLevel(pointCalculation.level().getValue())
-                                    .withIsInternationalCollaboration(pointCalculation.isInternationalCollaboration())
-                                    .withCollaborationFactor(pointCalculation.collaborationFactor())
-                                    .withCreatorShareCount(pointCalculation.creatorShareCount())
-                                    .withInstitutionPoints(pointCalculation.institutionPoints())
-                                    .withVerifiedCreators(mapToCreators(verifiedCreatorsWithNviInstitutions))
-                                    .build());
+                                                      PointCalculation pointCalculation, URI publicationId,
+                                                      URI publicationBucketUri) {
+        return NviCandidate.builder()
+                   .withPublicationId(publicationId)
+                   .withPublicationBucketUri(publicationBucketUri)
+                   .withPublicationDate(extractPublicationDate(jsonNode))
+                   .withInstanceType(pointCalculation.instanceType().getValue())
+                   .withBasePoints(pointCalculation.basePoints())
+                   .withPublicationChannelId(pointCalculation.publicationChannelId())
+                   .withChannelType(pointCalculation.channelType().getValue())
+                   .withLevel(pointCalculation.level().getValue())
+                   .withIsInternationalCollaboration(pointCalculation.isInternationalCollaboration())
+                   .withCollaborationFactor(pointCalculation.collaborationFactor())
+                   .withCreatorShareCount(pointCalculation.creatorShareCount())
+                   .withInstitutionPoints(pointCalculation.institutionPoints())
+                   .withVerifiedCreators(mapToCreators(verifiedCreatorsWithNviInstitutions))
+                   .withTotalPoints(pointCalculation.totalPoints())
+                   .build();
     }
 
     private static List<Creator> mapToCreators(Map<URI, List<URI>> verifiedCreatorsWithNviInstitutions) {
@@ -97,9 +99,8 @@ public class EvaluatorService {
                    .orElse(new PublicationDate(null, null, year.textValue()));
     }
 
-    private CandidateEvaluatedMessage constructMessage(URI publicationBucketUri, CandidateType candidateType) {
+    private CandidateEvaluatedMessage constructMessage(CandidateType candidateType) {
         return CandidateEvaluatedMessage.builder()
-                   .withPublicationBucketUri(publicationBucketUri)
                    .withCandidateType(candidateType)
                    .build();
     }

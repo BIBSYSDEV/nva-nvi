@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
@@ -171,12 +172,18 @@ public record CandidateDao(
         URI publicationBucketUri,
         boolean applicable,
         InstanceType instanceType,
+        ChannelType channelType,
+        URI channelId,
         DbLevel level,
         DbPublicationDate publicationDate,
         boolean internationalCollaboration,
+        BigDecimal collaborationFactor,
         int creatorCount,
+        int creatorShareCount,
         List<DbCreator> creators,
-        List<DbInstitutionPoints> points
+        BigDecimal basePoints,
+        List<DbInstitutionPoints> points,
+        BigDecimal totalPoints
     ) {
 
         public static Builder builder() {
@@ -190,12 +197,18 @@ public record CandidateDao(
                        .publicationBucketUri(publicationBucketUri)
                        .applicable(applicable)
                        .instanceType(instanceType)
+                       .channelType(channelType)
+                       .channelId(channelId)
                        .level(level)
                        .publicationDate(publicationDate.copy())
                        .internationalCollaboration(internationalCollaboration)
+                       .collaborationFactor(collaborationFactor)
                        .creatorCount(creatorCount)
+                       .creatorShareCount(creatorShareCount)
                        .creators(creators.stream().map(DbCreator::copy).toList())
-                       .points(points.stream().map(DbInstitutionPoints::copy).toList());
+                       .basePoints(basePoints)
+                       .points(points.stream().map(DbInstitutionPoints::copy).toList())
+                       .totalPoints(totalPoints);
         }
 
         public static final class Builder {
@@ -204,12 +217,18 @@ public record CandidateDao(
             private URI builderPublicationBucketUri;
             private boolean builderApplicable;
             private InstanceType builderInstanceType;
+            private ChannelType builderChannelType;
+            private URI builderChannelId;
             private DbLevel builderLevel;
             private DbPublicationDate builderPublicationDate;
             private boolean builderInternationalCollaboration;
+            private BigDecimal builderCollaborationFactor;
             private int builderCreatorCount;
+            private int builderCreatorShareCount;
             private List<DbCreator> builderCreators;
+            private BigDecimal builderBasePoints;
             private List<DbInstitutionPoints> builderPoints;
+            private BigDecimal builderTotalPoints;
 
             private Builder() {
             }
@@ -234,6 +253,16 @@ public record CandidateDao(
                 return this;
             }
 
+            public Builder channelType(ChannelType channelType) {
+                this.builderChannelType = channelType;
+                return this;
+            }
+
+            public Builder channelId(URI channelId) {
+                this.builderChannelId = channelId;
+                return this;
+            }
+
             public Builder level(DbLevel level) {
                 this.builderLevel = level;
                 return this;
@@ -249,8 +278,18 @@ public record CandidateDao(
                 return this;
             }
 
+            public Builder collaborationFactor(BigDecimal collaborationFactor) {
+                this.builderCollaborationFactor = collaborationFactor;
+                return this;
+            }
+
             public Builder creatorCount(int creatorCount) {
                 this.builderCreatorCount = creatorCount;
+                return this;
+            }
+
+            public Builder creatorShareCount(int creatorShareCount) {
+                this.builderCreatorShareCount = creatorShareCount;
                 return this;
             }
 
@@ -259,16 +298,29 @@ public record CandidateDao(
                 return this;
             }
 
+            public Builder basePoints(BigDecimal basePoints) {
+                this.builderBasePoints = basePoints;
+                return this;
+            }
+
             public Builder points(List<DbInstitutionPoints> points) {
                 this.builderPoints = points;
                 return this;
             }
 
+            public Builder totalPoints(BigDecimal totalPoints) {
+                this.builderTotalPoints = totalPoints;
+                return this;
+            }
+
             public DbCandidate build() {
                 return new DbCandidate(builderPublicationId, builderPublicationBucketUri, builderApplicable,
-                                       builderInstanceType, builderLevel,
-                                       builderPublicationDate, builderInternationalCollaboration, builderCreatorCount,
-                                       builderCreators, builderPoints);
+                                       builderInstanceType, builderChannelType,
+                                       builderChannelId, builderLevel, builderPublicationDate,
+                                       builderInternationalCollaboration,
+                                       builderCollaborationFactor,
+                                       builderCreatorCount, builderCreatorShareCount, builderCreators,
+                                       builderBasePoints, builderPoints, builderTotalPoints);
             }
         }
     }

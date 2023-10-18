@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.rest.create;
 
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -14,7 +15,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.time.ZonedDateTime;
+import java.time.Year;
 import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -34,7 +35,7 @@ import org.zalando.problem.Problem;
 
 public class CreateNoteHandlerTest extends LocalDynamoTest {
 
-    public static final int YEAR = ZonedDateTime.now().getYear();
+    public static final int YEAR = Year.now().getValue();
     private Context context;
     private ByteArrayOutputStream output;
     private CreateNoteHandler handler;
@@ -78,7 +79,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         var theNote = "The note";
         var userName = randomString();
 
-        var request = createRequest(candidate.identifier(), new NviNoteRequest(theNote), userName);
+        var request = createRequest(candidate.getIdentifier(), new NviNoteRequest(theNote), userName);
         handler.handleRequest(request, output, context);
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var actualNote = gatewayResponse.getBodyObject(CandidateDto.class).notes().get(0);
@@ -91,12 +92,25 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
     void shouldReturnConflictWhenCreatingNoteAndReportingPeriodIsClosed() throws IOException {
         var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
                                                 periodRepository).orElseThrow();
-        var request = createRequest(candidate.identifier(), new NviNoteRequest(randomString()), randomString());
+        var request = createRequest(candidate.getIdentifier(), new NviNoteRequest(randomString()), randomString());
         var handler = new CreateNoteHandler(candidateRepository, periodRepositoryReturningClosedPeriod(YEAR));
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
         assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_CONFLICT)));
+    }
+
+    @Test
+    void shouldReturn405NotAllowedWhenAddingNoteToNonCandidate() throws IOException {
+        var candidateBO = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
+                                                  candidateRepository, periodRepository).orElseThrow();
+        var nonCandidate = CandidateBO.fromRequest(
+            createUpsertNonCandidateRequest(candidateBO.getPublicationId()), candidateRepository).orElseThrow();
+        var request = createRequest(nonCandidate.getIdentifier(), randomNote(), randomString());
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_BAD_METHOD)));
     }
 
     private InputStream createRequest(UUID identifier, NviNoteRequest body, String userName)

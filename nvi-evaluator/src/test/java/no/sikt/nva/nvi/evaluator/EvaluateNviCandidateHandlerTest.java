@@ -33,22 +33,22 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
+import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.evaluator.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.evaluator.model.InstanceType;
 import no.sikt.nva.nvi.evaluator.model.Level;
 import no.sikt.nva.nvi.evaluator.model.NonNviCandidate;
 import no.sikt.nva.nvi.evaluator.model.NviCandidate;
-import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails;
-import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails.Creator;
-import no.sikt.nva.nvi.evaluator.model.NviCandidate.CandidateDetails.PublicationDate;
+import no.sikt.nva.nvi.evaluator.model.NviCandidate.Creator;
+import no.sikt.nva.nvi.evaluator.model.NviCandidate.PublicationDate;
 import no.sikt.nva.nvi.evaluator.model.PublicationChannel;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import no.unit.nva.stubs.FakeSecretsManagerClient;
+import nva.commons.core.Environment;
 import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
@@ -97,21 +97,24 @@ class EvaluateNviCandidateHandlerTest {
 
     @BeforeEach
     void setUp() {
+        var env = mock(Environment.class);
+        when(env.readEnv("CANDIDATE_QUEUE_URL")).thenReturn("My test candidate queue url");
+        when(env.readEnv("CANDIDATE_DLQ_URL")).thenReturn("My test candidate dlq url");
         notFoundResponse = createResponse(404, StringUtils.EMPTY_STRING);
         badResponse = createResponse(500, StringUtils.EMPTY_STRING);
         okResponse = createResponse(200, CUSTOMER_API_NVI_RESPONSE);
         var s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, BUCKET_NAME);
         sqsClient = new FakeSqsClient();
-        SqsMessageClient queueClient = new SqsMessageClient(sqsClient);
+        var queueClient = new NviQueueClient(sqsClient);
         var secretsManagerClient = new FakeSecretsManagerClient();
         var credentials = new BackendClientCredentials("id", "secret");
         secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
         uriRetriever = mock(AuthorizedBackendUriRetriever.class);
         var calculator = new CandidateCalculator(uriRetriever);
-        FakeStorageReader storageReader = new FakeStorageReader(s3Client);
+        var storageReader = new FakeStorageReader(s3Client);
         var evaluatorService = new EvaluatorService(storageReader, calculator);
-        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient);
+        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
         output = new ByteArrayOutputStream();
     }
 
@@ -166,7 +169,7 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var messageBody = getMessageBody();
-        var institutionPoints = ((NviCandidate) messageBody.candidate()).candidateDetails().institutionPoints();
+        var institutionPoints = ((NviCandidate) messageBody.candidate()).institutionPoints();
         assertEquals(1, institutionPoints.size());
         assertTrue(institutionPoints.containsKey(CRISTIN_NVI_ORG_TOP_LEVEL_ID));
     }
@@ -179,10 +182,11 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var messageBody = getMessageBody();
+        var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_ARTICLE.getValue(),
-                                                                   BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE),
+                                                                   expectedPoints,
                                                                    fileUri, JOURNAL,
-                                                                   ONE);
+                                                                   ONE, expectedPoints);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -194,11 +198,11 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var messageBody = getMessageBody();
+        var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(InstanceType.ACADEMIC_CHAPTER.getValue(),
-                                                                   BigDecimal.valueOf(1)
-                                                                       .setScale(SCALE, ROUNDING_MODE),
+                                                                   expectedPoints,
                                                                    fileUri, SERIES,
-                                                                   ONE);
+                                                                   ONE, expectedPoints);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -210,10 +214,11 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var messageBody = getMessageBody();
+        var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_MONOGRAPH.getValue(),
-                                                                   BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE),
+                                                                   expectedPoints,
                                                                    fileUri, SERIES,
-                                                                   BigDecimal.valueOf(5));
+                                                                   BigDecimal.valueOf(5), expectedPoints);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -227,10 +232,11 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var messageBody = getMessageBody();
+        var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_MONOGRAPH.getValue(),
-                                                                   BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE),
+                                                                   expectedPoints,
                                                                    fileUri, SERIES,
-                                                                   BigDecimal.valueOf(5));
+                                                                   BigDecimal.valueOf(5), expectedPoints);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -242,10 +248,11 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var messageBody = getMessageBody();
+        var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_LITERATURE_REVIEW.getValue(),
-                                                                   BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE),
+                                                                   expectedPoints,
                                                                    fileUri, JOURNAL,
-                                                                   ONE);
+                                                                   ONE, expectedPoints);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -257,7 +264,7 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var body = getMessageBody(fileUri);
-        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        var institutionPoints = ((NviCandidate) body.candidate()).institutionPoints();
         assertThat(institutionPoints, notNullValue());
         assertThat(institutionPoints.get(CRISTIN_NVI_ORG_TOP_LEVEL_ID),
                    is(equalTo(BigDecimal.valueOf(1).setScale(4, RoundingMode.HALF_UP))));
@@ -271,7 +278,7 @@ class EvaluateNviCandidateHandlerTest {
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var body = getMessageBody(fileUri);
-        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        var institutionPoints = ((NviCandidate) body.candidate()).institutionPoints();
         assertThat(institutionPoints, notNullValue());
         assertThat(institutionPoints.get(CRISTIN_NVI_ORG_TOP_LEVEL_ID), notNullValue());
     }
@@ -332,6 +339,17 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldCreateNonCandidateEventWhenIdentityIsNotVerified() throws IOException {
         var path = "nonCandidate_nonVerified.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+        var event = createS3Event(fileUri);
+        handler.handleRequest(event, output, context);
+        var candidate = getMessageBody();
+        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
+    }
+
+    @Test
+    void shouldCreateNonCandidateWhenPublicationYearBefore2022() throws IOException {
+        var path = "candidate_publicationDate_before_2022.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
         var event = createS3Event(fileUri);
@@ -457,34 +475,38 @@ class EvaluateNviCandidateHandlerTest {
     private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(String instanceType,
                                                                          BigDecimal points, URI bucketUri,
                                                                          PublicationChannel publicationChannel,
-                                                                         BigDecimal basePoints) {
+                                                                         BigDecimal basePoints,
+                                                                         BigDecimal totalPoints) {
         return CandidateEvaluatedMessage.builder()
                    .withCandidateType(createExpectedCandidate(instanceType,
                                                               Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID,
                                                                      points.setScale(SCALE, RoundingMode.HALF_UP)),
                                                               publicationChannel, Level.LEVEL_ONE.getValue(),
-                                                              basePoints))
-                   .withPublicationBucketUri(bucketUri).build();
+                                                              basePoints, totalPoints, bucketUri))
+                   .build();
     }
 
     private static NviCandidate createExpectedCandidate(String instanceType, Map<URI, BigDecimal> institutionPoints,
                                                         PublicationChannel channelType, String level,
-                                                        BigDecimal basePoints) {
+                                                        BigDecimal basePoints, BigDecimal totalPoints,
+                                                        URI publicationBucketUri) {
         var verifiedCreators = List.of(new Creator(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID)));
-        return new NviCandidate(CandidateDetails.builder()
-                                    .withPublicationId(HARDCODED_PUBLICATION_ID)
-                                    .withPublicationDate(HARDCODED_PUBLICATION_DATE)
-                                    .withInstanceType(instanceType)
-                                    .withChannelType(channelType.getValue())
-                                    .withLevel(level)
-                                    .withPublicationChannelId(HARDCODED_PUBLICATION_CHANNEL_ID)
-                                    .withIsInternationalCollaboration(false)
-                                    .withCollaborationFactor(BigDecimal.ONE.setScale(1, ROUNDING_MODE))
-                                    .withCreatorShareCount(countCreatorShares(verifiedCreators))
-                                    .withBasePoints(basePoints)
-                                    .withVerifiedCreators(verifiedCreators)
-                                    .withInstitutionPoints(institutionPoints)
-                                    .build());
+        return NviCandidate.builder()
+                   .withPublicationId(HARDCODED_PUBLICATION_ID)
+                   .withPublicationBucketUri(publicationBucketUri)
+                   .withPublicationDate(HARDCODED_PUBLICATION_DATE)
+                   .withInstanceType(instanceType)
+                   .withChannelType(channelType.getValue())
+                   .withLevel(level)
+                   .withPublicationChannelId(HARDCODED_PUBLICATION_CHANNEL_ID)
+                   .withIsInternationalCollaboration(false)
+                   .withCollaborationFactor(BigDecimal.ONE.setScale(1, ROUNDING_MODE))
+                   .withCreatorShareCount(countCreatorShares(verifiedCreators))
+                   .withBasePoints(basePoints)
+                   .withVerifiedCreators(verifiedCreators)
+                   .withInstitutionPoints(institutionPoints)
+                   .withTotalPoints(totalPoints)
+                   .build();
     }
 
     private static int countCreatorShares(List<Creator> verifiedCreators) {
