@@ -59,7 +59,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnNotFoundWhenCandidateDoesNotExist() throws IOException {
-        handler.handleRequest(createRequest(randomUUID(), randomUri(), randomUri(), ACCESS_RIGHT_MANAGE_NVI_CANDIDATES),
+        handler.handleRequest(createRequest(randomUUID(), randomUri(), ACCESS_RIGHT_MANAGE_NVI_CANDIDATES),
                               output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
 
@@ -70,7 +70,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     void shouldReturnNotFoundWhenCandidateExistsButNotApplicable() throws IOException {
         var institutionId = randomUri();
         var nonApplicableCandidate = setUpNonApplicableCandidate(institutionId);
-        handler.handleRequest(createRequest(nonApplicableCandidate.getIdentifier(), institutionId, institutionId,
+        handler.handleRequest(createRequest(nonApplicableCandidate.getIdentifier(), institutionId,
                                             ACCESS_RIGHT_MANAGE_NVI_CANDIDATES), output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
 
@@ -81,8 +81,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     void shouldReturnUnauthorizedWhenUserDoesNotBelongToSameInstitutionAsAnyOfCandidateApprovals() throws IOException {
         var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
                                                 candidateRepository, periodRepository).orElseThrow();
-        var request = createRequest(candidate.getIdentifier(), randomUri(), randomUri(),
-                                    ACCESS_RIGHT_MANAGE_NVI_CANDIDATES);
+        var request = createRequest(candidate.getIdentifier(), randomUri(), ACCESS_RIGHT_MANAGE_NVI_CANDIDATES);
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -94,7 +93,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
         var institutionId = randomUri();
         var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId),
                                                 candidateRepository, periodRepository).orElseThrow();
-        var request = createRequest(candidate.getIdentifier(), institutionId, institutionId, "SomeAccessRight");
+        var request = createRequest(candidate.getIdentifier(), institutionId, "SomeAccessRight");
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -107,8 +106,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
         var candidate =
             CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
-        var request = createRequest(candidate.getIdentifier(), institutionId, institutionId,
-                                    ACCESS_RIGHT_MANAGE_NVI_CANDIDATES);
+        var request = createRequest(candidate.getIdentifier(), institutionId, ACCESS_RIGHT_MANAGE_NVI_CANDIDATES);
 
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -118,13 +116,13 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
         assertEquals(expectedResponse, actualResponse);
     }
 
-    private static InputStream createRequest(UUID publicationId, URI customerId, URI institutionId, String accessRight)
+    private static InputStream createRequest(UUID publicationId, URI institutionId, String accessRight)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
                    .withHeaders(Map.of(HttpHeader.ACCEPT.asString(), ContentType.APPLICATION_JSON.getMimeType()))
-                   .withCurrentCustomer(customerId)
+                   .withCurrentCustomer(institutionId)
                    .withTopLevelCristinOrgId(institutionId)
-                   .withAccessRights(customerId, accessRight)
+                   .withAccessRights(institutionId, accessRight)
                    .withUserName(randomString())
                    .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, publicationId.toString()))
                    .build();
