@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
-import static no.sikt.nva.nvi.test.TestUtils.randomInstanceTypeExcluding;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -13,7 +12,6 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
@@ -49,7 +47,7 @@ class CandidateRepositoryTest extends LocalDynamoTest {
         var candidate = Candidate.fromRequest(originalRequest, candidateRepository, periodRepository).orElseThrow();
         var originalDbCandidate = candidateRepository.findCandidateById(candidate.getIdentifier()).get().candidate();
 
-        var newUpsertRequest = copyRequestWithNewInstanceType(originalRequest, randomValidInstanceType());
+        var newUpsertRequest = copyRequestWithNewInstanceType(originalRequest, randomUri());
         Candidate.fromRequest(newUpsertRequest, candidateRepository, periodRepository).orElseThrow();
         var updatedDbCandidate = candidateRepository.findCandidateById(candidate.getIdentifier()).get().candidate();
 
@@ -57,13 +55,8 @@ class CandidateRepositoryTest extends LocalDynamoTest {
         assertThat(updatedDbCandidate, is(not(equalTo(originalDbCandidate))));
     }
 
-    private static String randomValidInstanceType() {
-        return randomInstanceTypeExcluding(
-            InstanceType.NON_CANDIDATE).getValue();
-    }
-
     private UpsertCandidateRequest copyRequestWithNewInstanceType(UpsertCandidateRequest request,
-                                                                  String instanceType) {
+                                                                  URI publicationChannelId) {
         return new UpsertCandidateRequest() {
             @Override
             public URI publicationBucketUri() {
@@ -97,7 +90,7 @@ class CandidateRepositoryTest extends LocalDynamoTest {
 
             @Override
             public URI publicationChannelId() {
-                return request.publicationChannelId();
+                return publicationChannelId;
             }
 
             @Override
@@ -107,7 +100,7 @@ class CandidateRepositoryTest extends LocalDynamoTest {
 
             @Override
             public String instanceType() {
-                return instanceType;
+                return request.instanceType();
             }
 
             @Override
