@@ -248,17 +248,32 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private static List<no.sikt.nva.nvi.index.model.Approval> constructExpectedApprovals(Map<URI, Approval> approvals) {
         return approvals.keySet()
                    .stream()
-                   .map(approval -> new no.sikt.nva.nvi.index.model.Approval(approvals.get(approval).institutionId().toString(), getLabels(),
-                                                                             ApprovalStatus.fromValue(approvals.get(approval)
-                                                                              .approval()
-                                                                              .approvalStatus()
-                                                                              .status()
-                                                                              .getValue()),
-                                                                             Optional.of(approvals.get(approval).approval().approvalStatus())
-                                                     .map(DbApprovalStatus::assignee)
-                                                     .map(Username::value)
-                                                     .orElse(null)))
+                   .map(approval -> new no.sikt.nva.nvi.index.model.Approval(getInstitutionId(approvals, approval),
+                                                                             getLabels(),
+                                                                             getApprovalStatus(approvals, approval),
+                                                                             Optional.of(getDbApprovalStatus(approvals,
+                                                                                                             approval))
+                                                                                 .map(DbApprovalStatus::assignee)
+                                                                                 .map(Username::value)
+                                                                                 .orElse(null)))
                    .toList();
+    }
+
+    private static DbApprovalStatus getDbApprovalStatus(Map<URI, Approval> approvals, URI approval) {
+        return approvals.get(approval)
+                   .approval()
+                   .approvalStatus();
+    }
+
+    private static ApprovalStatus getApprovalStatus(Map<URI, Approval> approvals, URI approval) {
+        return ApprovalStatus.fromValue(
+            getDbApprovalStatus(approvals, approval)
+                .status()
+                .getValue());
+    }
+
+    private static String getInstitutionId(Map<URI, Approval> approvals, URI approval) {
+        return approvals.get(approval).institutionId().toString();
     }
 
     private static Map<String, String> getLabels() {

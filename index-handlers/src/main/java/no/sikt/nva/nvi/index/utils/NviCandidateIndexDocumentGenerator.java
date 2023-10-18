@@ -82,7 +82,8 @@ public final class NviCandidateIndexDocumentGenerator {
                    .collect(Collectors.toList());
     }
 
-    private List<no.sikt.nva.nvi.index.model.Approval> createApprovals(JsonNode resource, List<DbApprovalStatus> approvals) {
+    private List<no.sikt.nva.nvi.index.model.Approval> createApprovals(JsonNode resource,
+                                                                       List<DbApprovalStatus> approvals) {
         return approvals.stream().map(approval -> toApproval(resource, approval)).toList();
     }
 
