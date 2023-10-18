@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.rest.fetch;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.utils.RequestUtil.hasAccessRight;
+import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATE;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.URI;
@@ -13,7 +14,6 @@ import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.utils.ExceptionMapper;
-import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
@@ -56,7 +56,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
     }
 
     private static void validateAccessRight(RequestInfo requestInfo) throws UnauthorizedException {
-        hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
+        hasAccessRight(requestInfo, MANAGE_NVI_CANDIDATE);
     }
 
     private static CandidateBO validateTopLevelOrg(CandidateBO candidate, URI topLevelOrgCristinId)

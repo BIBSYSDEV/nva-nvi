@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeri
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,7 +29,6 @@ import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.testutils.HandlerRequestBuilder;
-import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpStatus;
@@ -41,7 +41,6 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 class FetchNviCandidateHandlerTest extends LocalDynamoTest {
 
-    public static final String ACCESS_RIGHT_MANAGE_NVI_CANDIDATES = AccessRight.MANAGE_NVI_CANDIDATE.name();
     private static final Context CONTEXT = mock(Context.class);
     private final DynamoDbClient localDynamo = initializeTestDatabase();
     private ByteArrayOutputStream output;
@@ -59,7 +58,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnNotFoundWhenCandidateDoesNotExist() throws IOException {
-        handler.handleRequest(createRequest(randomUUID(), randomUri(), ACCESS_RIGHT_MANAGE_NVI_CANDIDATES),
+        handler.handleRequest(createRequest(randomUUID(), randomUri(), MANAGE_NVI_CANDIDATE.name()),
                               output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
 
@@ -71,7 +70,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
         var institutionId = randomUri();
         var nonApplicableCandidate = setUpNonApplicableCandidate(institutionId);
         handler.handleRequest(createRequest(nonApplicableCandidate.getIdentifier(), institutionId,
-                                            ACCESS_RIGHT_MANAGE_NVI_CANDIDATES), output, CONTEXT);
+                                            MANAGE_NVI_CANDIDATE.name()), output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
 
         assertEquals(HttpStatus.SC_NOT_FOUND, gatewayResponse.getStatusCode());
@@ -82,7 +81,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
         throws IOException {
         var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
                                                 candidateRepository, periodRepository).orElseThrow();
-        var request = createRequest(candidate.getIdentifier(), randomUri(), ACCESS_RIGHT_MANAGE_NVI_CANDIDATES);
+        var request = createRequest(candidate.getIdentifier(), randomUri(), MANAGE_NVI_CANDIDATE.name());
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -107,7 +106,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
         var candidate =
             CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
-        var request = createRequest(candidate.getIdentifier(), institutionId, ACCESS_RIGHT_MANAGE_NVI_CANDIDATES);
+        var request = createRequest(candidate.getIdentifier(), institutionId, MANAGE_NVI_CANDIDATE.name());
 
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
