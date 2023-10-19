@@ -252,7 +252,10 @@ public class CandidateQuery {
 
     private Optional<Query> createTitleQuery(String title) {
         return nonNull(title) ? Optional.of(new MatchPhraseQuery.Builder().field(jsonPathOf(PUBLICATION_DETAILS,
-                                                                                           TITLE )).query(title).build()._toQuery()) : Optional.empty();
+                                                                                            TITLE))
+                                                .query(title)
+                                                .build()
+                                                ._toQuery()) : Optional.empty();
     }
 
     public enum QueryFilterType {

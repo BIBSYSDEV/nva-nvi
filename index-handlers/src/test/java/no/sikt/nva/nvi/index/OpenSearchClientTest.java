@@ -301,7 +301,10 @@ public class OpenSearchClientTest {
                             singleNviCandidateIndexDocumentWithCustomerAndTitle(customer.toString(), randomString()));
 
         var searchParameters =
-            defaultSearchParameters().withAffiliations(List.of(customer)).withTitle(getRandomWord(title)).withYear(YEAR).build();
+            defaultSearchParameters().withAffiliations(List.of(customer))
+                .withTitle(getRandomWord(title))
+                .withYear(YEAR)
+                .build();
 
         var searchResponse =
             openSearchClient.search(searchParameters);
