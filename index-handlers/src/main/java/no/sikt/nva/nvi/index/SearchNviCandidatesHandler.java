@@ -38,7 +38,7 @@ public class SearchNviCandidatesHandler
     public static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     public static final String QUERY_PARAM_EXCLUDE_SUB_UNITS = "excludeSubUnits";
     public static final String QUERY_PARAM_FILTER = "filter";
-    private static final String DEFAULT_FILTER = StringUtils.EMPTY_STRING;
+    private static final String DEFAULT_STRING = StringUtils.EMPTY_STRING;
     private static final String QUERY_SIZE_PARAM = "size";
     private static final String QUERY_OFFSET_PARAM = "offset";
     private static final int DEFAULT_QUERY_SIZE = 10;
@@ -157,12 +157,12 @@ public class SearchNviCandidatesHandler
 
     private static String extractQueryParamFilterOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
-                   .getOrDefault(QUERY_PARAM_FILTER, DEFAULT_FILTER);
+                   .getOrDefault(QUERY_PARAM_FILTER, DEFAULT_STRING);
     }
 
     private static String extractQueryParamCategoryOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
-            .getOrDefault(QUERY_PARAM_CATEGORY, StringUtils.EMPTY_STRING);
+            .getOrDefault(QUERY_PARAM_CATEGORY, DEFAULT_STRING);
     }
 
     @JacocoGenerated
