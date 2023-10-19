@@ -179,6 +179,11 @@ paths:
           schema:
             type: string
           description: Filters values based on year
+        - in: query
+          name: query
+          schema:
+            type: string
+          description: Term to search for in NVI candidates
       security:
         - CognitoUserPool: [
           'https://api.nva.unit.no/scopes/backend',

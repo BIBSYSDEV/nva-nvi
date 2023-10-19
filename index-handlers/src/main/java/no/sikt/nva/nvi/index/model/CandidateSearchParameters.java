@@ -6,7 +6,7 @@ import java.util.List;
 import nva.commons.core.JacocoGenerated;
 
 public record CandidateSearchParameters(List<URI> affiliations, boolean excludeSubUnits, String filter, String username,
-                                        String year, URI customer, int offset, int size) {
+                                        String year, String searchTerm, URI customer, int offset, int size) {
     public static Builder builder() {
         return new Builder();
     }
@@ -19,6 +19,7 @@ public record CandidateSearchParameters(List<URI> affiliations, boolean excludeS
         private String filter = EMPTY_STRING;
         private String username;
         private String year;
+        public String searchTerm;
         private URI customer;
         private int offset;
         private int size = 10;
@@ -51,6 +52,11 @@ public record CandidateSearchParameters(List<URI> affiliations, boolean excludeS
             return this;
         }
 
+        public Builder withSearchTerm(String searchTerm) {
+            this.searchTerm = searchTerm;
+            return this;
+        }
+
         public Builder withCustomer(URI customer) {
             this.customer = customer;
             return this;
@@ -72,6 +78,7 @@ public record CandidateSearchParameters(List<URI> affiliations, boolean excludeS
                                                  filter,
                                                  username,
                                                  year,
+                                                 searchTerm,
                                                  customer,
                                                  offset,
                                                  size);

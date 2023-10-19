@@ -31,6 +31,7 @@ import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ExistsQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
+import org.opensearch.client.opensearch._types.query_dsl.MultiMatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
@@ -50,19 +51,22 @@ public class CandidateQuery {
     private final String username;
     private final String customer;
     private final String year;
+    private final String searchTerm;
 
     public CandidateQuery(List<URI> affiliations,
                           boolean excludeSubUnits,
                           QueryFilterType filter,
                           String username,
                           String customer,
-                          String year) {
+                          String year,
+                          String searchTerm) {
         this.affiliations = affiliations.stream().map(URI::toString).toList();
         this.excludeSubUnits = excludeSubUnits;
         this.filter = filter;
         this.username = username;
         this.customer = customer;
         this.year = year;
+        this.searchTerm = searchTerm;
     }
 
     public Query toQuery() {
@@ -194,8 +198,9 @@ public class CandidateQuery {
         var institutionQuery = createInstitutionQuery();
         var filterQuery = constructQueryWithFilter();
         var yearQuery = createYearQuery(year);
+        var searchTermQuery = createsearchTermQuery(searchTerm);
 
-        return Stream.of(institutionQuery, filterQuery, yearQuery)
+        return Stream.of(institutionQuery, filterQuery, yearQuery, searchTermQuery)
                    .filter(Optional::isPresent)
                    .map(Optional::get)
                    .toList();
@@ -244,6 +249,11 @@ public class CandidateQuery {
 
     }
 
+    private Optional<Query> createsearchTermQuery(String searchTerm) {
+        return nonNull(searchTerm) ? Optional.of(new MultiMatchQuery.Builder().query(searchTerm).build()._toQuery())
+                   : Optional.empty();
+    }
+
     public enum QueryFilterType {
         PENDING_AGG("pending"),
         PENDING_COLLABORATION_AGG("pendingCollaboration"),
@@ -284,6 +294,7 @@ public class CandidateQuery {
         private String username;
         private String customer;
         private String year;
+        private String query;
 
         public Builder() {
             // No-args constructor.
@@ -319,8 +330,13 @@ public class CandidateQuery {
             return this;
         }
 
+        public Builder withQuery(String query) {
+            this.query = query;
+            return this;
+        }
+
         public CandidateQuery build() {
-            return new CandidateQuery(institutions, excludeSubUnits, filter, username, customer, year);
+            return new CandidateQuery(institutions, excludeSubUnits, filter, username, customer, year, query);
         }
     }
 }

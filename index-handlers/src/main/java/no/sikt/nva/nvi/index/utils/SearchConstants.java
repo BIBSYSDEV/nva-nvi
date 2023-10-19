@@ -57,6 +57,7 @@ public final class SearchConstants {
                         .withUsername(params.username())
                         .withCustomer(params.customer().toString())
                         .withYear(params.year())
+                        .withQuery(params.searchTerm())
                         .build()
                         .toQuery();
     }
