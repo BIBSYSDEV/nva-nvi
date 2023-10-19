@@ -299,7 +299,9 @@ public class OpenSearchClientTest {
                             documentFromString("document_pending_collaboration.json"));
 
         var searchParameters =
-            defaultSearchParameters().withSearchTerm(SEARCH_TERM).withAffiliations(List.of(NTNU_INSTITUTION_ID)).build();
+            defaultSearchParameters().withSearchTerm(SEARCH_TERM)
+                .withAffiliations(List.of(NTNU_INSTITUTION_ID))
+                .build();
 
         var searchResponse =
             openSearchClient.search(searchParameters);
