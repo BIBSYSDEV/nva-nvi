@@ -17,6 +17,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.PART_OF;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DATE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DETAILS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ROLE;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.TITLE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.YEAR;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.net.URI;
@@ -30,6 +31,7 @@ import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ExistsQuery;
+import org.opensearch.client.opensearch._types.query_dsl.MatchPhraseQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -50,19 +52,22 @@ public class CandidateQuery {
     private final String username;
     private final String customer;
     private final String year;
+    private final String title;
 
     public CandidateQuery(List<URI> affiliations,
                           boolean excludeSubUnits,
                           QueryFilterType filter,
                           String username,
                           String customer,
-                          String year) {
+                          String year,
+                          String title) {
         this.affiliations = affiliations.stream().map(URI::toString).toList();
         this.excludeSubUnits = excludeSubUnits;
         this.filter = filter;
         this.username = username;
         this.customer = customer;
         this.year = year;
+        this.title = title;
     }
 
     public Query toQuery() {
@@ -194,8 +199,9 @@ public class CandidateQuery {
         var institutionQuery = createInstitutionQuery();
         var filterQuery = constructQueryWithFilter();
         var yearQuery = createYearQuery(year);
+        var titleQuery = createTitleQuery(title);
 
-        return Stream.of(institutionQuery, filterQuery, yearQuery)
+        return Stream.of(institutionQuery, filterQuery, yearQuery, titleQuery)
                    .filter(Optional::isPresent)
                    .map(Optional::get)
                    .toList();
@@ -244,6 +250,11 @@ public class CandidateQuery {
 
     }
 
+    private Optional<Query> createTitleQuery(String title) {
+        return nonNull(title) ? Optional.of(new MatchPhraseQuery.Builder().field(jsonPathOf(PUBLICATION_DETAILS,
+                                                                                           TITLE )).query(title).build()._toQuery()) : Optional.empty();
+    }
+
     public enum QueryFilterType {
         PENDING_AGG("pending"),
         PENDING_COLLABORATION_AGG("pendingCollaboration"),
@@ -284,6 +295,7 @@ public class CandidateQuery {
         private String username;
         private String customer;
         private String year;
+        private String title;
 
         public Builder() {
             // No-args constructor.
@@ -319,8 +331,13 @@ public class CandidateQuery {
             return this;
         }
 
+        public Builder withTitle(String title) {
+            this.title = title;
+            return this;
+        }
+
         public CandidateQuery build() {
-            return new CandidateQuery(institutions, excludeSubUnits, filter, username, customer, year);
+            return new CandidateQuery(institutions, excludeSubUnits, filter, username, customer, year, title);
         }
     }
 }

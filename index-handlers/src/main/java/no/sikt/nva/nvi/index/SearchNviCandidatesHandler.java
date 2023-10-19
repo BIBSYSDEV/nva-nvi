@@ -16,7 +16,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.SearchClient;
@@ -38,7 +37,8 @@ public class SearchNviCandidatesHandler
     public static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     public static final String QUERY_PARAM_EXCLUDE_SUB_UNITS = "excludeSubUnits";
     public static final String QUERY_PARAM_FILTER = "filter";
-    private static final String DEFAULT_FILTER = StringUtils.EMPTY_STRING;
+    public static final String QUERY_PARAM_TITLE = "title";
+    private static final String DEFAULT_STRING = StringUtils.EMPTY_STRING;
     private static final String QUERY_SIZE_PARAM = "size";
     private static final String QUERY_OFFSET_PARAM = "offset";
     private static final int DEFAULT_QUERY_SIZE = 10;
@@ -88,11 +88,13 @@ public class SearchNviCandidatesHandler
                                .orElse(List.of(topLevelOrg));
         var username = requestInfo.getUserName();
         var year = extractQueryParamPublicationDateOrDefault(requestInfo);
+        var title = extractQueryParamTitle(requestInfo);
 
         assertUserIsAllowedToSearchAffiliations(affiliations, topLevelOrg);
 
-        var candidateSearchParameters = new CandidateSearchParameters(affiliations, excludeSubUnits, filter, username,
-                                                                      year, topLevelOrg, offset, size);
+        var candidateSearchParameters = new CandidateSearchParameters(affiliations, excludeSubUnits, filter,
+                                                                      username,
+                                                                      year, title, topLevelOrg, offset, size);
         return candidateSearchParameters;
     }
 
@@ -155,7 +157,12 @@ public class SearchNviCandidatesHandler
 
     private static String extractQueryParamFilterOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
-                   .getOrDefault(QUERY_PARAM_FILTER, DEFAULT_FILTER);
+                   .getOrDefault(QUERY_PARAM_FILTER, DEFAULT_STRING);
+    }
+
+    private static String extractQueryParamTitle(RequestInfo requestInfo) {
+        return requestInfo.getQueryParameters()
+            .getOrDefault(QUERY_PARAM_TITLE, DEFAULT_STRING);
     }
 
     @JacocoGenerated

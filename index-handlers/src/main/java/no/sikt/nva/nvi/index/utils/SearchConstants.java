@@ -28,6 +28,7 @@ public final class SearchConstants {
     public static final String APPROVALS = "approvals";
     public static final String PUBLICATION_DATE = "publicationDate";
     public static final String YEAR = "year";
+    public static final String TITLE = "title";
     public static final String KEYWORD = "keyword";
     public static final String APPROVAL_STATUS = "approvalStatus";
     public static final String PUBLICATION_DETAILS = "publicationDetails";
@@ -57,6 +58,7 @@ public final class SearchConstants {
                         .withUsername(params.username())
                         .withCustomer(params.customer().toString())
                         .withYear(params.year())
+                        .withTitle(params.title())
                         .build()
                         .toQuery();
     }

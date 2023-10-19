@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_EXCLUDE_SUB_UNITS;
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_TITLE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
@@ -153,7 +154,9 @@ public class SearchNviCandidatesHandlerTest {
         mockOpenSearchClient();
         var randomFilter = randomString();
         var randomInstitutions = List.of(randomSiktSubUnit(), randomSiktSubUnit());
-        handler.handleRequest(requestWithInstitutionsAndFilter(randomInstitutions, randomFilter), output, context);
+        var randomTitle = randomString();
+        handler.handleRequest(requestWithInstitutionsAndFilter(randomInstitutions, randomFilter, randomTitle),
+                              output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
 
@@ -164,6 +167,7 @@ public class SearchNviCandidatesHandlerTest {
         var expectedExcludeQuery = QUERY_PARAM_EXCLUDE_SUB_UNITS + "=true";
 
         assertThat(actualId, containsString(QUERY_PARAM_FILTER + "=" + randomFilter));
+        assertThat(actualId, containsString(QUERY_PARAM_TITLE + "=" + randomTitle));
         assertThat(actualId, containsString(expectedInstitutionQuery));
         assertThat(actualId, containsString(expectedExcludeQuery));
     }
@@ -313,7 +317,7 @@ public class SearchNviCandidatesHandlerTest {
                    .build();
     }
 
-    private InputStream requestWithInstitutionsAndFilter(List<URI> institutions, String filter)
+    private InputStream requestWithInstitutionsAndFilter(List<URI> institutions, String filter, String title)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
                    .withTopLevelCristinOrgId(randomUri())
@@ -321,7 +325,8 @@ public class SearchNviCandidatesHandlerTest {
                    .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS, String.join(COMMA,
                                                     institutions.stream().map(URI::toString).toList()),
                                                QUERY_PARAM_EXCLUDE_SUB_UNITS, "true",
-                                               QUERY_PARAM_FILTER, filter))
+                                               QUERY_PARAM_FILTER, filter,
+                                               QUERY_PARAM_TITLE, title))
                    .build();
     }
 
