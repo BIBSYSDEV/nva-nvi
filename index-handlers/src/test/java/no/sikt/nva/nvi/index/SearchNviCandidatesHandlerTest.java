@@ -150,7 +150,7 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
-    void shouldReturnPaginatedSearchResultWithCorrectQueryParamsFilterAndQueryInIdIfGiven() throws IOException {
+    void shouldReturnPaginatedSearchResultWithCorrectQueryParamsInIdIfGiven() throws IOException {
         mockOpenSearchClient();
         var randomFilter = randomString();
         var randomInstitutions = List.of(randomSiktSubUnit(), randomSiktSubUnit());
