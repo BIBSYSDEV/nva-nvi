@@ -22,6 +22,7 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -56,6 +57,7 @@ public final class NviCandidateIndexDocumentGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(NviCandidateIndexDocumentGenerator.class);
     private static final String APPLICATION_JSON = "application/json";
     private final AuthorizedBackendUriRetriever uriRetriever;
+    private final Map<String, String> temporaryCache = new HashMap<>();
 
     public NviCandidateIndexDocumentGenerator(AuthorizedBackendUriRetriever uriRetriever) {
         this.uriRetriever = uriRetriever;
@@ -156,13 +158,25 @@ public final class NviCandidateIndexDocumentGenerator {
             return null;
         }
 
-        return attempt(() -> getRawContentFromUri(id)).map(
+        return attempt(() -> cacheResults(id)).map(
                 a -> a.orElseThrow(() -> logFailingAffiliationHttpRequest(id)))
                    .map(str -> createModel(dtoObjectMapper.readTree(str)))
                    .map(model -> model.listObjectsOfProperty(model.createProperty(PART_OF_PROPERTY)))
                    .map(nodeIterator -> nodeIterator.toList().stream().map(RDFNode::toString).toList())
                    .map(result -> new Affiliation.Builder().withId(id).withPartOf(result).build())
                    .orElseThrow(this::logAndReThrow);
+    }
+
+    private Optional<String> cacheResults(String id) {
+        if (temporaryCache.containsKey(id)) {
+            return Optional.of(temporaryCache.get(id));
+        }
+
+        var rawContentFromUri = getRawContentFromUri(id);
+
+        rawContentFromUri.ifPresent(s -> this.temporaryCache.put(id, s));
+
+        return rawContentFromUri;
     }
 
     @JacocoGenerated
