@@ -69,6 +69,7 @@ public class SearchNviCandidatesHandlerTest {
 
     private static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     private static final String QUERY_PARAM_FILTER = "filter";
+    private static final String QUERY_PARAM_CATEGORY = "category";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
     private static final String CUSTOM_DOMAIN_BASE_PATH = ENVIRONMENT.readEnv(
@@ -150,12 +151,25 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
-    void shouldReturnPaginatedSearchResultWithCorrectQueryParamsInIdIfGiven() throws IOException {
+    void shouldReturnPaginatedSearchResultWithoutQueryParamCategoryNotGiven() throws IOException {
+        mockOpenSearchClient();
+        handler.handleRequest(requestWithoutQueryParameters(), output, context);
+        var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
+
+        var actualId = paginatedSearchResult.getId().toString();
+
+        assertThat(actualId, Matchers.not(containsString(QUERY_PARAM_CATEGORY)));
+    }
+
+    @Test
+    void shouldReturnPaginatedSearchResultWithCorrectQueryParamsFilterAndQueryInIdIfGiven() throws IOException {
         mockOpenSearchClient();
         var randomFilter = randomString();
-        var randomInstitutions = List.of(randomSiktSubUnit(), randomSiktSubUnit());
+        var randomCategory = randomString();
         var randomTitle = randomString();
-        handler.handleRequest(requestWithInstitutionsAndFilter(randomInstitutions, randomFilter, randomTitle),
+        var randomInstitutions = List.of(randomSiktSubUnit(), randomSiktSubUnit());
+        handler.handleRequest(requestWithInstitutionsAndFilter(randomInstitutions, randomFilter, randomCategory, randomTitle),
                               output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
@@ -167,6 +181,7 @@ public class SearchNviCandidatesHandlerTest {
         var expectedExcludeQuery = QUERY_PARAM_EXCLUDE_SUB_UNITS + "=true";
 
         assertThat(actualId, containsString(QUERY_PARAM_FILTER + "=" + randomFilter));
+        assertThat(actualId, containsString(QUERY_PARAM_CATEGORY + "=" + randomCategory));
         assertThat(actualId, containsString(QUERY_PARAM_TITLE + "=" + randomTitle));
         assertThat(actualId, containsString(expectedInstitutionQuery));
         assertThat(actualId, containsString(expectedExcludeQuery));
@@ -317,7 +332,7 @@ public class SearchNviCandidatesHandlerTest {
                    .build();
     }
 
-    private InputStream requestWithInstitutionsAndFilter(List<URI> institutions, String filter, String title)
+    private InputStream requestWithInstitutionsAndFilter(List<URI> institutions, String filter, String category, String title)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
                    .withTopLevelCristinOrgId(randomUri())
@@ -326,6 +341,7 @@ public class SearchNviCandidatesHandlerTest {
                                                     institutions.stream().map(URI::toString).toList()),
                                                QUERY_PARAM_EXCLUDE_SUB_UNITS, "true",
                                                QUERY_PARAM_FILTER, filter,
+                                               QUERY_PARAM_CATEGORY, category,
                                                QUERY_PARAM_TITLE, title))
                    .build();
     }

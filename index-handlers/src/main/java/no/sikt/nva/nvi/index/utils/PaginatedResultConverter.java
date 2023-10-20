@@ -1,8 +1,9 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_AFFILIATIONS;
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_CATEGORY;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_FILTER;
-import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_AFFILIATIONS;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_TITLE;
 import static nva.commons.apigateway.RestRequestHandler.COMMA;
 import static nva.commons.core.attempt.Try.attempt;
@@ -58,6 +59,7 @@ public final class PaginatedResultConverter {
             getQueryParameters(candidateSearchParameters.affiliations(),
                                candidateSearchParameters.excludeSubUnits(),
                                candidateSearchParameters.filter(),
+                               candidateSearchParameters.category(),
                                candidateSearchParameters.title()),
             extractAggregations(searchResponse));
 
@@ -66,7 +68,7 @@ public final class PaginatedResultConverter {
     }
 
     private static Map<String, String> getQueryParameters(List<URI> affiliations, boolean excludeSubUnits,
-                                                          String filter, String title) {
+                                                          String filter, String category, String title) {
         var queryParams = new HashMap();
         if (Objects.nonNull(affiliations)) {
             queryParams.put(QUERY_PARAM_AFFILIATIONS, affiliations.stream().map(URI::toString)
@@ -78,6 +80,9 @@ public final class PaginatedResultConverter {
         if (isNotEmpty(filter)) {
             queryParams.put(QUERY_PARAM_FILTER, filter);
         }
+        if (isNotNullCategory(category)) {
+            queryParams.put(QUERY_PARAM_CATEGORY, category);
+        }
         if (isNotNullTitle(title)) {
             queryParams.put(QUERY_PARAM_TITLE, title);
         }
@@ -86,6 +91,10 @@ public final class PaginatedResultConverter {
 
     private static boolean isNotEmpty(String filter) {
         return !filter.isEmpty();
+    }
+
+    private static boolean isNotNullCategory(String category) {
+        return category != null;
     }
 
     private static boolean isNotNullTitle(String title) {

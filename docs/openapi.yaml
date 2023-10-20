@@ -180,9 +180,14 @@ paths:
             type: string
           description: Filters values based on year
         - in: query
-          name: title
+          name: category
           schema:
             type: string
+          description: Filters values based on category
+        - in: query
+          name: title
+          schema:
+             type: string
           description: Filters values based on title
       security:
         - CognitoUserPool: [
