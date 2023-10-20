@@ -9,11 +9,13 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
+import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URI;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -124,7 +126,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     private boolean isCandidateOrApproval(DynamodbStreamRecord record) {
-        LOGGER.info("Record id {} type {}", extractIdentifierFromNewImage(record), extractRecordType(record));
+        LOGGER.info("Record id {} type {}", extractIdFromRecord(record), extractRecordType(record));
         return isCandidate(record) || isApproval(record);
     }
 
@@ -154,8 +156,16 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
     private boolean isUpdate(DynamodbStreamRecord record) {
         var eventType = getEventType(record);
-        LOGGER.info("Record id: {} Event type: {}", extractIdentifierFromNewImage(record), eventType.toString());
+        var identifier = extractIdFromRecord(record);
+
+        LOGGER.info("Record id: {} Event type: {}", identifier, eventType.toString());
         return OperationType.INSERT.equals(eventType) || OperationType.MODIFY.equals(eventType);
+    }
+
+    private static String extractIdFromRecord(DynamodbStreamRecord record) {
+        return Optional.ofNullable(record.getDynamodb().getOldImage())
+                   .orElse(record.getDynamodb().getNewImage())
+                   .getOrDefault(IDENTIFIER, new AttributeValue().withS("no id found")).getS();
     }
 
     private void removeDocumentFromIndex(CandidateBO candidate) {
