@@ -150,6 +150,18 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
+    void shouldReturnPaginatedSearchResultWithoutQueryParamCategoryNotGiven() throws IOException {
+        mockOpenSearchClient();
+        handler.handleRequest(requestWithoutQueryParameters(), output, context);
+        var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
+
+        var actualId = paginatedSearchResult.getId().toString();
+
+        assertThat(actualId, Matchers.not(containsString(QUERY_PARAM_CATEGORY)));
+    }
+
+    @Test
     void shouldReturnPaginatedSearchResultWithCorrectQueryParamsFilterAndQueryInIdIfGiven() throws IOException {
         mockOpenSearchClient();
         var randomFilter = randomString();
