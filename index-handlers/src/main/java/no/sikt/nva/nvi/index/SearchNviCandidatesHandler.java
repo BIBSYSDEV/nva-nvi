@@ -88,7 +88,8 @@ public class SearchNviCandidatesHandler
                                .orElse(List.of(topLevelOrg));
         var username = requestInfo.getUserName();
         var year = extractQueryParamPublicationDateOrDefault(requestInfo);
-        var category = extractQueryParamCategoryOrDefault(requestInfo);
+        var category = Optional.ofNullable(extractQueryParamCategoryOrDefault(requestInfo))
+            .orElse(null);
 
         assertUserIsAllowedToSearchAffiliations(affiliations, topLevelOrg);
 
@@ -161,7 +162,7 @@ public class SearchNviCandidatesHandler
 
     private static String extractQueryParamCategoryOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
-            .getOrDefault(QUERY_PARAM_CATEGORY, null);
+            .getOrDefault(QUERY_PARAM_CATEGORY, DEFAULT_STRING);
     }
 
     @JacocoGenerated
