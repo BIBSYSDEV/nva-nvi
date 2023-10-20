@@ -169,8 +169,9 @@ public class SearchNviCandidatesHandlerTest {
         var randomCategory = randomString();
         var randomTitle = randomString();
         var randomInstitutions = List.of(randomSiktSubUnit(), randomSiktSubUnit());
-        handler.handleRequest(requestWithInstitutionsAndFilter(randomInstitutions, randomFilter, randomCategory, randomTitle),
-                              output, context);
+        handler.handleRequest(
+            requestWithInstitutionsAndFilter(randomInstitutions, randomFilter, randomCategory, randomTitle),
+            output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
 
@@ -332,13 +333,14 @@ public class SearchNviCandidatesHandlerTest {
             .build();
     }
 
-    private InputStream requestWithInstitutionsAndFilter(List<URI> institutions, String filter, String category, String title)
+    private InputStream requestWithInstitutionsAndFilter(List<URI> institutions, String filter, String category,
+                                                         String title)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
             .withTopLevelCristinOrgId(randomUri())
             .withUserName(randomString())
             .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS, String.join(COMMA,
-                                                                              institutions.stream().map(URI::toString).toList()),
+                                        institutions.stream().map(URI::toString).toList()),
                                         QUERY_PARAM_EXCLUDE_SUB_UNITS, "true",
                                         QUERY_PARAM_FILTER, filter,
                                         QUERY_PARAM_CATEGORY, category,
@@ -353,7 +355,7 @@ public class SearchNviCandidatesHandlerTest {
             .withUserName(randomString())
             .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS,
                                         String.join(",",
-                                                    institutions.stream().map(URI::toString).toList()),
+                                        institutions.stream().map(URI::toString).toList()),
                                         QUERY_PARAM_EXCLUDE_SUB_UNITS,
                                         "true"))
             .build();
