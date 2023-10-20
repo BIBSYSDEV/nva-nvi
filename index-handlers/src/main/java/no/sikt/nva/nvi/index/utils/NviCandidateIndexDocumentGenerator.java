@@ -45,6 +45,7 @@ import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
+import nva.commons.core.attempt.Failure;
 import org.apache.jena.rdf.model.RDFNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +61,7 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     public NviCandidateIndexDocument generateDocument(String resource, CandidateBO candidate) {
+        LOGGER.info("Starting generateDocument for {}", candidate.getIdentifier());
         return createNviCandidateIndexDocument(
             attempt(() -> dtoObjectMapper.readTree(resource)).map(root -> root.at(JsonPointers.JSON_PTR_BODY))
                 .orElseThrow(), candidate);
@@ -145,18 +147,37 @@ public final class NviCandidateIndexDocumentGenerator {
     private Affiliation extractAffiliation(JsonNode affiliation) {
         var id = extractJsonNodeTextValue(affiliation, JSON_PTR_ID);
 
+        LOGGER.info("extractAffiliation for {}", id);
+
         if (isNull(id)) {
             LOGGER.info("Skipping extraction of affiliation because of missing id: {}", affiliation);
             return null;
         }
 
-        return attempt(() -> this.uriRetriever.getRawContent(URI.create(id), APPLICATION_JSON)).map(
-                Optional::orElseThrow)
+        return attempt(() -> getRawContentFromUri(id)).map(
+                a -> a.orElseThrow(() -> logFailingAffiliationHttpRequest(id)))
                    .map(str -> createModel(dtoObjectMapper.readTree(str)))
                    .map(model -> model.listObjectsOfProperty(model.createProperty(PART_OF_PROPERTY)))
                    .map(nodeIterator -> nodeIterator.toList().stream().map(RDFNode::toString).toList())
                    .map(result -> new Affiliation.Builder().withId(id).withPartOf(result).build())
-                   .orElseThrow();
+                   .orElseThrow(this::logAndReThrow);
+    }
+
+    private RuntimeException logFailingAffiliationHttpRequest(String id) {
+        LOGGER.error("Failure while retrieving affiliation. Uri: {}", id);
+        return new RuntimeException("Failure while retrieving affiliation");
+    }
+
+    private RuntimeException logAndReThrow(Failure<Affiliation> failure) {
+        LOGGER.error("Failure while mapping affiliation: {}", failure.getException().getMessage());
+        return new RuntimeException(failure.getException());
+    }
+
+    private Optional<String> getRawContentFromUri(String uri) {
+        LOGGER.info("getRawContentFromUri for {}", uri);
+        var result = this.uriRetriever.getRawContent(URI.create(uri), APPLICATION_JSON);
+        LOGGER.info("Done retrieving getRawContentFromUri for {}", uri);
+        return result;
     }
 
     private String extractId(JsonNode resource) {

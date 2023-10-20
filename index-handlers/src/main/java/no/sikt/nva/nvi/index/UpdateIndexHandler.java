@@ -73,12 +73,13 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     public Void handleRequest(DynamodbEvent event, Context context) {
+        LOGGER.info("Starting handleRequest. Records count: {}", event.getRecords().size());
         event.getRecords()
             .stream()
             .filter(this::isUpdate)
             .filter(this::isCandidateOrApproval)
             .forEach(this::updateIndex);
-
+        LOGGER.info("Done executing handleRequest");
         return null;
     }
 
@@ -123,12 +124,14 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     private boolean isCandidateOrApproval(DynamodbStreamRecord record) {
+        LOGGER.info("Record id {} type {}", extractIdentifierFromNewImage(record), extractRecordType(record));
         return isCandidate(record) || isApproval(record);
     }
 
     private void updateIndex(DynamodbStreamRecord record) {
         try {
             var candidateIdentifier = extractIdentifierFromNewImage(record);
+            LOGGER.info("Doing updateIndex on {}", candidateIdentifier);
             var candidate = fetchCandidate(candidateIdentifier);
             if (candidate.isApplicable()) {
                 addDocumentToIndex(candidate);
@@ -151,23 +154,39 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
     private boolean isUpdate(DynamodbStreamRecord record) {
         var eventType = getEventType(record);
+        LOGGER.info("Record id: {} Event type: {}", extractIdentifierFromNewImage(record), eventType.toString());
         return OperationType.INSERT.equals(eventType) || OperationType.MODIFY.equals(eventType);
     }
 
     private void removeDocumentFromIndex(CandidateBO candidate) {
-        openSearchClient.removeDocumentFromIndex(toIndexDocumentWithId(candidate.getIdentifier()));
+        LOGGER.info("removeDocumentFromIndex for {}", candidate.getIdentifier());
+        var result = openSearchClient.removeDocumentFromIndex(toIndexDocumentWithId(candidate.getIdentifier()));
+        LOGGER.info("done removeDocumentFromIndex for {}, result: {}", candidate.getIdentifier(),
+                    result.result().jsonValue());
     }
 
     private void addDocumentToIndex(CandidateBO candidate) {
-        attempt(() -> storageReader.read(candidate.getPublicationBucketUri()))
-            .map(blob -> documentGenerator.generateDocument(blob, candidate))
-            .map(indexDocument -> {
-                LOGGER.info("Adding document to index, candidateId: {} publicationId: {}",
-                            indexDocument.identifier(),
-                            indexDocument.publicationDetails().id());
-                return indexDocument;
-            })
-            .forEach(openSearchClient::addDocumentToIndex)
-            .orElseThrow();
+        LOGGER.info("addDocumentToIndex for {}", candidate.getIdentifier());
+        var result = attempt(() -> getPublicationFromBucket(candidate))
+                         .map(blob -> documentGenerator.generateDocument(blob, candidate))
+                         .map(indexDocument -> {
+                             LOGGER.info("Adding document to index, candidateId: {} publicationId: {}",
+                                         indexDocument.identifier(),
+                                         indexDocument.publicationDetails().id());
+                             return indexDocument;
+                         })
+                         .map(openSearchClient::addDocumentToIndex)
+                         .orElseThrow();
+        LOGGER.info("done addDocumentToIndex for {}, result:{}", candidate.getIdentifier(),
+                    result.result().jsonValue());
+    }
+
+    private String getPublicationFromBucket(CandidateBO candidate) {
+        var bucketUri = candidate.getPublicationBucketUri();
+        LOGGER.info("getPublicationFromBucket with candidate id {} and url {}", candidate.getIdentifier(),
+                    bucketUri.toString());
+        var result = storageReader.read(bucketUri);
+        LOGGER.info("Done fetching {}, string length {}", bucketUri, result.length());
+        return result;
     }
 }

@@ -75,6 +75,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opensearch.client.opensearch.core.DeleteResponse;
+import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
 class UpdateIndexHandlerTest extends LocalDynamoTest {
@@ -419,13 +421,15 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         }
 
         @Override
-        public void addDocumentToIndex(NviCandidateIndexDocument indexDocument) {
+        public IndexResponse addDocumentToIndex(NviCandidateIndexDocument indexDocument) {
             documents.add(indexDocument);
+            return null;
         }
 
         @Override
-        public void removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) {
+        public DeleteResponse removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) {
 
+            return null;
         }
 
         @Override
