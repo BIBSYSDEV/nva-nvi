@@ -78,7 +78,7 @@ public final class PaginatedResultConverter {
         if (isNotEmpty(filter)) {
             queryParams.put(QUERY_PARAM_FILTER, filter);
         }
-        if (isNotEmpty(category)) {
+        if (isNotNull(category)) {
             queryParams.put(QUERY_PARAM_CATEGORY, category);
         }
         return queryParams;
@@ -86,6 +86,10 @@ public final class PaginatedResultConverter {
 
     private static boolean isNotEmpty(String filter) {
         return !filter.isEmpty();
+    }
+
+    private static boolean isNotNull(String category) {
+        return category != null;
     }
 
     private static int extractTotalNumberOfHits(SearchResponse<NviCandidateIndexDocument> searchResponse) {

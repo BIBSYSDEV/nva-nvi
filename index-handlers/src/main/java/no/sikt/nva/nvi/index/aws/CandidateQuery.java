@@ -19,6 +19,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DETAILS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ROLE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.TYPE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.YEAR;
+import static nva.commons.core.StringUtils.EMPTY_STRING;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.net.URI;
 import java.time.ZonedDateTime;
@@ -254,7 +255,7 @@ public class CandidateQuery {
     }
 
     private Optional<Query> createCategoryQuery(String category) {
-        return Optional.of(categoryQuery(category));
+        return nonNull(category) ? Optional.of(categoryQuery(category)) : Optional.empty();
 
     }
 
