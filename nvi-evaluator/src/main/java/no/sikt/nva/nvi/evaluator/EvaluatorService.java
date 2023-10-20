@@ -45,18 +45,20 @@ public class EvaluatorService {
         if (!verifiedCreatorsWithNviInstitutions.isEmpty()) {
             var pointCalculation = calculatePoints(publication, verifiedCreatorsWithNviInstitutions);
             var nviCandidate = constructNviCandidate(publication, verifiedCreatorsWithNviInstitutions, pointCalculation,
-                                                     publicationId);
-            return constructMessage(publicationBucketUri, nviCandidate);
+                                                     publicationId, publicationBucketUri);
+            return constructMessage(nviCandidate);
         } else {
-            return constructMessage(publicationBucketUri, new NonNviCandidate(publicationId));
+            return constructMessage(new NonNviCandidate(publicationId));
         }
     }
 
     private static NviCandidate constructNviCandidate(JsonNode jsonNode,
                                                       Map<URI, List<URI>> verifiedCreatorsWithNviInstitutions,
-                                                      PointCalculation pointCalculation, URI publicationId) {
+                                                      PointCalculation pointCalculation, URI publicationId,
+                                                      URI publicationBucketUri) {
         return NviCandidate.builder()
                    .withPublicationId(publicationId)
+                   .withPublicationBucketUri(publicationBucketUri)
                    .withPublicationDate(extractPublicationDate(jsonNode))
                    .withInstanceType(pointCalculation.instanceType().getValue())
                    .withBasePoints(pointCalculation.basePoints())
@@ -97,9 +99,8 @@ public class EvaluatorService {
                    .orElse(new PublicationDate(null, null, year.textValue()));
     }
 
-    private CandidateEvaluatedMessage constructMessage(URI publicationBucketUri, CandidateType candidateType) {
+    private CandidateEvaluatedMessage constructMessage(CandidateType candidateType) {
         return CandidateEvaluatedMessage.builder()
-                   .withPublicationBucketUri(publicationBucketUri)
                    .withCandidateType(candidateType)
                    .build();
     }

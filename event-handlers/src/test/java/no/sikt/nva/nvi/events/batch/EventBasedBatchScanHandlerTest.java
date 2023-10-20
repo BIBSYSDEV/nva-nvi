@@ -211,25 +211,28 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     }
 
     private List<ApprovalStatusDao> generateCandidatesWithApprovalStatuses() {
-        return createRandomCandidates(10).map(CandidateBO::identifier)
+        return createRandomCandidates(10).map(CandidateBO::getIdentifier)
                    .flatMap(candidateRepository::findApprovalDaosByCandidateId)
                    .toList();
     }
 
     private List<CandidateDao> generatedRepositoryCandidates() {
-        return createRandomCandidates(10).map(CandidateBO::identifier).map(candidateRepository::findDaoById).toList();
+        return createRandomCandidates(10).map(CandidateBO::getIdentifier)
+                   .map(candidateRepository::findDaoById)
+                   .toList();
     }
 
     private List<NoteDao> generateRepositoryCandidatesWithNotes() {
-        return createRandomCandidates(10).map(CandidateBO::identifier)
+        return createRandomCandidates(10).map(CandidateBO::getIdentifier)
                    .flatMap(candidateRepository::findNoteDaosByCandidateId)
                    .toList();
     }
 
-    private boolean isSameBodyAsRepositoryCopy(CandidateBO item) {
+    private boolean isSameBodyAsRepositoryCopy(CandidateBO candidate) {
         //TODO: should replace this comparison with the actual data field (equals in CandidateBO?)
-        return item.toDto()
-                   .equals(CandidateBO.fromRequest(item::identifier, candidateRepository, periodRepository).toDto());
+        return candidate.toDto()
+                   .equals(CandidateBO.fromRequest(candidate::getIdentifier, candidateRepository, periodRepository)
+                               .toDto());
     }
 
     private boolean isSameVersionAsRepositoryCopy(CandidateDao dao) {
@@ -325,6 +328,14 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
                        .orElseThrow();
         }
 
+        public Stream<CandidateUniquenessEntryDao> getUniquenessEntries() {
+            return uniquenessTable.scan().items().stream().filter(a -> a.partitionKey() != null);
+        }
+
+        public CandidateUniquenessEntryDao getUniquenessEntry(CandidateUniquenessEntryDao entry) {
+            return uniquenessTable.getItem(entry);
+        }
+
         private static QueryConditional findApprovalByCandidateIdAndInstitutionId(UUID identifier, URI uri) {
             return QueryConditional.keyEqualTo(approvalByCandidateIdAndInstitutionIdKey(identifier, uri));
         }
@@ -334,14 +345,6 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
                        .partitionValue(CandidateDao.createPartitionKey(identifier.toString()))
                        .sortValue(ApprovalStatusDao.createSortKey(uri.toString()))
                        .build();
-        }
-
-        public Stream<CandidateUniquenessEntryDao> getUniquenessEntries() {
-            return uniquenessTable.scan().items().stream().filter(a -> a.partitionKey() != null);
-        }
-
-        public CandidateUniquenessEntryDao getUniquenessEntry(CandidateUniquenessEntryDao entry) {
-            return uniquenessTable.getItem(entry);
         }
     }
 

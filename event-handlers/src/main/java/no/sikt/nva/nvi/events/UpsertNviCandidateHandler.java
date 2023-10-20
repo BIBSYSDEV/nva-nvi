@@ -13,6 +13,8 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.InvalidNviMessageException;
+import no.sikt.nva.nvi.events.model.NonNviCandidate;
+import no.sikt.nva.nvi.events.model.NviCandidate;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,8 +22,8 @@ import org.slf4j.LoggerFactory;
 public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void> {
 
     public static final String INVALID_NVI_CANDIDATE_MESSAGE = "Invalid nvi candidate message";
-    private static final Logger LOGGER = LoggerFactory.getLogger(UpsertNviCandidateHandler.class);
     public static final String PERSISTANCE_MESSAGE = "Nvi candidate has been persisted for publication: {}";
+    private static final Logger LOGGER = LoggerFactory.getLogger(UpsertNviCandidateHandler.class);
     private final CandidateRepository repository;
     private final PeriodRepository periodRepository;
 
@@ -51,7 +53,6 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
 
     private static void validateMessage(CandidateEvaluatedMessage message) {
         attempt(() -> {
-            Objects.requireNonNull(message.publicationBucketUri());
             Objects.requireNonNull(message.candidate().publicationId());
             return message;
         }).orElseThrow(failure -> new InvalidNviMessageException(INVALID_NVI_CANDIDATE_MESSAGE));
@@ -59,7 +60,12 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
 
     private void upsertNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
         validateMessage(evaluatedCandidate);
-        CandidateBO.fromRequest(evaluatedCandidate, repository, periodRepository);
+        if (evaluatedCandidate.candidate() instanceof NviCandidate candidate) {
+            CandidateBO.fromRequest(candidate, repository, periodRepository);
+        } else {
+            var nonNviCandidate = (NonNviCandidate) evaluatedCandidate.candidate();
+            CandidateBO.fromRequest(nonNviCandidate, repository);
+        }
         LOGGER.info(PERSISTANCE_MESSAGE, evaluatedCandidate.candidate().publicationId());
     }
 

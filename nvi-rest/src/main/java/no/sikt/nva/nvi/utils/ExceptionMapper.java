@@ -35,7 +35,7 @@ public final class ExceptionMapper {
             logger.error("IllegalStateException", exception);
             return new ConflictException(exception.getMessage());
         }
-        if (exception instanceof UnauthorizedOperationException) {
+        if (exception instanceof UnauthorizedOperationException || exception instanceof UnauthorizedException) {
             return new UnauthorizedException(exception.getMessage());
         }
         if (exception instanceof NotApplicableException) {

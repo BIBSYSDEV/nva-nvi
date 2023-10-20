@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.events;
 
+import static no.sikt.nva.nvi.test.TestUtils.POINTS_SCALE;
+import static no.sikt.nva.nvi.test.TestUtils.ROUNDING_MODE;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
@@ -115,14 +117,16 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var institutionPoints = Map.of(institutionId, randomBigDecimal());
         var publicationId = generatePublicationId(identifier);
         var publicationBucketUri = generateS3BucketUri(identifier);
+        var totalPoints = randomBigDecimal();
 
         var sqsEvent = createEvent(creators, instanceType, randomLevel, publicationDate, institutionPoints,
-                                   publicationId, publicationBucketUri);
+                                   publicationId, publicationBucketUri, totalPoints);
         handler.handleRequest(sqsEvent, CONTEXT);
 
         var fetchedCandidate = CandidateBO.fromRequest(() -> publicationId, candidateRepository, periodRepository)
                                    .toDto();
-        var expectedResponse = createResponse(fetchedCandidate.identifier(), publicationId, institutionPoints);
+        var expectedResponse = createResponse(fetchedCandidate.identifier(), publicationId, institutionPoints,
+                                              totalPoints);
 
         assertThat(fetchedCandidate, is(equalTo(expectedResponse)));
     }
@@ -146,7 +150,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var publicationId = generatePublicationId(identifier);
         var dto = CandidateBO.fromRequest(
             createUpsertCandidateRequest(publicationId, randomUri(), true, InstanceType.ACADEMIC_ARTICLE, 1,
-                                         delete, keep),
+                                         randomBigDecimal(), delete, keep),
             candidateRepository, periodRepository).orElseThrow();
         var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));
         handler.handleRequest(sqsEvent, CONTEXT);
@@ -173,19 +177,21 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         assertThat(updatedApproval, is(equalTo(approval)));
     }
 
+    private static BigDecimal calculateUndistributedPoints(Map<URI, BigDecimal> institutionPoints,
+                                                           BigDecimal totalPoints) {
+        return totalPoints.subtract(institutionPoints.values().stream().reduce(BigDecimal.ZERO,
+                                                                               BigDecimal::add))
+                   .setScale(POINTS_SCALE, ROUNDING_MODE);
+    }
+
     private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
         return Stream.of(CandidateEvaluatedMessage.builder()
-                             .withPublicationBucketUri(null)
-                             .withCandidateType(NviCandidate.builder().withPublicationId(randomUri()).build())
-                             .build(),
-                         CandidateEvaluatedMessage.builder()
-                             .withPublicationBucketUri(randomUri())
                              .withCandidateType(NviCandidate.builder()
                                                     .withPublicationId(null)
                                                     .withInstanceType(randomString())
                                                     .withLevel(randomElement(
                                                         DbLevel.values()).getValue())
-                                                    .withPublicationDate(randomPublicationDate())
+                                                    .withDate(randomPublicationDate())
                                                     .withVerifiedCreators(List.of(randomCreator()))
                                                     .build())
                              .build());
@@ -214,22 +220,23 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                                InstanceType instanceType, DbLevel level,
                                                                PublicationDate publicationDate,
                                                                Map<URI, BigDecimal> institutionPoints,
-                                                               URI publicationId, URI publicationBucketUri) {
+                                                               URI publicationId, URI publicationBucketUri,
+                                                               BigDecimal totalPoints) {
         return CandidateEvaluatedMessage.builder()
-                   .withPublicationBucketUri(publicationBucketUri)
                    .withCandidateType(NviCandidate.builder()
                                           .withPublicationId(publicationId)
+                                          .withPublicationBucketUri(publicationBucketUri)
                                           .withInstanceType(instanceType.getValue())
                                           .withChannelType(randomElement(ChannelType.values()).getValue())
                                           .withPublicationChannelId(randomUri())
                                           .withLevel(level.getValue())
-                                          .withPublicationDate(publicationDate)
+                                          .withDate(publicationDate)
                                           .withVerifiedCreators(verifiedCreators)
                                           .withIsInternationalCollaboration(randomBoolean())
                                           .withCollaborationFactor(randomBigDecimal())
                                           .withCreatorShareCount(randomInteger())
                                           .withBasePoints(randomBigDecimal())
-                                          .withTotalPoints(randomBigDecimal())
+                                          .withTotalPoints(totalPoints)
                                           .withInstitutionPoints(institutionPoints)
                                           .build())
                    .build();
@@ -246,29 +253,31 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(UpsertCandidateRequest request,
                                                                                URI institutionId) {
         var creatorId = request.creators().keySet().stream().toList().get(0);
-        return new CandidateEvaluatedMessage(request.publicationBucketUri(),
-                                             NviCandidate.builder()
-                                                 .withPublicationId(request.publicationId())
-                                                 .withInstanceType(request.instanceType())
-                                                 .withLevel(request.level())
-                                                 .withPublicationDate(
-                                                     new PublicationDate(null, "3",
-                                                                         Year.now().toString()))
-                                                 .withVerifiedCreators(
-                                                     List.of(new Creator(creatorId,
-                                                                         List.of(institutionId))))
-                                                 .withInstitutionPoints(request.institutionPoints())
-                                                 .build());
+        return NviCandidate.builder()
+                   .withPublicationId(request.publicationId())
+                   .withPublicationBucketUri(request.publicationBucketUri())
+                   .withInstanceType(request.instanceType())
+                   .withLevel(request.level())
+                   .withDate(
+                       new PublicationDate(null, "3",
+                                           Year.now().toString()))
+                   .withVerifiedCreators(
+                       List.of(new Creator(creatorId,
+                                           List.of(institutionId))))
+                   .withInstitutionPoints(request.institutionPoints())
+                   .withTotalPoints(randomBigDecimal())
+                   .build();
     }
 
     private Map<URI, DbApprovalStatus> getAprovalMaps(CandidateBO dto) {
-        return candidateRepository.fetchApprovals(dto.identifier())
+        return candidateRepository.fetchApprovals(dto.getIdentifier())
                    .stream()
                    .map(ApprovalStatusDao::approvalStatus)
                    .collect(Collectors.toMap(DbApprovalStatus::institutionId, Function.identity()));
     }
 
-    private CandidateDto createResponse(UUID identifier, URI publicationId, Map<URI, BigDecimal> institutionPoints) {
+    private CandidateDto createResponse(UUID identifier, URI publicationId, Map<URI, BigDecimal> institutionPoints,
+                                        BigDecimal totalPoints) {
         var id = new UriWrapper(HTTPS, API_DOMAIN).addChild(BASE_PATH, CANDIDATE_PATH, identifier.toString()).getUri();
         var period = periodRepository.findByPublishingYear(Year.now().toString()).orElseThrow();
         return CandidateDto.builder()
@@ -278,6 +287,8 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withNotes(List.of())
                    .withApprovalStatuses(institutionPoints.entrySet().stream().map(this::mapToApprovalStatus).toList())
                    .withPeriodStatus(toPeriodStatus(period))
+                   .withUndistributedPoints(calculateUndistributedPoints(institutionPoints, totalPoints))
+                   .withTotalPoints(totalPoints)
                    .build();
     }
 
@@ -291,7 +302,6 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     private CandidateEvaluatedMessage nonCandidateMessageForExistingCandidate(CandidateDto candidate) {
         return CandidateEvaluatedMessage.builder()
-                   .withPublicationBucketUri(generateS3BucketUri(candidate.identifier()))
                    .withCandidateType(new NonNviCandidate(candidate.publicationId()))
                    .build();
     }
@@ -314,14 +324,14 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var institutionPoints = Map.of(institutionId, randomBigDecimal(), keep, randomBigDecimal());
 
         return createEvent(creators, instanceType, randomLevel, publicationDate, institutionPoints, publicationId,
-                           publicationBucketUri);
+                           publicationBucketUri, randomBigDecimal());
     }
 
     private SQSEvent createEvent(List<Creator> verifiedCreators, InstanceType instanceType, DbLevel randomLevel,
                                  PublicationDate publicationDate, Map<URI, BigDecimal> institutionPoints,
-                                 URI publicationId, URI publicationBucketUri) {
+                                 URI publicationId, URI publicationBucketUri, BigDecimal totalPoints) {
         return createEvent(
             createEvalMessage(verifiedCreators, instanceType, randomLevel, publicationDate, institutionPoints,
-                              publicationId, publicationBucketUri));
+                              publicationId, publicationBucketUri, totalPoints));
     }
 }
