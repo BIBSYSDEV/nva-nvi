@@ -187,7 +187,7 @@ paths:
         - in: query
           name: title
           schema:
-             type: string
+            type: string
           description: Filters values based on title
       security:
         - CognitoUserPool: [

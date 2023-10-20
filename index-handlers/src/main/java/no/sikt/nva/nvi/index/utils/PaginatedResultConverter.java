@@ -1,9 +1,9 @@
 package no.sikt.nva.nvi.index.utils;
 
-import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_AFFILIATIONS;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_CATEGORY;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_FILTER;
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_AFFILIATIONS;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_TITLE;
 import static nva.commons.apigateway.RestRequestHandler.COMMA;
 import static nva.commons.core.attempt.Try.attempt;
@@ -72,7 +72,7 @@ public final class PaginatedResultConverter {
         var queryParams = new HashMap();
         if (Objects.nonNull(affiliations)) {
             queryParams.put(QUERY_PARAM_AFFILIATIONS, affiliations.stream().map(URI::toString)
-                                                               .collect(Collectors.joining(COMMA)));
+                .collect(Collectors.joining(COMMA)));
         }
         if (excludeSubUnits) {
             queryParams.put(QUERY_PARAM_EXCLUDE_SUB_UNITS, String.valueOf(true));

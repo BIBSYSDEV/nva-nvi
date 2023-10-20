@@ -51,18 +51,18 @@ public final class SearchConstants {
 
     public static Query constructQuery(CandidateSearchParameters params) {
         var filterType = QueryFilterType.parse(params.filter())
-                             .orElseThrow(() -> new IllegalStateException("unknown filter " + params.filter()));
+            .orElseThrow(() -> new IllegalStateException("unknown filter " + params.filter()));
         return new CandidateQuery.Builder()
-                        .withInstitutions(params.affiliations())
-                        .withExcludeSubUnits(params.excludeSubUnits())
-                        .withFilter(filterType)
-                        .withUsername(params.username())
-                        .withCustomer(params.customer().toString())
-                        .withYear(params.year())
-                        .withCategory(params.category())
-                        .withTitle(params.title())
-                        .build()
-                        .toQuery();
+            .withInstitutions(params.affiliations())
+            .withExcludeSubUnits(params.excludeSubUnits())
+            .withFilter(filterType)
+            .withUsername(params.username())
+            .withCustomer(params.customer().toString())
+            .withYear(params.year())
+            .withCategory(params.category())
+            .withTitle(params.title())
+            .build()
+            .toQuery();
     }
 
     public static TypeMapping mappings() {
