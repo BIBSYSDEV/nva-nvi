@@ -17,6 +17,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.PART_OF;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DATE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DETAILS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ROLE;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.TYPE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.YEAR;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.net.URI;
@@ -50,19 +51,22 @@ public class CandidateQuery {
     private final String username;
     private final String customer;
     private final String year;
+    private final String category;
 
     public CandidateQuery(List<URI> affiliations,
                           boolean excludeSubUnits,
                           QueryFilterType filter,
                           String username,
                           String customer,
-                          String year) {
+                          String year,
+                          String category) {
         this.affiliations = affiliations.stream().map(URI::toString).toList();
         this.excludeSubUnits = excludeSubUnits;
         this.filter = filter;
         this.username = username;
         this.customer = customer;
         this.year = year;
+        this.category = category;
     }
 
     public Query toQuery() {
@@ -161,7 +165,11 @@ public class CandidateQuery {
 
     }
 
-
+    private static Query categoryQuery(String category) {
+        return Optional.ofNullable(category)
+            .map(c -> termQuery(c, jsonPathOf(PUBLICATION_DETAILS, TYPE, KEYWORD)))
+            .orElse(null);
+    }
 
     private static Query statusQueryWithAssignee(String customer, ApprovalStatus status, boolean hasAssignee) {
         return nestedQuery(APPROVALS,
@@ -194,8 +202,9 @@ public class CandidateQuery {
         var institutionQuery = createInstitutionQuery();
         var filterQuery = constructQueryWithFilter();
         var yearQuery = createYearQuery(year);
+        var categoryQuery = createCategoryQuery(category);
 
-        return Stream.of(institutionQuery, filterQuery, yearQuery)
+        return Stream.of(institutionQuery, filterQuery, yearQuery, categoryQuery)
                    .filter(Optional::isPresent)
                    .map(Optional::get)
                    .toList();
@@ -244,6 +253,11 @@ public class CandidateQuery {
 
     }
 
+    private Optional<Query> createCategoryQuery(String category) {
+        return nonNull(category) ? Optional.of(categoryQuery(category)) : Optional.empty();
+
+    }
+
     public enum QueryFilterType {
         PENDING_AGG("pending"),
         PENDING_COLLABORATION_AGG("pendingCollaboration"),
@@ -284,6 +298,7 @@ public class CandidateQuery {
         private String username;
         private String customer;
         private String year;
+        private String category;
 
         public Builder() {
             // No-args constructor.
@@ -319,8 +334,13 @@ public class CandidateQuery {
             return this;
         }
 
+        public Builder withCategory(String category) {
+            this.category = category;
+            return this;
+        }
+
         public CandidateQuery build() {
-            return new CandidateQuery(institutions, excludeSubUnits, filter, username, customer, year);
+            return new CandidateQuery(institutions, excludeSubUnits, filter, username, customer, year, category);
         }
     }
 }

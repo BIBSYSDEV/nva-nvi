@@ -78,6 +78,7 @@ public class OpenSearchClientTest {
     private static final OpensearchContainer container = new OpensearchContainer(OPEN_SEARCH_IMAGE);
     public static final int DELAY_ON_INDEX = 2000;
     public static final String YEAR = "2023";
+    public static final String CATEGORY = "AcademicArticle";
     public static final String UNEXISTING_FILTER = "unexisting-filter";
     public static final URI NTNU_INSTITUTION_ID
         = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
@@ -311,6 +312,20 @@ public class OpenSearchClientTest {
             openSearchClient.search(searchParameters);
 
         assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));
+    }
+
+    @Test
+    void shouldReturnSingleDocumentWhenFilteringByCategory() throws InterruptedException, IOException {
+        addDocumentsToIndex(documentFromString("document_pending.json"),
+                            documentFromString("document_pending_category_degree_bachelor.json"));
+
+        var searchParameters =
+            defaultSearchParameters().withCategory(CATEGORY).withAffiliations(List.of(NTNU_INSTITUTION_ID)).build();
+
+        var searchResponse =
+            openSearchClient.search(searchParameters);
+
+        assertThat(searchResponse.hits().hits(), hasSize(1));
     }
 
     private static int getDocCount(SearchResponse<NviCandidateIndexDocument> response, String aggregationName) {

@@ -16,7 +16,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.SearchClient;
@@ -38,12 +37,13 @@ public class SearchNviCandidatesHandler
     public static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     public static final String QUERY_PARAM_EXCLUDE_SUB_UNITS = "excludeSubUnits";
     public static final String QUERY_PARAM_FILTER = "filter";
-    private static final String DEFAULT_FILTER = StringUtils.EMPTY_STRING;
+    private static final String DEFAULT_STRING = StringUtils.EMPTY_STRING;
     private static final String QUERY_SIZE_PARAM = "size";
     private static final String QUERY_OFFSET_PARAM = "offset";
     private static final int DEFAULT_QUERY_SIZE = 10;
     private static final int DEFAULT_OFFSET_SIZE = 0;
     public static final String QUERY_PARAM_YEAR = "year";
+    public static final String QUERY_PARAM_CATEGORY = "category";
     public static final String USER_IS_NOT_ALLOWED_TO_SEARCH_FOR_AFFILIATIONS_S
         = "User is not allowed to search for affiliations: %s";
     public static final String COMMA_AND_SPACE = ", ";
@@ -88,11 +88,12 @@ public class SearchNviCandidatesHandler
                                .orElse(List.of(topLevelOrg));
         var username = requestInfo.getUserName();
         var year = extractQueryParamPublicationDateOrDefault(requestInfo);
+        var category = extractQueryParamCategoryOrDefault(requestInfo);
 
         assertUserIsAllowedToSearchAffiliations(affiliations, topLevelOrg);
 
         var candidateSearchParameters = new CandidateSearchParameters(affiliations, excludeSubUnits, filter, username,
-                                                                      year, topLevelOrg, offset, size);
+                                                                      year, category, topLevelOrg, offset, size);
         return candidateSearchParameters;
     }
 
@@ -155,7 +156,12 @@ public class SearchNviCandidatesHandler
 
     private static String extractQueryParamFilterOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
-                   .getOrDefault(QUERY_PARAM_FILTER, DEFAULT_FILTER);
+                   .getOrDefault(QUERY_PARAM_FILTER, DEFAULT_STRING);
+    }
+
+    private static String extractQueryParamCategoryOrDefault(RequestInfo requestInfo) {
+        return requestInfo.getQueryParameters()
+            .getOrDefault(QUERY_PARAM_CATEGORY, null);
     }
 
     @JacocoGenerated

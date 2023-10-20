@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_CATEGORY;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_FILTER;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_AFFILIATIONS;
@@ -56,7 +57,8 @@ public final class PaginatedResultConverter {
             extractsHits(searchResponse),
             getQueryParameters(candidateSearchParameters.affiliations(),
                                candidateSearchParameters.excludeSubUnits(),
-                               candidateSearchParameters.filter()),
+                               candidateSearchParameters.filter(),
+                               candidateSearchParameters.category()),
             extractAggregations(searchResponse));
 
         LOGGER.info("Returning paginatedSearchResult with id: {}", paginatedSearchResult.getId().toString());
@@ -64,7 +66,7 @@ public final class PaginatedResultConverter {
     }
 
     private static Map<String, String> getQueryParameters(List<URI> affiliations, boolean excludeSubUnits,
-                                                          String filter) {
+                                                          String filter, String category) {
         var queryParams = new HashMap();
         if (Objects.nonNull(affiliations)) {
             queryParams.put(QUERY_PARAM_AFFILIATIONS, affiliations.stream().map(URI::toString)
@@ -76,11 +78,18 @@ public final class PaginatedResultConverter {
         if (isNotEmpty(filter)) {
             queryParams.put(QUERY_PARAM_FILTER, filter);
         }
+        if (isNotNull(category)) {
+            queryParams.put(QUERY_PARAM_CATEGORY, category);
+        }
         return queryParams;
     }
 
     private static boolean isNotEmpty(String filter) {
         return !filter.isEmpty();
+    }
+
+    private static boolean isNotNull(String category) {
+        return category != null;
     }
 
     private static int extractTotalNumberOfHits(SearchResponse<NviCandidateIndexDocument> searchResponse) {
