@@ -254,7 +254,7 @@ public class CandidateQuery {
     }
 
     private Optional<Query> createCategoryQuery(String category) {
-        return nonNull(category) ? Optional.of(categoryQuery(category)) : Optional.empty();
+        return Optional.of(categoryQuery(category));
 
     }
 
