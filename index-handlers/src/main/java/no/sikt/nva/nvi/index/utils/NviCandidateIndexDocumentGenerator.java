@@ -151,8 +151,6 @@ public final class NviCandidateIndexDocumentGenerator {
     private Affiliation extractAffiliation(JsonNode affiliation) {
         var id = extractJsonNodeTextValue(affiliation, JSON_PTR_ID);
 
-        LOGGER.info("extractAffiliation for {}", id);
-
         if (isNull(id)) {
             LOGGER.info("Skipping extraction of affiliation because of missing id: {}", affiliation);
             return null;
@@ -192,9 +190,7 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private Optional<String> getRawContentFromUri(String uri) {
-        LOGGER.info("getRawContentFromUri for {}", uri);
         var result = this.uriRetriever.getRawContent(URI.create(uri), APPLICATION_JSON);
-        LOGGER.info("Done retrieving getRawContentFromUri for {}", uri);
         return result;
     }
 
