@@ -16,7 +16,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.SearchClient;
@@ -89,7 +88,8 @@ public class SearchNviCandidatesHandler
                                .orElse(List.of(topLevelOrg));
         var username = requestInfo.getUserName();
         var year = extractQueryParamPublicationDateOrDefault(requestInfo);
-        var category = extractQueryParamCategoryOrDefault(requestInfo);
+        var category = Optional.ofNullable(extractQueryParamCategoryOrDefault(requestInfo))
+            .orElse(null);
 
         assertUserIsAllowedToSearchAffiliations(affiliations, topLevelOrg);
 
