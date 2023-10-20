@@ -69,6 +69,7 @@ import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
+import org.hamcrest.Matchers;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -166,6 +167,16 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
 
         verify(queueClient, times(1)).sendMessage(any(String.class), eq(DLQ_QUEUE_URL));
+    }
+
+    @Test
+    void affiliationLookupFailureShouldBeLogged()
+        throws JsonProcessingException {
+        mockRepositories(randomApplicableCandidate());
+        when(uriRetriever.getRawContent(any(), any())).thenReturn(Optional.empty());
+        var appender = LogUtils.getTestingAppenderForRootLogger();
+        handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
+        assertThat(appender.getMessages(), Matchers.containsString("Failure while retrieving affiliation"));
     }
 
     @Test
