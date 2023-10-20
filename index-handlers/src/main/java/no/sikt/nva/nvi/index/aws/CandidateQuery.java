@@ -19,6 +19,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DETAILS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ROLE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.TYPE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.YEAR;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.TITLE;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.net.URI;
 import java.time.ZonedDateTime;
@@ -31,6 +32,7 @@ import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ExistsQuery;
+import org.opensearch.client.opensearch._types.query_dsl.MatchPhraseQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -52,6 +54,7 @@ public class CandidateQuery {
     private final String customer;
     private final String year;
     private final String category;
+    private final String title;
 
     public CandidateQuery(List<URI> affiliations,
                           boolean excludeSubUnits,
@@ -59,7 +62,8 @@ public class CandidateQuery {
                           String username,
                           String customer,
                           String year,
-                          String category) {
+                          String category,
+                          String title) {
         this.affiliations = affiliations.stream().map(URI::toString).toList();
         this.excludeSubUnits = excludeSubUnits;
         this.filter = filter;
@@ -67,6 +71,7 @@ public class CandidateQuery {
         this.customer = customer;
         this.year = year;
         this.category = category;
+        this.title = title;
     }
 
     public Query toQuery() {
@@ -75,8 +80,8 @@ public class CandidateQuery {
 
     private static Query mustMatch(Query... queries) {
         return new Query.Builder()
-                   .bool(new BoolQuery.Builder().must(Arrays.stream(queries).toList()).build())
-                   .build();
+            .bool(new BoolQuery.Builder().must(Arrays.stream(queries).toList()).build())
+            .build();
     }
 
     private static Query multipleApprovalsQuery() {
@@ -85,9 +90,9 @@ public class CandidateQuery {
 
     private static Query nestedQuery(String path, Query... queries) {
         return new NestedQuery.Builder()
-                   .path(path)
-                   .query(mustMatch(queries))
-                   .build()._toQuery();
+            .path(path)
+            .query(mustMatch(queries))
+            .build()._toQuery();
     }
 
     private static Query statusQuery(String customer, ApprovalStatus status) {
@@ -98,9 +103,9 @@ public class CandidateQuery {
 
     private static Query termQuery(String value, String field) {
         return new TermQuery.Builder()
-                   .value(new FieldValue.Builder().stringValue(value).build())
-                   .field(field)
-                   .build()._toQuery();
+            .value(new FieldValue.Builder().stringValue(value).build())
+            .field(field)
+            .build()._toQuery();
     }
 
     private static String jsonPathOf(String... args) {
@@ -124,15 +129,15 @@ public class CandidateQuery {
     private static Query termsQuery(List<String> values, String field) {
         var termsFields = values.stream().map(FieldValue::of).toList();
         return new TermsQuery.Builder()
-                   .field(field)
-                   .terms(new TermsQueryField.Builder().value(termsFields).build())
-                   .build()._toQuery();
+            .field(field)
+            .terms(new TermsQueryField.Builder().value(termsFields).build())
+            .build()._toQuery();
     }
 
     private static Query matchQuery(String value, String field) {
         return new MatchQuery.Builder().field(field)
-                   .query(new FieldValue.Builder().stringValue(value).build())
-                   .build()._toQuery();
+            .query(new FieldValue.Builder().stringValue(value).build())
+            .build()._toQuery();
     }
 
     private static Query contributorQueryIncludingSubUnits(List<String> institutions) {
@@ -182,20 +187,20 @@ public class CandidateQuery {
 
     private static Query notExistsQuery(String field) {
         return new BoolQuery.Builder()
-                   .mustNot(new ExistsQuery.Builder().field(field).build()._toQuery())
-                   .build()._toQuery();
+            .mustNot(new ExistsQuery.Builder().field(field).build()._toQuery())
+            .build()._toQuery();
     }
 
     private static Query existsQuery(String field) {
         return new BoolQuery.Builder()
-                   .must(new ExistsQuery.Builder().field(field).build()._toQuery())
-                   .build()._toQuery();
+            .must(new ExistsQuery.Builder().field(field).build()._toQuery())
+            .build()._toQuery();
     }
 
     public static Query matchAtLeastOne(Query... queries) {
         return new Query.Builder()
-                   .bool(new BoolQuery.Builder().should(Arrays.stream(queries).toList()).build())
-                   .build();
+            .bool(new BoolQuery.Builder().should(Arrays.stream(queries).toList()).build())
+            .build();
     }
 
     private List<Query> specificMatch() {
@@ -203,11 +208,12 @@ public class CandidateQuery {
         var filterQuery = constructQueryWithFilter();
         var yearQuery = createYearQuery(year);
         var categoryQuery = createCategoryQuery(category);
+        var titleQuery = createTitleQuery(title);
 
-        return Stream.of(institutionQuery, filterQuery, yearQuery, categoryQuery)
-                   .filter(Optional::isPresent)
-                   .map(Optional::get)
-                   .toList();
+        return Stream.of(institutionQuery, filterQuery, yearQuery, categoryQuery, titleQuery)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .toList();
     }
 
     private Optional<Query> constructQueryWithFilter() {
@@ -258,6 +264,14 @@ public class CandidateQuery {
 
     }
 
+    private Optional<Query> createTitleQuery(String title) {
+        return nonNull(title) ? Optional.of(new MatchPhraseQuery.Builder().field(jsonPathOf(PUBLICATION_DETAILS,
+                                                                                            TITLE))
+                                                .query(title)
+                                                .build()
+                                                ._toQuery()) : Optional.empty();
+    }
+
     public enum QueryFilterType {
         PENDING_AGG("pending"),
         PENDING_COLLABORATION_AGG("pendingCollaboration"),
@@ -280,8 +294,8 @@ public class CandidateQuery {
         public static Optional<QueryFilterType> parse(String candidate) {
             var testValue = isNull(candidate) ? "" : candidate;
             return Arrays.stream(values())
-                       .filter(item -> item.getFilter().equalsIgnoreCase(testValue))
-                       .findAny();
+                .filter(item -> item.getFilter().equalsIgnoreCase(testValue))
+                .findAny();
         }
 
         @JsonValue
@@ -299,6 +313,7 @@ public class CandidateQuery {
         private String customer;
         private String year;
         private String category;
+        private String title;
 
         public Builder() {
             // No-args constructor.
@@ -339,8 +354,13 @@ public class CandidateQuery {
             return this;
         }
 
+        public Builder withTitle(String title) {
+            this.title = title;
+            return this;
+        }
+
         public CandidateQuery build() {
-            return new CandidateQuery(institutions, excludeSubUnits, filter, username, customer, year, category);
+            return new CandidateQuery(institutions, excludeSubUnits, filter, username, customer, year, category, title);
         }
     }
 }

@@ -29,6 +29,7 @@ public final class SearchConstants {
     public static final String PUBLICATION_DATE = "publicationDate";
     public static final String YEAR = "year";
     public static final String TYPE = "type";
+    public static final String TITLE = "title";
     public static final String KEYWORD = "keyword";
     public static final String APPROVAL_STATUS = "approvalStatus";
     public static final String PUBLICATION_DETAILS = "publicationDetails";
@@ -50,17 +51,18 @@ public final class SearchConstants {
 
     public static Query constructQuery(CandidateSearchParameters params) {
         var filterType = QueryFilterType.parse(params.filter())
-                             .orElseThrow(() -> new IllegalStateException("unknown filter " + params.filter()));
+            .orElseThrow(() -> new IllegalStateException("unknown filter " + params.filter()));
         return new CandidateQuery.Builder()
-                        .withInstitutions(params.affiliations())
-                        .withExcludeSubUnits(params.excludeSubUnits())
-                        .withFilter(filterType)
-                        .withUsername(params.username())
-                        .withCustomer(params.customer().toString())
-                        .withYear(params.year())
-                        .withCategory(params.category())
-                        .build()
-                        .toQuery();
+            .withInstitutions(params.affiliations())
+            .withExcludeSubUnits(params.excludeSubUnits())
+            .withFilter(filterType)
+            .withUsername(params.username())
+            .withCustomer(params.customer().toString())
+            .withYear(params.year())
+            .withCategory(params.category())
+            .withTitle(params.title())
+            .build()
+            .toQuery();
     }
 
     public static TypeMapping mappings() {
