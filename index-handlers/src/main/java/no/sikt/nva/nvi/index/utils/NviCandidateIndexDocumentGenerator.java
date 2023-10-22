@@ -154,8 +154,8 @@ public final class NviCandidateIndexDocumentGenerator {
             return null;
         }
 
-        return attempt(() -> cacheResults(id)).map(
-                a -> a.orElseThrow(() -> logFailingAffiliationHttpRequest(id)))
+        return attempt(() -> getRawContentFromUriCached(id)).map(
+                rawContent -> rawContent.orElseThrow(() -> logFailingAffiliationHttpRequest(id)))
                    .map(str -> createModel(dtoObjectMapper.readTree(str)))
                    .map(model -> model.listObjectsOfProperty(model.createProperty(PART_OF_PROPERTY)))
                    .map(nodeIterator -> nodeIterator.toList().stream().map(RDFNode::toString).toList())
@@ -163,14 +163,14 @@ public final class NviCandidateIndexDocumentGenerator {
                    .orElseThrow(this::logAndReThrow);
     }
 
-    private Optional<String> cacheResults(String id) {
+    private Optional<String> getRawContentFromUriCached(String id) {
         if (temporaryCache.containsKey(id)) {
             return Optional.of(temporaryCache.get(id));
         }
 
         var rawContentFromUri = getRawContentFromUri(id);
 
-        rawContentFromUri.ifPresent(s -> this.temporaryCache.put(id, s));
+        rawContentFromUri.ifPresent(content -> this.temporaryCache.put(id, content));
 
         return rawContentFromUri;
     }
