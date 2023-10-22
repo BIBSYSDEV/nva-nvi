@@ -46,7 +46,6 @@ import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
-import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
 import org.apache.jena.rdf.model.RDFNode;
 import org.slf4j.Logger;
@@ -147,7 +146,6 @@ public final class NviCandidateIndexDocumentGenerator {
                    .toList();
     }
 
-    @JacocoGenerated
     private Affiliation extractAffiliation(JsonNode affiliation) {
         var id = extractJsonNodeTextValue(affiliation, JSON_PTR_ID);
 
@@ -177,21 +175,18 @@ public final class NviCandidateIndexDocumentGenerator {
         return rawContentFromUri;
     }
 
-    @JacocoGenerated
     private RuntimeException logFailingAffiliationHttpRequest(String id) {
         LOGGER.error("Failure while retrieving affiliation. Uri: {}", id);
         return new RuntimeException("Failure while retrieving affiliation");
     }
 
-    @JacocoGenerated
     private RuntimeException logAndReThrow(Failure<Affiliation> failure) {
         LOGGER.error("Failure while mapping affiliation: {}", failure.getException().getMessage());
         return new RuntimeException(failure.getException());
     }
 
     private Optional<String> getRawContentFromUri(String uri) {
-        var result = this.uriRetriever.getRawContent(URI.create(uri), APPLICATION_JSON);
-        return result;
+        return this.uriRetriever.getRawContent(URI.create(uri), APPLICATION_JSON);
     }
 
     private String extractId(JsonNode resource) {
