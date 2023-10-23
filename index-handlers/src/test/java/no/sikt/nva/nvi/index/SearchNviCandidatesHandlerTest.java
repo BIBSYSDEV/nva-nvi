@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_EXCLUDE_SUB_UNITS;
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_TITLE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
@@ -68,6 +69,7 @@ public class SearchNviCandidatesHandlerTest {
 
     private static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     private static final String QUERY_PARAM_FILTER = "filter";
+    private static final String QUERY_PARAM_CATEGORY = "category";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
     private static final String CUSTOM_DOMAIN_BASE_PATH = ENVIRONMENT.readEnv(
@@ -149,21 +151,39 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
+    void shouldReturnPaginatedSearchResultWithoutQueryParamCategoryNotGiven() throws IOException {
+        mockOpenSearchClient();
+        handler.handleRequest(requestWithoutQueryParameters(), output, context);
+        var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
+
+        var actualId = paginatedSearchResult.getId().toString();
+
+        assertThat(actualId, Matchers.not(containsString(QUERY_PARAM_CATEGORY)));
+    }
+
+    @Test
     void shouldReturnPaginatedSearchResultWithCorrectQueryParamsFilterAndQueryInIdIfGiven() throws IOException {
         mockOpenSearchClient();
         var randomFilter = randomString();
+        var randomCategory = randomString();
+        var randomTitle = randomString();
         var randomInstitutions = List.of(randomSiktSubUnit(), randomSiktSubUnit());
-        handler.handleRequest(requestWithInstitutionsAndFilter(randomInstitutions, randomFilter), output, context);
+        handler.handleRequest(
+            requestWithInstitutionsAndFilter(randomInstitutions, randomFilter, randomCategory, randomTitle),
+            output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
 
         var actualId = paginatedSearchResult.getId().toString();
         var expectedInstitutionQuery = QUERY_PARAM_AFFILIATIONS
-                            + "=" + randomInstitutions.get(0)
-                            + "," + randomInstitutions.get(1);
+                                       + "=" + randomInstitutions.get(0)
+                                       + "," + randomInstitutions.get(1);
         var expectedExcludeQuery = QUERY_PARAM_EXCLUDE_SUB_UNITS + "=true";
 
         assertThat(actualId, containsString(QUERY_PARAM_FILTER + "=" + randomFilter));
+        assertThat(actualId, containsString(QUERY_PARAM_CATEGORY + "=" + randomCategory));
+        assertThat(actualId, containsString(QUERY_PARAM_TITLE + "=" + randomTitle));
         assertThat(actualId, containsString(expectedInstitutionQuery));
         assertThat(actualId, containsString(expectedExcludeQuery));
     }
@@ -240,38 +260,38 @@ public class SearchNviCandidatesHandlerTest {
 
     private static SearchResponse<NviCandidateIndexDocument> createSearchResponse(NviCandidateIndexDocument document) {
         return new Builder<NviCandidateIndexDocument>().hits(constructHitsMetadata(List.of(document)))
-                   .took(10)
-                   .timedOut(false)
-                   .shards(new ShardStatistics.Builder().failed(0).successful(1).total(1).build())
-                   .build();
+            .took(10)
+            .timedOut(false)
+            .shards(new ShardStatistics.Builder().failed(0).successful(1).total(1).build())
+            .build();
     }
 
     private static SearchResponse<NviCandidateIndexDocument> createSearchResponse(
         List<NviCandidateIndexDocument> documents, int total, String aggregateName, int docCount) {
         return new Builder<NviCandidateIndexDocument>()
-                   .hits(constructHitsMetadata(documents))
-                   .took(10)
-                   .timedOut(false)
-                   .shards(new ShardStatistics.Builder().failed(0).successful(1).total(total).build())
-                   .aggregations(aggregateName, new Aggregate(new FilterAggregate.Builder().docCount(docCount).build()))
-                   .build();
+            .hits(constructHitsMetadata(documents))
+            .took(10)
+            .timedOut(false)
+            .shards(new ShardStatistics.Builder().failed(0).successful(1).total(total).build())
+            .aggregations(aggregateName, new Aggregate(new FilterAggregate.Builder().docCount(docCount).build()))
+            .build();
     }
 
     private static HitsMetadata<NviCandidateIndexDocument> constructHitsMetadata(
         List<NviCandidateIndexDocument> document) {
         return new HitsMetadata.Builder<NviCandidateIndexDocument>()
-                   .total(new TotalHits.Builder().value(10).relation(TotalHitsRelation.Eq).build())
-                   .hits(document.stream().map(SearchNviCandidatesHandlerTest::toHit).collect(Collectors.toList()))
-                   .total(new TotalHits.Builder().relation(TotalHitsRelation.Eq).value(1).build())
-                   .build();
+            .total(new TotalHits.Builder().value(10).relation(TotalHitsRelation.Eq).build())
+            .hits(document.stream().map(SearchNviCandidatesHandlerTest::toHit).collect(Collectors.toList()))
+            .total(new TotalHits.Builder().relation(TotalHitsRelation.Eq).value(1).build())
+            .build();
     }
 
     private static Hit<NviCandidateIndexDocument> toHit(NviCandidateIndexDocument document) {
         return new Hit.Builder<NviCandidateIndexDocument>()
-                   .id(randomString())
-                   .index(NVI_CANDIDATES_INDEX)
-                   .source(document)
-                   .build();
+            .id(randomString())
+            .index(NVI_CANDIDATES_INDEX)
+            .source(document)
+            .build();
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
@@ -308,41 +328,44 @@ public class SearchNviCandidatesHandlerTest {
 
     private InputStream emptyRequest() throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
-                   .withTopLevelCristinOrgId(randomUri())
-                   .withUserName(randomString())
-                   .build();
+            .withTopLevelCristinOrgId(randomUri())
+            .withUserName(randomString())
+            .build();
     }
 
-    private InputStream requestWithInstitutionsAndFilter(List<URI> institutions, String filter)
+    private InputStream requestWithInstitutionsAndFilter(List<URI> institutions, String filter, String category,
+                                                         String title)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
-                   .withTopLevelCristinOrgId(randomUri())
-                   .withUserName(randomString())
-                   .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS, String.join(COMMA,
-                                                    institutions.stream().map(URI::toString).toList()),
-                                               QUERY_PARAM_EXCLUDE_SUB_UNITS, "true",
-                                               QUERY_PARAM_FILTER, filter))
-                   .build();
+            .withTopLevelCristinOrgId(randomUri())
+            .withUserName(randomString())
+            .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS, String.join(COMMA,
+                                        institutions.stream().map(URI::toString).toList()),
+                                        QUERY_PARAM_EXCLUDE_SUB_UNITS, "true",
+                                        QUERY_PARAM_FILTER, filter,
+                                        QUERY_PARAM_CATEGORY, category,
+                                        QUERY_PARAM_TITLE, title))
+            .build();
     }
 
     private InputStream requestWithInstitutionsAndTopLevelCristinOrgId(List<URI> institutions, URI cristinId)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
-                   .withTopLevelCristinOrgId(cristinId)
-                   .withUserName(randomString())
-                   .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS,
-                                               String.join(",",
-                                               institutions.stream().map(URI::toString).toList()),
-                                               QUERY_PARAM_EXCLUDE_SUB_UNITS,
-                                               "true"))
-                   .build();
+            .withTopLevelCristinOrgId(cristinId)
+            .withUserName(randomString())
+            .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS,
+                                        String.join(",",
+                                        institutions.stream().map(URI::toString).toList()),
+                                        QUERY_PARAM_EXCLUDE_SUB_UNITS,
+                                        "true"))
+            .build();
     }
 
     private InputStream requestWithoutQueryParameters() throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
-                   .withTopLevelCristinOrgId(randomUri())
-                   .withUserName(randomString())
-                   .build();
+            .withTopLevelCristinOrgId(randomUri())
+            .withUserName(randomString())
+            .build();
     }
 
     public class CandidateSearchParamsAffiliationMatcher implements ArgumentMatcher<CandidateSearchParameters> {

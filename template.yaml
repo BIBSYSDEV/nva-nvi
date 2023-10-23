@@ -293,7 +293,7 @@ Resources:
       Description: 'Listens to DynamoDbStream and creates, modifies and deletes record from nvi-index'
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.UpdateIndexHandler::handleRequest
-      Timeout: 30
+      Timeout: 600
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live

@@ -78,6 +78,7 @@ public class OpenSearchClientTest {
     private static final OpensearchContainer container = new OpensearchContainer(OPEN_SEARCH_IMAGE);
     public static final int DELAY_ON_INDEX = 2000;
     public static final String YEAR = "2023";
+    public static final String CATEGORY = "AcademicArticle";
     public static final String UNEXISTING_FILTER = "unexisting-filter";
     public static final URI NTNU_INSTITUTION_ID
         = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
@@ -292,6 +293,26 @@ public class OpenSearchClientTest {
         assertThat(searchResponse.hits().hits(), hasSize(1));
     }
 
+    @Test
+    void shouldReturnSingleDocumentWhenFilteringByTitle() throws InterruptedException, IOException {
+        var customer = randomUri();
+        var title = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
+        var document = singleNviCandidateIndexDocumentWithCustomerAndTitle(customer.toString(), title);
+        addDocumentsToIndex(document,
+                            singleNviCandidateIndexDocumentWithCustomerAndTitle(customer.toString(), randomString()));
+
+        var searchParameters =
+            defaultSearchParameters().withAffiliations(List.of(customer))
+                .withTitle(getRandomWord(title))
+                .withYear(YEAR)
+                .build();
+
+        var searchResponse =
+            openSearchClient.search(searchParameters);
+
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+    }
+
     @ParameterizedTest
     @MethodSource("filterNameProvider")
     void shouldReturnSearchResultsUsingFilterAndSearchTermCombined(Entry<String, Integer> entry)
@@ -311,6 +332,20 @@ public class OpenSearchClientTest {
             openSearchClient.search(searchParameters);
 
         assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));
+    }
+
+    @Test
+    void shouldReturnSingleDocumentWhenFilteringByCategory() throws InterruptedException, IOException {
+        addDocumentsToIndex(documentFromString("document_pending.json"),
+                            documentFromString("document_pending_category_degree_bachelor.json"));
+
+        var searchParameters =
+            defaultSearchParameters().withCategory(CATEGORY).withAffiliations(List.of(NTNU_INSTITUTION_ID)).build();
+
+        var searchResponse =
+            openSearchClient.search(searchParameters);
+
+        assertThat(searchResponse.hits().hits(), hasSize(1));
     }
 
     private static int getDocCount(SearchResponse<NviCandidateIndexDocument> response, String aggregationName) {
@@ -355,6 +390,14 @@ public class OpenSearchClientTest {
                                              List.of(approval), 1, TestUtils.randomBigDecimal());
     }
 
+    private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomerAndTitle(String customer,
+                                                                                                 String title) {
+        var approval = new Approval(customer, Map.of(), randomStatus(), null);
+        return new NviCandidateIndexDocument(randomUri(), randomString(),
+                                             randomPublicationDetailsWithTitleAndContributor(title, customer),
+                                             List.of(approval), 1, TestUtils.randomBigDecimal());
+    }
+
     private static List<Approval> randomApprovalList() {
         return IntStream.range(0, 5).boxed().map(i -> randomApproval()).toList();
     }
@@ -379,6 +422,15 @@ public class OpenSearchClientTest {
     private static PublicationDetails randomPublicationDetailsWithYearAndContributor(String year, String affiliation) {
         return new PublicationDetails(randomString(), randomString(), randomString(),
                                       PublicationDate.builder().withYear(year).build(),
+                                      List.of(new Contributor.Builder().withRole("Creator")
+                                                  .withAffiliations(List.of(
+                                                      new Affiliation(affiliation, List.of()))).build()));
+    }
+
+    private static PublicationDetails randomPublicationDetailsWithTitleAndContributor(String title,
+                                                                                      String affiliation) {
+        return new PublicationDetails(randomString(), randomString(), title,
+                                      PublicationDate.builder().withYear(YEAR).build(),
                                       List.of(new Contributor.Builder().withRole("Creator")
                                                   .withAffiliations(List.of(
                                                       new Affiliation(affiliation, List.of()))).build()));
@@ -423,6 +475,13 @@ public class OpenSearchClientTest {
         return CandidateSearchParameters.builder()
                    .withAffiliations(List.of())
                    .withCustomer(CUSTOMER).withUsername(USERNAME).withYear(YEAR);
+    }
+
+    private static String getRandomWord(String str) {
+        String[] words = str.split(" ");
+        Random random = new Random();
+        int index = random.nextInt(words.length);
+        return words[index];
     }
 
     public static final class FakeCachedJwtProvider {
