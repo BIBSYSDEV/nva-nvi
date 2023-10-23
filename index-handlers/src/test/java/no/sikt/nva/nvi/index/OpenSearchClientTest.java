@@ -474,7 +474,6 @@ public class OpenSearchClientTest {
         map.put(REJECTED_AGG, 2);
         map.put(REJECTED_COLLABORATION_AGG, 1);
         map.put(ASSIGNMENTS_AGG, 4);
-        map.put(ASSIGNMENTS_AGG, 4);
         return map.entrySet().stream();
     }
 

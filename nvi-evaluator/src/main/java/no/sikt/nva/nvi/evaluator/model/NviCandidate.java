@@ -10,6 +10,7 @@ import java.util.Map;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
 public record NviCandidate(URI publicationId,
+                           URI publicationBucketUri,
                            String instanceType,
                            PublicationDate publicationDate,
                            List<Creator> verifiedCreators,
@@ -41,6 +42,7 @@ public record NviCandidate(URI publicationId,
     public static final class Builder {
 
         private URI publicationId;
+        private URI publicationBucketUri;
         private String instanceType;
         private PublicationDate publicationDate;
         private List<Creator> verifiedCreators;
@@ -59,6 +61,11 @@ public record NviCandidate(URI publicationId,
 
         public Builder withPublicationId(URI publicationId) {
             this.publicationId = publicationId;
+            return this;
+        }
+
+        public Builder withPublicationBucketUri(URI publicationBucketUri) {
+            this.publicationBucketUri = publicationBucketUri;
             return this;
         }
 
@@ -123,9 +130,10 @@ public record NviCandidate(URI publicationId,
         }
 
         public NviCandidate build() {
-            return new NviCandidate(publicationId, instanceType, publicationDate, verifiedCreators, channelType,
-                                    publicationChannelId, level, basePoints, isInternationalCollaboration,
-                                    collaborationFactor, creatorShareCount, institutionPoints, totalPoints);
+            return new NviCandidate(publicationId, publicationBucketUri, instanceType, publicationDate,
+                                    verifiedCreators, channelType, publicationChannelId, level, basePoints,
+                                    isInternationalCollaboration, collaborationFactor, creatorShareCount,
+                                    institutionPoints, totalPoints);
         }
     }
 }

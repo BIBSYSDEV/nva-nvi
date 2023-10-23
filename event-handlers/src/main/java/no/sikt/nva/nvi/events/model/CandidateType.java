@@ -14,5 +14,4 @@ import java.net.URI;
 public sealed interface CandidateType permits NonNviCandidate, NviCandidate {
 
     URI publicationId();
-
 }

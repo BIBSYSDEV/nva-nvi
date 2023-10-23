@@ -235,6 +235,12 @@
                   "@value": "Sikt – Kunnskapssektorens tjenesteleverandør"
                 }
               ]
+            },
+            {
+              "type": "Organization",
+              "labels": {
+                "nb": "Organization without id"
+              }
             }
           ],
           "correspondingAuthor": false,
