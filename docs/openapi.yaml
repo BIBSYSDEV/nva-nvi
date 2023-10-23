@@ -459,7 +459,47 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-
+  /report/{institutionIdentifier}:
+    get:
+      description: 'Get xlsx report for a given institution'
+      parameters:
+        - in: path
+          name: institutionIdentifier
+          required: true
+          schema:
+            type: string
+      security:
+        - CognitoUserPool: [
+          'https://api.nva.unit.no/scopes/backend',
+          'https://api.nva.unit.no/scopes/frontend',
+          'aws.cognito.signin.user.admin',
+        ]
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/vnd.ms-excel:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: "Candidate not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '500':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
 components:
   schemas:
     Filter:
