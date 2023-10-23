@@ -9,11 +9,13 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
+import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URI;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -73,12 +75,13 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     public Void handleRequest(DynamodbEvent event, Context context) {
+        LOGGER.info("Starting handleRequest. Records count: {}", event.getRecords().size());
         event.getRecords()
             .stream()
             .filter(this::isUpdate)
             .filter(this::isCandidateOrApproval)
             .forEach(this::updateIndex);
-
+        LOGGER.info("Done executing handleRequest");
         return null;
     }
 
@@ -123,12 +126,14 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     private boolean isCandidateOrApproval(DynamodbStreamRecord record) {
+        LOGGER.info("Record id {} type {}", extractIdFromRecord(record), extractRecordType(record));
         return isCandidate(record) || isApproval(record);
     }
 
     private void updateIndex(DynamodbStreamRecord record) {
         try {
             var candidateIdentifier = extractIdentifierFromNewImage(record);
+            LOGGER.info("Doing updateIndex on {}", candidateIdentifier);
             var candidate = fetchCandidate(candidateIdentifier);
             if (candidate.isApplicable()) {
                 addDocumentToIndex(candidate);
@@ -151,23 +156,47 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
     private boolean isUpdate(DynamodbStreamRecord record) {
         var eventType = getEventType(record);
+        var identifier = extractIdFromRecord(record);
+
+        LOGGER.info("Record id: {} Event type: {}", identifier, eventType.toString());
         return OperationType.INSERT.equals(eventType) || OperationType.MODIFY.equals(eventType);
     }
 
+    private static String extractIdFromRecord(DynamodbStreamRecord record) {
+        return Optional.ofNullable(record.getDynamodb().getOldImage())
+                   .orElse(record.getDynamodb().getNewImage())
+                   .getOrDefault(IDENTIFIER, new AttributeValue().withS("no id found")).getS();
+    }
+
     private void removeDocumentFromIndex(CandidateBO candidate) {
-        openSearchClient.removeDocumentFromIndex(toIndexDocumentWithId(candidate.getIdentifier()));
+        LOGGER.info("removeDocumentFromIndex for {}", candidate.getIdentifier());
+        var result = openSearchClient.removeDocumentFromIndex(toIndexDocumentWithId(candidate.getIdentifier()));
+        LOGGER.info("done removeDocumentFromIndex for {}, result: {}", candidate.getIdentifier(),
+                    result.result().jsonValue());
     }
 
     private void addDocumentToIndex(CandidateBO candidate) {
-        attempt(() -> storageReader.read(candidate.getPublicationBucketUri()))
-            .map(blob -> documentGenerator.generateDocument(blob, candidate))
-            .map(indexDocument -> {
-                LOGGER.info("Adding document to index, candidateId: {} publicationId: {}",
-                            indexDocument.identifier(),
-                            indexDocument.publicationDetails().id());
-                return indexDocument;
-            })
-            .forEach(openSearchClient::addDocumentToIndex)
-            .orElseThrow();
+        LOGGER.info("addDocumentToIndex for {}", candidate.getIdentifier());
+        var result = attempt(() -> getPublicationFromBucket(candidate))
+                         .map(blob -> documentGenerator.generateDocument(blob, candidate))
+                         .map(indexDocument -> {
+                             LOGGER.info("Adding document to index, candidateId: {} publicationId: {}",
+                                         indexDocument.identifier(),
+                                         indexDocument.publicationDetails().id());
+                             return indexDocument;
+                         })
+                         .map(openSearchClient::addDocumentToIndex)
+                         .orElseThrow();
+        LOGGER.info("done addDocumentToIndex for {}, result:{}", candidate.getIdentifier(),
+                    result.result().jsonValue());
+    }
+
+    private String getPublicationFromBucket(CandidateBO candidate) {
+        var bucketUri = candidate.getPublicationBucketUri();
+        LOGGER.info("getPublicationFromBucket with candidate id {} and url {}", candidate.getIdentifier(),
+                    bucketUri.toString());
+        var result = storageReader.read(bucketUri);
+        LOGGER.info("Done fetching {}, string length {}", bucketUri, result.length());
+        return result;
     }
 }
