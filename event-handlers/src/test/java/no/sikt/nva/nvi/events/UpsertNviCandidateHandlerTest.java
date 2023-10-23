@@ -22,7 +22,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -63,7 +62,6 @@ import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto.Status;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
-import no.sikt.nva.nvi.events.model.InvalidNviMessageException;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.Creator;
@@ -118,13 +116,13 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     @ParameterizedTest
     @MethodSource("invalidCandidateEvaluatedMessages")
-    void shouldThrowExceptionWhenInvalidMessage(CandidateEvaluatedMessage message) {
-        var sqsEvent = createEvent(message);
-        assertThrows(InvalidNviMessageException.class, () -> handler.handleRequest(sqsEvent, CONTEXT));
+    void shouldSendMessageToDlqWhenMessageInvalid(CandidateEvaluatedMessage message) {
+        handler.handleRequest(createEvent(message), CONTEXT);
+        verify(queueClient, times(1)).sendMessage(any(String.class), eq(DLQ_QUEUE_URL));
     }
 
     @Test
-    void shouldSendMessageToDlqIfUnexpectedErrorOccurs() {
+    void shouldSendMessageToDlqWhenUnexpectedErrorOccurs() {
         candidateRepository = mock(CandidateRepository.class);
         handler = new UpsertNviCandidateHandler(candidateRepository, periodRepository, queueClient, environment);
         when(candidateRepository.createDao(any(), any())).thenThrow(RuntimeException.class);

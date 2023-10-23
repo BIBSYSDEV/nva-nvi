@@ -7,7 +7,12 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.net.URI;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
@@ -25,10 +30,12 @@ import org.slf4j.LoggerFactory;
 
 public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void> {
 
+    public static final String PUBLICATION_ID_NOT_FOUND = "publicationId not found";
     private static final Logger LOGGER = LoggerFactory.getLogger(UpsertNviCandidateHandler.class);
     private static final String INVALID_NVI_CANDIDATE_MESSAGE = "Invalid nvi candidate message";
     private static final String PERSISTENCE_MESSAGE = "Nvi candidate has been persisted for publication: {}";
     private static final String UPSERT_CANDIDATE_DLQ_QUEUE_URL = "UPSERT_CANDIDATE_DLQ_QUEUE_URL";
+    private static final String UPSERT_CANDIDATE_FAILED_MESSAGE = "Failed to upsert candidate for publication: {}";
     private final CandidateRepository repository;
     private final PeriodRepository periodRepository;
 
@@ -68,15 +75,43 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         }).orElseThrow(failure -> new InvalidNviMessageException(INVALID_NVI_CANDIDATE_MESSAGE));
     }
 
+    private static String getStackTrace(Exception e) {
+        var stringWriter = new StringWriter();
+        e.printStackTrace(new PrintWriter(stringWriter));
+        return stringWriter.toString();
+    }
+
+    private static Optional<URI> extractPublicationId(CandidateEvaluatedMessage evaluatedCandidate) {
+        return Optional.ofNullable(evaluatedCandidate.candidate().publicationId());
+    }
+
+    private static void logPersistence(CandidateEvaluatedMessage evaluatedCandidate) {
+        LOGGER.info(PERSISTENCE_MESSAGE, extractPublicationId(evaluatedCandidate).map(URI::toString)
+                                             .orElse(PUBLICATION_ID_NOT_FOUND));
+    }
+
+    private static void logError(CandidateEvaluatedMessage evaluatedCandidate) {
+        LOGGER.error(UPSERT_CANDIDATE_FAILED_MESSAGE, extractPublicationId(evaluatedCandidate).map(URI::toString)
+                                                          .orElse(PUBLICATION_ID_NOT_FOUND));
+    }
+
     private void upsertNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-        validateMessage(evaluatedCandidate);
-        if (evaluatedCandidate.candidate() instanceof NviCandidate candidate) {
-            CandidateBO.fromRequest(candidate, repository, periodRepository);
-        } else {
-            var nonNviCandidate = (NonNviCandidate) evaluatedCandidate.candidate();
-            CandidateBO.fromRequest(nonNviCandidate, repository);
+        try {
+            validateMessage(evaluatedCandidate);
+            if (evaluatedCandidate.candidate() instanceof NviCandidate candidate) {
+                CandidateBO.fromRequest(candidate, repository, periodRepository);
+            } else {
+                var nonNviCandidate = (NonNviCandidate) evaluatedCandidate.candidate();
+                CandidateBO.fromRequest(nonNviCandidate, repository);
+            }
+            logPersistence(evaluatedCandidate);
+        } catch (Exception e) {
+            logError(evaluatedCandidate);
+            attempt(() -> queueClient.sendMessage(dtoObjectMapper.writeValueAsString(Map.of(
+                "exception", getStackTrace(e),
+                "evaluatedMessage", dtoObjectMapper.writeValueAsString(evaluatedCandidate)
+            )), dlqUrl));
         }
-        LOGGER.info(PERSISTENCE_MESSAGE, evaluatedCandidate.candidate().publicationId());
     }
 
     private CandidateEvaluatedMessage parseBody(String body) {
