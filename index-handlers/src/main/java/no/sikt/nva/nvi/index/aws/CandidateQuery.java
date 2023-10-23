@@ -279,7 +279,7 @@ public class CandidateQuery {
     }
 
     private Optional<Query> createSearchTermQuery(String searchTerm) {
-        return searchTerm != null && searchTerm.equals("*")
+        return "*".equals(searchTerm)
                    ? Optional.of(matchAllQuery())
                    : nonNull(searchTerm)
                          ? Optional.of(new MultiMatchQuery.Builder().query(searchTerm).build()._toQuery())

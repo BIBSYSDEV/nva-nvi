@@ -299,9 +299,8 @@ public class OpenSearchClientTest {
         var title = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
         var name = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
         var document = singleNviCandidateIndexDocumentWithCustomerTitleAndContributor(customer.toString(), title, name);
-        addDocumentsToIndex(document,
-                            singleNviCandidateIndexDocumentWithCustomerTitleAndContributor(customer.toString(),
-                                                                                           randomString(), randomString()));
+        addDocumentsToIndex(document, singleNviCandidateIndexDocumentWithCustomerTitleAndContributor(
+            customer.toString(), randomString(), randomString()));
 
         var searchParameters =
             defaultSearchParameters().withAffiliations(List.of(customer))
@@ -393,9 +392,10 @@ public class OpenSearchClientTest {
                                              List.of(approval), 1, TestUtils.randomBigDecimal());
     }
 
-    private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomerTitleAndContributor(String customer,
-                                                                                                            String title,
-                                                                                                            String contributor ) {
+    private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomerTitleAndContributor(
+        String customer,
+        String title,
+        String contributor) {
         var approval = new Approval(customer, Map.of(), randomStatus(), null);
         return new NviCandidateIndexDocument(randomUri(), randomString(),
                                              randomPublicationDetailsWithCustomerTitleAndContributor(title, customer,
@@ -433,7 +433,8 @@ public class OpenSearchClientTest {
     }
 
     private static PublicationDetails randomPublicationDetailsWithCustomerTitleAndContributor(String title,
-                                                                                              String affiliation, String name) {
+                                                                                              String affiliation,
+                                                                                              String name) {
         return new PublicationDetails(randomString(), randomString(), title,
                                       PublicationDate.builder().withYear(YEAR).build(),
                                       List.of(new Contributor.Builder().withRole("Creator")

@@ -340,7 +340,9 @@ public class SearchNviCandidatesHandlerTest {
             .withTopLevelCristinOrgId(randomUri())
             .withUserName(randomString())
             .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS, String.join(COMMA,
-                                                                              institutions.stream().map(URI::toString).toList()),
+                                                                              institutions.stream()
+                                                                                  .map(URI::toString)
+                                                                                  .toList()),
                                         QUERY_PARAM_EXCLUDE_SUB_UNITS, "true",
                                         QUERY_PARAM_FILTER, filter,
                                         QUERY_PARAM_CATEGORY, category,

@@ -87,7 +87,7 @@ public record CandidateSearchParameters(String searchTerm, List<URI> affiliation
         }
 
         public CandidateSearchParameters build() {
-            return new CandidateSearchParameters( searchTerm,
+            return new CandidateSearchParameters(searchTerm,
                                                   affiliations,
                                                   excludeSubUnits,
                                                   filter,
