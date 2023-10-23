@@ -1,9 +1,11 @@
 package no.sikt.nva.nvi.index.utils;
 
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAMETER_SEARCH_TERM;
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_CATEGORY;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_FILTER;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_AFFILIATIONS;
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_TITLE;
 import static nva.commons.apigateway.RestRequestHandler.COMMA;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -55,22 +57,28 @@ public final class PaginatedResultConverter {
             candidateSearchParameters.size(),
             extractTotalNumberOfHits(searchResponse),
             extractsHits(searchResponse),
-            getQueryParameters(candidateSearchParameters.affiliations(),
+            getQueryParameters(candidateSearchParameters.searchTerm(),
+                               candidateSearchParameters.affiliations(),
                                candidateSearchParameters.excludeSubUnits(),
                                candidateSearchParameters.filter(),
-                               candidateSearchParameters.searchTerm()),
+                               candidateSearchParameters.category(),
+                               candidateSearchParameters.title()),
             extractAggregations(searchResponse));
 
         LOGGER.info("Returning paginatedSearchResult with id: {}", paginatedSearchResult.getId().toString());
         return paginatedSearchResult;
     }
 
-    private static Map<String, String> getQueryParameters(List<URI> affiliations, boolean excludeSubUnits,
-                                                          String filter, String searchTerm) {
+    private static Map<String, String> getQueryParameters(String searchTerm, List<URI> affiliations,
+                                                          boolean excludeSubUnits,
+                                                          String filter, String category, String title) {
         var queryParams = new HashMap();
+        if (isNotNullSearchTerm(searchTerm)) {
+            queryParams.put(QUERY_PARAMETER_SEARCH_TERM, searchTerm);
+        }
         if (Objects.nonNull(affiliations)) {
             queryParams.put(QUERY_PARAM_AFFILIATIONS, affiliations.stream().map(URI::toString)
-                                                               .collect(Collectors.joining(COMMA)));
+                .collect(Collectors.joining(COMMA)));
         }
         if (excludeSubUnits) {
             queryParams.put(QUERY_PARAM_EXCLUDE_SUB_UNITS, String.valueOf(true));
@@ -78,14 +86,29 @@ public final class PaginatedResultConverter {
         if (isNotEmpty(filter)) {
             queryParams.put(QUERY_PARAM_FILTER, filter);
         }
-        if (isNotEmpty(filter)) {
-            queryParams.put(QUERY_PARAMETER_SEARCH_TERM, searchTerm);
+        if (isNotNullCategory(category)) {
+            queryParams.put(QUERY_PARAM_CATEGORY, category);
+        }
+        if (isNotNullTitle(title)) {
+            queryParams.put(QUERY_PARAM_TITLE, title);
         }
         return queryParams;
     }
 
     private static boolean isNotEmpty(String filter) {
         return !filter.isEmpty();
+    }
+
+    private static boolean isNotNullCategory(String category) {
+        return category != null;
+    }
+
+    private static boolean isNotNullTitle(String title) {
+        return title != null;
+    }
+
+    private static boolean isNotNullSearchTerm(String searchTerm) {
+        return searchTerm != null;
     }
 
     private static int extractTotalNumberOfHits(SearchResponse<NviCandidateIndexDocument> searchResponse) {

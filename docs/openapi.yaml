@@ -146,6 +146,11 @@ paths:
       description: 'Search for scientific index candidates'
       parameters:
         - in: query
+          name: query
+          schema:
+            type: string
+          description: Term to search for in NVI candidates
+        - in: query
           name: affiliations
           description: 'Only return candidates in given affiliations. Including their sub-units. Formated as a comma separated list of affiliations ids.'
           required: false
@@ -180,10 +185,15 @@ paths:
             type: string
           description: Filters values based on year
         - in: query
-          name: query
+          name: category
           schema:
             type: string
-          description: Term to search for in NVI candidates
+          description: Filters values based on category
+        - in: query
+          name: title
+          schema:
+            type: string
+          description: Filters values based on title
       security:
         - CognitoUserPool: [
           'https://api.nva.unit.no/scopes/backend',
