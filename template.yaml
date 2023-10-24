@@ -153,6 +153,7 @@ Resources:
                   - !GetAtt NewCandidateDLQ.Arn
                   - !GetAtt BatchScanDLQ.Arn
                   - !GetAtt UpdateIndexDLQ.Arn
+                  - !GetAtt UpsertCandidateDLQ.Arn
         - PolicyName: writeLog
           PolicyDocument:
             Version: 2012-10-17
@@ -331,7 +332,7 @@ Resources:
       AutoPublishAlias: live
       Environment:
         Variables:
-          UPSERT_CANDIDATE_DLQ_QUEUE_URL: !UpsertCandidateDLQ
+          UPSERT_CANDIDATE_DLQ_QUEUE_URL: !Ref UpsertCandidateDLQ
       Events:
         SqsEvent:
           Type: SQS
