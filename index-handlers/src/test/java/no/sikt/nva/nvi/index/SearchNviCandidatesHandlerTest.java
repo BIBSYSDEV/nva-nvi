@@ -183,15 +183,11 @@ public class SearchNviCandidatesHandlerTest {
                                        + "=" + randomInstitutions.get(0)
                                        + "," + randomInstitutions.get(1);
         var expectedExcludeQuery = QUERY_PARAM_EXCLUDE_SUB_UNITS + "=true";
-        var expectedSearchTermQuery =QUERY_PARAM_SEARCH_TERM + "=" + randomSearchTerm;
-        var expectedFilterQuery =QUERY_PARAM_FILTER + "=" + randomFilter;
-        var expectedCategoryQuery =QUERY_PARAM_CATEGORY + "=" + randomCategory;
-        var expectedTitleQuery =QUERY_PARAM_TITLE + "=" + randomTitle;
 
-        assertThat(actualId, containsString(expectedFilterQuery));
-        assertThat(actualId, containsString(expectedCategoryQuery));
-        assertThat(actualId, containsString(expectedTitleQuery));
-        assertThat(actualId, containsString(expectedSearchTermQuery));
+        assertThat(actualId, containsString(QUERY_PARAM_FILTER + "=" + randomFilter));
+        assertThat(actualId, containsString(QUERY_PARAM_CATEGORY + "=" + randomCategory));
+        assertThat(actualId, containsString(QUERY_PARAM_TITLE + "=" + randomTitle));
+        assertThat(actualId, containsString(QUERY_PARAM_SEARCH_TERM + "=" + randomTitle));
         assertThat(actualId, containsString(expectedInstitutionQuery));
         assertThat(actualId, containsString(expectedExcludeQuery));
     }
