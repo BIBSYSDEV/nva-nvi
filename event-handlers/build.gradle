@@ -30,12 +30,13 @@ dependencies {
 
 test {
     useJUnitPlatform()
-    environment ("OUTPUT_EVENT_TOPIC", "someTopic")
-    environment ("EVENT_BUS_NAME", "someEvent")
-    environment ("API_HOST", "example.org")
+    environment("OUTPUT_EVENT_TOPIC", "someTopic")
+    environment("EVENT_BUS_NAME", "someEvent")
+    environment("API_HOST", "example.org")
     environment("SEARCH_INFRASTRUCTURE_API_HOST", "localhost")
     environment("SEARCH_INFRASTRUCTURE_AUTH_URI", "localhost")
     environment("SEARCH_INFRASTRUCTURE_API_URI", "localhost")
     environment("NVI_TABLE_NAME", "some-table")
-    environment ("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
+    environment("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
+    environment("UPSERT_CANDIDATE_DLQ_QUEUE_URL", "UpsertCandidateDLQ")
 }
