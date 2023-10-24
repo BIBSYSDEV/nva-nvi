@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_EXCLUDE_SUB_UNITS;
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_SEARCH_TERM;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_TITLE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -168,9 +169,11 @@ public class SearchNviCandidatesHandlerTest {
         var randomFilter = randomString();
         var randomCategory = randomString();
         var randomTitle = randomString();
+        var randomSearchTerm = randomString();
         var randomInstitutions = List.of(randomSiktSubUnit(), randomSiktSubUnit());
         handler.handleRequest(
-            requestWithInstitutionsAndFilter(randomInstitutions, randomFilter, randomCategory, randomTitle),
+            requestWithInstitutionsAndFilter(randomSearchTerm, randomInstitutions, randomFilter, randomCategory,
+                                             randomTitle),
             output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
@@ -180,10 +183,15 @@ public class SearchNviCandidatesHandlerTest {
                                        + "=" + randomInstitutions.get(0)
                                        + "," + randomInstitutions.get(1);
         var expectedExcludeQuery = QUERY_PARAM_EXCLUDE_SUB_UNITS + "=true";
+        var expectedSearchTermQuery =QUERY_PARAM_SEARCH_TERM + "=" + randomSearchTerm;
+        var expectedFilterQuery =QUERY_PARAM_FILTER + "=" + randomFilter;
+        var expectedCategoryQuery =QUERY_PARAM_CATEGORY + "=" + randomCategory;
+        var expectedTitleQuery =QUERY_PARAM_TITLE + "=" + randomTitle;
 
-        assertThat(actualId, containsString(QUERY_PARAM_FILTER + "=" + randomFilter));
-        assertThat(actualId, containsString(QUERY_PARAM_CATEGORY + "=" + randomCategory));
-        assertThat(actualId, containsString(QUERY_PARAM_TITLE + "=" + randomTitle));
+        assertThat(actualId, containsString(expectedFilterQuery));
+        assertThat(actualId, containsString(expectedCategoryQuery));
+        assertThat(actualId, containsString(expectedTitleQuery));
+        assertThat(actualId, containsString(expectedSearchTermQuery));
         assertThat(actualId, containsString(expectedInstitutionQuery));
         assertThat(actualId, containsString(expectedExcludeQuery));
     }
@@ -333,7 +341,8 @@ public class SearchNviCandidatesHandlerTest {
             .build();
     }
 
-    private InputStream requestWithInstitutionsAndFilter(List<URI> institutions, String filter, String category,
+    private InputStream requestWithInstitutionsAndFilter(String searchTerm, List<URI> institutions, String filter,
+                                                         String category,
                                                          String title)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
@@ -346,7 +355,8 @@ public class SearchNviCandidatesHandlerTest {
                                         QUERY_PARAM_EXCLUDE_SUB_UNITS, "true",
                                         QUERY_PARAM_FILTER, filter,
                                         QUERY_PARAM_CATEGORY, category,
-                                        QUERY_PARAM_TITLE, title))
+                                        QUERY_PARAM_TITLE, title,
+                                        QUERY_PARAM_SEARCH_TERM, searchTerm))
             .build();
     }
 

@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.index.utils;
 
-import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAMETER_SEARCH_TERM;
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_SEARCH_TERM;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_CATEGORY;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_FILTER;
@@ -74,7 +74,7 @@ public final class PaginatedResultConverter {
                                                           String filter, String category, String title) {
         var queryParams = new HashMap();
         if (isNotNullSearchTerm(searchTerm)) {
-            queryParams.put(QUERY_PARAMETER_SEARCH_TERM, searchTerm);
+            queryParams.put(QUERY_PARAM_SEARCH_TERM, searchTerm);
         }
         if (Objects.nonNull(affiliations)) {
             queryParams.put(QUERY_PARAM_AFFILIATIONS, affiliations.stream().map(URI::toString)
