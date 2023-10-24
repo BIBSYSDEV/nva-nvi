@@ -19,7 +19,9 @@ import static no.sikt.nva.nvi.evaluator.model.InstanceType.ACADEMIC_CHAPTER;
 import static no.sikt.nva.nvi.evaluator.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
 import static no.sikt.nva.nvi.evaluator.model.InstanceType.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.evaluator.model.Level.LEVEL_ONE;
+import static no.sikt.nva.nvi.evaluator.model.Level.LEVEL_ONE_V2;
 import static no.sikt.nva.nvi.evaluator.model.Level.LEVEL_TWO;
+import static no.sikt.nva.nvi.evaluator.model.Level.LEVEL_TWO_V2;
 import static no.sikt.nva.nvi.evaluator.model.PublicationChannel.JOURNAL;
 import static no.sikt.nva.nvi.evaluator.model.PublicationChannel.PUBLISHER;
 import static no.sikt.nva.nvi.evaluator.model.PublicationChannel.SERIES;
@@ -60,25 +62,37 @@ public final class PointCalculator {
         ACADEMIC_MONOGRAPH, Map.of(
             PUBLISHER, Map.of(
                 LEVEL_ONE, BigDecimal.valueOf(5),
-                LEVEL_TWO, BigDecimal.valueOf(8)),
+                LEVEL_ONE_V2, BigDecimal.valueOf(5),
+                LEVEL_TWO, BigDecimal.valueOf(8),
+                LEVEL_TWO_V2, BigDecimal.valueOf(8)),
             SERIES, Map.of(
                 LEVEL_ONE, BigDecimal.valueOf(5),
-                LEVEL_TWO, BigDecimal.valueOf(8))),
+                LEVEL_ONE_V2, BigDecimal.valueOf(5),
+                LEVEL_TWO, BigDecimal.valueOf(8),
+                LEVEL_TWO_V2, BigDecimal.valueOf(8))),
         ACADEMIC_CHAPTER, Map.of(
             PUBLISHER, Map.of(
                 LEVEL_ONE, BigDecimal.valueOf(0.7),
-                LEVEL_TWO, BigDecimal.valueOf(1)),
+                LEVEL_ONE_V2, BigDecimal.valueOf(0.7),
+                LEVEL_TWO, BigDecimal.valueOf(1),
+                LEVEL_TWO_V2, BigDecimal.valueOf(1)),
             SERIES, Map.of(
                 LEVEL_ONE, BigDecimal.valueOf(1),
-                LEVEL_TWO, BigDecimal.valueOf(3))),
+                LEVEL_ONE_V2, BigDecimal.valueOf(1),
+                LEVEL_TWO, BigDecimal.valueOf(3),
+                LEVEL_TWO_V2, BigDecimal.valueOf(3))),
         ACADEMIC_ARTICLE, Map.of(
             JOURNAL, Map.of(
                 LEVEL_ONE, BigDecimal.valueOf(1),
-                LEVEL_TWO, BigDecimal.valueOf(3))),
+                LEVEL_ONE_V2, BigDecimal.valueOf(1),
+                LEVEL_TWO, BigDecimal.valueOf(3),
+                LEVEL_TWO_V2, BigDecimal.valueOf(3))),
         ACADEMIC_LITERATURE_REVIEW, Map.of(
             JOURNAL, Map.of(
                 LEVEL_ONE, BigDecimal.valueOf(1),
-                LEVEL_TWO, BigDecimal.valueOf(3))));
+                LEVEL_ONE_V2, BigDecimal.valueOf(1),
+                LEVEL_TWO, BigDecimal.valueOf(3),
+                LEVEL_TWO_V2, BigDecimal.valueOf(3))));
 
     private PointCalculator() {
     }
