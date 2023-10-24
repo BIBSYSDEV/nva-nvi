@@ -17,9 +17,9 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.PART_OF;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DATE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DETAILS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ROLE;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.TITLE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.TYPE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.YEAR;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.TITLE;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.net.URI;
 import java.time.ZonedDateTime;
@@ -279,15 +279,8 @@ public class CandidateQuery {
     }
 
     private Optional<Query> createSearchTermQuery(String searchTerm) {
-        return "*".equals(searchTerm)
-                   ? Optional.of(matchAllQuery())
-                   : nonNull(searchTerm)
-                         ? Optional.of(new MultiMatchQuery.Builder().query(searchTerm).build()._toQuery())
-                         : Optional.empty();
-    }
-
-    private static Query matchAllQuery() {
-        return new MatchAllQuery.Builder().build()._toQuery();
+        return nonNull(searchTerm) ? Optional.of(new MultiMatchQuery.Builder().query(searchTerm).build()._toQuery())
+                   : Optional.empty();
     }
 
     public enum QueryFilterType {
