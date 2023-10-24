@@ -187,7 +187,7 @@ public class SearchNviCandidatesHandlerTest {
         assertThat(actualId, containsString(QUERY_PARAM_FILTER + "=" + randomFilter));
         assertThat(actualId, containsString(QUERY_PARAM_CATEGORY + "=" + randomCategory));
         assertThat(actualId, containsString(QUERY_PARAM_TITLE + "=" + randomTitle));
-        assertThat(actualId, containsString(QUERY_PARAM_SEARCH_TERM + "=" + randomTitle));
+        assertThat(actualId, containsString(QUERY_PARAM_SEARCH_TERM + "=" + randomSearchTerm));
         assertThat(actualId, containsString(expectedInstitutionQuery));
         assertThat(actualId, containsString(expectedExcludeQuery));
     }
