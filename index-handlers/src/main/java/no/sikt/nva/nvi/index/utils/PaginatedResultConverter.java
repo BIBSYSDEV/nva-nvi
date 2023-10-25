@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_ASSIGNEE;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_CATEGORY;
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_CONTRIBUTOR;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_FILTER;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_AFFILIATIONS;
@@ -60,7 +62,9 @@ public final class PaginatedResultConverter {
                                candidateSearchParameters.excludeSubUnits(),
                                candidateSearchParameters.filter(),
                                candidateSearchParameters.category(),
-                               candidateSearchParameters.title()),
+                               candidateSearchParameters.title(),
+                               candidateSearchParameters.contributor(),
+                               candidateSearchParameters.assignee()),
             extractAggregations(searchResponse));
 
         LOGGER.info("Returning paginatedSearchResult with id: {}", paginatedSearchResult.getId().toString());
@@ -68,7 +72,8 @@ public final class PaginatedResultConverter {
     }
 
     private static Map<String, String> getQueryParameters(List<URI> affiliations, boolean excludeSubUnits,
-                                                          String filter, String category, String title) {
+                                                          String filter, String category, String title,
+                                                          String contributor, String assignee) {
         var queryParams = new HashMap();
         if (Objects.nonNull(affiliations)) {
             queryParams.put(QUERY_PARAM_AFFILIATIONS, affiliations.stream().map(URI::toString)
@@ -86,6 +91,12 @@ public final class PaginatedResultConverter {
         if (isNotNullTitle(title)) {
             queryParams.put(QUERY_PARAM_TITLE, title);
         }
+        if (isNotNullContributor(contributor)) {
+            queryParams.put(QUERY_PARAM_CONTRIBUTOR, contributor);
+        }
+        if (isNotNullAssignee(assignee)) {
+            queryParams.put(QUERY_PARAM_ASSIGNEE, assignee);
+        }
         return queryParams;
     }
 
@@ -99,6 +110,13 @@ public final class PaginatedResultConverter {
 
     private static boolean isNotNullTitle(String title) {
         return title != null;
+    }
+
+    private static boolean isNotNullContributor(String contributor) {
+        return contributor != null;
+    }
+    private static boolean isNotNullAssignee(String assignee) {
+        return assignee != null;
     }
 
     private static int extractTotalNumberOfHits(SearchResponse<NviCandidateIndexDocument> searchResponse) {
