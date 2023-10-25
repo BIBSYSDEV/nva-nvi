@@ -2,6 +2,8 @@ package no.sikt.nva.nvi.common.db;
 
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemResponse;
@@ -12,6 +14,7 @@ public class DynamoDbRetryWrapper {
     private final int writeRetriesMaxCount;
     private final long initialRetryWaitTimeMs;
     private final String tableName;
+    private static final Logger LOGGER = LoggerFactory.getLogger(DynamoDbRetryWrapper.class);
 
     public DynamoDbRetryWrapper(DynamoDbClient dynamoDbClient, String tableName, int writeRetriesMaxCount,
                                 long initialRetryWaitTimeMs) {
@@ -60,6 +63,8 @@ public class DynamoDbRetryWrapper {
         try {
             Thread.sleep(waitTime);
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.error("sleep interrupted", e);
             throw new RuntimeException(e);
         }
     }
