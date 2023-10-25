@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.test;
 
+import static no.sikt.nva.nvi.common.db.model.InstanceType.NON_CANDIDATE;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
@@ -89,7 +90,7 @@ public final class TestUtils {
                    .publicationId(randomUri())
                    .publicationBucketUri(randomUri())
                    .applicable(applicable)
-                   .instanceType(randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE))
+                   .instanceType(randomInstanceTypeExcluding(NON_CANDIDATE))
                    .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
                    .level(randomElement(DbLevel.values()))
                    .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
@@ -106,6 +107,11 @@ public final class TestUtils {
     public static InstanceType randomInstanceTypeExcluding(InstanceType instanceType) {
         var instanceTypes = Arrays.stream(InstanceType.values()).filter(type -> !type.equals(instanceType)).toList();
         return instanceTypes.get(new Random().nextInt(instanceTypes.size()));
+    }
+
+    public static DbLevel randomLevelExcluding(DbLevel level) {
+        var levels = Arrays.stream(DbLevel.values()).filter(type -> !type.equals(level)).toList();
+        return levels.get(new Random().nextInt(levels.size()));
     }
 
     public static String randomYear() {
@@ -214,16 +220,25 @@ public final class TestUtils {
                    .build();
     }
 
+    public static UpsertCandidateRequest createUpsertCandidateRequestWithLevel(String level, URI... institutions) {
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(NON_CANDIDATE),
+                                            1, randomBigDecimal(), level, institutions);
+    }
+
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI... institutions) {
-        return createUpsertCandidateRequest(randomUri(), randomUri(), true, InstanceType.ACADEMIC_MONOGRAPH, 1,
-                                            randomBigDecimal(),
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(NON_CANDIDATE),
+                                            1, randomBigDecimal(),
+                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
                                             institutions);
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
-                                                                      URI publicationBucketUri, boolean isApplicable,
-                                                                      final InstanceType instanceType, int creatorCount,
+                                                                      URI publicationBucketUri,
+                                                                      boolean isApplicable,
+                                                                      InstanceType instanceType,
+                                                                      int creatorCount,
                                                                       BigDecimal totalPoints,
+                                                                      String level,
                                                                       URI... institutions) {
         var creators = IntStream.of(creatorCount)
                            .mapToObj(i -> randomUri())
@@ -236,7 +251,7 @@ public final class TestUtils {
                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null), creators,
                                             instanceType,
                                             randomElement(ChannelType.values()).getValue(), randomUri(),
-                                            DbLevel.LEVEL_TWO, points,
+                                            level, points,
                                             randomInteger(), randomBoolean(),
                                             randomBigDecimal(), randomBigDecimal(), totalPoints);
     }
@@ -248,7 +263,7 @@ public final class TestUtils {
                                                                       Map<URI, List<URI>> creators,
                                                                       InstanceType instanceType,
                                                                       String channelType, URI channelId,
-                                                                      DbLevel level,
+                                                                      String level,
                                                                       Map<URI, BigDecimal> points,
                                                                       final Integer creatorShareCount,
                                                                       final boolean isInternationalCollaboration,
@@ -295,7 +310,7 @@ public final class TestUtils {
 
             @Override
             public String level() {
-                return level.getValue();
+                return level;
             }
 
             @Override

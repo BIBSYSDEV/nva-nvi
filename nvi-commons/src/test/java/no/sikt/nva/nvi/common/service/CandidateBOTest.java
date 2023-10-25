@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.test.TestUtils.ROUNDING_MODE;
 import static no.sikt.nva.nvi.test.TestUtils.createNoteRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequestWithLevel;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
@@ -95,6 +96,11 @@ class CandidateBOTest extends LocalDynamoTest {
                                                                                randomUri()))));
     }
 
+    @Deprecated
+    public static Stream<Arguments> levelValues() {
+        return Stream.of(Arguments.of(DbLevel.LEVEL_ONE, "LevelOne"), Arguments.of(DbLevel.LEVEL_TWO, "LevelTwo"));
+    }
+
     @BeforeEach
     void setup() {
         localDynamo = initializeTestDatabase();
@@ -116,6 +122,21 @@ class CandidateBOTest extends LocalDynamoTest {
         var fetchedCandidate = CandidateBO.fromRequest(candidate::identifier, candidateRepository, periodRepository)
                                    .toDto();
         assertThat(fetchedCandidate, is(equalTo(candidate)));
+    }
+
+    @Deprecated
+    @ParameterizedTest
+    @MethodSource("levelValues")
+    void shouldPersistNewCandidateWithCorrectLevelBasedOnVersionTwoLevelValues(DbLevel expectedLevel,
+                                                                               String versionTwoValue) {
+        var request = createUpsertCandidateRequestWithLevel(versionTwoValue, randomUri());
+        var candidateIdentifier = CandidateBO.fromRequest(request, candidateRepository, periodRepository)
+                                      .orElseThrow()
+                                      .getIdentifier();
+        var persistedCandidate = candidateRepository.findCandidateDaoById(candidateIdentifier)
+                                     .orElseThrow()
+                                     .candidate();
+        assertEquals(expectedLevel, persistedCandidate.level());
     }
 
     @Test
@@ -169,6 +190,8 @@ class CandidateBOTest extends LocalDynamoTest {
         var totalPoints = randomBigDecimal();
         var createRequest = createUpsertCandidateRequest(randomUri(), randomUri(), true,
                                                          InstanceType.ACADEMIC_MONOGRAPH, 4, totalPoints,
+                                                         TestUtils.randomLevelExcluding(DbLevel.NON_CANDIDATE)
+                                                             .getVersionOneValue(),
                                                          institutionToApprove, randomUri(), institutionToReject);
         var candidateBO = CandidateBO.fromRequest(createRequest, candidateRepository, periodRepository).orElseThrow();
         candidateBO.createNote(createNoteRequest(randomString(), randomString()))
@@ -218,7 +241,9 @@ class CandidateBOTest extends LocalDynamoTest {
                                                          creators,
                                                          randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE),
                                                          randomElement(ChannelType.values()).getValue(), randomUri(),
-                                                         DbLevel.LEVEL_TWO, points, randomInteger(10), randomBoolean(),
+                                                         DbLevel.LEVEL_TWO.getVersionOneValue(), points,
+                                                         randomInteger(10),
+                                                         randomBoolean(),
                                                          randomBigDecimal(), randomBigDecimal(), totalPoints);
         var candidate = CandidateBO.fromRequest(createRequest, candidateRepository, periodRepository).orElseThrow();
         assertEquals(candidate.getPublicationBucketUri(), publicationBucketUri);
@@ -235,6 +260,8 @@ class CandidateBOTest extends LocalDynamoTest {
                                   .orElseThrow();
         var updateRequest = createUpsertCandidateRequest(tempCandidateBO.getPublicationId(), randomUri(), false,
                                                          InstanceType.ACADEMIC_MONOGRAPH, 4, randomBigDecimal(),
+                                                         TestUtils.randomLevelExcluding(DbLevel.NON_CANDIDATE)
+                                                             .getVersionOneValue(),
                                                          randomUri(), randomUri(),
                                                          randomUri());
         var candidateBO = CandidateBO.fromRequest(updateRequest, candidateRepository, periodRepository).orElseThrow();
@@ -306,11 +333,11 @@ class CandidateBOTest extends LocalDynamoTest {
                                                                       String.valueOf(CURRENT_YEAR), null,
                                                                       null), getCreators(institutionIdsOriginal),
                                                                   originalType,
-                                                                  randomString(), randomUri(), originalLevel,
+                                                                  randomString(), randomUri(),
+                                                                  originalLevel.getVersionOneValue(),
                                                                   getPointsOriginal(institutionIdsOriginal),
                                                                   randomInteger(), false,
-                                                                  TestUtils.randomBigDecimal(), null,
-                                                                  randomBigDecimal());
+                                                                  randomBigDecimal(), null, randomBigDecimal());
 
         var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
@@ -323,7 +350,8 @@ class CandidateBOTest extends LocalDynamoTest {
                                                             new PublicationDate(String.valueOf(CURRENT_YEAR),
                                                                                 null, null),
                                                             getCreators(arguments.institutionIds()), arguments.type(),
-                                                            randomString(), randomUri(), arguments.level(),
+                                                            randomString(), randomUri(),
+                                                            arguments.level().getVersionOneValue(),
                                                             getPointsOriginal(arguments.institutionIds()),
                                                             randomInteger(), false,
                                                             TestUtils.randomBigDecimal(), null, randomBigDecimal());
@@ -368,6 +396,7 @@ class CandidateBOTest extends LocalDynamoTest {
                                             insertRequest.publicationBucketUri(), true,
                                             InstanceType.parse(insertRequest.instanceType()),
                                             insertRequest.creators().size(), randomBigDecimal(),
+                                            TestUtils.randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
                                             institutionId);
     }
 

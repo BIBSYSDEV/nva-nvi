@@ -260,38 +260,38 @@ public class SearchNviCandidatesHandlerTest {
 
     private static SearchResponse<NviCandidateIndexDocument> createSearchResponse(NviCandidateIndexDocument document) {
         return new Builder<NviCandidateIndexDocument>().hits(constructHitsMetadata(List.of(document)))
-            .took(10)
-            .timedOut(false)
-            .shards(new ShardStatistics.Builder().failed(0).successful(1).total(1).build())
-            .build();
+                   .took(10)
+                   .timedOut(false)
+                   .shards(new ShardStatistics.Builder().failed(0).successful(1).total(1).build())
+                   .build();
     }
 
     private static SearchResponse<NviCandidateIndexDocument> createSearchResponse(
         List<NviCandidateIndexDocument> documents, int total, String aggregateName, int docCount) {
         return new Builder<NviCandidateIndexDocument>()
-            .hits(constructHitsMetadata(documents))
-            .took(10)
-            .timedOut(false)
-            .shards(new ShardStatistics.Builder().failed(0).successful(1).total(total).build())
-            .aggregations(aggregateName, new Aggregate(new FilterAggregate.Builder().docCount(docCount).build()))
-            .build();
+                   .hits(constructHitsMetadata(documents))
+                   .took(10)
+                   .timedOut(false)
+                   .shards(new ShardStatistics.Builder().failed(0).successful(1).total(total).build())
+                   .aggregations(aggregateName, new Aggregate(new FilterAggregate.Builder().docCount(docCount).build()))
+                   .build();
     }
 
     private static HitsMetadata<NviCandidateIndexDocument> constructHitsMetadata(
         List<NviCandidateIndexDocument> document) {
         return new HitsMetadata.Builder<NviCandidateIndexDocument>()
-            .total(new TotalHits.Builder().value(10).relation(TotalHitsRelation.Eq).build())
-            .hits(document.stream().map(SearchNviCandidatesHandlerTest::toHit).collect(Collectors.toList()))
-            .total(new TotalHits.Builder().relation(TotalHitsRelation.Eq).value(1).build())
-            .build();
+                   .total(new TotalHits.Builder().value(10).relation(TotalHitsRelation.Eq).build())
+                   .hits(document.stream().map(SearchNviCandidatesHandlerTest::toHit).collect(Collectors.toList()))
+                   .total(new TotalHits.Builder().relation(TotalHitsRelation.Eq).value(1).build())
+                   .build();
     }
 
     private static Hit<NviCandidateIndexDocument> toHit(NviCandidateIndexDocument document) {
         return new Hit.Builder<NviCandidateIndexDocument>()
-            .id(randomString())
-            .index(NVI_CANDIDATES_INDEX)
-            .source(document)
-            .build();
+                   .id(randomString())
+                   .index(NVI_CANDIDATES_INDEX)
+                   .source(document)
+                   .build();
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
@@ -312,7 +312,6 @@ public class SearchNviCandidatesHandlerTest {
         return IntStream.range(0, number).boxed().map(i -> singleNviCandidateIndexDocument()).toList();
     }
 
-
     private URI randomSiktSubUnit() {
         return randomElement(
             List.of(
@@ -328,44 +327,46 @@ public class SearchNviCandidatesHandlerTest {
 
     private InputStream emptyRequest() throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
-            .withTopLevelCristinOrgId(randomUri())
-            .withUserName(randomString())
-            .build();
+                   .withTopLevelCristinOrgId(randomUri())
+                   .withUserName(randomString())
+                   .build();
     }
 
     private InputStream requestWithInstitutionsAndFilter(List<URI> institutions, String filter, String category,
                                                          String title)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
-            .withTopLevelCristinOrgId(randomUri())
-            .withUserName(randomString())
-            .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS, String.join(COMMA,
-                                        institutions.stream().map(URI::toString).toList()),
-                                        QUERY_PARAM_EXCLUDE_SUB_UNITS, "true",
-                                        QUERY_PARAM_FILTER, filter,
-                                        QUERY_PARAM_CATEGORY, category,
-                                        QUERY_PARAM_TITLE, title))
-            .build();
+                   .withTopLevelCristinOrgId(randomUri())
+                   .withUserName(randomString())
+                   .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS, String.join(COMMA,
+                                                                                     institutions.stream()
+                                                                                         .map(URI::toString)
+                                                                                         .toList()),
+                                               QUERY_PARAM_EXCLUDE_SUB_UNITS, "true",
+                                               QUERY_PARAM_FILTER, filter,
+                                               QUERY_PARAM_CATEGORY, category,
+                                               QUERY_PARAM_TITLE, title))
+                   .build();
     }
 
     private InputStream requestWithInstitutionsAndTopLevelCristinOrgId(List<URI> institutions, URI cristinId)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
-            .withTopLevelCristinOrgId(cristinId)
-            .withUserName(randomString())
-            .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS,
-                                        String.join(",",
-                                        institutions.stream().map(URI::toString).toList()),
-                                        QUERY_PARAM_EXCLUDE_SUB_UNITS,
-                                        "true"))
-            .build();
+                   .withTopLevelCristinOrgId(cristinId)
+                   .withUserName(randomString())
+                   .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS,
+                                               String.join(",",
+                                                           institutions.stream().map(URI::toString).toList()),
+                                               QUERY_PARAM_EXCLUDE_SUB_UNITS,
+                                               "true"))
+                   .build();
     }
 
     private InputStream requestWithoutQueryParameters() throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
-            .withTopLevelCristinOrgId(randomUri())
-            .withUserName(randomString())
-            .build();
+                   .withTopLevelCristinOrgId(randomUri())
+                   .withUserName(randomString())
+                   .build();
     }
 
     public class CandidateSearchParamsAffiliationMatcher implements ArgumentMatcher<CandidateSearchParameters> {
