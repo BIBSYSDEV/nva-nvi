@@ -100,9 +100,7 @@ public class SearchNviCandidatesHandler
 
         var candidateSearchParameters = new CandidateSearchParameters(affiliations, excludeSubUnits, filter, username,
                                                                       year, category, title, contributor,
-                                                                      assignee, topLevelOrg
-            , offset,
-                                                                      size);
+                                                                      assignee, topLevelOrg, offset, size);
         return candidateSearchParameters;
     }
 

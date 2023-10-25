@@ -114,18 +114,31 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldReturnDocumentsFromIndexAccordingToGivenOffsetAndSize() throws IOException, InterruptedException {
-        addDocumentsToIndex(singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(), YEAR, randomString()),
-                            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(), YEAR, randomString()),
-                            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(), YEAR, randomString()),
-                            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(), YEAR, randomString()),
-                            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(), YEAR, randomString()),
-                            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(), YEAR, randomString()),
-                            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(), YEAR, randomString()),
-                            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(), YEAR, randomString()),
-                            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(), YEAR, randomString()),
-                            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(), YEAR, randomString()),
-                            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(), YEAR, randomString()),
-                            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(), YEAR, randomString()));
+        addDocumentsToIndex(
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(), YEAR,
+                                                        randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()));
 
         int totalNumberOfDocuments = 12;
         int offset = 10;
@@ -487,7 +500,7 @@ public class OpenSearchClientTest {
                                       List.of());
     }
 
-     private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {
+    private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {
         Arrays.stream(documents).forEach(document -> openSearchClient.addDocumentToIndex(document));
         Thread.sleep(DELAY_ON_INDEX);
     }

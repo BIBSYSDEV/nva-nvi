@@ -219,7 +219,8 @@ public class CandidateQuery {
         var contributorQuery = createContributorQuery(contributor);
         var assigneeQuery = createAssigneeQuery(assignee);
 
-        return Stream.of(institutionQuery, filterQuery, yearQuery, categoryQuery, titleQuery, contributorQuery, assigneeQuery)
+        return Stream.of(institutionQuery, filterQuery, yearQuery, categoryQuery, titleQuery, contributorQuery,
+                         assigneeQuery)
             .filter(Optional::isPresent)
             .map(Optional::get)
             .toList();

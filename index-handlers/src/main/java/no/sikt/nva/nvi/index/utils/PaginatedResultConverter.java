@@ -115,6 +115,7 @@ public final class PaginatedResultConverter {
     private static boolean isNotNullContributor(String contributor) {
         return contributor != null;
     }
+
     private static boolean isNotNullAssignee(String assignee) {
         return assignee != null;
     }

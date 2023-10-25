@@ -100,7 +100,8 @@ public final class SearchConstants {
     }
 
     private static Map<String, Property> approvalProperties() {
-        return Map.of(ID, keywordProperty(), ASSIGNEE, textPropertyWithNetsedKeyword(), APPROVAL_STATUS, keywordProperty());
+        return Map.of(ID, keywordProperty(), ASSIGNEE, textPropertyWithNetsedKeyword(),
+                      APPROVAL_STATUS, keywordProperty());
     }
 
     private static Map<String, Property> contributorsProperties() {
