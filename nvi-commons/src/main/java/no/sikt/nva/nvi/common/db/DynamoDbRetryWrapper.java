@@ -28,11 +28,11 @@ public class DynamoDbRetryWrapper {
         var requestCount = 0;
 
         while (retryNeeded) {
-            requestCount++;
-
             if (requestCount >= writeRetriesMaxCount) {
                 throw new RuntimeException("Some items were not processed and retries exhausted");
             }
+
+            requestCount++;
 
             var response = client.batchWriteItem(batchWriteRequest);
 
