@@ -299,7 +299,8 @@ public class OpenSearchClientTest {
                                                                    randomString());
         addDocumentsToIndex(document,
                             singleNviCandidateIndexDocumentWithCustomer(customer.toString(), randomString(),
-                                                                        randomString(), randomString(), randomString()));
+                                                                        randomString(), randomString(),
+                                                                        randomString()));
 
         var searchParameters = defaultSearchParameters().withAffiliations(List.of(customer)).withYear(year).build();
 
