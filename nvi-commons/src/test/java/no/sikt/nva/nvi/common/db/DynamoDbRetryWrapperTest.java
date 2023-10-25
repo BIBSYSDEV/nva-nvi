@@ -20,7 +20,7 @@ import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
-class DynamoDbRetryTest {
+class DynamoDbRetryWrapperTest {
 
     private static final int WRITE_RETRIES_MAX_COUNT = 5;
     private static final long INITIAL_RETRY_WAIT_TIME_MS = 10;
