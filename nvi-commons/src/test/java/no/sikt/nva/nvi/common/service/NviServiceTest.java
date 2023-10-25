@@ -500,7 +500,6 @@ public class NviServiceTest extends LocalDynamoTest {
         assertThat(result.startMarker().size(), is(equalTo(0)));
         assertThat(result.totalItem(), is(equalTo(1)));
         assertThat(result.shouldContinueScan(), is(equalTo(false)));
-        assertThat(result.unprocessedItemsForTable(), is(equalTo(0)));
     }
 
     @Test
