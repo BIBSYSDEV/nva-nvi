@@ -86,7 +86,7 @@ public class DynamoDbRetryWrapper {
 
     public static final class Builder {
 
-        private static final int WRITE_RETRIES_MAX_COUNT_DEFAULT = 5;
+        private static final int WRITE_RETRIES_MAX_COUNT_DEFAULT = 3;
         private static final long INITIAL_RETRY_WAIT_TIME_MS_DEFAULT = 500L;
         private DynamoDbClient builderDynamoDbClient;
         private int builderWriteRetriesMaxCount = WRITE_RETRIES_MAX_COUNT_DEFAULT;

@@ -44,6 +44,7 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 public class CandidateRepository extends DynamoRepository {
 
     private static final int BATCH_SIZE = 25;
+    private static final long INITIAL_RETRY_WAIT_TIME_MS = 1000;
     private static final String PRIMARY_KEY_HASH_KEY = "PrimaryKeyHashKey";
     private static final String CANDIDATE_UNIQUENESS_ENTRY = "CandidateUniquenessEntry";
     protected final DynamoDbTable<CandidateDao> candidateTable;
@@ -64,6 +65,7 @@ public class CandidateRepository extends DynamoRepository {
         this.periodTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(NviPeriodDao.class));
         this.dynamoDbRetryClient = DynamoDbRetryWrapper.builder()
                                        .dynamoDbClient(defaultClient)
+                                       .initialRetryWaitTimeMs(INITIAL_RETRY_WAIT_TIME_MS)
                                        .tableName(NVI_TABLE_NAME)
                                        .build();
     }
