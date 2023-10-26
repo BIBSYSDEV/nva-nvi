@@ -7,8 +7,6 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_HASH_KE
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_RANGE_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.ArrayList;
@@ -87,27 +85,30 @@ public record CandidateDao(
     }
 
     public enum DbLevel {
-        UNASSIGNED("Unassigned"), LEVEL_ONE("1"), LEVEL_TWO("2"), NON_CANDIDATE("NonCandidateLevel");
+        LEVEL_ONE(List.of("1", "LevelOne")), LEVEL_TWO(List.of("2", "LevelTwo")), NON_CANDIDATE(
+            List.of("NonCandidateLevel"));
 
-        @JsonValue
-        private final String value;
+        private final List<String> values;
 
-        DbLevel(String value) {
+        DbLevel(List<String> values) {
 
-            this.value = value;
+            this.values = values;
         }
 
-        @JsonCreator
-        public static DbLevel parse(String value) {
-            return Arrays
-                       .stream(DbLevel.values())
-                       .filter(level -> level.getValue().equalsIgnoreCase(value))
+        public static DbLevel parse(String string) {
+            return Arrays.stream(DbLevel.values())
+                       .filter(level -> level.getValues().contains(string))
                        .findFirst()
                        .orElse(NON_CANDIDATE);
         }
 
-        public String getValue() {
-            return value;
+        @Deprecated
+        public String getVersionOneValue() {
+            return values.get(0);
+        }
+
+        public List<String> getValues() {
+            return values;
         }
     }
 

@@ -287,7 +287,7 @@ public final class CandidateBO {
     }
 
     private static boolean levelIsUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(request.level(), existingCandidateDao.candidate().level().getValue());
+        return !Objects.equals(DbLevel.parse(request.level()), existingCandidateDao.candidate().level());
     }
 
     private static CandidateBO createCandidate(UpsertCandidateRequest request, CandidateRepository repository,

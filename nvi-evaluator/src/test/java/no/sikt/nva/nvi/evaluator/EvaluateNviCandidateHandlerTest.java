@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.evaluator.model.CandidateEvaluatedMessage;
@@ -56,6 +57,9 @@ import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
 class EvaluateNviCandidateHandlerTest {
@@ -94,6 +98,10 @@ class EvaluateNviCandidateHandlerTest {
     private FakeSqsClient sqsClient;
     private ByteArrayOutputStream output;
     private AuthorizedBackendUriRetriever uriRetriever;
+
+    public static Stream<Arguments> levelValues() {
+        return Stream.of(Arguments.of("1", "LevelOne"), Arguments.of("2", "LevelTwo"));
+    }
 
     @BeforeEach
     void setUp() {
@@ -323,6 +331,22 @@ class EvaluateNviCandidateHandlerTest {
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
         assertThat(message.messageBody(), containsString(fileUri.toString()));
+    }
+
+    @ParameterizedTest
+    @MethodSource("levelValues")
+    void shouldCreateCandidateWhenLevelValueHasVersionTwoValues(String versionOneValue, String versionTwoValue)
+        throws IOException {
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+        var candidateWithNewLevel = IoUtils.stringFromResources(Path.of(ACADEMIC_ARTICLE_PATH))
+                                        .replace("\"level\": " + "\"" + versionOneValue + "\"",
+                                                 "\"level\": " + "\"" + versionTwoValue + "\"");
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
+                                          IoUtils.stringToStream(candidateWithNewLevel));
+
+        handler.handleRequest(createS3Event(fileUri), output, context);
+        var candidate = getMessageBody();
+        assertThat(candidate.candidate().getClass(), is(equalTo(NviCandidate.class)));
     }
 
     @Test

@@ -15,7 +15,7 @@ ASK WHERE {
   {
       SELECT ?level WHERE {
         VALUES ?channelType { nva:Publisher  nva:Series   nva:Journal }
-        VALUES ?rawLevel {"0" "1" "2"}
+        VALUES ?rawLevel {"0" "1" "2" "Unassigned" "LevelZero" "LevelOne" "LevelTwo"}
         ?a a ?channelType ;
            nva:level ?rawLevel .
         OPTIONAL { ?b a nva:Series ;
@@ -23,7 +23,7 @@ ASK WHERE {
         BIND(IF(BOUND(?seriesLevel), ?seriesLevel, ?rawLevel) AS ?level)
       }
     }
-  VALUES ?validLevel {"1" "2"}
+  VALUES ?validLevel {"1" "2" "LevelOne" "LevelTwo"}
   FILTER(?level = ?validLevel)
   FILTER(xsd:integer(?year) > 2021)
 }

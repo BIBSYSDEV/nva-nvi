@@ -457,26 +457,6 @@ public class OpenSearchClientTest {
         return new Approval(affiliation, Map.of(), randomStatus(), assignee);
     }
 
-
- /*   private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomerAndYear(String customer,
-                                                                                                String year) {
-        var approval = new Approval(customer, Map.of(), randomStatus(), null);
-        return new NviCandidateIndexDocument(randomUri(), randomString(),
-                                             randomPublicationDetailsWithYearAndContributor(year, customer),
-                                             List.of(approval), 1, TestUtils.randomBigDecimal());
-    }
-
-    private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomerTitleAndContributor(
-        String customer,
-        String title,
-        String contributor) {
-        var approval = new Approval(customer, Map.of(), randomStatus(), null);
-        return new NviCandidateIndexDocument(randomUri(), randomString(),
-                                             randomPublicationDetailsWithCustomerTitleAndContributor(title, customer,
-                                                                                                     contributor),
-                                             List.of(approval), 1, TestUtils.randomBigDecimal());
-    }*/
-
     private static List<Approval> randomApprovalList() {
         return IntStream.range(0, 5).boxed().map(i -> randomApproval()).toList();
     }
@@ -497,26 +477,6 @@ public class OpenSearchClientTest {
                                       PublicationDate.builder().withYear(randomString()).build(),
                                       List.of());
     }
-
-  /*  private static PublicationDetails randomPublicationDetailsWithYearAndContributor(String year, String
-  affiliation) {
-        return new PublicationDetails(randomString(), randomString(), randomString(),
-                                      PublicationDate.builder().withYear(year).build(),
-                                      List.of(new Contributor.Builder().withRole("Creator")
-                                                  .withAffiliations(List.of(
-                                                      new Affiliation(affiliation, List.of()))).build()));
-    }
-
-    private static PublicationDetails randomPublicationDetailsWithCustomerTitleAndContributor(String title,
-                                                                                              String affiliation,
-                                                                                              String name) {
-        return new PublicationDetails(randomString(), randomString(), title,
-                                      PublicationDate.builder().withYear(YEAR).build(),
-                                      List.of(new Contributor.Builder().withRole("Creator")
-                                                  .withName(name)
-                                                  .withAffiliations(List.of(
-                                                      new Affiliation(affiliation, List.of()))).build()));
-    }*/
 
     private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {
         Arrays.stream(documents).forEach(document -> openSearchClient.addDocumentToIndex(document));

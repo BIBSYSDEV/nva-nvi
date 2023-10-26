@@ -39,7 +39,6 @@ dependencies {
         exclude group: 'com.amazonaws', module: 'aws-java-sdk-core'
     }
 
-
     implementation libs.bundles.jacksonjr
     implementation libs.bundles.logging
 }
@@ -54,6 +53,6 @@ test {
     environment("ALLOWED_ORIGIN", "*")
     environment("API_HOST", "example.com")
     environment("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
-    environment "BACKEND_CLIENT_AUTH_URL", "My url"
-    environment "BACKEND_CLIENT_SECRET_NAME", "My secret name"
+    environment("BACKEND_CLIENT_AUTH_URL", "My url")
+    environment("BACKEND_CLIENT_SECRET_NAME", "My secret name")
 }

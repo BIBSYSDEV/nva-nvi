@@ -56,6 +56,9 @@ Parameters:
   UpdateIndexDLQName:
     Type: String
     Default: UpdateIndexDLQ
+  UpsertCandidateDLQName:
+    Type: String
+    Default: UpsertCandidateDLQ
   SearchInfrastructureApiHost:
     Type: String
     Description: Host of external search infrastructure API (SWS).
@@ -105,6 +108,11 @@ Resources:
     Properties:
       QueueName: !Ref UpdateIndexDLQName
       MessageRetentionPeriod: 43200
+  UpsertCandidateDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref UpsertCandidateDLQName
+      MessageRetentionPeriod: 43200
 
   #============================= Permissions =======================================================
   NvaNviRole:
@@ -145,6 +153,7 @@ Resources:
                   - !GetAtt NewCandidateDLQ.Arn
                   - !GetAtt BatchScanDLQ.Arn
                   - !GetAtt UpdateIndexDLQ.Arn
+                  - !GetAtt UpsertCandidateDLQ.Arn
         - PolicyName: writeLog
           PolicyDocument:
             Version: 2012-10-17
@@ -321,6 +330,9 @@ Resources:
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
+      Environment:
+        Variables:
+          UPSERT_CANDIDATE_DLQ_QUEUE_URL: !Ref UpsertCandidateDLQ
       Events:
         SqsEvent:
           Type: SQS
