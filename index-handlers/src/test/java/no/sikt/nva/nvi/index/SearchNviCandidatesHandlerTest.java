@@ -316,7 +316,6 @@ public class SearchNviCandidatesHandlerTest {
         return IntStream.range(0, number).boxed().map(i -> singleNviCandidateIndexDocument()).toList();
     }
 
-
     private URI randomSiktSubUnit() {
         return randomElement(
             List.of(
@@ -390,4 +389,3 @@ public class SearchNviCandidatesHandlerTest {
         }
     }
 }
-

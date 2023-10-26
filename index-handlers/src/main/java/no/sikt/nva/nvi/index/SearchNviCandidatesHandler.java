@@ -165,18 +165,15 @@ public class SearchNviCandidatesHandler
     }
 
     private static String extractQueryParamCategoryOrDefault(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameters()
-            .getOrDefault(QUERY_PARAM_CATEGORY, null);
+        return requestInfo.getQueryParameters().get(QUERY_PARAM_CATEGORY);
     }
 
     private static String extractQueryParamTitle(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameters()
-            .getOrDefault(QUERY_PARAM_TITLE, null);
+        return requestInfo.getQueryParameters().get(QUERY_PARAM_TITLE);
     }
 
     private static String extractQueryParamSearchTermOrDefault(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameters()
-            .getOrDefault(QUERY_PARAM_SEARCH_TERM, null);
+        return requestInfo.getQueryParameters().get(QUERY_PARAM_SEARCH_TERM);
     }
 
     @JacocoGenerated

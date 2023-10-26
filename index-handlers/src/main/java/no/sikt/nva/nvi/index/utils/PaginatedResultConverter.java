@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_SEARCH_TERM;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_CATEGORY;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_EXCLUDE_SUB_UNITS;
@@ -73,7 +74,7 @@ public final class PaginatedResultConverter {
                                                           boolean excludeSubUnits,
                                                           String filter, String category, String title) {
         var queryParams = new HashMap();
-        if (isNotNullSearchTerm(searchTerm)) {
+        if (nonNull(searchTerm)) {
             queryParams.put(QUERY_PARAM_SEARCH_TERM, searchTerm);
         }
         if (Objects.nonNull(affiliations)) {
@@ -86,10 +87,10 @@ public final class PaginatedResultConverter {
         if (isNotEmpty(filter)) {
             queryParams.put(QUERY_PARAM_FILTER, filter);
         }
-        if (isNotNullCategory(category)) {
+        if (nonNull(category)) {
             queryParams.put(QUERY_PARAM_CATEGORY, category);
         }
-        if (isNotNullTitle(title)) {
+        if (nonNull(title)) {
             queryParams.put(QUERY_PARAM_TITLE, title);
         }
         return queryParams;
@@ -97,18 +98,6 @@ public final class PaginatedResultConverter {
 
     private static boolean isNotEmpty(String filter) {
         return !filter.isEmpty();
-    }
-
-    private static boolean isNotNullCategory(String category) {
-        return category != null;
-    }
-
-    private static boolean isNotNullTitle(String title) {
-        return title != null;
-    }
-
-    private static boolean isNotNullSearchTerm(String searchTerm) {
-        return searchTerm != null;
     }
 
     private static int extractTotalNumberOfHits(SearchResponse<NviCandidateIndexDocument> searchResponse) {
