@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_ASSIGNEE;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_CATEGORY;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_CONTRIBUTOR;
@@ -75,7 +76,7 @@ public final class PaginatedResultConverter {
                                                           String filter, String category, String title,
                                                           String contributor, String assignee) {
         var queryParams = new HashMap();
-        if (Objects.nonNull(affiliations)) {
+        if (nonNull(affiliations)) {
             queryParams.put(QUERY_PARAM_AFFILIATIONS, affiliations.stream().map(URI::toString)
                 .collect(Collectors.joining(COMMA)));
         }
@@ -85,16 +86,16 @@ public final class PaginatedResultConverter {
         if (isNotEmpty(filter)) {
             queryParams.put(QUERY_PARAM_FILTER, filter);
         }
-        if (isNotNullCategory(category)) {
+        if (nonNull(category)) {
             queryParams.put(QUERY_PARAM_CATEGORY, category);
         }
-        if (isNotNullTitle(title)) {
+        if (nonNull(title)) {
             queryParams.put(QUERY_PARAM_TITLE, title);
         }
-        if (isNotNullContributor(contributor)) {
+        if (nonNull(contributor)) {
             queryParams.put(QUERY_PARAM_CONTRIBUTOR, contributor);
         }
-        if (isNotNullAssignee(assignee)) {
+        if (nonNull(assignee)) {
             queryParams.put(QUERY_PARAM_ASSIGNEE, assignee);
         }
         return queryParams;
@@ -102,22 +103,6 @@ public final class PaginatedResultConverter {
 
     private static boolean isNotEmpty(String filter) {
         return !filter.isEmpty();
-    }
-
-    private static boolean isNotNullCategory(String category) {
-        return category != null;
-    }
-
-    private static boolean isNotNullTitle(String title) {
-        return title != null;
-    }
-
-    private static boolean isNotNullContributor(String contributor) {
-        return contributor != null;
-    }
-
-    private static boolean isNotNullAssignee(String assignee) {
-        return assignee != null;
     }
 
     private static int extractTotalNumberOfHits(SearchResponse<NviCandidateIndexDocument> searchResponse) {

@@ -318,7 +318,8 @@ public class OpenSearchClientTest {
                                                                    randomString(), YEAR, title);
         addDocumentsToIndex(document,
                             singleNviCandidateIndexDocumentWithCustomer(customer.toString(), randomString(),
-                                                                        randomString(), randomString(), randomString()));
+                                                                        randomString(), randomString(),
+                                                                        randomString()));
 
         var searchParameters =
             defaultSearchParameters().withAffiliations(List.of(customer))
@@ -353,7 +354,6 @@ public class OpenSearchClientTest {
 
         assertThat(searchResponse.hits().hits(), hasSize(1));
     }
-
 
     @Test
     void shouldReturnSingleDocumentWhenFilteringByAssignee() throws InterruptedException, IOException {
