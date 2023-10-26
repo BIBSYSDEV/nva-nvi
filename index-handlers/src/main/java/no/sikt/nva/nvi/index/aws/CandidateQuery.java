@@ -275,11 +275,12 @@ public class CandidateQuery {
     }
 
     private Optional<Query> createTitleQuery(String title) {
-        return nonNull(title) ? Optional.of(new MatchPhraseQuery.Builder().field(jsonPathOf(PUBLICATION_DETAILS,
-                                                                                            TITLE))
-                                                .query(title)
-                                                .build()
-                                                ._toQuery()) : Optional.empty();
+        return Optional.ofNullable(title)
+            .map(t -> new MatchPhraseQuery.Builder()
+                .field(jsonPathOf(PUBLICATION_DETAILS, TITLE))
+                .query(t)
+                .build()
+                ._toQuery());
     }
 
     private Optional<Query> createContributorQuery(String contributor) {
@@ -293,9 +294,9 @@ public class CandidateQuery {
 
     private Optional<Query> createAssigneeQuery(String assignee) {
         return Optional.ofNullable(assignee)
-            .map(c -> new MatchPhraseQuery.Builder()
+            .map(a -> new MatchPhraseQuery.Builder()
                 .field(jsonPathOf(APPROVALS, ASSIGNEE))
-                .query(c)
+                .query(a)
                 .build()
                 ._toQuery());
     }
