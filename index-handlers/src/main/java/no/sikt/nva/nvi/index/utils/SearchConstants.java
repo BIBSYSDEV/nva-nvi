@@ -54,6 +54,7 @@ public final class SearchConstants {
         var filterType = QueryFilterType.parse(params.filter())
             .orElseThrow(() -> new IllegalStateException("unknown filter " + params.filter()));
         return new CandidateQuery.Builder()
+            .withSearchTerm(params.searchTerm())
             .withInstitutions(params.affiliations())
             .withExcludeSubUnits(params.excludeSubUnits())
             .withFilter(filterType)

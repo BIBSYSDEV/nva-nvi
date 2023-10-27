@@ -5,7 +5,8 @@ import java.net.URI;
 import java.util.List;
 import nva.commons.core.JacocoGenerated;
 
-public record CandidateSearchParameters(List<URI> affiliations, boolean excludeSubUnits, String filter, String username,
+public record CandidateSearchParameters(String searchTerm, List<URI> affiliations, boolean excludeSubUnits,
+                                        String filter, String username,
                                         String year, String category, String title, String contributor,
                                         String assignee, URI customer,
                                         int offset,
@@ -21,6 +22,7 @@ public record CandidateSearchParameters(List<URI> affiliations, boolean excludeS
         private boolean excludeSubUnits;
         private String filter = EMPTY_STRING;
         private String username;
+        private String searchTerm;
         private String year;
         private String category;
         private String title;
@@ -50,6 +52,11 @@ public record CandidateSearchParameters(List<URI> affiliations, boolean excludeS
 
         public Builder withUsername(String username) {
             this.username = username;
+            return this;
+        }
+
+        public Builder withSearchTerm(String searchTerm) {
+            this.searchTerm = searchTerm;
             return this;
         }
 
@@ -94,7 +101,8 @@ public record CandidateSearchParameters(List<URI> affiliations, boolean excludeS
         }
 
         public CandidateSearchParameters build() {
-            return new CandidateSearchParameters(affiliations,
+            return new CandidateSearchParameters(searchTerm,
+                                                 affiliations,
                                                  excludeSubUnits,
                                                  filter,
                                                  username,

@@ -43,6 +43,7 @@ public class SearchNviCandidatesHandler
     private static final String QUERY_OFFSET_PARAM = "offset";
     private static final int DEFAULT_QUERY_SIZE = 10;
     private static final int DEFAULT_OFFSET_SIZE = 0;
+    public static final String QUERY_PARAM_SEARCH_TERM = "query";
     public static final String QUERY_PARAM_YEAR = "year";
     public static final String QUERY_PARAM_CATEGORY = "category";
     public static final String QUERY_PARAM_CONTRIBUTOR = "contributor";
@@ -90,6 +91,7 @@ public class SearchNviCandidatesHandler
         var affiliations = Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
             .orElse(List.of(topLevelOrg));
         var username = requestInfo.getUserName();
+        var searchTerm = extractQueryParamSearchTermOrDefault(requestInfo);
         var year = extractQueryParamPublicationDateOrDefault(requestInfo);
         var category = extractQueryParamCategoryOrDefault(requestInfo);
         var title = extractQueryParamTitle(requestInfo);
@@ -98,7 +100,8 @@ public class SearchNviCandidatesHandler
 
         assertUserIsAllowedToSearchAffiliations(affiliations, topLevelOrg);
 
-        var candidateSearchParameters = new CandidateSearchParameters(affiliations, excludeSubUnits, filter, username,
+        var candidateSearchParameters = new CandidateSearchParameters(searchTerm, affiliations, excludeSubUnits,
+                                                                      filter, username,
                                                                       year, category, title, contributor,
                                                                       assignee, topLevelOrg, offset, size);
         return candidateSearchParameters;
@@ -164,6 +167,10 @@ public class SearchNviCandidatesHandler
     private static String extractQueryParamFilterOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
             .getOrDefault(QUERY_PARAM_FILTER, DEFAULT_STRING);
+    }
+
+    private static String extractQueryParamSearchTermOrDefault(RequestInfo requestInfo) {
+        return requestInfo.getQueryParameters().get(QUERY_PARAM_SEARCH_TERM);
     }
 
     private static String extractQueryParamCategoryOrDefault(RequestInfo requestInfo) {

@@ -35,6 +35,7 @@ import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ExistsQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchPhraseQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
+import org.opensearch.client.opensearch._types.query_dsl.MultiMatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
@@ -53,32 +54,31 @@ public class CandidateQuery {
     private final QueryFilterType filter;
     private final String username;
     private final String customer;
+    private final String searchTerm;
     private final String year;
     private final String category;
     private final String title;
     private final String contributor;
     private final String assignee;
 
-    public CandidateQuery(List<URI> affiliations,
-                          boolean excludeSubUnits,
-                          QueryFilterType filter,
-                          String username,
-                          String customer,
-                          String year,
-                          String category,
-                          String title,
-                          String contributor,
-                          String assignee) {
-        this.affiliations = affiliations.stream().map(URI::toString).toList();
-        this.excludeSubUnits = excludeSubUnits;
-        this.filter = filter;
-        this.username = username;
-        this.customer = customer;
-        this.year = year;
-        this.category = category;
-        this.title = title;
-        this.contributor = contributor;
-        this.assignee = assignee;
+    public CandidateQuery(CandidateQueryParameters params) {
+        this.searchTerm = params.searchTerm;
+        this.affiliations = params.affiliations.stream().map(URI::toString).toList();
+        this.excludeSubUnits = params.excludeSubUnits;
+        this.filter = params.filter;
+        this.username = params.username;
+        this.customer = params.customer;
+        this.year = params.year;
+        this.category = params.category;
+        this.title = params.title;
+        this.contributor = params.contributor;
+        this.assignee = params.assignee;
+    }
+
+    public static Query matchAtLeastOne(Query... queries) {
+        return new Query.Builder()
+            .bool(new BoolQuery.Builder().should(Arrays.stream(queries).toList()).build())
+            .build();
     }
 
     public Query toQuery() {
@@ -174,7 +174,6 @@ public class CandidateQuery {
     private static Query yearQuery(String year) {
         return termQuery(nonNull(year) ? year : String.valueOf(ZonedDateTime.now().getYear()),
                          jsonPathOf(PUBLICATION_DETAILS, PUBLICATION_DATE, YEAR, KEYWORD));
-
     }
 
     private static Query categoryQuery(String category) {
@@ -204,22 +203,18 @@ public class CandidateQuery {
             .build()._toQuery();
     }
 
-    public static Query matchAtLeastOne(Query... queries) {
-        return new Query.Builder()
-            .bool(new BoolQuery.Builder().should(Arrays.stream(queries).toList()).build())
-            .build();
-    }
-
     private List<Query> specificMatch() {
         var institutionQuery = createInstitutionQuery();
         var filterQuery = constructQueryWithFilter();
+        var searchTermQuery = createSearchTermQuery(searchTerm);
         var yearQuery = createYearQuery(year);
         var categoryQuery = createCategoryQuery(category);
         var titleQuery = createTitleQuery(title);
         var contributorQuery = createContributorQuery(contributor);
         var assigneeQuery = createAssigneeQuery(assignee);
 
-        return Stream.of(institutionQuery, filterQuery, yearQuery, categoryQuery, titleQuery, contributorQuery,
+        return Stream.of(searchTermQuery, institutionQuery, filterQuery, yearQuery, categoryQuery, titleQuery,
+                         contributorQuery,
                          assigneeQuery)
             .filter(Optional::isPresent)
             .map(Optional::get)
@@ -264,14 +259,17 @@ public class CandidateQuery {
                    : Optional.of(contributorQueryIncludingSubUnits(affiliations));
     }
 
+    private Optional<Query> createSearchTermQuery(String searchTerm) {
+        return nonNull(searchTerm) ? Optional.of(new MultiMatchQuery.Builder().query(searchTerm).build()._toQuery())
+                   : Optional.empty();
+    }
+
     private Optional<Query> createYearQuery(String year) {
         return nonNull(year) ? Optional.of(yearQuery(year)) : Optional.empty();
-
     }
 
     private Optional<Query> createCategoryQuery(String category) {
         return nonNull(category) ? Optional.of(categoryQuery(category)) : Optional.empty();
-
     }
 
     private Optional<Query> createTitleQuery(String title) {
@@ -340,6 +338,7 @@ public class CandidateQuery {
         private QueryFilterType filter;
         private String username;
         private String customer;
+        private String searchTerm;
         private String year;
         private String category;
         private String title;
@@ -375,6 +374,11 @@ public class CandidateQuery {
             return this;
         }
 
+        public Builder withSearchTerm(String searchTerm) {
+            this.searchTerm = searchTerm;
+            return this;
+        }
+
         public Builder withYear(String year) {
             this.year = year;
             return this;
@@ -401,8 +405,36 @@ public class CandidateQuery {
         }
 
         public CandidateQuery build() {
-            return new CandidateQuery(institutions, excludeSubUnits, filter, username, customer, year, category,
-                                      title, contributor, assignee);
+            CandidateQueryParameters params = new CandidateQueryParameters();
+
+            params.searchTerm = this.searchTerm;
+            params.affiliations = this.institutions;
+            params.excludeSubUnits = this.excludeSubUnits;
+            params.filter = this.filter;
+            params.username = this.username;
+            params.customer = this.customer;
+            params.year = this.year;
+            params.category = this.category;
+            params.title = this.title;
+            params.contributor = this.contributor;
+            params.assignee = this.assignee;
+
+            return new CandidateQuery(params);
         }
+    }
+
+    public static class CandidateQueryParameters {
+
+        public String searchTerm;
+        public List<URI> affiliations;
+        public boolean excludeSubUnits;
+        public QueryFilterType filter;
+        public String username;
+        public String customer;
+        public String year;
+        public String category;
+        public String title;
+        public String contributor;
+        public String assignee;
     }
 }

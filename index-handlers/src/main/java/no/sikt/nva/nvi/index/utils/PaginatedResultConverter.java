@@ -1,12 +1,13 @@
 package no.sikt.nva.nvi.index.utils;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_AFFILIATIONS;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_ASSIGNEE;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_CATEGORY;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_CONTRIBUTOR;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_FILTER;
-import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_AFFILIATIONS;
+import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_SEARCH_TERM;
 import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_TITLE;
 import static nva.commons.apigateway.RestRequestHandler.COMMA;
 import static nva.commons.core.attempt.Try.attempt;
@@ -17,7 +18,6 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
@@ -59,7 +59,8 @@ public final class PaginatedResultConverter {
             candidateSearchParameters.size(),
             extractTotalNumberOfHits(searchResponse),
             extractsHits(searchResponse),
-            getQueryParameters(candidateSearchParameters.affiliations(),
+            getQueryParameters(candidateSearchParameters.searchTerm(),
+                               candidateSearchParameters.affiliations(),
                                candidateSearchParameters.excludeSubUnits(),
                                candidateSearchParameters.filter(),
                                candidateSearchParameters.category(),
@@ -72,33 +73,43 @@ public final class PaginatedResultConverter {
         return paginatedSearchResult;
     }
 
-    private static Map<String, String> getQueryParameters(List<URI> affiliations, boolean excludeSubUnits,
-                                                          String filter, String category, String title,
-                                                          String contributor, String assignee) {
-        var queryParams = new HashMap();
-        if (nonNull(affiliations)) {
-            queryParams.put(QUERY_PARAM_AFFILIATIONS, affiliations.stream().map(URI::toString)
-                .collect(Collectors.joining(COMMA)));
-        }
-        if (excludeSubUnits) {
-            queryParams.put(QUERY_PARAM_EXCLUDE_SUB_UNITS, String.valueOf(true));
-        }
-        if (isNotEmpty(filter)) {
-            queryParams.put(QUERY_PARAM_FILTER, filter);
-        }
-        if (nonNull(category)) {
-            queryParams.put(QUERY_PARAM_CATEGORY, category);
-        }
-        if (nonNull(title)) {
-            queryParams.put(QUERY_PARAM_TITLE, title);
-        }
-        if (nonNull(contributor)) {
-            queryParams.put(QUERY_PARAM_CONTRIBUTOR, contributor);
-        }
-        if (nonNull(assignee)) {
-            queryParams.put(QUERY_PARAM_ASSIGNEE, assignee);
-        }
+    private static Map<String, String> getQueryParameters(String searchTerm, List<URI> affiliations,
+                                                          boolean excludeSubUnits, String filter, String category,
+                                                          String title, String contributor, String assignee) {
+        var queryParams = new HashMap<String, String>();
+        putIfValueNotNull(queryParams, QUERY_PARAM_SEARCH_TERM, searchTerm);
+        putAffiliationsIfNotNull(queryParams, QUERY_PARAM_AFFILIATIONS, affiliations);
+        putIfTrue(queryParams, QUERY_PARAM_EXCLUDE_SUB_UNITS, excludeSubUnits);
+        putIfValueNotEmpty(queryParams, QUERY_PARAM_FILTER, filter);
+        putIfValueNotNull(queryParams, QUERY_PARAM_CATEGORY, category);
+        putIfValueNotNull(queryParams, QUERY_PARAM_TITLE, title);
+        putIfValueNotNull(queryParams, QUERY_PARAM_CONTRIBUTOR, contributor);
+        putIfValueNotNull(queryParams, QUERY_PARAM_ASSIGNEE, assignee);
         return queryParams;
+    }
+
+    private static void putIfValueNotNull(Map<String, String> map, String key, String value) {
+        if (nonNull(value)) {
+            map.put(key, value);
+        }
+    }
+
+    private static void putAffiliationsIfNotNull(Map<String, String> map, String key, List<URI> affiliations) {
+        if (nonNull(affiliations)) {
+            map.put(key, affiliations.stream().map(URI::toString).collect(Collectors.joining(COMMA)));
+        }
+    }
+
+    private static void putIfTrue(Map<String, String> map, String key, boolean condition) {
+        if (condition) {
+            map.put(key, String.valueOf(true));
+        }
+    }
+
+    private static void putIfValueNotEmpty(Map<String, String> map, String key, String value) {
+        if (isNotEmpty(value)) {
+            map.put(key, value);
+        }
     }
 
     private static boolean isNotEmpty(String filter) {

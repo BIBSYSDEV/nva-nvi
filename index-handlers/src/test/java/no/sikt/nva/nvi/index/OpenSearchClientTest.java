@@ -291,6 +291,28 @@ public class OpenSearchClientTest {
     }
 
     @Test
+    void shouldReturnSingleDocumentWhenFilteringBySearchTerm() throws InterruptedException, IOException {
+        var customer = randomUri();
+        var searchTerm = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
+        var document = singleNviCandidateIndexDocumentWithCustomer(customer.toString(),
+                                                                   searchTerm, randomString(),
+                                                                   YEAR, randomString());
+        addDocumentsToIndex(document, singleNviCandidateIndexDocumentWithCustomer(
+            customer.toString(), randomString(), randomString(), randomString(), randomString()));
+
+        var searchParameters =
+            defaultSearchParameters().withAffiliations(List.of(customer))
+                .withSearchTerm(getRandomWord(searchTerm))
+                .withYear(YEAR)
+                .build();
+
+        var searchResponse =
+            openSearchClient.search(searchParameters);
+
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+    }
+
+    @Test
     void shouldReturnSingleDocumentWhenFilteringByYear() throws InterruptedException, IOException {
         var customer = randomUri();
         var year = randomString();
@@ -338,7 +360,7 @@ public class OpenSearchClientTest {
         var customer = randomUri();
         var contributor = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
         var document = singleNviCandidateIndexDocumentWithCustomer(customer.toString(),
-                                                                                       contributor, randomString(),
+                                                                   contributor, randomString(),
                                                                    YEAR, randomString());
         addDocumentsToIndex(document, singleNviCandidateIndexDocumentWithCustomer(
             customer.toString(), randomString(), randomString(), randomString(), randomString()));
@@ -538,8 +560,8 @@ public class OpenSearchClientTest {
 
     private static CandidateSearchParameters.Builder defaultSearchParameters() {
         return CandidateSearchParameters.builder()
-                   .withAffiliations(List.of())
-                   .withCustomer(CUSTOMER).withUsername(USERNAME).withYear(YEAR);
+            .withAffiliations(List.of())
+            .withCustomer(CUSTOMER).withUsername(USERNAME).withYear(YEAR);
     }
 
     private static String getRandomWord(String str) {
