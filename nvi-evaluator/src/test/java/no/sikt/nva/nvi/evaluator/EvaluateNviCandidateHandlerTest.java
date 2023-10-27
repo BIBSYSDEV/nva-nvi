@@ -340,7 +340,7 @@ class EvaluateNviCandidateHandlerTest {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var candidateWithNewLevel = IoUtils.stringFromResources(Path.of(ACADEMIC_ARTICLE_PATH))
                                         .replace("\"level\": " + "\"" + versionOneValue + "\"",
-                                                 "\"level\": " + "\"" + versionTwoValue + "\"");
+                                                 "\"scientificValue\": " + "\"" + versionTwoValue + "\"");
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
                                           IoUtils.stringToStream(candidateWithNewLevel));
 
