@@ -291,6 +291,28 @@ public class OpenSearchClientTest {
     }
 
     @Test
+    void shouldReturnSingleDocumentWhenFilteringBySearchTerm() throws InterruptedException, IOException {
+        var customer = randomUri();
+        var searchTerm = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
+        var document = singleNviCandidateIndexDocumentWithCustomer(customer.toString(),
+                                                                   searchTerm, randomString(),
+                                                                   YEAR, randomString());
+        addDocumentsToIndex(document, singleNviCandidateIndexDocumentWithCustomer(
+            customer.toString(), randomString(), randomString(), randomString(), randomString()));
+
+        var searchParameters =
+            defaultSearchParameters().withAffiliations(List.of(customer))
+                .withSearchTerm(getRandomWord(searchTerm))
+                .withYear(YEAR)
+                .build();
+
+        var searchResponse =
+            openSearchClient.search(searchParameters);
+
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+    }
+
+    @Test
     void shouldReturnSingleDocumentWhenFilteringByYear() throws InterruptedException, IOException {
         var customer = randomUri();
         var year = randomString();
@@ -334,18 +356,39 @@ public class OpenSearchClientTest {
     }
 
     @Test
-    void shouldReturnSingleDocumentWhenFilteringBySearchTerm() throws InterruptedException, IOException {
+    void shouldReturnSingleDocumentWhenFilteringByContributor() throws InterruptedException, IOException {
         var customer = randomUri();
-        var searchTerm = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
+        var contributor = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
         var document = singleNviCandidateIndexDocumentWithCustomer(customer.toString(),
-                                                                   searchTerm, randomString(),
+                                                                   contributor, randomString(),
                                                                    YEAR, randomString());
         addDocumentsToIndex(document, singleNviCandidateIndexDocumentWithCustomer(
             customer.toString(), randomString(), randomString(), randomString(), randomString()));
 
         var searchParameters =
             defaultSearchParameters().withAffiliations(List.of(customer))
-                .withSearchTerm(getRandomWord(searchTerm))
+                .withContributor(getRandomWord(contributor))
+                .withYear(YEAR)
+                .build();
+
+        var searchResponse =
+            openSearchClient.search(searchParameters);
+
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+    }
+
+    @Test
+    void shouldReturnSingleDocumentWhenFilteringByAssignee() throws InterruptedException, IOException {
+        var customer = randomUri();
+        var assignee = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
+        var document = singleNviCandidateIndexDocumentWithCustomer(customer.toString(), randomString(), assignee,
+                                                                   YEAR, randomString());
+        addDocumentsToIndex(document, singleNviCandidateIndexDocumentWithCustomer(
+            customer.toString(), randomString(), randomString(), randomString(), randomString()));
+
+        var searchParameters =
+            defaultSearchParameters().withAffiliations(List.of(customer))
+                .withAssignee(getRandomWord(assignee))
                 .withYear(YEAR)
                 .build();
 
@@ -456,6 +499,8 @@ public class OpenSearchClientTest {
     private static Approval randomApprovalWithCustomerAndAssignee(String affiliation, String assignee) {
         return new Approval(affiliation, Map.of(), randomStatus(), assignee);
     }
+
+
 
     private static List<Approval> randomApprovalList() {
         return IntStream.range(0, 5).boxed().map(i -> randomApproval()).toList();

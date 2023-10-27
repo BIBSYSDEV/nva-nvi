@@ -12,6 +12,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.CONTRIBUTORS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ID;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.KEYWORD;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.NAME;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NUMBER_OF_APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PART_OF;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DATE;
@@ -53,10 +54,12 @@ public class CandidateQuery {
     private final QueryFilterType filter;
     private final String username;
     private final String customer;
+    private final String searchTerm;
     private final String year;
     private final String category;
     private final String title;
-    private final String searchTerm;
+    private final String contributor;
+    private final String assignee;
 
     public CandidateQuery(String searchTerm,
                           List<URI> affiliations,
@@ -66,7 +69,10 @@ public class CandidateQuery {
                           String customer,
                           String year,
                           String category,
-                          String title) {
+                          String title,
+                          String contributor,
+                          String assignee) {
+        this.searchTerm = searchTerm;
         this.affiliations = affiliations.stream().map(URI::toString).toList();
         this.excludeSubUnits = excludeSubUnits;
         this.filter = filter;
@@ -75,7 +81,8 @@ public class CandidateQuery {
         this.year = year;
         this.category = category;
         this.title = title;
-        this.searchTerm = searchTerm;
+        this.contributor = contributor;
+        this.assignee = assignee;
     }
 
     public Query toQuery() {
@@ -210,12 +217,16 @@ public class CandidateQuery {
     private List<Query> specificMatch() {
         var institutionQuery = createInstitutionQuery();
         var filterQuery = constructQueryWithFilter();
+        var searchTermQuery = createSearchTermQuery(searchTerm);
         var yearQuery = createYearQuery(year);
         var categoryQuery = createCategoryQuery(category);
         var titleQuery = createTitleQuery(title);
-        var searchTermQuery = createSearchTermQuery(searchTerm);
+        var contributorQuery = createContributorQuery(contributor);
+        var assigneeQuery = createAssigneeQuery(assignee);
 
-        return Stream.of(institutionQuery, filterQuery, yearQuery, categoryQuery, titleQuery, searchTermQuery)
+        return Stream.of(searchTermQuery, institutionQuery, filterQuery, yearQuery, categoryQuery, titleQuery,
+                         contributorQuery,
+                         assigneeQuery)
             .filter(Optional::isPresent)
             .map(Optional::get)
             .toList();
@@ -259,6 +270,11 @@ public class CandidateQuery {
                    : Optional.of(contributorQueryIncludingSubUnits(affiliations));
     }
 
+    private Optional<Query> createSearchTermQuery(String searchTerm) {
+        return nonNull(searchTerm) ? Optional.of(new MultiMatchQuery.Builder().query(searchTerm).build()._toQuery())
+                   : Optional.empty();
+    }
+
     private Optional<Query> createYearQuery(String year) {
         return nonNull(year) ? Optional.of(yearQuery(year)) : Optional.empty();
 
@@ -270,16 +286,30 @@ public class CandidateQuery {
     }
 
     private Optional<Query> createTitleQuery(String title) {
-        return nonNull(title) ? Optional.of(new MatchPhraseQuery.Builder().field(jsonPathOf(PUBLICATION_DETAILS,
-                                                                                            TITLE))
-                                                .query(title)
-                                                .build()
-                                                ._toQuery()) : Optional.empty();
+        return Optional.ofNullable(title)
+            .map(t -> new MatchPhraseQuery.Builder()
+                .field(jsonPathOf(PUBLICATION_DETAILS, TITLE))
+                .query(t)
+                .build()
+                ._toQuery());
     }
 
-    private Optional<Query> createSearchTermQuery(String searchTerm) {
-        return nonNull(searchTerm) ? Optional.of(new MultiMatchQuery.Builder().query(searchTerm).build()._toQuery())
-                   : Optional.empty();
+    private Optional<Query> createContributorQuery(String contributor) {
+        return Optional.ofNullable(contributor)
+            .map(c -> new MatchPhraseQuery.Builder()
+                .field(jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, NAME))
+                .query(c)
+                .build()
+                ._toQuery());
+    }
+
+    private Optional<Query> createAssigneeQuery(String assignee) {
+        return Optional.ofNullable(assignee)
+            .map(a -> new MatchPhraseQuery.Builder()
+                .field(jsonPathOf(APPROVALS, ASSIGNEE))
+                .query(a)
+                .build()
+                ._toQuery());
     }
 
     public enum QueryFilterType {
@@ -321,10 +351,12 @@ public class CandidateQuery {
         private QueryFilterType filter;
         private String username;
         private String customer;
+        private String searchTerm;
         private String year;
         private String category;
         private String title;
-        private String searchTerm;
+        private String contributor;
+        private String assignee;
 
         public Builder() {
             // No-args constructor.
@@ -355,6 +387,11 @@ public class CandidateQuery {
             return this;
         }
 
+        public Builder withSearchTerm(String searchTerm) {
+            this.searchTerm = searchTerm;
+            return this;
+        }
+
         public Builder withYear(String year) {
             this.year = year;
             return this;
@@ -370,14 +407,20 @@ public class CandidateQuery {
             return this;
         }
 
-        public Builder withSearchTerm(String searchTerm) {
-            this.searchTerm = searchTerm;
+        public Builder withContributor(String contributor) {
+            this.contributor = contributor;
+            return this;
+        }
+
+        public Builder withAssignee(String assignee) {
+            this.assignee = assignee;
             return this;
         }
 
         public CandidateQuery build() {
             return new CandidateQuery(searchTerm, institutions, excludeSubUnits, filter, username, customer, year,
-                                      category, title);
+                                      category,
+                                      title, contributor, assignee);
         }
     }
 }

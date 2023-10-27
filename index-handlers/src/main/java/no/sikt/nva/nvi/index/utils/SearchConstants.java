@@ -54,6 +54,7 @@ public final class SearchConstants {
         var filterType = QueryFilterType.parse(params.filter())
             .orElseThrow(() -> new IllegalStateException("unknown filter " + params.filter()));
         return new CandidateQuery.Builder()
+            .withSearchTerm(params.searchTerm())
             .withInstitutions(params.affiliations())
             .withExcludeSubUnits(params.excludeSubUnits())
             .withFilter(filterType)
@@ -62,7 +63,8 @@ public final class SearchConstants {
             .withYear(params.year())
             .withCategory(params.category())
             .withTitle(params.title())
-            .withSearchTerm(params.searchTerm())
+            .withContributor(params.contributor())
+            .withAssignee(params.assignee())
             .build()
             .toQuery();
     }
@@ -99,7 +101,8 @@ public final class SearchConstants {
     }
 
     private static Map<String, Property> approvalProperties() {
-        return Map.of(ID, keywordProperty(), ASSIGNEE, keywordProperty(), APPROVAL_STATUS, keywordProperty());
+        return Map.of(ID, keywordProperty(), ASSIGNEE, textPropertyWithNetsedKeyword(),
+                      APPROVAL_STATUS, keywordProperty());
     }
 
     private static Map<String, Property> contributorsProperties() {

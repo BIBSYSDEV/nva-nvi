@@ -43,9 +43,11 @@ public class SearchNviCandidatesHandler
     private static final String QUERY_OFFSET_PARAM = "offset";
     private static final int DEFAULT_QUERY_SIZE = 10;
     private static final int DEFAULT_OFFSET_SIZE = 0;
+    public static final String QUERY_PARAM_SEARCH_TERM = "query";
     public static final String QUERY_PARAM_YEAR = "year";
     public static final String QUERY_PARAM_CATEGORY = "category";
-    public static final String QUERY_PARAM_SEARCH_TERM = "query";
+    public static final String QUERY_PARAM_CONTRIBUTOR = "contributor";
+    public static final String QUERY_PARAM_ASSIGNEE = "assignee";
     public static final String USER_IS_NOT_ALLOWED_TO_SEARCH_FOR_AFFILIATIONS_S
         = "User is not allowed to search for affiliations: %s";
     public static final String COMMA_AND_SPACE = ", ";
@@ -89,16 +91,19 @@ public class SearchNviCandidatesHandler
         var affiliations = Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
             .orElse(List.of(topLevelOrg));
         var username = requestInfo.getUserName();
+        var searchTerm = extractQueryParamSearchTermOrDefault(requestInfo);
         var year = extractQueryParamPublicationDateOrDefault(requestInfo);
         var category = extractQueryParamCategoryOrDefault(requestInfo);
         var title = extractQueryParamTitle(requestInfo);
-        var searchTerm = extractQueryParamSearchTermOrDefault(requestInfo);
+        var contributor = extractQueryParamContributor(requestInfo);
+        var assignee = extractQueryParamAssignee(requestInfo);
 
         assertUserIsAllowedToSearchAffiliations(affiliations, topLevelOrg);
 
         var candidateSearchParameters = new CandidateSearchParameters(searchTerm, affiliations, excludeSubUnits,
                                                                       filter, username,
-                                                                      year, category, title, topLevelOrg, offset, size);
+                                                                      year, category, title, contributor,
+                                                                      assignee, topLevelOrg, offset, size);
         return candidateSearchParameters;
     }
 
@@ -164,6 +169,10 @@ public class SearchNviCandidatesHandler
             .getOrDefault(QUERY_PARAM_FILTER, DEFAULT_STRING);
     }
 
+    private static String extractQueryParamSearchTermOrDefault(RequestInfo requestInfo) {
+        return requestInfo.getQueryParameters().get(QUERY_PARAM_SEARCH_TERM);
+    }
+
     private static String extractQueryParamCategoryOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters().get(QUERY_PARAM_CATEGORY);
     }
@@ -172,8 +181,12 @@ public class SearchNviCandidatesHandler
         return requestInfo.getQueryParameters().get(QUERY_PARAM_TITLE);
     }
 
-    private static String extractQueryParamSearchTermOrDefault(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameters().get(QUERY_PARAM_SEARCH_TERM);
+    private static String extractQueryParamContributor(RequestInfo requestInfo) {
+        return requestInfo.getQueryParameters().get(QUERY_PARAM_CONTRIBUTOR);
+    }
+
+    private static String extractQueryParamAssignee(RequestInfo requestInfo) {
+        return requestInfo.getQueryParameters().get(QUERY_PARAM_ASSIGNEE);
     }
 
     @JacocoGenerated
