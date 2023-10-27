@@ -6,7 +6,9 @@ import java.util.List;
 import nva.commons.core.JacocoGenerated;
 
 public record CandidateSearchParameters(List<URI> affiliations, boolean excludeSubUnits, String filter, String username,
-                                        String year, String category, String title, URI customer, int offset,
+                                        String year, String category, String title, String contributor,
+                                        String assignee, URI customer,
+                                        int offset,
                                         int size) {
     public static Builder builder() {
         return new Builder();
@@ -22,6 +24,8 @@ public record CandidateSearchParameters(List<URI> affiliations, boolean excludeS
         private String year;
         private String category;
         private String title;
+        private String contributor;
+        private String assignee;
         private URI customer;
         private int offset;
         private int size = 10;
@@ -64,6 +68,16 @@ public record CandidateSearchParameters(List<URI> affiliations, boolean excludeS
             return this;
         }
 
+        public Builder withContributor(String contributor) {
+            this.contributor = contributor;
+            return this;
+        }
+
+        public Builder withAssignee(String assignee) {
+            this.assignee = assignee;
+            return this;
+        }
+
         public Builder withCustomer(URI customer) {
             this.customer = customer;
             return this;
@@ -87,6 +101,8 @@ public record CandidateSearchParameters(List<URI> affiliations, boolean excludeS
                                                  year,
                                                  category,
                                                  title,
+                                                 contributor,
+                                                 assignee,
                                                  customer,
                                                  offset,
                                                  size);

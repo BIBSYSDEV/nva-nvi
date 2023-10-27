@@ -45,6 +45,8 @@ public class SearchNviCandidatesHandler
     private static final int DEFAULT_OFFSET_SIZE = 0;
     public static final String QUERY_PARAM_YEAR = "year";
     public static final String QUERY_PARAM_CATEGORY = "category";
+    public static final String QUERY_PARAM_CONTRIBUTOR = "contributor";
+    public static final String QUERY_PARAM_ASSIGNEE = "assignee";
     public static final String USER_IS_NOT_ALLOWED_TO_SEARCH_FOR_AFFILIATIONS_S
         = "User is not allowed to search for affiliations: %s";
     public static final String COMMA_AND_SPACE = ", ";
@@ -91,11 +93,14 @@ public class SearchNviCandidatesHandler
         var year = extractQueryParamPublicationDateOrDefault(requestInfo);
         var category = extractQueryParamCategoryOrDefault(requestInfo);
         var title = extractQueryParamTitle(requestInfo);
+        var contributor = extractQueryParamContributor(requestInfo);
+        var assignee = extractQueryParamAssignee(requestInfo);
 
         assertUserIsAllowedToSearchAffiliations(affiliations, topLevelOrg);
 
         var candidateSearchParameters = new CandidateSearchParameters(affiliations, excludeSubUnits, filter, username,
-                                                                      year, category, title, topLevelOrg, offset, size);
+                                                                      year, category, title, contributor,
+                                                                      assignee, topLevelOrg, offset, size);
         return candidateSearchParameters;
     }
 
@@ -162,13 +167,19 @@ public class SearchNviCandidatesHandler
     }
 
     private static String extractQueryParamCategoryOrDefault(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameters()
-            .getOrDefault(QUERY_PARAM_CATEGORY, null);
+        return requestInfo.getQueryParameters().get(QUERY_PARAM_CATEGORY);
     }
 
     private static String extractQueryParamTitle(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameters()
-            .getOrDefault(QUERY_PARAM_TITLE, null);
+        return requestInfo.getQueryParameters().get(QUERY_PARAM_TITLE);
+    }
+
+    private static String extractQueryParamContributor(RequestInfo requestInfo) {
+        return requestInfo.getQueryParameters().get(QUERY_PARAM_CONTRIBUTOR);
+    }
+
+    private static String extractQueryParamAssignee(RequestInfo requestInfo) {
+        return requestInfo.getQueryParameters().get(QUERY_PARAM_ASSIGNEE);
     }
 
     @JacocoGenerated

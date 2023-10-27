@@ -8,6 +8,7 @@ import nva.commons.core.Environment;
 import org.opensearch.client.opensearch._types.mapping.KeywordProperty;
 import org.opensearch.client.opensearch._types.mapping.NestedProperty;
 import org.opensearch.client.opensearch._types.mapping.Property;
+import org.opensearch.client.opensearch._types.mapping.TextProperty;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
@@ -61,6 +62,8 @@ public final class SearchConstants {
             .withYear(params.year())
             .withCategory(params.category())
             .withTitle(params.title())
+            .withContributor(params.contributor())
+            .withAssignee(params.assignee())
             .build()
             .toQuery();
     }
@@ -97,12 +100,13 @@ public final class SearchConstants {
     }
 
     private static Map<String, Property> approvalProperties() {
-        return Map.of(ID, keywordProperty(), ASSIGNEE, keywordProperty(), APPROVAL_STATUS, keywordProperty());
+        return Map.of(ID, keywordProperty(), ASSIGNEE, textPropertyWithNetsedKeyword(),
+                      APPROVAL_STATUS, keywordProperty());
     }
 
     private static Map<String, Property> contributorsProperties() {
         return Map.of(ID, keywordProperty(),
-                      NAME, keywordProperty(),
+                      NAME, textPropertyWithNetsedKeyword(),
                       AFFILIATIONS, affiliationsNestedProperty()._toProperty(),
                       ROLE, keywordProperty()
         );
@@ -116,5 +120,10 @@ public final class SearchConstants {
 
     private static Property keywordProperty() {
         return new Property.Builder().keyword(new KeywordProperty.Builder().build()).build();
+    }
+
+    private static Property textPropertyWithNetsedKeyword() {
+        return new Property.Builder().text(new TextProperty.Builder().fields(
+            Map.of(KEYWORD, keywordProperty())).build()).build();
     }
 }
