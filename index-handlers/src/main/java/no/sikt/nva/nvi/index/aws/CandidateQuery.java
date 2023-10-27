@@ -61,17 +61,9 @@ public class CandidateQuery {
     private final String contributor;
     private final String assignee;
 
-    public CandidateQuery(String searchTerm,
-                          List<URI> affiliations,
-                          boolean excludeSubUnits,
-                          QueryFilterType filter,
-                          String username,
-                          String customer,
-                          String year,
-                          String category,
-                          String title,
-                          String contributor,
-                          String assignee) {
+    public CandidateQuery(String searchTerm, List<URI> affiliations, boolean excludeSubUnits,
+                          QueryFilterType filter, String username, String customer, String year,
+                          String category, String title, String contributor, String assignee) {
         this.searchTerm = searchTerm;
         this.affiliations = affiliations.stream().map(URI::toString).toList();
         this.excludeSubUnits = excludeSubUnits;

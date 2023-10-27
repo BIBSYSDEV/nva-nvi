@@ -73,37 +73,43 @@ public final class PaginatedResultConverter {
         return paginatedSearchResult;
     }
 
-    private static Map<String, String> getQueryParameters(String searchTerm, List<URI> affiliations,
-                                                          boolean excludeSubUnits,
-                                                          String filter, String category, String title,
-                                                          String contributor, String assignee) {
-        var queryParams = new HashMap();
-        if (nonNull(searchTerm)) {
-            queryParams.put(QUERY_PARAM_SEARCH_TERM, searchTerm);
+  private static Map<String, String> getQueryParameters(String searchTerm, List<URI> affiliations,
+                                                        boolean excludeSubUnits, String filter, String category,
+                                                        String title, String contributor, String assignee) {
+      var queryParams = new HashMap<String, String>();
+      putIfValueNotNull(queryParams, QUERY_PARAM_SEARCH_TERM, searchTerm);
+      putAffiliationsIfNotNull(queryParams, QUERY_PARAM_AFFILIATIONS, affiliations);
+      putIfTrue(queryParams, QUERY_PARAM_EXCLUDE_SUB_UNITS, excludeSubUnits);
+      putIfValueNotEmpty(queryParams, QUERY_PARAM_FILTER, filter);
+      putIfValueNotNull(queryParams, QUERY_PARAM_CATEGORY, category);
+      putIfValueNotNull(queryParams, QUERY_PARAM_TITLE, title);
+      putIfValueNotNull(queryParams, QUERY_PARAM_CONTRIBUTOR, contributor);
+      putIfValueNotNull(queryParams, QUERY_PARAM_ASSIGNEE, assignee);
+      return queryParams;
+  }
+
+    private static void putIfValueNotNull(Map<String, String> map, String key, String value) {
+        if (nonNull(value)) {
+            map.put(key, value);
         }
+    }
+
+    private static void putAffiliationsIfNotNull(Map<String, String> map, String key, List<URI> affiliations) {
         if (nonNull(affiliations)) {
-            queryParams.put(QUERY_PARAM_AFFILIATIONS, affiliations.stream().map(URI::toString)
-                .collect(Collectors.joining(COMMA)));
+            map.put(key, affiliations.stream().map(URI::toString).collect(Collectors.joining(COMMA)));
         }
-        if (excludeSubUnits) {
-            queryParams.put(QUERY_PARAM_EXCLUDE_SUB_UNITS, String.valueOf(true));
+    }
+
+    private static void putIfTrue(Map<String, String> map, String key, boolean condition) {
+        if (condition) {
+            map.put(key, String.valueOf(true));
         }
-        if (isNotEmpty(filter)) {
-            queryParams.put(QUERY_PARAM_FILTER, filter);
+    }
+
+    private static void putIfValueNotEmpty(Map<String, String> map, String key, String value) {
+        if (isNotEmpty(value)) {
+            map.put(key, value);
         }
-        if (nonNull(category)) {
-            queryParams.put(QUERY_PARAM_CATEGORY, category);
-        }
-        if (nonNull(title)) {
-            queryParams.put(QUERY_PARAM_TITLE, title);
-        }
-        if (nonNull(contributor)) {
-            queryParams.put(QUERY_PARAM_CONTRIBUTOR, contributor);
-        }
-        if (nonNull(assignee)) {
-            queryParams.put(QUERY_PARAM_ASSIGNEE, assignee);
-        }
-        return queryParams;
     }
 
     private static boolean isNotEmpty(String filter) {
