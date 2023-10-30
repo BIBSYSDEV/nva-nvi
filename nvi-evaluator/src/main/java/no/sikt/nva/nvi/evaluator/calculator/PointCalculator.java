@@ -27,6 +27,7 @@ import static no.sikt.nva.nvi.evaluator.model.PublicationChannel.PUBLISHER;
 import static no.sikt.nva.nvi.evaluator.model.PublicationChannel.SERIES;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
@@ -293,7 +294,7 @@ public final class PointCalculator {
         }
     }
 
-    private record Channel(URI id, PublicationChannel type, Level level) {
+    private record Channel(URI id, PublicationChannel type, @JsonAlias("scientificValue") Level level) {
 
     }
 }
