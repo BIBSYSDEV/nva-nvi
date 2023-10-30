@@ -1,18 +1,20 @@
 package no.sikt.nva.nvi.evaluator.calculator;
 
+import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.evaluator.calculator.PointCalculator.calculatePoints;
+import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -25,11 +27,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class PointCalculatorTest {
 
-    public static final String COUNTRY_CODE_NO = "NO";
-    public static final String SOME_INTERNATIONAL_COUNTRY_CODE = Locale.UK.getCountry();
-    public static final String ROLE = "role";
-    public static final String ROLE_CREATOR = "Creator";
-    public static final String SOME_OTHER_ROLE = "SomeOtherRole";
+    private static final String COUNTRY_CODE_NO = "NO";
+    private static final String SOME_INTERNATIONAL_COUNTRY_CODE = Locale.UK.getCountry();
+    private static final String ROLE = "role";
+    private static final String ROLE_CREATOR = "Creator";
+    private static final String SOME_OTHER_ROLE = "SomeOtherRole";
     private static final String TYPE = "type";
     private static final String PUBLICATION_INSTANCE = "publicationInstance";
     private static final String REFERENCE = "reference";
@@ -37,6 +39,7 @@ class PointCalculatorTest {
     private static final String PUBLICATION_CONTEXT = "publicationContext";
     private static final String ID = "id";
     private static final String LEVEL = "level";
+    private static final JsonNode HARDCODED_JOURNAL_REFERENCE = createJournalReference("AcademicArticle", "1");
     private static final String AFFILIATIONS = "affiliations";
     private static final String IDENTITY = "identity";
     private static final String VERIFICATION_STATUS = "verificationStatus";
@@ -47,15 +50,11 @@ class PointCalculatorTest {
     @MethodSource("singleCreatorSingleInstitutionPointProvider")
     void shouldCalculateNviPointsForSingleInstitution(PointParameters parameters) {
 
-        var creator = randomUri();
+        var creatorId = randomUri();
         var institutionId = randomUri();
-        var expandedResource = createExpandedResource(
-            randomUri(),
-            createContributorNodes(getContributorNode(creator, true, Map.of(institutionId, COUNTRY_CODE_NO),
-                                                      ROLE_CREATOR)),
-            getInstanceTypeReference(parameters));
+        var expandedResource = setUpSingleContributorWithSingleInstitution(parameters, creatorId, institutionId);
 
-        var pointCalculation = calculatePoints(expandedResource, Map.of(creator, List.of(institutionId)));
+        var pointCalculation = calculatePoints(expandedResource, Map.of(creatorId, List.of(institutionId)));
 
         assertThat(pointCalculation.institutionPoints().get(institutionId),
                    is(equalTo(parameters.institution1Points())));
@@ -97,13 +96,8 @@ class PointCalculatorTest {
         var creator2 = randomUri();
         var creator1Institutions = List.of(nviInstitution1);
         var creator2Institutions = List.of(nviInstitution2);
-        var expandedResource = createExpandedResource(
-            randomUri(),
-            createContributorNodes(
-                getContributorNode(creator1, true, addCountryCode(creator1Institutions, COUNTRY_CODE_NO), ROLE_CREATOR),
-                getContributorNode(creator2, true, addCountryCode(creator1Institutions, COUNTRY_CODE_NO),
-                                   ROLE_CREATOR)),
-            getInstanceTypeReference(parameters));
+        var expandedResource = setUpCoPublishingTwoCreatorsTwoInstitutions(parameters, creator1, creator2,
+                                                                           creator1Institutions);
 
         var pointCalculation = calculatePoints(expandedResource, Map.of(creator1, creator1Institutions, creator2,
                                                                         creator2Institutions));
@@ -119,12 +113,7 @@ class PointCalculatorTest {
     void shouldNotGiveInternationalPointsIfNonCreatorAffiliatedWithInternationalInstitution() {
         var creatorId = randomUri();
         var institutionId = randomUri();
-        var expandedResource = createExpandedResourceWithTwoVerifiedCreators(creatorId, institutionId, COUNTRY_CODE_NO,
-                                                                             ROLE_CREATOR, randomUri(), randomUri(),
-                                                                             SOME_INTERNATIONAL_COUNTRY_CODE,
-                                                                             SOME_OTHER_ROLE,
-                                                                             createJournalReference("AcademicArticle",
-                                                                                                    "1"));
+        var expandedResource = setUpNonCreatorAffiliatedWithInternationalInstitution(creatorId, institutionId);
 
         var institutionPoints = calculatePoints(expandedResource,
                                                 Map.of(creatorId, List.of(institutionId))).institutionPoints();
@@ -136,11 +125,7 @@ class PointCalculatorTest {
     void shouldNotCountCreatorSharesForNonCreators() {
         var creatorId = randomUri();
         var institutionId = randomUri();
-        var expandedResource = createExpandedResourceWithTwoVerifiedCreators(creatorId, institutionId, COUNTRY_CODE_NO,
-                                                                             ROLE_CREATOR, randomUri(), randomUri(),
-                                                                             COUNTRY_CODE_NO, SOME_OTHER_ROLE,
-                                                                             createJournalReference("AcademicArticle",
-                                                                                                    "1"));
+        var expandedResource = setUpResourceWithNonCreator(creatorId, institutionId);
 
         var institutionPoints = calculatePoints(expandedResource,
                                                 Map.of(creatorId, List.of(institutionId))).institutionPoints();
@@ -152,16 +137,118 @@ class PointCalculatorTest {
     void shouldCountOneCreatorShareForCreatorsWithoutAffiliations() {
         var nviCreatorId = randomUri();
         var nviInstitutionId = randomUri();
-        var expandedResource = createExpandedResourceWithCreatorWithoutAffiliation(nviCreatorId,
-                                                                                   nviInstitutionId,
-                                                                                   createJournalReference(
-                                                                                       "AcademicArticle",
-                                                                                       "1"));
+        var expandedResource = setUpResourceWithCreatorsWithoutAffiliations(nviCreatorId, nviInstitutionId);
 
         var institutionPoints = calculatePoints(expandedResource,
                                                 Map.of(nviCreatorId, List.of(nviInstitutionId))).institutionPoints();
 
         assertThat(institutionPoints.get(nviInstitutionId), is(equalTo(asBigDecimal("0.7071"))));
+    }
+
+    @Test
+    void shouldNotCountCreatorSharesForAffiliationsWithoutId() {
+        var nviCreatorId = randomUri();
+        var nviInstitutionId = randomUri();
+        int numberOfEmptyAffiliationsWithoutId = randomIntBetween(2, 10);
+        var expandedResource = setUpResourceWithCreatorWithUnverifiedAffiliations(nviCreatorId, nviInstitutionId,
+                                                                                  numberOfEmptyAffiliationsWithoutId);
+
+        var institutionPoints = calculatePoints(expandedResource,
+                                                Map.of(nviCreatorId, List.of(nviInstitutionId))).institutionPoints();
+
+        assertThat(institutionPoints.get(nviInstitutionId), is(equalTo(asBigDecimal("0.7071"))));
+    }
+
+    @Test
+    void shouldCountOneCreatorShareForCreatorsWithOnlyAffiliationsWithoutId() {
+        var nviCreatorId = randomUri();
+        var nviInstitutionId = randomUri();
+        int numberOfEmptyAffiliationsWithoutId = randomIntBetween(2, 10);
+        var expandedResource = setUpResourceWithOneCreatorWithUnverifiedAffiliations(nviCreatorId, nviInstitutionId,
+                                                                                     numberOfEmptyAffiliationsWithoutId);
+
+        var institutionPoints = calculatePoints(expandedResource,
+                                                Map.of(nviCreatorId, List.of(nviInstitutionId))).institutionPoints();
+
+        assertThat(institutionPoints.get(nviInstitutionId), is(equalTo(asBigDecimal("0.7071"))));
+    }
+
+    private static JsonNode setUpResourceWithOneCreatorWithUnverifiedAffiliations(URI nviCreatorId,
+                                                                                  URI nviInstitutionId,
+                                                                                  int numberOfEmptyAffiliationsWithoutId) {
+        return createExpandedResourceWithTwoVerifiedContributors(nviCreatorId,
+                                                                 ROLE_CREATOR,
+                                                                 Map.of(nviInstitutionId,
+                                                                        COUNTRY_CODE_NO),
+                                                                 randomUri(),
+                                                                 ROLE_CREATOR,
+                                                                 emptyMap(),
+                                                                 HARDCODED_JOURNAL_REFERENCE,
+                                                                 numberOfEmptyAffiliationsWithoutId);
+    }
+
+    private static JsonNode setUpResourceWithCreatorWithUnverifiedAffiliations(URI nviCreatorId, URI nviInstitutionId,
+                                                                               int numberOfEmptyAffiliationsWithoutId) {
+        return createExpandedResource(randomUri(),
+                                      createContributorNodes(
+                                          createContributorNode(nviCreatorId, true,
+                                                                Map.of(nviInstitutionId,
+                                                                       COUNTRY_CODE_NO),
+                                                                ROLE_CREATOR,
+                                                                numberOfEmptyAffiliationsWithoutId)),
+                                      HARDCODED_JOURNAL_REFERENCE);
+    }
+
+    private static JsonNode setUpResourceWithCreatorsWithoutAffiliations(URI nviCreatorId, URI nviInstitutionId) {
+        return createExpandedResourceWithCreator(nviCreatorId,
+                                                 nviInstitutionId,
+                                                 emptyMap());
+    }
+
+    private static JsonNode setUpResourceWithNonCreator(URI creatorId, URI institutionId) {
+        return createExpandedResourceWithTwoVerifiedContributors(creatorId,
+                                                                 ROLE_CREATOR,
+                                                                 Map.of(institutionId, COUNTRY_CODE_NO),
+                                                                 randomUri(),
+                                                                 SOME_OTHER_ROLE,
+                                                                 Map.of(randomUri(),
+                                                                        COUNTRY_CODE_NO),
+                                                                 HARDCODED_JOURNAL_REFERENCE, 0);
+    }
+
+    private static JsonNode setUpNonCreatorAffiliatedWithInternationalInstitution(URI creatorId, URI institutionId) {
+        return createExpandedResourceWithTwoVerifiedContributors(creatorId,
+                                                                 ROLE_CREATOR,
+                                                                 Map.of(institutionId, COUNTRY_CODE_NO),
+                                                                 randomUri(),
+                                                                 SOME_OTHER_ROLE,
+                                                                 Map.of(randomUri(),
+                                                                        SOME_INTERNATIONAL_COUNTRY_CODE),
+                                                                 HARDCODED_JOURNAL_REFERENCE, 0
+        );
+    }
+
+    private static JsonNode setUpCoPublishingTwoCreatorsTwoInstitutions(PointParameters parameters, URI creator1,
+                                                                        URI creator2,
+                                                                        List<URI> creator1Institutions) {
+        return createExpandedResourceWithTwoVerifiedContributors(creator1, ROLE_CREATOR,
+                                                                 toMapWithCountryCode(creator1Institutions,
+                                                                                      COUNTRY_CODE_NO),
+                                                                 creator2,
+                                                                 ROLE_CREATOR,
+                                                                 toMapWithCountryCode(
+                                                                     creator1Institutions,
+                                                                     COUNTRY_CODE_NO),
+                                                                 getInstanceTypeReference(parameters),
+                                                                 0);
+    }
+
+    private static JsonNode setUpSingleContributorWithSingleInstitution(PointParameters parameters, URI creator,
+                                                                        URI institutionId) {
+        return createExpandedResource(
+            randomUri(), createContributorNodes(
+                createContributorNode(creator, true, Map.of(institutionId, COUNTRY_CODE_NO), ROLE_CREATOR, 0)),
+            getInstanceTypeReference(parameters));
     }
 
     private static JsonNode createExpandedResourceWithManyCreators(PointParameters parameters, URI creator1,
@@ -171,48 +258,47 @@ class PointCalculatorTest {
         var countryCodeForNonNviCreators = parameters.isInternationalCollaboration()
                                                ? SOME_INTERNATIONAL_COUNTRY_CODE : COUNTRY_CODE_NO;
         var contributorNodes = createContributorNodes(
-            getContributorNode(creator1, true, addCountryCode(creator1Institutions, COUNTRY_CODE_NO), ROLE_CREATOR),
-            getContributorNode(creator2, true, addCountryCode(creator2Institutions, COUNTRY_CODE_NO), ROLE_CREATOR),
-            getContributorNode(randomUri(), false,
-                               addCountryCode(createRandomInstitutions(parameters, 3), countryCodeForNonNviCreators),
-                               parameters.creatorShareCount() == 3 ? SOME_OTHER_ROLE : ROLE_CREATOR)
+            createContributorNode(creator1, true, toMapWithCountryCode(creator1Institutions, COUNTRY_CODE_NO),
+                                  ROLE_CREATOR, 0),
+            createContributorNode(creator2, true, toMapWithCountryCode(creator2Institutions, COUNTRY_CODE_NO),
+                                  ROLE_CREATOR, 0),
+            createContributorNode(randomUri(), false,
+                                  toMapWithCountryCode(createRandomInstitutions(parameters, 3),
+                                                       countryCodeForNonNviCreators),
+                                  parameters.creatorShareCount() == 3 ? SOME_OTHER_ROLE : ROLE_CREATOR, 0)
         );
         return createExpandedResource(randomUri(), contributorNodes, getInstanceTypeReference(parameters));
     }
 
-    private static JsonNode createExpandedResourceWithTwoVerifiedCreators(URI creator1, URI creator1InstitutionId,
-                                                                          String creator1InstitutionCountry,
-                                                                          String creator1Role,
-                                                                          URI creator2, URI creator2InstitutionId,
-                                                                          String creator2InstitutionCountry,
-                                                                          String creator2Role,
-                                                                          JsonNode reference) {
+    private static JsonNode createExpandedResourceWithTwoVerifiedContributors(URI creator1,
+                                                                              String contributor1Role,
+                                                                              Map<URI, String> creator1Institution,
+                                                                              URI creator2,
+                                                                              String contributor2Role,
+                                                                              Map<URI, String> creator2Institution,
+                                                                              JsonNode reference,
+                                                                              int creator2numberOfEmptyAffiliations) {
         return createExpandedResource(randomUri(),
                                       createContributorNodes(
-                                          getContributorNode(creator1, true,
-                                                             Map.of(creator1InstitutionId, creator1InstitutionCountry),
-                                                             creator1Role),
-                                          getContributorNode(creator2, true, Map.of(creator2InstitutionId,
-                                                                                    creator2InstitutionCountry),
-                                                             creator2Role)),
+                                          createContributorNode(creator1, true,
+                                                                creator1Institution,
+                                                                contributor1Role, 0),
+                                          createContributorNode(creator2, true, creator2Institution,
+                                                                contributor2Role, creator2numberOfEmptyAffiliations)),
                                       reference);
     }
 
-    private static JsonNode createExpandedResourceWithCreatorWithoutAffiliation(URI creator1,
-                                                                                URI creator1InstitutionId,
-                                                                                JsonNode reference) {
-        return createExpandedResource(randomUri(),
-                                      createContributorNodes(
-                                          getContributorNode(creator1, true,
-                                                             Map.of(creator1InstitutionId,
-                                                                    PointCalculatorTest.COUNTRY_CODE_NO),
-                                                             ROLE_CREATOR),
-                                          getContributorNode(randomUri(), true, Collections.emptyMap(),
-                                                             ROLE_CREATOR)),
-                                      reference);
+    private static JsonNode createExpandedResourceWithCreator(URI creator1, URI creator1InstitutionId,
+                                                              Map<URI, String> affiliations) {
+        return createExpandedResourceWithTwoVerifiedContributors(creator1, ROLE_CREATOR,
+                                                                 Map.of(creator1InstitutionId, COUNTRY_CODE_NO),
+                                                                 randomUri(), ROLE_CREATOR,
+                                                                 affiliations,
+                                                                 PointCalculatorTest.HARDCODED_JOURNAL_REFERENCE, 0
+        );
     }
 
-    private static Map<URI, String> addCountryCode(List<URI> creator1Institutions, String countryCode) {
+    private static Map<URI, String> toMapWithCountryCode(List<URI> creator1Institutions, String countryCode) {
         return creator1Institutions.stream()
                    .collect(Collectors.toMap(institutionId -> institutionId,
                                              institutionId -> countryCode));
@@ -346,17 +432,14 @@ class PointCalculatorTest {
         return reference;
     }
 
-    private static ObjectNode getContributorNode(URI contributor, boolean isVerified,
-                                                 Map<URI, String> affiliationsWithCountryCode, String role) {
+    private static ObjectNode createContributorNode(URI contributor, boolean isVerified,
+                                                    Map<URI, String> affiliationsWithCountryCode, String role,
+                                                    int numberOfEmptyAffiliations) {
         var contributorNode = objectMapper.createObjectNode();
 
         contributorNode.put(TYPE, "Contributor");
 
-        var affiliationsNode = objectMapper.createArrayNode();
-
-        affiliationsWithCountryCode.entrySet().stream()
-            .map(entry -> createAffiliationNode(entry.getKey(), entry.getValue()))
-            .forEach(affiliationsNode::add);
+        var affiliationsNode = createAffiliationsNode(affiliationsWithCountryCode, numberOfEmptyAffiliations);
 
         var roleNode = objectMapper.createObjectNode().put(TYPE, role);
 
@@ -368,6 +451,22 @@ class PointCalculatorTest {
         return contributorNode;
     }
 
+    private static ArrayNode createAffiliationsNode(Map<URI, String> affiliationsWithCountryCode,
+                                                    int numberOfEmptyAffiliations) {
+        var affiliationsNode = objectMapper.createArrayNode();
+
+        affiliationsWithCountryCode.entrySet().stream()
+            .map(entry -> createAffiliationNode(entry.getKey(), entry.getValue()))
+            .forEach(affiliationsNode::add);
+
+        for (int i = 1; i <= numberOfEmptyAffiliations; i++) {
+            affiliationsNode.add(createAffiliationNodeWithoutId());
+            i++;
+        }
+
+        return affiliationsNode;
+    }
+
     private static ObjectNode createIdentity(URI contributor, boolean isVerified) {
         return objectMapper.createObjectNode()
                    .put(ID, contributor.toString())
@@ -375,15 +474,19 @@ class PointCalculatorTest {
                    .put(TYPE, "Identity");
     }
 
-    private static ObjectNode createAffiliationNode(URI affiliation, String countryCode) {
+    private static ObjectNode createAffiliationNode(URI affiliationId, String countryCode) {
         return objectMapper.createObjectNode()
-                   .put(ID, affiliation.toString())
+                   .put(ID, affiliationId.toString())
                    .put(TYPE, "Organization")
                    .put("countryCode", countryCode);
     }
 
-    private static JsonNode createExpandedResource(URI publicationId, JsonNode contributors,
-                                                   JsonNode reference) {
+    private static ObjectNode createAffiliationNodeWithoutId() {
+        return objectMapper.createObjectNode()
+                   .put(TYPE, "Organization");
+    }
+
+    private static JsonNode createExpandedResource(URI publicationId, JsonNode contributors, JsonNode reference) {
         var root = objectMapper.createObjectNode();
 
         root.put(ID, publicationId.toString());
