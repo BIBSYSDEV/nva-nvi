@@ -275,7 +275,7 @@ paths:
       description: 'Get scientific index candidate by publication identifier'
       parameters:
         - in: path
-          name: candidatePublicationId
+          name: candidatePublicationId+
           description: The pubication identifer of the candidate
           required: true
           schema:
