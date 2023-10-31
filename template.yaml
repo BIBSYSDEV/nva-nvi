@@ -495,6 +495,26 @@ Resources:
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
+  FetchNviCandidateByPublicationIdHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.fetch.FetchNviCandidateByPublicationIdHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /candidate/{candidatePublicationId}
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+
   UpdateNviCandidateStatusHandler:
     Type: AWS::Serverless::Function
     Properties:
