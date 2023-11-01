@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -138,7 +139,6 @@ class PointCalculatorTest {
         var nviCreatorId = randomUri();
         var nviInstitutionId = randomUri();
         var expandedResource = setUpResourceWithCreatorsWithoutAffiliations(nviCreatorId, nviInstitutionId);
-
         var institutionPoints = calculatePoints(expandedResource,
                                                 Map.of(nviCreatorId, List.of(nviInstitutionId))).institutionPoints();
 
@@ -149,14 +149,14 @@ class PointCalculatorTest {
     void shouldNotCountCreatorSharesForAffiliationsWithoutId() {
         var nviCreatorId = randomUri();
         var nviInstitutionId = randomUri();
-        int numberOfEmptyAffiliationsWithoutId = randomIntBetween(2, 10);
+        int numberOfAffiliationsWithoutId = randomIntBetween(2, 10);
         var expandedResource = setUpResourceWithCreatorWithUnverifiedAffiliations(nviCreatorId, nviInstitutionId,
-                                                                                  numberOfEmptyAffiliationsWithoutId);
+                                                                                  numberOfAffiliationsWithoutId);
 
         var institutionPoints = calculatePoints(expandedResource,
                                                 Map.of(nviCreatorId, List.of(nviInstitutionId))).institutionPoints();
 
-        assertThat(institutionPoints.get(nviInstitutionId), is(equalTo(asBigDecimal("0.7071"))));
+        assertThat(institutionPoints.get(nviInstitutionId), is(equalTo(asBigDecimal("1"))));
     }
 
     @Test
@@ -200,9 +200,14 @@ class PointCalculatorTest {
     }
 
     private static JsonNode setUpResourceWithCreatorsWithoutAffiliations(URI nviCreatorId, URI nviInstitutionId) {
-        return createExpandedResourceWithCreator(nviCreatorId,
-                                                 nviInstitutionId,
-                                                 emptyMap());
+        return createExpandedResourceWithTwoVerifiedContributors(nviCreatorId,
+                                                                 ROLE_CREATOR,
+                                                                 Map.of(nviInstitutionId, COUNTRY_CODE_NO),
+                                                                 randomUri(),
+                                                                 ROLE_CREATOR,
+                                                                 Collections.emptyMap(),
+                                                                 HARDCODED_JOURNAL_REFERENCE,
+                                                                 0);
     }
 
     private static JsonNode setUpResourceWithNonCreator(URI creatorId, URI institutionId) {
@@ -286,16 +291,6 @@ class PointCalculatorTest {
                                           createContributorNode(creator2, true, creator2Institution,
                                                                 contributor2Role, creator2numberOfEmptyAffiliations)),
                                       reference);
-    }
-
-    private static JsonNode createExpandedResourceWithCreator(URI creator1, URI creator1InstitutionId,
-                                                              Map<URI, String> affiliations) {
-        return createExpandedResourceWithTwoVerifiedContributors(creator1, ROLE_CREATOR,
-                                                                 Map.of(creator1InstitutionId, COUNTRY_CODE_NO),
-                                                                 randomUri(), ROLE_CREATOR,
-                                                                 affiliations,
-                                                                 PointCalculatorTest.HARDCODED_JOURNAL_REFERENCE, 0
-        );
     }
 
     private static Map<URI, String> toMapWithCountryCode(List<URI> creator1Institutions, String countryCode) {
@@ -434,12 +429,12 @@ class PointCalculatorTest {
 
     private static ObjectNode createContributorNode(URI contributor, boolean isVerified,
                                                     Map<URI, String> affiliationsWithCountryCode, String role,
-                                                    int numberOfEmptyAffiliations) {
+                                                    int numberOfAffiliationsWithoutId) {
         var contributorNode = objectMapper.createObjectNode();
 
         contributorNode.put(TYPE, "Contributor");
 
-        var affiliationsNode = createAffiliationsNode(affiliationsWithCountryCode, numberOfEmptyAffiliations);
+        var affiliationsNode = createAffiliationsNode(affiliationsWithCountryCode, numberOfAffiliationsWithoutId);
 
         var roleNode = objectMapper.createObjectNode().put(TYPE, role);
 
@@ -452,14 +447,14 @@ class PointCalculatorTest {
     }
 
     private static ArrayNode createAffiliationsNode(Map<URI, String> affiliationsWithCountryCode,
-                                                    int numberOfEmptyAffiliations) {
+                                                    int numberOfAffiliationsWithoutId) {
         var affiliationsNode = objectMapper.createArrayNode();
 
         affiliationsWithCountryCode.entrySet().stream()
             .map(entry -> createAffiliationNode(entry.getKey(), entry.getValue()))
             .forEach(affiliationsNode::add);
 
-        for (int i = 1; i <= numberOfEmptyAffiliations; i++) {
+        for (int i = 1; i <= numberOfAffiliationsWithoutId; i++) {
             affiliationsNode.add(createAffiliationNodeWithoutId());
             i++;
         }
