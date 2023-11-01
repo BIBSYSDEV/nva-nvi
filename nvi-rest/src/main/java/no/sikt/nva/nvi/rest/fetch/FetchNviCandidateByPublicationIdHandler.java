@@ -6,8 +6,6 @@ import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.URI;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.CandidateBO;
@@ -42,7 +40,7 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
     protected CandidateDto processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         validateRequest(requestInfo);
-        return attempt(() -> getPublicationId(requestInfo))
+        return attempt(() -> requestInfo.getPathParameter(CANDIDATE_PUBLICATION_ID)).map(URI::create)
             .map(identifier -> CandidateBO.fromRequest(() -> identifier, candidateRepository, periodRepository))
             .map(this::checkIfApplicable)
             .map(CandidateBO::toDto)
@@ -62,11 +60,6 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
 
     private static boolean isNotAuthenticated(RequestInfo requestInfo) throws UnauthorizedException {
         return isNull(requestInfo.getCurrentCustomer());
-    }
-
-    private URI getPublicationId(RequestInfo requestInfo) {
-        return URI.create(
-            URLDecoder.decode(requestInfo.getPathParameters().get(CANDIDATE_PUBLICATION_ID), StandardCharsets.UTF_8));
     }
 
     private CandidateBO checkIfApplicable(CandidateBO candidate) {
