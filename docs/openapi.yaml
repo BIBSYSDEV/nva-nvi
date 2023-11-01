@@ -229,7 +229,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-  /candidate/{candidateIdentifier}:
+  /candidate/by-identifier/{candidateIdentifier}:
     get:
       description: 'Get scientific index candidate'
       parameters:
