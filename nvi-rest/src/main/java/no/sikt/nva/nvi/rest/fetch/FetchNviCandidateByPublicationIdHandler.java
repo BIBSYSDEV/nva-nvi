@@ -19,15 +19,12 @@ import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<Void, CandidateDto> {
 
     public static final String CANDIDATE_PUBLICATION_ID = "candidatePublicationId";
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
-    private static final Logger LOGGER = LoggerFactory.getLogger(FetchNviCandidateByPublicationIdHandler.class);
 
     @JacocoGenerated
     public FetchNviCandidateByPublicationIdHandler() {
@@ -44,7 +41,6 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
     @Override
     protected CandidateDto processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-        LOGGER.info(requestInfo.getPathParameter(CANDIDATE_PUBLICATION_ID));
         validateRequest(requestInfo);
         return attempt(() -> getPublicationId(requestInfo))
             .map(identifier -> CandidateBO.fromRequest(() -> identifier, candidateRepository, periodRepository))
