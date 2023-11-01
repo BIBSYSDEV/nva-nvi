@@ -6,6 +6,8 @@ import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.CandidateBO;
@@ -17,12 +19,15 @@ import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<Void, CandidateDto> {
 
-    public static final String CANDIDATE_PUBLICATION_ID = "candidatepublicationId";
+    public static final String CANDIDATE_PUBLICATION_ID = "candidatePublicationId";
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
+    private static final Logger LOGGER = LoggerFactory.getLogger(FetchNviCandidateByPublicationIdHandler.class);
 
     @JacocoGenerated
     public FetchNviCandidateByPublicationIdHandler() {
@@ -39,8 +44,9 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
     @Override
     protected CandidateDto processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
+        LOGGER.info(requestInfo.getPathParameter(CANDIDATE_PUBLICATION_ID));
         validateRequest(requestInfo);
-        return attempt(() -> requestInfo.getPathParameter(CANDIDATE_PUBLICATION_ID)).map(URI::create)
+        return attempt(() -> getPublicationId(requestInfo))
             .map(identifier -> CandidateBO.fromRequest(() -> identifier, candidateRepository, periodRepository))
             .map(this::checkIfApplicable)
             .map(CandidateBO::toDto)
@@ -60,6 +66,11 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
 
     private static boolean isNotAuthenticated(RequestInfo requestInfo) throws UnauthorizedException {
         return isNull(requestInfo.getCurrentCustomer());
+    }
+
+    private URI getPublicationId(RequestInfo requestInfo) {
+        return URI.create(
+            URLDecoder.decode(requestInfo.getPathParameters().get(CANDIDATE_PUBLICATION_ID), StandardCharsets.UTF_8));
     }
 
     private CandidateBO checkIfApplicable(CandidateBO candidate) {
