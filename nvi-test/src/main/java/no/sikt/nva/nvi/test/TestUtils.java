@@ -56,12 +56,17 @@ public final class TestUtils {
     public static final int POINTS_SCALE = 4;
     public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     public static final int CURRENT_YEAR = Year.now().getValue();
+    public static final Random RANDOM = new Random();
     private static final String BUCKET_HOST = "example.org";
     private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
     private static final String PUBLICATION_API_PATH = "publication";
     private static final String API_HOST = "example.com";
 
     private TestUtils() {
+    }
+
+    public static int randomIntBetween(int min, int max) {
+        return RANDOM.nextInt(min, max);
     }
 
     public static DbPublicationDate randomPublicationDate() {
@@ -80,7 +85,7 @@ public final class TestUtils {
 
     public static LocalDate randomLocalDate() {
         var daysBetween = ChronoUnit.DAYS.between(START_DATE, LocalDate.now());
-        var randomDays = new Random().nextInt((int) daysBetween);
+        var randomDays = RANDOM.nextInt((int) daysBetween);
 
         return START_DATE.plusDays(randomDays);
     }
@@ -101,17 +106,17 @@ public final class TestUtils {
 
     public static InstanceType randomInstanceType() {
         var instanceTypes = Arrays.stream(InstanceType.values()).toList();
-        return instanceTypes.get(new Random().nextInt(instanceTypes.size()));
+        return instanceTypes.get(RANDOM.nextInt(instanceTypes.size()));
     }
 
     public static InstanceType randomInstanceTypeExcluding(InstanceType instanceType) {
         var instanceTypes = Arrays.stream(InstanceType.values()).filter(type -> !type.equals(instanceType)).toList();
-        return instanceTypes.get(new Random().nextInt(instanceTypes.size()));
+        return instanceTypes.get(RANDOM.nextInt(instanceTypes.size()));
     }
 
     public static DbLevel randomLevelExcluding(DbLevel level) {
         var levels = Arrays.stream(DbLevel.values()).filter(type -> !type.equals(level)).toList();
-        return levels.get(new Random().nextInt(levels.size()));
+        return levels.get(RANDOM.nextInt(levels.size()));
     }
 
     public static String randomYear() {

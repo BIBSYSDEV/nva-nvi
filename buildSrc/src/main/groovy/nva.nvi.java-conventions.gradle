@@ -28,7 +28,7 @@ repositories {
 
 tasks.named('test') {
     useJUnitPlatform()
-    failFast = true
+    failFast = false
     testLogging {
         events 'skipped', 'passed', 'failed'
     }

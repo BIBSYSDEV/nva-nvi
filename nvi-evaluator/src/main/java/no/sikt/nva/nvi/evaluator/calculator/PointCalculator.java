@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_COUNTRY_CODE;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_INSTANCE_TYPE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLISHER;
@@ -223,11 +224,16 @@ public final class PointCalculator {
 
     private static int countCreatorShares(JsonNode jsonNode) {
         var creators = extractCreatorNodes(jsonNode);
-        return Integer.sum(countAffiliations(creators), countCreatorsWithoutAffiliations(creators));
+        return Integer.sum(Integer.sum(countVerifiedAffiliations(creators), countCreatorsWithoutAffiliations(creators)),
+                           countCreatorsWithOnlyUnverifiedAffiliations(creators));
     }
 
-    private static List<JsonNode> extractCreatorNodes(JsonNode jsonNode) {
-        return streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR)).filter(PointCalculator::isCreator).toList();
+    private static Integer countVerifiedAffiliations(List<JsonNode> creators) {
+        return creators.stream()
+                   .flatMap(PointCalculator::extractAffiliations)
+                   .filter(PointCalculator::hasId)
+                   .map(node -> 1)
+                   .reduce(0, Integer::sum);
     }
 
     private static Integer countCreatorsWithoutAffiliations(List<JsonNode> creators) {
@@ -237,8 +243,36 @@ public final class PointCalculator {
                    .reduce(0, Integer::sum);
     }
 
-    private static Integer countAffiliations(List<JsonNode> creators) {
-        return creators.stream().flatMap(PointCalculator::extractAffiliations).map(node -> 1).reduce(0, Integer::sum);
+    private static Integer countCreatorsWithOnlyUnverifiedAffiliations(List<JsonNode> creators) {
+        return creators.stream()
+                   .filter(PointCalculator::hasAffiliations)
+                   .filter(PointCalculator::isOnlyAffiliatedWithOrganizationsWithOutId)
+                   .map(node -> 1)
+                   .reduce(0, Integer::sum);
+    }
+
+    private static boolean isOnlyAffiliatedWithOrganizationsWithOutId(JsonNode contributor) {
+        return extractAffiliations(contributor).allMatch(PointCalculator::doesNotHaveId);
+    }
+
+    private static boolean hasId(JsonNode affiliation) {
+        return Objects.nonNull(extractId(affiliation));
+    }
+
+    private static boolean doesNotHaveId(JsonNode affiliation) {
+        return !hasId(affiliation);
+    }
+
+    private static String extractId(JsonNode affiliation) {
+        return extractJsonNodeTextValue(affiliation, JSON_PTR_ID);
+    }
+
+    private static List<JsonNode> extractCreatorNodes(JsonNode jsonNode) {
+        return streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR)).filter(PointCalculator::isCreator).toList();
+    }
+
+    private static boolean hasAffiliations(JsonNode contributor) {
+        return !doesNotHaveAffiliations(contributor);
     }
 
     private static boolean doesNotHaveAffiliations(JsonNode contributor) {
