@@ -276,7 +276,7 @@ paths:
       parameters:
         - in: path
           name: candidatePublicationId+
-          description: The UTF-8 Encoded pubication identifer of the candidate
+          description: The pubication identifer the candidate, this must be URI UTF-8 encoded
           required: true
           schema:
             type: string
