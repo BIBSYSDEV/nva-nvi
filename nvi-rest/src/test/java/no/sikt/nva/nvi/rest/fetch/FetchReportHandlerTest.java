@@ -1,10 +1,12 @@
 package no.sikt.nva.nvi.rest.fetch;
 
-import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
+import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
+import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.CoreMatchers.equalTo;
+import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATE;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -14,6 +16,7 @@ import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.file.Files;
@@ -23,13 +26,13 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.rest.create.NviNoteRequest;
+import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
-import no.unit.nva.commons.json.JsonUtils;
+import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
-import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
@@ -37,6 +40,7 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
@@ -44,6 +48,9 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 class FetchReportHandlerTest extends LocalDynamoTest {
 
+    private static final String INSTITUTION_IDENTIFIER = "institutionIdentifier";
+    private static final String YEAR = "year";
+    private static final int CURRENT_YEAR = Year.now().getValue();
     private static final Context CONTEXT = mock(Context.class);
     private final DynamoDbClient localDynamo = initializeTestDatabase();
     private ByteArrayOutputStream output;
@@ -55,20 +62,35 @@ class FetchReportHandlerTest extends LocalDynamoTest {
     public void setUp() {
         output = new ByteArrayOutputStream();
         candidateRepository = new CandidateRepository(localDynamo);
-        periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
+        periodRepository = periodRepositoryReturningOpenedPeriod(TestUtils.CURRENT_YEAR);
         handler = new FetchReportHandler(candidateRepository, periodRepository);
     }
 
     @Test
-    void shouldReturnUnauthenticatedWhenNotLoggedInWithValidUser() throws IOException {
-        var identifier = randomUri();
-        var customerId = randomUri();
+    void shouldReturnUnauthorizedWhenUserDoesNotHaveSufficientAccessRight() throws IOException {
+        var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
+                                                candidateRepository, periodRepository).orElseThrow();
         var year = Year.now().getValue();
-        var input = createInputWithoutAccessRights(customerId, identifier, year).build();
-        handler.handleRequest(input, output, CONTEXT);
+        var institutionId = randomUri();
+        var request = createRequest(candidate.getIdentifier(), institutionId, institutionId, year,
+                                    "SomeAccessRight").build();
+        handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    }
+
+    @Test
+    void shouldReturnForbiddenWhenUserDoesNotBelongToSameInstitutionAsRequestedInstitution()
+        throws IOException {
+        var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
+                                                candidateRepository, periodRepository).orElseThrow();
+        var request = createRequest(candidate.getIdentifier(), randomUri(), randomUri(), CURRENT_YEAR,
+                                    MANAGE_NVI_CANDIDATE.name()).build();
+        handler.handleRequest(request, output, CONTEXT);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_FORBIDDEN)));
     }
 
     @Test
@@ -79,9 +101,10 @@ class FetchReportHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnEmptyXlsxFileWhenNotDataExists()
         throws IOException {
-        var input = createInput(randomUri(), randomUri(), Year.now().getValue())
-                        .build();
-        handler.handleRequest(input, output, CONTEXT);
+        var institutionId = randomUri();
+        var request = createRequest(UUID.randomUUID(), institutionId, institutionId, CURRENT_YEAR,
+                                    MANAGE_NVI_CANDIDATE.toString()).build();
+        handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, String.class);
 
         assertThat(response.getStatusCode(), is(HttpURLConnection.HTTP_OK));
@@ -93,37 +116,40 @@ class FetchReportHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldContentNegotiate() throws IOException {
-        var input = createInput(randomUri(), randomUri(), Year.now().getValue())
-                        .withHeaders(Map.of(HttpHeaders.ACCEPT, MediaType.MICROSOFT_EXCEL.toString()))
-                        .build();
-        handler.handleRequest(input, output, CONTEXT);
+        var institutionId = randomUri();
+        var request = createRequest(UUID.randomUUID(), institutionId, institutionId, CURRENT_YEAR,
+                                    MANAGE_NVI_CANDIDATE.toString())
+                          .withHeaders(Map.of(HttpHeaders.ACCEPT, MediaType.MICROSOFT_EXCEL.toString()))
+                          .build();
+        handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, String.class);
         assertThat(response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(MediaType.MICROSOFT_EXCEL.toString()));
     }
 
     @Test
     void shouldContentNegotiateMore() throws IOException {
-        var input = createInput(randomUri(), randomUri(), Year.now().getValue())
-                        .withHeaders(Map.of(HttpHeaders.ACCEPT, MediaType.ANY_APPLICATION_TYPE.toString()))
-                        .build();
-        handler.handleRequest(input, output, CONTEXT);
+        var institutionId = randomUri();
+        var request = createRequest(UUID.randomUUID(), institutionId, institutionId, CURRENT_YEAR,
+                                    MANAGE_NVI_CANDIDATE.toString())
+                          .withHeaders(Map.of(HttpHeaders.ACCEPT, MediaType.ANY_APPLICATION_TYPE.toString()))
+                          .build();
+        handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, String.class);
         assertThat(response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(MediaType.MICROSOFT_EXCEL.toString()));
     }
 
-    private static HandlerRequestBuilder<NviNoteRequest> createInput(URI customerId, URI identifier, int year) {
-        return createInputWithoutAccessRights(customerId, identifier, year)
-                   .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE.name());
-    }
-
-    private static HandlerRequestBuilder<NviNoteRequest> createInputWithoutAccessRights(URI customerId,
-                                                                                        URI identifier,
-                                                                                        int year) {
-        return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper)
+    private static HandlerRequestBuilder<InputStream> createRequest(UUID candidateIdentifier,
+                                                                    URI userTopLevelCristinInstitution,
+                                                                    URI institutionId, int year, String accessRight) {
+        var customerId = randomUri();
+        return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
                    .withCurrentCustomer(customerId)
-                   .withPathParameters(Map.of("institutionIdentifier", identifier.toString(),
-                                              "year", String.valueOf(year)))
-                   .withUserName(randomString());
+                   .withTopLevelCristinOrgId(userTopLevelCristinInstitution)
+                   .withAccessRights(customerId, accessRight)
+                   .withUserName(randomString())
+                   .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateIdentifier.toString(),
+                                              INSTITUTION_IDENTIFIER, institutionId.toString(),
+                                              YEAR, String.valueOf(year)));
     }
 
     private static ArrayList<List<String>> getLists(XSSFSheet sheet) {
