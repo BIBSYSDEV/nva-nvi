@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.rest.fetch;
+package no.sikt.nva.nvi.rest.model;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
