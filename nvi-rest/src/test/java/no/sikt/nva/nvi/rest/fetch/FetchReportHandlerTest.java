@@ -1,5 +1,9 @@
 package no.sikt.nva.nvi.rest.fetch;
 
+import static com.google.common.net.HttpHeaders.ACCEPT;
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static com.google.common.net.MediaType.ANY_APPLICATION_TYPE;
+import static com.google.common.net.MediaType.MICROSOFT_EXCEL;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
@@ -12,8 +16,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.google.common.net.HttpHeaders;
-import com.google.common.net.MediaType;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -115,27 +117,27 @@ class FetchReportHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldContentNegotiate() throws IOException {
+    void shouldReturnMediaTypeMicrosoftExcelWhenRequested() throws IOException {
         var institutionId = randomUri();
         var request = createRequest(UUID.randomUUID(), institutionId, institutionId, CURRENT_YEAR,
                                     MANAGE_NVI_CANDIDATE.toString())
-                          .withHeaders(Map.of(HttpHeaders.ACCEPT, MediaType.MICROSOFT_EXCEL.toString()))
+                          .withHeaders(Map.of(ACCEPT, MICROSOFT_EXCEL.toString()))
                           .build();
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, String.class);
-        assertThat(response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(MediaType.MICROSOFT_EXCEL.toString()));
+        assertThat(response.getHeaders().get(CONTENT_TYPE), is(MICROSOFT_EXCEL.toString()));
     }
 
     @Test
-    void shouldContentNegotiateMore() throws IOException {
+    void shouldReturnMediaTypeMicrosoftExcelAsDefault() throws IOException {
         var institutionId = randomUri();
         var request = createRequest(UUID.randomUUID(), institutionId, institutionId, CURRENT_YEAR,
                                     MANAGE_NVI_CANDIDATE.toString())
-                          .withHeaders(Map.of(HttpHeaders.ACCEPT, MediaType.ANY_APPLICATION_TYPE.toString()))
+                          .withHeaders(Map.of(ACCEPT, ANY_APPLICATION_TYPE.toString()))
                           .build();
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, String.class);
-        assertThat(response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(MediaType.MICROSOFT_EXCEL.toString()));
+        assertThat(response.getHeaders().get(CONTENT_TYPE), is(MICROSOFT_EXCEL.toString()));
     }
 
     private static HandlerRequestBuilder<InputStream> createRequest(UUID candidateIdentifier,
