@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Year;
@@ -151,7 +153,8 @@ class FetchReportHandlerTest extends LocalDynamoTest {
                    .withAccessRights(customerId, accessRight)
                    .withUserName(randomString())
                    .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateIdentifier.toString(),
-                                              INSTITUTION_IDENTIFIER, institutionId.toString(),
+                                              INSTITUTION_IDENTIFIER,
+                                              URLEncoder.encode(institutionId.toString(), StandardCharsets.UTF_8),
                                               YEAR, String.valueOf(year)));
     }
 
