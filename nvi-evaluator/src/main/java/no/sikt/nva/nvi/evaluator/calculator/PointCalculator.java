@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_COUNTRY_CODE;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_INSTANCE_TYPE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLISHER;
@@ -19,12 +20,15 @@ import static no.sikt.nva.nvi.evaluator.model.InstanceType.ACADEMIC_CHAPTER;
 import static no.sikt.nva.nvi.evaluator.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
 import static no.sikt.nva.nvi.evaluator.model.InstanceType.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.evaluator.model.Level.LEVEL_ONE;
+import static no.sikt.nva.nvi.evaluator.model.Level.LEVEL_ONE_V2;
 import static no.sikt.nva.nvi.evaluator.model.Level.LEVEL_TWO;
+import static no.sikt.nva.nvi.evaluator.model.Level.LEVEL_TWO_V2;
 import static no.sikt.nva.nvi.evaluator.model.PublicationChannel.JOURNAL;
 import static no.sikt.nva.nvi.evaluator.model.PublicationChannel.PUBLISHER;
 import static no.sikt.nva.nvi.evaluator.model.PublicationChannel.SERIES;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
@@ -60,25 +64,37 @@ public final class PointCalculator {
         ACADEMIC_MONOGRAPH, Map.of(
             PUBLISHER, Map.of(
                 LEVEL_ONE, BigDecimal.valueOf(5),
-                LEVEL_TWO, BigDecimal.valueOf(8)),
+                LEVEL_ONE_V2, BigDecimal.valueOf(5),
+                LEVEL_TWO, BigDecimal.valueOf(8),
+                LEVEL_TWO_V2, BigDecimal.valueOf(8)),
             SERIES, Map.of(
                 LEVEL_ONE, BigDecimal.valueOf(5),
-                LEVEL_TWO, BigDecimal.valueOf(8))),
+                LEVEL_ONE_V2, BigDecimal.valueOf(5),
+                LEVEL_TWO, BigDecimal.valueOf(8),
+                LEVEL_TWO_V2, BigDecimal.valueOf(8))),
         ACADEMIC_CHAPTER, Map.of(
             PUBLISHER, Map.of(
                 LEVEL_ONE, BigDecimal.valueOf(0.7),
-                LEVEL_TWO, BigDecimal.valueOf(1)),
+                LEVEL_ONE_V2, BigDecimal.valueOf(0.7),
+                LEVEL_TWO, BigDecimal.valueOf(1),
+                LEVEL_TWO_V2, BigDecimal.valueOf(1)),
             SERIES, Map.of(
                 LEVEL_ONE, BigDecimal.valueOf(1),
-                LEVEL_TWO, BigDecimal.valueOf(3))),
+                LEVEL_ONE_V2, BigDecimal.valueOf(1),
+                LEVEL_TWO, BigDecimal.valueOf(3),
+                LEVEL_TWO_V2, BigDecimal.valueOf(3))),
         ACADEMIC_ARTICLE, Map.of(
             JOURNAL, Map.of(
                 LEVEL_ONE, BigDecimal.valueOf(1),
-                LEVEL_TWO, BigDecimal.valueOf(3))),
+                LEVEL_ONE_V2, BigDecimal.valueOf(1),
+                LEVEL_TWO, BigDecimal.valueOf(3),
+                LEVEL_TWO_V2, BigDecimal.valueOf(3))),
         ACADEMIC_LITERATURE_REVIEW, Map.of(
             JOURNAL, Map.of(
                 LEVEL_ONE, BigDecimal.valueOf(1),
-                LEVEL_TWO, BigDecimal.valueOf(3))));
+                LEVEL_ONE_V2, BigDecimal.valueOf(1),
+                LEVEL_TWO, BigDecimal.valueOf(3),
+                LEVEL_TWO_V2, BigDecimal.valueOf(3))));
 
     private PointCalculator() {
     }
@@ -90,31 +106,37 @@ public final class PointCalculator {
         massiveHackToFixObjectsWithMultipleTypes(jsonNode);
         var publicationChannel = extractChannel(instanceType, jsonNode);
         return calculatePoints(nviCreatorsWithInstitutionIds, instanceType, publicationChannel,
-                               getInstanceTypeAndLevelPoints(instanceType, publicationChannel),
                                isInternationalCollaboration(jsonNode), countCreatorShares(jsonNode));
     }
 
     private static PointCalculation calculatePoints(Map<URI, List<URI>> nviCreatorsWithInstitutionIds,
                                                     InstanceType instanceType, Channel channel,
-                                                    BigDecimal instanceTypeAndLevelPoints,
                                                     boolean internationalCollaboration, int creatorShareCount) {
+        var basePoints = getInstanceTypeAndLevelPoints(instanceType, channel);
+        var collaborationFactor = getInternationalCollaborationFactor(internationalCollaboration);
+        var institutionPoints = calculatePointsForAllInstitutions(basePoints, creatorShareCount,
+                                                                  internationalCollaboration,
+                                                                  nviCreatorsWithInstitutionIds);
+        var totalPoints = calculateTotalPoints(collaborationFactor, basePoints, BigDecimal.valueOf(creatorShareCount));
         return new PointCalculation(instanceType, channel.type(), channel.id(), channel.level(),
-                                    internationalCollaboration, internationalCollaboration
-                                                                    ? INTERNATIONAL_COLLABORATION_FACTOR
-                                                                    : NOT_INTERNATIONAL_COLLABORATION_FACTOR,
-                                    instanceTypeAndLevelPoints,
+                                    internationalCollaboration, collaborationFactor,
+                                    basePoints,
                                     creatorShareCount,
-                                    calculatePointsForAllInstitutions(instanceTypeAndLevelPoints,
-                                                                      creatorShareCount,
-                                                                      internationalCollaboration,
-                                                                      countInstitutionCreatorShares(
-                                                                          nviCreatorsWithInstitutionIds)));
+                                    institutionPoints,
+                                    totalPoints);
+    }
+
+    private static BigDecimal calculateTotalPoints(BigDecimal internationalCollaborationFactor, BigDecimal basePoints,
+                                                   BigDecimal creatorShareCount) {
+        return executeNviFormula(basePoints, internationalCollaborationFactor, creatorShareCount);
     }
 
     private static Map<URI, BigDecimal> calculatePointsForAllInstitutions(BigDecimal instanceTypeAndLevelPoints,
                                                                           int creatorShareCount,
                                                                           boolean isInternationalCollaboration,
-                                                                          Map<URI, Long> institutionCreatorShareCount) {
+                                                                          Map<URI, List<URI>>
+                                                                              nviCreatorsWithInstitutionIds) {
+        var institutionCreatorShareCount = countInstitutionCreatorShares(nviCreatorsWithInstitutionIds);
         return institutionCreatorShareCount.entrySet()
                    .stream()
                    .collect(Collectors.toMap(Entry::getKey,
@@ -131,10 +153,13 @@ public final class PointCalculator {
         var internationalFactor = getInternationalCollaborationFactor(isInternationalCollaboration);
         var institutionContributorFraction = divideInstitutionShareOnTotalShares(institutionCreatorShareCount,
                                                                                  creatorShareCount);
-        var creatorFactor = institutionContributorFraction.sqrt(MATH_CONTEXT).setScale(SCALE, ROUNDING_MODE);
-        return instanceTypeAndLevelPoints
-                   .multiply(internationalFactor)
-                   .multiply(creatorFactor)
+        return executeNviFormula(instanceTypeAndLevelPoints, internationalFactor, institutionContributorFraction);
+    }
+
+    private static BigDecimal executeNviFormula(BigDecimal basePoints, BigDecimal internationalFactor,
+                                                BigDecimal creatorShareCount) {
+        return basePoints.multiply(internationalFactor)
+                   .multiply(creatorShareCount.sqrt(MATH_CONTEXT).setScale(SCALE, ROUNDING_MODE))
                    .setScale(RESULT_SCALE, ROUNDING_MODE);
     }
 
@@ -199,11 +224,16 @@ public final class PointCalculator {
 
     private static int countCreatorShares(JsonNode jsonNode) {
         var creators = extractCreatorNodes(jsonNode);
-        return Integer.sum(countAffiliations(creators), countCreatorsWithoutAffiliations(creators));
+        return Integer.sum(Integer.sum(countVerifiedAffiliations(creators), countCreatorsWithoutAffiliations(creators)),
+                           countCreatorsWithOnlyUnverifiedAffiliations(creators));
     }
 
-    private static List<JsonNode> extractCreatorNodes(JsonNode jsonNode) {
-        return streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR)).filter(PointCalculator::isCreator).toList();
+    private static Integer countVerifiedAffiliations(List<JsonNode> creators) {
+        return creators.stream()
+                   .flatMap(PointCalculator::extractAffiliations)
+                   .filter(PointCalculator::hasId)
+                   .map(node -> 1)
+                   .reduce(0, Integer::sum);
     }
 
     private static Integer countCreatorsWithoutAffiliations(List<JsonNode> creators) {
@@ -213,8 +243,36 @@ public final class PointCalculator {
                    .reduce(0, Integer::sum);
     }
 
-    private static Integer countAffiliations(List<JsonNode> creators) {
-        return creators.stream().flatMap(PointCalculator::extractAffiliations).map(node -> 1).reduce(0, Integer::sum);
+    private static Integer countCreatorsWithOnlyUnverifiedAffiliations(List<JsonNode> creators) {
+        return creators.stream()
+                   .filter(PointCalculator::hasAffiliations)
+                   .filter(PointCalculator::isOnlyAffiliatedWithOrganizationsWithOutId)
+                   .map(node -> 1)
+                   .reduce(0, Integer::sum);
+    }
+
+    private static boolean isOnlyAffiliatedWithOrganizationsWithOutId(JsonNode contributor) {
+        return extractAffiliations(contributor).allMatch(PointCalculator::doesNotHaveId);
+    }
+
+    private static boolean hasId(JsonNode affiliation) {
+        return Objects.nonNull(extractId(affiliation));
+    }
+
+    private static boolean doesNotHaveId(JsonNode affiliation) {
+        return !hasId(affiliation);
+    }
+
+    private static String extractId(JsonNode affiliation) {
+        return extractJsonNodeTextValue(affiliation, JSON_PTR_ID);
+    }
+
+    private static List<JsonNode> extractCreatorNodes(JsonNode jsonNode) {
+        return streamNode(jsonNode.at(JSON_PTR_CONTRIBUTOR)).filter(PointCalculator::isCreator).toList();
+    }
+
+    private static boolean hasAffiliations(JsonNode contributor) {
+        return !doesNotHaveAffiliations(contributor);
     }
 
     private static boolean doesNotHaveAffiliations(JsonNode contributor) {
@@ -270,7 +328,7 @@ public final class PointCalculator {
         }
     }
 
-    private record Channel(URI id, PublicationChannel type, Level level) {
+    private record Channel(URI id, PublicationChannel type, @JsonAlias("scientificValue") Level level) {
 
     }
 }

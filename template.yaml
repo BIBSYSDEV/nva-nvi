@@ -53,6 +53,12 @@ Parameters:
   BatchScanDLQName:
     Type: String
     Default: BatchScanDLQ
+  UpdateIndexDLQName:
+    Type: String
+    Default: UpdateIndexDLQ
+  UpsertCandidateDLQName:
+    Type: String
+    Default: UpsertCandidateDLQ
   SearchInfrastructureApiHost:
     Type: String
     Description: Host of external search infrastructure API (SWS).
@@ -81,7 +87,7 @@ Resources:
   InternalBus:
     Type: AWS::Events::EventBus
     Properties:
-      Name: !Join [ '',[ 'nvi-internal-bus',!Ref Suffix ]   ]
+      Name: !Join [ '',[ 'nvi-internal-bus',!Ref Suffix ] ]
 
   #=============================== SQSs ============================================================
   NewCandidateQueue:
@@ -97,6 +103,16 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref BatchScanDLQName
+  UpdateIndexDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref UpdateIndexDLQName
+      MessageRetentionPeriod: 43200
+  UpsertCandidateDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref UpsertCandidateDLQName
+      MessageRetentionPeriod: 43200
 
   #============================= Permissions =======================================================
   NvaNviRole:
@@ -136,6 +152,8 @@ Resources:
                   - !GetAtt NewCandidateQueue.Arn
                   - !GetAtt NewCandidateDLQ.Arn
                   - !GetAtt BatchScanDLQ.Arn
+                  - !GetAtt UpdateIndexDLQ.Arn
+                  - !GetAtt UpsertCandidateDLQ.Arn
         - PolicyName: writeLog
           PolicyDocument:
             Version: 2012-10-17
@@ -263,8 +281,8 @@ Resources:
           BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
           BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-          CANDIDATE_QUEUE_NAME: !Ref NewCandidateQueueName
-          CANDIDATE_DLQ_NAME: !Ref NewCandidateDLQName
+          CANDIDATE_QUEUE_URL: !Ref NewCandidateQueue
+          CANDIDATE_DLQ_URL: !Ref NewCandidateDLQ
       AutoPublishAlias: live
       Events:
         EventBridgeEvent:
@@ -284,7 +302,7 @@ Resources:
       Description: 'Listens to DynamoDbStream and creates, modifies and deletes record from nvi-index'
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.UpdateIndexHandler::handleRequest
-      Timeout: 30
+      Timeout: 600
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
@@ -293,6 +311,7 @@ Resources:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
           BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
           BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
+          UPDATE_INDEX_DLQ_QUEUE_URL: !Ref UpdateIndexDLQ
       Events:
         FanoutSource:
           Type: DynamoDB
@@ -311,6 +330,9 @@ Resources:
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
+      Environment:
+        Variables:
+          UPSERT_CANDIDATE_DLQ_QUEUE_URL: !Ref UpsertCandidateDLQ
       Events:
         SqsEvent:
           Type: SQS
@@ -470,6 +492,26 @@ Resources:
           Type: Api
           Properties:
             Path: /candidate/{candidateIdentifier}
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+
+  FetchNviCandidateByPublicationIdHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.fetch.FetchNviCandidateByPublicationIdHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /candidate/publication/{candidatePublicationId+}
             Method: get
             RestApiId: !Ref ScientificIndexApi
 

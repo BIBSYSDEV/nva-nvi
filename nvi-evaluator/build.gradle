@@ -19,7 +19,6 @@ dependencies {
     implementation libs.aws.sdk2.s3
     implementation libs.aws.sdk2.sqs
     implementation libs.aws.sdk2.core
-    implementation libs.aws.sdk2.apache.client
     implementation libs.aws.sdk2.urlconnection
     implementation libs.aws.sdk2.secrets
 
@@ -36,8 +35,6 @@ dependencies {
 test {
     useJUnitPlatform()
     environment "EXPANDED_RESOURCES_BUCKET", "ignoredBucket"
-    environment "CANDIDATE_QUEUE_NAME", "My Queueses"
-    environment "CANDIDATE_DLQ_NAME", "My Deadeses"
     environment "BACKEND_CLIENT_AUTH_URL", "My url"
     environment "BACKEND_CLIENT_SECRET_NAME", "My secret name"
     environment "API_HOST", "api.dev.nva.aws.unit.no"

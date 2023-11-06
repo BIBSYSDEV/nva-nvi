@@ -200,7 +200,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE.name())
                    .withUserName(randomString())
                    .withBody(requestBody)
-                   .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidate.identifier().toString()))
+                   .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidate.getIdentifier().toString()))
                    .build();
     }
 

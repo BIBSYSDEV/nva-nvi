@@ -22,7 +22,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Optional;
-import no.sikt.nva.nvi.evaluator.aws.SqsMessageClient;
+import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.evaluator.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.evaluator.model.NviCandidate;
@@ -69,10 +69,13 @@ public class EvaluateNviCandidateWithCristinDataTest {
 
     @BeforeEach
     void setUp() {
+        var env = mock(Environment.class);
+        when(env.readEnv("CANDIDATE_QUEUE_URL")).thenReturn("My test candidate queue url");
+        when(env.readEnv("CANDIDATE_DLQ_URL")).thenReturn("My test candidate dlq url");
         var s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, BUCKET_NAME);
         sqsClient = new FakeSqsClient();
-        var queueClient = new SqsMessageClient(sqsClient);
+        var queueClient = new NviQueueClient(sqsClient);
         var secretsManagerClient = new FakeSecretsManagerClient();
         var credentials = new BackendClientCredentials("id", "secret");
         secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
@@ -80,7 +83,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
         var calculator = new CandidateCalculator(uriRetriever);
         var storageReader = new FakeStorageReader(s3Client);
         var evaluatorService = new EvaluatorService(storageReader, calculator);
-        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient);
+        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
         output = new ByteArrayOutputStream();
     }
 
@@ -91,7 +94,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
 
         handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicArticle.json"), output, context);
         var body = getCandidateEvaluatedMessage();
-        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        var institutionPoints = ((NviCandidate) body.candidate()).institutionPoints();
         assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8165))));
         assertThat(institutionPoints.get(ST_OLAVS_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5774))));
     }
@@ -104,7 +107,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
 
         handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicMonograph.json"), output, context);
         var body = getCandidateEvaluatedMessage();
-        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        var institutionPoints = ((NviCandidate) body.candidate()).institutionPoints();
         assertThat(institutionPoints.get(UIO_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(3.7528))));
     }
 
@@ -116,7 +119,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
 
         handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicLiteratureReview.json"), output, context);
         var body = getCandidateEvaluatedMessage();
-        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        var institutionPoints = ((NviCandidate) body.candidate()).institutionPoints();
         assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(1.5922))));
     }
 
@@ -128,7 +131,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
 
         handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicChapter.json"), output, context);
         var body = getCandidateEvaluatedMessage();
-        var institutionPoints = ((NviCandidate) body.candidate()).candidateDetails().institutionPoints();
+        var institutionPoints = ((NviCandidate) body.candidate()).institutionPoints();
         assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8660))));
         assertThat(institutionPoints.get(SINTEF_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5000))));
     }

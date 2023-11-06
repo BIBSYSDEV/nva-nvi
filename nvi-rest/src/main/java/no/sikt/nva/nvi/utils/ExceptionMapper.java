@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.utils;
 import java.util.NoSuchElementException;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
+import no.sikt.nva.nvi.utils.exception.NotApplicableException;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.BadGatewayException;
 import nva.commons.apigateway.exceptions.BadRequestException;
@@ -34,8 +35,12 @@ public final class ExceptionMapper {
             logger.error("IllegalStateException", exception);
             return new ConflictException(exception.getMessage());
         }
-        if (exception instanceof UnauthorizedOperationException) {
+        if (exception instanceof UnauthorizedOperationException || exception instanceof UnauthorizedException) {
             return new UnauthorizedException(exception.getMessage());
+        }
+        if (exception instanceof NotApplicableException) {
+            logger.warn("Attempted operation which was not allowed", exception);
+            return new MethodNotAllowedException(exception.getMessage());
         }
         logger.error("BadGatewayException", exception);
         return new BadGatewayException(exception.getMessage());

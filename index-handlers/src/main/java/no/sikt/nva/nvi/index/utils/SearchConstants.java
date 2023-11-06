@@ -8,6 +8,7 @@ import nva.commons.core.Environment;
 import org.opensearch.client.opensearch._types.mapping.KeywordProperty;
 import org.opensearch.client.opensearch._types.mapping.NestedProperty;
 import org.opensearch.client.opensearch._types.mapping.Property;
+import org.opensearch.client.opensearch._types.mapping.TextProperty;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
@@ -28,6 +29,8 @@ public final class SearchConstants {
     public static final String APPROVALS = "approvals";
     public static final String PUBLICATION_DATE = "publicationDate";
     public static final String YEAR = "year";
+    public static final String TYPE = "type";
+    public static final String TITLE = "title";
     public static final String KEYWORD = "keyword";
     public static final String APPROVAL_STATUS = "approvalStatus";
     public static final String PUBLICATION_DETAILS = "publicationDetails";
@@ -49,16 +52,21 @@ public final class SearchConstants {
 
     public static Query constructQuery(CandidateSearchParameters params) {
         var filterType = QueryFilterType.parse(params.filter())
-                             .orElseThrow(() -> new IllegalStateException("unknown filter " + params.filter()));
+            .orElseThrow(() -> new IllegalStateException("unknown filter " + params.filter()));
         return new CandidateQuery.Builder()
-                        .withInstitutions(params.affiliations())
-                        .withExcludeSubUnits(params.excludeSubUnits())
-                        .withFilter(filterType)
-                        .withUsername(params.username())
-                        .withCustomer(params.customer().toString())
-                        .withYear(params.year())
-                        .build()
-                        .toQuery();
+            .withSearchTerm(params.searchTerm())
+            .withInstitutions(params.affiliations())
+            .withExcludeSubUnits(params.excludeSubUnits())
+            .withFilter(filterType)
+            .withUsername(params.username())
+            .withCustomer(params.customer().toString())
+            .withYear(params.year())
+            .withCategory(params.category())
+            .withTitle(params.title())
+            .withContributor(params.contributor())
+            .withAssignee(params.assignee())
+            .build()
+            .toQuery();
     }
 
     public static TypeMapping mappings() {
@@ -93,12 +101,13 @@ public final class SearchConstants {
     }
 
     private static Map<String, Property> approvalProperties() {
-        return Map.of(ID, keywordProperty(), ASSIGNEE, keywordProperty(), APPROVAL_STATUS, keywordProperty());
+        return Map.of(ID, keywordProperty(), ASSIGNEE, textPropertyWithNetsedKeyword(),
+                      APPROVAL_STATUS, keywordProperty());
     }
 
     private static Map<String, Property> contributorsProperties() {
         return Map.of(ID, keywordProperty(),
-                      NAME, keywordProperty(),
+                      NAME, textPropertyWithNetsedKeyword(),
                       AFFILIATIONS, affiliationsNestedProperty()._toProperty(),
                       ROLE, keywordProperty()
         );
@@ -112,5 +121,10 @@ public final class SearchConstants {
 
     private static Property keywordProperty() {
         return new Property.Builder().keyword(new KeywordProperty.Builder().build()).build();
+    }
+
+    private static Property textPropertyWithNetsedKeyword() {
+        return new Property.Builder().text(new TextProperty.Builder().fields(
+            Map.of(KEYWORD, keywordProperty())).build()).build();
     }
 }

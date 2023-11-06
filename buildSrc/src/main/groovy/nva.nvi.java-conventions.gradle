@@ -22,7 +22,7 @@ targetCompatibility = JavaVersion.VERSION_17 // bytecode target version
 
 tasks.named('test') {
     useJUnitPlatform()
-    failFast = true
+    failFast = false
     testLogging {
         events 'skipped', 'passed', 'failed'
     }

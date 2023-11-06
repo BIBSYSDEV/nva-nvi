@@ -36,7 +36,6 @@ import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhanced
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
@@ -45,6 +44,7 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 public class CandidateRepository extends DynamoRepository {
 
     private static final int BATCH_SIZE = 25;
+    private static final long INITIAL_RETRY_WAIT_TIME_MS = 1000;
     private static final String PRIMARY_KEY_HASH_KEY = "PrimaryKeyHashKey";
     private static final String CANDIDATE_UNIQUENESS_ENTRY = "CandidateUniquenessEntry";
     protected final DynamoDbTable<CandidateDao> candidateTable;
@@ -53,6 +53,7 @@ public class CandidateRepository extends DynamoRepository {
     protected final DynamoDbTable<ApprovalStatusDao> approvalStatusTable;
     protected final DynamoDbTable<NoteDao> noteTable;
     protected final DynamoDbTable<NviPeriodDao> periodTable;
+    private final DynamoDbRetryWrapper dynamoDbRetryClient;
 
     public CandidateRepository(DynamoDbClient client) {
         super(client);
@@ -62,6 +63,11 @@ public class CandidateRepository extends DynamoRepository {
         this.approvalStatusTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(ApprovalStatusDao.class));
         this.noteTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(NoteDao.class));
         this.periodTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(NviPeriodDao.class));
+        this.dynamoDbRetryClient = DynamoDbRetryWrapper.builder()
+                                       .dynamoDbClient(defaultClient)
+                                       .initialRetryWaitTimeMs(INITIAL_RETRY_WAIT_TIME_MS)
+                                       .tableName(NVI_TABLE_NAME)
+                                       .build();
     }
 
     public ListingResult refresh(int pageSize, Map<String, String> startMarker) {
@@ -69,16 +75,14 @@ public class CandidateRepository extends DynamoRepository {
 
         var items = scan.items().stream().map(this::mutateVersion).toList();
 
-        var batchResults = getBatches(items).map(this::toBatchRequest).map(defaultClient::batchWriteItem).toList();
+        var count = getBatches(items).map(this::toBatchRequest)
+                .map(dynamoDbRetryClient::batchWriteItem)
+                .mapToInt(Integer::intValue)
+                .sum();
 
-        return new ListingResult(thereAreMorePagesToScan(scan), toStringMap(scan.lastEvaluatedKey()),
-                                 batchResults.size(),
-                                 getUnprocessedSum(batchResults));
+        return new ListingResult(thereAreMorePagesToScan(scan), toStringMap(scan.lastEvaluatedKey()), count);
     }
 
-    private static int getUnprocessedSum(List<BatchWriteItemResponse> batchResults) {
-        return batchResults.stream().mapToInt(a -> a.unprocessedItems().size()).sum();
-    }
 
     private Map<String, AttributeValue> mutateVersion(Map<String, AttributeValue> item) {
         var mutableMap = new HashMap<>(item);

@@ -4,6 +4,7 @@ import static java.util.UUID.randomUUID;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,6 +29,7 @@ import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
@@ -45,16 +47,17 @@ import no.sikt.nva.nvi.common.service.requests.FetchByPublicationRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import no.sikt.nva.nvi.common.service.requests.UpsertNonCandidateRequest;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
 public final class CandidateBO {
 
-    public static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
-    public static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
-                                                           + " forbidden!";
-    public static final String DELETE_MESSAGE_ERROR = "Can not delete message you does not own!";
+    private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
+    private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
+                                                            + " forbidden!";
+    private static final String DELETE_MESSAGE_ERROR = "Can not delete message you does not own!";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
@@ -63,22 +66,30 @@ public final class CandidateBO {
     private static final PeriodStatus PERIOD_STATUS_NO_PERIOD = PeriodStatus.builder()
                                                                     .withStatus(Status.NO_PERIOD)
                                                                     .build();
+    private static final int POINTS_SCALE = 4;
+    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private final CandidateRepository repository;
     private final UUID identifier;
-    private final CandidateDao candidateDao;
+    private final URI publicationId;
+    private final URI publicationBucketUri;
+    private final boolean applicable;
     private final Map<URI, ApprovalBO> approvals;
     private final Map<UUID, NoteBO> notes;
-    private final Map<URI, BigDecimal> points;
+    private final Map<URI, BigDecimal> institutionPoints;
+    private final BigDecimal totalPoints;
     private final PeriodStatus periodStatus;
 
     private CandidateBO(CandidateRepository repository, CandidateDao candidateDao, List<ApprovalStatusDao> approvals,
                         List<NoteDao> notes, PeriodStatus periodStatus) {
         this.repository = repository;
         this.identifier = candidateDao.identifier();
-        this.candidateDao = candidateDao;
+        this.publicationId = candidateDao.candidate().publicationId();
+        this.publicationBucketUri = candidateDao.candidate().publicationBucketUri();
+        this.applicable = candidateDao.candidate().applicable();
         this.approvals = mapToApprovalsMap(repository, approvals);
         this.notes = mapToNotesMap(repository, notes);
-        this.points = mapToPointsMap(candidateDao);
+        this.institutionPoints = mapToPointsMap(candidateDao);
+        this.totalPoints = candidateDao.candidate().totalPoints();
         this.periodStatus = periodStatus;
     }
 
@@ -104,49 +115,61 @@ public final class CandidateBO {
 
     public static Optional<CandidateBO> fromRequest(UpsertCandidateRequest request, CandidateRepository repository,
                                                     PeriodRepository periodRepository) {
-        if (isNewCandidate(request, repository)) {
+        if (isNotExistingCandidate(request, repository)) {
             return Optional.of(createCandidate(request, repository, periodRepository));
         }
-        if (shouldBeUpdated(request, repository)) {
+        if (isExistingCandidate(request.publicationId(), repository)) {
             return Optional.of(updateCandidate(request, repository, periodRepository));
         }
-        if (shouldBeDeleted(request, repository)) {
+        return Optional.empty();
+    }
+
+    public static Optional<CandidateBO> fromRequest(UpsertNonCandidateRequest request, CandidateRepository repository) {
+        if (isExistingCandidate(request.publicationId(), repository)) {
             return Optional.of(deleteCandidate(request, repository));
         }
         return Optional.empty();
     }
 
-    @JacocoGenerated
+    public UUID getIdentifier() {
+        return identifier;
+    }
+
+    public URI getPublicationId() {
+        return publicationId;
+    }
+
+    public URI getPublicationBucketUri() {
+        return publicationBucketUri;
+    }
+
+    public boolean isApplicable() {
+        return applicable;
+    }
+
+    public Map<URI, BigDecimal> getInstitutionPoints() {
+        return institutionPoints;
+    }
+
     public Map<URI, ApprovalBO> getApprovals() {
         return new HashMap<>(approvals);
     }
 
-    @JacocoGenerated
-    public UUID identifier() {
-        return identifier;
-    }
-
-    public URI publicationId() {
-        return candidateDao.candidate().publicationId();
-    }
-
-    PeriodStatus periodStatus() {
-        return periodStatus;
+    public BigDecimal getTotalPoints() {
+        return totalPoints;
     }
 
     public CandidateDto toDto() {
-        if (isApplicable()) {
-            return CandidateDto.builder()
-                       .withId(constructId(identifier))
-                       .withIdentifier(identifier)
-                       .withPublicationId(candidateDao.candidate().publicationId())
-                       .withApprovalStatuses(mapToApprovalDtos())
-                       .withNotes(mapToNoteDtos())
-                       .withPeriodStatus(mapToPeriodStatusDto())
-                       .build();
-        } else {
-            throw new CandidateNotFoundException();
-        }
+        return CandidateDto.builder()
+                   .withId(constructId(identifier))
+                   .withIdentifier(identifier)
+                   .withPublicationId(publicationId)
+                   .withApprovalStatuses(mapToApprovalDtos())
+                   .withNotes(mapToNoteDtos())
+                   .withPeriodStatus(mapToPeriodStatusDto())
+                   .withUndistributedPoints(calculateUndistributedPoints())
+                   .withTotalPoints(totalPoints)
+                   .build();
     }
 
     public CandidateBO updateApproval(UpdateApprovalRequest input) {
@@ -173,18 +196,8 @@ public final class CandidateBO {
         return this;
     }
 
-    public boolean isApplicable() {
-        return candidateDao.candidate().applicable();
-    }
-
-    @JacocoGenerated
-    public List<DbInstitutionPoints> getPoints() {
-        return candidateDao.candidate().points();
-    }
-
-    @JacocoGenerated
-    public URI getBucketUri() {
-        return candidateDao.candidate().publicationBucketUri();
+    PeriodStatus periodStatus() {
+        return periodStatus;
     }
 
     private static PeriodStatus calculatePeriodStatusIfApplicable(PeriodRepository periodRepository,
@@ -195,30 +208,18 @@ public final class CandidateBO {
                    : PERIOD_STATUS_NO_PERIOD;
     }
 
-    private static boolean shouldBeDeleted(UpsertCandidateRequest request, CandidateRepository repository) {
-        return !request.isApplicable() && isExistingCandidate(request, repository);
-    }
-
-    private static boolean shouldBeUpdated(UpsertCandidateRequest request, CandidateRepository repository) {
-        return request.isApplicable() && isExistingCandidate(request, repository);
-    }
-
-    private static boolean isNewCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
-        return request.isApplicable() && isNotExistingCandidate(request, repository);
-    }
-
     private static boolean isNotExistingCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
-        return !isExistingCandidate(request, repository);
+        return !isExistingCandidate(request.publicationId(), repository);
     }
 
     private static boolean isNotNoteOwner(String username, NoteDao dao) {
         return !dao.note().user().value().equals(username);
     }
 
-    private static CandidateBO deleteCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
+    private static CandidateBO deleteCandidate(UpsertNonCandidateRequest request, CandidateRepository repository) {
         var existingCandidateDao = repository.findByPublicationIdDao(request.publicationId())
                                        .orElseThrow(CandidateNotFoundException::new);
-        var nonApplicableCandidate = updateCandidateToNonApplicable(existingCandidateDao, request);
+        var nonApplicableCandidate = updateCandidateToNonApplicable(existingCandidateDao);
         repository.updateCandidateAndRemovingApprovals(existingCandidateDao.identifier(), nonApplicableCandidate);
 
         return new CandidateBO(repository, nonApplicableCandidate, Collections.emptyList(), Collections.emptyList(),
@@ -230,16 +231,20 @@ public final class CandidateBO {
         validateCandidate(request);
         var existingCandidateDao = repository.findByPublicationIdDao(request.publicationId())
                                        .orElseThrow(CandidateNotFoundException::new);
-        if (shouldResetCandidate(request, existingCandidateDao)) {
+        if (shouldResetCandidate(request, existingCandidateDao) || isNotApplicable(existingCandidateDao)) {
             return resetCandidate(request, repository, periodRepository, existingCandidateDao);
         } else {
             return updateCandidateKeepingApprovalsAndNotes(request, repository, periodRepository, existingCandidateDao);
         }
     }
 
+    private static boolean isNotApplicable(CandidateDao existingCandidateDao) {
+        return !existingCandidateDao.candidate().applicable();
+    }
+
     private static CandidateBO resetCandidate(UpsertCandidateRequest request, CandidateRepository repository,
                                               PeriodRepository periodRepository, CandidateDao existingCandidateDao) {
-        var newApprovals = mapToApprovals(request.points());
+        var newApprovals = mapToApprovals(request.institutionPoints());
         var newCandidateDao = updateCandidateDaoFromRequest(existingCandidateDao, request);
         repository.updateCandidate(existingCandidateDao.identifier(), newCandidateDao, newApprovals);
         var notes = repository.getNotes(existingCandidateDao.identifier());
@@ -270,7 +275,7 @@ public final class CandidateBO {
     }
 
     private static boolean pointsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(request.points(), mapToPointsMap(existingCandidateDao));
+        return !Objects.equals(request.institutionPoints(), mapToPointsMap(existingCandidateDao));
     }
 
     private static boolean creatorsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
@@ -282,13 +287,13 @@ public final class CandidateBO {
     }
 
     private static boolean levelIsUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(request.level(), existingCandidateDao.candidate().level().getValue());
+        return !Objects.equals(DbLevel.parse(request.level()), existingCandidateDao.candidate().level());
     }
 
     private static CandidateBO createCandidate(UpsertCandidateRequest request, CandidateRepository repository,
                                                PeriodRepository periodRepository) {
         validateCandidate(request);
-        var candidateDao = repository.createDao(mapToCandidate(request), mapToApprovals(request.points()));
+        var candidateDao = repository.createDao(mapToCandidate(request), mapToApprovals(request.institutionPoints()));
         var approvals1 = repository.fetchApprovals(candidateDao.identifier());
         var notes1 = repository.getNotes(candidateDao.identifier());
         var periodStatus1 = getPeriodStatus(periodRepository, candidateDao.candidate().publicationDate().year());
@@ -308,11 +313,12 @@ public final class CandidateBO {
         attempt(() -> {
             assertIsCandidate(candidate);
             Objects.requireNonNull(candidate.publicationBucketUri());
-            Objects.requireNonNull(candidate.points());
+            Objects.requireNonNull(candidate.institutionPoints());
             Objects.requireNonNull(candidate.publicationId());
             Objects.requireNonNull(candidate.creators());
             Objects.requireNonNull(candidate.level());
             Objects.requireNonNull(candidate.publicationDate());
+            Objects.requireNonNull(candidate.totalPoints());
             return candidate;
         }).orElseThrow(failure -> new InvalidNviCandidateException(INVALID_CANDIDATE_MESSAGE));
     }
@@ -367,10 +373,40 @@ public final class CandidateBO {
                    .publicationBucketUri(request.publicationBucketUri())
                    .applicable(request.isApplicable())
                    .creators(mapToCreators(request.creators()))
+                   .creatorShareCount(request.creatorShareCount())
+                   .channelType(ChannelType.parse(request.channelType()))
+                   .channelId(request.publicationChannelId())
                    .level(DbLevel.parse(request.level()))
                    .instanceType(InstanceType.parse(request.instanceType()))
                    .publicationDate(mapToPublicationDate(request.publicationDate()))
-                   .points(mapToPoints(request.points()))
+                   .internationalCollaboration(request.isInternationalCollaboration())
+                   .collaborationFactor(request.collaborationFactor())
+                   .basePoints(request.basePoints())
+                   .points(mapToPoints(request.institutionPoints()))
+                   .totalPoints(request.totalPoints())
+                   .build();
+    }
+
+    private static CandidateDao updateCandidateDaoFromRequest(CandidateDao candidateDao,
+                                                              UpsertCandidateRequest request) {
+        return candidateDao.copy()
+                   .candidate(candidateDao.candidate()
+                                  .copy()
+                                  .applicable(request.isApplicable())
+                                  .creators(mapToCreators(request.creators()))
+                                  .creatorShareCount(request.creatorShareCount())
+                                  .channelType(ChannelType.parse(request.channelType()))
+                                  .channelId(request.publicationChannelId())
+                                  .level(DbLevel.parse(request.level()))
+                                  .instanceType(InstanceType.parse(request.instanceType()))
+                                  .publicationDate(mapToPublicationDate(request.publicationDate()))
+                                  .internationalCollaboration(request.isInternationalCollaboration())
+                                  .collaborationFactor(request.collaborationFactor())
+                                  .basePoints(request.basePoints())
+                                  .points(mapToPoints(request.institutionPoints()))
+                                  .totalPoints(request.totalPoints())
+                                  .build())
+                   .version(randomUUID().toString())
                    .build();
     }
 
@@ -390,37 +426,26 @@ public final class CandidateBO {
         return creators.entrySet().stream().map(e -> new DbCreator(e.getKey(), e.getValue())).toList();
     }
 
-    private static boolean isExistingCandidate(UpsertCandidateRequest publicationId, CandidateRepository repository) {
-        return repository.findByPublicationId(publicationId.publicationId()).isPresent();
+    private static boolean isExistingCandidate(URI publicationId, CandidateRepository repository) {
+        return repository.findByPublicationId(publicationId).isPresent();
     }
 
-    private static CandidateDao updateCandidateDaoFromRequest(CandidateDao candidateDao,
-                                                              UpsertCandidateRequest request) {
+    private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao) {
         return candidateDao.copy()
-                   .candidate(candidateDao.candidate()
-                                  .copy()
-                                  .creators(mapToCreators(request.creators()))
-                                  .points(mapToPoints(request.points()))
-                                  .publicationDate(mapToPublicationDate(request.publicationDate()))
-                                  .instanceType(InstanceType.parse(request.instanceType()))
-                                  .level(DbLevel.parse(request.level()))
-                                  .applicable(request.isApplicable())
-                                  .internationalCollaboration(request.isInternationalCooperation())
-                                  .creatorCount(request.creatorCount())
-                                  .build())
-                   .version(randomUUID().toString())
-                   .build();
-    }
-
-    private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao,
-                                                               UpsertCandidateRequest request) {
-        return candidateDao.copy()
-                   .candidate(candidateDao.candidate().copy().applicable(request.isApplicable()).build())
+                   .candidate(candidateDao.candidate().copy().applicable(false).build())
                    .build();
     }
 
     private static String mapToUsernameString(Username assignee) {
         return assignee != null ? assignee.value() : null;
+    }
+
+    private BigDecimal calculateUndistributedPoints() {
+        return totalPoints.subtract(sumDistributedPoints()).setScale(POINTS_SCALE, ROUNDING_MODE);
+    }
+
+    private BigDecimal sumDistributedPoints() {
+        return institutionPoints.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private void validateNoteOwner(String username, NoteDao dao) {
@@ -458,7 +483,7 @@ public final class CandidateBO {
                    .withAssignee(mapToUsernameString(approval.assignee()))
                    .withFinalizedBy(mapToUsernameString(approval.finalizedBy()))
                    .withFinalizedDate(approval.finalizedDate())
-                   .withPoints(points.get(approval.institutionId()))
+                   .withPoints(institutionPoints.get(approval.institutionId()))
                    .withReason(approval.reason())
                    .build();
     }

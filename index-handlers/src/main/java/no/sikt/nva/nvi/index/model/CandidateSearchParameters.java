@@ -5,8 +5,12 @@ import java.net.URI;
 import java.util.List;
 import nva.commons.core.JacocoGenerated;
 
-public record CandidateSearchParameters(List<URI> affiliations, boolean excludeSubUnits, String filter, String username,
-                                        String year, URI customer, int offset, int size) {
+public record CandidateSearchParameters(String searchTerm, List<URI> affiliations, boolean excludeSubUnits,
+                                        String filter, String username,
+                                        String year, String category, String title, String contributor,
+                                        String assignee, URI customer,
+                                        int offset,
+                                        int size) {
     public static Builder builder() {
         return new Builder();
     }
@@ -18,7 +22,12 @@ public record CandidateSearchParameters(List<URI> affiliations, boolean excludeS
         private boolean excludeSubUnits;
         private String filter = EMPTY_STRING;
         private String username;
+        private String searchTerm;
         private String year;
+        private String category;
+        private String title;
+        private String contributor;
+        private String assignee;
         private URI customer;
         private int offset;
         private int size = 10;
@@ -46,8 +55,33 @@ public record CandidateSearchParameters(List<URI> affiliations, boolean excludeS
             return this;
         }
 
+        public Builder withSearchTerm(String searchTerm) {
+            this.searchTerm = searchTerm;
+            return this;
+        }
+
         public Builder withYear(String year) {
             this.year = year;
+            return this;
+        }
+
+        public Builder withCategory(String category) {
+            this.category = category;
+            return this;
+        }
+
+        public Builder withTitle(String title) {
+            this.title = title;
+            return this;
+        }
+
+        public Builder withContributor(String contributor) {
+            this.contributor = contributor;
+            return this;
+        }
+
+        public Builder withAssignee(String assignee) {
+            this.assignee = assignee;
             return this;
         }
 
@@ -67,11 +101,16 @@ public record CandidateSearchParameters(List<URI> affiliations, boolean excludeS
         }
 
         public CandidateSearchParameters build() {
-            return new CandidateSearchParameters(affiliations,
+            return new CandidateSearchParameters(searchTerm,
+                                                 affiliations,
                                                  excludeSubUnits,
                                                  filter,
                                                  username,
                                                  year,
+                                                 category,
+                                                 title,
+                                                 contributor,
+                                                 assignee,
                                                  customer,
                                                  offset,
                                                  size);

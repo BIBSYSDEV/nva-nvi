@@ -146,6 +146,11 @@ paths:
       description: 'Search for scientific index candidates'
       parameters:
         - in: query
+          name: query
+          schema:
+            type: string
+          description: Term to search for in NVI candidates
+        - in: query
           name: affiliations
           description: 'Only return candidates in given affiliations. Including their sub-units. Formated as a comma separated list of affiliations ids.'
           required: false
@@ -179,6 +184,26 @@ paths:
           schema:
             type: string
           description: Filters values based on year
+        - in: query
+          name: category
+          schema:
+            type: string
+          description: Filters values based on category
+        - in: query
+          name: title
+          schema:
+            type: string
+          description: Filters values based on title
+        - in: query
+          name: contributor
+          schema:
+            type: string
+          description: Filters values based on contributor
+        - in: query
+          name: assignee
+          schema:
+            type: string
+          description: Filters values based on assignee
       security:
         - CognitoUserPool: [
           'https://api.nva.unit.no/scopes/backend',
@@ -223,6 +248,47 @@ paths:
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviCandidateHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NviCandidateResponse"
+        '404':
+          description: "Candidate not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '500':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /candidate/publication/{candidatePublicationId+}:
+    get:
+      description: 'Get scientific index candidate by publication identifier'
+      parameters:
+        - in: path
+          name: candidatePublicationId+
+          description: The pubication identifer the candidate, this must be URI UTF-8 encoded
+          required: true
+          schema:
+            type: string
+      security:
+        - CognitoUserPool: [
+          'https://api.nva.unit.no/scopes/backend',
+          'https://api.nva.unit.no/scopes/frontend',
+          'aws.cognito.signin.user.admin',
+        ]
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviCandidateByPublicationIdHandler.Arn}:live/invocations
         responses: { }
         httpMethod: POST
         type: AWS_PROXY

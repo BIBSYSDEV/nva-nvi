@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.test;
 
+import static no.sikt.nva.nvi.common.db.model.InstanceType.NON_CANDIDATE;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
@@ -34,6 +35,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
@@ -41,6 +43,7 @@ import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import no.sikt.nva.nvi.common.service.requests.UpsertNonCandidateRequest;
 import nva.commons.core.paths.UriWrapper;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -49,14 +52,21 @@ public final class TestUtils {
     public static final int SCALE = 10;
     public static final BigDecimal MIN_BIG_DECIMAL = BigDecimal.ZERO;
     public static final BigDecimal MAX_BIG_DECIMAL = BigDecimal.TEN;
+
+    public static final int POINTS_SCALE = 4;
+    public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
+    public static final int CURRENT_YEAR = Year.now().getValue();
+    public static final Random RANDOM = new Random();
     private static final String BUCKET_HOST = "example.org";
     private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
     private static final String PUBLICATION_API_PATH = "publication";
     private static final String API_HOST = "example.com";
 
-    public static final int CURRENT_YEAR = Year.now().getValue();
-
     private TestUtils() {
+    }
+
+    public static int randomIntBetween(int min, int max) {
+        return RANDOM.nextInt(min, max);
     }
 
     public static DbPublicationDate randomPublicationDate() {
@@ -75,7 +85,7 @@ public final class TestUtils {
 
     public static LocalDate randomLocalDate() {
         var daysBetween = ChronoUnit.DAYS.between(START_DATE, LocalDate.now());
-        var randomDays = new Random().nextInt((int) daysBetween);
+        var randomDays = RANDOM.nextInt((int) daysBetween);
 
         return START_DATE.plusDays(randomDays);
     }
@@ -85,7 +95,7 @@ public final class TestUtils {
                    .publicationId(randomUri())
                    .publicationBucketUri(randomUri())
                    .applicable(applicable)
-                   .instanceType(randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE))
+                   .instanceType(randomInstanceTypeExcluding(NON_CANDIDATE))
                    .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
                    .level(randomElement(DbLevel.values()))
                    .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
@@ -96,12 +106,17 @@ public final class TestUtils {
 
     public static InstanceType randomInstanceType() {
         var instanceTypes = Arrays.stream(InstanceType.values()).toList();
-        return instanceTypes.get(new Random().nextInt(instanceTypes.size()));
+        return instanceTypes.get(RANDOM.nextInt(instanceTypes.size()));
     }
 
     public static InstanceType randomInstanceTypeExcluding(InstanceType instanceType) {
         var instanceTypes = Arrays.stream(InstanceType.values()).filter(type -> !type.equals(instanceType)).toList();
-        return instanceTypes.get(new Random().nextInt(instanceTypes.size()));
+        return instanceTypes.get(RANDOM.nextInt(instanceTypes.size()));
+    }
+
+    public static DbLevel randomLevelExcluding(DbLevel level) {
+        var levels = Arrays.stream(DbLevel.values()).filter(type -> !type.equals(level)).toList();
+        return levels.get(RANDOM.nextInt(levels.size()));
     }
 
     public static String randomYear() {
@@ -151,7 +166,7 @@ public final class TestUtils {
         var nviPeriodRepository = mock(PeriodRepository.class);
         var nviService = new NviService(nviPeriodRepository, new CandidateRepository(client));
         var period = DbNviPeriod.builder().publishingYear(String.valueOf(year)).startDate(Instant.now())
-                .reportingDate(Instant.now()).build();
+                         .reportingDate(Instant.now()).build();
         when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
         return nviService;
     }
@@ -197,6 +212,10 @@ public final class TestUtils {
         return nviService;
     }
 
+    public static UpsertNonCandidateRequest createUpsertNonCandidateRequest(URI publicationId) {
+        return () -> publicationId;
+    }
+
     public static UpdateStatusRequest createUpdateStatusRequest(DbStatus status, URI institutionId, String username) {
         return UpdateStatusRequest.builder()
                    .withReason(DbStatus.REJECTED.equals(status) ? randomString() : null)
@@ -206,14 +225,25 @@ public final class TestUtils {
                    .build();
     }
 
+    public static UpsertCandidateRequest createUpsertCandidateRequestWithLevel(String level, URI... institutions) {
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(NON_CANDIDATE),
+                                            1, randomBigDecimal(), level, institutions);
+    }
+
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI... institutions) {
-        return createUpsertCandidateRequest(randomUri(), true, 1, InstanceType.ACADEMIC_MONOGRAPH,
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(NON_CANDIDATE),
+                                            1, randomBigDecimal(),
+                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
                                             institutions);
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
-                                                                      boolean isApplicable, int creatorCount,
-                                                                      final InstanceType instanceType,
+                                                                      URI publicationBucketUri,
+                                                                      boolean isApplicable,
+                                                                      InstanceType instanceType,
+                                                                      int creatorCount,
+                                                                      BigDecimal totalPoints,
+                                                                      String level,
                                                                       URI... institutions) {
         var creators = IntStream.of(creatorCount)
                            .mapToObj(i -> randomUri())
@@ -222,23 +252,35 @@ public final class TestUtils {
         var points = Arrays.stream(institutions)
                          .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal()));
 
-        return createUpsertCandidateRequest(publicationId, isApplicable, creators, instanceType,
-                                            DbLevel.LEVEL_TWO, points);
+        return createUpsertCandidateRequest(publicationId, publicationBucketUri, isApplicable,
+                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null), creators,
+                                            instanceType,
+                                            randomElement(ChannelType.values()).getValue(), randomUri(),
+                                            level, points,
+                                            randomInteger(), randomBoolean(),
+                                            randomBigDecimal(), randomBigDecimal(), totalPoints);
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
+                                                                      final URI publicationBucketUri,
                                                                       boolean isApplicable,
+                                                                      final PublicationDate publicationDate,
                                                                       Map<URI, List<URI>> creators,
-                                                                      final InstanceType instanceType,
-                                                                      DbLevel level,
-                                                                      Map<URI, BigDecimal> points) {
-
+                                                                      InstanceType instanceType,
+                                                                      String channelType, URI channelId,
+                                                                      String level,
+                                                                      Map<URI, BigDecimal> points,
+                                                                      final Integer creatorShareCount,
+                                                                      final boolean isInternationalCollaboration,
+                                                                      final BigDecimal collaborationFactor,
+                                                                      final BigDecimal basePoints,
+                                                                      final BigDecimal totalPoints) {
 
         return new UpsertCandidateRequest() {
 
             @Override
             public URI publicationBucketUri() {
-                return randomUri();
+                return publicationBucketUri;
             }
 
             @Override
@@ -252,8 +294,8 @@ public final class TestUtils {
             }
 
             @Override
-            public boolean isInternationalCooperation() {
-                return false;
+            public boolean isInternationalCollaboration() {
+                return isInternationalCollaboration;
             }
 
             @Override
@@ -262,8 +304,18 @@ public final class TestUtils {
             }
 
             @Override
+            public String channelType() {
+                return channelType;
+            }
+
+            @Override
+            public URI publicationChannelId() {
+                return channelId;
+            }
+
+            @Override
             public String level() {
-                return level.getValue();
+                return level;
             }
 
             @Override
@@ -273,17 +325,32 @@ public final class TestUtils {
 
             @Override
             public PublicationDate publicationDate() {
-                return new PublicationDate(String.valueOf(ZonedDateTime.now().getYear()), null, null);
+                return publicationDate;
             }
 
             @Override
-            public Map<URI, BigDecimal> points() {
+            public int creatorShareCount() {
+                return creatorShareCount;
+            }
+
+            @Override
+            public BigDecimal collaborationFactor() {
+                return collaborationFactor;
+            }
+
+            @Override
+            public BigDecimal basePoints() {
+                return basePoints;
+            }
+
+            @Override
+            public Map<URI, BigDecimal> institutionPoints() {
                 return points;
             }
 
             @Override
-            public int creatorCount() {
-                return (int) creators.values().stream().mapToLong(List::size).sum();
+            public BigDecimal totalPoints() {
+                return totalPoints;
             }
         };
     }

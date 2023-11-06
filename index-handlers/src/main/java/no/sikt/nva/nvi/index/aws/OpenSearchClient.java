@@ -28,7 +28,9 @@ import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.core.DeleteRequest;
+import org.opensearch.client.opensearch.core.DeleteResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
+import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
@@ -74,27 +76,30 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     @Override
-    public void addDocumentToIndex(NviCandidateIndexDocument indexDocument) {
+    public IndexResponse addDocumentToIndex(NviCandidateIndexDocument indexDocument) {
         if (!indexExists()) {
             LOGGER.info("Creating index");
             createIndex();
         }
-        attempt(() -> client.withTransportOptions(getOptions()).index(constructIndexRequest(indexDocument)))
-            .map(indexResponse -> {
-                LOGGER.info("Adding document to index: {}", indexDocument.identifier());
-                return indexDocument;
-            })
-            .orElseThrow(failure -> handleFailure("Failed to add/update document from index", failure.getException()));
+
+        return attempt(() -> client.withTransportOptions(getOptions()).index(constructIndexRequest(indexDocument)))
+                   .map(indexResponse -> {
+                       LOGGER.info("Indexed document from index: {}", indexDocument.identifier());
+                       return indexResponse;
+                   })
+                   .orElseThrow(
+                       failure -> handleFailure("Failed to add/update document from index", failure.getException()));
     }
 
     @Override
-    public void removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) {
-        attempt(() -> client.withTransportOptions(getOptions()).delete(contructDeleteRequest(indexDocument)))
-            .map(deleteResponse -> {
-                LOGGER.info("Removing document from index: {}", indexDocument.identifier());
-                return deleteResponse;
-            })
-            .orElseThrow(failure -> handleFailure("Failed to remove document from index", failure.getException()));
+    public DeleteResponse removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) {
+        return attempt(() -> client.withTransportOptions(getOptions()).delete(contructDeleteRequest(indexDocument)))
+                   .map(deleteResponse -> {
+                       LOGGER.info("Removing document from index: {}", indexDocument.identifier());
+                       return deleteResponse;
+                   })
+                   .orElseThrow(
+                       failure -> handleFailure("Failed to remove document from index", failure.getException()));
     }
 
     @Override
@@ -117,7 +122,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         LOGGER.info("Generating search request with affiliations: {}, excludeSubUnits: {}, filter: {}, username: {}, "
                     + "customer: {}, offset: "
                     + "{}, size: {}", params.affiliations(), params.excludeSubUnits(), params.filter(),
-                    params.username(),params.username(), params.offset(),
+                    params.username(), params.username(), params.offset(),
                     params.size());
     }
 
