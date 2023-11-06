@@ -15,7 +15,7 @@ import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-public class Excel implements AutoCloseable {
+public final class Excel implements AutoCloseable {
 
     private final Workbook workbook;
 
@@ -106,7 +106,7 @@ public class Excel implements AutoCloseable {
 
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.RECORD_COMPONENT})
-    public static @interface ColumnName {
+    public @interface ColumnName {
 
         String value();
     }
