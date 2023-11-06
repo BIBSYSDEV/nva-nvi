@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.rest.fetch;
+package no.sikt.nva.nvi.rest.model;
 
 import static nva.commons.core.attempt.Try.attempt;
 import java.io.IOException;
@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class Excel implements AutoCloseable {
@@ -29,20 +30,28 @@ public class Excel implements AutoCloseable {
             var sheet = workbook.createSheet();
             var recordComponents = className.getRecordComponents();
             var headerRow = sheet.createRow(0);
-            for (var colIndex = 0; colIndex < recordComponents.length; colIndex++) {
-                headerRow.createCell(colIndex).setCellValue(getHeaderValue(recordComponents[colIndex]));
+            for (var columnIndex = 0; columnIndex < recordComponents.length; columnIndex++) {
+                addHeaderRow(recordComponents, headerRow, columnIndex);
             }
             for (var rowIndex = 0; rowIndex < records.size(); rowIndex++) {
                 var record = records.get(rowIndex);
                 var row = sheet.createRow(rowIndex + 1);
-                for (var colIndex = 0; colIndex < recordComponents.length; colIndex++) {
-                    var recordComponent = recordComponents[colIndex];
-                    var cell = row.createCell(colIndex);
-                    addValueToCell(recordComponent, record, cell);
+                for (var columnIndex = 0; columnIndex < recordComponents.length; columnIndex++) {
+                    addSheetComponent(recordComponents, record, row, columnIndex);
                 }
             }
         }
         return new Excel(workbook);
+    }
+
+    private static <T> void addSheetComponent(RecordComponent[] recordComponents, T record, XSSFRow row, int columnIndex) {
+        var recordComponent = recordComponents[columnIndex];
+        var cell = row.createCell(columnIndex);
+        addValueToCell(recordComponent, record, cell);
+    }
+
+    private static void addHeaderRow(RecordComponent[] recordComponents, XSSFRow headerRow, int colIndex) {
+        headerRow.createCell(colIndex).setCellValue(getHeaderValue(recordComponents[colIndex]));
     }
 
     public void write(OutputStream outputStream) throws IOException {

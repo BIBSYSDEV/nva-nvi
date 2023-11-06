@@ -32,6 +32,7 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.rest.model.ReportRow;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;

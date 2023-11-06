@@ -525,12 +525,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-  /report/{institutionIdentifier}:
+  /report/{institutionId+}:
     get:
-      description: 'Get xlsx report for a given institution'
+      description: 'Get NVI report for a given institution'
       parameters:
         - in: path
-          name: institutionIdentifier
+          name: institutionId+
+          description: The identifier of a top level organization in Cristin proxy. This must be a UTF encoded URI
           required: true
           schema:
             type: string

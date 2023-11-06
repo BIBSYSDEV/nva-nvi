@@ -1,7 +1,7 @@
-package no.sikt.nva.nvi.rest.fetch;
+package no.sikt.nva.nvi.rest.model;
 
-import no.sikt.nva.nvi.rest.fetch.Excel.ColumnName;
-import no.sikt.nva.nvi.rest.fetch.Excel.MyWorkbook;
+import no.sikt.nva.nvi.rest.model.Excel.ColumnName;
+import no.sikt.nva.nvi.rest.model.Excel.MyWorkbook;
 import nva.commons.core.JacocoGenerated;
 
 @MyWorkbook
