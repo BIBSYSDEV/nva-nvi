@@ -604,6 +604,26 @@ Resources:
             Method: delete
             RestApiId: !Ref ScientificIndexApi
 
+  FetchReportHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.fetch.FetchReportHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /report/{institutionId+}
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+
   #============================= Database =========================================================
   NvaNviTable:
     Type: AWS::DynamoDB::Table

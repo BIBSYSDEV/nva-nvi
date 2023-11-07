@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.net.HttpHeaders;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,7 +33,6 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpStatus;
-import org.eclipse.jetty.http.HttpHeader;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -116,16 +116,16 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
         assertEquals(expectedResponse, actualResponse);
     }
 
-    private static InputStream createRequest(UUID publicationId, URI cristinInstitutionId, String accessRight)
+    private static InputStream createRequest(UUID candidateIdentifier, URI cristinInstitutionId, String accessRight)
         throws JsonProcessingException {
         var customerId = randomUri();
         return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
-                   .withHeaders(Map.of(HttpHeader.ACCEPT.asString(), ContentType.APPLICATION_JSON.getMimeType()))
+                   .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
                    .withCurrentCustomer(customerId)
                    .withTopLevelCristinOrgId(cristinInstitutionId)
                    .withAccessRights(customerId, accessRight)
                    .withUserName(randomString())
-                   .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, publicationId.toString()))
+                   .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateIdentifier.toString()))
                    .build();
     }
 
