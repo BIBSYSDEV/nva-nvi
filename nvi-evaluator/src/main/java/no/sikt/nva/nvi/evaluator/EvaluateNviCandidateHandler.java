@@ -8,6 +8,8 @@ import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.evaluator.aws.S3StorageReader;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
+import no.sikt.nva.nvi.evaluator.calculator.OrganizationRetriever;
+import no.sikt.nva.nvi.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.evaluator.model.CandidateEvaluatedMessage;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.events.handlers.DestinationsEventBridgeEventHandler;
@@ -36,7 +38,9 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
     @JacocoGenerated
     public EvaluateNviCandidateHandler() {
         this(new EvaluatorService(new S3StorageReader(),
-                                  new CandidateCalculator(defaultUriRetriever(new Environment()))),
+                                  new CandidateCalculator(defaultUriRetriever(new Environment())),
+                                  new PointCalculator(
+                                      new OrganizationRetriever(defaultUriRetriever(new Environment())))),
              new NviQueueClient(), new Environment());
     }
 

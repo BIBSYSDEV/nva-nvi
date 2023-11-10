@@ -24,6 +24,8 @@ import java.nio.file.Path;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
+import no.sikt.nva.nvi.evaluator.calculator.OrganizationRetriever;
+import no.sikt.nva.nvi.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.evaluator.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.evaluator.model.NviCandidate;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
@@ -82,7 +84,9 @@ public class EvaluateNviCandidateWithCristinDataTest {
         uriRetriever = mock(AuthorizedBackendUriRetriever.class);
         var calculator = new CandidateCalculator(uriRetriever);
         var storageReader = new FakeStorageReader(s3Client);
-        var evaluatorService = new EvaluatorService(storageReader, calculator);
+        var organizationRetriever = new OrganizationRetriever(uriRetriever);
+        var pointCalculator = new PointCalculator(organizationRetriever);
+        var evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator);
         handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
         output = new ByteArrayOutputStream();
     }
