@@ -75,6 +75,9 @@ Parameters:
     Type: String
     Default: ''
     Description: Suffix used for naming resources for feature branches to avoid conflicts.
+  SlackSnsArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: '/NVA/Monitoring/SlackSnsArn'
 
 Conditions:
   WithSuffix: !Not [ !Equals [ !Ref Suffix, '' ] ]
@@ -659,3 +662,81 @@ Resources:
             ProjectionType: ALL
       StreamSpecification:
         StreamViewType: NEW_AND_OLD_IMAGES
+
+  #============================= Database =========================================================
+
+  BatchScanDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=BatchScanDLQ
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: BatchScanDLQ
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      OKActions:
+        - !Ref SlackSnsArn
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  NewCandidateDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=NewCandidateDLQ
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: NewCandidateDLQ
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      OKActions:
+        - !Ref SlackSnsArn
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  UpdateIndexDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=UpdateIndexDLQ
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: UpdateIndexDLQ
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      OKActions:
+        - !Ref SlackSnsArn
+      AlarmActions:
+        - !Ref SlackSnsArn
+        -
+  UpsertCandidateDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=UpsertCandidateDLQ
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: UpsertCandidateDLQ
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      OKActions:
+        - !Ref SlackSnsArn
+      AlarmActions:
+        - !Ref SlackSnsArn
