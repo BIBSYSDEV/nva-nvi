@@ -674,7 +674,7 @@ Resources:
       Statistic: Sum
       Dimensions:
         - Name: QueueName
-          Value: BatchScanDLQ
+          Value: !GetAtt BatchScanDLQ.QueueName
       Period: 300
       EvaluationPeriods: 1
       Threshold: 1
@@ -693,7 +693,7 @@ Resources:
       Statistic: Sum
       Dimensions:
         - Name: QueueName
-          Value: NewCandidateDLQ
+          Value: !GetAtt NewCandidateDLQ.QueueName
       Period: 300
       EvaluationPeriods: 1
       Threshold: 1
@@ -712,7 +712,7 @@ Resources:
       Statistic: Sum
       Dimensions:
         - Name: QueueName
-          Value: UpdateIndexDLQ
+          Value: !GetAtt UpdateIndexDLQ.QueueName
       Period: 300
       EvaluationPeriods: 1
       Threshold: 1
@@ -731,7 +731,7 @@ Resources:
       Statistic: Sum
       Dimensions:
         - Name: QueueName
-          Value: UpsertCandidateDLQ
+          Value: !GetAtt UpsertCandidateDLQ.QueueName
       Period: 300
       EvaluationPeriods: 1
       Threshold: 1
