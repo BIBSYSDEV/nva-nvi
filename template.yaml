@@ -663,7 +663,7 @@ Resources:
       StreamSpecification:
         StreamViewType: NEW_AND_OLD_IMAGES
 
-  #============================= Database =========================================================
+  #============================= Alarms =========================================================
 
   BatchScanDLQAlarm:
     Type: AWS::CloudWatch::Alarm
