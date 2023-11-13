@@ -36,12 +36,12 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.evaluator.model.InstanceType;
 import no.sikt.nva.nvi.evaluator.model.Level;
 import no.sikt.nva.nvi.evaluator.model.Organization;
 import no.sikt.nva.nvi.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.evaluator.model.PublicationChannel;
-import no.sikt.nva.nvi.evaluator.utils.ExtractionUtil;
 
 public final class PointCalculator {
 
@@ -271,10 +271,9 @@ public final class PointCalculator {
 
     private int countCreatorShares(JsonNode jsonNode) {
         var creators = extractCreatorNodes(jsonNode);
-        return Integer.sum(
-            Integer.sum(countVerifiedTopLevelAffiliationsPerCreator(creators),
-                        countCreatorsWithoutAffiliations(creators)),
-            countCreatorsWithOnlyUnverifiedAffiliations(creators));
+        return Integer.sum(Integer.sum(countVerifiedTopLevelAffiliationsPerCreator(creators),
+                                       countCreatorsWithoutAffiliations(creators)),
+                           countCreatorsWithOnlyUnverifiedAffiliations(creators));
     }
 
     private Integer countVerifiedTopLevelAffiliationsPerCreator(List<JsonNode> creators) {
@@ -286,7 +285,7 @@ public final class PointCalculator {
     private Integer countVerifiedTopLevelAffiliations(JsonNode creator) {
         return extractAffiliations(creator)
                    .filter(PointCalculator::hasId)
-                   .map(ExtractionUtil::extractId)
+                   .map(JsonUtils::extractId)
                    .distinct()
                    .map(organizationRetriever::fetchOrganization)
                    .map(Organization::getTopLevelOrg)

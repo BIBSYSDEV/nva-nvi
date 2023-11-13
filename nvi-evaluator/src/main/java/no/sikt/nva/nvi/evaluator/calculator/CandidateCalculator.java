@@ -25,9 +25,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.evaluator.model.CustomerResponse;
 import no.sikt.nva.nvi.evaluator.model.Organization;
-import no.sikt.nva.nvi.evaluator.utils.ExtractionUtil;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
@@ -126,7 +126,7 @@ public class CandidateCalculator {
 
     private List<URI> getTopLevelNviInstitutions(JsonNode creator) {
         return streamNode(creator.at(JSON_PTR_AFFILIATIONS))
-                   .map(ExtractionUtil::extractId)
+                   .map(JsonUtils::extractId)
                    .map(organizationRetriever::fetchOrganization)
                    .map(Organization::getTopLevelOrg)
                    .map(Organization::id)
