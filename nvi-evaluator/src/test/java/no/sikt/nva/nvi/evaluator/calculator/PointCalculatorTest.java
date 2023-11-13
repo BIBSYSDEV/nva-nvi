@@ -320,25 +320,6 @@ class PointCalculatorTest {
             getInstanceTypeReference(parameters));
     }
 
-    private static JsonNode createExpandedResourceWithManyCreators(PointParameters parameters, URI creator1,
-                                                                   URI creator2,
-                                                                   List<URI> creator1Institutions,
-                                                                   List<URI> creator2Institutions) {
-        var countryCodeForNonNviCreators = parameters.isInternationalCollaboration()
-                                               ? SOME_INTERNATIONAL_COUNTRY_CODE : COUNTRY_CODE_NO;
-        var contributorNodes = createContributorNodes(
-            createContributorNode(creator1, true, toMapWithCountryCode(creator1Institutions, COUNTRY_CODE_NO),
-                                  ROLE_CREATOR, 0),
-            createContributorNode(creator2, true, toMapWithCountryCode(creator2Institutions, COUNTRY_CODE_NO),
-                                  ROLE_CREATOR, 0),
-            createContributorNode(randomUri(), false,
-                                  toMapWithCountryCode(createRandomInstitutions(parameters, 3),
-                                                       countryCodeForNonNviCreators),
-                                  parameters.creatorShareCount() == 3 ? SOME_OTHER_ROLE : ROLE_CREATOR, 0)
-        );
-        return createExpandedResource(randomUri(), contributorNodes, getInstanceTypeReference(parameters));
-    }
-
     private static JsonNode createExpandedResourceWithTwoVerifiedContributors(
         URI creator1,
         String contributor1Role,
@@ -561,6 +542,31 @@ class PointCalculatorTest {
         root.set(ENTITY_DESCRIPTION, entityDescription);
 
         return root;
+    }
+
+    private JsonNode createExpandedResourceWithManyCreators(PointParameters parameters, URI creator1,
+                                                            URI creator2,
+                                                            List<URI> creator1Institutions,
+                                                            List<URI> creator2Institutions) {
+        var countryCodeForNonNviCreators = parameters.isInternationalCollaboration()
+                                               ? SOME_INTERNATIONAL_COUNTRY_CODE : COUNTRY_CODE_NO;
+        var randomInstitutions = createRandomInstitutions(parameters, 3);
+        mockOrganizationRetriever(randomInstitutions);
+        var contributorNodes = createContributorNodes(
+            createContributorNode(creator1, true, toMapWithCountryCode(creator1Institutions, COUNTRY_CODE_NO),
+                                  ROLE_CREATOR, 0),
+            createContributorNode(creator2, true, toMapWithCountryCode(creator2Institutions, COUNTRY_CODE_NO),
+                                  ROLE_CREATOR, 0),
+            createContributorNode(randomUri(), false,
+                                  toMapWithCountryCode(randomInstitutions,
+                                                       countryCodeForNonNviCreators),
+                                  parameters.creatorShareCount() == 3 ? SOME_OTHER_ROLE : ROLE_CREATOR, 0)
+        );
+        return createExpandedResource(randomUri(), contributorNodes, getInstanceTypeReference(parameters));
+    }
+
+    private void mockOrganizationRetriever(List<URI> randomInstitutions) {
+        randomInstitutions.forEach(uri -> mockOrganizationResponseForAffiliation(uri, null));
     }
 
     private void mockOrganizationResponseForAffiliation(URI topLevelInstitutionId, URI subUnitId) {
