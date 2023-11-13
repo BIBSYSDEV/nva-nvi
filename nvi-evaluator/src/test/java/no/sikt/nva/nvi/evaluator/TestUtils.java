@@ -41,7 +41,7 @@ public final class TestUtils {
 
     public static void mockOrganizationResponseForAffiliation(URI topLevelInstitutionId, URI subUnitId,
                                                               AuthorizedBackendUriRetriever uriRetriever) {
-        var body = generateMockedResponseBody(topLevelInstitutionId, subUnitId);
+        var body = generateResponseBody(topLevelInstitutionId, subUnitId);
         var response = Optional.of(createResponse(200, body));
         if (isNull(subUnitId)) {
             when(uriRetriever.fetchResponse(eq(topLevelInstitutionId), any())).thenReturn(response);
@@ -50,7 +50,7 @@ public final class TestUtils {
         }
     }
 
-    private static String generateMockedResponseBody(URI topLevelInstitutionId, URI subUnitId) {
+    private static String generateResponseBody(URI topLevelInstitutionId, URI subUnitId) {
         return attempt(
             () -> dtoObjectMapper.writeValueAsString(isNull(subUnitId)
                                                          ? new Organization(topLevelInstitutionId, emptyList())
