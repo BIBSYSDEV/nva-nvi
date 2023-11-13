@@ -127,9 +127,11 @@ public class CandidateCalculator {
     private List<URI> getTopLevelNviInstitutions(JsonNode creator) {
         return streamNode(creator.at(JSON_PTR_AFFILIATIONS))
                    .map(JsonUtils::extractId)
+                   .distinct()
                    .map(organizationRetriever::fetchOrganization)
                    .map(Organization::getTopLevelOrg)
                    .map(Organization::id)
+                   .distinct()
                    .filter(this::isNviInstitution)
                    .toList();
     }
