@@ -16,7 +16,7 @@ public record Organization(@JsonProperty(ID) URI id, @JsonProperty(PART_OF) List
 
     @JsonIgnore
     public Organization getTopLevelOrg() {
-        if (nonNull(partOf())) {
+        if (nonNull(partOf()) && !partOf().isEmpty()) {
 
             var organization = partOf().stream().collect(SingletonCollector.collect());
 
