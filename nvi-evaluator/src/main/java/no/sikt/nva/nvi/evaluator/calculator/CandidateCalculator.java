@@ -6,7 +6,6 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_ID
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_VERIFICATION_STATUS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ROLE_TYPE;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
@@ -26,14 +25,12 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.evaluator.model.CustomerResponse;
 import no.sikt.nva.nvi.evaluator.model.Organization;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import nva.commons.core.Environment;
-import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CandidateCalculator {
 
@@ -43,15 +40,14 @@ public class CandidateCalculator {
     private static final String CUSTOMER = "customer";
     private static final String CRISTIN_ID = "cristinId";
     private static final String VERIFIED = "Verified";
-    private static final String COULD_NOT_FETCH_CRISTIN_ORG_MESSAGE = "Could not fetch Cristin organization for: ";
-    private static final String ERROR_COULD_NOT_FETCH_CRISTIN_ORG = COULD_NOT_FETCH_CRISTIN_ORG_MESSAGE + "{}. "
-                                                                    + "Response code: {}";
-    private static final Logger LOGGER = LoggerFactory.getLogger(CandidateCalculator.class);
     private static final String API_HOST = new Environment().readEnv("API_HOST");
     private final AuthorizedBackendUriRetriever uriRetriever;
 
+    private final OrganizationRetriever organizationRetriever;
+
     public CandidateCalculator(AuthorizedBackendUriRetriever uriRetriever) {
         this.uriRetriever = uriRetriever;
+        this.organizationRetriever = new OrganizationRetriever(uriRetriever);
     }
 
     public Map<URI, List<URI>> getVerifiedCreatorsWithNviInstitutionsIfExists(JsonNode publication) {
@@ -81,17 +77,8 @@ public class CandidateCalculator {
         return URI.create(extractJsonNodeTextValue(creatorNode, JSON_POINTER_IDENTITY_ID));
     }
 
-    private static URI extractId(JsonNode jsonNode) {
-        return URI.create(extractJsonNodeTextValue(jsonNode, JSON_PTR_ID));
-    }
-
     private static boolean isVerified(JsonNode contributorNode) {
         return VERIFIED.equals(extractJsonNodeTextValue(contributorNode, JSON_POINTER_IDENTITY_VERIFICATION_STATUS));
-    }
-
-    @JacocoGenerated
-    private static void logInvalidJsonLdInput(Exception exception) {
-        LOGGER.warn("Invalid JSON LD input encountered: ", exception);
     }
 
     private static CustomerResponse toCustomer(String responseBody) {
@@ -139,22 +126,14 @@ public class CandidateCalculator {
 
     private List<URI> getTopLevelNviInstitutions(JsonNode creator) {
         return streamNode(creator.at(JSON_PTR_AFFILIATIONS))
-                   .map(CandidateCalculator::extractId)
-                   .map(this::fetchOrganization)
+                   .map(JsonUtils::extractId)
+                   .distinct()
+                   .map(organizationRetriever::fetchOrganization)
                    .map(Organization::getTopLevelOrg)
                    .map(Organization::id)
+                   .distinct()
                    .filter(this::isNviInstitution)
                    .toList();
-    }
-
-    private Organization fetchOrganization(URI organizationId) {
-        var response = getResponse(organizationId);
-        if (isHttpOk(response)) {
-            return toCristinOrganization(response.body());
-        } else {
-            LOGGER.error(ERROR_COULD_NOT_FETCH_CRISTIN_ORG, organizationId, response.statusCode());
-            throw new RuntimeException(COULD_NOT_FETCH_CRISTIN_ORG_MESSAGE + organizationId);
-        }
     }
 
     private boolean isNviInstitution(URI institutionId) {
@@ -163,10 +142,6 @@ public class CandidateCalculator {
             return mapToNviInstitutionValue(response);
         }
         throw new RuntimeException(COULD_NOT_FETCH_CUSTOMER_MESSAGE + institutionId);
-    }
-
-    private Organization toCristinOrganization(String response) {
-        return attempt(() -> dtoObjectMapper.readValue(response, Organization.class)).orElseThrow();
     }
 
     private HttpResponse<String> getResponse(URI uri) {

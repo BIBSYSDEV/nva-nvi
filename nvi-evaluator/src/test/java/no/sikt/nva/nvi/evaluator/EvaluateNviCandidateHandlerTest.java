@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.evaluator;
 import static java.math.BigDecimal.ONE;
 import static no.sikt.nva.nvi.evaluator.TestUtils.createResponse;
 import static no.sikt.nva.nvi.evaluator.TestUtils.createS3Event;
+import static no.sikt.nva.nvi.evaluator.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.evaluator.model.InstanceType.ACADEMIC_ARTICLE;
 import static no.sikt.nva.nvi.evaluator.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
 import static no.sikt.nva.nvi.evaluator.model.InstanceType.ACADEMIC_MONOGRAPH;
@@ -28,7 +29,9 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +39,8 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
+import no.sikt.nva.nvi.evaluator.calculator.OrganizationRetriever;
+import no.sikt.nva.nvi.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.evaluator.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.evaluator.model.InstanceType;
 import no.sikt.nva.nvi.evaluator.model.Level;
@@ -69,7 +74,6 @@ class EvaluateNviCandidateHandlerTest {
     public static final URI HARDCODED_PUBLICATION_CHANNEL_ID = URI.create("https://api.dev.nva.aws.unit"
                                                                           + ".no/publication-channels/series/490845"
                                                                           + "/2023");
-    private static final String CRISTIN_API_ORGANIZATION_RESPONSE_JSON = "cristinApiOrganizationResponse.json";
     private static final URI HARDCODED_CREATOR_ID = URI.create("https://api.dev.nva.aws.unit.no/cristin/person/997998");
     private static final String ACADEMIC_CHAPTER_PATH = "candidate_academicChapter.json";
     private static final int SCALE = 4;
@@ -121,7 +125,9 @@ class EvaluateNviCandidateHandlerTest {
         uriRetriever = mock(AuthorizedBackendUriRetriever.class);
         var calculator = new CandidateCalculator(uriRetriever);
         var storageReader = new FakeStorageReader(s3Client);
-        var evaluatorService = new EvaluatorService(storageReader, calculator);
+        var organizationRetriever = new OrganizationRetriever(uriRetriever);
+        var pointCalculator = new PointCalculator(organizationRetriever);
+        var evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator);
         handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
         output = new ByteArrayOutputStream();
     }
@@ -539,10 +545,6 @@ class EvaluateNviCandidateHandlerTest {
                          .sum();
     }
 
-    private static String getHardCodedCristinOrgResponse() {
-        return IoUtils.stringFromResources(Path.of(CRISTIN_API_ORGANIZATION_RESPONSE_JSON));
-    }
-
     private static void assertThatMessageIsInDlq(List<SendMessageRequest> sentMessages) {
         assertThat(sentMessages, hasSize(1));
         assertThat(sentMessages.get(0).messageBody(), containsString("Exception"));
@@ -566,26 +568,19 @@ class EvaluateNviCandidateHandlerTest {
     }
 
     private void mockCristinResponseAndCustomerApiResponseForNonNviInstitution() {
-        var responseBodyForNonNviInstitution = """
-            {"id": "https://api.dev.nva.aws.unit.no/cristin/organization/150.50.50.0",\s
-            "partOf":\s
-            [{"type": "Organization", "id": "https://api.dev.nva.aws.unit.no/cristin/organization/150.0.0.0"}]}
-            """;
-        var response = createResponse(200, responseBodyForNonNviInstitution);
         var cristinOrgNonNviSubUnit = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/150.50.50.0");
-        var crinstinOrgNonNviTopLevelCristinApiUri = URI.create(
-            "https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi.dev.nva.aws.unit"
-            + ".no%2Fcristin%2Forganization%2F150.0.0.0");
-        when(uriRetriever.fetchResponse(eq(cristinOrgNonNviSubUnit), any())).thenReturn(
-            Optional.of(response));
-        when(uriRetriever.fetchResponse(eq(crinstinOrgNonNviTopLevelCristinApiUri), any())).thenReturn(Optional.of(
+        var cristinOrgNonNviTopLevel = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/150.0.0.0");
+        var customerApiEndpoint = URI.create("https://api.dev.nva.aws.unit.no/customer/cristinId");
+        var cristinOrgNonNviTopLevelCustomerApiUri =
+            URI.create(customerApiEndpoint + "/" + URLEncoder.encode(cristinOrgNonNviTopLevel.toString(),
+                                                                     StandardCharsets.UTF_8));
+        when(uriRetriever.fetchResponse(eq(cristinOrgNonNviTopLevelCustomerApiUri), any())).thenReturn(Optional.of(
             notFoundResponse));
+        mockOrganizationResponseForAffiliation(cristinOrgNonNviTopLevel, cristinOrgNonNviSubUnit, uriRetriever);
     }
 
     private void mockCristinResponseAndCustomerApiResponseForNviInstitution(HttpResponse<String> httpResponse) {
-        var cristinOrgResponse = createResponse(200, getHardCodedCristinOrgResponse());
-        when(uriRetriever.fetchResponse(eq(CRISTIN_NVI_ORG_SUB_UNIT_ID), any())).thenReturn(
-            Optional.of(cristinOrgResponse));
+        mockOrganizationResponseForAffiliation(CRISTIN_NVI_ORG_TOP_LEVEL_ID, CRISTIN_NVI_ORG_SUB_UNIT_ID, uriRetriever);
         when(uriRetriever.fetchResponse(eq(CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL), any())).thenReturn(Optional.of(
             httpResponse));
     }

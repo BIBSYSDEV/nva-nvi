@@ -1,12 +1,12 @@
 package no.sikt.nva.nvi.evaluator;
 
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_DAY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MONTH;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_DATE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_YEAR;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
-import static no.sikt.nva.nvi.evaluator.calculator.PointCalculator.calculatePoints;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.evaluator.calculator.CandidateCalculator;
+import no.sikt.nva.nvi.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.evaluator.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.evaluator.model.CandidateType;
 import no.sikt.nva.nvi.evaluator.model.NonNviCandidate;
@@ -27,13 +28,16 @@ import no.unit.nva.events.models.EventReference;
 
 public class EvaluatorService {
 
-    public static final String JSON_PTR_BODY = "/body";
     private final StorageReader<EventReference> storageReader;
     private final CandidateCalculator candidateCalculator;
 
-    public EvaluatorService(StorageReader<EventReference> storageReader, CandidateCalculator candidateCalculator) {
+    private final PointCalculator pointCalculator;
+
+    public EvaluatorService(StorageReader<EventReference> storageReader, CandidateCalculator candidateCalculator,
+                            PointCalculator pointCalculator) {
         this.storageReader = storageReader;
         this.candidateCalculator = candidateCalculator;
+        this.pointCalculator = pointCalculator;
     }
 
     public CandidateEvaluatedMessage evaluateCandidacy(EventReference input) {
@@ -43,7 +47,7 @@ public class EvaluatorService {
         var verifiedCreatorsWithNviInstitutions = candidateCalculator.getVerifiedCreatorsWithNviInstitutionsIfExists(
             publication);
         if (!verifiedCreatorsWithNviInstitutions.isEmpty()) {
-            var pointCalculation = calculatePoints(publication, verifiedCreatorsWithNviInstitutions);
+            var pointCalculation = pointCalculator.calculatePoints(publication, verifiedCreatorsWithNviInstitutions);
             var nviCandidate = constructNviCandidate(publication, verifiedCreatorsWithNviInstitutions, pointCalculation,
                                                      publicationId, publicationBucketUri);
             return constructMessage(nviCandidate);

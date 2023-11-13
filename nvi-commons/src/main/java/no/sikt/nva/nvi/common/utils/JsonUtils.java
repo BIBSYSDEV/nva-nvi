@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.common.utils;
 
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.net.URI;
 import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -21,8 +23,11 @@ public final class JsonUtils {
         return StreamSupport.stream(node.spliterator(), false);
     }
 
+    public static URI extractId(JsonNode jsonNode) {
+        return URI.create(extractJsonNodeTextValue(jsonNode, JSON_PTR_ID));
+    }
+
     private static boolean isNotMissingNode(JsonNode node) {
         return !node.isMissingNode() && !node.isNull() && node.isValueNode();
     }
-
 }
