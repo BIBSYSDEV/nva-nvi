@@ -55,7 +55,7 @@ public final class PointCalculator {
     }
 
     public PointCalculation calculatePoints(JsonNode jsonNode,
-                                                   Map<URI, List<URI>> nviCreatorsWithInstitutionIds) {
+                                            Map<URI, List<URI>> nviCreatorsWithInstitutionIds) {
         var instanceType = extractInstanceType(jsonNode);
         //TODO: Remove when migrating to publication channels v2
         massiveHackToFixObjectsWithMultipleTypes(jsonNode);
@@ -177,13 +177,6 @@ public final class PointCalculator {
                    : NOT_INTERNATIONAL_COLLABORATION_FACTOR;
     }
 
-    private int countCreatorShares(JsonNode jsonNode) {
-        var creators = extractCreatorNodes(jsonNode);
-        return Integer.sum(
-            Integer.sum(countVerifiedTopLevelAffiliations(creators), countCreatorsWithoutAffiliations(creators)),
-            countCreatorsWithOnlyUnverifiedAffiliations(creators));
-    }
-
     private static Integer countCreatorsWithoutAffiliations(List<JsonNode> creators) {
         return creators.stream()
                    .filter(PointCalculator::doesNotHaveAffiliations)
@@ -276,9 +269,22 @@ public final class PointCalculator {
         }
     }
 
-    private Integer countVerifiedTopLevelAffiliations(List<JsonNode> creators) {
+    private int countCreatorShares(JsonNode jsonNode) {
+        var creators = extractCreatorNodes(jsonNode);
+        return Integer.sum(
+            Integer.sum(countVerifiedTopLevelAffiliationsPerCreator(creators),
+                        countCreatorsWithoutAffiliations(creators)),
+            countCreatorsWithOnlyUnverifiedAffiliations(creators));
+    }
+
+    private Integer countVerifiedTopLevelAffiliationsPerCreator(List<JsonNode> creators) {
         return creators.stream()
-                   .flatMap(PointCalculator::extractAffiliations)
+                   .map(this::countVerifiedTopLevelAffiliations)
+                   .reduce(0, Integer::sum);
+    }
+
+    private Integer countVerifiedTopLevelAffiliations(JsonNode creator) {
+        return extractAffiliations(creator)
                    .filter(PointCalculator::hasId)
                    .map(ExtractionUtil::extractId)
                    .distinct()
