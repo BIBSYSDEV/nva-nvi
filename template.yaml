@@ -679,8 +679,6 @@ Resources:
       EvaluationPeriods: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
-      OKActions:
-        - !Ref SlackSnsArn
       AlarmActions:
         - !Ref SlackSnsArn
 
@@ -698,8 +696,6 @@ Resources:
       EvaluationPeriods: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
-      OKActions:
-        - !Ref SlackSnsArn
       AlarmActions:
         - !Ref SlackSnsArn
 
@@ -717,8 +713,6 @@ Resources:
       EvaluationPeriods: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
-      OKActions:
-        - !Ref SlackSnsArn
       AlarmActions:
         - !Ref SlackSnsArn
 
@@ -736,7 +730,5 @@ Resources:
       EvaluationPeriods: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
-      OKActions:
-        - !Ref SlackSnsArn
       AlarmActions:
         - !Ref SlackSnsArn
