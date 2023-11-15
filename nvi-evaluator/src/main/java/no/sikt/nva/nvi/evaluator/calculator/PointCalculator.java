@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.evaluator.calculator;
 
+import static java.math.BigDecimal.ZERO;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_PUBLISHER;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES;
@@ -72,7 +73,7 @@ public final class PointCalculator {
         var institutionPoints = calculatePointsForAllInstitutions(basePoints, creatorShareCount,
                                                                   internationalCollaboration,
                                                                   nviCreatorsWithInstitutionIds);
-        var totalPoints = calculateTotalPoints(collaborationFactor, basePoints, BigDecimal.valueOf(creatorShareCount));
+        var totalPoints = sumInstitutionPoints(institutionPoints);
         return new PointCalculation(instanceType, channel.type(), channel.id(), channel.level(),
                                     internationalCollaboration, collaborationFactor,
                                     basePoints,
@@ -81,9 +82,8 @@ public final class PointCalculator {
                                     totalPoints);
     }
 
-    private static BigDecimal calculateTotalPoints(BigDecimal internationalCollaborationFactor, BigDecimal basePoints,
-                                                   BigDecimal creatorShareCount) {
-        return executeNviFormula(basePoints, internationalCollaborationFactor, creatorShareCount);
+    private static BigDecimal sumInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
+        return institutionPoints.values().stream().reduce(BigDecimal::add).orElse(ZERO);
     }
 
     private static Map<URI, BigDecimal> calculatePointsForAllInstitutions(BigDecimal instanceTypeAndLevelPoints,
