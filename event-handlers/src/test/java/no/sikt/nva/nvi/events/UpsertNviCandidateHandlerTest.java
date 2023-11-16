@@ -100,8 +100,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         queueClient = mock(QueueClient.class);
         environment = mock(Environment.class);
         when(environment.readEnv("UPSERT_CANDIDATE_DLQ_QUEUE_URL")).thenReturn(DLQ_QUEUE_URL);
-        handler = new UpsertNviCandidateHandler(candidateRepository, periodRepository, queueClient,
-                                                environment);
+        handler = new UpsertNviCandidateHandler(candidateRepository, periodRepository, queueClient, environment);
     }
 
     @Test

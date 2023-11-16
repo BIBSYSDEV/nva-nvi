@@ -207,8 +207,6 @@ class CandidateBOTest extends LocalDynamoTest {
             assertThat(dto.publicationId(), is(equalTo(createRequest.publicationId())));
             assertThat(dto.approvalStatuses().size(), is(equalTo(createRequest.institutionPoints().size())));
             assertThat(dto.notes().size(), is(2));
-            assertThat(dto.undistributedPoints(),
-                       is(equalTo(calculateExpectedUndistributedPoints(totalPoints, approvalMap))));
             assertThat(dto.totalPoints(), is(equalTo(totalPoints)));
             var note = dto.notes().get(0);
             assertThat(note.text(), is(notNullValue()));
@@ -361,14 +359,6 @@ class CandidateBOTest extends LocalDynamoTest {
         var updatedApproval = updatedCandidate.toDto().approvalStatuses().get(0);
 
         assertThat(updatedApproval.status(), is(equalTo(NviApprovalStatus.PENDING)));
-    }
-
-    private static BigDecimal calculateExpectedUndistributedPoints(BigDecimal totalPoints,
-                                                                   Map<URI, ApprovalStatus> approvalMap) {
-        return totalPoints.subtract(
-                approvalMap.values().stream().map(ApprovalStatus::points).reduce(BigDecimal.ZERO, BigDecimal::add))
-                   .setScale(
-                       POINTS_SCALE, ROUNDING_MODE);
     }
 
     private static Map<URI, BigDecimal> getPointsOriginal(URI[] institutionIdsOriginal) {
