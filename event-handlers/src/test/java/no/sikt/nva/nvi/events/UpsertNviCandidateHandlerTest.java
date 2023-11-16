@@ -1,8 +1,6 @@
 package no.sikt.nva.nvi.events;
 
 import static no.sikt.nva.nvi.common.db.model.InstanceType.NON_CANDIDATE;
-import static no.sikt.nva.nvi.test.TestUtils.POINTS_SCALE;
-import static no.sikt.nva.nvi.test.TestUtils.ROUNDING_MODE;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
@@ -102,8 +100,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         queueClient = mock(QueueClient.class);
         environment = mock(Environment.class);
         when(environment.readEnv("UPSERT_CANDIDATE_DLQ_QUEUE_URL")).thenReturn(DLQ_QUEUE_URL);
-        handler = new UpsertNviCandidateHandler(candidateRepository, periodRepository, queueClient,
-                                                environment);
+        handler = new UpsertNviCandidateHandler(candidateRepository, periodRepository, queueClient, environment);
     }
 
     @Test
@@ -228,13 +225,6 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private static BigDecimal calculateUndistributedPoints(Map<URI, BigDecimal> institutionPoints,
-                                                           BigDecimal totalPoints) {
-        return totalPoints.subtract(institutionPoints.values().stream().reduce(BigDecimal.ZERO,
-                                                                               BigDecimal::add))
-                   .setScale(POINTS_SCALE, ROUNDING_MODE);
-    }
-
     private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
         return Stream.of(CandidateEvaluatedMessage.builder()
                              .withCandidateType(NviCandidate.builder()
@@ -338,7 +328,6 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withNotes(List.of())
                    .withApprovalStatuses(institutionPoints.entrySet().stream().map(this::mapToApprovalStatus).toList())
                    .withPeriodStatus(toPeriodStatus(period))
-                   .withUndistributedPoints(calculateUndistributedPoints(institutionPoints, totalPoints))
                    .withTotalPoints(totalPoints)
                    .build();
     }
