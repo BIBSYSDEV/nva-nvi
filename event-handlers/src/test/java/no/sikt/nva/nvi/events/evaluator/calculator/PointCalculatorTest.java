@@ -348,23 +348,23 @@ class PointCalculatorTest {
     private static Stream<PointParameters> twoCreatorsAffiliatedWithOneInstitutionPointProvider() {
         return Stream.of(
             new PointParameters("AcademicMonograph", "Series", "1", false, 3, asBigDecimal("4.0825"),
-                                asBigDecimal("2.8868"), asBigDecimal("8.6603")),
+                                asBigDecimal("2.8868"), asBigDecimal("6.9693")),
             new PointParameters("AcademicMonograph", "Series", "2", true, 4, asBigDecimal("7.3539"),
-                                asBigDecimal("5.2000"), asBigDecimal("20.8000")),
+                                asBigDecimal("5.2000"), asBigDecimal("12.5539")),
             new PointParameters("AcademicMonograph", "Series", "2", false, 4, asBigDecimal("5.6569"),
-                                asBigDecimal("4.0000"), asBigDecimal("16")),
+                                asBigDecimal("4.0000"), asBigDecimal("9.6569")),
             new PointParameters("AcademicChapter", "Series", "1", true, 5, asBigDecimal("0.8222"),
-                                asBigDecimal("0.5814"), asBigDecimal("2.9069")),
+                                asBigDecimal("0.5814"), asBigDecimal("1.4036")),
             new PointParameters("AcademicChapter", "Series", "2", false, 5, asBigDecimal("1.8974"),
-                                asBigDecimal("1.3416"), asBigDecimal("6.7082")),
+                                asBigDecimal("1.3416"), asBigDecimal("3.2390")),
             new PointParameters("AcademicArticle", "Journal", "1", false, 7, asBigDecimal("0.5345"),
-                                asBigDecimal("0.3780"), asBigDecimal("2.6458")),
+                                asBigDecimal("0.3780"), asBigDecimal("0.9125")),
             new PointParameters("AcademicArticle", "Journal", "2", false, 7, asBigDecimal("1.6036"),
-                                asBigDecimal("1.1339"), asBigDecimal("7.9373")),
+                                asBigDecimal("1.1339"), asBigDecimal("2.7375")),
             new PointParameters("AcademicLiteratureReview", "Journal", "1", true, 8, asBigDecimal("0.6500"),
-                                asBigDecimal("0.4596"), asBigDecimal("3.6770")),
+                                asBigDecimal("0.4596"), asBigDecimal("1.1096")),
             new PointParameters("AcademicLiteratureReview", "Journal", "2", true, 8, asBigDecimal("1.9500"),
-                                asBigDecimal("1.3789"), asBigDecimal("11.0309"))
+                                asBigDecimal("1.3789"), asBigDecimal("3.3289"))
         );
     }
 
