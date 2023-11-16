@@ -274,7 +274,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: nvi-evaluator
-      Handler: no.sikt.nva.nvi.evaluator.EvaluateNviCandidateHandler::handleRequest
+      Handler: no.sikt.nva.nvi.events.evaluator.EvaluateNviCandidateHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 30
@@ -328,7 +328,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: event-handlers
-      Handler: no.sikt.nva.nvi.events.UpsertNviCandidateHandler::handleRequest
+      Handler: no.sikt.nva.nvi.events.persist.UpsertNviCandidateHandler::handleRequest
       Timeout: 30
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
