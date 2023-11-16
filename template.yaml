@@ -623,7 +623,7 @@ Resources:
         GetEvent:
           Type: Api
           Properties:
-            Path: /report/{institutionId+}
+            Path: /report/{institutionId}
             Method: get
             RestApiId: !Ref ScientificIndexApi
 

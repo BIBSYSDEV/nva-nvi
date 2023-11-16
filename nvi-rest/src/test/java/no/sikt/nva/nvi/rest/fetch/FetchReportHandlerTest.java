@@ -53,7 +53,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 class FetchReportHandlerTest extends LocalDynamoTest {
 
-    private static final String INSTITUTION_IDENTIFIER = "institutionIdentifier";
+    private static final String INSTITUTION_ID = "institutionId";
     private static final String YEAR = "year";
     private static final int CURRENT_YEAR = Year.now().getValue();
     private static final Context CONTEXT = mock(Context.class);
@@ -153,7 +153,7 @@ class FetchReportHandlerTest extends LocalDynamoTest {
                    .withAccessRights(customerId, accessRight)
                    .withUserName(randomString())
                    .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateIdentifier.toString(),
-                                              INSTITUTION_IDENTIFIER,
+                                              INSTITUTION_ID,
                                               URLEncoder.encode(institutionId.toString(), StandardCharsets.UTF_8),
                                               YEAR, String.valueOf(year)));
     }

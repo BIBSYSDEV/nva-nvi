@@ -30,7 +30,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 public class FetchReportHandler extends ApiGatewayHandler<Void, String> {
 
     public static final Encoder ENCODER = Base64.getEncoder();
-    private static final String INSTITUTION_IDENTIFIER = "institutionIdentifier";
+    private static final String INSTITUTION_ID = "institutionId";
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
 
@@ -71,7 +71,7 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, String> {
     }
 
     private static URI decodeInstitutionIdentifierPath(RequestInfo requestInfo) {
-        return URI.create(URLDecoder.decode(requestInfo.getPathParameter(INSTITUTION_IDENTIFIER), UTF_8));
+        return URI.create(URLDecoder.decode(requestInfo.getPathParameter(INSTITUTION_ID), UTF_8));
     }
 
     private static void validateRequest(URI requestedInstitution, RequestInfo requestInfo)

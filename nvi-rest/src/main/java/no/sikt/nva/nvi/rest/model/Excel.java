@@ -44,16 +44,6 @@ public final class Excel implements AutoCloseable {
         return new Excel(workbook);
     }
 
-    private static <T> void addSheetComponent(RecordComponent[] recordComponents, T record, XSSFRow row, int columnIndex) {
-        var recordComponent = recordComponents[columnIndex];
-        var cell = row.createCell(columnIndex);
-        addValueToCell(recordComponent, record, cell);
-    }
-
-    private static void addHeaderRow(RecordComponent[] recordComponents, XSSFRow headerRow, int colIndex) {
-        headerRow.createCell(colIndex).setCellValue(getHeaderValue(recordComponents[colIndex]));
-    }
-
     public void write(OutputStream outputStream) throws IOException {
         workbook.write(outputStream);
         workbook.close();
@@ -62,6 +52,17 @@ public final class Excel implements AutoCloseable {
     @Override
     public void close() throws Exception {
         workbook.close();
+    }
+
+    private static <T> void addSheetComponent(RecordComponent[] recordComponents, T record, XSSFRow row,
+                                              int columnIndex) {
+        var recordComponent = recordComponents[columnIndex];
+        var cell = row.createCell(columnIndex);
+        addValueToCell(recordComponent, record, cell);
+    }
+
+    private static void addHeaderRow(RecordComponent[] recordComponents, XSSFRow headerRow, int colIndex) {
+        headerRow.createCell(colIndex).setCellValue(getHeaderValue(recordComponents[colIndex]));
     }
 
     private static String getHeaderValue(RecordComponent recordComponent) {
