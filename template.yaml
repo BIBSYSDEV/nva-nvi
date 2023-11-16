@@ -273,7 +273,7 @@ Resources:
   EvaluateNVICandidateHandler:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: nvi-evaluator
+      CodeUri: event-handlers
       Handler: no.sikt.nva.nvi.events.evaluator.EvaluateNviCandidateHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
