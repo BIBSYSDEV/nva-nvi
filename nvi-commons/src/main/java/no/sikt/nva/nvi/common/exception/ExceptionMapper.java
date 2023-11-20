@@ -1,9 +1,8 @@
-package no.sikt.nva.nvi.utils;
+package no.sikt.nva.nvi.common.exception;
 
 import java.util.NoSuchElementException;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
-import no.sikt.nva.nvi.utils.exception.NotApplicableException;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.BadGatewayException;
 import nva.commons.apigateway.exceptions.BadRequestException;

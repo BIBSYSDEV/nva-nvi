@@ -17,7 +17,7 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.rest.model.ApprovalDto;
 import no.sikt.nva.nvi.rest.model.User;
 import no.sikt.nva.nvi.rest.model.User.Role;
-import no.sikt.nva.nvi.utils.ExceptionMapper;
+import no.sikt.nva.nvi.common.exception.ExceptionMapper;
 import no.sikt.nva.nvi.utils.RequestUtil;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.RawContentRetriever;

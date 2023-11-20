@@ -11,7 +11,7 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
-import no.sikt.nva.nvi.utils.ExceptionMapper;
+import no.sikt.nva.nvi.common.exception.ExceptionMapper;
 import no.sikt.nva.nvi.utils.RequestUtil;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;

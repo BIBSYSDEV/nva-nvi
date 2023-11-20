@@ -5,72 +5,52 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
-import no.sikt.nva.nvi.common.queue.NviQueueClient;
-import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
-import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.events.evaluator.aws.S3StorageReader;
+import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import java.util.List;
+import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.events.evaluator.calculator.OrganizationRetriever;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
-import no.sikt.nva.nvi.events.evaluator.model.CandidateEvaluatedMessage;
+import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
+import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
-import no.unit.nva.events.models.AwsEventBridgeDetail;
-import no.unit.nva.events.models.AwsEventBridgeEvent;
-import no.unit.nva.events.models.EventReference;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.attempt.Failure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Void> {
+public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, SQSEvent> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateNviCandidateHandler.class);
     private static final String BACKEND_CLIENT_AUTH_URL = "BACKEND_CLIENT_AUTH_URL";
     private static final String BACKEND_CLIENT_SECRET_NAME = "BACKEND_CLIENT_SECRET_NAME";
-    private static final String ENV_CANDIDATE_QUEUE_URL = "CANDIDATE_QUEUE_URL";
-    private static final String ENV_CANDIDATE_DLQ_URL = "CANDIDATE_DLQ_URL";
     private static final String EVALUATION_MESSAGE = "Nvi candidacy has been evaluated for publication: {}. Type: {}";
     private static final String FAILURE_MESSAGE = "Failure while calculating NVI Candidate: %s, ex: %s, msg: %s";
     private final EvaluatorService evaluatorService;
-    private final QueueClient<NviSendMessageResponse> queueClient;
-    private final String queueUrl;
-    private final String dlqUrl;
 
     @JacocoGenerated
     public EvaluateNviCandidateHandler() {
-        this(new EvaluatorService(new S3StorageReader(),
+        this(new EvaluatorService(new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")),
                                   new CandidateCalculator(defaultUriRetriever(new Environment())),
                                   new PointCalculator(
-                                      new OrganizationRetriever(defaultUriRetriever(new Environment())))),
-             new NviQueueClient(), new Environment());
+                                      new OrganizationRetriever(defaultUriRetriever(new Environment())))));
     }
 
-    public EvaluateNviCandidateHandler(EvaluatorService evaluatorService,
-                                       QueueClient<NviSendMessageResponse> queueClient, Environment environment) {
+    public EvaluateNviCandidateHandler(EvaluatorService evaluatorService) {
         this.evaluatorService = evaluatorService;
-        this.queueClient = queueClient;
-        this.queueUrl = environment.readEnv(ENV_CANDIDATE_QUEUE_URL);
-        this.dlqUrl = environment.readEnv(ENV_CANDIDATE_DLQ_URL);
     }
 
     @Override
-    public Void handleRequest(SQSEvent input, Context context) {
-        return null;
+    public SQSEvent handleRequest(SQSEvent input, Context context) {
+        return attempt(() -> createEvent(evaluateCandidacy(extractPersistedResourceMessage(input)))).orElseThrow(
+            failure -> handleFailure(input, failure));
     }
 
-    protected Void processInputPayload(EventReference input,
-                                       AwsEventBridgeEvent<AwsEventBridgeDetail<EventReference>> event,
-                                       Context context) {
-        try {
-            var message = evaluatorService.evaluateCandidacy(input);
-            sendMessage(message);
-            LOGGER.info(EVALUATION_MESSAGE, message.candidate().publicationId(), message.candidate().getClass());
-        } catch (Exception e) {
-            var msg = FAILURE_MESSAGE.formatted(input.getUri(), e.getClass(), e.getMessage());
-            LOGGER.error(msg, e);
-            queueClient.sendMessage(msg, dlqUrl);
-        }
-        return null;
+    private static RuntimeException handleFailure(SQSEvent input, Failure<SQSEvent> failure) {
+        LOGGER.error(String.format(FAILURE_MESSAGE, input.toString(), failure.getException(),
+                                   failure.getException().getMessage()));
+        return new RuntimeException(failure.getException());
     }
 
     @JacocoGenerated
@@ -79,8 +59,35 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
                                                  env.readEnv(BACKEND_CLIENT_SECRET_NAME));
     }
 
-    private void sendMessage(CandidateEvaluatedMessage evaluatedCandidate) {
-        attempt(() -> dtoObjectMapper.writeValueAsString(evaluatedCandidate)).map(
-            message -> queueClient.sendMessage(message, queueUrl)).orElseThrow();
+    private static SQSEvent createEvent(CandidateEvaluatedMessage messageBody) {
+        var event = new SQSEvent();
+        event.setRecords(
+            List.of(createMessage(attempt(() -> dtoObjectMapper.writeValueAsString(messageBody)).orElseThrow())));
+        return event;
+    }
+
+    private static SQSMessage createMessage(String messageBody) {
+        var message = new SQSMessage();
+        message.setBody(messageBody);
+        return message;
+    }
+
+    private static PersistedResourceMessage parseBody(String body) {
+        return attempt(() -> dtoObjectMapper.readValue(body, PersistedResourceMessage.class)).orElseThrow();
+    }
+
+    private PersistedResourceMessage extractPersistedResourceMessage(SQSEvent input) {
+        return attempt(() -> parseBody(extractFirstMessage(input).getBody())).orElseThrow();
+    }
+
+    private SQSMessage extractFirstMessage(SQSEvent input) {
+        return input.getRecords().stream().findFirst().orElseThrow();
+    }
+
+    private CandidateEvaluatedMessage evaluateCandidacy(PersistedResourceMessage message) {
+        var evaluatedCandidate = evaluatorService.evaluateCandidacy(message.resourceFileUri());
+        LOGGER.info(EVALUATION_MESSAGE, evaluatedCandidate.candidate().publicationId(),
+                    evaluatedCandidate.candidate().getClass().getSimpleName());
+        return evaluatedCandidate;
     }
 }
