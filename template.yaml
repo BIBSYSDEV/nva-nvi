@@ -338,6 +338,9 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt PersistedResourceQueue.Arn
+            BatchSize: 1
+            #Note: EvaluateNVICandidateHandler is implemented to handle only batch size 1.
+            #Don't change the batch size value, unless you change the implementation.
       EventInvokeConfig:
         DestinationConfig:
           OnSuccess:
