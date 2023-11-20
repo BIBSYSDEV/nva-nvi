@@ -3,6 +3,8 @@ package no.sikt.nva.nvi.events.evaluator;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
@@ -12,7 +14,6 @@ import no.sikt.nva.nvi.events.evaluator.calculator.OrganizationRetriever;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.CandidateEvaluatedMessage;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
-import no.unit.nva.events.handlers.DestinationsEventBridgeEventHandler;
 import no.unit.nva.events.models.AwsEventBridgeDetail;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
 import no.unit.nva.events.models.EventReference;
@@ -21,7 +22,7 @@ import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHandler<EventReference, Void> {
+public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Void> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateNviCandidateHandler.class);
     private static final String BACKEND_CLIENT_AUTH_URL = "BACKEND_CLIENT_AUTH_URL";
@@ -46,7 +47,6 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
 
     public EvaluateNviCandidateHandler(EvaluatorService evaluatorService,
                                        QueueClient<NviSendMessageResponse> queueClient, Environment environment) {
-        super(EventReference.class);
         this.evaluatorService = evaluatorService;
         this.queueClient = queueClient;
         this.queueUrl = environment.readEnv(ENV_CANDIDATE_QUEUE_URL);
@@ -54,6 +54,10 @@ public class EvaluateNviCandidateHandler extends DestinationsEventBridgeEventHan
     }
 
     @Override
+    public Void handleRequest(SQSEvent input, Context context) {
+        return null;
+    }
+
     protected Void processInputPayload(EventReference input,
                                        AwsEventBridgeEvent<AwsEventBridgeDetail<EventReference>> event,
                                        Context context) {
