@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.exception;
+package no.sikt.nva.nvi.common.exceptions;
 
 public class NotApplicableException extends RuntimeException {
 
