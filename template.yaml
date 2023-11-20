@@ -44,6 +44,12 @@ Parameters:
   ResourcesBucket:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/PersistedEntriesBucketName
+  PersistedResourceQueueName:
+    Type: String
+    Default: PersistedResourceQueue
+  PersistedResourceDLQName:
+    Type: String
+    Default: PersistedResourceDLQ
   NewCandidateQueueName:
     Type: String
     Default: NewCandidateQueue
@@ -116,6 +122,16 @@ Resources:
     Properties:
       QueueName: !Ref UpsertCandidateDLQName
       MessageRetentionPeriod: 43200
+  PersistedResourceQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref PersistedResourceQueueName
+      MessageRetentionPeriod: 43200
+  PersistedResourceDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref PersistedResourceDLQName
+      MessageRetentionPeriod: 43200
 
   #============================= Permissions =======================================================
   NvaNviRole:
@@ -153,6 +169,8 @@ Resources:
                   - !Ref EventBusArn
                   - !GetAtt InternalBus.Arn
                   - !GetAtt NewCandidateQueue.Arn
+                  - !GetAtt PersistedResourceQueue.Arn
+                  - !GetAtt PersistedResourceDLQ.Arn
                   - !GetAtt NewCandidateDLQ.Arn
                   - !GetAtt BatchScanDLQ.Arn
                   - !GetAtt UpdateIndexDLQ.Arn
@@ -270,6 +288,36 @@ Resources:
       Stage: !Ref ScientificIndexApi.Stage
 
   #============================= Handlers ==========================================================
+  QueuePersistedResourceHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.QueuePersistedResourceHandler::handleRequest
+      Runtime: java17
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 30
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Events:
+        EventBridgeEvent:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !Ref EventBusName
+            Pattern:
+              detail-type:
+                - Lambda Function Invocation Result - Success
+              detail:
+                responsePayload:
+                  topic: [ "PublicationService.ExpandedEntry.Persisted" ]
+      EventInvokeConfig:
+        DestinationConfig:
+          OnSuccess:
+            Type: SQS
+            Destination: !GetAtt PersistedResourceQueue.Arn
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt PersistedResourceDLQ.Arn
+
   EvaluateNVICandidateHandler:
     Type: AWS::Serverless::Function
     Properties:
