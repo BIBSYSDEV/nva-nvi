@@ -332,20 +332,20 @@ Resources:
           BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
           BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-          CANDIDATE_QUEUE_URL: !Ref NewCandidateQueue
-          CANDIDATE_DLQ_URL: !Ref NewCandidateDLQ
       AutoPublishAlias: live
       Events:
-        EventBridgeEvent:
-          Type: EventBridgeRule
+        SqsEvent:
+          Type: SQS
           Properties:
-            EventBusName: !Ref EventBusName
-            Pattern:
-              detail-type:
-                - Lambda Function Invocation Result - Success
-              detail:
-                responsePayload:
-                  topic: [ "PublicationService.ExpandedEntry.Persisted" ]
+            Queue: !GetAtt PersistedResourceQueue.Arn
+      EventInvokeConfig:
+        DestinationConfig:
+          OnSuccess:
+            Type: SQS
+            Destination: !GetAtt NewCandidateQueue.Arn
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt NewCandidateDLQ.Arn
 
   UpdateIndexHandler:
     Type: AWS::Serverless::Function
