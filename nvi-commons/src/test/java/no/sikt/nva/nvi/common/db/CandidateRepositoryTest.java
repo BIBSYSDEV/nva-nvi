@@ -12,6 +12,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
@@ -57,7 +58,7 @@ class CandidateRepositoryTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldFetchCandidatesByGivenYearAndPageSizeAndStartMarker() {
+    void shouldFetchCandidatesByGivenYearAndPageSize() {
         int year = Integer.parseInt(randomYear());
         var candidates = createNumberOfCandidatesForYear(year, 10);
         int pageSize = 5;
@@ -65,6 +66,17 @@ class CandidateRepositoryTest extends LocalDynamoTest {
         var results = candidateRepository.fetchCandidatesByYear(year, pageSize, null);
         assertThat(results.size(), is(equalTo(pageSize)));
         assertThat(expectedCandidates, containsInAnyOrder(results.toArray()));
+    }
+
+    @Test
+    void shouldFetchCandidatesByGivenYearAndStartMarker() {
+        int year = Integer.parseInt(randomYear());
+        var candidates = createNumberOfCandidatesForYear(year, 2);
+        var expectedCandidates = sortByIdentifier(candidates, DEFAULT_PAGE_SIZE);
+        var startMarker = getStartMarker(expectedCandidates.get(0));
+        var results = candidateRepository.fetchCandidatesByYear(year, null, startMarker);
+        assertThat(results.size(), is(equalTo(1)));
+        assertThat(expectedCandidates.subList(1, 2), containsInAnyOrder(results.toArray()));
     }
 
     @Test
@@ -76,6 +88,13 @@ class CandidateRepositoryTest extends LocalDynamoTest {
         var results = candidateRepository.fetchCandidatesByYear(year, null, null);
         assertThat(results.size(), is(equalTo(DEFAULT_PAGE_SIZE)));
         assertThat(expectedCandidates, containsInAnyOrder(results.toArray()));
+    }
+
+    private static Map<String, String> getStartMarker(CandidateDao dao) {
+        return Map.of("PrimaryKeyRangeKey", dao.primaryKeyRangeKey(),
+                      "PrimaryKeyHashKey", dao.primaryKeyHashKey(),
+                      "SearchByYearHashKey", String.valueOf(dao.searchByYearHashKey()),
+                      "SearchByYearRangeKey", dao.searchByYearSortKey());
     }
 
     private static DbCandidate randomCandidate(int year) {
