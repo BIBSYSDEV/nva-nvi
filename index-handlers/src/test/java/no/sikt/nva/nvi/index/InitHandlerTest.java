@@ -18,6 +18,7 @@ class InitHandlerTest {
         openSearchClient = mock(OpenSearchClient.class);
         handler = new InitHandler(openSearchClient);
     }
+
     @Test
     void shouldCreateIndexWhenNotExsisting() {
         when(openSearchClient.indexExists()).thenReturn(false);

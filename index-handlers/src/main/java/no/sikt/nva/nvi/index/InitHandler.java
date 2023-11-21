@@ -26,8 +26,7 @@ public class InitHandler implements RequestHandler<Object, String> {
         if (!this.indexingClient.indexExists()) {
             LOGGER.info("Creating index");
             this.indexingClient.createIndex();
-        }
-        else {
+        } else {
             LOGGER.info("Index already exists");
         }
 
