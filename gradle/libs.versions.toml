@@ -15,8 +15,8 @@ commons-validator-version = { strictly = '1.7' }
 awsSdk = { strictly = '1.12.544' }
 awsSdk2 = { strictly = '2.20.141' }
 jena = { strictly = '4.7.0' }
-openSearchRestClient = { strictly = '2.8.0' }
-openSearchJava = { strictly = '2.4.0' }
+openSearchRestClient = { strictly = '2.9.0' }
+openSearchJava = { strictly = '2.6.0' }
 com-auth0-jwt = { strictly = '3.18.3' }
 guava = { strictly = '32.1.2-jre' }
 dynamoDbLocal = { strictly = '1.19.0' }
