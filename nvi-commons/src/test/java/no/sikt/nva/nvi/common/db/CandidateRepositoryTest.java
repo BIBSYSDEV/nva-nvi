@@ -60,11 +60,12 @@ class CandidateRepositoryTest extends LocalDynamoTest {
 
     @Test
     void shouldFetchCandidatesByGivenYearAndPageSize() {
-        int year = Integer.parseInt(randomYear());
-        var candidates = createNumberOfCandidatesForYear(year, 10);
+        int searchYear = Integer.parseInt(randomYear());
+        var candidates = createNumberOfCandidatesForYear(searchYear, 10);
+        createNumberOfCandidatesForYear(Integer.parseInt(randomYear()), 10);
         int pageSize = 5;
         var expectedCandidates = sortByIdentifier(candidates, pageSize);
-        var results = candidateRepository.fetchCandidatesByYear(year, pageSize, null);
+        var results = candidateRepository.fetchCandidatesByYear(searchYear, pageSize, null);
         assertThat(results.size(), is(equalTo(pageSize)));
         assertThat(expectedCandidates, containsInAnyOrder(results.toArray()));
     }
