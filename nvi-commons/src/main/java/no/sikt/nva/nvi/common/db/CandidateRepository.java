@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toMap;
@@ -46,6 +47,7 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 public class CandidateRepository extends DynamoRepository {
 
+    public static final int DEFAULT_PAGE_SIZE = 700;
     private static final int BATCH_SIZE = 25;
     private static final long INITIAL_RETRY_WAIT_TIME_MS = 1000;
     private static final String PRIMARY_KEY_HASH_KEY = "PrimaryKeyHashKey";
@@ -89,12 +91,12 @@ public class CandidateRepository extends DynamoRepository {
         return new ListingResult(thereAreMorePagesToScan(scan), toStringMap(scan.lastEvaluatedKey()), count);
     }
 
-    public List<CandidateDao> fetchCandidatesByYear(int year, int pageSize, Map<String, String> startMarker) {
+    public List<CandidateDao> fetchCandidatesByYear(int year, Integer pageSize, Map<String, String> startMarker) {
         return this.yearIndex.query(createQuery(year, pageSize, startMarker))
                    .stream()
+                   .findFirst()
                    .map(Page::items)
-                   .flatMap(Collection::stream)
-                   .toList();
+                   .orElse(emptyList());
     }
 
     public Candidate create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
@@ -314,14 +316,14 @@ public class CandidateRepository extends DynamoRepository {
                    .build();
     }
 
-    private QueryEnhancedRequest createQuery(int year, int pageSize, Map<String, String> startMarker) {
+    private QueryEnhancedRequest createQuery(int year, Integer pageSize, Map<String, String> startMarker) {
         var start = nonNull(startMarker) ? toAttributeMap(startMarker) : null;
+        var limit = nonNull(pageSize) ? pageSize : DEFAULT_PAGE_SIZE;
         return QueryEnhancedRequest.builder()
                    .queryConditional(keyEqualTo(Key.builder()
                                                     .partitionValue(String.valueOf(year))
-                                                    .sortValue(String.valueOf(year))
                                                     .build()))
-                   .limit(pageSize)
+                   .limit(limit)
                    .exclusiveStartKey(start)
                    .build();
     }

@@ -10,7 +10,9 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
@@ -21,6 +23,8 @@ import org.junit.jupiter.api.Test;
 
 class CandidateRepositoryTest extends LocalDynamoTest {
 
+    public static final int DEFAULT_PAGE_SIZE = 700;
+    public static final String UUID_SEPERATOR = "-";
     private CandidateRepository candidateRepository;
 
     @BeforeEach
@@ -55,11 +59,23 @@ class CandidateRepositoryTest extends LocalDynamoTest {
     @Test
     void shouldFetchCandidatesByGivenYearAndPageSizeAndStartMarker() {
         int year = Integer.parseInt(randomYear());
-        int numberOfCandidates = randomIntBetween(1, 10);
+        var candidates = createNumberOfCandidatesForYear(year, 10);
+        int pageSize = 5;
+        var expectedCandidates = sortByIdentifier(candidates, pageSize);
+        var results = candidateRepository.fetchCandidatesByYear(year, pageSize, null);
+        assertThat(results.size(), is(equalTo(pageSize)));
+        assertThat(expectedCandidates, containsInAnyOrder(results.toArray()));
+    }
+
+    @Test
+    void shouldFetchCandidatesByGivenYearWithDefaultPageSizeAndStartMarkerIfNotSet() {
+        int year = Integer.parseInt(randomYear());
+        int numberOfCandidates = DEFAULT_PAGE_SIZE + randomIntBetween(1, 10);
         var candidates = createNumberOfCandidatesForYear(year, numberOfCandidates);
-        var results = candidateRepository.fetchCandidatesByYear(year, 5, null);
-        assertThat(results.size(), is(equalTo(numberOfCandidates)));
-        assertThat(results, containsInAnyOrder(candidates.toArray()));
+        var expectedCandidates = sortByIdentifier(candidates, DEFAULT_PAGE_SIZE);
+        var results = candidateRepository.fetchCandidatesByYear(year, null, null);
+        assertThat(results.size(), is(equalTo(DEFAULT_PAGE_SIZE)));
+        assertThat(expectedCandidates, containsInAnyOrder(results.toArray()));
     }
 
     private static DbCandidate randomCandidate(int year) {
@@ -68,6 +84,18 @@ class CandidateRepositoryTest extends LocalDynamoTest {
 
     private static DbPublicationDate publicationDate(int year) {
         return new DbPublicationDate(String.valueOf(year), null, null);
+    }
+
+    private static List<CandidateDao> sortByIdentifier(List<CandidateDao> candidates, int limit) {
+        var comparator = Comparator.comparing(CandidateRepositoryTest::getCharacterValues);
+        return candidates.stream()
+                   .sorted(Comparator.comparing(CandidateDao::identifier, comparator))
+                   .limit(limit)
+                   .toList();
+    }
+
+    private static String getCharacterValues(UUID uuid) {
+        return uuid.toString().replaceAll(UUID_SEPERATOR, "");
     }
 
     private List<CandidateDao> createNumberOfCandidatesForYear(int year, int number) {

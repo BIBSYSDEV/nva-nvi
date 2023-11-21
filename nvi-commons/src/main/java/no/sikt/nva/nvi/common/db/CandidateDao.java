@@ -91,7 +91,7 @@ public record CandidateDao(
     @DynamoDbSecondarySortKey(indexNames = {SECONDARY_INDEX_YEAR})
     @DynamoDbAttribute(SECONDARY_INDEX_YEAR_RANGE_KEY)
     public String searchByYearSortKey() {
-        return nonNull(candidate.publicationDate()) ? candidate.publicationDate().year() : null;
+        return nonNull(identifier) ? identifier.toString() : null;
     }
 
     @DynamoDbIgnore
