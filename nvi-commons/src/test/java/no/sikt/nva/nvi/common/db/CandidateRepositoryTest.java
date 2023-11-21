@@ -9,6 +9,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.Comparator;
 import java.util.List;
@@ -73,10 +74,12 @@ class CandidateRepositoryTest extends LocalDynamoTest {
         int year = Integer.parseInt(randomYear());
         var candidates = createNumberOfCandidatesForYear(year, 2);
         var expectedCandidates = sortByIdentifier(candidates, DEFAULT_PAGE_SIZE);
-        var startMarker = getStartMarker(expectedCandidates.get(0));
+        var firstCandidateInIndex = expectedCandidates.get(0);
+        var secondCandidateInIndex = expectedCandidates.get(1);
+        var startMarker = getStartMarker(firstCandidateInIndex);
         var results = candidateRepository.fetchCandidatesByYear(year, null, startMarker);
         assertThat(results.size(), is(equalTo(1)));
-        assertThat(expectedCandidates.subList(1, 2), containsInAnyOrder(results.toArray()));
+        assertEquals(secondCandidateInIndex, results.get(0));
     }
 
     @Test
