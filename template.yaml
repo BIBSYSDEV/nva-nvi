@@ -197,7 +197,9 @@ Resources:
                   - sqs:DeleteMessage
                   - sqs:GetQueueAttributes
                   - sqs:ChangeMessageVisibility
-                Resource: !GetAtt NewCandidateQueue.Arn
+                Resource:
+                  - !GetAtt NewCandidateQueue.Arn
+                  - !GetAtt PersistedResourceQueue.Arn
         - PolicyName: readSecret
           PolicyDocument:
             Version: 2012-10-17
