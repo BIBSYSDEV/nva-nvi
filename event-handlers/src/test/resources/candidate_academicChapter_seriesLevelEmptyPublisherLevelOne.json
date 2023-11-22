@@ -211,12 +211,13 @@
           "type": "Contributor",
           "affiliations": [
             {
-              "id": "https://www.example.org/39a728f4-88f5-46a9-a476-ff0c2b4c635b",
+              "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0",
               "type": "Organization"
             }
           ],
           "identity": {
             "type": "Identity",
+            "id": "https://www.example.org/person/123",
             "verificationStatus": "Verified"
           },
           "role": {

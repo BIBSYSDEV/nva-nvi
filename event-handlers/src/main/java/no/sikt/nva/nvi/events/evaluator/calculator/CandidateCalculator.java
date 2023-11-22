@@ -31,9 +31,11 @@ import no.sikt.nva.nvi.events.evaluator.model.Organization;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CandidateCalculator {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(CandidateCalculator.class);
     private static final String CREATOR = "Creator";
     private static final String CONTENT_TYPE = "application/json";
     private static final String COULD_NOT_FETCH_CUSTOMER_MESSAGE = "Could not fetch customer for: ";
@@ -141,6 +143,7 @@ public class CandidateCalculator {
         if (isSuccessOrNotFound(response)) {
             return mapToNviInstitutionValue(response);
         }
+        LOGGER.error(COULD_NOT_FETCH_CUSTOMER_MESSAGE + institutionId + ". Response code: {}", response.statusCode());
         throw new RuntimeException(COULD_NOT_FETCH_CUSTOMER_MESSAGE + institutionId);
     }
 

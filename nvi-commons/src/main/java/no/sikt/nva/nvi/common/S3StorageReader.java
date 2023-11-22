@@ -1,7 +1,6 @@
-package no.sikt.nva.nvi.index.aws;
+package no.sikt.nva.nvi.common;
 
 import java.net.URI;
-import no.sikt.nva.nvi.common.StorageReader;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;

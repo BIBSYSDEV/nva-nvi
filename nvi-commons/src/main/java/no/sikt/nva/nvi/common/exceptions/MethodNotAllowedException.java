@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.utils;
+package no.sikt.nva.nvi.common.exceptions;
 
 import java.net.HttpURLConnection;
 import nva.commons.apigateway.exceptions.ApiGatewayException;

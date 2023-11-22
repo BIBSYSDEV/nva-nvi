@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.events.evaluator;
 
 import static java.math.BigDecimal.ONE;
+import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createResponse;
-import static no.sikt.nva.nvi.events.evaluator.TestUtils.createS3Event;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.events.evaluator.model.InstanceType.ACADEMIC_ARTICLE;
 import static no.sikt.nva.nvi.events.evaluator.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
@@ -18,13 +18,14 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
-import java.io.ByteArrayOutputStream;
+import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -37,18 +38,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.events.evaluator.calculator.OrganizationRetriever;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
-import no.sikt.nva.nvi.events.evaluator.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
 import no.sikt.nva.nvi.events.evaluator.model.Level;
 import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
+import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.Creator;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
+import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.s3.S3Driver;
@@ -65,15 +67,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
 class EvaluateNviCandidateHandlerTest {
 
     public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     public static final PublicationDate HARDCODED_PUBLICATION_DATE = new PublicationDate(null, null, "2023");
-    public static final URI HARDCODED_PUBLICATION_CHANNEL_ID = URI.create("https://api.dev.nva.aws.unit"
-                                                                          + ".no/publication-channels/series/490845"
-                                                                          + "/2023");
+    public static final URI HARDCODED_PUBLICATION_CHANNEL_ID = URI.create(
+        "https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023");
+    public static final URI SIKT_CRISTIN_ORG_ID = URI.create(
+        "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     private static final URI HARDCODED_CREATOR_ID = URI.create("https://api.dev.nva.aws.unit.no/cristin/person/997998");
     private static final String ACADEMIC_CHAPTER_PATH = "candidate_academicChapter.json";
     private static final int SCALE = 4;
@@ -99,8 +101,6 @@ class EvaluateNviCandidateHandlerTest {
     private HttpResponse<String> okResponse;
     private S3Driver s3Driver;
     private EvaluateNviCandidateHandler handler;
-    private FakeSqsClient sqsClient;
-    private ByteArrayOutputStream output;
     private AuthorizedBackendUriRetriever uriRetriever;
 
     public static Stream<Arguments> levelValues() {
@@ -117,60 +117,51 @@ class EvaluateNviCandidateHandlerTest {
         okResponse = createResponse(200, CUSTOMER_API_NVI_RESPONSE);
         var s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, BUCKET_NAME);
-        sqsClient = new FakeSqsClient();
-        var queueClient = new NviQueueClient(sqsClient);
         var secretsManagerClient = new FakeSecretsManagerClient();
         var credentials = new BackendClientCredentials("id", "secret");
         secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
         uriRetriever = mock(AuthorizedBackendUriRetriever.class);
         var calculator = new CandidateCalculator(uriRetriever);
-        var storageReader = new FakeStorageReader(s3Client);
+        var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
         var organizationRetriever = new OrganizationRetriever(uriRetriever);
         var pointCalculator = new PointCalculator(organizationRetriever);
         var evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator);
-        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
-        output = new ByteArrayOutputStream();
+        handler = new EvaluateNviCandidateHandler(evaluatorService);
     }
 
     @Test
     void shouldCreateNewCandidateEventOnValidCandidate() throws IOException {
         when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(okResponse));
+        mockOrganizationResponseForAffiliation(SIKT_CRISTIN_ORG_ID, null, uriRetriever);
         var path = "candidate.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        assertThat(sentMessages, hasSize(1));
-        var message = sentMessages.get(0);
-        assertThat(message.messageBody(), containsString(fileUri.toString()));
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var candidate = (NviCandidate) getMessageBody(handler.handleRequest(event, context)).candidate();
+        assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
     }
 
     @Test
     void shouldEvaluateStrippedCandidate() throws IOException {
         when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(okResponse));
+        mockOrganizationResponseForAffiliation(SIKT_CRISTIN_ORG_ID, null, uriRetriever);
         var path = "candidate_stripped.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        assertThat(sentMessages, hasSize(1));
-        var message = sentMessages.get(0);
-        assertThat(message.messageBody(), containsString(fileUri.toString()));
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var candidate = (NviCandidate) getMessageBody(handler.handleRequest(event, context)).candidate();
+        assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
     }
 
     @Test
     void shouldCreateNewCandidateEventOnValidAcademicChapter() throws IOException {
-        when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(okResponse));
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+        mockOrganizationResponseForAffiliation(SIKT_CRISTIN_ORG_ID, null, uriRetriever);
         var content = IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH);
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        assertThat(sentMessages, hasSize(1));
-        var message = sentMessages.get(0);
-        assertThat(message.messageBody(), containsString(fileUri.toString()));
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var candidate = (NviCandidate) getMessageBody(handler.handleRequest(event, context)).candidate();
+        assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
     }
 
     @Test
@@ -180,9 +171,8 @@ class EvaluateNviCandidateHandlerTest {
         var content = IoUtils.inputStreamFromResources("candidate_verifiedCreator_with_nonNviInstitution.json");
         var fileUri = s3Driver.insertFile(UnixPath.of("candidate_verifiedCreator_with_nonNviInstitution.json"),
                                           content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var messageBody = getMessageBody();
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var messageBody = getMessageBody(handler.handleRequest(event, context));
         var institutionPoints = ((NviCandidate) messageBody.candidate()).institutionPoints();
         assertEquals(1, institutionPoints.size());
         assertTrue(institutionPoints.containsKey(CRISTIN_NVI_ORG_TOP_LEVEL_ID));
@@ -193,9 +183,8 @@ class EvaluateNviCandidateHandlerTest {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var content = IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH);
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var messageBody = getMessageBody();
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var messageBody = getMessageBody(handler.handleRequest(event, context));
         var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_ARTICLE.getValue(),
                                                                    expectedPoints,
@@ -209,9 +198,8 @@ class EvaluateNviCandidateHandlerTest {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var content = IoUtils.inputStreamFromResources(ACADEMIC_CHAPTER_PATH);
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_CHAPTER_PATH), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var messageBody = getMessageBody();
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var messageBody = getMessageBody(handler.handleRequest(event, context));
         var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(InstanceType.ACADEMIC_CHAPTER.getValue(),
                                                                    expectedPoints,
@@ -225,9 +213,8 @@ class EvaluateNviCandidateHandlerTest {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var content = IoUtils.inputStreamFromResources(ACADEMIC_MONOGRAPH_JSON_PATH);
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_MONOGRAPH_JSON_PATH), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var messageBody = getMessageBody();
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var messageBody = getMessageBody(handler.handleRequest(event, context));
         var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_MONOGRAPH.getValue(),
                                                                    expectedPoints,
@@ -243,9 +230,8 @@ class EvaluateNviCandidateHandlerTest {
         var path = "candidate_academicMonograph_series_multiple_types.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var messageBody = getMessageBody();
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var messageBody = getMessageBody(handler.handleRequest(event, context));
         var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_MONOGRAPH.getValue(),
                                                                    expectedPoints,
@@ -259,9 +245,8 @@ class EvaluateNviCandidateHandlerTest {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var content = IoUtils.inputStreamFromResources(ACADEMIC_LITERATURE_REVIEW_JSON_PATH);
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_LITERATURE_REVIEW_JSON_PATH), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var messageBody = getMessageBody();
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var messageBody = getMessageBody(handler.handleRequest(event, context));
         var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_LITERATURE_REVIEW.getValue(),
                                                                    expectedPoints,
@@ -275,10 +260,9 @@ class EvaluateNviCandidateHandlerTest {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var content = IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH);
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var body = getMessageBody(fileUri);
-        var institutionPoints = ((NviCandidate) body.candidate()).institutionPoints();
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var messageBody = getMessageBody(handler.handleRequest(event, context));
+        var institutionPoints = ((NviCandidate) messageBody.candidate()).institutionPoints();
         assertThat(institutionPoints, notNullValue());
         assertThat(institutionPoints.get(CRISTIN_NVI_ORG_TOP_LEVEL_ID),
                    is(equalTo(BigDecimal.valueOf(1).setScale(4, RoundingMode.HALF_UP))));
@@ -289,54 +273,44 @@ class EvaluateNviCandidateHandlerTest {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var content = IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH);
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var body = getMessageBody(fileUri);
-        var institutionPoints = ((NviCandidate) body.candidate()).institutionPoints();
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var messageBody = getMessageBody(handler.handleRequest(event, context));
+        var institutionPoints = ((NviCandidate) messageBody.candidate()).institutionPoints();
         assertThat(institutionPoints, notNullValue());
         assertThat(institutionPoints.get(CRISTIN_NVI_ORG_TOP_LEVEL_ID), notNullValue());
     }
 
     @Test
     void shouldCreateNewCandidateEventOnValidAcademicChapterWithoutSeriesLevelWithPublisherLevel() throws IOException {
-        when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(okResponse));
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var path = "candidate_academicChapter_seriesLevelEmptyPublisherLevelOne.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        assertThat(sentMessages, hasSize(1));
-        var message = sentMessages.get(0);
-        assertThat(message.messageBody(), containsString(fileUri.toString()));
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var candidate = (NviCandidate) getMessageBody(handler.handleRequest(event, context)).candidate();
+        assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
     }
 
     @Test
     void shouldCreateNewCandidateEventOnValidAcademicMonograph() throws IOException {
-        when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(okResponse));
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var path = "candidate_academicMonograph.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        assertThat(sentMessages, hasSize(1));
-        var message = sentMessages.get(0);
-        assertThat(message.messageBody(), containsString(fileUri.toString()));
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var candidate = (NviCandidate) getMessageBody(handler.handleRequest(event, context)).candidate();
+        assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
     }
 
     @Test
     void shouldCreateNewCandidateEventOnValidAcademicLiteratureReview() throws IOException {
-        when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(okResponse));
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var path = "candidate_academicLiteratureReview.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        assertThat(sentMessages, hasSize(1));
-        var message = sentMessages.get(0);
-        assertThat(message.messageBody(), containsString(fileUri.toString()));
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var candidate = (NviCandidate) getMessageBody(handler.handleRequest(event, context)).candidate();
+        assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
     }
 
     @ParameterizedTest
@@ -350,9 +324,10 @@ class EvaluateNviCandidateHandlerTest {
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
                                           IoUtils.stringToStream(candidateWithNewLevel));
 
-        handler.handleRequest(createS3Event(fileUri), output, context);
-        var candidate = getMessageBody();
-        assertThat(candidate.candidate().getClass(), is(equalTo(NviCandidate.class)));
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        handler.handleRequest(event, context);
+        var candidate = (NviCandidate) getMessageBody(handler.handleRequest(event, context)).candidate();
+        assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
     }
 
     @Test
@@ -360,10 +335,9 @@ class EvaluateNviCandidateHandlerTest {
         var path = "nonCandidate_academicChapter_seriesLevelZero.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var candidate = getMessageBody();
-        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var nonCandidate = (NonNviCandidate) getMessageBody(handler.handleRequest(event, context)).candidate();
+        assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
     }
 
     @Test
@@ -371,10 +345,9 @@ class EvaluateNviCandidateHandlerTest {
         var path = "nonCandidate_nonVerified.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var candidate = getMessageBody();
-        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var nonCandidate = (NonNviCandidate) getMessageBody(handler.handleRequest(event, context)).candidate();
+        assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
     }
 
     @Test
@@ -382,10 +355,9 @@ class EvaluateNviCandidateHandlerTest {
         var path = "candidate_publicationDate_before_2022.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var candidate = getMessageBody();
-        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var nonCandidate = (NonNviCandidate) getMessageBody(handler.handleRequest(event, context)).candidate();
+        assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
     }
 
     @Test
@@ -393,11 +365,9 @@ class EvaluateNviCandidateHandlerTest {
         var path = "nonCandidate_notPublished.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var candidate = getMessageBody();
-        var nonNviCandidate = (NonNviCandidate) candidate.candidate();
-        assertThat(nonNviCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var nonCandidate = (NonNviCandidate) getMessageBody(handler.handleRequest(event, context)).candidate();
+        assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
     }
 
     @Test
@@ -405,10 +375,9 @@ class EvaluateNviCandidateHandlerTest {
         var path = "nonCandidate_musicalArts.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var candidate = getMessageBody();
-        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var nonCandidate = (NonNviCandidate) getMessageBody(handler.handleRequest(event, context)).candidate();
+        assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
     }
 
     @Test
@@ -416,18 +385,15 @@ class EvaluateNviCandidateHandlerTest {
         var path = "nonCandidate_notValidMonographArticle.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var candidate = getMessageBody();
-        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var nonCandidate = (NonNviCandidate) getMessageBody(handler.handleRequest(event, context)).candidate();
+        assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
     }
 
     @Test
-    void shouldThrowExceptionIfFileDoesntExist() throws IOException {
-        var event = createS3Event(UriWrapper.fromUri("s3://dummy").getUri());
-        handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        assertThatMessageIsInDlq(sentMessages);
+    void shouldThrowExceptionIfFileDoesntExist() {
+        var event = createEvent(new PersistedResourceMessage(UriWrapper.fromUri("s3://dummy").getUri()));
+        assertThrows(RuntimeException.class, () -> handler.handleRequest(event, context));
     }
 
     @Test
@@ -435,10 +401,9 @@ class EvaluateNviCandidateHandlerTest {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(notFoundResponse);
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
                                           IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var candidate = getMessageBody();
-        assertThat(candidate.candidate().getClass(), is(equalTo(NonNviCandidate.class)));
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var nonCandidate = (NonNviCandidate) getMessageBody(handler.handleRequest(event, context)).candidate();
+        assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
     }
 
     @Test
@@ -446,10 +411,9 @@ class EvaluateNviCandidateHandlerTest {
         when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(badResponse));
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
                                           IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
-        var event = createS3Event(fileUri);
+        var event = createEvent(new PersistedResourceMessage(fileUri));
         var appender = LogUtils.getTestingAppenderForRootLogger();
-        handler.handleRequest(event, output, context);
-        assertThatMessageIsInDlq(sqsClient.getSentMessages());
+        assertThrows(RuntimeException.class, () -> handler.handleRequest(event, context));
         assertThat(appender.getMessages(), containsString(ERROR_COULD_NOT_FETCH_CRISTIN_ORG));
     }
 
@@ -458,33 +422,20 @@ class EvaluateNviCandidateHandlerTest {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(badResponse);
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
                                           IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
-        var event = createS3Event(fileUri);
+        var event = createEvent(new PersistedResourceMessage(fileUri));
         var appender = LogUtils.getTestingAppenderForRootLogger();
-        handler.handleRequest(event, output, context);
-        assertThatMessageIsInDlq(sqsClient.getSentMessages());
+        assertThrows(RuntimeException.class, () -> handler.handleRequest(event, context));
         assertThat(appender.getMessages(), containsString(COULD_NOT_FETCH_CUSTOMER_MESSAGE));
     }
 
     @Test
     void shouldCreateNewCandidateEventWhenAffiliationAreNviInstitutions() throws IOException {
-        createResponse(200, CUSTOMER_API_NVI_RESPONSE);
-        when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(okResponse));
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
                                           IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        assertThat(sqsClient.getSentMessages(), hasSize(1));
-    }
-
-    @Test
-    void shouldCreateDlqWhenFailingToGetCandidateInfo() throws IOException {
-        when(uriRetriever.getRawContent(any(), any())).thenThrow(RuntimeException.class);
-        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
-                                          IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
-        var event = createS3Event(fileUri);
-        handler.handleRequest(event, output, context);
-        var sentMessages = sqsClient.getSentMessages();
-        assertThatMessageIsInDlq(sentMessages);
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        var candidate = (NviCandidate) getMessageBody(handler.handleRequest(event, context)).candidate();
+        assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
     }
 
     @Test
@@ -545,26 +496,12 @@ class EvaluateNviCandidateHandlerTest {
                          .sum();
     }
 
-    private static void assertThatMessageIsInDlq(List<SendMessageRequest> sentMessages) {
-        assertThat(sentMessages, hasSize(1));
-        assertThat(sentMessages.get(0).messageBody(), containsString("Exception"));
-    }
-
-    private CandidateEvaluatedMessage getMessageBody(URI fileUri) {
-        var sentMessages = sqsClient.getSentMessages();
-        assertThat(sentMessages, hasSize(1));
-        var message = sentMessages.get(0);
-        assertThat(message.messageBody(), containsString(fileUri.toString()));
-        return attempt(() -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class))
-                   .orElseThrow();
-    }
-
-    private CandidateEvaluatedMessage getMessageBody() {
-        var sentMessages = sqsClient.getSentMessages();
+    private CandidateEvaluatedMessage getMessageBody(SQSEvent sqsEvent) {
+        var sentMessages = sqsEvent.getRecords();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
         return attempt(
-            () -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
+            () -> objectMapper.readValue(message.getBody(), CandidateEvaluatedMessage.class)).orElseThrow();
     }
 
     private void mockCristinResponseAndCustomerApiResponseForNonNviInstitution() {

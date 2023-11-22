@@ -1,33 +1,34 @@
 package no.sikt.nva.nvi.events.evaluator;
 
+import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createResponse;
-import static no.sikt.nva.nvi.events.evaluator.TestUtils.createS3Event;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
-import java.io.ByteArrayOutputStream;
+import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.events.evaluator.calculator.OrganizationRetriever;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
-import no.sikt.nva.nvi.events.evaluator.model.CandidateEvaluatedMessage;
+import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NviCandidate;
+import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.s3.S3Driver;
@@ -61,8 +62,6 @@ public class EvaluateNviCandidateWithCristinDataTest {
     private final Context context = mock(Context.class);
     private S3Driver s3Driver;
     private EvaluateNviCandidateHandler handler;
-    private FakeSqsClient sqsClient;
-    private ByteArrayOutputStream output;
     private AuthorizedBackendUriRetriever uriRetriever;
 
     @BeforeEach
@@ -72,28 +71,25 @@ public class EvaluateNviCandidateWithCristinDataTest {
         when(env.readEnv("CANDIDATE_DLQ_URL")).thenReturn("My test candidate dlq url");
         var s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, BUCKET_NAME);
-        sqsClient = new FakeSqsClient();
-        var queueClient = new NviQueueClient(sqsClient);
         var secretsManagerClient = new FakeSecretsManagerClient();
         var credentials = new BackendClientCredentials("id", "secret");
         secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
         uriRetriever = mock(AuthorizedBackendUriRetriever.class);
         var calculator = new CandidateCalculator(uriRetriever);
-        var storageReader = new FakeStorageReader(s3Client);
+        var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
         var organizationRetriever = new OrganizationRetriever(uriRetriever);
         var pointCalculator = new PointCalculator(organizationRetriever);
         var evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator);
-        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
-        output = new ByteArrayOutputStream();
+        handler = new EvaluateNviCandidateHandler(evaluatorService);
     }
 
     @Test
     void shouldReturnSamePointsAsPointsCalculatedByCristinForAcademicArticleFrom2022() throws IOException {
         mockCristinApiResponsesForAllSubUnitsInAcademicArticle();
         mockCustomerApi();
-        handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicArticle.json"), output, context);
-        var body = getCandidateEvaluatedMessage();
-        var institutionPoints = ((NviCandidate) body.candidate()).institutionPoints();
+        var event = setUpSqsEvent("cristin_candidate_2022_academicArticle.json");
+        var candidate = getMessageBody(handler.handleRequest(event, context));
+        var institutionPoints = candidate.institutionPoints();
         assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8165))));
         assertThat(institutionPoints.get(ST_OLAVS_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5774))));
     }
@@ -106,9 +102,9 @@ public class EvaluateNviCandidateWithCristinDataTest {
         mockCristinResponseForNonNviOrganizationsForAcademicMonograph();
         mockCustomerApi(UIO_TOP_LEVEL_ORG_ID);
 
-        handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicMonograph.json"), output, context);
-        var body = getCandidateEvaluatedMessage();
-        var institutionPoints = ((NviCandidate) body.candidate()).institutionPoints();
+        var event = setUpSqsEvent("cristin_candidate_2022_academicMonograph.json");
+        var candidate = getMessageBody(handler.handleRequest(event, context));
+        var institutionPoints = candidate.institutionPoints();
         assertThat(institutionPoints.get(UIO_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(3.7528))));
     }
 
@@ -120,9 +116,9 @@ public class EvaluateNviCandidateWithCristinDataTest {
         mockCristinResponseForNonNviOrganizationsForLiteratureReview();
         mockCustomerApi(NTNU_TOP_LEVEL_ORG_ID);
 
-        handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicLiteratureReview.json"), output, context);
-        var body = getCandidateEvaluatedMessage();
-        var institutionPoints = ((NviCandidate) body.candidate()).institutionPoints();
+        var event = setUpSqsEvent("cristin_candidate_2022_academicLiteratureReview.json");
+        var candidate = getMessageBody(handler.handleRequest(event, context));
+        var institutionPoints = candidate.institutionPoints();
         assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(1.5922))));
     }
 
@@ -132,9 +128,9 @@ public class EvaluateNviCandidateWithCristinDataTest {
         mockCustomerApi(NTNU_TOP_LEVEL_ORG_ID);
         mockCustomerApi(SINTEF_TOP_LEVEL_ORG_ID);
 
-        handler.handleRequest(setUpS3Event("cristin_candidate_2022_academicChapter.json"), output, context);
-        var body = getCandidateEvaluatedMessage();
-        var institutionPoints = ((NviCandidate) body.candidate()).institutionPoints();
+        var event = setUpSqsEvent("cristin_candidate_2022_academicChapter.json");
+        var candidate = getMessageBody(handler.handleRequest(event, context));
+        var institutionPoints = candidate.institutionPoints();
         assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8660))));
         assertThat(institutionPoints.get(SINTEF_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5000))));
     }
@@ -166,12 +162,6 @@ public class EvaluateNviCandidateWithCristinDataTest {
             uriRetriever);
     }
 
-    private CandidateEvaluatedMessage getCandidateEvaluatedMessage() {
-        var message = sqsClient.getSentMessages().get(0);
-        return attempt(
-            () -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
-    }
-
     private void mockCristinApiResponsesForAllSubUnitsInAcademicChapter() {
         mockOrganizationResponseForAffiliation(NTNU_TOP_LEVEL_ORG_ID, URI.create("https://api.sandbox.nva.aws.unit"
                                                                                  + ".no/cristin/organization/194.64.94"
@@ -184,10 +174,10 @@ public class EvaluateNviCandidateWithCristinDataTest {
                                                                                    + ".40.0"), uriRetriever);
     }
 
-    private InputStream setUpS3Event(String path) throws IOException {
+    private SQSEvent setUpSqsEvent(String path) throws IOException {
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        return createS3Event(fileUri);
+        return createEvent(new PersistedResourceMessage(fileUri));
     }
 
     private void mockCristinApiResponsesForAllSubUnitsInAcademicArticle() {
@@ -216,5 +206,14 @@ public class EvaluateNviCandidateWithCristinDataTest {
         var customerApiResponse = createResponse(200, CUSTOMER_API_NVI_RESPONSE);
         when(uriRetriever.fetchResponse(eq(createCustomerApiUri(topLevelOrgId.toString())), any())).thenReturn(
             Optional.of(customerApiResponse));
+    }
+
+    private NviCandidate getMessageBody(SQSEvent sqsEvent) {
+        var sentMessages = sqsEvent.getRecords();
+        assertThat(sentMessages, hasSize(1));
+        var message = sentMessages.get(0);
+        var candidateEvaluatedMessage = attempt(
+            () -> objectMapper.readValue(message.getBody(), CandidateEvaluatedMessage.class)).orElseThrow();
+        return (NviCandidate) candidateEvaluatedMessage.candidate();
     }
 }

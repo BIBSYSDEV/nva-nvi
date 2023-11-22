@@ -17,32 +17,29 @@ import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
-import no.sikt.nva.nvi.events.evaluator.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
+import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.CandidateType;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.Creator;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
-import no.unit.nva.events.models.EventReference;
 
 public class EvaluatorService {
 
-    private final StorageReader<EventReference> storageReader;
+    private final StorageReader<URI> storageReader;
     private final CandidateCalculator candidateCalculator;
-
     private final PointCalculator pointCalculator;
 
-    public EvaluatorService(StorageReader<EventReference> storageReader, CandidateCalculator candidateCalculator,
+    public EvaluatorService(StorageReader<URI> storageReader, CandidateCalculator candidateCalculator,
                             PointCalculator pointCalculator) {
         this.storageReader = storageReader;
         this.candidateCalculator = candidateCalculator;
         this.pointCalculator = pointCalculator;
     }
 
-    public CandidateEvaluatedMessage evaluateCandidacy(EventReference input) {
-        var publication = extractBodyFromContent(storageReader.read(input));
-        var publicationBucketUri = input.getUri();
+    public CandidateEvaluatedMessage evaluateCandidacy(URI publicationBucketUri) {
+        var publication = extractBodyFromContent(storageReader.read(publicationBucketUri));
         var publicationId = extractPublicationId(publication);
         var verifiedCreatorsWithNviInstitutions = candidateCalculator.getVerifiedCreatorsWithNviInstitutionsIfExists(
             publication);

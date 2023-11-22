@@ -3,11 +3,14 @@ package no.sikt.nva.nvi.events.evaluator;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import com.amazonaws.services.lambda.runtime.events.SQSEvent;
+import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,6 +19,7 @@ import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.events.evaluator.model.Organization;
+import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.events.models.AwsEventBridgeDetail;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
@@ -29,6 +33,15 @@ public final class TestUtils {
 
     public static InputStream createS3Event(URI uri) throws IOException {
         return createEventInputStream(new EventReference("", uri));
+    }
+
+    public static SQSEvent createEvent(PersistedResourceMessage persistedResourceMessage) {
+        var sqsEvent = new SQSEvent();
+        var message = new SQSMessage();
+        var body = attempt(() -> objectMapper.writeValueAsString(persistedResourceMessage)).orElseThrow();
+        message.setBody(body);
+        sqsEvent.setRecords(List.of(message));
+        return sqsEvent;
     }
 
     @SuppressWarnings("unchecked")

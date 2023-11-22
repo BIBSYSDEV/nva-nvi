@@ -18,7 +18,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.rest.model.Excel;
 import no.sikt.nva.nvi.rest.model.ReportRow;
-import no.sikt.nva.nvi.utils.ExceptionMapper;
+import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
