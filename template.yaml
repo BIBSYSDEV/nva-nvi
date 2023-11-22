@@ -646,6 +646,10 @@ Resources:
           AttributeType: S
         - AttributeName: SecondaryIndex1RangeKey
           AttributeType: S
+        - AttributeName: SearchByYearHashKey
+          AttributeType: S
+        - AttributeName: SearchByYearRangeKey
+          AttributeType: S
       KeySchema:
         - AttributeName: PrimaryKeyHashKey
           KeyType: HASH
@@ -657,6 +661,14 @@ Resources:
             - AttributeName: SecondaryIndex1HashKey
               KeyType: HASH
             - AttributeName: SecondaryIndex1RangeKey
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: SearchByYear
+          KeySchema:
+            - AttributeName: SearchByYearHashKey
+              KeyType: HASH
+            - AttributeName: SearchByYearRangeKey
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
