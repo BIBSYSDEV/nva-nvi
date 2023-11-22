@@ -6,6 +6,9 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_RANGE_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
+import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
+import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_HASH_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_RANGE_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -77,6 +80,20 @@ public record CandidateDao(
         return nonNull(candidate.publicationId()) ? candidate.publicationId().toString() : null;
     }
 
+    @JacocoGenerated
+    @DynamoDbSecondaryPartitionKey(indexNames = {SECONDARY_INDEX_YEAR})
+    @DynamoDbAttribute(SECONDARY_INDEX_YEAR_HASH_KEY)
+    public String searchByYearHashKey() {
+        return nonNull(candidate.publicationDate()) ? candidate.publicationDate().year() : null;
+    }
+
+    @JacocoGenerated
+    @DynamoDbSecondarySortKey(indexNames = {SECONDARY_INDEX_YEAR})
+    @DynamoDbAttribute(SECONDARY_INDEX_YEAR_RANGE_KEY)
+    public String searchByYearSortKey() {
+        return nonNull(identifier) ? identifier.toString() : null;
+    }
+
     @DynamoDbIgnore
     public CandidateDao.Builder copy() {
         return builder()
@@ -143,6 +160,16 @@ public record CandidateDao(
         }
 
         public Builder searchByPublicationIdSortKey(String noop) {
+            // Used by @DynamoDbImmutable for building the object
+            return this;
+        }
+
+        public Builder searchByYearHashKey(String noop) {
+            // Used by @DynamoDbImmutable for building the object
+            return this;
+        }
+
+        public Builder searchByYearSortKey(String noop) {
             // Used by @DynamoDbImmutable for building the object
             return this;
         }

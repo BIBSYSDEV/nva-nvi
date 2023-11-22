@@ -1,11 +1,14 @@
 package no.sikt.nva.nvi.common.db;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toMap;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
+import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static software.amazon.awssdk.enhanced.dynamodb.TableSchema.fromImmutableClass;
+import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.keyEqualTo;
 import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.sortBeginsWith;
 import java.net.URI;
 import java.time.Instant;
@@ -30,6 +33,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactPutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest.Builder;
@@ -43,16 +47,19 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 public class CandidateRepository extends DynamoRepository {
 
+    public static final int DEFAULT_PAGE_SIZE = 700;
     private static final int BATCH_SIZE = 25;
     private static final long INITIAL_RETRY_WAIT_TIME_MS = 1000;
     private static final String PRIMARY_KEY_HASH_KEY = "PrimaryKeyHashKey";
     private static final String CANDIDATE_UNIQUENESS_ENTRY = "CandidateUniquenessEntry";
     protected final DynamoDbTable<CandidateDao> candidateTable;
     protected final DynamoDbTable<CandidateUniquenessEntryDao> uniquenessTable;
-    private final DynamoDbIndex<CandidateDao> publicationIdIndex;
     protected final DynamoDbTable<ApprovalStatusDao> approvalStatusTable;
     protected final DynamoDbTable<NoteDao> noteTable;
     protected final DynamoDbTable<NviPeriodDao> periodTable;
+    private final DynamoDbIndex<CandidateDao> publicationIdIndex;
+
+    private final DynamoDbIndex<CandidateDao> yearIndex;
     private final DynamoDbRetryWrapper dynamoDbRetryClient;
 
     public CandidateRepository(DynamoDbClient client) {
@@ -60,6 +67,7 @@ public class CandidateRepository extends DynamoRepository {
         this.candidateTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(CandidateDao.class));
         this.uniquenessTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(CandidateUniquenessEntryDao.class));
         this.publicationIdIndex = this.candidateTable.index(SECONDARY_INDEX_PUBLICATION_ID);
+        this.yearIndex = this.candidateTable.index(SECONDARY_INDEX_YEAR);
         this.approvalStatusTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(ApprovalStatusDao.class));
         this.noteTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(NoteDao.class));
         this.periodTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(NviPeriodDao.class));
@@ -76,69 +84,19 @@ public class CandidateRepository extends DynamoRepository {
         var items = scan.items().stream().map(this::mutateVersion).toList();
 
         var count = getBatches(items).map(this::toBatchRequest)
-                .map(dynamoDbRetryClient::batchWriteItem)
-                .mapToInt(Integer::intValue)
-                .sum();
+                        .map(dynamoDbRetryClient::batchWriteItem)
+                        .mapToInt(Integer::intValue)
+                        .sum();
 
         return new ListingResult(thereAreMorePagesToScan(scan), toStringMap(scan.lastEvaluatedKey()), count);
     }
 
-
-    private Map<String, AttributeValue> mutateVersion(Map<String, AttributeValue> item) {
-        var mutableMap = new HashMap<>(item);
-        mutableMap.put(DynamoEntryWithRangeKey.VERSION_FIELD_NAME,
-                       AttributeValue.builder().s(randomUUID().toString()).build());
-        return mutableMap;
-    }
-
-    private boolean thereAreMorePagesToScan(ScanResponse scanResult) {
-        return nonNull(scanResult.lastEvaluatedKey()) && !scanResult.lastEvaluatedKey().isEmpty();
-    }
-
-    private static <T> Stream<List<T>> getBatches(List<T> scanResult) {
-        var count = scanResult.size();
-        return IntStream.range(0, (count + BATCH_SIZE - 1) / BATCH_SIZE)
-                   .mapToObj(i -> scanResult.subList(i * BATCH_SIZE, Math.min((i + 1) * BATCH_SIZE, count)));
-    }
-
-    private BatchWriteItemRequest toBatchRequest(List<Map<String, AttributeValue>> results) {
-        return BatchWriteItemRequest.builder().requestItems(Map.of(NVI_TABLE_NAME, toWriteBatches(results))).build();
-    }
-
-    private Collection<WriteRequest> toWriteBatches(List<Map<String, AttributeValue>> results) {
-        return results.stream().map(this::toWriteRequest).toList();
-    }
-
-    private WriteRequest toWriteRequest(Map<String, AttributeValue> dao) {
-        return WriteRequest.builder().putRequest(toPutRequest(dao)).build();
-    }
-
-    private PutRequest toPutRequest(Map<String, AttributeValue> dao) {
-        return PutRequest.builder().item(dao).build();
-    }
-
-    private ScanRequest createScanRequest(int pageSize, Map<String, String> startMarker) {
-        var start = nonNull(startMarker) ? toAttributeMap(startMarker) : null;
-        return ScanRequest.builder()
-                   .tableName(NVI_TABLE_NAME)
-                   .filterExpression("not contains (#PK, :TYPE) ")
-                   .expressionAttributeNames(Map.of("#PK", PRIMARY_KEY_HASH_KEY))
-                   .expressionAttributeValues(Map.of(":TYPE", AttributeValue.fromS(CANDIDATE_UNIQUENESS_ENTRY)))
-                   .exclusiveStartKey(start)
-                   .limit(pageSize)
-                   .build();
-    }
-
-    private static Map<String, AttributeValue> toAttributeMap(Map<String, String> startMarker) {
-        return startMarker.entrySet()
+    public List<CandidateDao> fetchCandidatesByYear(int year, Integer pageSize, Map<String, String> startMarker) {
+        return this.yearIndex.query(createQuery(year, pageSize, startMarker))
                    .stream()
-                   .collect(toMap(Map.Entry::getKey, e -> AttributeValue.builder().s(e.getValue()).build()));
-    }
-
-    private static Map<String, String> toStringMap(Map<String, AttributeValue> startMarker) {
-        return startMarker.entrySet()
-                   .stream()
-                   .collect(toMap(Map.Entry::getKey, e -> e.getValue().s()));
+                   .findFirst()
+                   .map(Page::items)
+                   .orElse(emptyList());
     }
 
     public Candidate create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
@@ -277,6 +235,36 @@ public class CandidateRepository extends DynamoRepository {
         }
     }
 
+    protected static Key noteKey(UUID candidateIdentifier, UUID noteIdentifier) {
+        return Key.builder()
+                   .partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
+                   .sortValue(NoteDao.createSortKey(noteIdentifier.toString()))
+                   .build();
+    }
+
+    protected static QueryConditional queryCandidateParts(UUID id, String type) {
+        return sortBeginsWith(
+            Key.builder().partitionValue(CandidateDao.createPartitionKey(id.toString())).sortValue(type).build());
+    }
+
+    private static <T> Stream<List<T>> getBatches(List<T> scanResult) {
+        var count = scanResult.size();
+        return IntStream.range(0, (count + BATCH_SIZE - 1) / BATCH_SIZE)
+                   .mapToObj(i -> scanResult.subList(i * BATCH_SIZE, Math.min((i + 1) * BATCH_SIZE, count)));
+    }
+
+    private static Map<String, AttributeValue> toAttributeMap(Map<String, String> startMarker) {
+        return startMarker.entrySet()
+                   .stream()
+                   .collect(toMap(Map.Entry::getKey, e -> AttributeValue.builder().s(e.getValue()).build()));
+    }
+
+    private static Map<String, String> toStringMap(Map<String, AttributeValue> startMarker) {
+        return startMarker.entrySet()
+                   .stream()
+                   .collect(toMap(Map.Entry::getKey, e -> e.getValue().s()));
+    }
+
     private static ApprovalStatusDao mapToApprovalStatusDao(UUID identifier, DbApprovalStatus approval) {
         return ApprovalStatusDao.builder().identifier(identifier).approvalStatus(approval).build();
     }
@@ -314,29 +302,68 @@ public class CandidateRepository extends DynamoRepository {
     }
 
     private static QueryConditional findCandidateByPublicationIdQuery(URI publicationId) {
-        return QueryConditional.keyEqualTo(candidateByPublicationIdKey(publicationId));
+        return keyEqualTo(candidateByPublicationIdKey(publicationId));
     }
 
     private static Key candidateByPublicationIdKey(URI publicationId) {
         return Key.builder().partitionValue(publicationId.toString()).sortValue(publicationId.toString()).build();
     }
 
-    protected static Key noteKey(UUID candidateIdentifier, UUID noteIdentifier) {
-        return Key.builder()
-                   .partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
-                   .sortValue(NoteDao.createSortKey(noteIdentifier.toString()))
-                   .build();
-    }
-
-    protected static QueryConditional queryCandidateParts(UUID id, String type) {
-        return sortBeginsWith(
-            Key.builder().partitionValue(CandidateDao.createPartitionKey(id.toString())).sortValue(type).build());
-    }
-
     private static <T> TransactPutItemEnhancedRequest<T> insertTransaction(T insert, Class<T> clazz) {
         return TransactPutItemEnhancedRequest.builder(clazz)
                    .item(insert)
                    .conditionExpression(uniquePrimaryKeysExpression())
+                   .build();
+    }
+
+    private QueryEnhancedRequest createQuery(int year, Integer pageSize, Map<String, String> startMarker) {
+        var start = nonNull(startMarker) ? toAttributeMap(startMarker) : null;
+        var limit = nonNull(pageSize) ? pageSize : DEFAULT_PAGE_SIZE;
+        return QueryEnhancedRequest.builder()
+                   .queryConditional(keyEqualTo(Key.builder()
+                                                    .partitionValue(String.valueOf(year))
+                                                    .build()))
+                   .limit(limit)
+                   .exclusiveStartKey(start)
+                   .build();
+    }
+
+    private Map<String, AttributeValue> mutateVersion(Map<String, AttributeValue> item) {
+        var mutableMap = new HashMap<>(item);
+        mutableMap.put(DynamoEntryWithRangeKey.VERSION_FIELD_NAME,
+                       AttributeValue.builder().s(randomUUID().toString()).build());
+        return mutableMap;
+    }
+
+    private boolean thereAreMorePagesToScan(ScanResponse scanResult) {
+        return nonNull(scanResult.lastEvaluatedKey()) && !scanResult.lastEvaluatedKey().isEmpty();
+    }
+
+    private BatchWriteItemRequest toBatchRequest(List<Map<String, AttributeValue>> results) {
+        return BatchWriteItemRequest.builder().requestItems(Map.of(NVI_TABLE_NAME, toWriteBatches(results))).build();
+    }
+
+    private Collection<WriteRequest> toWriteBatches(List<Map<String, AttributeValue>> results) {
+        return results.stream().map(this::toWriteRequest).toList();
+    }
+
+    private WriteRequest toWriteRequest(Map<String, AttributeValue> dao) {
+        return WriteRequest.builder().putRequest(toPutRequest(dao)).build();
+    }
+
+    private PutRequest toPutRequest(Map<String, AttributeValue> dao) {
+        return PutRequest.builder().item(dao).build();
+    }
+
+    private ScanRequest createScanRequest(int pageSize, Map<String, String> startMarker) {
+        var start = nonNull(startMarker) ? toAttributeMap(startMarker) : null;
+        return ScanRequest.builder()
+                   .tableName(NVI_TABLE_NAME)
+                   .filterExpression("not contains (#PK, :TYPE) ")
+                   .expressionAttributeNames(Map.of("#PK", PRIMARY_KEY_HASH_KEY))
+                   .expressionAttributeValues(Map.of(":TYPE", AttributeValue.fromS(CANDIDATE_UNIQUENESS_ENTRY)))
+                   .exclusiveStartKey(start)
+                   .limit(pageSize)
                    .build();
     }
 

@@ -120,7 +120,7 @@ public final class TestUtils {
     }
 
     public static String randomYear() {
-        return String.valueOf(randomInteger(3000));
+        return String.valueOf(randomIntBetween(START_DATE.getYear(), LocalDate.now().getYear()));
     }
 
     public static DbCandidate randomCandidate() {
