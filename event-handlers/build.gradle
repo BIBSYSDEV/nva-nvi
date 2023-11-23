@@ -54,6 +54,7 @@ test {
     environment("NVI_TABLE_NAME", "some-table")
     environment("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
     environment("UPSERT_CANDIDATE_DLQ_QUEUE_URL", "UpsertCandidateDLQ")
+    environment("PERSISTED_RESOURCE_QUEUE_URL", "PersistedResourceQueue")
     environment "EXPANDED_RESOURCES_BUCKET", "ignoredBucket"
     environment "BACKEND_CLIENT_AUTH_URL", "My url"
     environment "BACKEND_CLIENT_SECRET_NAME", "My secret name"

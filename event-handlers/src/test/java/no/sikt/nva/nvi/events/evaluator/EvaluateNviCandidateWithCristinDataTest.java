@@ -64,6 +64,8 @@ public class EvaluateNviCandidateWithCristinDataTest {
     private EvaluateNviCandidateHandler handler;
     private AuthorizedBackendUriRetriever uriRetriever;
 
+    private FakeSqsClient queueClient;
+
     @BeforeEach
     void setUp() {
         var env = mock(Environment.class);
@@ -80,7 +82,8 @@ public class EvaluateNviCandidateWithCristinDataTest {
         var organizationRetriever = new OrganizationRetriever(uriRetriever);
         var pointCalculator = new PointCalculator(organizationRetriever);
         var evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator);
-        handler = new EvaluateNviCandidateHandler(evaluatorService);
+        queueClient = new FakeSqsClient();
+        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
     }
 
     @Test
@@ -88,7 +91,8 @@ public class EvaluateNviCandidateWithCristinDataTest {
         mockCristinApiResponsesForAllSubUnitsInAcademicArticle();
         mockCustomerApi();
         var event = setUpSqsEvent("cristin_candidate_2022_academicArticle.json");
-        var candidate = getMessageBody(handler.handleRequest(event, context));
+        handler.handleRequest(event, context);
+        var candidate = getMessageBody();
         var institutionPoints = candidate.institutionPoints();
         assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8165))));
         assertThat(institutionPoints.get(ST_OLAVS_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5774))));
@@ -103,7 +107,8 @@ public class EvaluateNviCandidateWithCristinDataTest {
         mockCustomerApi(UIO_TOP_LEVEL_ORG_ID);
 
         var event = setUpSqsEvent("cristin_candidate_2022_academicMonograph.json");
-        var candidate = getMessageBody(handler.handleRequest(event, context));
+        handler.handleRequest(event, context);
+        var candidate = getMessageBody();
         var institutionPoints = candidate.institutionPoints();
         assertThat(institutionPoints.get(UIO_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(3.7528))));
     }
@@ -117,7 +122,8 @@ public class EvaluateNviCandidateWithCristinDataTest {
         mockCustomerApi(NTNU_TOP_LEVEL_ORG_ID);
 
         var event = setUpSqsEvent("cristin_candidate_2022_academicLiteratureReview.json");
-        var candidate = getMessageBody(handler.handleRequest(event, context));
+        handler.handleRequest(event, context);
+        var candidate = getMessageBody();
         var institutionPoints = candidate.institutionPoints();
         assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(1.5922))));
     }
@@ -129,7 +135,8 @@ public class EvaluateNviCandidateWithCristinDataTest {
         mockCustomerApi(SINTEF_TOP_LEVEL_ORG_ID);
 
         var event = setUpSqsEvent("cristin_candidate_2022_academicChapter.json");
-        var candidate = getMessageBody(handler.handleRequest(event, context));
+        handler.handleRequest(event, context);
+        var candidate = getMessageBody();
         var institutionPoints = candidate.institutionPoints();
         assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8660))));
         assertThat(institutionPoints.get(SINTEF_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5000))));
@@ -208,12 +215,12 @@ public class EvaluateNviCandidateWithCristinDataTest {
             Optional.of(customerApiResponse));
     }
 
-    private NviCandidate getMessageBody(SQSEvent sqsEvent) {
-        var sentMessages = sqsEvent.getRecords();
+    private NviCandidate getMessageBody() {
+        var sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
         var message = sentMessages.get(0);
         var candidateEvaluatedMessage = attempt(
-            () -> objectMapper.readValue(message.getBody(), CandidateEvaluatedMessage.class)).orElseThrow();
+            () -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
         return (NviCandidate) candidateEvaluatedMessage.candidate();
     }
 }

@@ -103,11 +103,14 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref NewCandidateQueueName
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt NewCandidateDLQ.Arn
+        maxReceiveCount: 5
   NewCandidateDLQ:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref NewCandidateDLQName
-      MessageRetentionPeriod: 43200
+      MessageRetentionPeriod: 1209600 #14 days
   BatchScanDLQ:
     Type: AWS::SQS::Queue
     Properties:
@@ -116,22 +119,24 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref UpdateIndexDLQName
-      MessageRetentionPeriod: 43200
+      MessageRetentionPeriod: 1209600 #14 days
   UpsertCandidateDLQ:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref UpsertCandidateDLQName
-      MessageRetentionPeriod: 43200
+      MessageRetentionPeriod: 1209600 #14 days
   PersistedResourceQueue:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref PersistedResourceQueueName
-      MessageRetentionPeriod: 43200
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt PersistedResourceDLQ.Arn
+        maxReceiveCount: 5
   PersistedResourceDLQ:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref PersistedResourceDLQName
-      MessageRetentionPeriod: 43200
+      MessageRetentionPeriod: 1209600 #14 days
 
   #============================= Permissions =======================================================
   NvaNviRole:
@@ -197,7 +202,9 @@ Resources:
                   - sqs:DeleteMessage
                   - sqs:GetQueueAttributes
                   - sqs:ChangeMessageVisibility
-                Resource: !GetAtt NewCandidateQueue.Arn
+                Resource:
+                  - !GetAtt NewCandidateQueue.Arn
+                  - !GetAtt PersistedResourceQueue.Arn
         - PolicyName: readSecret
           PolicyDocument:
             Version: 2012-10-17
@@ -298,6 +305,9 @@ Resources:
       Timeout: 30
       MemorySize: 1536
       AutoPublishAlias: live
+      Environment:
+        Variables:
+          PERSISTED_RESOURCE_QUEUE_URL: !Ref PersistedResourceQueue
       Events:
         EventBridgeEvent:
           Type: EventBridgeRule
@@ -311,9 +321,6 @@ Resources:
                   topic: [ "PublicationService.ExpandedEntry.Persisted" ]
       EventInvokeConfig:
         DestinationConfig:
-          OnSuccess:
-            Type: SQS
-            Destination: !GetAtt PersistedResourceQueue.Arn
           OnFailure:
             Type: SQS
             Destination: !GetAtt PersistedResourceDLQ.Arn
@@ -332,6 +339,7 @@ Resources:
           BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
           BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+          CANDIDATE_QUEUE_URL: !Ref NewCandidateQueue
       AutoPublishAlias: live
       Events:
         SqsEvent:
@@ -343,9 +351,6 @@ Resources:
             #Don't change the batch size value, unless you change the implementation.
       EventInvokeConfig:
         DestinationConfig:
-          OnSuccess:
-            Type: SQS
-            Destination: !GetAtt NewCandidateQueue.Arn
           OnFailure:
             Type: SQS
             Destination: !GetAtt NewCandidateDLQ.Arn

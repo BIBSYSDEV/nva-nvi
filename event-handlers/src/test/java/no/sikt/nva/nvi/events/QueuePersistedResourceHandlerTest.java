@@ -9,23 +9,28 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import no.sikt.nva.nvi.events.evaluator.FakeSqsClient;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
+import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class QueuePersistedResourceHandlerTest {
 
+    private static final Environment environment = new Environment();
+    private static final String queueUrl = environment.readEnv("PERSISTED_RESOURCE_QUEUE_URL");
     private final Context context = mock(Context.class);
     private QueuePersistedResourceHandler handler;
     private ByteArrayOutputStream output;
+    private FakeSqsClient sqsClient;
 
     @BeforeEach
     void setUp() {
-        handler = new QueuePersistedResourceHandler();
+        sqsClient = new FakeSqsClient();
+        handler = new QueuePersistedResourceHandler(sqsClient, environment);
         output = new ByteArrayOutputStream();
     }
 
@@ -42,8 +47,11 @@ public class QueuePersistedResourceHandlerTest {
         var fileUri = randomUri();
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
-        var response = objectMapper.readValue(output.toString(), SQSEvent.class);
-        var body = objectMapper.readValue(response.getRecords().get(0).getBody(), PersistedResourceMessage.class);
+        var sentMessages = sqsClient.getSentMessages();
+        assertEquals(1, sentMessages.size());
+        var sentMessage = sentMessages.get(0);
+        var body = objectMapper.readValue(sentMessage.messageBody(), PersistedResourceMessage.class);
+        assertEquals(queueUrl, sentMessage.queueUrl());
         assertEquals(fileUri, body.resourceFileUri());
     }
 }
