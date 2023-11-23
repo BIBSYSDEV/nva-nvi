@@ -3,43 +3,44 @@ package no.sikt.nva.nvi.events;
 import static java.util.Objects.isNull;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.events.SQSEvent;
-import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
-import java.util.List;
+import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
+import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.events.handlers.DestinationsEventBridgeEventHandler;
 import no.unit.nva.events.models.AwsEventBridgeDetail;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
 import no.unit.nva.events.models.EventReference;
+import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class QueuePersistedResourceHandler extends DestinationsEventBridgeEventHandler<EventReference, SQSEvent> {
+public class QueuePersistedResourceHandler extends DestinationsEventBridgeEventHandler<EventReference, Void> {
 
+    public static final String QUEUE_PERSISTED_RESOURCE_QUEUE_URL = "QUEUE_PERSISTED_RESOURCE_QUEUE_URL";
     private static final Logger LOGGER = LoggerFactory.getLogger(QueuePersistedResourceHandler.class);
     private static final String ERROR_MSG = "Invalid EventReference, missing uri: %s";
+    private final QueueClient<NviSendMessageResponse> queueClient;
+    private final String queueUrl;
 
+    @JacocoGenerated
     public QueuePersistedResourceHandler() {
+        this(new NviQueueClient(), new Environment());
+    }
+
+    public QueuePersistedResourceHandler(QueueClient<NviSendMessageResponse> queueClient, Environment environment) {
         super(EventReference.class);
+        this.queueClient = queueClient;
+        this.queueUrl = environment.readEnv(QUEUE_PERSISTED_RESOURCE_QUEUE_URL);
     }
 
     @Override
-    protected SQSEvent processInputPayload(EventReference input,
-                                           AwsEventBridgeEvent<AwsEventBridgeDetail<EventReference>> event,
-                                           Context context) {
-        return createEvent(createMessageBody(input));
-    }
-
-    private static SQSEvent createEvent(String messageBody) {
-        var event = new SQSEvent();
-        event.setRecords(List.of(createMessage(messageBody)));
-        return event;
-    }
-
-    private static SQSMessage createMessage(String messageBody) {
-        var message = new SQSMessage();
-        message.setBody(messageBody);
-        return message;
+    protected Void processInputPayload(EventReference input,
+                                       AwsEventBridgeEvent<AwsEventBridgeDetail<EventReference>> event,
+                                       Context context) {
+        queuePersistedResource(createMessageBody(input));
+        return null;
     }
 
     private static void validateInput(EventReference input) {
@@ -47,6 +48,10 @@ public class QueuePersistedResourceHandler extends DestinationsEventBridgeEventH
             LOGGER.error(String.format(ERROR_MSG, input));
             throw new RuntimeException();
         }
+    }
+
+    private void queuePersistedResource(String messageBody) {
+        queueClient.sendMessage(messageBody, queueUrl);
     }
 
     private String createMessageBody(EventReference input) {

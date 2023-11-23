@@ -2,17 +2,14 @@ package no.sikt.nva.nvi.events.evaluator;
 
 import java.util.ArrayList;
 import java.util.List;
+import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
+import no.sikt.nva.nvi.common.queue.QueueClient;
 import nva.commons.core.JacocoGenerated;
-import software.amazon.awssdk.awscore.exception.AwsServiceException;
-import software.amazon.awssdk.core.exception.SdkClientException;
-import software.amazon.awssdk.services.sqs.SqsClient;
-import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
-import software.amazon.awssdk.services.sqs.model.GetQueueUrlResponse;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 @JacocoGenerated
-public class FakeSqsClient implements SqsClient {
+public class FakeSqsClient implements QueueClient<NviSendMessageResponse> {
 
     private final List<SendMessageRequest> sentMessages = new ArrayList<>();
 
@@ -21,27 +18,22 @@ public class FakeSqsClient implements SqsClient {
     }
 
     @Override
-    public GetQueueUrlResponse getQueueUrl(GetQueueUrlRequest getQueueUrlRequest)
-        throws AwsServiceException, SdkClientException {
-        return GetQueueUrlResponse.builder().queueUrl("").build();
+    public NviSendMessageResponse sendMessage(String message, String queueUrl) {
+        var request = createRequest(message, queueUrl);
+        sentMessages.add(request);
+        return createResponse(SendMessageResponse.builder()
+                                  .messageId(request.messageDeduplicationId())
+                                  .build());
     }
 
-    @Override
-    public SendMessageResponse sendMessage(SendMessageRequest candidate)
-        throws AwsServiceException, SdkClientException {
-        sentMessages.add(candidate);
-        return SendMessageResponse.builder()
-                   .messageId(candidate.messageDeduplicationId())
+    private SendMessageRequest createRequest(String body, String queueUrl) {
+        return SendMessageRequest.builder()
+                   .queueUrl(queueUrl)
+                   .messageBody(body)
                    .build();
     }
 
-    @Override
-    public String serviceName() {
-        return null;
-    }
-
-    @Override
-    public void close() {
-        sentMessages.clear();
+    private NviSendMessageResponse createResponse(SendMessageResponse response) {
+        return new NviSendMessageResponse(response.messageId());
     }
 }
