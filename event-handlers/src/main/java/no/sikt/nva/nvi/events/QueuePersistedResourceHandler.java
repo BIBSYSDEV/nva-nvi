@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class QueuePersistedResourceHandler extends DestinationsEventBridgeEventHandler<EventReference, Void> {
 
-    public static final String QUEUE_PERSISTED_RESOURCE_QUEUE_URL = "QUEUE_PERSISTED_RESOURCE_QUEUE_URL";
+    public static final String QUEUE_PERSISTED_RESOURCE_QUEUE_URL = "PERSISTED_RESOURCE_QUEUE_URL";
     private static final Logger LOGGER = LoggerFactory.getLogger(QueuePersistedResourceHandler.class);
     private static final String ERROR_MSG = "Invalid EventReference, missing uri: %s";
     private final QueueClient<NviSendMessageResponse> queueClient;

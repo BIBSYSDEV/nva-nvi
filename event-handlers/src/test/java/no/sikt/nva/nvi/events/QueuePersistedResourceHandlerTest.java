@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 public class QueuePersistedResourceHandlerTest {
 
     private static final Environment environment = new Environment();
-    private static final String queueUrl = environment.readEnv("QUEUE_PERSISTED_RESOURCE_QUEUE_URL");
+    private static final String queueUrl = environment.readEnv("PERSISTED_RESOURCE_QUEUE_URL");
     private final Context context = mock(Context.class);
     private QueuePersistedResourceHandler handler;
     private ByteArrayOutputStream output;
