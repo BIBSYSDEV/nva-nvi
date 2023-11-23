@@ -12,7 +12,6 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
-import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
@@ -25,6 +24,7 @@ import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.ListingResult;
+import no.sikt.nva.nvi.common.model.ListingResultWithCandidates;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -121,13 +121,9 @@ public class NviService {
         return candidateRepository.refresh(pageSize, startMarker);
     }
 
-    public List<URI> fetchCandidatePublicationFileUrisByYear(String year, int pageSize,
-                                                             Map<String, String> startMarker) {
-        return candidateRepository.fetchCandidatesByYear(year, pageSize, startMarker)
-                   .stream()
-                   .map(CandidateDao::candidate)
-                   .map(DbCandidate::publicationBucketUri)
-                   .toList();
+    public ListingResultWithCandidates fetchCandidatePublicationFileUrisByYear(String year, int pageSize,
+                                                                               Map<String, String> startMarker) {
+        return candidateRepository.fetchCandidatesByYear(year, pageSize, startMarker);
     }
 
     private static boolean isNoteOwner(String requestUsername, DbNote note) {
