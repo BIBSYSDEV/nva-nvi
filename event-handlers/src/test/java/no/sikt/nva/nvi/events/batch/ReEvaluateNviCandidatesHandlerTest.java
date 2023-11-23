@@ -86,6 +86,17 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
         assertEquals(expectedEmittedEvent, actualEmittedEvent);
     }
 
+    @Test
+    void shouldNotEmitNewEventWhenBatchIsComplete() {
+        var numberOfCandidates = 9;
+        var pageSize = 10;
+        var year = randomYear();
+        createNumberOfCandidatesForYear(year, numberOfCandidates, candidateRepository);
+        handler.handleRequest(eventStream(createRequest(year, pageSize)), outputStream, context);
+        var emittedEvents = eventBridgeClient.getRequestEntries();
+        assertEquals(0, emittedEvents.size());
+    }
+
     private static Map<String, String> getStartMarker(CandidateDao dao) {
         return Map.of("PrimaryKeyRangeKey", dao.primaryKeyRangeKey(),
                       "PrimaryKeyHashKey", dao.primaryKeyHashKey(),
