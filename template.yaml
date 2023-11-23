@@ -300,6 +300,9 @@ Resources:
       Timeout: 30
       MemorySize: 1536
       AutoPublishAlias: live
+      Environment:
+        Variables:
+          PERSISTED_RESOURCE_QUEUE_URL: !Ref PersistedResourceQueue
       Events:
         EventBridgeEvent:
           Type: EventBridgeRule
@@ -313,9 +316,6 @@ Resources:
                   topic: [ "PublicationService.ExpandedEntry.Persisted" ]
       EventInvokeConfig:
         DestinationConfig:
-          OnSuccess:
-            Type: SQS
-            Destination: !GetAtt PersistedResourceQueue.Arn
           OnFailure:
             Type: SQS
             Destination: !GetAtt PersistedResourceDLQ.Arn
