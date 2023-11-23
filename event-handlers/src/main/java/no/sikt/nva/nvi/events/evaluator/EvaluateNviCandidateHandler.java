@@ -24,8 +24,8 @@ import org.slf4j.LoggerFactory;
 
 public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Void> {
 
-    public static final String EVALUATED_CANDIDATE_QUEUE_URL = "EVALUATED_CANDIDATE_QUEUE_URL";
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateNviCandidateHandler.class);
+    private static final String EVALUATED_CANDIDATE_QUEUE_URL = "CANDIDATE_QUEUE_URL";
     private static final String BACKEND_CLIENT_AUTH_URL = "BACKEND_CLIENT_AUTH_URL";
     private static final String BACKEND_CLIENT_SECRET_NAME = "BACKEND_CLIENT_SECRET_NAME";
     private static final String EVALUATION_MESSAGE = "Nvi candidacy has been evaluated for publication: {}. Type: {}";
