@@ -110,7 +110,7 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref NewCandidateDLQName
-      MessageRetentionPeriod: 43200
+      MessageRetentionPeriod: 1209600 #14 days
   BatchScanDLQ:
     Type: AWS::SQS::Queue
     Properties:
@@ -119,17 +119,16 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref UpdateIndexDLQName
-      MessageRetentionPeriod: 43200
+      MessageRetentionPeriod: 1209600 #14 days
   UpsertCandidateDLQ:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref UpsertCandidateDLQName
-      MessageRetentionPeriod: 43200
+      MessageRetentionPeriod: 1209600 #14 days
   PersistedResourceQueue:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref PersistedResourceQueueName
-      MessageRetentionPeriod: 43200
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt PersistedResourceDLQ.Arn
         maxReceiveCount: 5
@@ -137,7 +136,7 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref PersistedResourceDLQName
-      MessageRetentionPeriod: 43200
+      MessageRetentionPeriod: 1209600 #14 days
 
   #============================= Permissions =======================================================
   NvaNviRole:
