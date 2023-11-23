@@ -60,9 +60,9 @@ class CandidateRepositoryTest extends LocalDynamoTest {
 
     @Test
     void shouldFetchCandidatesByGivenYearAndPageSize() {
-        int searchYear = Integer.parseInt(randomYear());
+        var searchYear = randomYear();
         var candidates = createNumberOfCandidatesForYear(searchYear, 10);
-        createNumberOfCandidatesForYear(Integer.parseInt(randomYear()), 10);
+        createNumberOfCandidatesForYear(randomYear(), 10);
         int pageSize = 5;
         var expectedCandidates = sortByIdentifier(candidates, pageSize);
         var results = candidateRepository.fetchCandidatesByYear(searchYear, pageSize, null);
@@ -72,7 +72,7 @@ class CandidateRepositoryTest extends LocalDynamoTest {
 
     @Test
     void shouldFetchCandidatesByGivenYearAndStartMarker() {
-        int year = Integer.parseInt(randomYear());
+        var year = randomYear();
         var candidates = createNumberOfCandidatesForYear(year, 2);
         var expectedCandidates = sortByIdentifier(candidates, DEFAULT_PAGE_SIZE);
         var firstCandidateInIndex = expectedCandidates.get(0);
@@ -85,7 +85,7 @@ class CandidateRepositoryTest extends LocalDynamoTest {
 
     @Test
     void shouldFetchCandidatesByGivenYearWithDefaultPageSizeAndStartMarkerIfNotSet() {
-        int year = Integer.parseInt(randomYear());
+        var year = randomYear();
         int numberOfCandidates = DEFAULT_PAGE_SIZE + randomIntBetween(1, 10);
         var candidates = createNumberOfCandidatesForYear(year, numberOfCandidates);
         var expectedCandidates = sortByIdentifier(candidates, DEFAULT_PAGE_SIZE);
@@ -101,12 +101,12 @@ class CandidateRepositoryTest extends LocalDynamoTest {
                       "SearchByYearRangeKey", dao.searchByYearSortKey());
     }
 
-    private static DbCandidate randomCandidate(int year) {
+    private static DbCandidate randomCandidate(String year) {
         return randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
     }
 
-    private static DbPublicationDate publicationDate(int year) {
-        return new DbPublicationDate(String.valueOf(year), null, null);
+    private static DbPublicationDate publicationDate(String year) {
+        return new DbPublicationDate(year, null, null);
     }
 
     private static List<CandidateDao> sortByIdentifier(List<CandidateDao> candidates, int limit) {
@@ -121,7 +121,7 @@ class CandidateRepositoryTest extends LocalDynamoTest {
         return uuid.toString().replaceAll(UUID_SEPERATOR, "");
     }
 
-    private List<CandidateDao> createNumberOfCandidatesForYear(int year, int number) {
+    private List<CandidateDao> createNumberOfCandidatesForYear(String year, int number) {
         return IntStream.range(0, number)
                    .mapToObj(i -> randomCandidate(year))
                    .map(candidate -> candidateRepository.createDao(candidate, List.of()))

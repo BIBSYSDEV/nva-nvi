@@ -5,13 +5,14 @@ import static nva.commons.core.attempt.Try.attempt;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
+import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
@@ -120,6 +121,15 @@ public class NviService {
         return candidateRepository.refresh(pageSize, startMarker);
     }
 
+    public List<URI> fetchCandidatePublicationFileUrisByYear(String year, int pageSize,
+                                                             Map<String, String> startMarker) {
+        return candidateRepository.fetchCandidatesByYear(year, pageSize, startMarker)
+                   .stream()
+                   .map(CandidateDao::candidate)
+                   .map(DbCandidate::publicationBucketUri)
+                   .toList();
+    }
+
     private static boolean isNoteOwner(String requestUsername, DbNote note) {
         return note.user().value().equals(requestUsername);
     }
@@ -160,6 +170,10 @@ public class NviService {
         if (InstanceType.NON_CANDIDATE.equals(candidate.instanceType())) {
             throw new InvalidNviCandidateException("Can not update invalid candidate");
         }
+    }
+
+    private static boolean hasNullValues(DbNviPeriod period) {
+        return Stream.of(period.startDate(), period.reportingDate(), period.publishingYear()).anyMatch(Objects::isNull);
     }
 
     private void candidateIsEditable(UUID candidateIdentifier) {
@@ -264,9 +278,5 @@ public class NviService {
         if (period.startDate().isAfter(period.reportingDate())) {
             throw new IllegalArgumentException(START_DATE_ERROR_MESSAGE);
         }
-    }
-
-    private static boolean hasNullValues(DbNviPeriod period) {
-        return Stream.of(period.startDate(), period.reportingDate(), period.publishingYear()).anyMatch(Objects::isNull);
     }
 }

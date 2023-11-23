@@ -1,24 +1,76 @@
 package no.sikt.nva.nvi.events.batch;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
+import java.net.URI;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.model.ListingResult;
+import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
+import no.sikt.nva.nvi.common.queue.QueueClient;
+import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.model.ReEvaluateRequest;
 import no.unit.nva.events.handlers.EventHandler;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
+import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 
-public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateRequest, Void> {
+public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateRequest, ListingResult> {
 
-    public static final String INVALID_INPUT_MSG = "Invalid request. Field year is required";
+    public static final int BATCH_SIZE = 10;
+    private static final String PERSISTED_RESOURCE_QUEUE_URL = "PERSISTED_RESOURCE_QUEUE_URL";
+    private static final String INVALID_INPUT_MSG = "Invalid request. Field year is required";
+    private final QueueClient<NviSendMessageResponse> queueClient;
+    private final NviService nviService;
+    private final String queueUrl;
 
+    @JacocoGenerated
     public ReEvaluateNviCandidatesHandler() {
+        this(NviService.defaultNviService(), new NviQueueClient(), new Environment());
+    }
+
+    public ReEvaluateNviCandidatesHandler(NviService nviService, QueueClient<NviSendMessageResponse> queueClient,
+                                          Environment environment) {
         super(ReEvaluateRequest.class);
+        this.nviService = nviService;
+        this.queueClient = queueClient;
+        this.queueUrl = environment.readEnv(PERSISTED_RESOURCE_QUEUE_URL);
     }
 
     @Override
-    protected Void processInput(ReEvaluateRequest input, AwsEventBridgeEvent<ReEvaluateRequest> event,
-                                Context context) {
+    protected ListingResult processInput(ReEvaluateRequest input, AwsEventBridgeEvent<ReEvaluateRequest> event,
+                                         Context context) {
         validateInput(input);
+        var startMarker = nonNull(input.startMarker()) ? input.startMarker() : null;
+        var candidatePublicationFileUris = nviService.fetchCandidatePublicationFileUrisByYear(input.year(),
+                                                                                              input.pageSize(),
+                                                                                              startMarker);
+        splitIntoBatches(candidatePublicationFileUris).forEach(uris -> sendBatch(createMessages(uris)));
         return null;
+    }
+
+    private Stream<List<URI>> splitIntoBatches(List<URI> fileUris) {
+        var count = fileUris.size();
+        return IntStream.range(0, (count + BATCH_SIZE - 1) / BATCH_SIZE)
+                   .mapToObj(i -> fileUris.subList(i * BATCH_SIZE, Math.min((i + 1) * BATCH_SIZE, count)));
+    }
+
+    private void sendBatch(Collection<String> messages) {
+        queueClient.sendMessageBatch(messages, queueUrl);
+    }
+
+    private Collection<String> createMessages(List<URI> uris) {
+        return uris.stream().map(this::createMessage).toList();
+    }
+
+    private String createMessage(URI fileUri) {
+        return attempt(() -> objectMapper.writeValueAsString(new PersistedResourceMessage(fileUri))).orElseThrow();
     }
 
     private void validateInput(ReEvaluateRequest input) {
