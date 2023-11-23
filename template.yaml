@@ -103,6 +103,9 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref NewCandidateQueueName
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt NewCandidateDLQ.Arn
+        maxReceiveCount: 5
   NewCandidateDLQ:
     Type: AWS::SQS::Queue
     Properties:
@@ -127,6 +130,9 @@ Resources:
     Properties:
       QueueName: !Ref PersistedResourceQueueName
       MessageRetentionPeriod: 43200
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt PersistedResourceDLQ.Arn
+        maxReceiveCount: 5
   PersistedResourceDLQ:
     Type: AWS::SQS::Queue
     Properties:
