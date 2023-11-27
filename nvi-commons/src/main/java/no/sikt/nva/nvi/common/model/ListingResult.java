@@ -1,16 +1,25 @@
 package no.sikt.nva.nvi.common.model;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.Map;
 import java.util.Objects;
 import nva.commons.core.JacocoGenerated;
 
+@JsonSerialize
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class ListingResult {
 
     private final boolean shouldContinueScan;
     private final Map<String, String> startMarker;
     private final int totalItem;
 
-    public ListingResult(boolean shouldContinueScan, Map<String, String> startMarker, int totalItem) {
+    @JsonCreator
+    public ListingResult(@JsonProperty("shouldContinueScan") boolean shouldContinueScan,
+                         @JsonProperty("startMarker") Map<String, String> startMarker,
+                         @JsonProperty("totalItem") int totalItem) {
         this.shouldContinueScan = shouldContinueScan;
         this.startMarker = startMarker;
         this.totalItem = totalItem;
