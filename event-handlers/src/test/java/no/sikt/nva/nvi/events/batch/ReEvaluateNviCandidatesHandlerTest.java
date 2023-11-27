@@ -22,11 +22,14 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.List;
+import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.ListingResultWithCandidates;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.events.evaluator.FakeSqsClient;
+import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.model.ReEvaluateRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
@@ -37,6 +40,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
+import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 
 class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
 
@@ -95,6 +99,23 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
         var secondBatch = sentBatches.get(1);
         assertEquals(BATCH_SIZE, firstBatch.entries().size());
         assertEquals(numberOfCandidates - BATCH_SIZE, secondBatch.entries().size());
+    }
+
+    @Test
+    void shouldSendMessagesForCandidatesPublishedInGivenYear() {
+        var year = randomYear();
+        var candidates = createNumberOfCandidatesForYear(year, 10, candidateRepository);
+        createNumberOfCandidatesForYear(randomYear(), 10, candidateRepository);
+        handler.handleRequest(eventStream(createRequest(year)), outputStream, context);
+        var batch = sqsClient.getSentBatches().get(0);
+        var expectedCandidates = sortByIdentifier(candidates, BATCH_SIZE).stream().map(CandidateDao::candidate)
+                                      .map(DbCandidate::publicationBucketUri).toList();
+        var actualCandidates = batch.entries().stream()
+                                   .map(SendMessageBatchRequestEntry::messageBody)
+                                   .map(PersistedResourceMessage::fromJson)
+                                   .map(PersistedResourceMessage::resourceFileUri)
+                                   .toList();
+        assertEquals(expectedCandidates, actualCandidates);
     }
 
     @Test

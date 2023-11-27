@@ -95,11 +95,7 @@ public class CandidateRepository extends DynamoRepository {
 
     public ListingResultWithCandidates fetchCandidatesByYear(String year,
                                                              Integer pageSize, Map<String, String> startMarker) {
-        var page = this.yearIndex.query(createQuery(year, pageSize, startMarker))
-                       .stream()
-                       .findFirst()
-                       .orElse(Page.create(emptyList()));
-
+        var page = queryYearIndex(year, pageSize, startMarker);
         return new ListingResultWithCandidates(thereAreMorePagesToScan(page),
                                                nonNull(page.lastEvaluatedKey())
                                                    ? toStringMap(page.lastEvaluatedKey()) : emptyMap(),
@@ -322,6 +318,13 @@ public class CandidateRepository extends DynamoRepository {
                    .item(insert)
                    .conditionExpression(uniquePrimaryKeysExpression())
                    .build();
+    }
+
+    private Page<CandidateDao> queryYearIndex(String year, Integer pageSize, Map<String, String> startMarker) {
+        return this.yearIndex.query(createQuery(year, pageSize, startMarker))
+                   .stream()
+                   .findFirst()
+                   .orElse(Page.create(emptyList()));
     }
 
     private QueryEnhancedRequest createQuery(String year, Integer pageSize, Map<String, String> startMarker) {
