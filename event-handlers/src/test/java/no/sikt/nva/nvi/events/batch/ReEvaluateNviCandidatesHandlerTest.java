@@ -168,11 +168,16 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
     }
 
     private ReEvaluateRequest createRequest(String year) {
-        return ReEvaluateRequest.builder().withYear(year).build();
+        return ReEvaluateRequest.builder().withYear(year).withTopic(outputTopic).withStartMarker(null).build();
     }
 
     private ReEvaluateRequest createRequest(String year, int pageSize) {
-        return ReEvaluateRequest.builder().withYear(year).withPageSize(pageSize).build();
+        return ReEvaluateRequest.builder()
+                   .withYear(year)
+                   .withPageSize(pageSize)
+                   .withTopic(outputTopic)
+                   .withStartMarker(null)
+                   .build();
     }
 
     private InputStream eventStream(ReEvaluateRequest request) {

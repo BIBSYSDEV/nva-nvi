@@ -81,6 +81,16 @@ public record ReEvaluateRequest(@JsonProperty(PAGE_SIZE_FIELD) Integer pageSize,
             return this;
         }
 
+        public Builder withStartMarker(Map<String, String> startMarker) {
+            this.startMarker = startMarker;
+            return this;
+        }
+
+        public Builder withTopic(String topic) {
+            this.topic = topic;
+            return this;
+        }
+
         public ReEvaluateRequest build() {
             return new ReEvaluateRequest(pageSize, startMarker, year, topic);
         }
