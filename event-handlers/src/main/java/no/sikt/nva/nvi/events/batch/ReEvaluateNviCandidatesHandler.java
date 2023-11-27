@@ -32,6 +32,8 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
     private static final String PERSISTED_RESOURCE_QUEUE_URL = "PERSISTED_RESOURCE_QUEUE_URL";
     private static final String EVENT_BUS_NAME = "EVENT_BUS_NAME";
     private static final String INVALID_INPUT_MSG = "Invalid request. Field year is required";
+    public static final String OUTPUT_EVENT_TOPIC = "TOPIC_REEVALUATE_CANDIDATES";
+    private static final String TOPIC = new Environment().readEnv(OUTPUT_EVENT_TOPIC);
     private final QueueClient<NviSendMessageResponse> queueClient;
     private final NviService nviService;
     private final String queueUrl;
@@ -79,7 +81,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
 
     private void sendEventToInvokeNewReEvaluateExecution(ReEvaluateRequest request, Context context,
                                                          ListingResultWithCandidates result) {
-        var newEvent = request.newReEvaluateRequest(result.startMarker())
+        var newEvent = request.newReEvaluateRequest(result.startMarker(), TOPIC)
                            .createNewEventEntry(eventBusName, context.getInvokedFunctionArn());
         sendEvent(newEvent);
     }

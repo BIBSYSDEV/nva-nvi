@@ -65,6 +65,9 @@ Parameters:
   UpsertCandidateDLQName:
     Type: String
     Default: UpsertCandidateDLQ
+  ReEvaluateDLQName:
+    Type: String
+    Default: ReEvaluateDLQ
   SearchInfrastructureApiHost:
     Type: String
     Description: Host of external search infrastructure API (SWS).
@@ -136,6 +139,11 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref PersistedResourceDLQName
+      MessageRetentionPeriod: 1209600 #14 days
+  ReEvaluateDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref ReEvaluateDLQName
       MessageRetentionPeriod: 1209600 #14 days
 
   #============================= Permissions =======================================================
@@ -539,6 +547,33 @@ Resources:
         Variables:
           EVENT_BUS_NAME: !GetAtt InternalBus.Name
           OUTPUT_EVENT_TOPIC: 'NviService.BatchScan'
+  
+  ReEvaluateNviCandidatesHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.batch.ReEvaluateNviCandidatesHandler::handleRequest
+      Runtime: java17
+      Timeout: 60
+      Role: !GetAtt NvaNviRole.Arn
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          EVENT_BUS_NAME: !GetAtt InternalBus.Name
+          TOPIC_REEVALUATE_CANDIDATES: 'NviService.ReEvaluate'
+      Events:
+        EventBridgeEvent:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !GetAtt InternalBus.Name
+            Pattern:
+              detail:
+                topic: [ "NviService.ReEvaluate" ]
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt ReEvaluateDLQ.Arn
 
   # ======================= API HANDLERS ========================
 

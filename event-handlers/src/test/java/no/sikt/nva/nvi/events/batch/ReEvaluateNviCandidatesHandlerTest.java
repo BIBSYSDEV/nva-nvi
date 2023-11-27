@@ -37,6 +37,7 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
     private static final int MAX_PAGE_SIZE = 1000;
     private static final int DEFAULT_PAGE_SIZE = 500;
     private static final Environment environment = new Environment();
+    private static final String outputTopic = environment.readEnv("TOPIC_REEVALUATE_CANDIDATES");
     private static final int BATCH_SIZE = 10;
     private final Context context = mock(Context.class);
     private ByteArrayOutputStream outputStream;
@@ -99,7 +100,7 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
         handler.handleRequest(eventStream(createRequest(year, pageSize)), outputStream, context);
         var expectedStartMarker = getYearIndexStartMarker(
             sortByIdentifier(candidates, numberOfCandidates).get(pageSize - 1));
-        var expectedEmittedEvent = new ReEvaluateRequest(pageSize, expectedStartMarker, year);
+        var expectedEmittedEvent = new ReEvaluateRequest(pageSize, expectedStartMarker, year, outputTopic);
         var actualEmittedEvent = getEmittedEvent();
         assertEquals(expectedEmittedEvent, actualEmittedEvent);
     }

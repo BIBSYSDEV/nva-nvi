@@ -10,11 +10,13 @@ import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
 public record ReEvaluateRequest(@JsonProperty(PAGE_SIZE_FIELD) Integer pageSize,
                                 @JsonProperty(START_MARKER_FIELD) Map<String, String> startMarker,
-                                @JsonProperty(YEAR_FIELD) String year) {
+                                @JsonProperty(YEAR_FIELD) String year,
+                                @JsonProperty(TOPIC_FIELD) String topic) {
 
     public static final String PAGE_SIZE_FIELD = "pageSize";
     public static final String START_MARKER_FIELD = "startMarker";
     public static final String YEAR_FIELD = "year";
+    public static final String TOPIC_FIELD = "topic";
     public static final int DEFAULT_PAGE_SIZE = 500;
     public static final int MAX_PAGE_SIZE = 1000;
 
@@ -33,8 +35,8 @@ public record ReEvaluateRequest(@JsonProperty(PAGE_SIZE_FIELD) Integer pageSize,
                    : DEFAULT_PAGE_SIZE;
     }
 
-    public ReEvaluateRequest newReEvaluateRequest(Map<String, String> stringStringMap) {
-        return new ReEvaluateRequest(this.pageSize(), stringStringMap, year);
+    public ReEvaluateRequest newReEvaluateRequest(Map<String, String> stringStringMap, String outputTopic) {
+        return new ReEvaluateRequest(this.pageSize(), stringStringMap, year, outputTopic);
     }
 
     public PutEventsRequestEntry createNewEventEntry(
@@ -64,6 +66,7 @@ public record ReEvaluateRequest(@JsonProperty(PAGE_SIZE_FIELD) Integer pageSize,
         private Integer pageSize;
         private Map<String, String> startMarker;
         private String year;
+        private String topic;
 
         private Builder() {
         }
@@ -79,7 +82,7 @@ public record ReEvaluateRequest(@JsonProperty(PAGE_SIZE_FIELD) Integer pageSize,
         }
 
         public ReEvaluateRequest build() {
-            return new ReEvaluateRequest(pageSize, startMarker, year);
+            return new ReEvaluateRequest(pageSize, startMarker, year, topic);
         }
     }
 }
