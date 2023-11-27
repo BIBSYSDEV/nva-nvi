@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.queue;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import no.sikt.nva.nvi.common.utils.ApplicationConstants;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.http.SdkHttpClient;
@@ -78,7 +79,7 @@ public class NviQueueClient implements QueueClient<NviSendMessageResponse> {
     }
 
     private SendMessageBatchRequestEntry createBatchEntry(String message) {
-        return SendMessageBatchRequestEntry.builder().messageBody(message).build();
+        return SendMessageBatchRequestEntry.builder().id(UUID.randomUUID().toString()).messageBody(message).build();
     }
 
     private NviSendMessageResponse createResponse(SendMessageResponse response) {
