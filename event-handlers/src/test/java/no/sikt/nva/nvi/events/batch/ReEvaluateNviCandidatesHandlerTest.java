@@ -47,7 +47,7 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
     private static final int MAX_PAGE_SIZE = 1000;
     private static final int DEFAULT_PAGE_SIZE = 500;
     private static final Environment environment = new Environment();
-    private static final String outputTopic = environment.readEnv("TOPIC_REEVALUATE_CANDIDATES");
+    private static final String OUTPUT_TOPIC = environment.readEnv("TOPIC_REEVALUATE_CANDIDATES");
     private static final int BATCH_SIZE = 10;
     private final Context context = mock(Context.class);
     private ByteArrayOutputStream outputStream;
@@ -109,7 +109,7 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
         handler.handleRequest(eventStream(createRequest(year)), outputStream, context);
         var batch = sqsClient.getSentBatches().get(0);
         var expectedCandidates = sortByIdentifier(candidates, BATCH_SIZE).stream().map(CandidateDao::candidate)
-                                      .map(DbCandidate::publicationBucketUri).toList();
+                                     .map(DbCandidate::publicationBucketUri).toList();
         var actualCandidates = batch.entries().stream()
                                    .map(SendMessageBatchRequestEntry::messageBody)
                                    .map(PersistedResourceMessage::fromJson)
@@ -137,7 +137,7 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
         handler.handleRequest(eventStream(createRequest(year, pageSize)), outputStream, context);
         var expectedStartMarker = getYearIndexStartMarker(
             sortByIdentifier(candidates, numberOfCandidates).get(pageSize - 1));
-        var expectedEmittedEvent = new ReEvaluateRequest(pageSize, expectedStartMarker, year, outputTopic);
+        var expectedEmittedEvent = new ReEvaluateRequest(pageSize, expectedStartMarker, year, OUTPUT_TOPIC);
         var actualEmittedEvent = getEmittedEvent();
         assertEquals(expectedEmittedEvent, actualEmittedEvent);
     }
@@ -189,14 +189,14 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
     }
 
     private ReEvaluateRequest createRequest(String year) {
-        return ReEvaluateRequest.builder().withYear(year).withTopic(outputTopic).withStartMarker(null).build();
+        return ReEvaluateRequest.builder().withYear(year).withTopic(OUTPUT_TOPIC).withStartMarker(null).build();
     }
 
     private ReEvaluateRequest createRequest(String year, int pageSize) {
         return ReEvaluateRequest.builder()
                    .withYear(year)
                    .withPageSize(pageSize)
-                   .withTopic(outputTopic)
+                   .withTopic(OUTPUT_TOPIC)
                    .withStartMarker(null)
                    .build();
     }

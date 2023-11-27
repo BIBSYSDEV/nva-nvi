@@ -31,13 +31,14 @@ import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateRequest, Void> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReEvaluateNviCandidatesHandler.class);
-    private static final String QUERY_STARTING_POINT_MSG = "Query starting point: {}";
-    private static final String RESULT_MSG = "Batch result startMarker: {}, totalItemCount: {}, shouldContinueScan: {}";
+    private static final String INVALID_INPUT_MESSAGE = "Invalid request. Field year is required";
+    private static final String QUERY_STARTING_POINT_MESSAGE = "Query starting point: {}";
+    private static final String RESULT_MESSAGE = "Batch result startMarker: {}, totalItemCount: {}, "
+                                                 + "shouldContinueScan: {}";
     private static final String OUTPUT_EVENT_TOPIC = "TOPIC_REEVALUATE_CANDIDATES";
     private static final int BATCH_SIZE = 10;
     private static final String PERSISTED_RESOURCE_QUEUE_URL = "PERSISTED_RESOURCE_QUEUE_URL";
     private static final String EVENT_BUS_NAME = "EVENT_BUS_NAME";
-    private static final String INVALID_INPUT_MSG = "Invalid request. Field year is required";
     private final QueueClient<NviSendMessageResponse> queueClient;
     private final NviService nviService;
     private final String queueUrl;
@@ -65,7 +66,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
     protected Void processInput(ReEvaluateRequest input, AwsEventBridgeEvent<ReEvaluateRequest> event,
                                 Context context) {
         validateInput(input);
-        LOGGER.info(QUERY_STARTING_POINT_MSG, input.startMarker());
+        LOGGER.info(QUERY_STARTING_POINT_MESSAGE, input.startMarker());
         var result = getListingResultWithCandidates(input);
         logResult(result);
         splitIntoBatches(mapToFileUris(result)).forEach(fileUriList -> sendBatch(createMessages(fileUriList)));
@@ -76,7 +77,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
     }
 
     private static void logResult(ListingResultWithCandidates result) {
-        LOGGER.info(RESULT_MSG, result.getStartMarker(), result.getTotalItemCount(), result.shouldContinueScan());
+        LOGGER.info(RESULT_MESSAGE, result.getStartMarker(), result.getTotalItemCount(), result.shouldContinueScan());
     }
 
     @JacocoGenerated
@@ -129,7 +130,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
 
     private void validateInput(ReEvaluateRequest input) {
         if (isNull(input) || isNull(input.year())) {
-            throw new IllegalArgumentException(INVALID_INPUT_MSG);
+            throw new IllegalArgumentException(INVALID_INPUT_MESSAGE);
         }
     }
 }
