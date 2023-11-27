@@ -58,7 +58,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
                                 Context context) {
         validateInput(input);
         var result = getListingResultWithCandidates(input);
-        splitIntoBatches(mapToFileUris(result)).forEach(uris -> sendBatch(createMessages(uris)));
+        splitIntoBatches(mapToFileUris(result)).forEach(fileUriList -> sendBatch(createMessages(fileUriList)));
         if (result.shouldContinueScan()) {
             sendEventToInvokeNewReEvaluateExecution(input, context, result);
         }
@@ -80,7 +80,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
     private void sendEventToInvokeNewReEvaluateExecution(ReEvaluateRequest request, Context context,
                                                          ListingResultWithCandidates result) {
         var newEvent = request.newReEvaluateRequest(result.startMarker())
-                           .createNewEventEntry(EVENT_BUS_NAME, context.getInvokedFunctionArn());
+                           .createNewEventEntry(eventBusName, context.getInvokedFunctionArn());
         sendEvent(newEvent);
     }
 

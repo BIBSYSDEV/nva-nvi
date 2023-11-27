@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.events.batch;
 
 import static no.sikt.nva.nvi.test.TestUtils.createNumberOfCandidatesForYear;
+import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.sortByIdentifier;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -9,13 +10,18 @@ import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.model.ListingResultWithCandidates;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.events.evaluator.FakeSqsClient;
 import no.sikt.nva.nvi.events.model.ReEvaluateRequest;
@@ -29,8 +35,9 @@ import org.junit.jupiter.api.Test;
 
 class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
 
+    private static final int MAX_PAGE_SIZE = 1000;
+    private static final int DEFAULT_PAGE_SIZE = 500;
     private static final Environment environment = new Environment();
-    public static final String EVENT_BUS_NAME = environment.readEnv("EVENT_BUS_NAME");
     private static final int BATCH_SIZE = 10;
     private final Context context = mock(Context.class);
     private ByteArrayOutputStream outputStream;
@@ -53,9 +60,20 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldThrowExceptionWhenRequestDoesNotContainYear() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            handler.handleRequest(eventStream(emptyRequest()), outputStream, context);
-        });
+        assertThrows(IllegalArgumentException.class,
+                     () -> handler.handleRequest(eventStream(emptyRequest()), outputStream, context));
+    }
+
+    @Test
+    void shouldInitializeWithDefaultPageSizeIfRequestedPageSizeIsBiggerThanMaxPageSize() {
+        var year = randomYear();
+        var pageSizeBiggerThanMaxPageSize = MAX_PAGE_SIZE + randomIntBetween(1, 100);
+        var mockedNviService = mock(NviService.class);
+        when(mockedNviService.fetchCandidatePublicationFileUrisByYear(year, DEFAULT_PAGE_SIZE, null))
+            .thenReturn(new ListingResultWithCandidates(false, null, 0, List.of()));
+        var handler = new ReEvaluateNviCandidatesHandler(mockedNviService, sqsClient, environment, eventBridgeClient);
+        handler.handleRequest(eventStream(createRequest(year, pageSizeBiggerThanMaxPageSize)), outputStream, context);
+        verify(mockedNviService, times(1)).fetchCandidatePublicationFileUrisByYear(year, DEFAULT_PAGE_SIZE, null);
     }
 
     @Test
@@ -101,7 +119,7 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
         return Map.of("PrimaryKeyRangeKey", dao.primaryKeyRangeKey(),
                       "PrimaryKeyHashKey", dao.primaryKeyHashKey(),
                       "SearchByYearHashKey", String.valueOf(dao.searchByYearHashKey()),
-                      "SearchByYearRangeKey", dao.searchByYearSortKey());
+                      "SearchByYearRangeKey", String.valueOf(dao.searchByYearSortKey()));
     }
 
     private static ReEvaluateRequest emptyRequest() {
