@@ -12,38 +12,38 @@ import nva.commons.core.JacocoGenerated;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class ListingResult {
 
-    public static final String SHOULD_CONTINUE_SCAN = "shouldContinueScan";
+    public static final String MORE_ITEMS_TO_SCAN = "moreItemsToScan";
     public static final String START_MARKER = "startMarker";
-    public static final String TOTAL_ITEM = "totalItem";
-    private final boolean shouldContinueScan;
+    public static final String ITEM_COUNT = "totalItemCount";
+    private final boolean moreItemsToScan;
     private final Map<String, String> startMarker;
-    private final int totalItem;
+    private final int totalItemCount;
 
     @JsonCreator
-    public ListingResult(@JsonProperty(SHOULD_CONTINUE_SCAN) boolean shouldContinueScan,
+    public ListingResult(@JsonProperty(MORE_ITEMS_TO_SCAN) boolean moreItemsToScan,
                          @JsonProperty(START_MARKER) Map<String, String> startMarker,
-                         @JsonProperty(TOTAL_ITEM) int totalItem) {
-        this.shouldContinueScan = shouldContinueScan;
+                         @JsonProperty(ITEM_COUNT) int totalItemCount) {
+        this.moreItemsToScan = moreItemsToScan;
         this.startMarker = startMarker;
-        this.totalItem = totalItem;
+        this.totalItemCount = totalItemCount;
     }
 
     public boolean shouldContinueScan() {
-        return shouldContinueScan;
+        return moreItemsToScan;
     }
 
-    public Map<String, String> startMarker() {
+    public Map<String, String> getStartMarker() {
         return startMarker;
     }
 
-    public int totalItem() {
-        return totalItem;
+    public int getTotalItemCount() {
+        return totalItemCount;
     }
 
     @Override
     @JacocoGenerated
     public int hashCode() {
-        return Objects.hash(shouldContinueScan, startMarker, totalItem);
+        return Objects.hash(moreItemsToScan, startMarker, totalItemCount);
     }
 
     @Override
@@ -56,8 +56,8 @@ public class ListingResult {
             return false;
         }
         var that = (ListingResult) obj;
-        return this.shouldContinueScan == that.shouldContinueScan
+        return this.moreItemsToScan == that.moreItemsToScan
                && Objects.equals(this.startMarker, that.startMarker)
-               && this.totalItem == that.totalItem;
+               && this.totalItemCount == that.totalItemCount;
     }
 }

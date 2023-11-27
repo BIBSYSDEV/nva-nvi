@@ -84,8 +84,8 @@ public class NviServiceTest extends LocalDynamoTest {
         var result = nviService.refresh(10, null);
         var modified = candidateRepository.findDaoById(candidate.identifier());
         assertThat(modified.version(), is(not(equalTo(original.version()))));
-        assertThat(result.startMarker().size(), is(equalTo(0)));
-        assertThat(result.totalItem(), is(equalTo(1)));
+        assertThat(result.getStartMarker().size(), is(equalTo(0)));
+        assertThat(result.getTotalItemCount(), is(equalTo(1)));
         assertThat(result.shouldContinueScan(), is(equalTo(false)));
     }
 

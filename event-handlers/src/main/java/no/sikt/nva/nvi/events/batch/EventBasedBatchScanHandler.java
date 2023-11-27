@@ -55,7 +55,7 @@ public class EventBasedBatchScanHandler extends EventHandler<ScanDatabaseRequest
 
     private void sendEventToInvokeNewRefreshRowVersionExecution(ScanDatabaseRequest input, Context context,
                                                                 ListingResult result) {
-        var newEvent = input.newScanDatabaseRequest(result.startMarker())
+        var newEvent = input.newScanDatabaseRequest(result.getStartMarker())
                            .createNewEventEntry(EVENT_BUS_NAME, DETAIL_TYPE, context.getInvokedFunctionArn());
         sendEvent(newEvent);
     }

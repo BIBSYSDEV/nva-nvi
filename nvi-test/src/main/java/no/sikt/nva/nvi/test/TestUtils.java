@@ -131,6 +131,18 @@ public final class TestUtils {
         return randomCandidateBuilder(true).build();
     }
 
+    private static DbCandidate randomCandidate(String year) {
+        return randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
+    }
+
+    public static List<CandidateDao> createNumberOfCandidatesForYear(String year, int number,
+                                                                     CandidateRepository repository) {
+        return IntStream.range(0, number)
+                   .mapToObj(i -> randomCandidate(year))
+                   .map(candidate -> repository.createDao(candidate, List.of()))
+                   .toList();
+    }
+
     public static DbCandidate randomCandidateWithPublicationYear(int year) {
         return randomCandidateBuilder(true)
                    .publicationDate(DbPublicationDate.builder().year(String.valueOf(year)).build()).build();
@@ -376,18 +388,6 @@ public final class TestUtils {
 
     public static CreateNoteRequest createNoteRequest(String text, String username) {
         return new CreateNoteRequest(text, username);
-    }
-
-    public static List<CandidateDao> createNumberOfCandidatesForYear(String year, int number,
-                                                                     CandidateRepository repository) {
-        return IntStream.range(0, number)
-                   .mapToObj(i -> randomCandidate(year))
-                   .map(candidate -> repository.createDao(candidate, List.of()))
-                   .toList();
-    }
-
-    private static DbCandidate randomCandidate(String year) {
-        return randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
     }
 
     private static DbPublicationDate publicationDate(String year) {

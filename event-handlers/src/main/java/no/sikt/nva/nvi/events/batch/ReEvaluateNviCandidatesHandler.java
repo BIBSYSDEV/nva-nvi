@@ -81,7 +81,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
 
     private void sendEventToInvokeNewReEvaluateExecution(ReEvaluateRequest request, Context context,
                                                          ListingResultWithCandidates result) {
-        var newEvent = request.newReEvaluateRequest(result.startMarker(), TOPIC)
+        var newEvent = request.newReEvaluateRequest(result.getStartMarker(), TOPIC)
                            .createNewEventEntry(eventBusName, context.getInvokedFunctionArn());
         sendEvent(newEvent);
     }
