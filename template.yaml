@@ -188,6 +188,7 @@ Resources:
                   - !GetAtt BatchScanDLQ.Arn
                   - !GetAtt UpdateIndexDLQ.Arn
                   - !GetAtt UpsertCandidateDLQ.Arn
+                  - !GetAtt ReEvaluateDLQ.Arn
         - PolicyName: writeLog
           PolicyDocument:
             Version: 2012-10-17
