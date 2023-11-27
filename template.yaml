@@ -481,6 +481,14 @@ Resources:
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
+  InitHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Lambda that creates indices. Needs to be run manually from Test
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.InitHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+
   DeleteNviCandidateIndexHandler:
     Type: AWS::Serverless::Function
     Properties:

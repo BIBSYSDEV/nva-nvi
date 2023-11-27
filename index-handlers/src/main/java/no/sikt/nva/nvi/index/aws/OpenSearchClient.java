@@ -77,11 +77,6 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
 
     @Override
     public IndexResponse addDocumentToIndex(NviCandidateIndexDocument indexDocument) {
-        if (!indexExists()) {
-            LOGGER.info("Creating index");
-            createIndex();
-        }
-
         return attempt(() -> client.withTransportOptions(getOptions()).index(constructIndexRequest(indexDocument)))
                    .map(indexResponse -> {
                        LOGGER.info("Indexed document from index: {}", indexDocument.identifier());
@@ -154,7 +149,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     //TODO change with .exists() when sws index handler is cleaned up.
-    private boolean indexExists() {
+    public boolean indexExists() {
         try {
             client.withTransportOptions(getOptions())
                 .indices()
@@ -170,7 +165,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         return true;
     }
 
-    private void createIndex() {
+    public void createIndex() {
         attempt(() -> client.withTransportOptions(getOptions())
                           .indices()
                           .create(getCreateIndexRequest()))
