@@ -12,14 +12,17 @@ import nva.commons.core.JacocoGenerated;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class ListingResult {
 
+    public static final String SHOULD_CONTINUE_SCAN = "shouldContinueScan";
+    public static final String START_MARKER = "startMarker";
+    public static final String TOTAL_ITEM = "totalItem";
     private final boolean shouldContinueScan;
     private final Map<String, String> startMarker;
     private final int totalItem;
 
     @JsonCreator
-    public ListingResult(@JsonProperty("shouldContinueScan") boolean shouldContinueScan,
-                         @JsonProperty("startMarker") Map<String, String> startMarker,
-                         @JsonProperty("totalItem") int totalItem) {
+    public ListingResult(@JsonProperty(SHOULD_CONTINUE_SCAN) boolean shouldContinueScan,
+                         @JsonProperty(START_MARKER) Map<String, String> startMarker,
+                         @JsonProperty(TOTAL_ITEM) int totalItem) {
         this.shouldContinueScan = shouldContinueScan;
         this.startMarker = startMarker;
         this.totalItem = totalItem;
@@ -53,16 +56,8 @@ public class ListingResult {
             return false;
         }
         var that = (ListingResult) obj;
-        return this.shouldContinueScan == that.shouldContinueScan &&
-               Objects.equals(this.startMarker, that.startMarker) &&
-               this.totalItem == that.totalItem;
-    }
-
-    @Override
-    public String toString() {
-        return "ListingResult[" +
-               "shouldContinueScan=" + shouldContinueScan + ", " +
-               "startMarker=" + startMarker + ", " +
-               "totalItem=" + totalItem + ']';
+        return this.shouldContinueScan == that.shouldContinueScan
+               && Objects.equals(this.startMarker, that.startMarker)
+               && this.totalItem == that.totalItem;
     }
 }

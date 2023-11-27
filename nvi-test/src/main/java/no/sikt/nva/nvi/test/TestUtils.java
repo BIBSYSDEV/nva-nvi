@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.test;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.db.model.InstanceType.NON_CANDIDATE;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
@@ -143,12 +144,19 @@ public final class TestUtils {
                    .publishingYear(randomYear());
     }
 
-    public static List<CandidateDao> sortByIdentifier(List<CandidateDao> candidates, int limit) {
+    public static List<CandidateDao> sortByIdentifier(List<CandidateDao> candidates, Integer limit) {
         var comparator = Comparator.comparing(TestUtils::getCharacterValues);
         return candidates.stream()
                    .sorted(Comparator.comparing(CandidateDao::identifier, comparator))
-                   .limit(limit)
+                   .limit(nonNull(limit) ? limit : candidates.size())
                    .toList();
+    }
+
+    public static Map<String, String> getYearIndexStartMarker(CandidateDao dao) {
+        return Map.of("PrimaryKeyRangeKey", dao.primaryKeyRangeKey(),
+                      "PrimaryKeyHashKey", dao.primaryKeyHashKey(),
+                      "SearchByYearHashKey", String.valueOf(dao.searchByYearHashKey()),
+                      "SearchByYearRangeKey", String.valueOf(dao.searchByYearSortKey()));
     }
 
     public static Username randomUsername() {
@@ -371,7 +379,7 @@ public final class TestUtils {
     }
 
     public static List<CandidateDao> createNumberOfCandidatesForYear(String year, int number,
-                                                               CandidateRepository repository) {
+                                                                     CandidateRepository repository) {
         return IntStream.range(0, number)
                    .mapToObj(i -> randomCandidate(year))
                    .map(candidate -> repository.createDao(candidate, List.of()))

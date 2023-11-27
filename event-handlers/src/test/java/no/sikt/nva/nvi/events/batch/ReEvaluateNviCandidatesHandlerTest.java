@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.events.batch;
 
 import static no.sikt.nva.nvi.test.TestUtils.createNumberOfCandidatesForYear;
+import static no.sikt.nva.nvi.test.TestUtils.getYearIndexStartMarker;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.sortByIdentifier;
@@ -17,8 +18,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
-import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.ListingResultWithCandidates;
@@ -69,11 +68,11 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
         var year = randomYear();
         var pageSizeBiggerThanMaxPageSize = MAX_PAGE_SIZE + randomIntBetween(1, 100);
         var mockedNviService = mock(NviService.class);
-        when(mockedNviService.fetchCandidatePublicationFileUrisByYear(year, DEFAULT_PAGE_SIZE, null))
+        when(mockedNviService.fetchCandidatesByYear(year, DEFAULT_PAGE_SIZE, null))
             .thenReturn(new ListingResultWithCandidates(false, null, 0, List.of()));
         var handler = new ReEvaluateNviCandidatesHandler(mockedNviService, sqsClient, environment, eventBridgeClient);
         handler.handleRequest(eventStream(createRequest(year, pageSizeBiggerThanMaxPageSize)), outputStream, context);
-        verify(mockedNviService, times(1)).fetchCandidatePublicationFileUrisByYear(year, DEFAULT_PAGE_SIZE, null);
+        verify(mockedNviService, times(1)).fetchCandidatesByYear(year, DEFAULT_PAGE_SIZE, null);
     }
 
     @Test
@@ -98,7 +97,8 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
         var year = randomYear();
         var candidates = createNumberOfCandidatesForYear(year, numberOfCandidates, candidateRepository);
         handler.handleRequest(eventStream(createRequest(year, pageSize)), outputStream, context);
-        var expectedStartMarker = getStartMarker(sortByIdentifier(candidates, numberOfCandidates).get(pageSize - 1));
+        var expectedStartMarker = getYearIndexStartMarker(
+            sortByIdentifier(candidates, numberOfCandidates).get(pageSize - 1));
         var expectedEmittedEvent = new ReEvaluateRequest(pageSize, expectedStartMarker, year);
         var actualEmittedEvent = getEmittedEvent();
         assertEquals(expectedEmittedEvent, actualEmittedEvent);
@@ -113,13 +113,6 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
         handler.handleRequest(eventStream(createRequest(year, pageSize)), outputStream, context);
         var emittedEvents = eventBridgeClient.getRequestEntries();
         assertEquals(0, emittedEvents.size());
-    }
-
-    private static Map<String, String> getStartMarker(CandidateDao dao) {
-        return Map.of("PrimaryKeyRangeKey", dao.primaryKeyRangeKey(),
-                      "PrimaryKeyHashKey", dao.primaryKeyHashKey(),
-                      "SearchByYearHashKey", String.valueOf(dao.searchByYearHashKey()),
-                      "SearchByYearRangeKey", String.valueOf(dao.searchByYearSortKey()));
     }
 
     private static ReEvaluateRequest emptyRequest() {

@@ -121,8 +121,8 @@ public class NviService {
         return candidateRepository.refresh(pageSize, startMarker);
     }
 
-    public ListingResultWithCandidates fetchCandidatePublicationFileUrisByYear(String year, int pageSize,
-                                                                               Map<String, String> startMarker) {
+    public ListingResultWithCandidates fetchCandidatesByYear(String year, Integer pageSize,
+                                                             Map<String, String> startMarker) {
         return candidateRepository.fetchCandidatesByYear(year, pageSize, startMarker);
     }
 

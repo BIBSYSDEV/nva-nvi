@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.test.TestUtils.createNumberOfCandidatesForYear;
+import static no.sikt.nva.nvi.test.TestUtils.getYearIndexStartMarker;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
@@ -14,7 +15,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.List;
-import java.util.Map;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,7 +73,7 @@ class CandidateRepositoryTest extends LocalDynamoTest {
         var expectedCandidates = sortByIdentifier(candidates, DEFAULT_PAGE_SIZE);
         var firstCandidateInIndex = expectedCandidates.get(0);
         var secondCandidateInIndex = expectedCandidates.get(1);
-        var startMarker = getStartMarker(firstCandidateInIndex);
+        var startMarker = getYearIndexStartMarker(firstCandidateInIndex);
         var results = candidateRepository.fetchCandidatesByYear(year, null, startMarker).getCandidates();
         assertThat(results.size(), is(equalTo(1)));
         assertEquals(secondCandidateInIndex, results.get(0));
@@ -88,12 +88,5 @@ class CandidateRepositoryTest extends LocalDynamoTest {
         var results = candidateRepository.fetchCandidatesByYear(year, null, null).getCandidates();
         assertThat(results.size(), is(equalTo(DEFAULT_PAGE_SIZE)));
         assertThat(expectedCandidates, containsInAnyOrder(results.toArray()));
-    }
-
-    private static Map<String, String> getStartMarker(CandidateDao dao) {
-        return Map.of("PrimaryKeyRangeKey", dao.primaryKeyRangeKey(),
-                      "PrimaryKeyHashKey", dao.primaryKeyHashKey(),
-                      "SearchByYearHashKey", String.valueOf(dao.searchByYearHashKey()),
-                      "SearchByYearRangeKey", dao.searchByYearSortKey());
     }
 }

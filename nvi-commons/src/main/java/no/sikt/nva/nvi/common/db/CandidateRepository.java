@@ -101,8 +101,8 @@ public class CandidateRepository extends DynamoRepository {
                        .orElse(Page.create(emptyList()));
 
         return new ListingResultWithCandidates(thereAreMorePagesToScan(page),
-                                               nonNull(page.lastEvaluatedKey()) ?
-                                                   toStringMap(page.lastEvaluatedKey()) : emptyMap(),
+                                               nonNull(page.lastEvaluatedKey())
+                                                   ? toStringMap(page.lastEvaluatedKey()) : emptyMap(),
                                                page.items().size(),
                                                page.items());
     }

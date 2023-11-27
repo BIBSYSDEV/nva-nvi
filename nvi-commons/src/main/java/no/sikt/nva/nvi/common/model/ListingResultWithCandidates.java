@@ -8,8 +8,9 @@ public class ListingResultWithCandidates extends ListingResult {
 
     private final List<CandidateDao> candidates;
 
-    public ListingResultWithCandidates(boolean shouldContinueScan, Map<String, String> startMarker, int totalItem, List<CandidateDao> candidates) {
-          super(shouldContinueScan, startMarker, totalItem);
+    public ListingResultWithCandidates(boolean shouldContinueScan, Map<String, String> startMarker, int totalItem,
+                                       List<CandidateDao> candidates) {
+        super(shouldContinueScan, startMarker, totalItem);
         this.candidates = candidates;
     }
 

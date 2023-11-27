@@ -3,11 +3,14 @@ package no.sikt.nva.nvi.events.evaluator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
+import software.amazon.awssdk.services.sqs.model.SendMessageBatchResponse;
+import software.amazon.awssdk.services.sqs.model.SendMessageBatchResultEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
@@ -31,7 +34,7 @@ public class FakeSqsClient implements QueueClient<NviSendMessageResponse> {
         var request = createRequest(message, queueUrl);
         sentMessages.add(request);
         return createResponse(SendMessageResponse.builder()
-                                  .messageId(request.messageDeduplicationId())
+                                  .messageId(UUID.randomUUID().toString())
                                   .build());
     }
 
@@ -39,7 +42,7 @@ public class FakeSqsClient implements QueueClient<NviSendMessageResponse> {
     public NviSendMessageResponse sendMessageBatch(Collection<String> messages, String queueUrl) {
         var request = createBatchRequest(messages, queueUrl);
         sentBatches.add(request);
-        return createResponse(SendMessageResponse.builder().build());
+        return createResponse(SendMessageBatchResponse.builder().build());
     }
 
     private SendMessageBatchRequest createBatchRequest(Collection<String> messages, String queueUrl) {
@@ -65,6 +68,10 @@ public class FakeSqsClient implements QueueClient<NviSendMessageResponse> {
     }
 
     private NviSendMessageResponse createResponse(SendMessageResponse response) {
-        return new NviSendMessageResponse(response.messageId());
+        return new NviSendMessageResponse(List.of(response.messageId()));
+    }
+
+    private NviSendMessageResponse createResponse(SendMessageBatchResponse response) {
+        return new NviSendMessageResponse(response.successful().stream().map(SendMessageBatchResultEntry::id).toList());
     }
 }
