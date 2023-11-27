@@ -46,6 +46,7 @@ dependencies {
 test {
     useJUnitPlatform()
     environment("OUTPUT_EVENT_TOPIC", "someTopic")
+    environment("TOPIC_REEVALUATE_CANDIDATES", "someTopic")
     environment("EVENT_BUS_NAME", "someEvent")
     environment "API_HOST", "api.dev.nva.aws.unit.no"
     environment("SEARCH_INFRASTRUCTURE_API_HOST", "localhost")

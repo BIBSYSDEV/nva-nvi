@@ -5,8 +5,10 @@ import static no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus.APPROVED;
 import static no.sikt.nva.nvi.common.db.PeriodStatus.Status.CLOSED_PERIOD;
 import static no.sikt.nva.nvi.common.db.PeriodStatus.Status.NO_PERIOD;
 import static no.sikt.nva.nvi.common.db.PeriodStatus.Status.OPEN_PERIOD;
+import static no.sikt.nva.nvi.test.TestUtils.createNumberOfCandidatesForYear;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
+import static no.sikt.nva.nvi.test.TestUtils.getYearIndexStartMarker;
 import static no.sikt.nva.nvi.test.TestUtils.nviServiceReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.nviServiceReturningNotStartedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
@@ -15,10 +17,13 @@ import static no.sikt.nva.nvi.test.TestUtils.randomCandidateWithPublicationYear;
 import static no.sikt.nva.nvi.test.TestUtils.randomInstanceType;
 import static no.sikt.nva.nvi.test.TestUtils.randomInstanceTypeExcluding;
 import static no.sikt.nva.nvi.test.TestUtils.randomPublicationDate;
+import static no.sikt.nva.nvi.test.TestUtils.randomYear;
+import static no.sikt.nva.nvi.test.TestUtils.sortByIdentifier;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -26,6 +31,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -69,6 +75,43 @@ public class NviServiceTest extends LocalDynamoTest {
     private static final int SECOND_ROW = 1;
     private NviService nviService;
     private CandidateRepositoryHelper candidateRepository;
+
+    @Test
+    public void shouldWriteVersionOnRefreshWhenStartMarkerIsNotSet() {
+        var originalCandidate = randomCandidate();
+        var candidate = candidateRepository.create(originalCandidate, List.of());
+        var original = candidateRepository.findDaoById(candidate.identifier());
+        var result = nviService.refresh(10, null);
+        var modified = candidateRepository.findDaoById(candidate.identifier());
+        assertThat(modified.version(), is(not(equalTo(original.version()))));
+        assertThat(result.getStartMarker().size(), is(equalTo(0)));
+        assertThat(result.getTotalItemCount(), is(equalTo(1)));
+        assertThat(result.shouldContinueScan(), is(equalTo(false)));
+    }
+
+    @Test
+    public void refreshVersionShouldContinue() {
+        IntStream.range(0, 3).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
+
+        var result = nviService.refresh(1, null);
+        assertThat(result.shouldContinueScan(), is(equalTo(true)));
+    }
+
+    @Test
+    public void shouldWriteVersionOnRefreshWithStartMarker() {
+        IntStream.range(0, 2).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
+
+        var candidates = getCandidatesInOrder();
+
+        var originalRows = getCandidateDaos(candidates);
+
+        nviService.refresh(1000, getStartMarker(originalRows.get(FIRST_ROW)));
+
+        var modifiedRows = getCandidateDaos(candidates);
+
+        assertThat(modifiedRows.get(FIRST_ROW).version(), is(equalTo(originalRows.get(FIRST_ROW).version())));
+        assertThat(modifiedRows.get(SECOND_ROW).version(), is(not(equalTo(originalRows.get(SECOND_ROW).version()))));
+    }
 
     @BeforeEach
     void setup() {
@@ -490,45 +533,28 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
-    public void shouldWriteVersionOnRefreshWhenStartMarkerIsNotSet() {
-        var originalCandidate = randomCandidate();
-        var candidate = candidateRepository.create(originalCandidate, List.of());
-        var original = candidateRepository.findDaoById(candidate.identifier());
-        var result = nviService.refresh(10, null);
-        var modified = candidateRepository.findDaoById(candidate.identifier());
-        assertThat(modified.version(), is(not(equalTo(original.version()))));
-        assertThat(result.startMarker().size(), is(equalTo(0)));
-        assertThat(result.totalItem(), is(equalTo(1)));
-        assertThat(result.shouldContinueScan(), is(equalTo(false)));
+    void shouldFetchCandidatesByGivenYearAndStartMarker() {
+        var year = randomYear();
+        var candidates = createNumberOfCandidatesForYear(year, 2, candidateRepository);
+        var expectedCandidates = sortByIdentifier(candidates, null);
+        var firstCandidateInIndex = expectedCandidates.get(0);
+        var secondCandidateInIndex = expectedCandidates.get(1);
+        var startMarker = getYearIndexStartMarker(firstCandidateInIndex);
+        var results = nviService.fetchCandidatesByYear(year, null, startMarker).getCandidates();
+        assertThat(results.size(), is(equalTo(1)));
+        assertEquals(secondCandidateInIndex, results.get(0));
     }
 
     @Test
-    public void refreshVersionShouldContinue() {
-        IntStream.range(0, 3).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
-
-        var result = nviService.refresh(1, null);
-        assertThat(result.shouldContinueScan(), is(equalTo(true)));
-    }
-
-    @Test
-    public void shouldWriteVersionOnRefreshWithStartMarker() {
-        IntStream.range(0, 2).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
-
-        var candidates = getCandidatesInOrder();
-
-        var originalRows = getCandidateDaos(candidates);
-
-        nviService.refresh(1000, getStartMarker(originalRows.get(FIRST_ROW)));
-
-        var modifiedRows = getCandidateDaos(candidates);
-
-        assertThat(modifiedRows.get(FIRST_ROW).version(), is(equalTo(originalRows.get(FIRST_ROW).version())));
-        assertThat(modifiedRows.get(SECOND_ROW).version(), is(not(equalTo(originalRows.get(SECOND_ROW).version()))));
-    }
-
-    private List<CandidateDao> getCandidateDaos(List<Map<String, AttributeValue>> candidates) {
-        return Arrays.asList(candidateRepository.findDaoById(getIdentifier(candidates, 0)),
-                             candidateRepository.findDaoById(getIdentifier(candidates, 1)));
+    void shouldFetchCandidatesByGivenYearAndPageSize() {
+        var searchYear = randomYear();
+        var candidates = createNumberOfCandidatesForYear(searchYear, 10, candidateRepository);
+        createNumberOfCandidatesForYear(randomYear(), 10, candidateRepository);
+        int pageSize = 5;
+        var expectedCandidates = sortByIdentifier(candidates, pageSize);
+        var results = nviService.fetchCandidatesByYear(searchYear, pageSize, null).getCandidates();
+        assertThat(results.size(), is(equalTo(pageSize)));
+        assertThat(expectedCandidates, containsInAnyOrder(results.toArray()));
     }
 
     private static Map<String, String> getStartMarker(CandidateDao dao) {
@@ -543,27 +569,6 @@ public class NviServiceTest extends LocalDynamoTest {
 
     private static UUID getIdentifier(List<Map<String, AttributeValue>> candidates, int index) {
         return UUID.fromString(candidates.get(index).get("identifier").s());
-    }
-
-    private List<Map<String, AttributeValue>> getCandidatesInOrder() {
-        return localDynamo.scan(ScanRequest.builder().tableName(ApplicationConstants.NVI_TABLE_NAME).build())
-                   .items()
-                   .stream()
-                   .filter(a -> a.get("type").s().equals("CANDIDATE"))
-                   .toList();
-    }
-
-    public static class CandidateRepositoryHelper extends CandidateRepository {
-
-        public CandidateRepositoryHelper(DynamoDbClient client) {
-            super(client);
-        }
-
-        public CandidateDao findDaoById(UUID id) {
-            return Optional.of(CandidateDao.builder().identifier(id).build())
-                       .map(candidateTable::getItem)
-                       .orElseThrow();
-        }
     }
 
     private static UUID getNoteIdentifier(Candidate candidateWith2Notes, Username user) {
@@ -629,6 +634,19 @@ public class NviServiceTest extends LocalDynamoTest {
                    .toList();
     }
 
+    private List<CandidateDao> getCandidateDaos(List<Map<String, AttributeValue>> candidates) {
+        return Arrays.asList(candidateRepository.findDaoById(getIdentifier(candidates, 0)),
+                             candidateRepository.findDaoById(getIdentifier(candidates, 1)));
+    }
+
+    private List<Map<String, AttributeValue>> getCandidatesInOrder() {
+        return localDynamo.scan(ScanRequest.builder().tableName(ApplicationConstants.NVI_TABLE_NAME).build())
+                   .items()
+                   .stream()
+                   .filter(a -> a.get("type").s().equals("CANDIDATE"))
+                   .toList();
+    }
+
     private DbCandidate createExpectedCandidate(UUID identifier, List<DbCreator> creators, InstanceType instanceType,
                                                 DbLevel level, DbPublicationDate publicationDate,
                                                 Map<URI, BigDecimal> institutionPoints, boolean applicable) {
@@ -642,5 +660,18 @@ public class NviServiceTest extends LocalDynamoTest {
                    .publicationDate(publicationDate)
                    .points(mapToInstitutionPoints(institutionPoints))
                    .build();
+    }
+
+    public static class CandidateRepositoryHelper extends CandidateRepository {
+
+        public CandidateRepositoryHelper(DynamoDbClient client) {
+            super(client);
+        }
+
+        public CandidateDao findDaoById(UUID id) {
+            return Optional.of(CandidateDao.builder().identifier(id).build())
+                       .map(candidateTable::getItem)
+                       .orElseThrow();
+        }
     }
 }

@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.common.queue;
 
-public record NviSendMessageResponse(String messageId) {
+import java.util.List;
+
+public record NviSendMessageResponse(List<String> messageIds) {
 
 }

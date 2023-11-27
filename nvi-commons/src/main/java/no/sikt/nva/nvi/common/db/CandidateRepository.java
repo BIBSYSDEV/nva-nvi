@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.db;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toMap;
@@ -27,6 +28,7 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.model.ListingResult;
+import no.sikt.nva.nvi.common.model.ListingResultWithCandidates;
 import no.sikt.nva.nvi.common.service.Candidate;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -91,12 +93,14 @@ public class CandidateRepository extends DynamoRepository {
         return new ListingResult(thereAreMorePagesToScan(scan), toStringMap(scan.lastEvaluatedKey()), count);
     }
 
-    public List<CandidateDao> fetchCandidatesByYear(int year, Integer pageSize, Map<String, String> startMarker) {
-        return this.yearIndex.query(createQuery(year, pageSize, startMarker))
-                   .stream()
-                   .findFirst()
-                   .map(Page::items)
-                   .orElse(emptyList());
+    public ListingResultWithCandidates fetchCandidatesByYear(String year,
+                                                             Integer pageSize, Map<String, String> startMarker) {
+        var page = queryYearIndex(year, pageSize, startMarker);
+        return new ListingResultWithCandidates(thereAreMorePagesToScan(page),
+                                               nonNull(page.lastEvaluatedKey())
+                                                   ? toStringMap(page.lastEvaluatedKey()) : emptyMap(),
+                                               page.items().size(),
+                                               page.items());
     }
 
     public Candidate create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
@@ -259,8 +263,8 @@ public class CandidateRepository extends DynamoRepository {
                    .collect(toMap(Map.Entry::getKey, e -> AttributeValue.builder().s(e.getValue()).build()));
     }
 
-    private static Map<String, String> toStringMap(Map<String, AttributeValue> startMarker) {
-        return startMarker.entrySet()
+    private static Map<String, String> toStringMap(Map<String, AttributeValue> lastEvaluatedKey) {
+        return lastEvaluatedKey.entrySet()
                    .stream()
                    .collect(toMap(Map.Entry::getKey, e -> e.getValue().s()));
     }
@@ -316,12 +320,19 @@ public class CandidateRepository extends DynamoRepository {
                    .build();
     }
 
-    private QueryEnhancedRequest createQuery(int year, Integer pageSize, Map<String, String> startMarker) {
+    private Page<CandidateDao> queryYearIndex(String year, Integer pageSize, Map<String, String> startMarker) {
+        return this.yearIndex.query(createQuery(year, pageSize, startMarker))
+                   .stream()
+                   .findFirst()
+                   .orElse(Page.create(emptyList()));
+    }
+
+    private QueryEnhancedRequest createQuery(String year, Integer pageSize, Map<String, String> startMarker) {
         var start = nonNull(startMarker) ? toAttributeMap(startMarker) : null;
         var limit = nonNull(pageSize) ? pageSize : DEFAULT_PAGE_SIZE;
         return QueryEnhancedRequest.builder()
                    .queryConditional(keyEqualTo(Key.builder()
-                                                    .partitionValue(String.valueOf(year))
+                                                    .partitionValue(year)
                                                     .build()))
                    .limit(limit)
                    .exclusiveStartKey(start)
@@ -333,6 +344,10 @@ public class CandidateRepository extends DynamoRepository {
         mutableMap.put(DynamoEntryWithRangeKey.VERSION_FIELD_NAME,
                        AttributeValue.builder().s(randomUUID().toString()).build());
         return mutableMap;
+    }
+
+    private boolean thereAreMorePagesToScan(Page<CandidateDao> page) {
+        return nonNull(page) && nonNull(page.lastEvaluatedKey()) && !page.lastEvaluatedKey().isEmpty();
     }
 
     private boolean thereAreMorePagesToScan(ScanResponse scanResult) {
