@@ -562,6 +562,7 @@ Resources:
         Variables:
           EVENT_BUS_NAME: !GetAtt InternalBus.Name
           TOPIC_REEVALUATE_CANDIDATES: 'NviService.ReEvaluate'
+          PERSISTED_RESOURCE_QUEUE_URL: !Ref PersistedResourceQueue
       Events:
         EventBridgeEvent:
           Type: EventBridgeRule
