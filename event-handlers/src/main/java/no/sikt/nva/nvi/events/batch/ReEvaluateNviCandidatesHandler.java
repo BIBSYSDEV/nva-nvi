@@ -21,6 +21,8 @@ import no.unit.nva.events.handlers.EventHandler;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
@@ -28,11 +30,14 @@ import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
 public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateRequest, Void> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReEvaluateNviCandidatesHandler.class);
+    private static final String QUERY_STARTING_POINT_MSG = "Query starting point: {}";
+    private static final String RESULT_MSG = "Batch result startMarker: {}, totalItemCount: {}, shouldContinueScan: {}";
+    private static final String OUTPUT_EVENT_TOPIC = "TOPIC_REEVALUATE_CANDIDATES";
     private static final int BATCH_SIZE = 10;
     private static final String PERSISTED_RESOURCE_QUEUE_URL = "PERSISTED_RESOURCE_QUEUE_URL";
     private static final String EVENT_BUS_NAME = "EVENT_BUS_NAME";
     private static final String INVALID_INPUT_MSG = "Invalid request. Field year is required";
-    public static final String OUTPUT_EVENT_TOPIC = "TOPIC_REEVALUATE_CANDIDATES";
     private static final String TOPIC = new Environment().readEnv(OUTPUT_EVENT_TOPIC);
     private final QueueClient<NviSendMessageResponse> queueClient;
     private final NviService nviService;
@@ -59,12 +64,18 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
     protected Void processInput(ReEvaluateRequest input, AwsEventBridgeEvent<ReEvaluateRequest> event,
                                 Context context) {
         validateInput(input);
+        LOGGER.info(QUERY_STARTING_POINT_MSG, input.startMarker());
         var result = getListingResultWithCandidates(input);
+        logResult(result);
         splitIntoBatches(mapToFileUris(result)).forEach(fileUriList -> sendBatch(createMessages(fileUriList)));
         if (result.shouldContinueScan()) {
             sendEventToInvokeNewReEvaluateExecution(input, context, result);
         }
         return null;
+    }
+
+    private static void logResult(ListingResultWithCandidates result) {
+        LOGGER.info(RESULT_MSG, result.getStartMarker(), result.getTotalItemCount(), result.shouldContinueScan());
     }
 
     @JacocoGenerated

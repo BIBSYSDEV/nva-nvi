@@ -53,7 +53,7 @@ public record ReEvaluateRequest(@JsonProperty(PAGE_SIZE_FIELD) Integer pageSize,
                    .build();
     }
 
-    private String toJsonString() {
+    public String toJsonString() {
         return attempt(() -> dtoObjectMapper.writeValueAsString(this)).orElseThrow();
     }
 

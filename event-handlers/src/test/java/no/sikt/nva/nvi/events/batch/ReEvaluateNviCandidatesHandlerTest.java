@@ -6,8 +6,12 @@ import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.sortByIdentifier;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsEmptyCollection.empty;
+import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -31,6 +35,8 @@ import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
 class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
 
@@ -92,6 +98,16 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldConsumeEventsFromEventBridgeTopic() {
+        pushInitialEntryInEventBridge(createRequest(randomYear()));
+        while (thereAreMoreEventsInEventBridge()) {
+            var currentRequest = consumeLatestEmittedEvent();
+            handler.handleRequest(eventToInputStream(currentRequest), outputStream, context);
+        }
+        assertThat(eventBridgeClient.getRequestEntries(), is(empty()));
+    }
+
+    @Test
     void shouldEmitNewEventWhenBatchIsNotComplete() {
         var numberOfCandidates = 10;
         var pageSize = 5;
@@ -118,6 +134,31 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
 
     private static ReEvaluateRequest emptyRequest() {
         return ReEvaluateRequest.builder().build();
+    }
+
+    private boolean thereAreMoreEventsInEventBridge() {
+        return !eventBridgeClient.getRequestEntries().isEmpty();
+    }
+
+    private ReEvaluateRequest consumeLatestEmittedEvent() {
+        var allRequests = eventBridgeClient.getRequestEntries();
+        var latest = allRequests.remove(allRequests.size() - 1);
+        return attempt(() -> ReEvaluateRequest.fromJson(latest.detail())).orElseThrow();
+    }
+
+    private InputStream eventToInputStream(ReEvaluateRequest request) {
+        var event = new AwsEventBridgeEvent<ReEvaluateRequest>();
+        event.setAccount(randomString());
+        event.setVersion(randomString());
+        event.setSource(randomString());
+        event.setRegion(randomElement(Region.regions()));
+        event.setDetail(request);
+        return IoUtils.stringToStream(event.toJsonString());
+    }
+
+    private void pushInitialEntryInEventBridge(ReEvaluateRequest request) {
+        var entry = PutEventsRequestEntry.builder().detail(request.toJsonString()).build();
+        eventBridgeClient.getRequestEntries().add(entry);
     }
 
     private ReEvaluateRequest getEmittedEvent() {
