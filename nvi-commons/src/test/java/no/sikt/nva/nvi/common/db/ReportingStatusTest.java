@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common;
+package no.sikt.nva.nvi.common.db;
 
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;

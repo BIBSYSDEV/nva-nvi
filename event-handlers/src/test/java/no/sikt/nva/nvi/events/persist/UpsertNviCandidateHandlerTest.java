@@ -53,9 +53,9 @@ import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
+import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
+import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto.Status;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -194,11 +194,11 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                             .orElseThrow();
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, DbStatus.APPROVED, randomString(), randomString()));
-        var approval = candidate.toDto().approvalStatuses().get(0);
+        var approval = candidate.toDto().approvals().get(0);
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest, institutionId);
         var updatedCandidate = Candidate.fromRequest(newUpsertRequest, candidateRepository, periodRepository)
                                    .orElseThrow();
-        var updatedApproval = updatedCandidate.toDto().approvalStatuses().get(0);
+        var updatedApproval = updatedCandidate.toDto().approvals().get(0);
 
         assertThat(updatedApproval, is(equalTo(approval)));
     }
@@ -332,10 +332,10 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private ApprovalStatus mapToApprovalStatus(Entry<URI, BigDecimal> e) {
-        return ApprovalStatus.builder()
+    private ApprovalDto mapToApprovalStatus(Entry<URI, BigDecimal> e) {
+        return ApprovalDto.builder()
                    .withInstitutionId(e.getKey())
-                   .withStatus(NviApprovalStatus.PENDING)
+                   .withStatus(ApprovalStatus.PENDING)
                    .withPoints(e.getValue())
                    .build();
     }

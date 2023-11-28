@@ -33,10 +33,10 @@ import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
-import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
+import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
-import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
+import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
@@ -460,13 +460,13 @@ public final class Candidate {
         return this.notes.values().stream().map(Note::toDto).toList();
     }
 
-    private List<ApprovalStatus> mapToApprovalDtos() {
+    private List<ApprovalDto> mapToApprovalDtos() {
         return approvals.values().stream().map(this::mapToApprovalDto).toList();
     }
 
-    private ApprovalStatus mapToApprovalDto(Approval bo) {
+    private ApprovalDto mapToApprovalDto(Approval bo) {
         var approval = bo.approval().approvalStatus();
-        return ApprovalStatus.builder()
+        return ApprovalDto.builder()
                    .withInstitutionId(approval.institutionId())
                    .withStatus(mapToNviApprovalStatus(approval.status()))
                    .withAssignee(mapToUsernameString(approval.assignee()))
@@ -478,11 +478,11 @@ public final class Candidate {
     }
 
     @JacocoGenerated //TODO bug when no need for default
-    private NviApprovalStatus mapToNviApprovalStatus(DbStatus status) {
+    private ApprovalStatus mapToNviApprovalStatus(DbStatus status) {
         return switch (status) {
-            case APPROVED -> NviApprovalStatus.APPROVED;
-            case PENDING -> NviApprovalStatus.PENDING;
-            case REJECTED -> NviApprovalStatus.REJECTED;
+            case APPROVED -> ApprovalStatus.APPROVED;
+            case PENDING -> ApprovalStatus.PENDING;
+            case REJECTED -> ApprovalStatus.REJECTED;
         };
     }
 }

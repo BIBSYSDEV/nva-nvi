@@ -142,7 +142,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         handler.handleRequest(createRequest(candidate, assignee), output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
-        assertThat(response.getBodyObject(CandidateDto.class).approvalStatuses().get(0).assignee(),
+        assertThat(response.getBodyObject(CandidateDto.class).approvals().get(0).assignee(),
                    is(equalTo(assignee)));
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
     }
@@ -156,7 +156,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         handler.handleRequest(createRequest(candidate, null), output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
-        assertThat(response.getBodyObject(CandidateDto.class).approvalStatuses().get(0).assignee(),
+        assertThat(response.getBodyObject(CandidateDto.class).approvals().get(0).assignee(),
                    is(nullValue()));
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
     }
@@ -170,7 +170,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         var response =
             GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
-        assertThat(response.getBodyObject(CandidateDto.class).approvalStatuses().get(0).assignee(),
+        assertThat(response.getBodyObject(CandidateDto.class).approvals().get(0).assignee(),
                    is(equalTo(newAssignee)));
     }
 
@@ -191,7 +191,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     }
 
     private InputStream createRequest(Candidate candidate, String newAssignee) throws JsonProcessingException {
-        var approvalToUpdate = candidate.toDto().approvalStatuses().get(0);
+        var approvalToUpdate = candidate.toDto().approvals().get(0);
         var requestBody = new ApprovalDto(newAssignee, approvalToUpdate.institutionId());
         var customerId = randomUri();
         return new HandlerRequestBuilder<ApprovalDto>(JsonUtils.dtoObjectMapper).withBody(randomAssigneeRequest())
@@ -207,7 +207,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     private InputStream createRequestWithNonExistingCandidate() throws JsonProcessingException {
         var approvalToUpdate =
             Candidate.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository, periodRepository)
-                .orElseThrow().toDto().approvalStatuses().get(0);
+                .orElseThrow().toDto().approvals().get(0);
         var requestBody = new ApprovalDto(randomString(), approvalToUpdate.institutionId());
         var customerId = randomUri();
         return new HandlerRequestBuilder<ApprovalDto>(JsonUtils.dtoObjectMapper).withBody(randomAssigneeRequest())

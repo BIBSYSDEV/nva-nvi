@@ -13,7 +13,7 @@ public record CandidateDto(
     URI id,
     UUID identifier,
     URI publicationId,
-    List<ApprovalStatus> approvalStatuses,
+    List<ApprovalDto> approvals,
     BigDecimal totalPoints,
     List<NoteDto> notes,
     PeriodStatusDto periodStatus) {
@@ -27,7 +27,7 @@ public record CandidateDto(
         private URI id;
         private UUID identifier;
         private URI publicationId;
-        private List<ApprovalStatus> approvalStatuses;
+        private List<ApprovalDto> approvalDtos;
         private BigDecimal totalPoints;
         private List<NoteDto> notes;
         private PeriodStatusDto periodStatus;
@@ -50,8 +50,8 @@ public record CandidateDto(
             return this;
         }
 
-        public Builder withApprovalStatuses(List<ApprovalStatus> approvalStatuses) {
-            this.approvalStatuses = approvalStatuses;
+        public Builder withApprovalStatuses(List<ApprovalDto> approvalDtos) {
+            this.approvalDtos = approvalDtos;
             return this;
         }
 
@@ -71,7 +71,7 @@ public record CandidateDto(
         }
 
         public CandidateDto build() {
-            return new CandidateDto(id, identifier, publicationId, approvalStatuses, totalPoints,
+            return new CandidateDto(id, identifier, publicationId, approvalDtos, totalPoints,
                                     notes, periodStatus);
         }
     }

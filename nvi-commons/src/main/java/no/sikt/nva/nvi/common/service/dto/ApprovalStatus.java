@@ -1,75 +1,31 @@
 package no.sikt.nva.nvi.common.service.dto;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.math.BigDecimal;
-import java.net.URI;
-import java.time.Instant;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Arrays;
+import nva.commons.core.JacocoGenerated;
 
-@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-@JsonSerialize
-public record ApprovalStatus(URI institutionId,
-                             NviApprovalStatus status,
-                             BigDecimal points,
-                             String assignee,
-                             String finalizedBy,
-                             Instant finalizedDate,
-                             String reason) {
+@JacocoGenerated
+public enum ApprovalStatus {
 
-    public static Builder builder() {
-        return new Builder();
+    APPROVED("Approved"), PENDING("Pending"), REJECTED("Rejected");
+
+    @JsonValue
+    private final String value;
+
+    ApprovalStatus(String value) {
+        this.value = value;
     }
 
-    public static final class Builder {
+    @JsonCreator
+    public static ApprovalStatus parse(String value) {
+        return Arrays.stream(ApprovalStatus.values())
+                   .filter(status -> status.getValue().equalsIgnoreCase(value))
+                   .findFirst()
+                   .orElseThrow();
+    }
 
-        private URI institutionId;
-        private NviApprovalStatus status;
-        private BigDecimal points;
-        private String assignee;
-        private String finalizedBy;
-        private Instant finalizedDate;
-        private String reason;
-
-        private Builder() {
-        }
-
-        public Builder withInstitutionId(URI institutionId) {
-            this.institutionId = institutionId;
-            return this;
-        }
-
-        public Builder withStatus(NviApprovalStatus status) {
-            this.status = status;
-            return this;
-        }
-
-        public Builder withPoints(BigDecimal points) {
-            this.points = points;
-            return this;
-        }
-
-        public Builder withAssignee(String assignee) {
-            this.assignee = assignee;
-            return this;
-        }
-
-        public Builder withFinalizedBy(String finalizedBy) {
-            this.finalizedBy = finalizedBy;
-            return this;
-        }
-
-        public Builder withFinalizedDate(Instant finalizedDate) {
-            this.finalizedDate = finalizedDate;
-            return this;
-        }
-
-        public Builder withReason(String reason) {
-            this.reason = reason;
-            return this;
-        }
-
-        public ApprovalStatus build() {
-            return new ApprovalStatus(institutionId, status, points, assignee, finalizedBy, finalizedDate, reason);
-        }
+    public String getValue() {
+        return value;
     }
 }

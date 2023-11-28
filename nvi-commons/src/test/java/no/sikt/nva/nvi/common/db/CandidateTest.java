@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common;
+package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomInstanceType;
