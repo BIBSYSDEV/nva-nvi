@@ -33,12 +33,12 @@ public class NviServiceTest extends LocalDynamoTest {
     private static final int FIRST_ROW = 0;
     private static final int SECOND_ROW = 1;
     private NviService nviService;
-    private CandidateRepository candidateRepository;
+    private CandidateRepositoryHelper candidateRepository;
 
     @BeforeEach
     void setup() {
         localDynamo = initializeTestDatabase();
-        candidateRepository = new CandidateRepository(localDynamo);
+        candidateRepository = new CandidateRepositoryHelper(localDynamo);
         nviService = TestUtils.nviServiceReturningOpenPeriod(localDynamo, YEAR);
     }
 
@@ -57,7 +57,7 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
-    void refreshVersionShouldContinue() {
+    public void refreshVersionShouldContinue() {
         IntStream.range(0, 3).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
 
         var result = nviService.refresh(1, null);
@@ -65,7 +65,7 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldWriteVersionOnRefreshWithStartMarker() {
+    public void shouldWriteVersionOnRefreshWithStartMarker() {
         IntStream.range(0, 2).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
 
         var candidates = getCandidatesInOrder();
@@ -189,6 +189,31 @@ public class NviServiceTest extends LocalDynamoTest {
         assertThat(periods, hasSize(2));
     }
 
+    @Test
+    void shouldFetchCandidatesByGivenYearAndStartMarker() {
+        var year = randomYear();
+        var candidates = createNumberOfCandidatesForYear(year, 2, candidateRepository);
+        var expectedCandidates = sortByIdentifier(candidates, null);
+        var firstCandidateInIndex = expectedCandidates.get(0);
+        var secondCandidateInIndex = expectedCandidates.get(1);
+        var startMarker = getYearIndexStartMarker(firstCandidateInIndex);
+        var results = nviService.fetchCandidatesByYear(year, null, startMarker).getCandidates();
+        assertThat(results.size(), is(equalTo(1)));
+        assertEquals(secondCandidateInIndex, results.get(0));
+    }
+
+    @Test
+    void shouldFetchCandidatesByGivenYearAndPageSize() {
+        var searchYear = randomYear();
+        var candidates = createNumberOfCandidatesForYear(searchYear, 10, candidateRepository);
+        createNumberOfCandidatesForYear(randomYear(), 10, candidateRepository);
+        int pageSize = 5;
+        var expectedCandidates = sortByIdentifier(candidates, pageSize);
+        var results = nviService.fetchCandidatesByYear(searchYear, pageSize, null).getCandidates();
+        assertThat(results.size(), is(equalTo(pageSize)));
+        assertThat(expectedCandidates, containsInAnyOrder(results.toArray()));
+    }
+
     private static Map<String, String> getStartMarker(CandidateDao dao) {
         return getStartMarker(dao.primaryKeyHashKey(),
                               dao.primaryKeyHashKey());
@@ -217,8 +242,8 @@ public class NviServiceTest extends LocalDynamoTest {
     }
 
     private List<CandidateDao> getCandidateDaos(List<Map<String, AttributeValue>> candidates) {
-        return Arrays.asList(candidateRepository.findCandidateById(getIdentifier(candidates, 0)).orElseThrow(),
-                             candidateRepository.findCandidateById(getIdentifier(candidates, 1)).orElseThrow());
+        return Arrays.asList(candidateRepository.findDaoById(getIdentifier(candidates, 0)),
+                             candidateRepository.findDaoById(getIdentifier(candidates, 1)));
     }
 
     private List<Map<String, AttributeValue>> getCandidatesInOrder() {
@@ -227,5 +252,33 @@ public class NviServiceTest extends LocalDynamoTest {
                    .stream()
                    .filter(a -> a.get("type").s().equals("CANDIDATE"))
                    .toList();
+    }
+
+    private DbCandidate createExpectedCandidate(UUID identifier, List<DbCreator> creators, InstanceType instanceType,
+                                                DbLevel level, DbPublicationDate publicationDate,
+                                                Map<URI, BigDecimal> institutionPoints, boolean applicable) {
+        return DbCandidate.builder()
+                   .publicationBucketUri(generateS3BucketUri(identifier))
+                   .publicationId(generatePublicationId(identifier))
+                   .creators(creators)
+                   .instanceType(instanceType)
+                   .level(level)
+                   .applicable(applicable)
+                   .publicationDate(publicationDate)
+                   .points(mapToInstitutionPoints(institutionPoints))
+                   .build();
+    }
+
+    public static class CandidateRepositoryHelper extends CandidateRepository {
+
+        public CandidateRepositoryHelper(DynamoDbClient client) {
+            super(client);
+        }
+
+        public CandidateDao findDaoById(UUID id) {
+            return Optional.of(CandidateDao.builder().identifier(id).build())
+                       .map(candidateTable::getItem)
+                       .orElseThrow();
+        }
     }
 }

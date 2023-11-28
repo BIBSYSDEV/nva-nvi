@@ -4,7 +4,6 @@ import static java.util.UUID.randomUUID;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -66,8 +65,6 @@ public final class Candidate {
     private static final PeriodStatus PERIOD_STATUS_NO_PERIOD = PeriodStatus.builder()
                                                                     .withStatus(Status.NO_PERIOD)
                                                                     .build();
-    private static final int POINTS_SCALE = 4;
-    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private final CandidateRepository repository;
     private final UUID identifier;
     private final URI publicationId;
@@ -171,7 +168,6 @@ public final class Candidate {
                    .withApprovalStatuses(mapToApprovalDtos())
                    .withNotes(mapToNoteDtos())
                    .withPeriodStatus(mapToPeriodStatusDto())
-                   .withUndistributedPoints(calculateUndistributedPoints())
                    .withTotalPoints(totalPoints)
                    .build();
     }
@@ -288,7 +284,7 @@ public final class Candidate {
     }
 
     private static boolean levelIsUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(request.level(), existingCandidateDao.candidate().level().getValue());
+        return !Objects.equals(DbLevel.parse(request.level()), existingCandidateDao.candidate().level());
     }
 
     private static Candidate createCandidate(UpsertCandidateRequest request, CandidateRepository repository,
@@ -439,14 +435,6 @@ public final class Candidate {
 
     private static String mapToUsernameString(Username assignee) {
         return assignee != null ? assignee.value() : null;
-    }
-
-    private BigDecimal calculateUndistributedPoints() {
-        return totalPoints.subtract(sumDistributedPoints()).setScale(POINTS_SCALE, ROUNDING_MODE);
-    }
-
-    private BigDecimal sumDistributedPoints() {
-        return institutionPoints.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private void validateNoteOwner(String username, NoteDao dao) {

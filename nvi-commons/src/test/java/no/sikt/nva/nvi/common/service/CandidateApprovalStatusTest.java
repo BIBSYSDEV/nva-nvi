@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeri
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningNotOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.sikt.nva.nvi.test.TestUtils.randomLevelExcluding;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -21,6 +22,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
@@ -100,6 +102,8 @@ public class CandidateApprovalStatusTest extends LocalDynamoTest {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri(), randomUri(), true,
                                                                   InstanceType.ACADEMIC_MONOGRAPH, 1,
                                                                   randomBigDecimal(),
+                                                                  randomLevelExcluding(
+                                                                      DbLevel.NON_CANDIDATE).getVersionOneValue(),
                                                                   institutionId);
         var candidateBO = Candidate.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                               .orElseThrow();
@@ -139,6 +143,8 @@ public class CandidateApprovalStatusTest extends LocalDynamoTest {
         var updateRequest = createUpsertCandidateRequest(candidate.toDto().publicationId(),
                                                          randomUri(), true, InstanceType.ACADEMIC_MONOGRAPH, 2,
                                                          randomBigDecimal(),
+                                                         randomLevelExcluding(DbLevel.NON_CANDIDATE)
+                                                             .getVersionOneValue(),
                                                          randomUri(),
                                                          randomUri(), randomUri());
         var updatedCandidate = Candidate.fromRequest(updateRequest, candidateRepository, periodRepository)
@@ -155,7 +161,7 @@ public class CandidateApprovalStatusTest extends LocalDynamoTest {
         Candidate.fromRequest(createCandidateRequest, candidateRepository, periodRepository);
         var updateRequest = createUpsertCandidateRequest(
             createCandidateRequest.publicationId(), randomUri(), true, InstanceType.ACADEMIC_MONOGRAPH, 2,
-            randomBigDecimal(),
+            randomBigDecimal(), randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
             keepInstitutionId,
             randomUri());
         var updatedCandidate = Candidate.fromRequest(updateRequest, candidateRepository, periodRepository)
@@ -189,7 +195,9 @@ public class CandidateApprovalStatusTest extends LocalDynamoTest {
                               .orElseThrow();
         var updateRequest = createUpsertCandidateRequest(candidateBO.toDto().publicationId(),
                                                          randomUri(), true, InstanceType.NON_CANDIDATE, 2,
-                                                         randomBigDecimal(), randomUri());
+                                                         randomBigDecimal(),
+                                                         randomLevelExcluding(DbLevel.NON_CANDIDATE)
+                                                             .getVersionOneValue(), randomUri());
         assertThrows(InvalidNviCandidateException.class,
                      () -> Candidate.fromRequest(updateRequest, candidateRepository, periodRepository));
     }

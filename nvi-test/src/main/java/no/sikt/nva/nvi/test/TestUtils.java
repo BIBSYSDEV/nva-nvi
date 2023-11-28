@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.test;
 
+import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.db.model.InstanceType.NON_CANDIDATE;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
@@ -17,6 +19,7 @@ import java.time.Year;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,6 +29,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
+import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
@@ -55,12 +59,18 @@ public final class TestUtils {
     public static final int POINTS_SCALE = 4;
     public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     public static final int CURRENT_YEAR = Year.now().getValue();
+    public static final Random RANDOM = new Random();
+    public static final String UUID_SEPERATOR = "-";
     private static final String BUCKET_HOST = "example.org";
     private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
     private static final String PUBLICATION_API_PATH = "publication";
     private static final String API_HOST = "example.com";
 
     private TestUtils() {
+    }
+
+    public static int randomIntBetween(int min, int max) {
+        return RANDOM.nextInt(min, max);
     }
 
     public static DbPublicationDate randomPublicationDate() {
@@ -79,7 +89,7 @@ public final class TestUtils {
 
     public static LocalDate randomLocalDate() {
         var daysBetween = ChronoUnit.DAYS.between(START_DATE, LocalDate.now());
-        var randomDays = new Random().nextInt((int) daysBetween);
+        var randomDays = RANDOM.nextInt((int) daysBetween);
 
         return START_DATE.plusDays(randomDays);
     }
@@ -89,7 +99,7 @@ public final class TestUtils {
                    .publicationId(randomUri())
                    .publicationBucketUri(randomUri())
                    .applicable(applicable)
-                   .instanceType(randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE))
+                   .instanceType(randomInstanceTypeExcluding(NON_CANDIDATE))
                    .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
                    .level(randomElement(DbLevel.values()))
                    .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
@@ -100,20 +110,37 @@ public final class TestUtils {
 
     public static InstanceType randomInstanceType() {
         var instanceTypes = Arrays.stream(InstanceType.values()).toList();
-        return instanceTypes.get(new Random().nextInt(instanceTypes.size()));
+        return instanceTypes.get(RANDOM.nextInt(instanceTypes.size()));
     }
 
     public static InstanceType randomInstanceTypeExcluding(InstanceType instanceType) {
         var instanceTypes = Arrays.stream(InstanceType.values()).filter(type -> !type.equals(instanceType)).toList();
-        return instanceTypes.get(new Random().nextInt(instanceTypes.size()));
+        return instanceTypes.get(RANDOM.nextInt(instanceTypes.size()));
+    }
+
+    public static DbLevel randomLevelExcluding(DbLevel level) {
+        var levels = Arrays.stream(DbLevel.values()).filter(type -> !type.equals(level)).toList();
+        return levels.get(RANDOM.nextInt(levels.size()));
     }
 
     public static String randomYear() {
-        return String.valueOf(randomInteger(3000));
+        return String.valueOf(randomIntBetween(START_DATE.getYear(), LocalDate.now().getYear()));
     }
 
     public static DbCandidate randomCandidate() {
         return randomCandidateBuilder(true).build();
+    }
+
+    private static DbCandidate randomCandidate(String year) {
+        return randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
+    }
+
+    public static List<CandidateDao> createNumberOfCandidatesForYear(String year, int number,
+                                                                     CandidateRepository repository) {
+        return IntStream.range(0, number)
+                   .mapToObj(i -> randomCandidate(year))
+                   .map(candidate -> repository.createDao(candidate, List.of()))
+                   .toList();
     }
 
     public static DbCandidate randomCandidateWithPublicationYear(int year) {
@@ -127,6 +154,21 @@ public final class TestUtils {
                    .modifiedBy(randomUsername())
                    .reportingDate(getNowWithMillisecondAccuracy())
                    .publishingYear(randomYear());
+    }
+
+    public static List<CandidateDao> sortByIdentifier(List<CandidateDao> candidates, Integer limit) {
+        var comparator = Comparator.comparing(TestUtils::getCharacterValues);
+        return candidates.stream()
+                   .sorted(Comparator.comparing(CandidateDao::identifier, comparator))
+                   .limit(nonNull(limit) ? limit : candidates.size())
+                   .toList();
+    }
+
+    public static Map<String, String> getYearIndexStartMarker(CandidateDao dao) {
+        return Map.of("PrimaryKeyRangeKey", dao.primaryKeyRangeKey(),
+                      "PrimaryKeyHashKey", dao.primaryKeyHashKey(),
+                      "SearchByYearHashKey", String.valueOf(dao.searchByYearHashKey()),
+                      "SearchByYearRangeKey", String.valueOf(dao.searchByYearSortKey()));
     }
 
     public static Username randomUsername() {
@@ -214,16 +256,25 @@ public final class TestUtils {
                    .build();
     }
 
+    public static UpsertCandidateRequest createUpsertCandidateRequestWithLevel(String level, URI... institutions) {
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(NON_CANDIDATE),
+                                            1, randomBigDecimal(), level, institutions);
+    }
+
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI... institutions) {
-        return createUpsertCandidateRequest(randomUri(), randomUri(), true, InstanceType.ACADEMIC_MONOGRAPH, 1,
-                                            randomBigDecimal(),
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(NON_CANDIDATE),
+                                            1, randomBigDecimal(),
+                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
                                             institutions);
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
-                                                                      URI publicationBucketUri, boolean isApplicable,
-                                                                      final InstanceType instanceType, int creatorCount,
+                                                                      URI publicationBucketUri,
+                                                                      boolean isApplicable,
+                                                                      InstanceType instanceType,
+                                                                      int creatorCount,
                                                                       BigDecimal totalPoints,
+                                                                      String level,
                                                                       URI... institutions) {
         var creators = IntStream.of(creatorCount)
                            .mapToObj(i -> randomUri())
@@ -236,7 +287,7 @@ public final class TestUtils {
                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null), creators,
                                             instanceType,
                                             randomElement(ChannelType.values()).getValue(), randomUri(),
-                                            DbLevel.LEVEL_TWO, points,
+                                            level, points,
                                             randomInteger(), randomBoolean(),
                                             randomBigDecimal(), randomBigDecimal(), totalPoints);
     }
@@ -248,7 +299,7 @@ public final class TestUtils {
                                                                       Map<URI, List<URI>> creators,
                                                                       InstanceType instanceType,
                                                                       String channelType, URI channelId,
-                                                                      DbLevel level,
+                                                                      String level,
                                                                       Map<URI, BigDecimal> points,
                                                                       final Integer creatorShareCount,
                                                                       final boolean isInternationalCollaboration,
@@ -295,7 +346,7 @@ public final class TestUtils {
 
             @Override
             public String level() {
-                return level.getValue();
+                return level;
             }
 
             @Override
@@ -337,6 +388,14 @@ public final class TestUtils {
 
     public static CreateNoteRequest createNoteRequest(String text, String username) {
         return new CreateNoteRequest(text, username);
+    }
+
+    private static DbPublicationDate publicationDate(String year) {
+        return new DbPublicationDate(year, null, null);
+    }
+
+    private static String getCharacterValues(UUID uuid) {
+        return uuid.toString().replaceAll(UUID_SEPERATOR, "");
     }
 
     private static Instant getNowWithMillisecondAccuracy() {

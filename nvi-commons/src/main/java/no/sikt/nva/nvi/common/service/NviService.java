@@ -6,11 +6,15 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.Objects;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.ListingResult;
+import no.sikt.nva.nvi.common.model.ListingResultWithCandidates;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -62,6 +66,11 @@ public class NviService {
 
     public ListingResult refresh(int pageSize, Map<String, String> startMarker) {
         return candidateRepository.refresh(pageSize, startMarker);
+    }
+
+    public ListingResultWithCandidates fetchCandidatesByYear(String year, Integer pageSize,
+                                                             Map<String, String> startMarker) {
+        return candidateRepository.fetchCandidatesByYear(year, pageSize, startMarker);
     }
 
     private static boolean isInteger(String value) {

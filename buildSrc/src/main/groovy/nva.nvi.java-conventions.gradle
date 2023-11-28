@@ -6,7 +6,6 @@ plugins {
 //    id 'test-report-aggregation'
 }
 
-
 group = 'com.github.bibsysdev'
 
 dependencies {
@@ -21,14 +20,9 @@ dependencies {
 sourceCompatibility = JavaVersion.VERSION_17  // source-code version and must be <= targetCompatibility
 targetCompatibility = JavaVersion.VERSION_17 // bytecode target version
 
-repositories {
-    mavenCentral()
-    maven { url 'https://jitpack.io' }
-}
-
 tasks.named('test') {
     useJUnitPlatform()
-    failFast = true
+    failFast = false
     testLogging {
         events 'skipped', 'passed', 'failed'
     }
@@ -45,14 +39,13 @@ checkstyle {
     configFile = rootProject.resources.text.fromFile('config/checkstyle/checkstyle.xml').asFile()
     showViolations = true
 }
-tasks.withType(Checkstyle) .configureEach{
+tasks.withType(Checkstyle).configureEach {
     reports {
         xml.required
         html.required
         html.stylesheet rootProject.resources.text.fromFile('config/checkstyle/checkstyle-simple.xsl')
     }
 }
-
 
 check.dependsOn jacocoTestCoverageVerification
 jacocoTestCoverageVerification.dependsOn(jacocoTestReport)

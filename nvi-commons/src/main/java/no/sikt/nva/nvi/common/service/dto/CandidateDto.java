@@ -14,7 +14,6 @@ public record CandidateDto(
     UUID identifier,
     URI publicationId,
     List<ApprovalStatus> approvalStatuses,
-    BigDecimal undistributedPoints,
     BigDecimal totalPoints,
     List<NoteDto> notes,
     PeriodStatusDto periodStatus) {
@@ -29,7 +28,6 @@ public record CandidateDto(
         private UUID identifier;
         private URI publicationId;
         private List<ApprovalStatus> approvalStatuses;
-        private BigDecimal undistributedPoints;
         private BigDecimal totalPoints;
         private List<NoteDto> notes;
         private PeriodStatusDto periodStatus;
@@ -57,11 +55,6 @@ public record CandidateDto(
             return this;
         }
 
-        public Builder withUndistributedPoints(BigDecimal undistributedPoints) {
-            this.undistributedPoints = undistributedPoints;
-            return this;
-        }
-
         public Builder withTotalPoints(BigDecimal totalPoints) {
             this.totalPoints = totalPoints;
             return this;
@@ -78,7 +71,7 @@ public record CandidateDto(
         }
 
         public CandidateDto build() {
-            return new CandidateDto(id, identifier, publicationId, approvalStatuses, undistributedPoints, totalPoints,
+            return new CandidateDto(id, identifier, publicationId, approvalStatuses, totalPoints,
                                     notes, periodStatus);
         }
     }

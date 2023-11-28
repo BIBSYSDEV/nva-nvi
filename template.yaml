@@ -44,6 +44,12 @@ Parameters:
   ResourcesBucket:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/PersistedEntriesBucketName
+  PersistedResourceQueueName:
+    Type: String
+    Default: PersistedResourceQueue
+  PersistedResourceDLQName:
+    Type: String
+    Default: PersistedResourceDLQ
   NewCandidateQueueName:
     Type: String
     Default: NewCandidateQueue
@@ -56,6 +62,12 @@ Parameters:
   UpdateIndexDLQName:
     Type: String
     Default: UpdateIndexDLQ
+  UpsertCandidateDLQName:
+    Type: String
+    Default: UpsertCandidateDLQ
+  ReEvaluateDLQName:
+    Type: String
+    Default: ReEvaluateDLQ
   SearchInfrastructureApiHost:
     Type: String
     Description: Host of external search infrastructure API (SWS).
@@ -72,6 +84,9 @@ Parameters:
     Type: String
     Default: ''
     Description: Suffix used for naming resources for feature branches to avoid conflicts.
+  SlackSnsArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: '/NVA/Monitoring/SlackSnsArn'
 
 Conditions:
   WithSuffix: !Not [ !Equals [ !Ref Suffix, '' ] ]
@@ -91,11 +106,14 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref NewCandidateQueueName
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt NewCandidateDLQ.Arn
+        maxReceiveCount: 5
   NewCandidateDLQ:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref NewCandidateDLQName
-      MessageRetentionPeriod: 43200
+      MessageRetentionPeriod: 1209600 #14 days
   BatchScanDLQ:
     Type: AWS::SQS::Queue
     Properties:
@@ -104,7 +122,29 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref UpdateIndexDLQName
-      MessageRetentionPeriod: 43200
+      MessageRetentionPeriod: 1209600 #14 days
+  UpsertCandidateDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref UpsertCandidateDLQName
+      MessageRetentionPeriod: 1209600 #14 days
+  PersistedResourceQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref PersistedResourceQueueName
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt PersistedResourceDLQ.Arn
+        maxReceiveCount: 5
+  PersistedResourceDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref PersistedResourceDLQName
+      MessageRetentionPeriod: 1209600 #14 days
+  ReEvaluateDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref ReEvaluateDLQName
+      MessageRetentionPeriod: 1209600 #14 days
 
   #============================= Permissions =======================================================
   NvaNviRole:
@@ -142,9 +182,13 @@ Resources:
                   - !Ref EventBusArn
                   - !GetAtt InternalBus.Arn
                   - !GetAtt NewCandidateQueue.Arn
+                  - !GetAtt PersistedResourceQueue.Arn
+                  - !GetAtt PersistedResourceDLQ.Arn
                   - !GetAtt NewCandidateDLQ.Arn
                   - !GetAtt BatchScanDLQ.Arn
                   - !GetAtt UpdateIndexDLQ.Arn
+                  - !GetAtt UpsertCandidateDLQ.Arn
+                  - !GetAtt ReEvaluateDLQ.Arn
         - PolicyName: writeLog
           PolicyDocument:
             Version: 2012-10-17
@@ -167,7 +211,9 @@ Resources:
                   - sqs:DeleteMessage
                   - sqs:GetQueueAttributes
                   - sqs:ChangeMessageVisibility
-                Resource: !GetAtt NewCandidateQueue.Arn
+                Resource:
+                  - !GetAtt NewCandidateQueue.Arn
+                  - !GetAtt PersistedResourceQueue.Arn
         - PolicyName: readSecret
           PolicyDocument:
             Version: 2012-10-17
@@ -258,23 +304,19 @@ Resources:
       Stage: !Ref ScientificIndexApi.Stage
 
   #============================= Handlers ==========================================================
-  EvaluateNVICandidateHandler:
+  QueuePersistedResourceHandler:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: nvi-evaluator
-      Handler: no.sikt.nva.nvi.evaluator.EvaluateNviCandidateHandler::handleRequest
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.QueuePersistedResourceHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 30
       MemorySize: 1536
+      AutoPublishAlias: live
       Environment:
         Variables:
-          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
-          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
-          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-          CANDIDATE_QUEUE_URL: !Ref NewCandidateQueue
-          CANDIDATE_DLQ_URL: !Ref NewCandidateDLQ
-      AutoPublishAlias: live
+          PERSISTED_RESOURCE_QUEUE_URL: !Ref PersistedResourceQueue
       Events:
         EventBridgeEvent:
           Type: EventBridgeRule
@@ -286,6 +328,41 @@ Resources:
               detail:
                 responsePayload:
                   topic: [ "PublicationService.ExpandedEntry.Persisted" ]
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt PersistedResourceDLQ.Arn
+
+  EvaluateNVICandidateHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.evaluator.EvaluateNviCandidateHandler::handleRequest
+      Runtime: java17
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 30
+      MemorySize: 1536
+      Environment:
+        Variables:
+          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
+          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
+          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+          CANDIDATE_QUEUE_URL: !Ref NewCandidateQueue
+      AutoPublishAlias: live
+      Events:
+        SqsEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt PersistedResourceQueue.Arn
+            BatchSize: 1
+            #Note: EvaluateNVICandidateHandler is implemented to handle only batch size 1.
+            #Don't change the batch size value, unless you change the implementation.
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt NewCandidateDLQ.Arn
 
   UpdateIndexHandler:
     Type: AWS::Serverless::Function
@@ -293,7 +370,7 @@ Resources:
       Description: 'Listens to DynamoDbStream and creates, modifies and deletes record from nvi-index'
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.UpdateIndexHandler::handleRequest
-      Timeout: 30
+      Timeout: 600
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
@@ -316,11 +393,14 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: event-handlers
-      Handler: no.sikt.nva.nvi.events.UpsertNviCandidateHandler::handleRequest
+      Handler: no.sikt.nva.nvi.events.persist.UpsertNviCandidateHandler::handleRequest
       Timeout: 30
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
+      Environment:
+        Variables:
+          UPSERT_CANDIDATE_DLQ_QUEUE_URL: !Ref UpsertCandidateDLQ
       Events:
         SqsEvent:
           Type: SQS
@@ -410,6 +490,14 @@ Resources:
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
+  InitHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Lambda that creates indices. Needs to be run manually from Test
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.InitHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+
   DeleteNviCandidateIndexHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -460,6 +548,34 @@ Resources:
         Variables:
           EVENT_BUS_NAME: !GetAtt InternalBus.Name
           OUTPUT_EVENT_TOPIC: 'NviService.BatchScan'
+  
+  ReEvaluateNviCandidatesHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.batch.ReEvaluateNviCandidatesHandler::handleRequest
+      Runtime: java17
+      Timeout: 60
+      Role: !GetAtt NvaNviRole.Arn
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          EVENT_BUS_NAME: !GetAtt InternalBus.Name
+          TOPIC_REEVALUATE_CANDIDATES: 'NviService.ReEvaluate'
+          PERSISTED_RESOURCE_QUEUE_URL: !Ref PersistedResourceQueue
+      Events:
+        EventBridgeEvent:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !GetAtt InternalBus.Name
+            Pattern:
+              detail:
+                topic: [ "NviService.ReEvaluate" ]
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt ReEvaluateDLQ.Arn
 
   # ======================= API HANDLERS ========================
 
@@ -480,6 +596,26 @@ Resources:
           Type: Api
           Properties:
             Path: /candidate/{candidateIdentifier}
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+
+  FetchNviCandidateByPublicationIdHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.fetch.FetchNviCandidateByPublicationIdHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /candidate/publication/{candidatePublicationId+}
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
@@ -572,6 +708,26 @@ Resources:
             Method: delete
             RestApiId: !Ref ScientificIndexApi
 
+  FetchReportHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.fetch.FetchReportHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /report/{institutionId}
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+
   #============================= Database =========================================================
   NvaNviTable:
     Type: AWS::DynamoDB::Table
@@ -591,6 +747,10 @@ Resources:
           AttributeType: S
         - AttributeName: SecondaryIndex1RangeKey
           AttributeType: S
+        - AttributeName: SearchByYearHashKey
+          AttributeType: S
+        - AttributeName: SearchByYearRangeKey
+          AttributeType: S
       KeySchema:
         - AttributeName: PrimaryKeyHashKey
           KeyType: HASH
@@ -605,5 +765,83 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
+        - IndexName: SearchByYear
+          KeySchema:
+            - AttributeName: SearchByYearHashKey
+              KeyType: HASH
+            - AttributeName: SearchByYearRangeKey
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
       StreamSpecification:
         StreamViewType: NEW_AND_OLD_IMAGES
+
+  #============================= Alarms =========================================================
+
+  BatchScanDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=BatchScanDLQ
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt BatchScanDLQ.QueueName
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  NewCandidateDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=NewCandidateDLQ
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt NewCandidateDLQ.QueueName
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  UpdateIndexDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=UpdateIndexDLQ
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt UpdateIndexDLQ.QueueName
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  UpsertCandidateDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=UpsertCandidateDLQ
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt UpsertCandidateDLQ.QueueName
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn

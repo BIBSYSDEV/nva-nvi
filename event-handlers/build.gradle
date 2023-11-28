@@ -8,34 +8,55 @@ dependencies {
     implementation libs.nva.json
     implementation libs.nva.core
     implementation libs.nva.eventhandlers
+    implementation libs.nva.s3
+    implementation libs.nva.commons.core
+    implementation libs.nva.commons.auth
+    implementation libs.nva.commons.secrets
 
     implementation libs.aws.lambda.java.core
     implementation libs.aws.lambda.events
+
+    implementation libs.aws.java.sdk.core
+
     implementation libs.aws.sdk2.sqs
+    implementation libs.aws.sdk2.s3
     implementation libs.aws.sdk2.eventbridge
     implementation libs.aws.sdk2.dynamodb
     implementation libs.aws.sdk2.urlconnectionclient
+    implementation libs.aws.sdk2.secrets
+    implementation libs.aws.sdk2.core
+    implementation libs.aws.sdk2.urlconnection
+
 
     implementation libs.jackson.core
     implementation libs.jackson.databind
 
     implementation libs.bundles.logging
+    implementation libs.bundles.jena
     testImplementation project(':nvi-test')
 
+    testImplementation libs.nva.testutils
     testImplementation(group: 'com.amazonaws', name: 'DynamoDBLocal', version: '1.19.0') {
         exclude group: 'com.amazonaws', module: 'aws-java-sdk-dynamodb'
         exclude group: 'com.amazonaws', module: 'aws-java-sdk-core'
     }
+    testImplementation project(':nvi-test')
 }
 
 test {
     useJUnitPlatform()
-    environment ("OUTPUT_EVENT_TOPIC", "someTopic")
-    environment ("EVENT_BUS_NAME", "someEvent")
-    environment ("API_HOST", "example.org")
+    environment("OUTPUT_EVENT_TOPIC", "someTopic")
+    environment("TOPIC_REEVALUATE_CANDIDATES", "someTopic")
+    environment("EVENT_BUS_NAME", "someEvent")
+    environment "API_HOST", "api.dev.nva.aws.unit.no"
     environment("SEARCH_INFRASTRUCTURE_API_HOST", "localhost")
     environment("SEARCH_INFRASTRUCTURE_AUTH_URI", "localhost")
     environment("SEARCH_INFRASTRUCTURE_API_URI", "localhost")
     environment("NVI_TABLE_NAME", "some-table")
-    environment ("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
+    environment("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
+    environment("UPSERT_CANDIDATE_DLQ_QUEUE_URL", "UpsertCandidateDLQ")
+    environment("PERSISTED_RESOURCE_QUEUE_URL", "PersistedResourceQueue")
+    environment "EXPANDED_RESOURCES_BUCKET", "ignoredBucket"
+    environment "BACKEND_CLIENT_AUTH_URL", "My url"
+    environment "BACKEND_CLIENT_SECRET_NAME", "My secret name"
 }

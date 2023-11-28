@@ -59,6 +59,7 @@ import org.apache.http.HttpHost;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -78,6 +79,7 @@ public class OpenSearchClientTest {
     private static final OpensearchContainer container = new OpensearchContainer(OPEN_SEARCH_IMAGE);
     public static final int DELAY_ON_INDEX = 2000;
     public static final String YEAR = "2023";
+    public static final String CATEGORY = "AcademicArticle";
     public static final String UNEXISTING_FILTER = "unexisting-filter";
     public static final URI NTNU_INSTITUTION_ID
         = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
@@ -97,6 +99,11 @@ public class OpenSearchClientTest {
         openSearchClient = new OpenSearchClient(restClient, FakeCachedJwtProvider.setup());
     }
 
+    @BeforeEach
+    public void beforeEach() {
+        openSearchClient.createIndex();
+    }
+
     @AfterAll
     static void afterAll() {
         container.stop();
@@ -113,18 +120,31 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldReturnDocumentsFromIndexAccordingToGivenOffsetAndSize() throws IOException, InterruptedException {
-        addDocumentsToIndex(singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
-                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
-                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
-                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
-                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
-                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
-                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
-                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
-                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
-                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
-                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR),
-                            singleNviCandidateIndexDocumentWithCustomerAndYear(CUSTOMER.toString(), YEAR));
+        addDocumentsToIndex(
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(), YEAR,
+                                                        randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()),
+            singleNviCandidateIndexDocumentWithCustomer(CUSTOMER.toString(), randomString(), randomString(),
+                                                        YEAR, randomString()));
 
         int totalNumberOfDocuments = 12;
         int offset = 10;
@@ -277,14 +297,106 @@ public class OpenSearchClientTest {
     }
 
     @Test
+    void shouldReturnSingleDocumentWhenFilteringBySearchTerm() throws InterruptedException, IOException {
+        var customer = randomUri();
+        var searchTerm = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
+        var document = singleNviCandidateIndexDocumentWithCustomer(customer.toString(),
+                                                                   searchTerm, randomString(),
+                                                                   YEAR, randomString());
+        addDocumentsToIndex(document, singleNviCandidateIndexDocumentWithCustomer(
+            customer.toString(), randomString(), randomString(), randomString(), randomString()));
+
+        var searchParameters =
+            defaultSearchParameters().withAffiliations(List.of(customer))
+                .withSearchTerm(getRandomWord(searchTerm))
+                .withYear(YEAR)
+                .build();
+
+        var searchResponse =
+            openSearchClient.search(searchParameters);
+
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+    }
+
+    @Test
     void shouldReturnSingleDocumentWhenFilteringByYear() throws InterruptedException, IOException {
         var customer = randomUri();
         var year = randomString();
-        var document = singleNviCandidateIndexDocumentWithCustomerAndYear(customer.toString(), year);
+        var document = singleNviCandidateIndexDocumentWithCustomer(customer.toString(), randomString(),
+                                                                   randomString(), year,
+                                                                   randomString());
         addDocumentsToIndex(document,
-                            singleNviCandidateIndexDocumentWithCustomerAndYear(customer.toString(), randomString()));
+                            singleNviCandidateIndexDocumentWithCustomer(customer.toString(), randomString(),
+                                                                        randomString(), randomString(),
+                                                                        randomString()));
 
         var searchParameters = defaultSearchParameters().withAffiliations(List.of(customer)).withYear(year).build();
+
+        var searchResponse =
+            openSearchClient.search(searchParameters);
+
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+    }
+
+    @Test
+    void shouldReturnSingleDocumentWhenFilteringByTitle() throws InterruptedException, IOException {
+        var customer = randomUri();
+        var title = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
+        var document = singleNviCandidateIndexDocumentWithCustomer(customer.toString(), randomString(),
+                                                                   randomString(), YEAR, title);
+        addDocumentsToIndex(document,
+                            singleNviCandidateIndexDocumentWithCustomer(customer.toString(), randomString(),
+                                                                        randomString(), randomString(),
+                                                                        randomString()));
+
+        var searchParameters =
+            defaultSearchParameters().withAffiliations(List.of(customer))
+                .withTitle(getRandomWord(title))
+                .withYear(YEAR)
+                .build();
+
+        var searchResponse =
+            openSearchClient.search(searchParameters);
+
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+    }
+
+    @Test
+    void shouldReturnSingleDocumentWhenFilteringByContributor() throws InterruptedException, IOException {
+        var customer = randomUri();
+        var contributor = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
+        var document = singleNviCandidateIndexDocumentWithCustomer(customer.toString(),
+                                                                   contributor, randomString(),
+                                                                   YEAR, randomString());
+        addDocumentsToIndex(document, singleNviCandidateIndexDocumentWithCustomer(
+            customer.toString(), randomString(), randomString(), randomString(), randomString()));
+
+        var searchParameters =
+            defaultSearchParameters().withAffiliations(List.of(customer))
+                .withContributor(getRandomWord(contributor))
+                .withYear(YEAR)
+                .build();
+
+        var searchResponse =
+            openSearchClient.search(searchParameters);
+
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+    }
+
+    @Test
+    void shouldReturnSingleDocumentWhenFilteringByAssignee() throws InterruptedException, IOException {
+        var customer = randomUri();
+        var assignee = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
+        var document = singleNviCandidateIndexDocumentWithCustomer(customer.toString(), randomString(), assignee,
+                                                                   YEAR, randomString());
+        addDocumentsToIndex(document, singleNviCandidateIndexDocumentWithCustomer(
+            customer.toString(), randomString(), randomString(), randomString(), randomString()));
+
+        var searchParameters =
+            defaultSearchParameters().withAffiliations(List.of(customer))
+                .withAssignee(getRandomWord(assignee))
+                .withYear(YEAR)
+                .build();
 
         var searchResponse =
             openSearchClient.search(searchParameters);
@@ -311,6 +423,20 @@ public class OpenSearchClientTest {
             openSearchClient.search(searchParameters);
 
         assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));
+    }
+
+    @Test
+    void shouldReturnSingleDocumentWhenFilteringByCategory() throws InterruptedException, IOException {
+        addDocumentsToIndex(documentFromString("document_pending.json"),
+                            documentFromString("document_pending_category_degree_bachelor.json"));
+
+        var searchParameters =
+            defaultSearchParameters().withCategory(CATEGORY).withAffiliations(List.of(NTNU_INSTITUTION_ID)).build();
+
+        var searchResponse =
+            openSearchClient.search(searchParameters);
+
+        assertThat(searchResponse.hits().hits(), hasSize(1));
     }
 
     private static int getDocCount(SearchResponse<NviCandidateIndexDocument> response, String aggregationName) {
@@ -347,13 +473,40 @@ public class OpenSearchClientTest {
                                              approvals, approvals.size(), TestUtils.randomBigDecimal());
     }
 
-    private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomerAndYear(String customer,
-                                                                                                String year) {
-        var approval = new Approval(customer, Map.of(), randomStatus(), null);
+    private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomer(String customer,
+                                                                                         String contributor,
+                                                                                         String assignee,
+                                                                                         String year,
+                                                                                         String title) {
         return new NviCandidateIndexDocument(randomUri(), randomString(),
-                                             randomPublicationDetailsWithYearAndContributor(year, customer),
-                                             List.of(approval), 1, TestUtils.randomBigDecimal());
+                                             randomPublicationDetailsWithCustomer(customer,contributor, year, title),
+                                             List.of(randomApprovalWithCustomerAndAssignee(customer, assignee)), 1,
+                                             TestUtils.randomBigDecimal());
     }
+
+
+    private static PublicationDetails randomPublicationDetailsWithCustomer(String affiliation,
+                                                                           String contributor,
+                                                                           String year,
+                                                                           String title) {
+        var publicationDate = year != null
+                                  ? PublicationDate.builder().withYear(year).build()
+                                  : PublicationDate.builder().withYear(YEAR).build();
+        var contributorBuilder = new Contributor.Builder().withRole("Creator")
+            .withAffiliations(List.of(new Affiliation(affiliation, List.of())));
+        if (contributor != null) {
+            contributorBuilder.withName(contributor);
+        }
+        return new PublicationDetails(randomString(), randomString(), title,
+                                      publicationDate,
+                                      List.of(contributorBuilder.build()));
+    }
+
+    private static Approval randomApprovalWithCustomerAndAssignee(String affiliation, String assignee) {
+        return new Approval(affiliation, Map.of(), randomStatus(), assignee);
+    }
+
+
 
     private static List<Approval> randomApprovalList() {
         return IntStream.range(0, 5).boxed().map(i -> randomApproval()).toList();
@@ -374,14 +527,6 @@ public class OpenSearchClientTest {
         return new PublicationDetails(randomString(), randomString(), randomString(),
                                       PublicationDate.builder().withYear(randomString()).build(),
                                       List.of());
-    }
-
-    private static PublicationDetails randomPublicationDetailsWithYearAndContributor(String year, String affiliation) {
-        return new PublicationDetails(randomString(), randomString(), randomString(),
-                                      PublicationDate.builder().withYear(year).build(),
-                                      List.of(new Contributor.Builder().withRole("Creator")
-                                                  .withAffiliations(List.of(
-                                                      new Affiliation(affiliation, List.of()))).build()));
     }
 
     private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {
@@ -421,8 +566,15 @@ public class OpenSearchClientTest {
 
     private static CandidateSearchParameters.Builder defaultSearchParameters() {
         return CandidateSearchParameters.builder()
-                   .withAffiliations(List.of())
-                   .withCustomer(CUSTOMER).withUsername(USERNAME).withYear(YEAR);
+            .withAffiliations(List.of())
+            .withCustomer(CUSTOMER).withUsername(USERNAME).withYear(YEAR);
+    }
+
+    private static String getRandomWord(String str) {
+        String[] words = str.split(" ");
+        Random random = new Random();
+        int index = random.nextInt(words.length);
+        return words[index];
     }
 
     public static final class FakeCachedJwtProvider {

@@ -68,12 +68,15 @@ import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.logutils.LogUtils;
 import nva.commons.logutils.TestAppender;
+import org.hamcrest.Matchers;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opensearch.client.opensearch.core.DeleteResponse;
+import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
 class UpdateIndexHandlerTest extends LocalDynamoTest {
@@ -163,6 +166,16 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
 
         verify(queueClient, times(1)).sendMessage(any(String.class), eq(DLQ_QUEUE_URL));
+    }
+
+    @Test
+    void affiliationLookupFailureShouldBeLogged()
+        throws JsonProcessingException {
+        mockRepositories(randomApplicableCandidate());
+        when(uriRetriever.getRawContent(any(), any())).thenReturn(Optional.empty());
+        var appender = LogUtils.getTestingAppenderForRootLogger();
+        handler.handleRequest(createEvent(MODIFY, toRecord("dynamoDbRecordApplicableEvent.json")), CONTEXT);
+        assertThat(appender.getMessages(), Matchers.containsString("Failure while retrieving affiliation"));
     }
 
     @Test
@@ -433,13 +446,15 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         }
 
         @Override
-        public void addDocumentToIndex(NviCandidateIndexDocument indexDocument) {
+        public IndexResponse addDocumentToIndex(NviCandidateIndexDocument indexDocument) {
             documents.add(indexDocument);
+            return null;
         }
 
         @Override
-        public void removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) {
+        public DeleteResponse removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) {
 
+            return null;
         }
 
         @Override

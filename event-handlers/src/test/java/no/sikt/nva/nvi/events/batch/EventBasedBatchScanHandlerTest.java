@@ -191,8 +191,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         consumeEvents();
         var result = JsonUtils.dtoObjectMapper.readValue(output.toByteArray(), ListingResult.class);
 
-        assertThat(result.totalItem(), is(0));
-        assertThat(result.unprocessedItemsForTable(), is(0));
+        assertThat(result.getTotalItemCount(), is(0));
     }
 
     private void createPeriod() {

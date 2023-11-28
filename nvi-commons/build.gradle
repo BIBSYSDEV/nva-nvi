@@ -4,6 +4,7 @@ plugins {
 }
 dependencies {
     implementation libs.jackson.databind
+    implementation libs.nva.commons.apigateway
     implementation libs.nva.core
     implementation libs.nva.json
     implementation libs.nva.s3
