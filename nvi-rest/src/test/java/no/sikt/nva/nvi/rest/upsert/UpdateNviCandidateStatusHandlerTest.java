@@ -158,7 +158,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var candidateResponse = response.getBodyObject(CandidateDto.class);
 
-        assertThat(candidateResponse.approvalStatuses().get(0).status().getValue(), is(equalTo(newStatus.getValue())));
+        assertThat(candidateResponse.approvalDtos().get(0).status().getValue(), is(equalTo(newStatus.getValue())));
     }
 
     @ParameterizedTest
@@ -175,9 +175,9 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var candidateResponse = response.getBodyObject(CandidateDto.class);
 
-        assertThat(candidateResponse.approvalStatuses().get(0).finalizedBy(), is(nullValue()));
-        assertThat(candidateResponse.approvalStatuses().get(0).finalizedDate(), is(nullValue()));
-        assertThat(candidateResponse.approvalStatuses().get(0).status().getValue(), is(equalTo(newStatus.getValue())));
+        assertThat(candidateResponse.approvalDtos().get(0).finalizedBy(), is(nullValue()));
+        assertThat(candidateResponse.approvalDtos().get(0).finalizedDate(), is(nullValue()));
+        assertThat(candidateResponse.approvalDtos().get(0).status().getValue(), is(equalTo(newStatus.getValue())));
     }
 
     @ParameterizedTest
@@ -196,7 +196,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var candidateResponse = response.getBodyObject(CandidateDto.class);
 
-        var actualApprovalStatus = candidateResponse.approvalStatuses().get(0);
+        var actualApprovalStatus = candidateResponse.approvalDtos().get(0);
         assertThat(actualApprovalStatus.status().getValue(), is(equalTo(newStatus.getValue())));
         assertThat(actualApprovalStatus.reason(), is(equalTo(rejectionReason)));
     }
@@ -215,7 +215,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var candidateResponse = response.getBodyObject(CandidateDto.class);
 
-        var actualApprovalStatus = candidateResponse.approvalStatuses().get(0);
+        var actualApprovalStatus = candidateResponse.approvalDtos().get(0);
         assertThat(actualApprovalStatus.status().getValue(), is(equalTo(newStatus.getValue())));
         assertThat(actualApprovalStatus.reason(), is(nullValue()));
     }
@@ -233,7 +233,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var candidateResponse = response.getBodyObject(CandidateDto.class);
 
-        assertThat(candidateResponse.approvalStatuses().get(0).assignee(), is(equalTo(assignee)));
+        assertThat(candidateResponse.approvalDtos().get(0).assignee(), is(equalTo(assignee)));
     }
 
     private static UpdateStatusRequest createStatusRequest(DbStatus status) {

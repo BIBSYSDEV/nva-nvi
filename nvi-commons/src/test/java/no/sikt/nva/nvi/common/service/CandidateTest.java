@@ -52,8 +52,8 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
-import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -198,13 +198,13 @@ class CandidateTest extends LocalDynamoTest {
             .updateApproval(createUpdateStatusRequest(DbStatus.APPROVED, institutionToApprove, randomString()))
             .updateApproval(createUpdateStatusRequest(DbStatus.REJECTED, institutionToReject, randomString()));
         var dto = candidateBO.toDto();
-        var approvalMap = dto.approvalStatuses()
+        var approvalMap = dto.approvalDtos()
                               .stream()
-                              .collect(Collectors.toMap(ApprovalStatus::institutionId, Function.identity()));
+                              .collect(Collectors.toMap(ApprovalDto::institutionId, Function.identity()));
 
         assertAll(() -> {
             assertThat(dto.publicationId(), is(equalTo(createRequest.publicationId())));
-            assertThat(dto.approvalStatuses().size(), is(equalTo(createRequest.institutionPoints().size())));
+            assertThat(dto.approvalDtos().size(), is(equalTo(createRequest.institutionPoints().size())));
             assertThat(dto.notes().size(), is(2));
             assertThat(dto.totalPoints(), is(equalTo(totalPoints)));
             var note = dto.notes().get(0);
@@ -215,9 +215,9 @@ class CandidateTest extends LocalDynamoTest {
             assertThat(dto.identifier(), is(equalTo(candidateBO.getIdentifier())));
             var periodStatus = getDefaultPeriodStatus();
             assertThat(dto.periodStatus().status(), is(equalTo(periodStatus.status())));
-            assertThat(approvalMap.get(institutionToApprove).status(), is(equalTo(NviApprovalStatus.APPROVED)));
+            assertThat(approvalMap.get(institutionToApprove).status(), is(equalTo(ApprovalStatus.APPROVED)));
             var rejectedAP = approvalMap.get(institutionToReject);
-            assertThat(rejectedAP.status(), is(equalTo(NviApprovalStatus.REJECTED)));
+            assertThat(rejectedAP.status(), is(equalTo(ApprovalStatus.REJECTED)));
             assertThat(rejectedAP.reason(), is(notNullValue()));
             assertThat(rejectedAP.points(), is(createRequest.institutionPoints().get(rejectedAP.institutionId())));
         });
@@ -278,8 +278,8 @@ class CandidateTest extends LocalDynamoTest {
                             .updateApproval(createUpdateStatusRequest(DbStatus.APPROVED, institutionId, randomString()))
                             .updateApproval(createUpdateStatusRequest(DbStatus.REJECTED, institutionId, randomString()))
                             .toDto();
-        assertThat(candidate.approvalStatuses().get(0).assignee(), is(equalTo(assignee)));
-        assertThat(candidate.approvalStatuses().get(0).finalizedBy(), is(not(equalTo(assignee))));
+        assertThat(candidate.approvalDtos().get(0).assignee(), is(equalTo(assignee)));
+        assertThat(candidate.approvalDtos().get(0).finalizedBy(), is(not(equalTo(assignee))));
     }
 
     @Test
@@ -290,11 +290,11 @@ class CandidateTest extends LocalDynamoTest {
                             .orElseThrow();
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, DbStatus.APPROVED, randomString(), randomString()));
-        var approval = candidate.toDto().approvalStatuses().get(0);
+        var approval = candidate.toDto().approvalDtos().get(0);
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
         var updatedCandidate = Candidate.fromRequest(newUpsertRequest, candidateRepository, periodRepository)
                                    .orElseThrow();
-        var updatedApproval = updatedCandidate.toDto().approvalStatuses().get(0);
+        var updatedApproval = updatedCandidate.toDto().approvalDtos().get(0);
 
         assertThat(updatedApproval, is(equalTo(approval)));
     }
@@ -355,9 +355,9 @@ class CandidateTest extends LocalDynamoTest {
 
         var updatedCandidate = Candidate.fromRequest(newUpsertRequest, candidateRepository, periodRepository)
                                    .orElseThrow();
-        var updatedApproval = updatedCandidate.toDto().approvalStatuses().get(0);
+        var updatedApproval = updatedCandidate.toDto().approvalDtos().get(0);
 
-        assertThat(updatedApproval.status(), is(equalTo(NviApprovalStatus.PENDING)));
+        assertThat(updatedApproval.status(), is(equalTo(ApprovalStatus.PENDING)));
     }
 
     private static Map<URI, BigDecimal> getPointsOriginal(URI[] institutionIdsOriginal) {

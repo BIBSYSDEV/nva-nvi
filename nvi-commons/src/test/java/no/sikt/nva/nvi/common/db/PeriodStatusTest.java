@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.service;
+package no.sikt.nva.nvi.common.db;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -7,7 +7,6 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
-import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import org.junit.jupiter.api.Test;
@@ -32,14 +31,6 @@ public class PeriodStatusTest {
                                           .startDate(plusMonthsFromNow(1))
                                           .reportingDate(plusMonthsFromNow(2))
                                           .build(), Status.UNOPENED_PERIOD));
-    }
-
-    private static Instant minusMonthFromNow(int numberOfMonths) {
-        return now.minusMonths(numberOfMonths).toInstant();
-    }
-
-    private static Instant plusMonthsFromNow(int numberOfMonths) {
-        return now.plusMonths(numberOfMonths).toInstant();
     }
 
     @Test
@@ -70,5 +61,13 @@ public class PeriodStatusTest {
 
         assertThat(actualStatus.status(), is(equalTo(expectedStatus)));
         assertThat(actualPeriodDtoStatus.reportingDate(), is(equalTo(actualStatus.reportingDate().toString())));
+    }
+
+    private static Instant minusMonthFromNow(int numberOfMonths) {
+        return now.minusMonths(numberOfMonths).toInstant();
+    }
+
+    private static Instant plusMonthsFromNow(int numberOfMonths) {
+        return now.plusMonths(numberOfMonths).toInstant();
     }
 }
