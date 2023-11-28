@@ -117,7 +117,7 @@ public final class TestUtils {
     public static List<CandidateDao> createNumberOfCandidatesForYear(String year, int number,
                                                                      CandidateRepository repository) {
         return IntStream.range(0, number)
-                   .mapToObj(i -> randomCandidate(year))
+                   .mapToObj(i -> randomCandidateWithYear(year))
                    .map(candidate -> repository.create(candidate, List.of()))
                    .toList();
     }
@@ -344,7 +344,7 @@ public final class TestUtils {
         return new CreateNoteRequest(text, username);
     }
 
-    private static DbCandidate randomCandidate(String year) {
+    private static DbCandidate randomCandidateWithYear(String year) {
         return randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
     }
 
