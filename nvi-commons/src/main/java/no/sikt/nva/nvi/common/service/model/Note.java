@@ -1,24 +1,32 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Objects.isNull;
+import java.time.Instant;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
-import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
+import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 
 public class Note {
 
+    private static final String DELETE_MESSAGE_ERROR = "Can not delete message you does not own!";
     private final CandidateRepository repository;
     private final UUID identifier;
-    private final NoteDao dao;
+    private final UUID noteId;
+    private final Instant createdDate;
+    private final Username user;
+    private final String text;
 
     public Note(CandidateRepository repository, UUID identifier, NoteDao note) {
         this.repository = repository;
         this.identifier = identifier;
-        this.dao = note;
+        this.noteId = note.note().noteId();
+        this.createdDate = note.note().createdDate();
+        this.user = Username.fromUserName(note.note().user());
+        this.text = note.note().text();
     }
 
     public static Note fromRequest(CreateNoteRequest input, UUID candidateIdentifier,
@@ -26,30 +34,41 @@ public class Note {
         validate(input);
         var noteDao = repository.saveNote(candidateIdentifier, DbNote.builder()
                                                                    .text(input.text())
-                                                                   .user(Username.fromString(input.username()))
+                                                                   .user(dbUserName(input))
                                                                    .build());
         return new Note(repository, candidateIdentifier, noteDao);
     }
 
-    public UUID noteId() {
-        return dao.note().noteId();
+    public void validateOwner(String username) {
+        if (isNotNoteOwner(username, user)) {
+            throw new UnauthorizedOperationException(DELETE_MESSAGE_ERROR);
+        }
+    }
+
+    public UUID getNoteId() {
+        return noteId;
     }
 
     public void delete() {
-        repository.deleteNote(identifier, dao.note().noteId());
+        repository.deleteNote(identifier, noteId);
     }
 
     public NoteDto toDto() {
         return NoteDto.builder()
-                   .withCreatedDate(dao.note().createdDate())
-                   .withUser(dao.note().user().value())
-                   .withText(dao.note().text())
-                   .withIdentifier(dao.note().noteId())
+                   .withCreatedDate(createdDate)
+                   .withUser(user.value())
+                   .withText(text)
+                   .withIdentifier(noteId)
                    .build();
     }
 
-    public NoteDao getDao() {
-        return dao;
+    private static boolean isNotNoteOwner(String username, Username user) {
+        return !user.value().equals(username);
+    }
+
+    private static no.sikt.nva.nvi.common.db.model.Username dbUserName(CreateNoteRequest input) {
+        return no.sikt.nva.nvi.common.db.model.Username.fromString(
+            input.username());
     }
 
     private static void validate(CreateNoteRequest request) {

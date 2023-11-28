@@ -37,7 +37,6 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
-import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchByPublicationRequest;
@@ -53,7 +52,6 @@ public final class Candidate {
     private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
     private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
                                                             + " forbidden!";
-    private static final String DELETE_MESSAGE_ERROR = "Can not delete message you does not own!";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
@@ -178,14 +176,14 @@ public final class Candidate {
     public Candidate createNote(CreateNoteRequest input) {
         validateCandidateState();
         var noteBO = Note.fromRequest(input, identifier, repository);
-        notes.put(noteBO.noteId(), noteBO);
+        notes.put(noteBO.getNoteId(), noteBO);
         return this;
     }
 
     public Candidate deleteNote(DeleteNoteRequest request) {
         validateCandidateState();
         var note = notes.get(request.noteId());
-        validateNoteOwner(request.username(), note.getDao());
+        note.validateOwner(request.username());
         notes.computeIfPresent(request.noteId(), (uuid, noteBO) -> {
             noteBO.delete();
             return null;
@@ -203,10 +201,6 @@ public final class Candidate {
 
     private static boolean isNotExistingCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
         return !isExistingCandidate(request.publicationId(), repository);
-    }
-
-    private static boolean isNotNoteOwner(String username, NoteDao dao) {
-        return !dao.note().user().value().equals(username);
     }
 
     private static Candidate deleteCandidate(UpsertNonCandidateRequest request, CandidateRepository repository) {
@@ -333,7 +327,7 @@ public final class Candidate {
     private static Map<UUID, Note> mapToNotesMap(CandidateRepository repository, List<NoteDao> notes) {
         return notes.stream()
                    .map(dao -> new Note(repository, dao.identifier(), dao))
-                   .collect(Collectors.toMap(Note::noteId, Function.identity()));
+                   .collect(Collectors.toMap(Note::getNoteId, Function.identity()));
     }
 
     private static Map<URI, Approval> mapToApprovalsMap(CandidateRepository repository,
@@ -432,12 +426,6 @@ public final class Candidate {
 
     private static String mapToUsernameString(Username assignee) {
         return assignee != null ? assignee.value() : null;
-    }
-
-    private void validateNoteOwner(String username, NoteDao dao) {
-        if (isNotNoteOwner(username, dao)) {
-            throw new UnauthorizedOperationException(DELETE_MESSAGE_ERROR);
-        }
     }
 
     private void validateCandidateState() {
