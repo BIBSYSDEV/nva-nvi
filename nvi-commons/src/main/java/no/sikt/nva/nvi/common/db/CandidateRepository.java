@@ -28,7 +28,6 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.model.ListingResultWithCandidates;
-import no.sikt.nva.nvi.common.service.Candidate;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
@@ -101,11 +100,7 @@ public class CandidateRepository extends DynamoRepository {
                                                page.items());
     }
 
-    public Candidate create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
-        return toCandidate(createDao(dbCandidate, approvalStatuses));
-    }
-
-    public CandidateDao createDao(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
+    public CandidateDao create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
         var identifier = randomUUID();
         var candidate = constructCandidate(identifier, dbCandidate);
         var uniqueness = new CandidateUniquenessEntryDao(dbCandidate.publicationId().toString());

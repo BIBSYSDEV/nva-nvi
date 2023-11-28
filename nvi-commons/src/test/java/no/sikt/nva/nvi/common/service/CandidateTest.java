@@ -1,8 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.sikt.nva.nvi.test.TestUtils.POINTS_SCALE;
-import static no.sikt.nva.nvi.test.TestUtils.ROUNDING_MODE;
 import static no.sikt.nva.nvi.test.TestUtils.createNoteRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
@@ -54,11 +52,11 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
-import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -131,10 +129,10 @@ class CandidateTest extends LocalDynamoTest {
     void shouldPersistNewCandidateWithCorrectLevelBasedOnVersionTwoLevelValues(DbLevel expectedLevel,
                                                                                String versionTwoValue) {
         var request = createUpsertCandidateRequestWithLevel(versionTwoValue, randomUri());
-        var candidateIdentifier = CandidateBO.fromRequest(request, candidateRepository, periodRepository)
+        var candidateIdentifier = Candidate.fromRequest(request, candidateRepository, periodRepository)
                                       .orElseThrow()
                                       .getIdentifier();
-        var persistedCandidate = candidateRepository.findCandidateDaoById(candidateIdentifier)
+        var persistedCandidate = candidateRepository.findCandidateById(candidateIdentifier)
                                      .orElseThrow()
                                      .candidate();
         assertEquals(expectedLevel, persistedCandidate.level());

@@ -10,9 +10,9 @@ import java.net.URI;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -67,7 +67,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
         return candidate;
     }
 
-    private static boolean doesNotContainApprovalForInstitution(CandidateBO candidate, URI topLevelOrgCristinId) {
+    private static boolean doesNotContainApprovalForInstitution(Candidate candidate, URI topLevelOrgCristinId) {
         return candidate.getApprovals().keySet().stream().noneMatch(uri -> uri.equals(topLevelOrgCristinId));
     }
 

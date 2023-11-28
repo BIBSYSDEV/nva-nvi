@@ -53,19 +53,18 @@ import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
-import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto.Status;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.Creator;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
-import no.sikt.nva.nvi.events.persist.UpsertNviCandidateHandler;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import nva.commons.core.Environment;
@@ -124,7 +123,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     void shouldSendMessageToDlqWhenUnexpectedErrorOccurs() {
         candidateRepository = mock(CandidateRepository.class);
         handler = new UpsertNviCandidateHandler(candidateRepository, periodRepository, queueClient, environment);
-        when(candidateRepository.createDao(any(), any())).thenThrow(RuntimeException.class);
+        when(candidateRepository.create(any(), any())).thenThrow(RuntimeException.class);
 
         handler.handleRequest(createEvent(randomCandidateEvaluatedMessage()), CONTEXT);
 

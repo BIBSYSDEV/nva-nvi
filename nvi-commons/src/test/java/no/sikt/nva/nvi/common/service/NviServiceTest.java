@@ -1,18 +1,25 @@
 package no.sikt.nva.nvi.common.service;
 
+import static no.sikt.nva.nvi.test.TestUtils.createNumberOfCandidatesForYear;
+import static no.sikt.nva.nvi.test.TestUtils.getYearIndexStartMarker;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.randomYear;
+import static no.sikt.nva.nvi.test.TestUtils.sortByIdentifier;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
@@ -24,6 +31,7 @@ import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 
@@ -34,27 +42,6 @@ public class NviServiceTest extends LocalDynamoTest {
     private static final int SECOND_ROW = 1;
     private NviService nviService;
     private CandidateRepositoryHelper candidateRepository;
-
-    @BeforeEach
-    void setup() {
-        localDynamo = initializeTestDatabase();
-        candidateRepository = new CandidateRepositoryHelper(localDynamo);
-        nviService = TestUtils.nviServiceReturningOpenPeriod(localDynamo, YEAR);
-    }
-
-    @Test
-    void shouldWriteVersionOnRefreshWhenStartMarkerIsNotSet() {
-        var originalCandidate = randomCandidate();
-        var candidate = candidateRepository.create(originalCandidate, List.of());
-        var original = candidateRepository.findCandidateById(candidate.identifier()).orElseThrow();
-        var result = nviService.refresh(10, null);
-        var modified = candidateRepository.findCandidateById(candidate.identifier()).orElseThrow();
-        assertThat(modified.version(), is(not(equalTo(original.version()))));
-        assertThat(result.startMarker().size(), is(equalTo(0)));
-        assertThat(result.totalItem(), is(equalTo(1)));
-        assertThat(result.shouldContinueScan(), is(equalTo(false)));
-        assertThat(result.unprocessedItemsForTable(), is(equalTo(0)));
-    }
 
     @Test
     public void refreshVersionShouldContinue() {
@@ -78,6 +65,26 @@ public class NviServiceTest extends LocalDynamoTest {
 
         assertThat(modifiedRows.get(FIRST_ROW).version(), is(equalTo(originalRows.get(FIRST_ROW).version())));
         assertThat(modifiedRows.get(SECOND_ROW).version(), is(not(equalTo(originalRows.get(SECOND_ROW).version()))));
+    }
+
+    @BeforeEach
+    void setup() {
+        localDynamo = initializeTestDatabase();
+        candidateRepository = new CandidateRepositoryHelper(localDynamo);
+        nviService = TestUtils.nviServiceReturningOpenPeriod(localDynamo, YEAR);
+    }
+
+    @Test
+    void shouldWriteVersionOnRefreshWhenStartMarkerIsNotSet() {
+        var originalCandidate = randomCandidate();
+        var candidate = candidateRepository.create(originalCandidate, List.of());
+        var original = candidateRepository.findCandidateById(candidate.identifier()).orElseThrow();
+        var result = nviService.refresh(10, null);
+        var modified = candidateRepository.findCandidateById(candidate.identifier()).orElseThrow();
+        assertThat(modified.version(), is(not(equalTo(original.version()))));
+        assertThat(result.getStartMarker().size(), is(equalTo(0)));
+        assertThat(result.getTotalItemCount(), is(equalTo(1)));
+        assertThat(result.shouldContinueScan(), is(equalTo(false)));
     }
 
     @Test
@@ -252,21 +259,6 @@ public class NviServiceTest extends LocalDynamoTest {
                    .stream()
                    .filter(a -> a.get("type").s().equals("CANDIDATE"))
                    .toList();
-    }
-
-    private DbCandidate createExpectedCandidate(UUID identifier, List<DbCreator> creators, InstanceType instanceType,
-                                                DbLevel level, DbPublicationDate publicationDate,
-                                                Map<URI, BigDecimal> institutionPoints, boolean applicable) {
-        return DbCandidate.builder()
-                   .publicationBucketUri(generateS3BucketUri(identifier))
-                   .publicationId(generatePublicationId(identifier))
-                   .creators(creators)
-                   .instanceType(instanceType)
-                   .level(level)
-                   .applicable(applicable)
-                   .publicationDate(publicationDate)
-                   .points(mapToInstitutionPoints(institutionPoints))
-                   .build();
     }
 
     public static class CandidateRepositoryHelper extends CandidateRepository {
