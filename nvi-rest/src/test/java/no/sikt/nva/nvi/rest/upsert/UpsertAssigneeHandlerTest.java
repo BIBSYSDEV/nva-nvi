@@ -25,13 +25,13 @@ import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
-import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.rest.model.ApprovalDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
@@ -180,8 +180,8 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
                                               candidateRepository,
                                               periodRepository).orElseThrow();
         candidate.updateApproval(new UpdateAssigneeRequest(institutionId, newAssignee));
-        candidate.updateApproval(new UpdateStatusRequest(institutionId,
-                                                         DbStatus.APPROVED, randomString(), randomString()));
+        candidate.updateApproval(
+            new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
         return candidate;
     }
 

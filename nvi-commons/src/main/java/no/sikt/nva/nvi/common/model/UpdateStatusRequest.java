@@ -1,10 +1,10 @@
 package no.sikt.nva.nvi.common.model;
 
 import java.net.URI;
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
+import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 
 public record UpdateStatusRequest(URI institutionId,
-                                  DbStatus approvalStatus,
+                                  ApprovalStatus approvalStatus,
                                   String username,
                                   String reason) implements UpdateApprovalRequest {
 
@@ -15,7 +15,7 @@ public record UpdateStatusRequest(URI institutionId,
     public static final class Builder {
 
         private URI institutionId;
-        private DbStatus approvalStatus;
+        private ApprovalStatus approvalStatus;
         private String username;
         private String reason;
 
@@ -27,7 +27,7 @@ public record UpdateStatusRequest(URI institutionId,
             return this;
         }
 
-        public Builder withApprovalStatus(DbStatus approvalStatus) {
+        public Builder withApprovalStatus(ApprovalStatus approvalStatus) {
             this.approvalStatus = approvalStatus;
             return this;
         }

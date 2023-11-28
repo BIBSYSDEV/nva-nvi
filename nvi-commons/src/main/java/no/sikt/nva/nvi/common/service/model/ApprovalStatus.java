@@ -1,11 +1,9 @@
-package no.sikt.nva.nvi.common.service.dto;
+package no.sikt.nva.nvi.common.service.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
-import nva.commons.core.JacocoGenerated;
 
-@JacocoGenerated
 public enum ApprovalStatus {
 
     APPROVED("Approved"), PENDING("Pending"), REJECTED("Rejected");

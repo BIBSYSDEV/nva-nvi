@@ -37,7 +37,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
@@ -53,9 +52,9 @@ import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
-import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
+import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
@@ -195,8 +194,8 @@ class CandidateTest extends LocalDynamoTest {
         var candidateBO = Candidate.fromRequest(createRequest, candidateRepository, periodRepository).orElseThrow();
         candidateBO.createNote(createNoteRequest(randomString(), randomString()))
             .createNote(createNoteRequest(randomString(), randomString()))
-            .updateApproval(createUpdateStatusRequest(DbStatus.APPROVED, institutionToApprove, randomString()))
-            .updateApproval(createUpdateStatusRequest(DbStatus.REJECTED, institutionToReject, randomString()));
+            .updateApproval(createUpdateStatusRequest(ApprovalStatus.APPROVED, institutionToApprove, randomString()))
+            .updateApproval(createUpdateStatusRequest(ApprovalStatus.REJECTED, institutionToReject, randomString()));
         var dto = candidateBO.toDto();
         var approvalMap = dto.approvals()
                               .stream()
@@ -275,8 +274,10 @@ class CandidateTest extends LocalDynamoTest {
         var candidate = Candidate.fromRequest(createCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow()
                             .updateApproval(new UpdateAssigneeRequest(institutionId, assignee))
-                            .updateApproval(createUpdateStatusRequest(DbStatus.APPROVED, institutionId, randomString()))
-                            .updateApproval(createUpdateStatusRequest(DbStatus.REJECTED, institutionId, randomString()))
+                            .updateApproval(
+                                createUpdateStatusRequest(ApprovalStatus.APPROVED, institutionId, randomString()))
+                            .updateApproval(
+                                createUpdateStatusRequest(ApprovalStatus.REJECTED, institutionId, randomString()))
                             .toDto();
         assertThat(candidate.approvals().get(0).assignee(), is(equalTo(assignee)));
         assertThat(candidate.approvals().get(0).finalizedBy(), is(not(equalTo(assignee))));
@@ -289,7 +290,7 @@ class CandidateTest extends LocalDynamoTest {
         var candidate = Candidate.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
         candidate.updateApproval(
-            new UpdateStatusRequest(institutionId, DbStatus.APPROVED, randomString(), randomString()));
+            new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
         var approval = candidate.toDto().approvals().get(0);
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
         var updatedCandidate = Candidate.fromRequest(newUpsertRequest, candidateRepository, periodRepository)
@@ -341,7 +342,7 @@ class CandidateTest extends LocalDynamoTest {
 
         candidate.updateApproval(
             new UpdateStatusRequest(Arrays.stream(arguments.institutionIds()).findFirst().orElseThrow(),
-                                    DbStatus.APPROVED, randomString(), randomString()));
+                                    ApprovalStatus.APPROVED, randomString(), randomString()));
 
         var newUpsertRequest = createUpsertCandidateRequest(candidate.getPublicationId(), randomUri(), true,
                                                             new PublicationDate(String.valueOf(CURRENT_YEAR),
