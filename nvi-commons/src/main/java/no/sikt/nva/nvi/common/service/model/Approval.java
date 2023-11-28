@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import java.net.URI;
 import java.time.Instant;
 import java.util.UUID;
@@ -98,7 +99,7 @@ public class Approval {
     private DbApprovalStatus finalizeApprovedStatus(UpdateStatusRequest request) {
         var username = no.sikt.nva.nvi.common.db.model.Username.fromString(request.username());
         return new DbApprovalStatus(institutionId, DbStatus.APPROVED,
-                                    no.sikt.nva.nvi.common.db.model.Username.fromUserName(assignee),
+                                    assigneeOrUsername(username),
                                     username, Instant.now(), null);
     }
 
@@ -108,8 +109,17 @@ public class Approval {
         }
         var username = no.sikt.nva.nvi.common.db.model.Username.fromString(request.username());
         return new DbApprovalStatus(institutionId, DbStatus.REJECTED,
-                                    no.sikt.nva.nvi.common.db.model.Username.fromUserName(assignee),
+                                    assigneeOrUsername(username),
                                     username, Instant.now(), request.reason());
+    }
+
+    private boolean isAssigned() {
+        return nonNull(assignee) && nonNull(assignee.value());
+    }
+
+    private no.sikt.nva.nvi.common.db.model.Username assigneeOrUsername(
+        no.sikt.nva.nvi.common.db.model.Username username) {
+        return isAssigned() ? no.sikt.nva.nvi.common.db.model.Username.fromUserName(assignee) : username;
     }
 
     private void validate(UpdateStatusRequest input) {
