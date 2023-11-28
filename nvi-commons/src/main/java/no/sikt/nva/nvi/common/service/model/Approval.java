@@ -4,6 +4,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import java.net.URI;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
@@ -12,6 +13,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import nva.commons.core.JacocoGenerated;
 
 public class Approval {
 
@@ -36,6 +38,52 @@ public class Approval {
         this.finalizedBy = Username.fromUserName(dbApprovalStatus.approvalStatus().finalizedBy());
         this.finalizedDate = dbApprovalStatus.approvalStatus().finalizedDate();
         this.reason = dbApprovalStatus.approvalStatus().reason();
+    }
+
+    @Override
+    @JacocoGenerated
+    public int hashCode() {
+        int result = identifier != null ? identifier.hashCode() : 0;
+        result = 31 * result + (institutionId != null ? institutionId.hashCode() : 0);
+        result = 31 * result + (status != null ? status.hashCode() : 0);
+        result = 31 * result + (assignee != null ? assignee.hashCode() : 0);
+        result = 31 * result + (finalizedBy != null ? finalizedBy.hashCode() : 0);
+        result = 31 * result + (finalizedDate != null ? finalizedDate.hashCode() : 0);
+        result = 31 * result + (reason != null ? reason.hashCode() : 0);
+        return result;
+    }
+
+    @Override
+    @JacocoGenerated
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        Approval approval = (Approval) o;
+
+        if (!Objects.equals(identifier, approval.identifier)) {
+            return false;
+        }
+        if (!Objects.equals(institutionId, approval.institutionId)) {
+            return false;
+        }
+        if (status != approval.status) {
+            return false;
+        }
+        if (!Objects.equals(assignee, approval.assignee)) {
+            return false;
+        }
+        if (!Objects.equals(finalizedBy, approval.finalizedBy)) {
+            return false;
+        }
+        if (!Objects.equals(finalizedDate, approval.finalizedDate)) {
+            return false;
+        }
+        return Objects.equals(reason, approval.reason);
     }
 
     public URI getInstitutionId() {

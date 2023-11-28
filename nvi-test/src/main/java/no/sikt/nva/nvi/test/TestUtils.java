@@ -215,6 +215,13 @@ public final class TestUtils {
                                             1, randomBigDecimal(), level, institutions);
     }
 
+    public static UpsertCandidateRequest createUpsertCandidateRequest() {
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(NON_CANDIDATE),
+                                            1, randomBigDecimal(),
+                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
+                                            randomUri());
+    }
+
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI... institutions) {
         return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(NON_CANDIDATE),
                                             1, randomBigDecimal(),

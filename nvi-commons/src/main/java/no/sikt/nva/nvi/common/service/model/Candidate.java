@@ -45,6 +45,7 @@ import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpsertNonCandidateRequest;
 import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
 public final class Candidate {
@@ -121,6 +122,60 @@ public final class Candidate {
             return Optional.of(deleteCandidate(request, repository));
         }
         return Optional.empty();
+    }
+
+    @Override
+    @JacocoGenerated
+    public int hashCode() {
+        int result = identifier != null ? identifier.hashCode() : 0;
+        result = 31 * result + (publicationId != null ? publicationId.hashCode() : 0);
+        result = 31 * result + (publicationBucketUri != null ? publicationBucketUri.hashCode() : 0);
+        result = 31 * result + (applicable ? 1 : 0);
+        result = 31 * result + (approvals != null ? approvals.hashCode() : 0);
+        result = 31 * result + (notes != null ? notes.hashCode() : 0);
+        result = 31 * result + (institutionPoints != null ? institutionPoints.hashCode() : 0);
+        result = 31 * result + (totalPoints != null ? totalPoints.hashCode() : 0);
+        result = 31 * result + (periodStatus != null ? periodStatus.hashCode() : 0);
+        return result;
+    }
+
+    @Override
+    @JacocoGenerated
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        Candidate candidate = (Candidate) o;
+
+        if (applicable != candidate.applicable) {
+            return false;
+        }
+        if (!Objects.equals(identifier, candidate.identifier)) {
+            return false;
+        }
+        if (!Objects.equals(publicationId, candidate.publicationId)) {
+            return false;
+        }
+        if (!Objects.equals(publicationBucketUri, candidate.publicationBucketUri)) {
+            return false;
+        }
+        if (!Objects.equals(approvals, candidate.approvals)) {
+            return false;
+        }
+        if (!Objects.equals(notes, candidate.notes)) {
+            return false;
+        }
+        if (!Objects.equals(institutionPoints, candidate.institutionPoints)) {
+            return false;
+        }
+        if (!Objects.equals(totalPoints, candidate.totalPoints)) {
+            return false;
+        }
+        return Objects.equals(periodStatus, candidate.periodStatus);
     }
 
     public PeriodStatus getPeriodStatus() {
