@@ -46,11 +46,11 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
-import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.Username;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
@@ -263,30 +263,27 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .stream()
                    .map(approval -> new no.sikt.nva.nvi.index.model.Approval(getInstitutionId(approvals, approval),
                                                                              getLabels(),
-                                                                             getApprovalStatus(approvals, approval),
-                                                                             Optional.of(getDbApprovalStatus(approvals,
-                                                                                                             approval))
-                                                                                 .map(DbApprovalStatus::assignee)
-                                                                                 .map(Username::value)
-                                                                                 .orElse(null)))
+                                                                             getStatus(approvals, approval),
+                                                                             Optional.of(getApproval(approvals,
+                                                                                                     approval))
+                                                                                 .map(Approval::getAssignee)
+                                                                                 .map(Username::value).orElse(null)))
                    .toList();
     }
 
-    private static DbApprovalStatus getDbApprovalStatus(Map<URI, Approval> approvals, URI approval) {
-        return approvals.get(approval)
-                   .approval()
-                   .approvalStatus();
+    private static Approval getApproval(Map<URI, Approval> approvals, URI institutionId) {
+        return approvals.get(institutionId);
     }
 
-    private static ApprovalStatus getApprovalStatus(Map<URI, Approval> approvals, URI approval) {
+    private static ApprovalStatus getStatus(Map<URI, Approval> approvals, URI approval) {
         return ApprovalStatus.fromValue(
-            getDbApprovalStatus(approvals, approval)
-                .status()
+            getApproval(approvals, approval)
+                .getStatus()
                 .getValue());
     }
 
     private static String getInstitutionId(Map<URI, Approval> approvals, URI approval) {
-        return approvals.get(approval).institutionId().toString();
+        return approvals.get(approval).getInstitutionId().toString();
     }
 
     private static Map<String, String> getLabels() {
@@ -396,7 +393,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         var approval = persistedCandidate.getApprovals().get(INSTITUTION_ID_FROM_EVENT);
         return List.of(ApprovalStatusDao.builder()
                            .approvalStatus(DbApprovalStatus.builder()
-                                               .institutionId(approval.institutionId())
+                                               .institutionId(approval.getInstitutionId())
                                                .status(DbStatus.PENDING)
                                                .build())
                            .build());

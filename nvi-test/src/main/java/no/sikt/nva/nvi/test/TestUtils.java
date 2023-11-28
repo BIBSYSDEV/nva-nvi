@@ -27,7 +27,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
@@ -43,6 +42,7 @@ import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpsertNonCandidateRequest;
@@ -114,14 +114,10 @@ public final class TestUtils {
         return randomCandidateBuilder(true).build();
     }
 
-    private static DbCandidate randomCandidate(String year) {
-        return randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
-    }
-
     public static List<CandidateDao> createNumberOfCandidatesForYear(String year, int number,
                                                                      CandidateRepository repository) {
         return IntStream.range(0, number)
-                   .mapToObj(i -> randomCandidate(year))
+                   .mapToObj(i -> randomCandidateWithYear(year))
                    .map(candidate -> repository.create(candidate, List.of()))
                    .toList();
     }
@@ -204,9 +200,10 @@ public final class TestUtils {
         return () -> publicationId;
     }
 
-    public static UpdateStatusRequest createUpdateStatusRequest(DbStatus status, URI institutionId, String username) {
+    public static UpdateStatusRequest createUpdateStatusRequest(ApprovalStatus status, URI institutionId,
+                                                                String username) {
         return UpdateStatusRequest.builder()
-                   .withReason(DbStatus.REJECTED.equals(status) ? randomString() : null)
+                   .withReason(ApprovalStatus.REJECTED.equals(status) ? randomString() : null)
                    .withApprovalStatus(status)
                    .withInstitutionId(institutionId)
                    .withUsername(username)
@@ -345,6 +342,10 @@ public final class TestUtils {
 
     public static CreateNoteRequest createNoteRequest(String text, String username) {
         return new CreateNoteRequest(text, username);
+    }
+
+    private static DbCandidate randomCandidateWithYear(String year) {
+        return randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
     }
 
     private static DbPublicationDate publicationDate(String year) {

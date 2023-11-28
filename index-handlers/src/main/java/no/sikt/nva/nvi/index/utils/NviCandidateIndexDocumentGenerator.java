@@ -27,13 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.Username;
 import no.sikt.nva.nvi.common.utils.JsonPointers;
 import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
@@ -69,7 +67,7 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private NviCandidateIndexDocument createNviCandidateIndexDocument(JsonNode resource, Candidate candidate) {
-        var approvals = createApprovals(resource, toDbApprovals(candidate.getApprovals()));
+        var approvals = createApprovals(resource, getApprovals(candidate.getApprovals()));
         return new NviCandidateIndexDocument.Builder().withContext(URI.create(Contexts.NVI_CONTEXT))
                    .withIdentifier(candidate.getIdentifier().toString())
                    .withApprovals(approvals)
@@ -79,36 +77,33 @@ public final class NviCandidateIndexDocumentGenerator {
                    .build();
     }
 
-    private List<DbApprovalStatus> toDbApprovals(Map<URI, Approval> approvals) {
-        return approvals.values()
-                   .stream()
-                   .map(approval -> approval.approval().approvalStatus())
-                   .collect(Collectors.toList());
+    private List<Approval> getApprovals(Map<URI, Approval> approvals) {
+        return approvals.values().stream().toList();
     }
 
     private List<no.sikt.nva.nvi.index.model.Approval> createApprovals(JsonNode resource,
-                                                                       List<DbApprovalStatus> approvals) {
+                                                                       List<Approval> approvals) {
         return approvals.stream().map(approval -> toApproval(resource, approval)).toList();
     }
 
-    private Map<String, String> extractLabel(JsonNode resource, DbApprovalStatus approval) {
+    private Map<String, String> extractLabel(JsonNode resource, Approval approval) {
         return getTopLevelOrgs(resource.toString()).stream()
-                   .filter(organization -> organization.hasAffiliation(approval.institutionId().toString()))
+                   .filter(organization -> organization.hasAffiliation(approval.getInstitutionId().toString()))
                    .findFirst()
                    .orElseThrow()
                    .getLabels();
     }
 
-    private no.sikt.nva.nvi.index.model.Approval toApproval(JsonNode resource, DbApprovalStatus approval) {
-        return new no.sikt.nva.nvi.index.model.Approval.Builder().withId(approval.institutionId().toString())
+    private no.sikt.nva.nvi.index.model.Approval toApproval(JsonNode resource, Approval approval) {
+        return new no.sikt.nva.nvi.index.model.Approval.Builder().withId(approval.getInstitutionId().toString())
                    .withLabels(extractLabel(resource, approval))
-                   .withApprovalStatus(ApprovalStatus.fromValue(approval.status().getValue()))
+                   .withApprovalStatus(ApprovalStatus.fromValue(approval.getStatus().getValue()))
                    .withAssignee(extractAssignee(approval))
                    .build();
     }
 
-    private String extractAssignee(DbApprovalStatus approval) {
-        return Optional.of(approval).map(DbApprovalStatus::assignee).map(Username::value).orElse(null);
+    private String extractAssignee(Approval approval) {
+        return Optional.of(approval).map(Approval::getAssignee).map(Username::value).orElse(null);
     }
 
     private List<Organization> getTopLevelOrgs(String s) {

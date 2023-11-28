@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import java.net.URI;
 import java.time.Instant;
 import java.util.UUID;
@@ -8,11 +9,9 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
-import nva.commons.core.JacocoGenerated;
 
 public class Approval {
 
@@ -21,20 +20,46 @@ public class Approval {
     private static final String ERROR_MISSING_REJECTION_REASON = "Cannot reject approval status without reason.";
     private final CandidateRepository repository;
     private final UUID identifier;
-    private final ApprovalStatusDao original;
+    private final URI institutionId;
+    private final ApprovalStatus status;
+    private final Username assignee;
+    private final Username finalizedBy;
+    private final Instant finalizedDate;
+    private final String reason;
 
     public Approval(CandidateRepository repository, UUID identifier, ApprovalStatusDao dbApprovalStatus) {
         this.repository = repository;
         this.identifier = identifier;
-        this.original = dbApprovalStatus;
+        this.institutionId = dbApprovalStatus.approvalStatus().institutionId();
+        this.status = ApprovalStatus.parse(dbApprovalStatus.approvalStatus().status().getValue());
+        this.assignee = Username.fromUserName(dbApprovalStatus.approvalStatus().assignee());
+        this.finalizedBy = Username.fromUserName(dbApprovalStatus.approvalStatus().finalizedBy());
+        this.finalizedDate = dbApprovalStatus.approvalStatus().finalizedDate();
+        this.reason = dbApprovalStatus.approvalStatus().reason();
     }
 
-    public URI institutionId() {
-        return original.approvalStatus().institutionId();
+    public URI getInstitutionId() {
+        return institutionId;
     }
 
-    public ApprovalStatusDao approval() {
-        return original;
+    public ApprovalStatus getStatus() {
+        return status;
+    }
+
+    public Username getAssignee() {
+        return assignee;
+    }
+
+    public Username getFinalizedBy() {
+        return finalizedBy;
+    }
+
+    public Instant getFinalizedDate() {
+        return finalizedDate;
+    }
+
+    public String getReason() {
+        return reason;
     }
 
     public Approval update(UpdateApprovalRequest input) {
@@ -50,21 +75,13 @@ public class Approval {
         }
     }
 
-    private static Username getAssignee(DbApprovalStatus approval, Username username) {
-        return approval.hasAssignee() ? approval.assignee() : username;
-    }
-
-    private void validate(UpdateStatusRequest input) {
-        if (isNull(input.username())) {
-            throw new IllegalArgumentException(ERROR_MSG_USERNAME_NULL);
-        }
-    }
-
     private DbApprovalStatus updateAssignee(UpdateAssigneeRequest request) {
-        return original.approvalStatus().copy().assignee(Username.fromString(request.username())).build();
+        return new DbApprovalStatus(institutionId, DbStatus.parse(status.getValue()),
+                                    no.sikt.nva.nvi.common.db.model.Username.fromString(request.username()),
+                                    no.sikt.nva.nvi.common.db.model.Username.fromUserName(finalizedBy),
+                                    finalizedDate, reason);
     }
 
-    @JacocoGenerated //TODO still bug with return switch not needing default
     private DbApprovalStatus updateStatus(UpdateStatusRequest request) {
         return switch (request.approvalStatus()) {
             case APPROVED -> finalizeApprovedStatus(request);
@@ -74,39 +91,40 @@ public class Approval {
     }
 
     private DbApprovalStatus resetStatus() {
-        return original.approvalStatus()
-                   .copy()
-                   .status(DbStatus.PENDING)
-                   .finalizedBy(null)
-                   .finalizedDate(null)
-                   .reason(null)
-                   .build();
+        return new DbApprovalStatus(institutionId,
+                                    DbStatus.PENDING, no.sikt.nva.nvi.common.db.model.Username.fromUserName(assignee),
+                                    null, null, null);
     }
 
     private DbApprovalStatus finalizeApprovedStatus(UpdateStatusRequest request) {
-        var username = Username.fromString(request.username());
-        var approval = original.approvalStatus();
-        return approval.copy()
-                   .status(request.approvalStatus())
-                   .assignee(getAssignee(approval, username))
-                   .finalizedBy(username)
-                   .finalizedDate(Instant.now())
-                   .reason(null)
-                   .build();
+        var username = no.sikt.nva.nvi.common.db.model.Username.fromString(request.username());
+        return new DbApprovalStatus(institutionId, DbStatus.APPROVED,
+                                    assigneeOrUsername(username),
+                                    username, Instant.now(), null);
     }
 
     private DbApprovalStatus finalizeRejectedStatus(UpdateStatusRequest request) {
         if (isNull(request.reason())) {
             throw new UnsupportedOperationException(ERROR_MISSING_REJECTION_REASON);
         }
-        var username = Username.fromString(request.username());
-        var approval = original.approvalStatus();
-        return approval.copy()
-                   .status(request.approvalStatus())
-                   .assignee(getAssignee(approval, username))
-                   .finalizedBy(username)
-                   .finalizedDate(Instant.now())
-                   .reason(request.reason())
-                   .build();
+        var username = no.sikt.nva.nvi.common.db.model.Username.fromString(request.username());
+        return new DbApprovalStatus(institutionId, DbStatus.REJECTED,
+                                    assigneeOrUsername(username),
+                                    username, Instant.now(), request.reason());
+    }
+
+    private boolean isAssigned() {
+        return nonNull(assignee) && nonNull(assignee.value());
+    }
+
+    private no.sikt.nva.nvi.common.db.model.Username assigneeOrUsername(
+        no.sikt.nva.nvi.common.db.model.Username username) {
+        return isAssigned() ? no.sikt.nva.nvi.common.db.model.Username.fromUserName(assignee) : username;
+    }
+
+    private void validate(UpdateStatusRequest input) {
+        if (isNull(input.username())) {
+            throw new IllegalArgumentException(ERROR_MSG_USERNAME_NULL);
+        }
     }
 }

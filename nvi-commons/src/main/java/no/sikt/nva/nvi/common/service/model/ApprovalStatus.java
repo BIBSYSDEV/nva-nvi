@@ -1,25 +1,23 @@
-package no.sikt.nva.nvi.rest.upsert;
+package no.sikt.nva.nvi.common.service.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
-import nva.commons.core.JacocoGenerated;
 
-@JacocoGenerated
-public enum NviApprovalStatus {
+public enum ApprovalStatus {
 
     APPROVED("Approved"), PENDING("Pending"), REJECTED("Rejected");
 
     @JsonValue
     private final String value;
 
-    NviApprovalStatus(String value) {
+    ApprovalStatus(String value) {
         this.value = value;
     }
 
     @JsonCreator
-    public static NviApprovalStatus parse(String value) {
-        return Arrays.stream(NviApprovalStatus.values())
+    public static ApprovalStatus parse(String value) {
+        return Arrays.stream(ApprovalStatus.values())
                    .filter(status -> status.getValue().equalsIgnoreCase(value))
                    .findFirst()
                    .orElseThrow();

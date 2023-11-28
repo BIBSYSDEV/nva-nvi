@@ -30,13 +30,11 @@ import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
-import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
-import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
@@ -48,7 +46,6 @@ import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpsertNonCandidateRequest;
 import nva.commons.core.Environment;
-import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
 public final class Candidate {
@@ -343,7 +340,7 @@ public final class Candidate {
                                                         List<ApprovalStatusDao> approvals) {
         return approvals.stream()
                    .map(dao -> new Approval(repository, dao.identifier(), dao))
-                   .collect(Collectors.toMap(Approval::institutionId, Function.identity()));
+                   .collect(Collectors.toMap(Approval::getInstitutionId, Function.identity()));
     }
 
     private static PeriodStatus findPeriodStatus(PeriodRepository periodRepository, String year) {
@@ -464,25 +461,15 @@ public final class Candidate {
         return approvals.values().stream().map(this::mapToApprovalDto).toList();
     }
 
-    private ApprovalDto mapToApprovalDto(Approval bo) {
-        var approval = bo.approval().approvalStatus();
+    private ApprovalDto mapToApprovalDto(Approval approval) {
         return ApprovalDto.builder()
-                   .withInstitutionId(approval.institutionId())
-                   .withStatus(mapToNviApprovalStatus(approval.status()))
-                   .withAssignee(mapToUsernameString(approval.assignee()))
-                   .withFinalizedBy(mapToUsernameString(approval.finalizedBy()))
-                   .withFinalizedDate(approval.finalizedDate())
-                   .withPoints(institutionPoints.get(approval.institutionId()))
-                   .withReason(approval.reason())
+                   .withInstitutionId(approval.getInstitutionId())
+                   .withStatus(approval.getStatus())
+                   .withAssignee(mapToUsernameString(approval.getAssignee()))
+                   .withFinalizedBy(mapToUsernameString(approval.getFinalizedBy()))
+                   .withFinalizedDate(approval.getFinalizedDate())
+                   .withPoints(institutionPoints.get(approval.getInstitutionId()))
+                   .withReason(approval.getReason())
                    .build();
-    }
-
-    @JacocoGenerated //TODO bug when no need for default
-    private ApprovalStatus mapToNviApprovalStatus(DbStatus status) {
-        return switch (status) {
-            case APPROVED -> ApprovalStatus.APPROVED;
-            case PENDING -> ApprovalStatus.PENDING;
-            case REJECTED -> ApprovalStatus.REJECTED;
-        };
     }
 }

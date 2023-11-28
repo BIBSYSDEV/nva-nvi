@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.db;
 
-import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
@@ -54,15 +53,6 @@ public record ApprovalStatusDao(UUID identifier,
     @DynamoDbAttribute(TYPE_FIELD)
     public String type() {
         return TYPE;
-    }
-
-    @DynamoDbIgnore
-    @JacocoGenerated
-    public ApprovalStatusDao.Builder copy() {
-        return builder()
-                   .identifier(identifier)
-                   .version(randomUUID().toString())
-                   .approvalStatus(approvalStatus.copy().build());
     }
 
     @JacocoGenerated
@@ -149,21 +139,6 @@ public record ApprovalStatusDao(UUID identifier,
                        .approvalStatus(this)
                        .version(randomUUID().toString())
                        .build();
-        }
-
-        @DynamoDbIgnore
-        public Builder copy() {
-            return builder().institutionId(institutionId)
-                       .status(status)
-                       .assignee(assignee)
-                       .finalizedBy(finalizedBy)
-                       .finalizedDate(finalizedDate)
-                       .reason(reason);
-        }
-
-        @DynamoDbIgnore
-        public boolean hasAssignee() {
-            return nonNull(assignee);
         }
 
         public static final class Builder {

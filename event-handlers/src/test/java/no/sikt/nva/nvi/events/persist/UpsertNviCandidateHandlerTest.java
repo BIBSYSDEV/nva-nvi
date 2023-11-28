@@ -43,7 +43,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
@@ -55,9 +54,9 @@ import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto.Status;
+import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
@@ -193,7 +192,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var candidate = Candidate.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
         candidate.updateApproval(
-            new UpdateStatusRequest(institutionId, DbStatus.APPROVED, randomString(), randomString()));
+            new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
         var approval = candidate.toDto().approvals().get(0);
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest, institutionId);
         var updatedCandidate = Candidate.fromRequest(newUpsertRequest, candidateRepository, periodRepository)
@@ -332,11 +331,11 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private ApprovalDto mapToApprovalStatus(Entry<URI, BigDecimal> e) {
+    private ApprovalDto mapToApprovalStatus(Entry<URI, BigDecimal> pointsMap) {
         return ApprovalDto.builder()
-                   .withInstitutionId(e.getKey())
+                   .withInstitutionId(pointsMap.getKey())
                    .withStatus(ApprovalStatus.PENDING)
-                   .withPoints(e.getValue())
+                   .withPoints(pointsMap.getValue())
                    .build();
     }
 
