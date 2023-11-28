@@ -18,7 +18,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -29,7 +28,6 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.model.ListingResultWithCandidates;
-import no.sikt.nva.nvi.common.service.Candidate;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
@@ -60,7 +58,6 @@ public class CandidateRepository extends DynamoRepository {
     protected final DynamoDbTable<NoteDao> noteTable;
     protected final DynamoDbTable<NviPeriodDao> periodTable;
     private final DynamoDbIndex<CandidateDao> publicationIdIndex;
-
     private final DynamoDbIndex<CandidateDao> yearIndex;
     private final DynamoDbRetryWrapper dynamoDbRetryClient;
 
@@ -103,11 +100,7 @@ public class CandidateRepository extends DynamoRepository {
                                                page.items());
     }
 
-    public Candidate create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
-        return toCandidate(createDao(dbCandidate, approvalStatuses));
-    }
-
-    public CandidateDao createDao(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
+    public CandidateDao create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
         var identifier = randomUUID();
         var candidate = constructCandidate(identifier, dbCandidate);
         var uniqueness = new CandidateUniquenessEntryDao(dbCandidate.publicationId().toString());
@@ -135,24 +128,7 @@ public class CandidateRepository extends DynamoRepository {
         client.transactWriteItems(transaction.build());
     }
 
-    public Candidate update(UUID identifier, DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatusList) {
-        var candidate = constructCandidate(identifier, dbCandidate);
-        var approvalStatuses = approvalStatusList.stream()
-                                   .map(approval -> mapToApprovalStatusDao(identifier, approval))
-                                   .toList();
-        var transaction = TransactWriteItemsEnhancedRequest.builder();
-        transaction.addPutItem(candidateTable, candidate);
-
-        approvalStatuses.forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
-        client.transactWriteItems(transaction.build());
-        return new Candidate.Builder().withIdentifier(identifier)
-                   .withCandidate(dbCandidate)
-                   .withApprovalStatuses(approvalStatusList)
-                   .withNotes(getDbNotes(identifier))
-                   .build();
-    }
-
-    public Optional<CandidateDao> findCandidateDaoById(UUID candidateIdentifier) {
+    public Optional<CandidateDao> findCandidateById(UUID candidateIdentifier) {
         return Optional.ofNullable(candidateTable.getItem(Key.builder()
                                                               .partitionValue(CandidateDao.createPartitionKey(
                                                                   candidateIdentifier.toString()))
@@ -161,17 +137,7 @@ public class CandidateRepository extends DynamoRepository {
                                                               .build()));
     }
 
-    public Optional<Candidate> findCandidateById(UUID candidateIdentifier) {
-        return Optional.of(CandidateDao.builder().identifier(candidateIdentifier).build())
-                   .map(candidateTable::getItem)
-                   .map(this::toCandidate);
-    }
-
-    public Optional<Candidate> findByPublicationId(URI publicationId) {
-        return findByPublicationIdDao(publicationId).map(this::toCandidate);
-    }
-
-    public Optional<CandidateDao> findByPublicationIdDao(URI publicationId) {
+    public Optional<CandidateDao> findByPublicationId(URI publicationId) {
         return this.publicationIdIndex.query(findCandidateByPublicationIdQuery(publicationId))
                    .stream()
                    .map(Page::items)
@@ -189,39 +155,12 @@ public class CandidateRepository extends DynamoRepository {
         return note;
     }
 
-    public Candidate updateCandidateRemovingApprovals(UUID identifier, DbCandidate dbCandidate,
-                                                      List<DbApprovalStatus> approvals) {
-        var candidate = constructCandidate(identifier, dbCandidate);
-        var transaction = constructTransaction(approvals, candidate);
-        client.transactWriteItems(transaction.build());
-        return new Candidate.Builder().withIdentifier(identifier)
-                   .withCandidate(dbCandidate)
-                   .withApprovalStatuses(approvals)
-                   .withNotes(getDbNotes(identifier))
-                   .build();
-    }
-
     public void deleteNote(UUID candidateIdentifier, UUID noteIdentifier) {
         noteTable.deleteItem(noteKey(candidateIdentifier, noteIdentifier));
     }
 
-    public DbNote getNoteById(UUID candidateIdentifier, UUID noteIdentifier) {
-        return Optional.of(noteKey(candidateIdentifier, noteIdentifier))
-                   .map(noteTable::getItem)
-                   .map(NoteDao::note)
-                   .orElseThrow(NoSuchElementException::new);
-    }
-
     public List<ApprovalStatusDao> fetchApprovals(UUID identifier) {
         return approvalStatusTable.query(constructApprovalsQuery(identifier)).items().stream().toList();
-    }
-
-    public List<DbNote> getDbNotes(UUID candidateIdentifier) {
-        return noteTable.query(queryCandidateParts(candidateIdentifier, NoteDao.TYPE))
-                   .items()
-                   .stream()
-                   .map(NoteDao::note)
-                   .toList();
     }
 
     public List<NoteDao> getNotes(UUID candidateIdentifier) {
@@ -389,22 +328,6 @@ public class CandidateRepository extends DynamoRepository {
             oldApprovals.forEach(leftOver -> transaction.addDeleteItem(approvalStatusTable,
                                                                        mapToApprovalStatusDao(identifier, leftOver)));
         }
-    }
-
-    private Builder constructTransaction(List<DbApprovalStatus> approvals, CandidateDao candidate) {
-        var approvalStatuses = approvals.stream().map(approval -> approval.toDao(candidate.identifier())).toList();
-        var transaction = TransactWriteItemsEnhancedRequest.builder();
-        transaction.addPutItem(candidateTable, candidate);
-        approvalStatuses.forEach(approvalStatus -> transaction.addDeleteItem(approvalStatusTable, approvalStatus));
-        return transaction;
-    }
-
-    private Candidate toCandidate(CandidateDao candidateDao) {
-        return new Candidate.Builder().withIdentifier(candidateDao.identifier())
-                   .withCandidate(candidateDao.candidate())
-                   .withApprovalStatuses(getApprovalStatuses(approvalStatusTable, candidateDao.identifier()))
-                   .withNotes(getDbNotes(candidateDao.identifier()))
-                   .build();
     }
 
     private List<ApprovalStatusDao> getApprovalStatuses(UUID identifier) {

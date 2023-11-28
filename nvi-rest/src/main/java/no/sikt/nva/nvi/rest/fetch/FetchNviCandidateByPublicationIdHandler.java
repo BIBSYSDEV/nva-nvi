@@ -10,9 +10,9 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -43,10 +43,10 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
         throws ApiGatewayException {
         validateRequest(requestInfo);
         return attempt(() -> getPublicationId(requestInfo))
-            .map(identifier -> CandidateBO.fromRequest(() -> identifier, candidateRepository, periodRepository))
-            .map(this::checkIfApplicable)
-            .map(CandidateBO::toDto)
-            .orElseThrow(ExceptionMapper::map);
+                   .map(identifier -> Candidate.fromRequest(() -> identifier, candidateRepository, periodRepository))
+                   .map(this::checkIfApplicable)
+                   .map(Candidate::toDto)
+                   .orElseThrow(ExceptionMapper::map);
     }
 
     @Override
@@ -69,7 +69,7 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
             URLDecoder.decode(requestInfo.getPathParameters().get(CANDIDATE_PUBLICATION_ID), StandardCharsets.UTF_8));
     }
 
-    private CandidateBO checkIfApplicable(CandidateBO candidate) {
+    private Candidate checkIfApplicable(Candidate candidate) {
         if (candidate.isApplicable()) {
             return candidate;
         }

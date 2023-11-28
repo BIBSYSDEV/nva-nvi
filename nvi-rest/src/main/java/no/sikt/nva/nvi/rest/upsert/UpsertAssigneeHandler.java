@@ -12,7 +12,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.DynamoRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.rest.model.ApprovalDto;
 import no.sikt.nva.nvi.rest.model.User;
@@ -68,9 +68,9 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
         var institutionId = input.institutionId();
         var assignee = input.assignee();
-        return attempt(() -> CandidateBO.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository))
+        return attempt(() -> Candidate.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository))
                    .map(candidate -> candidate.updateApproval(new UpdateAssigneeRequest(institutionId, assignee)))
-                   .map(CandidateBO::toDto)
+                   .map(Candidate::toDto)
                    .orElseThrow(ExceptionMapper::map);
     }
 

@@ -10,7 +10,7 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.utils.RequestUtil;
@@ -46,10 +46,10 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         validate(input);
         var username = RequestUtil.getUsername(requestInfo);
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
-        return attempt(() -> CandidateBO.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository))
+        return attempt(() -> Candidate.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository))
                    .map(this::checkIfApplicable)
                    .map(candidate -> candidate.createNote(new CreateNoteRequest(input.text(), username.value())))
-                   .map(CandidateBO::toDto)
+                   .map(Candidate::toDto)
                    .orElseThrow(ExceptionMapper::map);
     }
 
@@ -58,7 +58,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         return HttpURLConnection.HTTP_OK;
     }
 
-    private CandidateBO checkIfApplicable(CandidateBO candidate) {
+    private Candidate checkIfApplicable(Candidate candidate) {
         if (candidate.isApplicable()) {
             return candidate;
         }

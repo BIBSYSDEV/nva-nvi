@@ -53,19 +53,18 @@ import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.NviApprovalStatus;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto.Status;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.Creator;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
-import no.sikt.nva.nvi.events.persist.UpsertNviCandidateHandler;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import nva.commons.core.Environment;
@@ -124,7 +123,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     void shouldSendMessageToDlqWhenUnexpectedErrorOccurs() {
         candidateRepository = mock(CandidateRepository.class);
         handler = new UpsertNviCandidateHandler(candidateRepository, periodRepository, queueClient, environment);
-        when(candidateRepository.createDao(any(), any())).thenThrow(RuntimeException.class);
+        when(candidateRepository.create(any(), any())).thenThrow(RuntimeException.class);
 
         handler.handleRequest(createEvent(randomCandidateEvaluatedMessage()), CONTEXT);
 
@@ -148,7 +147,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                    publicationId, publicationBucketUri, totalPoints);
         handler.handleRequest(sqsEvent, CONTEXT);
 
-        var fetchedCandidate = CandidateBO.fromRequest(() -> publicationId, candidateRepository, periodRepository)
+        var fetchedCandidate = Candidate.fromRequest(() -> publicationId, candidateRepository, periodRepository)
                                    .toDto();
         var expectedResponse = createResponse(fetchedCandidate.identifier(), publicationId, institutionPoints,
                                               totalPoints);
@@ -158,11 +157,11 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldUpdateExistingNviCandidateToNonCandidateWhenIncomingEventIsNonCandidate() {
-        var dto = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
-                                          periodRepository).orElseThrow().toDto();
+        var dto = Candidate.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
+                                        periodRepository).orElseThrow().toDto();
         var eventMessage = nonCandidateMessageForExistingCandidate(dto);
         handler.handleRequest(createEvent(eventMessage), CONTEXT);
-        var updatedCandidate = CandidateBO.fromRequest(dto::identifier, candidateRepository, periodRepository);
+        var updatedCandidate = Candidate.fromRequest(dto::identifier, candidateRepository, periodRepository);
 
         assertThat(updatedCandidate.isApplicable(), is(false));
     }
@@ -173,7 +172,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var delete = randomUri();
         var identifier = UUID.randomUUID();
         var publicationId = generatePublicationId(identifier);
-        var dto = CandidateBO.fromRequest(
+        var dto = Candidate.fromRequest(
             createUpsertCandidateRequest(publicationId, randomUri(), true, InstanceType.ACADEMIC_ARTICLE, 1,
                                          randomBigDecimal(),
                                          randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
@@ -191,13 +190,13 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     void shouldNotResetApprovalsWhenUpdatingFieldsNotEffectingApprovals() {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
-        var candidate = CandidateBO.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
+        var candidate = Candidate.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, DbStatus.APPROVED, randomString(), randomString()));
         var approval = candidate.toDto().approvalStatuses().get(0);
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest, institutionId);
-        var updatedCandidate = CandidateBO.fromRequest(newUpsertRequest, candidateRepository, periodRepository)
+        var updatedCandidate = Candidate.fromRequest(newUpsertRequest, candidateRepository, periodRepository)
                                    .orElseThrow();
         var updatedApproval = updatedCandidate.toDto().approvalStatuses().get(0);
 
@@ -311,7 +310,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private Map<URI, DbApprovalStatus> getAprovalMaps(CandidateBO dto) {
+    private Map<URI, DbApprovalStatus> getAprovalMaps(Candidate dto) {
         return candidateRepository.fetchApprovals(dto.getIdentifier())
                    .stream()
                    .map(ApprovalStatusDao::approvalStatus)

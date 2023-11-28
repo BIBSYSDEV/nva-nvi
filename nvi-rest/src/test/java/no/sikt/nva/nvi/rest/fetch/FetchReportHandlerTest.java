@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.rest.model.ReportRow;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
@@ -73,8 +73,8 @@ class FetchReportHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnUnauthorizedWhenUserDoesNotHaveSufficientAccessRight() throws IOException {
-        var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
-                                                candidateRepository, periodRepository).orElseThrow();
+        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(randomUri()),
+                                              candidateRepository, periodRepository).orElseThrow();
         var year = Year.now().getValue();
         var institutionId = randomUri();
         var request = createRequest(candidate.getIdentifier(), institutionId, institutionId, year,
@@ -88,7 +88,7 @@ class FetchReportHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnForbiddenWhenUserDoesNotBelongToSameInstitutionAsRequestedInstitution()
         throws IOException {
-        var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()),
+        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(randomUri()),
                                                 candidateRepository, periodRepository).orElseThrow();
         var request = createRequest(candidate.getIdentifier(), randomUri(), randomUri(), CURRENT_YEAR,
                                     MANAGE_NVI_CANDIDATE.name()).build();

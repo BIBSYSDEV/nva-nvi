@@ -2,19 +2,26 @@ package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.test.TestUtils.createNumberOfCandidatesForYear;
 import static no.sikt.nva.nvi.test.TestUtils.getYearIndexStartMarker;
+import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.sortByIdentifier;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import java.math.BigDecimal;
+import java.net.URI;
 import java.util.List;
+import java.util.Map;
+import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.requests.PublicationDate;
+import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,11 +31,13 @@ class CandidateRepositoryTest extends LocalDynamoTest {
 
     public static final int DEFAULT_PAGE_SIZE = 700;
     private CandidateRepository candidateRepository;
+    private PeriodRepository periodRepository;
 
     @BeforeEach
     public void setUp() {
         localDynamo = initializeTestDatabase();
         candidateRepository = new CandidateRepository(localDynamo);
+        periodRepository = new PeriodRepository(localDynamo);
     }
 
     @Test
@@ -43,15 +52,16 @@ class CandidateRepositoryTest extends LocalDynamoTest {
 
     @Test
     public void shouldOverwriteExistingCandidateWhenUpdating() {
-        var originalCandidate = TestUtils.randomCandidate();
-        var created = candidateRepository.create(originalCandidate, List.of());
-        var newCandidate = originalCandidate.copy().publicationBucketUri(randomUri()).build();
-        candidateRepository.update(created.identifier(), newCandidate, List.of());
-        var fetched = candidateRepository.findCandidateById(created.identifier()).get().candidate();
+        var originalRequest = createUpsertCandidateRequest(randomUri());
+        var candidate = Candidate.fromRequest(originalRequest, candidateRepository, periodRepository).orElseThrow();
+        var originalDbCandidate = candidateRepository.findCandidateById(candidate.getIdentifier()).get().candidate();
 
-        assertThat(scanDB().count(), is(equalTo(2)));
-        assertThat(fetched, is(not(equalTo(originalCandidate))));
-        assertThat(fetched, is(equalTo(newCandidate)));
+        var newUpsertRequest = copyRequestWithNewInstanceType(originalRequest, randomUri());
+        Candidate.fromRequest(newUpsertRequest, candidateRepository, periodRepository).orElseThrow();
+        var updatedDbCandidate = candidateRepository.findCandidateById(candidate.getIdentifier()).get().candidate();
+
+        assertThat(scanDB().count(), is(equalTo(3)));
+        assertThat(updatedDbCandidate, is(not(equalTo(originalDbCandidate))));
     }
 
     @Test
@@ -88,5 +98,85 @@ class CandidateRepositoryTest extends LocalDynamoTest {
         var results = candidateRepository.fetchCandidatesByYear(year, null, null).getCandidates();
         assertThat(results.size(), is(equalTo(DEFAULT_PAGE_SIZE)));
         assertThat(expectedCandidates, containsInAnyOrder(results.toArray()));
+    }
+
+    private UpsertCandidateRequest copyRequestWithNewInstanceType(UpsertCandidateRequest request,
+                                                                  URI publicationChannelId) {
+        return new UpsertCandidateRequest() {
+            @Override
+            public URI publicationBucketUri() {
+                return request.publicationBucketUri();
+            }
+
+            @Override
+            public URI publicationId() {
+                return request.publicationId();
+            }
+
+            @Override
+            public boolean isApplicable() {
+                return request.isApplicable();
+            }
+
+            @Override
+            public boolean isInternationalCollaboration() {
+                return request.isInternationalCollaboration();
+            }
+
+            @Override
+            public Map<URI, List<URI>> creators() {
+                return request.creators();
+            }
+
+            @Override
+            public String channelType() {
+                return request.channelType();
+            }
+
+            @Override
+            public URI publicationChannelId() {
+                return publicationChannelId;
+            }
+
+            @Override
+            public String level() {
+                return request.level();
+            }
+
+            @Override
+            public String instanceType() {
+                return request.instanceType();
+            }
+
+            @Override
+            public PublicationDate publicationDate() {
+                return request.publicationDate();
+            }
+
+            @Override
+            public int creatorShareCount() {
+                return request.creatorShareCount();
+            }
+
+            @Override
+            public BigDecimal collaborationFactor() {
+                return request.collaborationFactor();
+            }
+
+            @Override
+            public BigDecimal basePoints() {
+                return request.basePoints();
+            }
+
+            @Override
+            public Map<URI, BigDecimal> institutionPoints() {
+                return request.institutionPoints();
+            }
+
+            @Override
+            public BigDecimal totalPoints() {
+                return request.totalPoints();
+            }
+        };
     }
 }

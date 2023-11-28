@@ -32,11 +32,10 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.model.Username;
-import no.sikt.nva.nvi.common.service.ApprovalBO;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.model.Approval;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.JsonPointers;
 import no.sikt.nva.nvi.index.model.Affiliation;
-import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contexts;
 import no.sikt.nva.nvi.index.model.Contributor;
@@ -62,14 +61,14 @@ public final class NviCandidateIndexDocumentGenerator {
         this.uriRetriever = uriRetriever;
     }
 
-    public NviCandidateIndexDocument generateDocument(String resource, CandidateBO candidate) {
+    public NviCandidateIndexDocument generateDocument(String resource, Candidate candidate) {
         LOGGER.info("Starting generateDocument for {}", candidate.getIdentifier());
         return createNviCandidateIndexDocument(
             attempt(() -> dtoObjectMapper.readTree(resource)).map(root -> root.at(JsonPointers.JSON_PTR_BODY))
                 .orElseThrow(), candidate);
     }
 
-    private NviCandidateIndexDocument createNviCandidateIndexDocument(JsonNode resource, CandidateBO candidate) {
+    private NviCandidateIndexDocument createNviCandidateIndexDocument(JsonNode resource, Candidate candidate) {
         var approvals = createApprovals(resource, toDbApprovals(candidate.getApprovals()));
         return new NviCandidateIndexDocument.Builder().withContext(URI.create(Contexts.NVI_CONTEXT))
                    .withIdentifier(candidate.getIdentifier().toString())
@@ -80,14 +79,15 @@ public final class NviCandidateIndexDocumentGenerator {
                    .build();
     }
 
-    private List<DbApprovalStatus> toDbApprovals(Map<URI, ApprovalBO> approvals) {
+    private List<DbApprovalStatus> toDbApprovals(Map<URI, Approval> approvals) {
         return approvals.values()
                    .stream()
-                   .map(approvalBO -> approvalBO.approval().approvalStatus())
+                   .map(approval -> approval.approval().approvalStatus())
                    .collect(Collectors.toList());
     }
 
-    private List<Approval> createApprovals(JsonNode resource, List<DbApprovalStatus> approvals) {
+    private List<no.sikt.nva.nvi.index.model.Approval> createApprovals(JsonNode resource,
+                                                                       List<DbApprovalStatus> approvals) {
         return approvals.stream().map(approval -> toApproval(resource, approval)).toList();
     }
 
@@ -99,8 +99,8 @@ public final class NviCandidateIndexDocumentGenerator {
                    .getLabels();
     }
 
-    private Approval toApproval(JsonNode resource, DbApprovalStatus approval) {
-        return new Approval.Builder().withId(approval.institutionId().toString())
+    private no.sikt.nva.nvi.index.model.Approval toApproval(JsonNode resource, DbApprovalStatus approval) {
+        return new no.sikt.nva.nvi.index.model.Approval.Builder().withId(approval.institutionId().toString())
                    .withLabels(extractLabel(resource, approval))
                    .withApprovalStatus(ApprovalStatus.fromValue(approval.status().getValue()))
                    .withAssignee(extractAssignee(approval))

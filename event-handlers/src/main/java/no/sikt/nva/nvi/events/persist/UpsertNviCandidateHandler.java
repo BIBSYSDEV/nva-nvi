@@ -18,7 +18,7 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.InvalidNviMessageException;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
@@ -99,10 +99,10 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         try {
             validateMessage(evaluatedCandidate);
             if (evaluatedCandidate.candidate() instanceof NviCandidate candidate) {
-                CandidateBO.fromRequest(candidate, repository, periodRepository);
+                Candidate.fromRequest(candidate, repository, periodRepository);
             } else {
                 var nonNviCandidate = (NonNviCandidate) evaluatedCandidate.candidate();
-                CandidateBO.fromRequest(nonNviCandidate, repository);
+                Candidate.fromRequest(nonNviCandidate, repository);
             }
             logPersistence(evaluatedCandidate);
         } catch (Exception e) {

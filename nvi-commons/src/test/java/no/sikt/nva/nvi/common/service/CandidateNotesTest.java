@@ -15,13 +15,14 @@ import java.time.ZonedDateTime;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class CandidateBONotesTest extends LocalDynamoTest {
+public class CandidateNotesTest extends LocalDynamoTest {
 
     public static final int YEAR = ZonedDateTime.now().getYear();
     private CandidateRepository candidateRepository;
@@ -40,7 +41,7 @@ public class CandidateBONotesTest extends LocalDynamoTest {
         var noteRequest = createNoteRequest(randomString(), randomString());
         candidate.createNote(noteRequest);
 
-        var actualNote = CandidateBO.fromRequest(candidate::getIdentifier, candidateRepository, periodRepository)
+        var actualNote = Candidate.fromRequest(candidate::getIdentifier, candidateRepository, periodRepository)
                              .toDto()
                              .notes()
                              .get(0);
@@ -88,8 +89,8 @@ public class CandidateBONotesTest extends LocalDynamoTest {
                      () -> candidate.deleteNote(new DeleteNoteRequest(noteToDelete.identifier(), randomString())));
     }
 
-    private CandidateBO createCandidate() {
-        return CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
-                                       periodRepository).orElseThrow();
+    private Candidate createCandidate() {
+        return Candidate.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
+                                     periodRepository).orElseThrow();
     }
 }

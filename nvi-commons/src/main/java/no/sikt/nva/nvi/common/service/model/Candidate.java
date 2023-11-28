@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.service;
+package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.UUID.randomUUID;
 import static nva.commons.core.attempt.Try.attempt;
@@ -51,7 +51,7 @@ import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
-public final class CandidateBO {
+public final class Candidate {
 
     private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
     private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
@@ -70,14 +70,14 @@ public final class CandidateBO {
     private final URI publicationId;
     private final URI publicationBucketUri;
     private final boolean applicable;
-    private final Map<URI, ApprovalBO> approvals;
-    private final Map<UUID, NoteBO> notes;
+    private final Map<URI, Approval> approvals;
+    private final Map<UUID, Note> notes;
     private final Map<URI, BigDecimal> institutionPoints;
     private final BigDecimal totalPoints;
     private final PeriodStatus periodStatus;
 
-    private CandidateBO(CandidateRepository repository, CandidateDao candidateDao, List<ApprovalStatusDao> approvals,
-                        List<NoteDao> notes, PeriodStatus periodStatus) {
+    private Candidate(CandidateRepository repository, CandidateDao candidateDao, List<ApprovalStatusDao> approvals,
+                      List<NoteDao> notes, PeriodStatus periodStatus) {
         this.repository = repository;
         this.identifier = candidateDao.identifier();
         this.publicationId = candidateDao.candidate().publicationId();
@@ -90,28 +90,28 @@ public final class CandidateBO {
         this.periodStatus = periodStatus;
     }
 
-    public static CandidateBO fromRequest(FetchByPublicationRequest request, CandidateRepository repository,
-                                          PeriodRepository periodRepository) {
-        var candidateDao = repository.findByPublicationIdDao(request.publicationId())
+    public static Candidate fromRequest(FetchByPublicationRequest request, CandidateRepository repository,
+                                        PeriodRepository periodRepository) {
+        var candidateDao = repository.findByPublicationId(request.publicationId())
                                .orElseThrow(CandidateNotFoundException::new);
         var approvalDaoList = repository.fetchApprovals(candidateDao.identifier());
         var noteDaoList = repository.getNotes(candidateDao.identifier());
-        var periodStatus = getPeriodStatus(periodRepository, candidateDao.candidate().publicationDate().year());
-        return new CandidateBO(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
+        var periodStatus = findPeriodStatus(periodRepository, candidateDao.candidate().publicationDate().year());
+        return new Candidate(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
     }
 
-    public static CandidateBO fromRequest(FetchCandidateRequest request, CandidateRepository repository,
-                                          PeriodRepository periodRepository) {
-        var candidateDao = repository.findCandidateDaoById(request.identifier())
+    public static Candidate fromRequest(FetchCandidateRequest request, CandidateRepository repository,
+                                        PeriodRepository periodRepository) {
+        var candidateDao = repository.findCandidateById(request.identifier())
                                .orElseThrow(CandidateNotFoundException::new);
         var approvalDaoList = repository.fetchApprovals(candidateDao.identifier());
         var noteDaoList = repository.getNotes(candidateDao.identifier());
         var periodStatus = calculatePeriodStatusIfApplicable(periodRepository, candidateDao);
-        return new CandidateBO(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
+        return new Candidate(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
     }
 
-    public static Optional<CandidateBO> fromRequest(UpsertCandidateRequest request, CandidateRepository repository,
-                                                    PeriodRepository periodRepository) {
+    public static Optional<Candidate> fromRequest(UpsertCandidateRequest request, CandidateRepository repository,
+                                                  PeriodRepository periodRepository) {
         if (isNotExistingCandidate(request, repository)) {
             return Optional.of(createCandidate(request, repository, periodRepository));
         }
@@ -121,11 +121,15 @@ public final class CandidateBO {
         return Optional.empty();
     }
 
-    public static Optional<CandidateBO> fromRequest(UpsertNonCandidateRequest request, CandidateRepository repository) {
+    public static Optional<Candidate> fromRequest(UpsertNonCandidateRequest request, CandidateRepository repository) {
         if (isExistingCandidate(request.publicationId(), repository)) {
             return Optional.of(deleteCandidate(request, repository));
         }
         return Optional.empty();
+    }
+
+    public PeriodStatus getPeriodStatus() {
+        return periodStatus;
     }
 
     public UUID getIdentifier() {
@@ -148,7 +152,7 @@ public final class CandidateBO {
         return institutionPoints;
     }
 
-    public Map<URI, ApprovalBO> getApprovals() {
+    public Map<URI, Approval> getApprovals() {
         return new HashMap<>(approvals);
     }
 
@@ -168,20 +172,20 @@ public final class CandidateBO {
                    .build();
     }
 
-    public CandidateBO updateApproval(UpdateApprovalRequest input) {
+    public Candidate updateApproval(UpdateApprovalRequest input) {
         validateCandidateState();
-        approvals.computeIfPresent(input.institutionId(), (uri, approvalBO) -> approvalBO.update(input));
+        approvals.computeIfPresent(input.institutionId(), (uri, approval) -> approval.update(input));
         return this;
     }
 
-    public CandidateBO createNote(CreateNoteRequest input) {
+    public Candidate createNote(CreateNoteRequest input) {
         validateCandidateState();
-        var noteBO = NoteBO.fromRequest(input, identifier, repository);
+        var noteBO = Note.fromRequest(input, identifier, repository);
         notes.put(noteBO.noteId(), noteBO);
         return this;
     }
 
-    public CandidateBO deleteNote(DeleteNoteRequest request) {
+    public Candidate deleteNote(DeleteNoteRequest request) {
         validateCandidateState();
         var note = notes.get(request.noteId());
         validateNoteOwner(request.username(), note.getDao());
@@ -192,15 +196,11 @@ public final class CandidateBO {
         return this;
     }
 
-    PeriodStatus periodStatus() {
-        return periodStatus;
-    }
-
     private static PeriodStatus calculatePeriodStatusIfApplicable(PeriodRepository periodRepository,
                                                                   CandidateDao candidateDao) {
-        return candidateDao.candidate().applicable() ? getPeriodStatus(periodRepository, candidateDao.candidate()
-                                                                                             .publicationDate()
-                                                                                             .year())
+        return candidateDao.candidate().applicable() ? findPeriodStatus(periodRepository, candidateDao.candidate()
+                                                                                              .publicationDate()
+                                                                                              .year())
                    : PERIOD_STATUS_NO_PERIOD;
     }
 
@@ -212,20 +212,20 @@ public final class CandidateBO {
         return !dao.note().user().value().equals(username);
     }
 
-    private static CandidateBO deleteCandidate(UpsertNonCandidateRequest request, CandidateRepository repository) {
-        var existingCandidateDao = repository.findByPublicationIdDao(request.publicationId())
+    private static Candidate deleteCandidate(UpsertNonCandidateRequest request, CandidateRepository repository) {
+        var existingCandidateDao = repository.findByPublicationId(request.publicationId())
                                        .orElseThrow(CandidateNotFoundException::new);
         var nonApplicableCandidate = updateCandidateToNonApplicable(existingCandidateDao);
         repository.updateCandidateAndRemovingApprovals(existingCandidateDao.identifier(), nonApplicableCandidate);
 
-        return new CandidateBO(repository, nonApplicableCandidate, Collections.emptyList(), Collections.emptyList(),
-                               PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
+        return new Candidate(repository, nonApplicableCandidate, Collections.emptyList(), Collections.emptyList(),
+                             PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
     }
 
-    private static CandidateBO updateCandidate(UpsertCandidateRequest request, CandidateRepository repository,
-                                               PeriodRepository periodRepository) {
+    private static Candidate updateCandidate(UpsertCandidateRequest request, CandidateRepository repository,
+                                             PeriodRepository periodRepository) {
         validateCandidate(request);
-        var existingCandidateDao = repository.findByPublicationIdDao(request.publicationId())
+        var existingCandidateDao = repository.findByPublicationId(request.publicationId())
                                        .orElseThrow(CandidateNotFoundException::new);
         if (shouldResetCandidate(request, existingCandidateDao) || isNotApplicable(existingCandidateDao)) {
             return resetCandidate(request, repository, periodRepository, existingCandidateDao);
@@ -238,27 +238,28 @@ public final class CandidateBO {
         return !existingCandidateDao.candidate().applicable();
     }
 
-    private static CandidateBO resetCandidate(UpsertCandidateRequest request, CandidateRepository repository,
-                                              PeriodRepository periodRepository, CandidateDao existingCandidateDao) {
+    private static Candidate resetCandidate(UpsertCandidateRequest request, CandidateRepository repository,
+                                            PeriodRepository periodRepository, CandidateDao existingCandidateDao) {
         var newApprovals = mapToApprovals(request.institutionPoints());
         var newCandidateDao = updateCandidateDaoFromRequest(existingCandidateDao, request);
         repository.updateCandidate(existingCandidateDao.identifier(), newCandidateDao, newApprovals);
         var notes = repository.getNotes(existingCandidateDao.identifier());
-        var periodStatus = getPeriodStatus(periodRepository, existingCandidateDao.candidate().publicationDate().year());
+        var periodStatus = findPeriodStatus(periodRepository,
+                                            existingCandidateDao.candidate().publicationDate().year());
         var approvals = mapToApprovalsDaos(newCandidateDao.identifier(), newApprovals);
-        return new CandidateBO(repository, newCandidateDao, approvals, notes, periodStatus);
+        return new Candidate(repository, newCandidateDao, approvals, notes, periodStatus);
     }
 
-    private static CandidateBO updateCandidateKeepingApprovalsAndNotes(UpsertCandidateRequest request,
-                                                                       CandidateRepository repository,
-                                                                       PeriodRepository periodRepository,
-                                                                       CandidateDao existingCandidateDao) {
+    private static Candidate updateCandidateKeepingApprovalsAndNotes(UpsertCandidateRequest request,
+                                                                     CandidateRepository repository,
+                                                                     PeriodRepository periodRepository,
+                                                                     CandidateDao existingCandidateDao) {
         var updatedCandidate = updateCandidateDaoFromRequest(existingCandidateDao, request);
         var approvalDaoList = repository.fetchApprovals(updatedCandidate.identifier());
         repository.updateCandidate(updatedCandidate);
         var noteDaoList = repository.getNotes(updatedCandidate.identifier());
-        var periodStatus = getPeriodStatus(periodRepository, updatedCandidate.candidate().publicationDate().year());
-        return new CandidateBO(repository, updatedCandidate, approvalDaoList, noteDaoList, periodStatus);
+        var periodStatus = findPeriodStatus(periodRepository, updatedCandidate.candidate().publicationDate().year());
+        return new Candidate(repository, updatedCandidate, approvalDaoList, noteDaoList, periodStatus);
     }
 
     private static boolean shouldResetCandidate(UpsertCandidateRequest request, CandidateDao candidate) {
@@ -286,15 +287,15 @@ public final class CandidateBO {
         return !Objects.equals(DbLevel.parse(request.level()), existingCandidateDao.candidate().level());
     }
 
-    private static CandidateBO createCandidate(UpsertCandidateRequest request, CandidateRepository repository,
-                                               PeriodRepository periodRepository) {
+    private static Candidate createCandidate(UpsertCandidateRequest request, CandidateRepository repository,
+                                             PeriodRepository periodRepository) {
         validateCandidate(request);
-        var candidateDao = repository.createDao(mapToCandidate(request), mapToApprovals(request.institutionPoints()));
+        var candidateDao = repository.create(mapToCandidate(request), mapToApprovals(request.institutionPoints()));
         var approvals1 = repository.fetchApprovals(candidateDao.identifier());
         var notes1 = repository.getNotes(candidateDao.identifier());
-        var periodStatus1 = getPeriodStatus(periodRepository, candidateDao.candidate().publicationDate().year());
+        var periodStatus1 = findPeriodStatus(periodRepository, candidateDao.candidate().publicationDate().year());
 
-        return new CandidateBO(repository, candidateDao, approvals1, notes1, periodStatus1);
+        return new Candidate(repository, candidateDao, approvals1, notes1, periodStatus1);
     }
 
     private static List<ApprovalStatusDao> mapToApprovalsDaos(UUID identifier, List<DbApprovalStatus> newApprovals) {
@@ -332,20 +333,20 @@ public final class CandidateBO {
                    .collect(Collectors.toMap(DbInstitutionPoints::institutionId, DbInstitutionPoints::points));
     }
 
-    private static Map<UUID, NoteBO> mapToNotesMap(CandidateRepository repository, List<NoteDao> notes) {
+    private static Map<UUID, Note> mapToNotesMap(CandidateRepository repository, List<NoteDao> notes) {
         return notes.stream()
-                   .map(dao -> new NoteBO(repository, dao.identifier(), dao))
-                   .collect(Collectors.toMap(NoteBO::noteId, Function.identity()));
+                   .map(dao -> new Note(repository, dao.identifier(), dao))
+                   .collect(Collectors.toMap(Note::noteId, Function.identity()));
     }
 
-    private static Map<URI, ApprovalBO> mapToApprovalsMap(CandidateRepository repository,
-                                                          List<ApprovalStatusDao> approvals) {
+    private static Map<URI, Approval> mapToApprovalsMap(CandidateRepository repository,
+                                                        List<ApprovalStatusDao> approvals) {
         return approvals.stream()
-                   .map(dao -> new ApprovalBO(repository, dao.identifier(), dao))
-                   .collect(Collectors.toMap(ApprovalBO::institutionId, Function.identity()));
+                   .map(dao -> new Approval(repository, dao.identifier(), dao))
+                   .collect(Collectors.toMap(Approval::institutionId, Function.identity()));
     }
 
-    private static PeriodStatus getPeriodStatus(PeriodRepository periodRepository, String year) {
+    private static PeriodStatus findPeriodStatus(PeriodRepository periodRepository, String year) {
         return periodRepository.findByPublishingYear(year)
                    .map(PeriodStatus::fromPeriod)
                    .orElse(PERIOD_STATUS_NO_PERIOD);
@@ -356,7 +357,7 @@ public final class CandidateBO {
     }
 
     private static List<DbApprovalStatus> mapToApprovals(Map<URI, BigDecimal> points) {
-        return points.keySet().stream().map(CandidateBO::mapToApproval).toList();
+        return points.keySet().stream().map(Candidate::mapToApproval).toList();
     }
 
     private static DbApprovalStatus mapToApproval(URI institutionId) {
@@ -456,14 +457,14 @@ public final class CandidateBO {
     }
 
     private List<NoteDto> mapToNoteDtos() {
-        return this.notes.values().stream().map(NoteBO::toDto).toList();
+        return this.notes.values().stream().map(Note::toDto).toList();
     }
 
     private List<ApprovalStatus> mapToApprovalDtos() {
         return approvals.values().stream().map(this::mapToApprovalDto).toList();
     }
 
-    private ApprovalStatus mapToApprovalDto(ApprovalBO bo) {
+    private ApprovalStatus mapToApprovalDto(Approval bo) {
         var approval = bo.approval().approvalStatus();
         return ApprovalStatus.builder()
                    .withInstitutionId(approval.institutionId())

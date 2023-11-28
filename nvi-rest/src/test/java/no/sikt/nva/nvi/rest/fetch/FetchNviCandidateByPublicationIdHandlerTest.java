@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.net.HttpHeaders;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,14 +23,13 @@ import java.net.URI;
 import java.util.Map;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpStatus;
-import org.eclipse.jetty.http.HttpHeader;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,7 +75,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnUnauthorizedWhenUserOIsNonAuthorized() throws IOException {
         var institutionId = randomUri();
-        var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId),
+        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(institutionId),
                                                 candidateRepository, periodRepository).orElseThrow();
         var request = createUnauthorizedRequest(candidate.getPublicationId());
         handler.handleRequest(request, output, CONTEXT);
@@ -88,7 +88,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
     void shouldReturnValidCandidateWhenCandidateExists() throws IOException {
         var institutionId = randomUri();
         var candidate =
-            CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         var request = createRequest(candidate.getPublicationId());
 
@@ -103,28 +103,28 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
     private static InputStream createRequest(URI publicationId)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
-            .withHeaders(Map.of(HttpHeader.ACCEPT.asString(), ContentType.APPLICATION_JSON.getMimeType()))
-            .withCurrentCustomer(randomUri())
-            .withUserName(randomString())
-            .withPathParameters(Map.of(CANDIDATE_PUBLICATION_ID, publicationId.toString()))
-            .build();
+                   .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
+                   .withCurrentCustomer(randomUri())
+                   .withUserName(randomString())
+                   .withPathParameters(Map.of(CANDIDATE_PUBLICATION_ID, publicationId.toString()))
+                   .build();
     }
 
     private static InputStream createUnauthorizedRequest(URI publicationId)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
-            .withHeaders(Map.of(HttpHeader.ACCEPT.asString(), ContentType.APPLICATION_JSON.getMimeType()))
-            .withUserName(randomString())
-            .withPathParameters(Map.of(CANDIDATE_PUBLICATION_ID, publicationId.toString()))
-            .build();
+                   .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
+                   .withUserName(randomString())
+                   .withPathParameters(Map.of(CANDIDATE_PUBLICATION_ID, publicationId.toString()))
+                   .build();
     }
 
-    private CandidateBO setUpNonApplicableCandidate(URI institutionId) {
+    private Candidate setUpNonApplicableCandidate(URI institutionId) {
         var candidate =
-            CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
-        return CandidateBO.fromRequest(createUpsertNonCandidateRequest(candidate.getPublicationId()),
-                                       candidateRepository).orElseThrow();
+        return Candidate.fromRequest(createUpsertNonCandidateRequest(candidate.getPublicationId()),
+                                     candidateRepository).orElseThrow();
     }
 
     private GatewayResponse<CandidateDto> getGatewayResponse()

@@ -25,7 +25,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.rest.create.NviNoteRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -124,13 +124,13 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
                    .withUserName(userName);
     }
 
-    private CandidateBO createNote(CandidateBO candidate, Username user) {
+    private Candidate createNote(Candidate candidate, Username user) {
         return candidate.createNote(new CreateNoteRequest(randomString(), user.value()));
     }
 
-    private CandidateBO createCandidate() {
-        return CandidateBO.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
-                                       periodRepository).orElseThrow();
+    private Candidate createCandidate() {
+        return Candidate.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
+                                     periodRepository).orElseThrow();
     }
 
     private HandlerRequestBuilder<NviNoteRequest> createRequest(UUID candidateIdentifier, UUID noteIdentifier,

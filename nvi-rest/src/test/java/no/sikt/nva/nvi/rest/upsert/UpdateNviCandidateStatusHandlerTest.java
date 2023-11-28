@@ -31,7 +31,7 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
-import no.sikt.nva.nvi.common.service.CandidateBO;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
@@ -89,8 +89,8 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     @Test
     void shouldBeForbiddenToChangeStatusOfOtherInstitution() throws IOException {
         var institutionId = randomUri();
-        var candidate = CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository,
-                                                periodRepository).orElseThrow();
+        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository,
+                                              periodRepository).orElseThrow();
         var request = createUnauthorizedRequest(candidate.getIdentifier(), institutionId);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -105,7 +105,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository);
         var institutionId = randomUri();
         var candidate =
-            CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         var request = createRequest(candidate.getIdentifier(), institutionId, APPROVED);
         handler.handleRequest(request, output, context);
@@ -121,7 +121,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository);
         var institutionId = randomUri();
         var candidate =
-            CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         var request = createRequest(candidate.getIdentifier(), institutionId, APPROVED);
         handler.handleRequest(request, output, context);
@@ -134,7 +134,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldReturnBadRequestIfRejectionDoesNotContainReason() throws IOException {
         var institutionId = randomUri();
         var candidate =
-            CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         var request = createRequestWithoutReason(candidate.getIdentifier(), institutionId, REJECTED);
         handler.handleRequest(request, output, context);
@@ -149,7 +149,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldUpdateApprovalStatus(DbStatus oldStatus, DbStatus newStatus) throws IOException {
         var institutionId = randomUri();
         var candidate =
-            CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         candidate.updateApproval(createStatusRequest(oldStatus));
         var request = createRequest(candidate.getIdentifier(), institutionId,
@@ -166,7 +166,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldResetFinalizedValuesWhenUpdatingStatusToPending(DbStatus oldStatus) throws IOException {
         var institutionId = randomUri();
         var candidate =
-            CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         candidate.updateApproval(createStatusRequest(oldStatus));
         var newStatus = PENDING;
@@ -185,7 +185,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldUpdateApprovalStatusToRejectedWithReason(DbStatus oldStatus) throws IOException {
         var institutionId = randomUri();
         var candidate =
-            CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         candidate.updateApproval(createStatusRequest(oldStatus));
         var rejectionReason = randomString();
@@ -206,7 +206,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldRemoveReasonWhenUpdatingStatusFromRejected(DbStatus newStatus) throws IOException {
         var institutionId = randomUri();
         var candidate =
-            CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         candidate.updateApproval(createStatusRequest(DbStatus.REJECTED));
         var request = createRequest(candidate.getIdentifier(), institutionId,
@@ -224,7 +224,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldUpdateAssigneeWhenFinalizingApprovalWithoutAssignee() throws IOException {
         var institutionId = randomUri();
         var candidate =
-            CandidateBO.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         var assignee = randomString();
         var requestBody = new NviStatusRequest(candidate.getIdentifier(), institutionId, APPROVED, null);

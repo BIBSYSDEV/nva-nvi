@@ -23,8 +23,8 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.service.CandidateBO;
 import no.sikt.nva.nvi.common.S3StorageReader;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
@@ -150,8 +150,8 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         }
     }
 
-    private CandidateBO fetchCandidate(UUID candidateIdentifier) {
-        return CandidateBO.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository);
+    private Candidate fetchCandidate(UUID candidateIdentifier) {
+        return Candidate.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository);
     }
 
     private boolean isUpdate(DynamodbStreamRecord record) {
@@ -168,14 +168,14 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
                    .getOrDefault(IDENTIFIER, new AttributeValue().withS("no id found")).getS();
     }
 
-    private void removeDocumentFromIndex(CandidateBO candidate) {
+    private void removeDocumentFromIndex(Candidate candidate) {
         LOGGER.info("removeDocumentFromIndex for {}", candidate.getIdentifier());
         var result = openSearchClient.removeDocumentFromIndex(toIndexDocumentWithId(candidate.getIdentifier()));
         LOGGER.info("done removeDocumentFromIndex for {}, result: {}", candidate.getIdentifier(),
                     result.result().jsonValue());
     }
 
-    private void addDocumentToIndex(CandidateBO candidate) {
+    private void addDocumentToIndex(Candidate candidate) {
         LOGGER.info("addDocumentToIndex for {}", candidate.getIdentifier());
         var result = attempt(() -> getPublicationFromBucket(candidate))
                          .map(blob -> documentGenerator.generateDocument(blob, candidate))
@@ -191,7 +191,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
                     result.result().jsonValue());
     }
 
-    private String getPublicationFromBucket(CandidateBO candidate) {
+    private String getPublicationFromBucket(Candidate candidate) {
         var bucketUri = candidate.getPublicationBucketUri();
         LOGGER.info("getPublicationFromBucket with candidate id {} and url {}", candidate.getIdentifier(),
                     bucketUri.toString());

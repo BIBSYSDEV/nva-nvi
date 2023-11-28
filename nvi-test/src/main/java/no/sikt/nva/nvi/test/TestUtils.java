@@ -17,7 +17,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Year;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -55,9 +54,6 @@ public final class TestUtils {
     public static final int SCALE = 10;
     public static final BigDecimal MIN_BIG_DECIMAL = BigDecimal.ZERO;
     public static final BigDecimal MAX_BIG_DECIMAL = BigDecimal.TEN;
-
-    public static final int POINTS_SCALE = 4;
-    public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     public static final int CURRENT_YEAR = Year.now().getValue();
     public static final Random RANDOM = new Random();
     public static final String UUID_SEPERATOR = "-";
@@ -73,25 +69,12 @@ public final class TestUtils {
         return RANDOM.nextInt(min, max);
     }
 
-    public static DbPublicationDate randomPublicationDate() {
-        var randomDate = randomLocalDate();
-        return new DbPublicationDate(String.valueOf(randomDate.getYear()), String.valueOf(randomDate.getMonthValue()),
-                                     String.valueOf(randomDate.getDayOfMonth()));
-    }
-
     public static URI generateS3BucketUri(UUID identifier) {
         return UriWrapper.fromHost(BUCKET_HOST).addChild(identifier.toString()).getUri();
     }
 
     public static URI generatePublicationId(UUID identifier) {
         return UriWrapper.fromHost(API_HOST).addChild(PUBLICATION_API_PATH).addChild(identifier.toString()).getUri();
-    }
-
-    public static LocalDate randomLocalDate() {
-        var daysBetween = ChronoUnit.DAYS.between(START_DATE, LocalDate.now());
-        var randomDays = RANDOM.nextInt((int) daysBetween);
-
-        return START_DATE.plusDays(randomDays);
     }
 
     public static DbCandidate.Builder randomCandidateBuilder(boolean applicable) {
@@ -139,13 +122,8 @@ public final class TestUtils {
                                                                      CandidateRepository repository) {
         return IntStream.range(0, number)
                    .mapToObj(i -> randomCandidate(year))
-                   .map(candidate -> repository.createDao(candidate, List.of()))
+                   .map(candidate -> repository.create(candidate, List.of()))
                    .toList();
-    }
-
-    public static DbCandidate randomCandidateWithPublicationYear(int year) {
-        return randomCandidateBuilder(true)
-                   .publicationDate(DbPublicationDate.builder().year(String.valueOf(year)).build()).build();
     }
 
     public static DbNviPeriod.Builder randomNviPeriodBuilder() {
@@ -193,15 +171,6 @@ public final class TestUtils {
         return nviService;
     }
 
-    public static NviService nviServiceReturningClosedPeriod(DynamoDbClient client, int year) {
-        var nviPeriodRepository = mock(PeriodRepository.class);
-        var nviService = new NviService(nviPeriodRepository, new CandidateRepository(client));
-        var period = DbNviPeriod.builder().publishingYear(String.valueOf(year)).startDate(Instant.now())
-                         .reportingDate(Instant.now()).build();
-        when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
-        return nviService;
-    }
-
     public static PeriodRepository periodRepositoryReturningClosedPeriod(int year) {
         var nviPeriodRepository = mock(PeriodRepository.class);
         var period = DbNviPeriod.builder().publishingYear(String.valueOf(year))
@@ -229,18 +198,6 @@ public final class TestUtils {
                          .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant()).build();
         when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
         return nviPeriodRepository;
-    }
-
-    public static NviService nviServiceReturningNotStartedPeriod(DynamoDbClient client, int year) {
-        var nviPeriodRepository = mock(PeriodRepository.class);
-        var nviService = new NviService(nviPeriodRepository, new CandidateRepository(client));
-        var period = DbNviPeriod.builder()
-                         .publishingYear(String.valueOf(year))
-                         .startDate(ZonedDateTime.now().plusMonths(1).toInstant())
-                         .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
-                         .build();
-        when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
-        return nviService;
     }
 
     public static UpsertNonCandidateRequest createUpsertNonCandidateRequest(URI publicationId) {
