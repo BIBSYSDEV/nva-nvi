@@ -194,11 +194,11 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                             .orElseThrow();
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, DbStatus.APPROVED, randomString(), randomString()));
-        var approval = candidate.toDto().approvalDtos().get(0);
+        var approval = candidate.toDto().approvals().get(0);
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest, institutionId);
         var updatedCandidate = Candidate.fromRequest(newUpsertRequest, candidateRepository, periodRepository)
                                    .orElseThrow();
-        var updatedApproval = updatedCandidate.toDto().approvalDtos().get(0);
+        var updatedApproval = updatedCandidate.toDto().approvals().get(0);
 
         assertThat(updatedApproval, is(equalTo(approval)));
     }

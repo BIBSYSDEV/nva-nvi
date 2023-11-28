@@ -13,7 +13,7 @@ public record CandidateDto(
     URI id,
     UUID identifier,
     URI publicationId,
-    List<ApprovalDto> approvalDtos,
+    List<ApprovalDto> approvals,
     BigDecimal totalPoints,
     List<NoteDto> notes,
     PeriodStatusDto periodStatus) {

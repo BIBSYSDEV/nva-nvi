@@ -74,9 +74,9 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
         var candidate = Candidate.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow()
                             .toDto();
-        assertThat(candidate.approvalDtos().size(), is(equalTo(1)));
-        assertThat(candidate.approvalDtos().get(0).status(), is(equalTo(ApprovalStatus.PENDING)));
-        assertThat(candidate.approvalDtos().get(0).institutionId(), is(equalTo(institutionId)));
+        assertThat(candidate.approvals().size(), is(equalTo(1)));
+        assertThat(candidate.approvals().get(0).status(), is(equalTo(ApprovalStatus.PENDING)));
+        assertThat(candidate.approvals().get(0).institutionId(), is(equalTo(institutionId)));
     }
 
     @ParameterizedTest(name = "Should update from old status {0} to new status {1}")
@@ -91,7 +91,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
         var updatedCandidate = existingCandidate.updateApproval(
             createUpdateStatusRequest(newStatus, institutionId, randomString()));
 
-        var actualNewStatus = updatedCandidate.toDto().approvalDtos().get(0).status();
+        var actualNewStatus = updatedCandidate.toDto().approvals().get(0).status();
         assertThat(actualNewStatus, is(equalTo(mapToNviApprovalStatus(newStatus))));
     }
 
@@ -111,7 +111,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
         candidateBO.updateApproval(new UpdateAssigneeRequest(institutionId, assignee))
             .updateApproval(createUpdateStatusRequest(oldStatus, institutionId, randomString()))
             .updateApproval(createUpdateStatusRequest(DbStatus.PENDING, institutionId, randomString()));
-        var approvalStatus = candidateBO.toDto().approvalDtos().get(0);
+        var approvalStatus = candidateBO.toDto().approvals().get(0);
         assertThat(approvalStatus.status(), is(equalTo(ApprovalStatus.PENDING)));
         assertThat(approvalStatus.assignee(), is(assignee));
         assertThat(approvalStatus.finalizedBy(), is(nullValue()));
@@ -130,9 +130,9 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
 
         var updatedCandidate = rejectedCandidate.updateApproval(
             createUpdateStatusRequest(newStatus, institutionId, randomString())).toDto();
-        assertThat(updatedCandidate.approvalDtos().size(), is(equalTo(1)));
-        assertThat(updatedCandidate.approvalDtos().get(0).status(), is(equalTo(mapToNviApprovalStatus(newStatus))));
-        assertThat(updatedCandidate.approvalDtos().get(0).reason(), is(nullValue()));
+        assertThat(updatedCandidate.approvals().size(), is(equalTo(1)));
+        assertThat(updatedCandidate.approvals().get(0).status(), is(equalTo(mapToNviApprovalStatus(newStatus))));
+        assertThat(updatedCandidate.approvals().get(0).reason(), is(nullValue()));
     }
 
     @Test
@@ -150,7 +150,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
         var updatedCandidate = Candidate.fromRequest(updateRequest, candidateRepository, periodRepository)
                                    .orElseThrow();
         assertThat(updatedCandidate.getIdentifier(), is(equalTo(candidate.getIdentifier())));
-        assertThat(updatedCandidate.toDto().approvalDtos().size(), is(equalTo(3)));
+        assertThat(updatedCandidate.toDto().approvals().size(), is(equalTo(3)));
     }
 
     @Test
@@ -167,7 +167,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
         var updatedCandidate = Candidate.fromRequest(updateRequest, candidateRepository, periodRepository)
                                    .orElseThrow();
         var dto = updatedCandidate.toDto();
-        var approvalMap = dto.approvalDtos()
+        var approvalMap = dto.approvals()
                               .stream()
                               .collect(Collectors.toMap(ApprovalDto::institutionId, Function.identity()));
 
@@ -234,7 +234,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
 
         var status = Candidate.fromRequest(candidateBO::getIdentifier, candidateRepository, periodRepository)
                          .toDto()
-                         .approvalDtos()
+                         .approvals()
                          .get(0)
                          .status();
 
@@ -252,7 +252,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
 
         var assignee = Candidate.fromRequest(candidateBO::getIdentifier, candidateRepository, periodRepository)
                            .toDto()
-                           .approvalDtos()
+                           .approvals()
                            .get(0)
                            .assignee();
 
