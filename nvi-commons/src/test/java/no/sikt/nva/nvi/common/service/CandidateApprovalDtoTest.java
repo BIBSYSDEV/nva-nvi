@@ -32,6 +32,7 @@ import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -103,6 +104,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
                                                                   randomBigDecimal(),
                                                                   randomLevelExcluding(
                                                                       DbLevel.NON_CANDIDATE).getVersionOneValue(),
+                                                                  TestUtils.CURRENT_YEAR,
                                                                   institutionId);
         var candidateBO = Candidate.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                               .orElseThrow();
@@ -144,7 +146,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
                                                          randomUri(), true, InstanceType.ACADEMIC_MONOGRAPH, 2,
                                                          randomBigDecimal(),
                                                          randomLevelExcluding(DbLevel.NON_CANDIDATE)
-                                                             .getVersionOneValue(),
+                                                             .getVersionOneValue(), TestUtils.CURRENT_YEAR,
                                                          randomUri(),
                                                          randomUri(), randomUri());
         var updatedCandidate = Candidate.fromRequest(updateRequest, candidateRepository, periodRepository)
@@ -162,6 +164,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
         var updateRequest = createUpsertCandidateRequest(
             createCandidateRequest.publicationId(), randomUri(), true, InstanceType.ACADEMIC_MONOGRAPH, 2,
             randomBigDecimal(), randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
+            TestUtils.CURRENT_YEAR,
             keepInstitutionId,
             randomUri());
         var updatedCandidate = Candidate.fromRequest(updateRequest, candidateRepository, periodRepository)
@@ -197,7 +200,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
                                                          randomUri(), true, InstanceType.NON_CANDIDATE, 2,
                                                          randomBigDecimal(),
                                                          randomLevelExcluding(DbLevel.NON_CANDIDATE)
-                                                             .getVersionOneValue(), randomUri());
+                                                             .getVersionOneValue(), TestUtils.CURRENT_YEAR, randomUri());
         assertThrows(InvalidNviCandidateException.class,
                      () -> Candidate.fromRequest(updateRequest, candidateRepository, periodRepository));
     }

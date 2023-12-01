@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
+import static no.sikt.nva.nvi.test.TestUtils.createPeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -135,15 +136,6 @@ public class NviServicePeriodTest extends LocalDynamoTest {
         nviService.createPeriod(createPeriod(String.valueOf(ZonedDateTime.now().plusYears(1).getYear())));
         var periods = nviService.getPeriods();
         assertThat(periods, hasSize(2));
-    }
-
-    private static DbNviPeriod createPeriod(String publishingYear) {
-        return DbNviPeriod.builder()
-                   .startDate(ZonedDateTime.now().plusMonths(1).toInstant())
-                   .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
-                   .publishingYear(publishingYear)
-                   .createdBy(randomUsername())
-                   .build();
     }
 
     private static Username randomUsername() {

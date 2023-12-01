@@ -13,9 +13,11 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 @JsonSubTypes({
     @JsonSubTypes.Type(value = ApprovalStatusDao.class, name = ApprovalStatusDao.TYPE),
     @JsonSubTypes.Type(value = CandidateDao.class, name = CandidateDao.TYPE),
+    @JsonSubTypes.Type(value = NoteDao.class, name = NoteDao.TYPE)
 })
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 public abstract class Dao implements DynamoEntryWithRangeKey {
+
     public static Map<String, AttributeValue> toDynamoFormat(Dao dao) {
         return EnhancedDocument.fromJson(attempt(() -> dtoObjectMapper.writeValueAsString(dao)).orElseThrow())
                    .toMap();
