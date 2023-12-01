@@ -16,6 +16,7 @@ public class ListingResult<T> {
     public static final String MORE_ITEMS_TO_SCAN = "moreItemsToScan";
     public static final String START_MARKER = "startMarker";
     public static final String ITEM_COUNT = "totalItemCount";
+    public static final String DATABASE_ENTRIES = "dataBaseEntries";
     private final boolean moreItemsToScan;
     private final Map<String, String> startMarker;
     private final int totalItemCount;
@@ -25,7 +26,7 @@ public class ListingResult<T> {
     public ListingResult(@JsonProperty(MORE_ITEMS_TO_SCAN) boolean moreItemsToScan,
                          @JsonProperty(START_MARKER) Map<String, String> startMarker,
                          @JsonProperty(ITEM_COUNT) int totalItemCount,
-                         List<T> databaseEntries) {
+                         @JsonProperty(DATABASE_ENTRIES) List<T> databaseEntries) {
         this.moreItemsToScan = moreItemsToScan;
         this.startMarker = startMarker;
         this.totalItemCount = totalItemCount;
