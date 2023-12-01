@@ -156,13 +156,12 @@ public final class ApprovalStatusDao extends Dao {
     }
 
     @DynamoDbImmutable(builder = DbApprovalStatus.Builder.class)
-    @JsonSerialize
-    public record DbApprovalStatus(@JsonProperty("institutionId") URI institutionId,
-                                   @JsonProperty("status") DbStatus status,
-                                   @JsonProperty("assignee") Username assignee,
-                                   @JsonProperty("finalizedBy") Username finalizedBy,
-                                   @JsonProperty("finalizedDate") Instant finalizedDate,
-                                   @JsonProperty("reason") String reason) {
+    public record DbApprovalStatus(URI institutionId,
+                                   DbStatus status,
+                                   Username assignee,
+                                   Username finalizedBy,
+                                   Instant finalizedDate,
+                                   String reason) {
 
         public static Builder builder() {
             return new Builder();

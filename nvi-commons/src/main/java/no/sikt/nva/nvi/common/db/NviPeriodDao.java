@@ -6,7 +6,6 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.IDENTIFIER_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.Builder;
 import no.sikt.nva.nvi.common.db.model.Username;
@@ -125,12 +124,11 @@ public final class NviPeriodDao extends Dao {
     }
 
     @DynamoDbImmutable(builder = DbNviPeriod.Builder.class)
-    @JsonSerialize
-    public record DbNviPeriod(@JsonProperty("publishingYear") String publishingYear,
-                              @JsonProperty("startDate") Instant startDate,
-                              @JsonProperty("reportingDate") Instant reportingDate,
-                              @JsonProperty("createdBy") Username createdBy,
-                              @JsonProperty("modifiedBy") Username modifiedBy) {
+    public record DbNviPeriod(String publishingYear,
+                              Instant startDate,
+                              Instant reportingDate,
+                              Username createdBy,
+                              Username modifiedBy) {
 
         public static Builder builder() {
             return new Builder();

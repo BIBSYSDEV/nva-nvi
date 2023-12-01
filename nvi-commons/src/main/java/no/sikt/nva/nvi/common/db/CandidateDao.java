@@ -14,7 +14,6 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.ArrayList;
@@ -265,24 +264,22 @@ public final class CandidateDao extends Dao {
     }
 
     @DynamoDbImmutable(builder = DbCandidate.Builder.class)
-    @JsonSerialize
-    public record DbCandidate(
-        @JsonProperty("publicationId") URI publicationId,
-        @JsonProperty("publicationBucketUri") URI publicationBucketUri,
-        @JsonProperty("applicable") boolean applicable,
-        @JsonProperty("instanceType") InstanceType instanceType,
-        @JsonProperty("channelType") ChannelType channelType,
-        @JsonProperty("channelId") URI channelId,
-        @JsonProperty("level") DbLevel level,
-        @JsonProperty("publicationDate") DbPublicationDate publicationDate,
-        @JsonProperty("internationalCollaboration") boolean internationalCollaboration,
-        @JsonProperty("collaborationFactor") BigDecimal collaborationFactor,
-        @JsonProperty("creatorCount") int creatorCount,
-        @JsonProperty("creatorShareCount") int creatorShareCount,
-        @JsonProperty("creators") List<DbCreator> creators,
-        @JsonProperty("basePoints") BigDecimal basePoints,
-        @JsonProperty("points") List<DbInstitutionPoints> points,
-        @JsonProperty("totalPoints") BigDecimal totalPoints
+    public record DbCandidate(URI publicationId,
+                              URI publicationBucketUri,
+                              boolean applicable,
+                              InstanceType instanceType,
+                              ChannelType channelType,
+                              URI channelId,
+                              DbLevel level,
+                              DbPublicationDate publicationDate,
+                              boolean internationalCollaboration,
+                              BigDecimal collaborationFactor,
+                              int creatorCount,
+                              int creatorShareCount,
+                              List<DbCreator> creators,
+                              BigDecimal basePoints,
+                              List<DbInstitutionPoints> points,
+                              BigDecimal totalPoints
     ) {
 
         public static Builder builder() {
