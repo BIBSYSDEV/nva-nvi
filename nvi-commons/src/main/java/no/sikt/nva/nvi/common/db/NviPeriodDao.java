@@ -33,6 +33,7 @@ public final class NviPeriodDao extends Dao {
     public NviPeriodDao(@JsonProperty(IDENTIFIER_FIELD) String identifier,
                         @JsonProperty(DATA_FIELD) DbNviPeriod nviPeriod,
                         @JsonProperty(VERSION_FIELD) String version) {
+        super();
         this.identifier = identifier;
         this.nviPeriod = nviPeriod;
         this.version = version;

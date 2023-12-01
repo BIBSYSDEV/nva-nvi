@@ -33,6 +33,7 @@ public final class NoteDao extends Dao {
                    @JsonProperty(DATA_FIELD) DbNote note,
                    @JsonProperty(VERSION_FIELD) String version
     ) {
+        super();
         this.identifier = identifier;
         this.note = note;
         this.version = version;

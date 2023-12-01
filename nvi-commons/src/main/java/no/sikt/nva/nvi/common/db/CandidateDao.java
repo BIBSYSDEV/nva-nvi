@@ -50,6 +50,7 @@ public final class CandidateDao extends Dao {
         @JsonProperty(DATA_FIELD) DbCandidate candidate,
         @JsonProperty(VERSION_FIELD) String version
     ) {
+        super();
         this.identifier = identifier;
         this.candidate = candidate;
         this.version = version;

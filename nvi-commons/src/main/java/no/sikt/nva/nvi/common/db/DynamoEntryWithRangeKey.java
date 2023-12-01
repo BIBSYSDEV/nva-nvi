@@ -15,6 +15,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public interface DynamoEntryWithRangeKey extends Typed {
 
     String FIELD_DELIMITER = "#";
+
     static Dao parseAttributeValuesMap(Map<String, AttributeValue> value, Class<Dao> daoClass) {
         return attempt(
             () -> dynamoObjectMapper.readValue(EnhancedDocument.fromAttributeValueMap(value).toJson(), daoClass))

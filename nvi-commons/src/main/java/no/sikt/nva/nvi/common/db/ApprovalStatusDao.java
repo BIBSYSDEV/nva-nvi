@@ -39,6 +39,7 @@ public final class ApprovalStatusDao extends Dao {
                              @JsonProperty(DATA_FIELD) DbApprovalStatus approvalStatus,
                              @JsonProperty(VERSION_FIELD) String version
     ) {
+        super();
         this.identifier = identifier;
         this.approvalStatus = approvalStatus;
         this.version = version;
