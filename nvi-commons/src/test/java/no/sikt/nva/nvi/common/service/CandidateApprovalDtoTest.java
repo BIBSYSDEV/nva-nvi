@@ -200,7 +200,8 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
                                                          randomUri(), true, InstanceType.NON_CANDIDATE, 2,
                                                          randomBigDecimal(),
                                                          randomLevelExcluding(DbLevel.NON_CANDIDATE)
-                                                             .getVersionOneValue(), TestUtils.CURRENT_YEAR, randomUri());
+                                                             .getVersionOneValue(), TestUtils.CURRENT_YEAR,
+                                                         randomUri());
         assertThrows(InvalidNviCandidateException.class,
                      () -> Candidate.fromRequest(updateRequest, candidateRepository, periodRepository));
     }

@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.db;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.IDENTIFIER_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_RANGE_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
@@ -10,6 +11,7 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_RANGE_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -36,18 +38,18 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 public final class CandidateDao extends Dao {
 
     public static final String TYPE = "CANDIDATE";
-    @JsonProperty("identifier")
+    @JsonProperty(IDENTIFIER_FIELD)
     private final UUID identifier;
     @JsonProperty(DATA_FIELD)
     private final DbCandidate candidate;
-    @JsonProperty(VERSION_FIELD_NAME)
+    @JsonProperty(VERSION_FIELD)
     private final String version;
 
     @JsonCreator
     public CandidateDao(
-        @JsonProperty("identifier") UUID identifier,
+        @JsonProperty(IDENTIFIER_FIELD) UUID identifier,
         @JsonProperty(DATA_FIELD) DbCandidate candidate,
-        @JsonProperty(VERSION_FIELD_NAME) String version
+        @JsonProperty(VERSION_FIELD) String version
     ) {
         this.identifier = identifier;
         this.candidate = candidate;

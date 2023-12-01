@@ -2,7 +2,9 @@ package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.IDENTIFIER_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
@@ -20,16 +22,16 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 public final class NoteDao extends Dao {
 
     public static final String TYPE = "NOTE";
-    @JsonProperty("identifier")
+    @JsonProperty(IDENTIFIER_FIELD)
     private final UUID identifier;
     @JsonProperty(DATA_FIELD)
     private final DbNote note;
-    @JsonProperty(VERSION_FIELD_NAME)
+    @JsonProperty(VERSION_FIELD)
     private final String version;
 
-    public NoteDao(@JsonProperty("identifier") UUID identifier,
+    public NoteDao(@JsonProperty(IDENTIFIER_FIELD) UUID identifier,
                    @JsonProperty(DATA_FIELD) DbNote note,
-                   @JsonProperty(VERSION_FIELD_NAME) String version
+                   @JsonProperty(VERSION_FIELD) String version
     ) {
         this.identifier = identifier;
         this.note = note;

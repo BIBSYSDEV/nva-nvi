@@ -2,11 +2,12 @@ package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.IDENTIFIER_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
-import java.util.Objects;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.Builder;
 import no.sikt.nva.nvi.common.db.model.Username;
 import nva.commons.core.JacocoGenerated;
@@ -23,15 +24,16 @@ public final class NviPeriodDao extends Dao {
     public static final TableSchema<NviPeriodDao> TABLE_SCHEMA = TableSchema.fromClass(NviPeriodDao.class);
 
     public static final String TYPE = "PERIOD";
-    @JsonProperty("identifier")
+    @JsonProperty(IDENTIFIER_FIELD)
     private final String identifier;
     @JsonProperty(DATA_FIELD)
     private final DbNviPeriod nviPeriod;
-    @JsonProperty(VERSION_FIELD_NAME)
+    @JsonProperty(VERSION_FIELD)
     private final String version;
 
-    public NviPeriodDao(@JsonProperty("identifier") String identifier, @JsonProperty(DATA_FIELD) DbNviPeriod nviPeriod,
-                        @JsonProperty(VERSION_FIELD_NAME) String version) {
+    public NviPeriodDao(@JsonProperty(IDENTIFIER_FIELD) String identifier,
+                        @JsonProperty(DATA_FIELD) DbNviPeriod nviPeriod,
+                        @JsonProperty(VERSION_FIELD) String version) {
         this.identifier = identifier;
         this.nviPeriod = nviPeriod;
         this.version = version;
@@ -76,33 +78,6 @@ public final class NviPeriodDao extends Dao {
     @DynamoDbAttribute(DATA_FIELD)
     public DbNviPeriod nviPeriod() {
         return nviPeriod;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(identifier, nviPeriod, version);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        }
-        if (obj == null || obj.getClass() != this.getClass()) {
-            return false;
-        }
-        var that = (NviPeriodDao) obj;
-        return Objects.equals(this.identifier, that.identifier) &&
-               Objects.equals(this.nviPeriod, that.nviPeriod) &&
-               Objects.equals(this.version, that.version);
-    }
-
-    @Override
-    public String toString() {
-        return "NviPeriodDao[" +
-               "identifier=" + identifier + ", " +
-               "nviPeriod=" + nviPeriod + ", " +
-               "version=" + version + ']';
     }
 
     public static final class Builder {

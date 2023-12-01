@@ -7,6 +7,7 @@ import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toMap;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
+import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static software.amazon.awssdk.enhanced.dynamodb.TableSchema.fromImmutableClass;
 import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.keyEqualTo;
@@ -296,8 +297,7 @@ public class CandidateRepository extends DynamoRepository {
 
     private Map<String, AttributeValue> mutateVersion(Map<String, AttributeValue> item) {
         var mutableMap = new HashMap<>(item);
-        mutableMap.put(DynamoEntryWithRangeKey.VERSION_FIELD_NAME,
-                       AttributeValue.builder().s(randomUUID().toString()).build());
+        mutableMap.put(VERSION_FIELD, AttributeValue.builder().s(randomUUID().toString()).build());
         return mutableMap;
     }
 
