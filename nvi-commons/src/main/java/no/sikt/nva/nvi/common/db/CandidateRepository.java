@@ -87,7 +87,7 @@ public class CandidateRepository extends DynamoRepository {
                                    items);
     }
 
-    public void refreshItems(List<Dao> items) {
+    public void writeEntries(List<Dao> items) {
         var writeRequests = createWriteRequestsForBatchJob(items);
         var batches = getBatches(writeRequests);
         batches.forEach(batch -> dynamoDbRetryClient.batchWriteItem(toBatchRequest(batch)));

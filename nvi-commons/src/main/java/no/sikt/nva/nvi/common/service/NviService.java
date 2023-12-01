@@ -64,7 +64,7 @@ public class NviService {
 
     public ListingResult<Dao> migrateAndUpdateVersion(int pageSize, Map<String, String> startMarker) {
         var scan = candidateRepository.scanEntries(pageSize, startMarker);
-        candidateRepository.refreshItems(scan.getDatabaseEntries());
+        candidateRepository.writeEntries(scan.getDatabaseEntries());
         return scan;
     }
 
