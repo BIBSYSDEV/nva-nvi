@@ -48,4 +48,13 @@ public class ListingResult<T> {
     public int getTotalItemCount() {
         return totalItemCount;
     }
+
+    @Override
+    public String toString() {
+        return "ListingResult{"
+               + "moreItemsToScan=" + moreItemsToScan
+               + ", startMarker=" + startMarker
+               + ", totalItemCount=" + totalItemCount
+               + '}';
+    }
 }
