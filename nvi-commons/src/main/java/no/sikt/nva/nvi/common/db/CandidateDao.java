@@ -10,16 +10,22 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_RANGE_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.db.CandidateDao.Builder;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
@@ -27,14 +33,28 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecon
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondarySortKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-@DynamoDbImmutable(builder = CandidateDao.Builder.class)
-public record CandidateDao(
-    UUID identifier,
-    @DynamoDbAttribute(DATA_FIELD) DbCandidate candidate,
-    String version
-) implements DynamoEntryWithRangeKey {
+@DynamoDbImmutable(builder = Builder.class)
+@DynamoDbBean
+public final class CandidateDao extends Dao {
 
     public static final String TYPE = "CANDIDATE";
+    @JsonProperty("identifier")
+    private final UUID identifier;
+    @JsonProperty(DATA_FIELD)
+    private final DbCandidate candidate;
+    @JsonProperty(VERSION_FIELD_NAME)
+    private final String version;
+
+    @JsonCreator
+    public CandidateDao(
+        @JsonProperty("identifier") UUID identifier,
+        @JsonProperty(DATA_FIELD) DbCandidate candidate,
+        @JsonProperty(VERSION_FIELD_NAME) String version
+    ) {
+        this.identifier = identifier;
+        this.candidate = candidate;
+        this.version = version;
+    }
 
     @DynamoDbIgnore
     public static String createPartitionKey(String identifier) {
@@ -48,6 +68,7 @@ public record CandidateDao(
     @Override
     @DynamoDbPartitionKey
     @DynamoDbAttribute(HASH_KEY)
+    @JsonProperty(HASH_KEY)
     public String primaryKeyHashKey() {
         return createPartitionKey(identifier.toString());
     }
@@ -55,8 +76,14 @@ public record CandidateDao(
     @Override
     @DynamoDbSortKey
     @DynamoDbAttribute(SORT_KEY)
+    @JsonProperty(SORT_KEY)
     public String primaryKeyRangeKey() {
         return primaryKeyHashKey();
+    }
+
+    @Override
+    public String version() {
+        return version;
     }
 
     @Override
@@ -69,6 +96,7 @@ public record CandidateDao(
     @JacocoGenerated
     @DynamoDbSecondaryPartitionKey(indexNames = {SECONDARY_INDEX_PUBLICATION_ID})
     @DynamoDbAttribute(SECONDARY_INDEX_1_HASH_KEY)
+    @JsonProperty(SECONDARY_INDEX_1_HASH_KEY)
     public String searchByPublicationIdHashKey() {
         return nonNull(candidate.publicationId()) ? candidate.publicationId().toString() : null;
     }
@@ -76,6 +104,7 @@ public record CandidateDao(
     @JacocoGenerated
     @DynamoDbSecondarySortKey(indexNames = {SECONDARY_INDEX_PUBLICATION_ID})
     @DynamoDbAttribute(SECONDARY_INDEX_1_RANGE_KEY)
+    @JsonProperty(SECONDARY_INDEX_1_RANGE_KEY)
     public String searchByPublicationIdSortKey() {
         return nonNull(candidate.publicationId()) ? candidate.publicationId().toString() : null;
     }
@@ -83,6 +112,7 @@ public record CandidateDao(
     @JacocoGenerated
     @DynamoDbSecondaryPartitionKey(indexNames = {SECONDARY_INDEX_YEAR})
     @DynamoDbAttribute(SECONDARY_INDEX_YEAR_HASH_KEY)
+    @JsonProperty(SECONDARY_INDEX_YEAR_HASH_KEY)
     public String searchByYearHashKey() {
         return nonNull(candidate.publicationDate()) ? candidate.publicationDate().year() : null;
     }
@@ -90,15 +120,55 @@ public record CandidateDao(
     @JacocoGenerated
     @DynamoDbSecondarySortKey(indexNames = {SECONDARY_INDEX_YEAR})
     @DynamoDbAttribute(SECONDARY_INDEX_YEAR_RANGE_KEY)
+    @JsonProperty(SECONDARY_INDEX_YEAR_RANGE_KEY)
     public String searchByYearSortKey() {
         return nonNull(identifier) ? identifier.toString() : null;
     }
 
     @DynamoDbIgnore
-    public CandidateDao.Builder copy() {
+    public Builder copy() {
         return builder()
                    .identifier(identifier)
                    .candidate(candidate);
+    }
+
+    public UUID identifier() {
+        return identifier;
+    }
+
+    @DynamoDbAttribute(DATA_FIELD)
+    public DbCandidate candidate() {
+        return candidate;
+    }
+
+    @Override
+    @JacocoGenerated
+    public int hashCode() {
+        return Objects.hash(identifier, candidate, version);
+    }
+
+    @Override
+    @JacocoGenerated
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (obj == null || obj.getClass() != this.getClass()) {
+            return false;
+        }
+        var that = (CandidateDao) obj;
+        return Objects.equals(this.identifier, that.identifier)
+               && Objects.equals(this.candidate, that.candidate)
+               && Objects.equals(this.version, that.version);
+    }
+
+    @Override
+    @JacocoGenerated
+    public String toString() {
+        return "CandidateDao["
+               + "identifier=" + identifier + ", "
+               + "candidate=" + candidate + ", "
+               + "version=" + version + ']';
     }
 
     public enum DbLevel {
@@ -195,23 +265,24 @@ public record CandidateDao(
     }
 
     @DynamoDbImmutable(builder = DbCandidate.Builder.class)
+    @JsonSerialize
     public record DbCandidate(
-        URI publicationId,
-        URI publicationBucketUri,
-        boolean applicable,
-        InstanceType instanceType,
-        ChannelType channelType,
-        URI channelId,
-        DbLevel level,
-        DbPublicationDate publicationDate,
-        boolean internationalCollaboration,
-        BigDecimal collaborationFactor,
-        int creatorCount,
-        int creatorShareCount,
-        List<DbCreator> creators,
-        BigDecimal basePoints,
-        List<DbInstitutionPoints> points,
-        BigDecimal totalPoints
+        @JsonProperty("publicationId") URI publicationId,
+        @JsonProperty("publicationBucketUri") URI publicationBucketUri,
+        @JsonProperty("applicable") boolean applicable,
+        @JsonProperty("instanceType") InstanceType instanceType,
+        @JsonProperty("channelType") ChannelType channelType,
+        @JsonProperty("channelId") URI channelId,
+        @JsonProperty("level") DbLevel level,
+        @JsonProperty("publicationDate") DbPublicationDate publicationDate,
+        @JsonProperty("internationalCollaboration") boolean internationalCollaboration,
+        @JsonProperty("collaborationFactor") BigDecimal collaborationFactor,
+        @JsonProperty("creatorCount") int creatorCount,
+        @JsonProperty("creatorShareCount") int creatorShareCount,
+        @JsonProperty("creators") List<DbCreator> creators,
+        @JsonProperty("basePoints") BigDecimal basePoints,
+        @JsonProperty("points") List<DbInstitutionPoints> points,
+        @JsonProperty("totalPoints") BigDecimal totalPoints
     ) {
 
         public static Builder builder() {

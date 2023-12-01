@@ -26,7 +26,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.model.ListingResultWithCandidates;
+import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.events.evaluator.FakeSqsClient;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
@@ -80,7 +80,7 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
         var pageSizeBiggerThanMaxPageSize = MAX_PAGE_SIZE + randomIntBetween(1, 100);
         var mockedNviService = mock(NviService.class);
         when(mockedNviService.fetchCandidatesByYear(year, DEFAULT_PAGE_SIZE, null))
-            .thenReturn(new ListingResultWithCandidates(false, null, 0, List.of()));
+            .thenReturn(new ListingResult<>(false, null, 0, List.of()));
         var handler = new ReEvaluateNviCandidatesHandler(mockedNviService, sqsClient, environment, eventBridgeClient);
         handler.handleRequest(eventStream(createRequest(year, pageSizeBiggerThanMaxPageSize)), outputStream, context);
         verify(mockedNviService, times(1)).fetchCandidatesByYear(year, DEFAULT_PAGE_SIZE, null);

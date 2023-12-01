@@ -1,9 +1,6 @@
 package no.sikt.nva.nvi.common;
 
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -33,7 +30,7 @@ public class MigrationTests extends LocalDynamoTest {
     void shouldWriteBackEntryAsIsWhenMigrating() {
         var candidate = Candidate.fromRequest(createUpsertCandidateRequest(), candidateRepository, periodRepository)
                             .orElseThrow();
-        nviService.refresh(DEFAULT_PAGE_SIZE, null);
+        nviService.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null);
         var migratedCandidate = Candidate.fromRequest(candidate::getIdentifier, candidateRepository,
                                                       periodRepository);
         assertEquals(candidate, migratedCandidate);

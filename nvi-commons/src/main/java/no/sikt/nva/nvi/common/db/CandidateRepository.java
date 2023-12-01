@@ -21,13 +21,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.model.ListingResult;
-import no.sikt.nva.nvi.common.model.ListingResultWithCandidates;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
@@ -77,27 +77,29 @@ public class CandidateRepository extends DynamoRepository {
                                        .build();
     }
 
-    public ListingResult refresh(int pageSize, Map<String, String> startMarker) {
+    public ListingResult<Dao> scanEntries(int pageSize, Map<String, String> startMarker) {
         var scan = defaultClient.scan(createScanRequest(pageSize, startMarker));
-
-        var items = scan.items().stream().map(this::mutateVersion).toList();
-
-        var count = getBatches(items).map(this::toBatchRequest)
-                        .map(dynamoDbRetryClient::batchWriteItem)
-                        .mapToInt(Integer::intValue)
-                        .sum();
-
-        return new ListingResult(thereAreMorePagesToScan(scan), toStringMap(scan.lastEvaluatedKey()), count);
+        var items = extractDatabaseEntries(scan);
+        return new ListingResult<>(thereAreMorePagesToScan(scan),
+                                   toStringMap(scan.lastEvaluatedKey()),
+                                   scan.count(),
+                                   items);
     }
 
-    public ListingResultWithCandidates fetchCandidatesByYear(String year,
+    public void refreshItems(List<Dao> items) {
+        var writeRequests = createWriteRequestsForBatchJob(items);
+        var batches = getBatches(writeRequests);
+        batches.forEach(batch -> dynamoDbRetryClient.batchWriteItem(toBatchRequest(batch)));
+    }
+
+    public ListingResult<CandidateDao> fetchCandidatesByYear(String year,
                                                              Integer pageSize, Map<String, String> startMarker) {
         var page = queryYearIndex(year, pageSize, startMarker);
-        return new ListingResultWithCandidates(thereAreMorePagesToScan(page),
-                                               nonNull(page.lastEvaluatedKey())
-                                                   ? toStringMap(page.lastEvaluatedKey()) : emptyMap(),
-                                               page.items().size(),
-                                               page.items());
+        return new ListingResult<>(thereAreMorePagesToScan(page),
+                                   nonNull(page.lastEvaluatedKey())
+                                       ? toStringMap(page.lastEvaluatedKey()) : emptyMap(),
+                                   page.items().size(),
+                                   page.items());
     }
 
     public CandidateDao create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
@@ -223,7 +225,6 @@ public class CandidateRepository extends DynamoRepository {
         return CandidateDao.builder()
                    .identifier(identifier)
                    .candidate(dbCandidate)
-                   .version(randomUUID().toString())
                    .build();
     }
 
@@ -257,6 +258,21 @@ public class CandidateRepository extends DynamoRepository {
                    .item(insert)
                    .conditionExpression(uniquePrimaryKeysExpression())
                    .build();
+    }
+
+    private List<Dao> extractDatabaseEntries(ScanResponse response) {
+        return response.items()
+                   .stream()
+                   .map(value -> DynamoEntryWithRangeKey.parseAttributeValuesMap(value, Dao.class))
+                   .collect(Collectors.toList());
+    }
+
+    private List<WriteRequest> createWriteRequestsForBatchJob(List<Dao> refreshedEntries) {
+        return refreshedEntries.stream()
+                   .map(Dao::toDynamoFormat)
+                   .map(this::mutateVersion)
+                   .map(this::toWriteRequest)
+                   .collect(Collectors.toList());
     }
 
     private Page<CandidateDao> queryYearIndex(String year, Integer pageSize, Map<String, String> startMarker) {
@@ -293,12 +309,8 @@ public class CandidateRepository extends DynamoRepository {
         return nonNull(scanResult.lastEvaluatedKey()) && !scanResult.lastEvaluatedKey().isEmpty();
     }
 
-    private BatchWriteItemRequest toBatchRequest(List<Map<String, AttributeValue>> results) {
-        return BatchWriteItemRequest.builder().requestItems(Map.of(NVI_TABLE_NAME, toWriteBatches(results))).build();
-    }
-
-    private Collection<WriteRequest> toWriteBatches(List<Map<String, AttributeValue>> results) {
-        return results.stream().map(this::toWriteRequest).toList();
+    private BatchWriteItemRequest toBatchRequest(Collection<WriteRequest> writeRequests) {
+        return BatchWriteItemRequest.builder().requestItems(Map.of(NVI_TABLE_NAME, writeRequests)).build();
     }
 
     private WriteRequest toWriteRequest(Map<String, AttributeValue> dao) {

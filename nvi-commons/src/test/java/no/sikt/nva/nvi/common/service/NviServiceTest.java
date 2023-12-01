@@ -50,7 +50,7 @@ public class NviServiceTest extends LocalDynamoTest {
     void shouldReturnTrueWhenThereAreMoreItemsToScan() {
         IntStream.range(0, 3).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
 
-        var result = nviService.refresh(1, null);
+        var result = nviService.migrateAndUpdateVersion(1, null);
         assertThat(result.shouldContinueScan(), is(equalTo(true)));
     }
 
@@ -59,7 +59,7 @@ public class NviServiceTest extends LocalDynamoTest {
         IntStream.range(0, 2).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
         var candidates = getCandidatesInOrder();
         var originalRows = getCandidates(candidates);
-        nviService.refresh(1000, getStartMarker(originalRows.get(FIRST_ROW)));
+        nviService.migrateAndUpdateVersion(1000, getStartMarker(originalRows.get(FIRST_ROW)));
         var modifiedRows = getCandidates(candidates);
 
         assertThat(modifiedRows.get(FIRST_ROW).version(), is(equalTo(originalRows.get(FIRST_ROW).version())));
@@ -71,7 +71,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var originalCandidate = randomCandidate();
         var candidate = candidateRepository.create(originalCandidate, List.of());
         var original = candidateRepository.findCandidateById(candidate.identifier()).orElseThrow();
-        var result = nviService.refresh(10, null);
+        var result = nviService.migrateAndUpdateVersion(10, null);
         var modified = candidateRepository.findCandidateById(candidate.identifier()).orElseThrow();
         assertThat(modified.version(), is(not(equalTo(original.version()))));
         assertThat(result.getStartMarker().size(), is(equalTo(0)));
@@ -87,7 +87,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var firstCandidateInIndex = expectedCandidates.get(0);
         var secondCandidateInIndex = expectedCandidates.get(1);
         var startMarker = getYearIndexStartMarker(firstCandidateInIndex);
-        var results = nviService.fetchCandidatesByYear(year, null, startMarker).getCandidates();
+        var results = nviService.fetchCandidatesByYear(year, null, startMarker).getDatabaseEntries();
         assertThat(results.size(), is(equalTo(1)));
         assertEquals(secondCandidateInIndex, results.get(0));
     }
@@ -99,7 +99,7 @@ public class NviServiceTest extends LocalDynamoTest {
         createNumberOfCandidatesForYear(randomYear(), 10, candidateRepository);
         int pageSize = 5;
         var expectedCandidates = sortByIdentifier(candidates, pageSize);
-        var results = nviService.fetchCandidatesByYear(searchYear, pageSize, null).getCandidates();
+        var results = nviService.fetchCandidatesByYear(searchYear, pageSize, null).getDatabaseEntries();
         assertThat(results.size(), is(equalTo(pageSize)));
         assertThat(expectedCandidates, containsInAnyOrder(results.toArray()));
     }
@@ -110,7 +110,7 @@ public class NviServiceTest extends LocalDynamoTest {
         int numberOfCandidates = DEFAULT_PAGE_SIZE + randomIntBetween(1, 10);
         var candidates = createNumberOfCandidatesForYear(year, numberOfCandidates, candidateRepository);
         var expectedCandidates = sortByIdentifier(candidates, DEFAULT_PAGE_SIZE);
-        var results = nviService.fetchCandidatesByYear(year, null, null).getCandidates();
+        var results = nviService.fetchCandidatesByYear(year, null, null).getDatabaseEntries();
         assertThat(results.size(), is(equalTo(DEFAULT_PAGE_SIZE)));
         assertThat(expectedCandidates, containsInAnyOrder(results.toArray()));
     }
