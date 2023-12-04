@@ -13,6 +13,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -185,6 +186,7 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
     private ReEvaluateRequest getEmittedEvent() {
         var emittedEvents = eventBridgeClient.getRequestEntries();
         assertEquals(1, emittedEvents.size());
+        assertNotNull(emittedEvents.get(0).detailType());
         return attempt(() -> ReEvaluateRequest.fromJson(emittedEvents.get(0).detail())).orElseThrow();
     }
 
