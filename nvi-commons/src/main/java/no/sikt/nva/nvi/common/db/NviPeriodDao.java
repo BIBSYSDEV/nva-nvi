@@ -2,8 +2,12 @@ package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.IDENTIFIER_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
+import no.sikt.nva.nvi.common.db.NviPeriodDao.Builder;
 import no.sikt.nva.nvi.common.db.model.Username;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
@@ -13,15 +17,27 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmut
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-@DynamoDbImmutable(builder = NviPeriodDao.Builder.class)
-public record NviPeriodDao(
-
-    String identifier, @DynamoDbAttribute(DATA_FIELD) DbNviPeriod nviPeriod, String version)
-    implements DynamoEntryWithRangeKey {
+@DynamoDbImmutable(builder = Builder.class)
+public final class NviPeriodDao extends Dao {
 
     public static final TableSchema<NviPeriodDao> TABLE_SCHEMA = TableSchema.fromClass(NviPeriodDao.class);
 
     public static final String TYPE = "PERIOD";
+    @JsonProperty(IDENTIFIER_FIELD)
+    private final String identifier;
+    @JsonProperty(DATA_FIELD)
+    private final DbNviPeriod nviPeriod;
+    @JsonProperty(VERSION_FIELD)
+    private final String version;
+
+    public NviPeriodDao(@JsonProperty(IDENTIFIER_FIELD) String identifier,
+                        @JsonProperty(DATA_FIELD) DbNviPeriod nviPeriod,
+                        @JsonProperty(VERSION_FIELD) String version) {
+        super();
+        this.identifier = identifier;
+        this.nviPeriod = nviPeriod;
+        this.version = version;
+    }
 
     public static Builder builder() {
         return new Builder();
@@ -30,6 +46,7 @@ public record NviPeriodDao(
     @Override
     @DynamoDbPartitionKey
     @DynamoDbAttribute(HASH_KEY)
+    @JsonProperty(HASH_KEY)
     public String primaryKeyHashKey() {
         return TYPE;
     }
@@ -37,8 +54,14 @@ public record NviPeriodDao(
     @Override
     @DynamoDbSortKey
     @DynamoDbAttribute(SORT_KEY)
+    @JsonProperty(SORT_KEY)
     public String primaryKeyRangeKey() {
         return String.join(DynamoEntryWithRangeKey.FIELD_DELIMITER, TYPE, identifier);
+    }
+
+    @Override
+    public String version() {
+        return version;
     }
 
     @Override
@@ -46,6 +69,15 @@ public record NviPeriodDao(
     @DynamoDbAttribute(TYPE_FIELD)
     public String type() {
         return TYPE;
+    }
+
+    public String identifier() {
+        return identifier;
+    }
+
+    @DynamoDbAttribute(DATA_FIELD)
+    public DbNviPeriod nviPeriod() {
+        return nviPeriod;
     }
 
     public static final class Builder {
@@ -93,7 +125,10 @@ public record NviPeriodDao(
     }
 
     @DynamoDbImmutable(builder = DbNviPeriod.Builder.class)
-    public record DbNviPeriod(String publishingYear, Instant startDate, Instant reportingDate, Username createdBy,
+    public record DbNviPeriod(String publishingYear,
+                              Instant startDate,
+                              Instant reportingDate,
+                              Username createdBy,
                               Username modifiedBy) {
 
         public static Builder builder() {

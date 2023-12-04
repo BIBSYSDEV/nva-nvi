@@ -10,7 +10,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.model.ListingResultWithCandidates;
+import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
@@ -76,7 +76,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
         return null;
     }
 
-    private static void logResult(ListingResultWithCandidates result) {
+    private static void logResult(ListingResult<CandidateDao> result) {
         LOGGER.info(RESULT_MESSAGE, result.getStartMarker(), result.getTotalItemCount(), result.shouldContinueScan());
     }
 
@@ -85,15 +85,15 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
         return EventBridgeClient.builder().httpClientBuilder(UrlConnectionHttpClient.builder()).build();
     }
 
-    private static List<URI> mapToFileUris(ListingResultWithCandidates result) {
-        return result.getCandidates().stream()
+    private static List<URI> mapToFileUris(ListingResult<CandidateDao> result) {
+        return result.getDatabaseEntries().stream()
                    .map(CandidateDao::candidate)
                    .map(DbCandidate::publicationBucketUri)
                    .toList();
     }
 
     private void sendEventToInvokeNewReEvaluateExecution(ReEvaluateRequest request, Context context,
-                                                         ListingResultWithCandidates result) {
+                                                         ListingResult<CandidateDao> result) {
         var newEvent = request.newReEvaluateRequest(result.getStartMarker(), topic)
                            .createNewEventEntry(eventBusName, context.getInvokedFunctionArn());
         sendEvent(newEvent);
@@ -104,7 +104,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
         eventBridgeClient.putEvents(putEventRequest);
     }
 
-    private ListingResultWithCandidates getListingResultWithCandidates(ReEvaluateRequest input) {
+    private ListingResult<CandidateDao> getListingResultWithCandidates(ReEvaluateRequest input) {
         return nviService.fetchCandidatesByYear(input.year(),
                                                 input.pageSize(),
                                                 input.startMarker());

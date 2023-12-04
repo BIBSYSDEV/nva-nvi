@@ -189,7 +189,7 @@ class CandidateTest extends LocalDynamoTest {
         var createRequest = createUpsertCandidateRequest(randomUri(), randomUri(), true,
                                                          InstanceType.ACADEMIC_MONOGRAPH, 4, totalPoints,
                                                          TestUtils.randomLevelExcluding(DbLevel.NON_CANDIDATE)
-                                                             .getVersionOneValue(),
+                                                             .getVersionOneValue(), CURRENT_YEAR,
                                                          institutionToApprove, randomUri(), institutionToReject);
         var candidateBO = Candidate.fromRequest(createRequest, candidateRepository, periodRepository).orElseThrow();
         candidateBO.createNote(createNoteRequest(randomString(), randomString()))
@@ -257,7 +257,7 @@ class CandidateTest extends LocalDynamoTest {
         var updateRequest = createUpsertCandidateRequest(tempCandidateBO.getPublicationId(), randomUri(), false,
                                                          InstanceType.ACADEMIC_MONOGRAPH, 4, randomBigDecimal(),
                                                          TestUtils.randomLevelExcluding(DbLevel.NON_CANDIDATE)
-                                                             .getVersionOneValue(),
+                                                             .getVersionOneValue(), CURRENT_YEAR,
                                                          randomUri(), randomUri(),
                                                          randomUri());
         var candidateBO = Candidate.fromRequest(updateRequest, candidateRepository, periodRepository).orElseThrow();
@@ -387,6 +387,7 @@ class CandidateTest extends LocalDynamoTest {
                                             InstanceType.parse(insertRequest.instanceType()),
                                             insertRequest.creators().size(), randomBigDecimal(),
                                             TestUtils.randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
+                                            CURRENT_YEAR,
                                             institutionId);
     }
 

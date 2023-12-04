@@ -3,13 +3,17 @@ package no.sikt.nva.nvi.common.db;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.IDENTIFIER_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.Builder;
 import no.sikt.nva.nvi.common.db.model.Username;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
@@ -18,13 +22,28 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmut
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-@DynamoDbImmutable(builder = ApprovalStatusDao.Builder.class)
-public record ApprovalStatusDao(UUID identifier,
-                                @DynamoDbAttribute(DATA_FIELD) DbApprovalStatus approvalStatus,
-                                String version
-) implements DynamoEntryWithRangeKey {
+@DynamoDbImmutable(builder = Builder.class)
+@JsonSerialize
+public final class ApprovalStatusDao extends Dao {
 
     public static final String TYPE = "APPROVAL_STATUS";
+    @JsonProperty(IDENTIFIER_FIELD)
+    private final UUID identifier;
+    @JsonProperty(DATA_FIELD)
+    private final DbApprovalStatus approvalStatus;
+    @JsonProperty(VERSION_FIELD)
+    private final String version;
+
+    @JsonCreator
+    public ApprovalStatusDao(@JsonProperty(IDENTIFIER_FIELD) UUID identifier,
+                             @JsonProperty(DATA_FIELD) DbApprovalStatus approvalStatus,
+                             @JsonProperty(VERSION_FIELD) String version
+    ) {
+        super();
+        this.identifier = identifier;
+        this.approvalStatus = approvalStatus;
+        this.version = version;
+    }
 
     public static String createSortKey(String institutionUri) {
         return String.join(FIELD_DELIMITER, TYPE, institutionUri);
@@ -37,6 +56,7 @@ public record ApprovalStatusDao(UUID identifier,
     @Override
     @DynamoDbPartitionKey
     @DynamoDbAttribute(HASH_KEY)
+    @JsonProperty(HASH_KEY)
     public String primaryKeyHashKey() {
         return CandidateDao.createPartitionKey(identifier.toString());
     }
@@ -44,8 +64,13 @@ public record ApprovalStatusDao(UUID identifier,
     @Override
     @DynamoDbSortKey
     @DynamoDbAttribute(SORT_KEY)
+    @JsonProperty(SORT_KEY)
     public String primaryKeyRangeKey() {
         return createSortKey(approvalStatus.institutionId().toString());
+    }
+
+    public String version() {
+        return version;
     }
 
     @Override
@@ -55,11 +80,18 @@ public record ApprovalStatusDao(UUID identifier,
         return TYPE;
     }
 
-    @JacocoGenerated
+    public UUID identifier() {
+        return identifier;
+    }
+
+    @DynamoDbAttribute(DATA_FIELD)
+    public DbApprovalStatus approvalStatus() {
+        return approvalStatus;
+    }
+
     public enum DbStatus {
         APPROVED("Approved"), PENDING("Pending"), REJECTED("Rejected");
 
-        @JsonValue
         private final String value;
 
         DbStatus(String value) {
@@ -125,8 +157,12 @@ public record ApprovalStatusDao(UUID identifier,
     }
 
     @DynamoDbImmutable(builder = DbApprovalStatus.Builder.class)
-    public record DbApprovalStatus(URI institutionId, DbStatus status, Username assignee,
-                                   Username finalizedBy, Instant finalizedDate, String reason) {
+    public record DbApprovalStatus(URI institutionId,
+                                   DbStatus status,
+                                   Username assignee,
+                                   Username finalizedBy,
+                                   Instant finalizedDate,
+                                   String reason) {
 
         public static Builder builder() {
             return new Builder();

@@ -45,6 +45,7 @@ import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpsertNonCandidateRequest;
 import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
 public final class Candidate {
@@ -189,6 +190,34 @@ public final class Candidate {
             return null;
         });
         return this;
+    }
+
+    @Override
+    @JacocoGenerated
+    public int hashCode() {
+        return Objects.hash(identifier, publicationId, publicationBucketUri, applicable, approvals, notes,
+                            institutionPoints, totalPoints, periodStatus);
+    }
+
+    @Override
+    @JacocoGenerated
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Candidate candidate = (Candidate) o;
+        return applicable == candidate.applicable
+               && Objects.equals(identifier, candidate.identifier)
+               && Objects.equals(publicationId, candidate.publicationId)
+               && Objects.equals(publicationBucketUri, candidate.publicationBucketUri)
+               && Objects.equals(approvals, candidate.approvals)
+               && Objects.equals(notes, candidate.notes)
+               && Objects.equals(institutionPoints, candidate.institutionPoints)
+               && Objects.equals(totalPoints, candidate.totalPoints)
+               && Objects.equals(periodStatus, candidate.periodStatus);
     }
 
     private static PeriodStatus calculatePeriodStatusIfApplicable(PeriodRepository periodRepository,

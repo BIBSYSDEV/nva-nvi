@@ -4,6 +4,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import java.net.URI;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
@@ -12,6 +13,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import nva.commons.core.JacocoGenerated;
 
 public class Approval {
 
@@ -73,6 +75,31 @@ public class Approval {
         } else {
             throw new IllegalArgumentException(UNKNOWN_REQUEST_TYPE_MESSAGE);
         }
+    }
+
+    @Override
+    @JacocoGenerated
+    public int hashCode() {
+        return Objects.hash(identifier, institutionId, status, assignee, finalizedBy, finalizedDate, reason);
+    }
+
+    @Override
+    @JacocoGenerated
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Approval approval = (Approval) o;
+        return Objects.equals(identifier, approval.identifier)
+               && Objects.equals(institutionId, approval.institutionId)
+               && status == approval.status
+               && Objects.equals(assignee, approval.assignee)
+               && Objects.equals(finalizedBy, approval.finalizedBy)
+               && Objects.equals(finalizedDate, approval.finalizedDate)
+               && Objects.equals(reason, approval.reason);
     }
 
     private DbApprovalStatus updateAssignee(UpdateAssigneeRequest request) {

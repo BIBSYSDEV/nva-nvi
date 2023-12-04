@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Objects.isNull;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NoteDao;
@@ -9,6 +10,7 @@ import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
 import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
+import nva.commons.core.JacocoGenerated;
 
 public class Note {
 
@@ -60,6 +62,29 @@ public class Note {
                    .withText(text)
                    .withIdentifier(noteId)
                    .build();
+    }
+
+    @Override
+    @JacocoGenerated
+    public int hashCode() {
+        return Objects.hash(identifier, noteId, createdDate, user, text);
+    }
+
+    @Override
+    @JacocoGenerated
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Note note = (Note) o;
+        return Objects.equals(identifier, note.identifier)
+               && Objects.equals(noteId, note.noteId)
+               && Objects.equals(createdDate, note.createdDate)
+               && Objects.equals(user, note.user)
+               && Objects.equals(text, note.text);
     }
 
     private static boolean isNotNoteOwner(String username, Username user) {

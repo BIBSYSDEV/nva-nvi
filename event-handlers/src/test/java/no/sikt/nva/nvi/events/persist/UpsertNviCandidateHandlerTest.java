@@ -175,6 +175,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
             createUpsertCandidateRequest(publicationId, randomUri(), true, InstanceType.ACADEMIC_ARTICLE, 1,
                                          randomBigDecimal(),
                                          randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
+                                         TestUtils.CURRENT_YEAR,
                                          delete, keep),
             candidateRepository, periodRepository).orElseThrow();
         var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));

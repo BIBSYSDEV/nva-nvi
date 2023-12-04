@@ -2,9 +2,14 @@ package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.IDENTIFIER_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.db.NoteDao.Builder;
 import no.sikt.nva.nvi.common.db.model.Username;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
@@ -12,14 +17,27 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmut
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-@DynamoDbImmutable(builder = NoteDao.Builder.class)
-public record NoteDao(UUID identifier,
-                      @DynamoDbAttribute(DATA_FIELD)
-                      DbNote note,
-                      String version
-) implements DynamoEntryWithRangeKey {
+@DynamoDbImmutable(builder = Builder.class)
+@JsonSerialize
+public final class NoteDao extends Dao {
 
     public static final String TYPE = "NOTE";
+    @JsonProperty(IDENTIFIER_FIELD)
+    private final UUID identifier;
+    @JsonProperty(DATA_FIELD)
+    private final DbNote note;
+    @JsonProperty(VERSION_FIELD)
+    private final String version;
+
+    public NoteDao(@JsonProperty(IDENTIFIER_FIELD) UUID identifier,
+                   @JsonProperty(DATA_FIELD) DbNote note,
+                   @JsonProperty(VERSION_FIELD) String version
+    ) {
+        super();
+        this.identifier = identifier;
+        this.note = note;
+        this.version = version;
+    }
 
     public static String createSortKey(String skId) {
         return String.join(FIELD_DELIMITER, TYPE, skId);
@@ -32,6 +50,7 @@ public record NoteDao(UUID identifier,
     @Override
     @DynamoDbPartitionKey
     @DynamoDbAttribute(HASH_KEY)
+    @JsonProperty(HASH_KEY)
     public String primaryKeyHashKey() {
         return CandidateDao.createPartitionKey(identifier.toString());
     }
@@ -39,8 +58,14 @@ public record NoteDao(UUID identifier,
     @Override
     @DynamoDbSortKey
     @DynamoDbAttribute(SORT_KEY)
+    @JsonProperty(SORT_KEY)
     public String primaryKeyRangeKey() {
         return createSortKey(note.noteId().toString());
+    }
+
+    @Override
+    public String version() {
+        return version;
     }
 
     @Override
@@ -48,6 +73,15 @@ public record NoteDao(UUID identifier,
     @DynamoDbAttribute(TYPE_FIELD)
     public String type() {
         return TYPE;
+    }
+
+    public UUID identifier() {
+        return identifier;
+    }
+
+    @DynamoDbAttribute(DATA_FIELD)
+    public DbNote note() {
+        return note;
     }
 
     public static final class Builder {
