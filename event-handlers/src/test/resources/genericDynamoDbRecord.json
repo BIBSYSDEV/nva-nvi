@@ -1,0 +1,15 @@
+{
+  "keys": {
+    "PrimaryKeyRangeKey": {
+      "s": "CANDIDATE#__REPLACE_IDENTIFIER__"
+    },
+    "PrimaryKeyHashKey": {
+      "s": "CANDIDATE#__REPLACE_IDENTIFIER__"
+    }
+  },
+  "newImage": {
+    "identifier": {
+      "s": "__REPLACE_IDENTIFIER__"
+    }
+  }
+}
