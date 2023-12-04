@@ -103,9 +103,9 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldSendMessagesForCandidatesPublishedInGivenYear() {
-        var year = randomYear();
+        var year = "2023";
         var candidates = createNumberOfCandidatesForYear(year, 10, candidateRepository);
-        createNumberOfCandidatesForYear(randomYear(), 10, candidateRepository);
+        createNumberOfCandidatesForYear("2022", 10, candidateRepository);
         handler.handleRequest(eventStream(createRequest(year)), outputStream, context);
         var batch = sqsClient.getSentBatches().get(0);
         var expectedCandidates = sortByIdentifier(candidates, BATCH_SIZE).stream().map(CandidateDao::candidate)
