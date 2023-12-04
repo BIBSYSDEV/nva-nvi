@@ -54,11 +54,7 @@ public class ListingResult<T> {
     @Override
     @JacocoGenerated
     public int hashCode() {
-        int result = (moreItemsToScan ? 1 : 0);
-        result = 31 * result + (startMarker != null ? startMarker.hashCode() : 0);
-        result = 31 * result + totalItemCount;
-        result = 31 * result + (databaseEntries != null ? databaseEntries.hashCode() : 0);
-        return result;
+        return Objects.hash(moreItemsToScan, startMarker, totalItemCount, databaseEntries);
     }
 
     @Override
@@ -70,19 +66,9 @@ public class ListingResult<T> {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-
         ListingResult<?> that = (ListingResult<?>) o;
-
-        if (moreItemsToScan != that.moreItemsToScan) {
-            return false;
-        }
-        if (totalItemCount != that.totalItemCount) {
-            return false;
-        }
-        if (!Objects.equals(startMarker, that.startMarker)) {
-            return false;
-        }
-        return Objects.equals(databaseEntries, that.databaseEntries);
+        return moreItemsToScan == that.moreItemsToScan && totalItemCount == that.totalItemCount && Objects.equals(
+            startMarker, that.startMarker) && Objects.equals(databaseEntries, that.databaseEntries);
     }
 
     @Override

@@ -40,52 +40,6 @@ public class Approval {
         this.reason = dbApprovalStatus.approvalStatus().reason();
     }
 
-    @Override
-    @JacocoGenerated
-    public int hashCode() {
-        int result = identifier != null ? identifier.hashCode() : 0;
-        result = 31 * result + (institutionId != null ? institutionId.hashCode() : 0);
-        result = 31 * result + (status != null ? status.hashCode() : 0);
-        result = 31 * result + (assignee != null ? assignee.hashCode() : 0);
-        result = 31 * result + (finalizedBy != null ? finalizedBy.hashCode() : 0);
-        result = 31 * result + (finalizedDate != null ? finalizedDate.hashCode() : 0);
-        result = 31 * result + (reason != null ? reason.hashCode() : 0);
-        return result;
-    }
-
-    @Override
-    @JacocoGenerated
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        Approval approval = (Approval) o;
-
-        if (!Objects.equals(identifier, approval.identifier)) {
-            return false;
-        }
-        if (!Objects.equals(institutionId, approval.institutionId)) {
-            return false;
-        }
-        if (status != approval.status) {
-            return false;
-        }
-        if (!Objects.equals(assignee, approval.assignee)) {
-            return false;
-        }
-        if (!Objects.equals(finalizedBy, approval.finalizedBy)) {
-            return false;
-        }
-        if (!Objects.equals(finalizedDate, approval.finalizedDate)) {
-            return false;
-        }
-        return Objects.equals(reason, approval.reason);
-    }
-
     public URI getInstitutionId() {
         return institutionId;
     }
@@ -121,6 +75,31 @@ public class Approval {
         } else {
             throw new IllegalArgumentException(UNKNOWN_REQUEST_TYPE_MESSAGE);
         }
+    }
+
+    @Override
+    @JacocoGenerated
+    public int hashCode() {
+        return Objects.hash(identifier, institutionId, status, assignee, finalizedBy, finalizedDate, reason);
+    }
+
+    @Override
+    @JacocoGenerated
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Approval approval = (Approval) o;
+        return Objects.equals(identifier, approval.identifier)
+               && Objects.equals(institutionId, approval.institutionId)
+               && status == approval.status
+               && Objects.equals(assignee, approval.assignee)
+               && Objects.equals(finalizedBy, approval.finalizedBy)
+               && Objects.equals(finalizedDate, approval.finalizedDate)
+               && Objects.equals(reason, approval.reason);
     }
 
     private DbApprovalStatus updateAssignee(UpdateAssigneeRequest request) {

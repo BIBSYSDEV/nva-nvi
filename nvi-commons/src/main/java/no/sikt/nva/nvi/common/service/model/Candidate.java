@@ -124,60 +124,6 @@ public final class Candidate {
         return Optional.empty();
     }
 
-    @Override
-    @JacocoGenerated
-    public int hashCode() {
-        int result = identifier != null ? identifier.hashCode() : 0;
-        result = 31 * result + (publicationId != null ? publicationId.hashCode() : 0);
-        result = 31 * result + (publicationBucketUri != null ? publicationBucketUri.hashCode() : 0);
-        result = 31 * result + (applicable ? 1 : 0);
-        result = 31 * result + (approvals != null ? approvals.hashCode() : 0);
-        result = 31 * result + (notes != null ? notes.hashCode() : 0);
-        result = 31 * result + (institutionPoints != null ? institutionPoints.hashCode() : 0);
-        result = 31 * result + (totalPoints != null ? totalPoints.hashCode() : 0);
-        result = 31 * result + (periodStatus != null ? periodStatus.hashCode() : 0);
-        return result;
-    }
-
-    @Override
-    @JacocoGenerated
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        Candidate candidate = (Candidate) o;
-
-        if (applicable != candidate.applicable) {
-            return false;
-        }
-        if (!Objects.equals(identifier, candidate.identifier)) {
-            return false;
-        }
-        if (!Objects.equals(publicationId, candidate.publicationId)) {
-            return false;
-        }
-        if (!Objects.equals(publicationBucketUri, candidate.publicationBucketUri)) {
-            return false;
-        }
-        if (!Objects.equals(approvals, candidate.approvals)) {
-            return false;
-        }
-        if (!Objects.equals(notes, candidate.notes)) {
-            return false;
-        }
-        if (!Objects.equals(institutionPoints, candidate.institutionPoints)) {
-            return false;
-        }
-        if (!Objects.equals(totalPoints, candidate.totalPoints)) {
-            return false;
-        }
-        return Objects.equals(periodStatus, candidate.periodStatus);
-    }
-
     public PeriodStatus getPeriodStatus() {
         return periodStatus;
     }
@@ -244,6 +190,34 @@ public final class Candidate {
             return null;
         });
         return this;
+    }
+
+    @Override
+    @JacocoGenerated
+    public int hashCode() {
+        return Objects.hash(identifier, publicationId, publicationBucketUri, applicable, approvals, notes,
+                            institutionPoints, totalPoints, periodStatus);
+    }
+
+    @Override
+    @JacocoGenerated
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Candidate candidate = (Candidate) o;
+        return applicable == candidate.applicable
+               && Objects.equals(identifier, candidate.identifier)
+               && Objects.equals(publicationId, candidate.publicationId)
+               && Objects.equals(publicationBucketUri, candidate.publicationBucketUri)
+               && Objects.equals(approvals, candidate.approvals)
+               && Objects.equals(notes, candidate.notes)
+               && Objects.equals(institutionPoints, candidate.institutionPoints)
+               && Objects.equals(totalPoints, candidate.totalPoints)
+               && Objects.equals(periodStatus, candidate.periodStatus);
     }
 
     private static PeriodStatus calculatePeriodStatusIfApplicable(PeriodRepository periodRepository,

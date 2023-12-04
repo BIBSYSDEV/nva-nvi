@@ -67,12 +67,7 @@ public class Note {
     @Override
     @JacocoGenerated
     public int hashCode() {
-        int result = identifier != null ? identifier.hashCode() : 0;
-        result = 31 * result + (noteId != null ? noteId.hashCode() : 0);
-        result = 31 * result + (createdDate != null ? createdDate.hashCode() : 0);
-        result = 31 * result + (user != null ? user.hashCode() : 0);
-        result = 31 * result + (text != null ? text.hashCode() : 0);
-        return result;
+        return Objects.hash(identifier, noteId, createdDate, user, text);
     }
 
     @Override
@@ -84,22 +79,12 @@ public class Note {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-
         Note note = (Note) o;
-
-        if (!Objects.equals(identifier, note.identifier)) {
-            return false;
-        }
-        if (!Objects.equals(noteId, note.noteId)) {
-            return false;
-        }
-        if (!Objects.equals(createdDate, note.createdDate)) {
-            return false;
-        }
-        if (!Objects.equals(user, note.user)) {
-            return false;
-        }
-        return Objects.equals(text, note.text);
+        return Objects.equals(identifier, note.identifier)
+               && Objects.equals(noteId, note.noteId)
+               && Objects.equals(createdDate, note.createdDate)
+               && Objects.equals(user, note.user)
+               && Objects.equals(text, note.text);
     }
 
     private static boolean isNotNoteOwner(String username, Username user) {
