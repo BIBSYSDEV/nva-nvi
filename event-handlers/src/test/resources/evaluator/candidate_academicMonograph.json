@@ -241,12 +241,12 @@
           "publisher": {
             "id": "https://api.dev.nva.aws.unit.no/publication-channels/d1a0860e-f246-4c8a-a725-98e6bb4fc022",
             "type": "Publisher",
-            "level": "1"
+            "scientificValue": "LevelOne"
           },
           "series": {
             "id": "https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023",
             "type": "Series",
-            "level": "1"
+            "scientificValue": "LevelOne"
           }
         },
         "publicationInstance": {

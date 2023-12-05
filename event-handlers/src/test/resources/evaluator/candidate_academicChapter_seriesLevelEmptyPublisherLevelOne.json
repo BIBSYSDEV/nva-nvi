@@ -259,7 +259,7 @@
                 "publisher": {
                   "id": "https://api.dev.nva.aws.unit.no/publication-channels/3bbb6017-ca4a-496a-8ca7-d3ac78f65abf",
                   "type": "Publisher",
-                  "level": "1"
+                  "scientificValue": "LevelOne"
                 },
                 "series": {
                   "id": "https://api.dev.nva.aws.unit.no/publication-channels/583d74c4-ba08-485f-9e79-c640f5d223ba",

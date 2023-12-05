@@ -260,12 +260,12 @@
                 "publisher": {
                   "id": "https://api.dev.nva.aws.unit.no/publication-channels/3bbb6017-ca4a-496a-8ca7-d3ac78f65abf",
                   "type": "Publisher",
-                  "scientificValue": "LevelOne"
+                  "level": "1"
                 },
                 "series": {
                   "id": "https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023",
                   "type": "Series",
-                  "scientificValue": "LevelOne"
+                  "level": "1"
                 }
               }
             }
