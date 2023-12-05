@@ -1,26 +1,24 @@
 package no.sikt.nva.nvi.events.db;
 
-import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
-import com.amazonaws.services.lambda.runtime.events.SQSEvent;
-import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.StreamRecord;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.events.evaluator.FakeSqsClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 
 public class DynamoDbEventToQueueHandlerTest {
 
@@ -37,28 +35,39 @@ public class DynamoDbEventToQueueHandlerTest {
     void shouldQueueSQSEventWhenReceivingDynamoDbEvent() {
         var dynamoDbEvent = randomEventWithNumberOfDynamoRecords(1);
         handler.handleRequest(dynamoDbEvent, mock(Context.class));
-        var expectedSqsEvent = createSqsEvent(dynamoDbEvent);
-        var actualSqsEvent = sqsClient.getSentBatches().get(0);
-        assertThat(actualSqsEvent, is(equalTo(expectedSqsEvent)));
+        var expectedMessages = mapToMessageBodies(dynamoDbEvent);
+        var actualMessages = extractBatchEntryMessageBodiesAtIndex(0);
+        assertEquals(expectedMessages, actualMessages);
+    }
+
+    @Test
+    void shouldSendMessageBatchWithSize10() {
+        var dynamoDbEvent = randomEventWithNumberOfDynamoRecords(11);
+        handler.handleRequest(dynamoDbEvent, mock(Context.class));
+        var batchOneMessages = extractBatchEntryMessageBodiesAtIndex(0);
+        var batchTwoMessages = extractBatchEntryMessageBodiesAtIndex(1);
+        assertEquals(10, batchOneMessages.size());
+        assertEquals(1, batchTwoMessages.size());
     }
 
     private static String mapToString(DynamodbStreamRecord record) {
-        return attempt(() -> objectMapper.writeValueAsString(record)).orElseThrow();
+        return attempt(() -> dynamoObjectMapper.writeValueAsString(record)).orElseThrow();
     }
 
-    private SQSEvent createSqsEvent(DynamodbEvent dynamoDbEvent) {
-        var event = new SQSEvent();
-        event.setRecords(dynamoDbEvent.getRecords()
-                             .stream()
-                             .map(this::mapToSqsMessage)
-                             .toList());
-        return event;
+    private List<String> extractBatchEntryMessageBodiesAtIndex(int index) {
+        return sqsClient.getSentBatches()
+                   .get(index)
+                   .entries()
+                   .stream()
+                   .map(SendMessageBatchRequestEntry::messageBody)
+                   .toList();
     }
 
-    private SQSMessage mapToSqsMessage(DynamodbStreamRecord record) {
-        var message = new SQSMessage();
-        message.setBody(mapToString(record));
-        return message;
+    private List<String> mapToMessageBodies(DynamodbEvent dynamoDbEvent) {
+        return dynamoDbEvent.getRecords()
+                   .stream()
+                   .map(DynamoDbEventToQueueHandlerTest::mapToString)
+                   .toList();
     }
 
     private DynamodbEvent randomEventWithNumberOfDynamoRecords(int numberOfRecords) {
