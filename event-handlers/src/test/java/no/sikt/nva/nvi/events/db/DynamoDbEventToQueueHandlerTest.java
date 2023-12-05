@@ -52,7 +52,7 @@ public class DynamoDbEventToQueueHandlerTest {
     }
 
     @Test
-    void shouldQueueSQSEventWhenReceivingDynamoDbEvent() {
+    void shouldQueueSqsMessageWhenReceivingDynamoDbEvent() {
         var dynamoDbEvent = randomEventWithNumberOfDynamoRecords(1);
         handler.handleRequest(dynamoDbEvent, CONTEXT);
         var expectedMessages = mapToMessageBodies(dynamoDbEvent);

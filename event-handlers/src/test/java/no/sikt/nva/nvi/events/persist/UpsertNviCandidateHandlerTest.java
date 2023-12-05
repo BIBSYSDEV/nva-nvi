@@ -50,6 +50,7 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
@@ -87,7 +88,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
 
-    private QueueClient<NviSendMessageResponse> queueClient;
+    private QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
 
     private Environment environment;
 

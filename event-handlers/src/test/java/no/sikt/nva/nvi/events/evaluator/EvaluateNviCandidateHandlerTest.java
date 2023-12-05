@@ -78,7 +78,8 @@ class EvaluateNviCandidateHandlerTest {
     private static final URI HARDCODED_CREATOR_ID = URI.create("https://api.dev.nva.aws.unit.no/cristin/person/997998");
     private static final String ACADEMIC_CHAPTER_PATH = "evaluator/candidate_academicChapter.json";
     private static final int SCALE = 4;
-    private static final String ACADEMIC_LITERATURE_REVIEW_JSON_PATH = "evaluator/candidate_academicLiteratureReview.json";
+    private static final String ACADEMIC_LITERATURE_REVIEW_JSON_PATH = "evaluator/candidate_academicLiteratureReview"
+                                                                       + ".json";
     private static final String ACADEMIC_MONOGRAPH_JSON_PATH = "evaluator/candidate_academicMonograph.json";
     private static final String BUCKET_NAME = "ignoredBucket";
     private static final String CUSTOMER_API_NVI_RESPONSE = "{" + "\"nviInstitution\" : \"true\"" + "}";
@@ -175,8 +176,9 @@ class EvaluateNviCandidateHandlerTest {
         mockCristinResponseAndCustomerApiResponseForNonNviInstitution();
         var content = IoUtils.inputStreamFromResources(
             "evaluator/candidate_verifiedCreator_with_nonNviInstitution.json");
-        var fileUri = s3Driver.insertFile(UnixPath.of("evaluator/candidate_verifiedCreator_with_nonNviInstitution.json"),
-                                          content);
+        var fileUri = s3Driver.insertFile(
+            UnixPath.of("evaluator/candidate_verifiedCreator_with_nonNviInstitution.json"),
+            content);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();

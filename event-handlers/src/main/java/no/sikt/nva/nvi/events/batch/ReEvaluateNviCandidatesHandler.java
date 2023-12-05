@@ -12,6 +12,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.NviService;
@@ -39,7 +40,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
     private static final int BATCH_SIZE = 10;
     private static final String PERSISTED_RESOURCE_QUEUE_URL = "PERSISTED_RESOURCE_QUEUE_URL";
     private static final String EVENT_BUS_NAME = "EVENT_BUS_NAME";
-    private final QueueClient<NviSendMessageResponse> queueClient;
+    private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
     private final NviService nviService;
     private final String queueUrl;
     private final String eventBusName;
@@ -51,7 +52,8 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
         this(NviService.defaultNviService(), new NviQueueClient(), new Environment(), defaultEventBridgeClient());
     }
 
-    public ReEvaluateNviCandidatesHandler(NviService nviService, QueueClient<NviSendMessageResponse> queueClient,
+    public ReEvaluateNviCandidatesHandler(NviService nviService,
+                                          QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient,
                                           Environment environment, EventBridgeClient eventBridgeClient) {
         super(ReEvaluateRequest.class);
         this.nviService = nviService;

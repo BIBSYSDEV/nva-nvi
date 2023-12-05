@@ -4,9 +4,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import nva.commons.core.JacocoGenerated;
+import software.amazon.awssdk.services.sqs.model.BatchResultErrorEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchResponse;
@@ -15,7 +17,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 @JacocoGenerated
-public class FakeSqsClient implements QueueClient<NviSendMessageResponse> {
+public class FakeSqsClient implements QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> {
 
     private final List<SendMessageRequest> sentMessages = new ArrayList<>();
 
@@ -39,10 +41,18 @@ public class FakeSqsClient implements QueueClient<NviSendMessageResponse> {
     }
 
     @Override
-    public NviSendMessageResponse sendMessageBatch(Collection<String> messages, String queueUrl) {
+    public NviSendMessageBatchResponse sendMessageBatch(Collection<String> messages, String queueUrl) {
         var request = createBatchRequest(messages, queueUrl);
         sentBatches.add(request);
         return createResponse(SendMessageBatchResponse.builder().build());
+    }
+
+    private static List<String> extractSuccessfulEntryIds(SendMessageBatchResponse response) {
+        return response.successful().stream().map(SendMessageBatchResultEntry::id).toList();
+    }
+
+    private static List<String> extractFailedEntryIds(SendMessageBatchResponse response) {
+        return response.failed().stream().map(BatchResultErrorEntry::id).toList();
     }
 
     private SendMessageBatchRequest createBatchRequest(Collection<String> messages, String queueUrl) {
@@ -67,11 +77,13 @@ public class FakeSqsClient implements QueueClient<NviSendMessageResponse> {
                    .build();
     }
 
-    private NviSendMessageResponse createResponse(SendMessageResponse response) {
-        return new NviSendMessageResponse(List.of(response.messageId()));
+    private NviSendMessageResponse createResponse(
+        software.amazon.awssdk.services.sqs.model.SendMessageResponse response) {
+        return new NviSendMessageResponse(response.messageId());
     }
 
-    private NviSendMessageResponse createResponse(SendMessageBatchResponse response) {
-        return new NviSendMessageResponse(response.successful().stream().map(SendMessageBatchResultEntry::id).toList());
+    private NviSendMessageBatchResponse createResponse(
+        software.amazon.awssdk.services.sqs.model.SendMessageBatchResponse response) {
+        return new NviSendMessageBatchResponse(extractSuccessfulEntryIds(response), extractFailedEntryIds(response));
     }
 }

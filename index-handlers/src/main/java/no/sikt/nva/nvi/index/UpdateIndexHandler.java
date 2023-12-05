@@ -17,13 +17,14 @@ import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
@@ -49,7 +50,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
     private final NviCandidateIndexDocumentGenerator documentGenerator;
-    private final QueueClient<NviSendMessageResponse> queueClient;
+    private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
     private final String dlqUrl;
 
     @JacocoGenerated
@@ -64,7 +65,8 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
                               SearchClient<NviCandidateIndexDocument> openSearchClient,
                               CandidateRepository candidateRepository, PeriodRepository periodRepository,
                               NviCandidateIndexDocumentGenerator documentGenerator,
-                              QueueClient<NviSendMessageResponse> queueClient, Environment environment) {
+                              QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient,
+                              Environment environment) {
         this.storageReader = storageReader;
         this.openSearchClient = openSearchClient;
         this.candidateRepository = candidateRepository;
@@ -125,6 +127,12 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         return stringWriter.toString();
     }
 
+    private static String extractIdFromRecord(DynamodbStreamRecord record) {
+        return Optional.ofNullable(record.getDynamodb().getOldImage())
+                   .orElse(record.getDynamodb().getNewImage())
+                   .getOrDefault(IDENTIFIER, new AttributeValue().withS("no id found")).getS();
+    }
+
     private boolean isCandidateOrApproval(DynamodbStreamRecord record) {
         LOGGER.info("Record id {} type {}", extractIdFromRecord(record), extractRecordType(record));
         return isCandidate(record) || isApproval(record);
@@ -160,12 +168,6 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
         LOGGER.info("Record id: {} Event type: {}", identifier, eventType.toString());
         return OperationType.INSERT.equals(eventType) || OperationType.MODIFY.equals(eventType);
-    }
-
-    private static String extractIdFromRecord(DynamodbStreamRecord record) {
-        return Optional.ofNullable(record.getDynamodb().getOldImage())
-                   .orElse(record.getDynamodb().getNewImage())
-                   .getOrDefault(IDENTIFIER, new AttributeValue().withS("no id found")).getS();
     }
 
     private void removeDocumentFromIndex(Candidate candidate) {

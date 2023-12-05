@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import nva.commons.core.Environment;
@@ -20,12 +21,13 @@ import org.slf4j.LoggerFactory;
 
 public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent, Void> {
 
+    public static final String INFO_MESSAGE = "Sent {} messages to queue. Failures: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(DynamoDbEventToQueueHandler.class);
     private static final int BATCH_SIZE = 10;
     private static final String DB_EVENTS_QUEUE_URL = "DB_EVENTS_QUEUE_URL";
     private static final String FAILURE_MESSAGE = "Failure while sending database events to queue";
     private static final String FAILED_RECORDS_MESSAGE = "Failed records: {}";
-    private final QueueClient<NviSendMessageResponse> queueClient;
+    private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
     private final String queueUrl;
 
     @JacocoGenerated
@@ -33,7 +35,8 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
         this(new NviQueueClient(), new Environment());
     }
 
-    public DynamoDbEventToQueueHandler(QueueClient<NviSendMessageResponse> queueClient, Environment environment) {
+    public DynamoDbEventToQueueHandler(QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient,
+                                       Environment environment) {
         this.queueClient = queueClient;
         this.queueUrl = environment.readEnv(DB_EVENTS_QUEUE_URL);
     }
@@ -68,7 +71,8 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     }
 
     private void sendBatch(List<String> messages) {
-        queueClient.sendMessageBatch(messages, queueUrl);
+        var response = queueClient.sendMessageBatch(messages, queueUrl);
+        LOGGER.info(INFO_MESSAGE, messages.size(), response.failed().size());
     }
 
     private Stream<List<DynamodbStreamRecord>> splitIntoBatches(List<DynamodbStreamRecord> records) {

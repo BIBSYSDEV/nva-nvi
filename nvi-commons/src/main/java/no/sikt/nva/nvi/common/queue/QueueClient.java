@@ -2,9 +2,9 @@ package no.sikt.nva.nvi.common.queue;
 
 import java.util.Collection;
 
-public interface QueueClient<T> {
+public interface QueueClient<T, R> {
 
     T sendMessage(String message, String queueUrl);
 
-    T sendMessageBatch(Collection<String> messages, String queueUrl);
+    R sendMessageBatch(Collection<String> messages, String queueUrl);
 }

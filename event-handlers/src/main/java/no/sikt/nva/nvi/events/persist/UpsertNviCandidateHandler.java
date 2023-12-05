@@ -16,6 +16,7 @@ import java.util.Optional;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -39,7 +40,7 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
     private final CandidateRepository repository;
     private final PeriodRepository periodRepository;
 
-    private final QueueClient<NviSendMessageResponse> queueClient;
+    private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
     private final String dlqUrl;
 
     @JacocoGenerated
@@ -49,7 +50,8 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
     }
 
     public UpsertNviCandidateHandler(CandidateRepository repository, PeriodRepository periodRepository,
-                                     QueueClient<NviSendMessageResponse> queueClient, Environment environment) {
+                                     QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient,
+                                     Environment environment) {
         this.repository = repository;
         this.periodRepository = periodRepository;
         this.queueClient = queueClient;
