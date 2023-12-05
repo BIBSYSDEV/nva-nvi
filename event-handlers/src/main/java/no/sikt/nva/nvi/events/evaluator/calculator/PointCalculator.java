@@ -1,10 +1,12 @@
 package no.sikt.nva.nvi.events.evaluator.calculator;
 
 import static java.math.BigDecimal.ZERO;
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_PUBLISHER;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES_LEVEL;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES_SCIENTIFIC_VALUE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_COUNTRY_CODE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
@@ -14,6 +16,7 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLISHER;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ROLE_TYPE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_LEVEL;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_SCIENTIFIC_VALUE;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
 import static no.sikt.nva.nvi.events.evaluator.calculator.PointCalculationConstants.INSTANCE_TYPE_AND_LEVEL_POINT_MAP;
@@ -197,7 +200,7 @@ public final class PointCalculator {
     }
 
     private static boolean hasId(JsonNode affiliation) {
-        return Objects.nonNull(extractId(affiliation));
+        return nonNull(extractId(affiliation));
     }
 
     private static boolean doesNotHaveId(JsonNode affiliation) {
@@ -234,7 +237,8 @@ public final class PointCalculator {
     }
 
     private static String extractAcademicChapterChannel(JsonNode jsonNode) {
-        if (Objects.nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_CHAPTER_SERIES_LEVEL))) {
+        if (nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_CHAPTER_SERIES_LEVEL))
+            || nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_CHAPTER_SERIES_SCIENTIFIC_VALUE))) {
             return jsonNode.at(JSON_PTR_CHAPTER_SERIES).toString();
         } else {
             return jsonNode.at(JSON_PTR_CHAPTER_PUBLISHER).toString();
@@ -242,7 +246,8 @@ public final class PointCalculator {
     }
 
     private static String extractAcademicMonographChannel(JsonNode jsonNode) {
-        if (Objects.nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_LEVEL))) {
+        if (nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_LEVEL))
+            || nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_SCIENTIFIC_VALUE))) {
             return jsonNode.at(JSON_PTR_SERIES).toString();
         } else {
             return jsonNode.at(JSON_PTR_PUBLISHER).toString();

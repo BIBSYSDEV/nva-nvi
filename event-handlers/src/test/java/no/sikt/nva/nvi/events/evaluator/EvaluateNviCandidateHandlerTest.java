@@ -159,18 +159,6 @@ class EvaluateNviCandidateHandlerTest {
     }
 
     @Test
-    void shouldCreateNewCandidateEventOnValidAcademicChapter() throws IOException {
-        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        mockOrganizationResponseForAffiliation(SIKT_CRISTIN_ORG_ID, null, uriRetriever);
-        var content = IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH);
-        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), content);
-        var event = createEvent(new PersistedResourceMessage(fileUri));
-        handler.handleRequest(event, context);
-        var candidate = (NviCandidate) getMessageBody().candidate();
-        assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
-    }
-
-    @Test
     void shouldCreateNewCandidateWithPointsOnlyForNviInstitutions() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         mockCristinResponseAndCustomerApiResponseForNonNviInstitution();
@@ -489,7 +477,7 @@ class EvaluateNviCandidateHandlerTest {
                    .withCandidateType(createExpectedCandidate(instanceType,
                                                               Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID,
                                                                      points.setScale(SCALE, RoundingMode.HALF_UP)),
-                                                              publicationChannel, Level.LEVEL_ONE.getValue(),
+                                                              publicationChannel, Level.LEVEL_ONE_V2.getValue(),
                                                               basePoints, totalPoints, bucketUri))
                    .build();
     }
