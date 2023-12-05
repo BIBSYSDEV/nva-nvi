@@ -90,7 +90,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
     void shouldReturnSamePointsAsPointsCalculatedByCristinForAcademicArticleFrom2022() throws IOException {
         mockCristinApiResponsesForAllSubUnitsInAcademicArticle();
         mockCustomerApi();
-        var event = setUpSqsEvent("cristin_candidate_2022_academicArticle.json");
+        var event = setUpSqsEvent("evaluator/cristin_candidate_2022_academicArticle.json");
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
         var institutionPoints = candidate.institutionPoints();
@@ -106,7 +106,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
         mockCristinResponseForNonNviOrganizationsForAcademicMonograph();
         mockCustomerApi(UIO_TOP_LEVEL_ORG_ID);
 
-        var event = setUpSqsEvent("cristin_candidate_2022_academicMonograph.json");
+        var event = setUpSqsEvent("evaluator/cristin_candidate_2022_academicMonograph.json");
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
         var institutionPoints = candidate.institutionPoints();
@@ -121,7 +121,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
         mockCristinResponseForNonNviOrganizationsForLiteratureReview();
         mockCustomerApi(NTNU_TOP_LEVEL_ORG_ID);
 
-        var event = setUpSqsEvent("cristin_candidate_2022_academicLiteratureReview.json");
+        var event = setUpSqsEvent("evaluator/cristin_candidate_2022_academicLiteratureReview.json");
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
         var institutionPoints = candidate.institutionPoints();
@@ -134,7 +134,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
         mockCustomerApi(NTNU_TOP_LEVEL_ORG_ID);
         mockCustomerApi(SINTEF_TOP_LEVEL_ORG_ID);
 
-        var event = setUpSqsEvent("cristin_candidate_2022_academicChapter.json");
+        var event = setUpSqsEvent("evaluator/cristin_candidate_2022_academicChapter.json");
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
         var institutionPoints = candidate.institutionPoints();

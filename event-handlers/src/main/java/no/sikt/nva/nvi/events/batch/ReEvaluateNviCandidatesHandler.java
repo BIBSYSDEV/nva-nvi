@@ -12,6 +12,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.NviService;
@@ -40,7 +41,8 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
     private static final String RESULT_MESSAGE = "Batch result startMarker: {}, totalItemCount: {}, "
                                                  + "shouldContinueScan: {}";
     private static final String PUT_EVENT_RESPONSE_MESSAGE = "Put event response: {}";
-    private final QueueClient<NviSendMessageResponse> queueClient;
+    private static final String MESSAGES_SENT_MESSAGE = "Sent {} messages to queue. Failures: {}";
+    private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
     private final NviService nviService;
     private final String queueUrl;
     private final String eventBusName;
@@ -52,7 +54,8 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
         this(NviService.defaultNviService(), new NviQueueClient(), new Environment(), defaultEventBridgeClient());
     }
 
-    public ReEvaluateNviCandidatesHandler(NviService nviService, QueueClient<NviSendMessageResponse> queueClient,
+    public ReEvaluateNviCandidatesHandler(NviService nviService,
+                                          QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient,
                                           Environment environment, EventBridgeClient eventBridgeClient) {
         super(ReEvaluateRequest.class);
         this.nviService = nviService;
@@ -119,7 +122,8 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
     }
 
     private void sendBatch(Collection<String> messages) {
-        queueClient.sendMessageBatch(messages, queueUrl);
+        var response = queueClient.sendMessageBatch(messages, queueUrl);
+        LOGGER.info(MESSAGES_SENT_MESSAGE, messages.size(), response.failed().size());
     }
 
     private Collection<String> createMessages(List<URI> uris) {

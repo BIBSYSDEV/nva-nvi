@@ -9,6 +9,7 @@ import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.BatchResultErrorEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchResponse;
@@ -16,7 +17,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageBatchResultEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
-public class NviQueueClient implements QueueClient<NviSendMessageResponse> {
+public class NviQueueClient implements QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> {
 
     private static final int MAX_CONNECTIONS = 10_000;
     private static final int IDLE_TIME = 30;
@@ -38,7 +39,7 @@ public class NviQueueClient implements QueueClient<NviSendMessageResponse> {
     }
 
     @Override
-    public NviSendMessageResponse sendMessageBatch(Collection<String> messages, String queueUrl) {
+    public NviSendMessageBatchResponse sendMessageBatch(Collection<String> messages, String queueUrl) {
         return createResponse(sqsClient.sendMessageBatch(createBatchRequest(messages, queueUrl)));
     }
 
@@ -58,6 +59,14 @@ public class NviQueueClient implements QueueClient<NviSendMessageResponse> {
                    .connectionMaxIdleTime(Duration.ofMinutes(IDLE_TIME))
                    .connectionTimeout(Duration.ofMinutes(TIMEOUT_TIME))
                    .build();
+    }
+
+    private static List<String> extractFailedEntryIds(SendMessageBatchResponse response) {
+        return response.failed().stream().map(BatchResultErrorEntry::id).toList();
+    }
+
+    private static List<String> extractSuccessfulEntryIds(SendMessageBatchResponse response) {
+        return response.successful().stream().map(SendMessageBatchResultEntry::id).toList();
     }
 
     private SendMessageRequest createRequest(String body, String queueUrl) {
@@ -83,11 +92,10 @@ public class NviQueueClient implements QueueClient<NviSendMessageResponse> {
     }
 
     private NviSendMessageResponse createResponse(SendMessageResponse response) {
-        return new NviSendMessageResponse(List.of(response.messageId()));
+        return new NviSendMessageResponse(response.messageId());
     }
 
-    private NviSendMessageResponse createResponse(SendMessageBatchResponse response) {
-        return new NviSendMessageResponse(
-            response.successful().stream().map(SendMessageBatchResultEntry::id).toList());
+    private NviSendMessageBatchResponse createResponse(SendMessageBatchResponse response) {
+        return new NviSendMessageBatchResponse(extractSuccessfulEntryIds(response), extractFailedEntryIds(response));
     }
 }
