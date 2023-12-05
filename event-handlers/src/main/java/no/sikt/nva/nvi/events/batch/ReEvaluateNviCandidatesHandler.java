@@ -41,6 +41,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
     private static final String RESULT_MESSAGE = "Batch result startMarker: {}, totalItemCount: {}, "
                                                  + "shouldContinueScan: {}";
     private static final String PUT_EVENT_RESPONSE_MESSAGE = "Put event response: {}";
+    private static final String MESSAGES_SENT_MESSAGE = "Sent {} messages to queue. Failures: {}";
     private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
     private final NviService nviService;
     private final String queueUrl;
@@ -121,7 +122,8 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
     }
 
     private void sendBatch(Collection<String> messages) {
-        queueClient.sendMessageBatch(messages, queueUrl);
+        var response = queueClient.sendMessageBatch(messages, queueUrl);
+        LOGGER.info(MESSAGES_SENT_MESSAGE, messages.size(), response.failed().size());
     }
 
     private Collection<String> createMessages(List<URI> uris) {

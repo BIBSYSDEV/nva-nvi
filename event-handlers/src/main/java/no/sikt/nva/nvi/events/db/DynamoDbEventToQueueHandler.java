@@ -21,12 +21,12 @@ import org.slf4j.LoggerFactory;
 
 public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent, Void> {
 
-    public static final String INFO_MESSAGE = "Sent {} messages to queue. Failures: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(DynamoDbEventToQueueHandler.class);
     private static final int BATCH_SIZE = 10;
     private static final String DB_EVENTS_QUEUE_URL = "DB_EVENTS_QUEUE_URL";
     private static final String FAILURE_MESSAGE = "Failure while sending database events to queue";
     private static final String FAILED_RECORDS_MESSAGE = "Failed records: {}";
+    private static final String INFO_MESSAGE = "Sent {} messages to queue. Failures: {}";
     private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
     private final String queueUrl;
 
