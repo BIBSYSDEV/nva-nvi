@@ -9,9 +9,11 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStream
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +27,11 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     private static final String FAILED_RECORDS_MESSAGE = "Failed records: {}";
     private final QueueClient<NviSendMessageResponse> queueClient;
     private final String queueUrl;
+
+    @JacocoGenerated
+    public DynamoDbEventToQueueHandler() {
+        this(new NviQueueClient(), new Environment());
+    }
 
     public DynamoDbEventToQueueHandler(QueueClient<NviSendMessageResponse> queueClient, Environment environment) {
         this.queueClient = queueClient;
