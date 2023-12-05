@@ -47,6 +47,7 @@ public record ReEvaluateRequest(@JsonProperty(PAGE_SIZE_FIELD) Integer pageSize,
                    .builder()
                    .eventBusName(eventBusName)
                    .detail(this.toJsonString())
+                   .detailType(this.getClass().getSimpleName())
                    .resources(invokedFunctionArn)
                    .time(Instant.now())
                    .source(invokedFunctionArn)

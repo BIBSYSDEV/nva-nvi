@@ -32,14 +32,15 @@ import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateRequest, Void> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReEvaluateNviCandidatesHandler.class);
+    private static final String EVENT_BUS_NAME = "EVENT_BUS_NAME";
+    private static final String OUTPUT_EVENT_TOPIC = "TOPIC_REEVALUATE_CANDIDATES";
+    private static final String PERSISTED_RESOURCE_QUEUE_URL = "PERSISTED_RESOURCE_QUEUE_URL";
+    private static final int BATCH_SIZE = 10;
     private static final String INVALID_INPUT_MESSAGE = "Invalid request. Field year is required";
     private static final String QUERY_STARTING_POINT_MESSAGE = "Query starting point: {}";
     private static final String RESULT_MESSAGE = "Batch result startMarker: {}, totalItemCount: {}, "
                                                  + "shouldContinueScan: {}";
-    private static final String OUTPUT_EVENT_TOPIC = "TOPIC_REEVALUATE_CANDIDATES";
-    private static final int BATCH_SIZE = 10;
-    private static final String PERSISTED_RESOURCE_QUEUE_URL = "PERSISTED_RESOURCE_QUEUE_URL";
-    private static final String EVENT_BUS_NAME = "EVENT_BUS_NAME";
+    private static final String PUT_EVENT_RESPONSE_MESSAGE = "Put event response: {}";
     private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
     private final NviService nviService;
     private final String queueUrl;
@@ -103,7 +104,8 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
 
     private void sendEvent(PutEventsRequestEntry newEvent) {
         var putEventRequest = PutEventsRequest.builder().entries(newEvent).build();
-        eventBridgeClient.putEvents(putEventRequest);
+        var response = eventBridgeClient.putEvents(putEventRequest);
+        LOGGER.info(PUT_EVENT_RESPONSE_MESSAGE, response.toString());
     }
 
     private ListingResult<CandidateDao> getListingResultWithCandidates(ReEvaluateRequest input) {
