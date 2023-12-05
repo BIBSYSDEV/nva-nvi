@@ -262,8 +262,8 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldCalculatePointsOnValidAcademicArticle() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var content = IoUtils.inputStreamFromResources("evaluator/candidate_academicArticle.json");
-        var fileUri = s3Driver.insertFile(UnixPath.of("evaluator/candidate_academicArticle.json"), content);
+        var content = IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH);
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), content);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();
@@ -276,8 +276,8 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldCreateInstitutionApprovalsForTopLevelInstitutions() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var content = IoUtils.inputStreamFromResources("evaluator/candidate_academicArticle.json");
-        var fileUri = s3Driver.insertFile(UnixPath.of("evaluator/candidate_academicArticle.json"), content);
+        var content = IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH);
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), content);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();
@@ -301,9 +301,8 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldCreateNewCandidateEventOnValidAcademicMonograph() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var path = "evaluator/candidate_academicMonograph.json";
-        var content = IoUtils.inputStreamFromResources(path);
-        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+        var content = IoUtils.inputStreamFromResources(ACADEMIC_MONOGRAPH_JSON_PATH);
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_MONOGRAPH_JSON_PATH), content);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var candidate = (NviCandidate) getMessageBody().candidate();
@@ -313,9 +312,8 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldCreateNewCandidateEventOnValidAcademicLiteratureReview() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var path = "evaluator/candidate_academicLiteratureReview.json";
-        var content = IoUtils.inputStreamFromResources(path);
-        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+        var content = IoUtils.inputStreamFromResources(ACADEMIC_LITERATURE_REVIEW_JSON_PATH);
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_LITERATURE_REVIEW_JSON_PATH), content);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var candidate = (NviCandidate) getMessageBody().candidate();
@@ -327,10 +325,10 @@ class EvaluateNviCandidateHandlerTest {
     void shouldCreateCandidateWhenLevelValueHasVersionTwoValues(String versionOneValue, String versionTwoValue)
         throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var candidateWithNewLevel = IoUtils.stringFromResources(Path.of("evaluator/candidate_academicArticle.json"))
+        var candidateWithNewLevel = IoUtils.stringFromResources(Path.of(ACADEMIC_ARTICLE_PATH))
                                         .replace("\"level\": " + "\"" + versionOneValue + "\"",
                                                  "\"scientificValue\": " + "\"" + versionTwoValue + "\"");
-        var fileUri = s3Driver.insertFile(UnixPath.of("evaluator/candidate_academicArticle.json"),
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
                                           IoUtils.stringToStream(candidateWithNewLevel));
 
         var event = createEvent(new PersistedResourceMessage(fileUri));
@@ -414,8 +412,8 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldCreateNonCandidateEventWhenZeroNviInstitutions() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(notFoundResponse);
-        var fileUri = s3Driver.insertFile(UnixPath.of("evaluator/candidate_academicArticle.json"),
-                                          IoUtils.inputStreamFromResources("evaluator/candidate_academicArticle.json"));
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
+                                          IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
@@ -425,8 +423,8 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldThrowExceptionWhenProblemsFetchingCristinOrganization() throws IOException {
         when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(badResponse));
-        var fileUri = s3Driver.insertFile(UnixPath.of("evaluator/candidate_academicArticle.json"),
-                                          IoUtils.inputStreamFromResources("evaluator/candidate_academicArticle.json"));
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
+                                          IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
         var event = createEvent(new PersistedResourceMessage(fileUri));
         var appender = LogUtils.getTestingAppenderForRootLogger();
         assertThrows(RuntimeException.class, () -> handler.handleRequest(event, context));
@@ -436,8 +434,8 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldThrowExceptionWhenProblemsFetchingCustomer() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(badResponse);
-        var fileUri = s3Driver.insertFile(UnixPath.of("evaluator/candidate_academicArticle.json"),
-                                          IoUtils.inputStreamFromResources("evaluator/candidate_academicArticle.json"));
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
+                                          IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
         var event = createEvent(new PersistedResourceMessage(fileUri));
         var appender = LogUtils.getTestingAppenderForRootLogger();
         assertThrows(RuntimeException.class, () -> handler.handleRequest(event, context));
@@ -447,8 +445,8 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldCreateNewCandidateEventWhenAffiliationAreNviInstitutions() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var fileUri = s3Driver.insertFile(UnixPath.of("evaluator/candidate_academicArticle.json"),
-                                          IoUtils.inputStreamFromResources("evaluator/candidate_academicArticle.json"));
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
+                                          IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var candidate = (NviCandidate) getMessageBody().candidate();
