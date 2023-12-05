@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.queue;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.utils.ApplicationConstants;
 import nva.commons.core.JacocoGenerated;
@@ -11,8 +12,10 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.BatchResultErrorEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
+import software.amazon.awssdk.services.sqs.model.SendMessageBatchResponse;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchResultEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
+import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 public class NviQueueClient implements QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> {
 
@@ -58,6 +61,14 @@ public class NviQueueClient implements QueueClient<NviSendMessageResponse, NviSe
                    .build();
     }
 
+    private static List<String> extractFailedEntryIds(SendMessageBatchResponse response) {
+        return response.failed().stream().map(BatchResultErrorEntry::id).toList();
+    }
+
+    private static List<String> extractSuccessfulEntryIds(SendMessageBatchResponse response) {
+        return response.successful().stream().map(SendMessageBatchResultEntry::id).toList();
+    }
+
     private SendMessageRequest createRequest(String body, String queueUrl) {
         return SendMessageRequest.builder()
                    .queueUrl(queueUrl)
@@ -80,14 +91,11 @@ public class NviQueueClient implements QueueClient<NviSendMessageResponse, NviSe
         return SendMessageBatchRequestEntry.builder().id(UUID.randomUUID().toString()).messageBody(message).build();
     }
 
-    private NviSendMessageResponse createResponse(software.amazon.awssdk.services.sqs.model.SendMessageResponse response) {
+    private NviSendMessageResponse createResponse(SendMessageResponse response) {
         return new NviSendMessageResponse(response.messageId());
     }
 
-    private NviSendMessageBatchResponse createResponse(
-        software.amazon.awssdk.services.sqs.model.SendMessageBatchResponse response) {
-        return new NviSendMessageBatchResponse(
-            response.successful().stream().map(SendMessageBatchResultEntry::id).toList(),
-            response.failed().stream().map(BatchResultErrorEntry::id).toList());
+    private NviSendMessageBatchResponse createResponse(SendMessageBatchResponse response) {
+        return new NviSendMessageBatchResponse(extractSuccessfulEntryIds(response), extractFailedEntryIds(response));
     }
 }
