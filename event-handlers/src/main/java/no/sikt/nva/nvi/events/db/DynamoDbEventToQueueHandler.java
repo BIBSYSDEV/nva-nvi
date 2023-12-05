@@ -11,16 +11,24 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
+import nva.commons.core.Environment;
 import nva.commons.core.attempt.Failure;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent, Void> {
 
-    public static final String QUEUE_URL = "queueUrl";
+    private static final Logger LOGGER = LoggerFactory.getLogger(DynamoDbEventToQueueHandler.class);
     private static final int BATCH_SIZE = 10;
+    private static final String DB_EVENTS_QUEUE_URL = "DB_EVENTS_QUEUE_URL";
+    private static final String FAILURE_MESSAGE = "Failure while sending database events to queue";
+    private static final String FAILED_RECORDS_MESSAGE = "Failed records: {}";
     private final QueueClient<NviSendMessageResponse> queueClient;
+    private final String queueUrl;
 
-    public DynamoDbEventToQueueHandler(QueueClient<NviSendMessageResponse> queueClient) {
+    public DynamoDbEventToQueueHandler(QueueClient<NviSendMessageResponse> queueClient, Environment environment) {
         this.queueClient = queueClient;
+        this.queueUrl = environment.readEnv(DB_EVENTS_QUEUE_URL);
     }
 
     @Override
@@ -47,11 +55,13 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     }
 
     private RuntimeException handleFailure(Failure<Object> failure, List<DynamodbStreamRecord> records) {
-        return null;
+        LOGGER.error(FAILURE_MESSAGE, failure.getException());
+        LOGGER.error(FAILED_RECORDS_MESSAGE, records.stream().map(DynamodbStreamRecord::toString).toList());
+        return new RuntimeException(failure.getException());
     }
 
     private void sendBatch(List<String> messages) {
-        queueClient.sendMessageBatch(messages, QUEUE_URL);
+        queueClient.sendMessageBatch(messages, queueUrl);
     }
 
     private Stream<List<DynamodbStreamRecord>> splitIntoBatches(List<DynamodbStreamRecord> records) {
