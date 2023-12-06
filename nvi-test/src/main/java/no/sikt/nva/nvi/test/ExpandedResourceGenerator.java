@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.util.List;
+import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
@@ -110,31 +111,38 @@ public final class ExpandedResourceGenerator {
 
         var contributors = objectMapper.createArrayNode();
         var creators = candidate.getPublicationDetails().creators();
-        creators.forEach(creator -> {
-
-            var contributorNode = objectMapper.createObjectNode();
-
-            contributorNode.put("type", "Contributor");
-
-            var affiliations = createAndPopulateAffiliationsNode(creator.affiliations());
-
-            contributorNode.set("affiliations", affiliations);
-
-            var role = objectMapper.createObjectNode();
-            role.put("type", randomString());
-            contributorNode.set("role", role);
-
-            var identity = objectMapper.createObjectNode();
-            identity.put("id", creator.id().toString());
-            identity.put("name", randomString());
-            identity.put("orcid", randomString());
-
-            contributorNode.set("identity", identity);
-
-            contributors.add(contributorNode);
-        });
-
+        creators.stream()
+            .map(creator -> createContributorNode(creator.affiliations(), creator.id()))
+            .forEach(contributors::add);
+        addOtherRandomContributors(contributors);
         return contributors;
+    }
+
+    private static void addOtherRandomContributors(ArrayNode contributors) {
+        IntStream.range(0, 10).mapToObj(i -> createContributorNode(List.of(), URI.create(randomString())))
+            .forEach(contributors::add);
+    }
+
+    private static ObjectNode createContributorNode(List<URI> affiliationsUris, URI contributorId) {
+        var contributorNode = objectMapper.createObjectNode();
+
+        contributorNode.put("type", "Contributor");
+
+        var affiliations = createAndPopulateAffiliationsNode(affiliationsUris);
+
+        contributorNode.set("affiliations", affiliations);
+
+        var role = objectMapper.createObjectNode();
+        role.put("type", randomString());
+        contributorNode.set("role", role);
+
+        var identity = objectMapper.createObjectNode();
+        identity.put("id", contributorId.toString());
+        identity.put("name", randomString());
+        identity.put("orcid", randomString());
+
+        contributorNode.set("identity", identity);
+        return contributorNode;
     }
 
     private static ArrayNode createAndPopulateAffiliationsNode(List<URI> creatorAffiliations) {
