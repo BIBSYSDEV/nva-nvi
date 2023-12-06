@@ -111,11 +111,13 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
                    .withApprovals(expandApprovals(candidate))
                    .withPoints(candidate.getTotalPoints())
                    .withPublicationDetails(expandPublicationDetails(candidate, expandedResource))
+                   .withNumberOfApprovals(candidate.getApprovals().size())
                    .build();
     }
 
     private PublicationDetails expandPublicationDetails(Candidate candidate, JsonNode expandedResource) {
         return PublicationDetails.builder()
+                   .withType(ExpandedResourceGenerator.extractType(expandedResource))
                    .withId(candidate.getPublicationDetails().publicationId().toString())
                    .withTitle(ExpandedResourceGenerator.extractTitle(expandedResource))
                    .withPublicationDate(mapToPublicationDate(candidate.getPublicationDetails().publicationDate()))

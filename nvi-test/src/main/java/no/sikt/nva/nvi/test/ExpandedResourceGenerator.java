@@ -66,6 +66,7 @@ public final class ExpandedResourceGenerator {
 
     public static List<URI> extractAffiliations(JsonNode contributorNode) {
         return JsonUtils.streamNode(contributorNode.at("/affiliations"))
+                   .map(affiliationNode -> affiliationNode.at("/id"))
                    .map(JsonNode::asText)
                    .map(URI::create)
                    .toList();
@@ -84,7 +85,12 @@ public final class ExpandedResourceGenerator {
     }
 
     public static String extractRole(JsonNode contributorNode) {
-        return JsonUtils.extractJsonNodeTextValue(contributorNode, "/role");
+        return JsonUtils.extractJsonNodeTextValue(contributorNode, "/role/type");
+    }
+
+    public static String extractType(JsonNode expandedResource) {
+        return JsonUtils.extractJsonNodeTextValue(expandedResource,
+                                                  "/entityDescription/reference/publicationInstance/type");
     }
 
     private static ObjectNode createAndPopulatePublicationDate(PublicationDate date) {
