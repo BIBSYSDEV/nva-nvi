@@ -1,6 +1,10 @@
 {
   "body": {
     "type": "Publication",
+    "publicationContextUris": [
+      "https://api.dev.nva.aws.unit.no/publication-channels/d1a0860e-f246-4c8a-a725-98e6bb4fc022",
+      "https://api.dev.nva.aws.unit.no/publication-channels/d96f1b8c-a0f0-450d-ac18-5d11a2ea1f1b"
+    ],
     "@context": {
       "@vocab": "https://nva.sikt.no/ontology/publication#",
       "hasPart": "https://bibsysdev.github.io/src/organization-ontology.ttl#hasPart",
@@ -217,8 +221,8 @@
             }
           ],
           "identity": {
-            "type": "Identity",
             "id": "https://api.dev.nva.aws.unit.no/cristin/person/997998",
+            "type": "Identity",
             "verificationStatus": "Verified"
           },
           "role": {
@@ -233,46 +237,20 @@
       "reference": {
         "type": "Reference",
         "publicationContext": {
-          "id": "https://www.example.org/publication/0188beb8f331-da429b9c-ed21-4741-9127-2c32b2cb6232",
-          "type": "Anthology",
-          "entityDescription": {
-            "type": "EntityDescription",
-            "contributors": [
-              {
-                "type": "Contributor",
-                "identity": {
-                  "type": "Identity",
-                  "name": "aJeLFk7JUx"
-                }
-              },
-              {
-                "type": "Contributor",
-                "identity": {
-                  "type": "Identity",
-                  "name": "u7GaTOPFFHDHlRrn0"
-                }
-              }
-            ],
-            "reference": {
-              "type": "Reference",
-              "publicationContext": {
-                "type": "Book",
-                "publisher": {
-                  "id": "https://api.dev.nva.aws.unit.no/publication-channels/3bbb6017-ca4a-496a-8ca7-d3ac78f65abf",
-                  "type": "Publisher",
-                  "scientificValue": "LevelOne"
-                },
-                "series": {
-                  "id": "https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023",
-                  "type": "Series",
-                  "scientificValue": "LevelOne"
-                }
-              }
-            }
+          "type": "Book",
+          "publisher": {
+            "id": "https://api.dev.nva.aws.unit.no/publication-channels/d1a0860e-f246-4c8a-a725-98e6bb4fc022",
+            "type": "Publisher",
+            "level": "1"
+          },
+          "series": {
+            "id": "https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023",
+            "type": "Series",
+            "level": "1"
           }
         },
         "publicationInstance": {
-          "type": "AcademicChapter"
+          "type": "AcademicMonograph"
         }
       }
     },
@@ -280,6 +258,6 @@
   },
   "consumptionAttributes": {
     "index": "resources",
-    "documentIdentifier": "0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4"
+    "documentIdentifier": "0188bee5a7f1-17acf7d5-5658-4a5a-89b2-b2ea73032661"
   }
 }
