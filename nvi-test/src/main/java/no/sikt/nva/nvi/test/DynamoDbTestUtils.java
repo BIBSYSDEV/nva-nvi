@@ -14,11 +14,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
-public final class DynamoDbUtils {
+public final class DynamoDbTestUtils {
 
     public static final String IDENTIFIER = "identifier";
 
-    private DynamoDbUtils() {
+    private DynamoDbTestUtils() {
     }
 
     //TODO: To be used in new tests for new IndexDocumentHandler
@@ -41,7 +41,7 @@ public final class DynamoDbUtils {
     public static List<String> mapToMessageBodies(DynamodbEvent dynamoDbEvent) {
         return dynamoDbEvent.getRecords()
                    .stream()
-                   .map(DynamoDbUtils::mapToString)
+                   .map(DynamoDbTestUtils::mapToString)
                    .toList();
     }
 

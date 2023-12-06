@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.events.db;
 
-import static no.sikt.nva.nvi.test.DynamoDbUtils.mapToMessageBodies;
-import static no.sikt.nva.nvi.test.DynamoDbUtils.randomEventWithNumberOfDynamoRecords;
+import static no.sikt.nva.nvi.test.DynamoDbTestUtils.mapToMessageBodies;
+import static no.sikt.nva.nvi.test.DynamoDbTestUtils.randomEventWithNumberOfDynamoRecords;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;

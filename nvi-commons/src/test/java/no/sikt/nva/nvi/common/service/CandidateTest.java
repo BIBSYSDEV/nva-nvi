@@ -376,7 +376,7 @@ class CandidateTest extends LocalDynamoTest {
                 candidate.getPublicationDetails()
                     .creators()
                     .stream()
-                    .filter(c -> c.id().equals(key))
+                    .filter(creator -> creator.id().equals(key))
                     .findFirst()
                     .orElse(null);
             assert actualCreator != null;
