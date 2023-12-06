@@ -3,21 +3,27 @@ package no.sikt.nva.nvi.test;
 import static java.util.Objects.nonNull;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static nva.commons.core.attempt.Try.attempt;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
+import no.sikt.nva.nvi.common.utils.JsonUtils;
 
 public final class ExpandedResourceGenerator {
+
+    public static final String HARDCODED_NORWEGIAN_LABEL = "Hardcoded Norwegian label";
+    public static final String HARDCODED_ENGLISH_LABEL = "Hardcoded English label";
+    public static final String NB_FIELD = "nb";
+    public static final String EN_FIELD = "en";
 
     private ExpandedResourceGenerator() {
     }
 
     //TODO: To be used in new tests for new IndexDocumentHandler
-    public static String createExpandedResource(Candidate candidate) {
+    public static JsonNode createExpandedResource(Candidate candidate) {
         var root = objectMapper.createObjectNode();
 
         root.put("id", candidate.getPublicationDetails().publicationId().toString());
@@ -47,7 +53,38 @@ public final class ExpandedResourceGenerator {
 
         root.put("identifier", candidate.getIdentifier().toString());
 
-        return attempt(() -> objectMapper.writeValueAsString(root)).orElseThrow();
+        return root;
+    }
+
+    public static String extractTitle(JsonNode expandedResource) {
+        return JsonUtils.extractJsonNodeTextValue(expandedResource, "/entityDescription/mainTitle");
+    }
+
+    public static ArrayNode extractContributors(JsonNode expandedResource) {
+        return (ArrayNode) expandedResource.at("/entityDescription/contributors");
+    }
+
+    public static List<URI> extractAffiliations(JsonNode contributorNode) {
+        return JsonUtils.streamNode(contributorNode.at("/affiliations"))
+                   .map(JsonNode::asText)
+                   .map(URI::create)
+                   .toList();
+    }
+
+    public static String extractId(JsonNode contributorNode) {
+        return JsonUtils.extractJsonNodeTextValue(contributorNode, "/identity/id");
+    }
+
+    public static String extractName(JsonNode contributorNode) {
+        return JsonUtils.extractJsonNodeTextValue(contributorNode, "/identity/name");
+    }
+
+    public static String extractOrcid(JsonNode contributorNode) {
+        return JsonUtils.extractJsonNodeTextValue(contributorNode, "/identity/orcid");
+    }
+
+    public static String extractRole(JsonNode contributorNode) {
+        return JsonUtils.extractJsonNodeTextValue(contributorNode, "/role");
     }
 
     private static ObjectNode createAndPopulatePublicationDate(PublicationDate date) {
@@ -77,6 +114,10 @@ public final class ExpandedResourceGenerator {
 
             contributorNode.set("affiliations", affiliations);
 
+            var role = objectMapper.createObjectNode();
+            role.put("type", randomString());
+            contributorNode.set("role", role);
+
             var identity = objectMapper.createObjectNode();
             identity.put("id", creator.id().toString());
             identity.put("name", randomString());
@@ -99,8 +140,8 @@ public final class ExpandedResourceGenerator {
             affiliationNode.put("type", "Organization");
             var labels = objectMapper.createObjectNode();
 
-            labels.put("nb", randomString());
-            labels.put("en", randomString());
+            labels.put(NB_FIELD, HARDCODED_NORWEGIAN_LABEL);
+            labels.put(EN_FIELD, HARDCODED_ENGLISH_LABEL);
 
             affiliationNode.set("labels", labels);
 
