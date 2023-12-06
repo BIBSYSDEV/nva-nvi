@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Approval;
@@ -35,8 +36,10 @@ import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
+import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.sikt.nva.nvi.test.ExpandedResourceGenerator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
@@ -62,14 +65,17 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var s3Client = new FakeS3Client();
         resourcesS3Driver = new S3Driver(s3Client, RESOURCES_BUCKET_NAME);
         candidateS3Driver = new S3Driver(s3Client, CANDIDATES_BUCKET_NAME);
+        var storageReader = new S3StorageReader(s3Client, RESOURCES_BUCKET_NAME);
         var localDynamoDbClient = initializeTestDatabase();
         candidateRepository = new CandidateRepository(localDynamoDbClient);
         periodRepository = new PeriodRepository(localDynamoDbClient);
-        handler = new IndexDocumentHandler();
+        AuthorizedBackendUriRetriever uriRetriever = mock(AuthorizedBackendUriRetriever.class);
+        NviCandidateIndexDocumentGenerator documentGenerator = new NviCandidateIndexDocumentGenerator(uriRetriever);
+        handler = new IndexDocumentHandler(storageReader, documentGenerator);
     }
 
     @Test
-    void shouldBuildIndexDocumentAndPersistInS3WhenReceivingSQSEvent() {
+    void shouldBuildIndexDocumentAndPersistInS3WhenReceivingSqsEvent() {
         var candidate = randomApplicableCandidate();
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(candidate);
         var event = createSqsEventWithDynamoDbRecord(candidate.getIdentifier());
