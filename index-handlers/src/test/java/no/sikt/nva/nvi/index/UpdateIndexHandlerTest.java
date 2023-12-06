@@ -373,7 +373,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         return CandidateDao.builder()
                    .identifier(candidate.getIdentifier())
                    .candidate(DbCandidate.builder()
-                                  .publicationId(candidate.getPublicationId())
+                                  .publicationId(candidate.getPublicationDetails().publicationId())
                                   .points(mapToInstitutionPoints(candidate))
                                   .applicable(candidate.isApplicable())
                                   .creatorCount(1)
@@ -384,7 +384,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                   .publicationDate(new DbPublicationDate("2023", "6", "4"))
                                   .internationalCollaboration(false)
                                   .level(DbLevel.LEVEL_ONE)
-                                  .publicationBucketUri(candidate.getPublicationBucketUri())
+                                  .publicationBucketUri(candidate.getPublicationDetails().publicationBucketUri())
                                   .totalPoints(candidate.getTotalPoints())
                                   .build())
                    .build();

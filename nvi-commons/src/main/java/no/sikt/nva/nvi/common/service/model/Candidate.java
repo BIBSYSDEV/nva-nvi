@@ -37,11 +37,12 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchByPublicationRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchCandidateRequest;
-import no.sikt.nva.nvi.common.service.requests.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpsertNonCandidateRequest;
 import nva.commons.core.Environment;
@@ -63,27 +64,25 @@ public final class Candidate {
                                                                     .build();
     private final CandidateRepository repository;
     private final UUID identifier;
-    private final URI publicationId;
-    private final URI publicationBucketUri;
     private final boolean applicable;
     private final Map<URI, Approval> approvals;
     private final Map<UUID, Note> notes;
     private final Map<URI, BigDecimal> institutionPoints;
     private final BigDecimal totalPoints;
     private final PeriodStatus periodStatus;
+    private final PublicationDetails publicationDetails;
 
     private Candidate(CandidateRepository repository, CandidateDao candidateDao, List<ApprovalStatusDao> approvals,
                       List<NoteDao> notes, PeriodStatus periodStatus) {
         this.repository = repository;
         this.identifier = candidateDao.identifier();
-        this.publicationId = candidateDao.candidate().publicationId();
-        this.publicationBucketUri = candidateDao.candidate().publicationBucketUri();
         this.applicable = candidateDao.candidate().applicable();
         this.approvals = mapToApprovalsMap(repository, approvals);
         this.notes = mapToNotesMap(repository, notes);
         this.institutionPoints = mapToPointsMap(candidateDao);
         this.totalPoints = candidateDao.candidate().totalPoints();
         this.periodStatus = periodStatus;
+        this.publicationDetails = mapToPublicationDetails(candidateDao);
     }
 
     public static Candidate fromRequest(FetchByPublicationRequest request, CandidateRepository repository,
@@ -124,20 +123,16 @@ public final class Candidate {
         return Optional.empty();
     }
 
+    public PublicationDetails getPublicationDetails() {
+        return publicationDetails;
+    }
+
     public PeriodStatus getPeriodStatus() {
         return periodStatus;
     }
 
     public UUID getIdentifier() {
         return identifier;
-    }
-
-    public URI getPublicationId() {
-        return publicationId;
-    }
-
-    public URI getPublicationBucketUri() {
-        return publicationBucketUri;
     }
 
     public boolean isApplicable() {
@@ -160,7 +155,7 @@ public final class Candidate {
         return CandidateDto.builder()
                    .withId(constructId(identifier))
                    .withIdentifier(identifier)
-                   .withPublicationId(publicationId)
+                   .withPublicationId(publicationDetails.publicationId())
                    .withApprovalStatuses(mapToApprovalDtos())
                    .withNotes(mapToNoteDtos())
                    .withPeriodStatus(mapToPeriodStatusDto())
@@ -195,8 +190,8 @@ public final class Candidate {
     @Override
     @JacocoGenerated
     public int hashCode() {
-        return Objects.hash(identifier, publicationId, publicationBucketUri, applicable, approvals, notes,
-                            institutionPoints, totalPoints, periodStatus);
+        return Objects.hash(identifier, applicable, approvals, notes, institutionPoints, totalPoints, periodStatus,
+                            publicationDetails);
     }
 
     @Override
@@ -211,13 +206,12 @@ public final class Candidate {
         Candidate candidate = (Candidate) o;
         return applicable == candidate.applicable
                && Objects.equals(identifier, candidate.identifier)
-               && Objects.equals(publicationId, candidate.publicationId)
-               && Objects.equals(publicationBucketUri, candidate.publicationBucketUri)
                && Objects.equals(approvals, candidate.approvals)
                && Objects.equals(notes, candidate.notes)
                && Objects.equals(institutionPoints, candidate.institutionPoints)
                && Objects.equals(totalPoints, candidate.totalPoints)
-               && Objects.equals(periodStatus, candidate.periodStatus);
+               && Objects.equals(periodStatus, candidate.periodStatus)
+               && Objects.equals(publicationDetails, candidate.publicationDetails);
     }
 
     private static PeriodStatus calculatePeriodStatusIfApplicable(PeriodRepository periodRepository,
@@ -439,8 +433,20 @@ public final class Candidate {
                    .build();
     }
 
+    private static PublicationDate mapToPublicationDate(DbPublicationDate date) {
+        return new PublicationDate(date.year(), date.month(), date.day());
+    }
+
     private static List<DbCreator> mapToCreators(Map<URI, List<URI>> creators) {
         return creators.entrySet().stream().map(e -> new DbCreator(e.getKey(), e.getValue())).toList();
+    }
+
+    private static List<Creator> mapToCreators(List<DbCreator> creators) {
+        return creators.stream().map(Candidate::mapToCreator).toList();
+    }
+
+    private static Creator mapToCreator(DbCreator dbCreator) {
+        return new Creator(dbCreator.creatorId(), dbCreator.affiliations());
     }
 
     private static boolean isExistingCandidate(URI publicationId, CandidateRepository repository) {
@@ -455,6 +461,15 @@ public final class Candidate {
 
     private static String mapToUsernameString(Username assignee) {
         return assignee != null ? assignee.value() : null;
+    }
+
+    private PublicationDetails mapToPublicationDetails(CandidateDao candidateDao) {
+        return new PublicationDetails(candidateDao.candidate().publicationId(),
+                                      candidateDao.candidate().publicationBucketUri(),
+                                      candidateDao.candidate().instanceType().getValue(),
+                                      mapToPublicationDate(candidateDao.candidate().publicationDate()),
+                                      mapToCreators(candidateDao.candidate().creators())
+        );
     }
 
     private void validateCandidateState() {

@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 
 public interface UpsertCandidateRequest {
 
