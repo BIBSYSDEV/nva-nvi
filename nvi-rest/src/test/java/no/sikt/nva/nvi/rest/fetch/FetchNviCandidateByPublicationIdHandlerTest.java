@@ -66,7 +66,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
     void shouldReturnNotFoundWhenCandidateExistsButNotApplicable() throws IOException {
         var institutionId = randomUri();
         var nonApplicableCandidate = setUpNonApplicableCandidate(institutionId);
-        handler.handleRequest(createRequest(nonApplicableCandidate.getPublicationId()), output, CONTEXT);
+        handler.handleRequest(createRequest(nonApplicableCandidate.getPublicationDetails().publicationId()), output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
 
         assertEquals(HttpStatus.SC_NOT_FOUND, gatewayResponse.getStatusCode());
@@ -77,7 +77,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
         var institutionId = randomUri();
         var candidate = Candidate.fromRequest(createUpsertCandidateRequest(institutionId),
                                                 candidateRepository, periodRepository).orElseThrow();
-        var request = createUnauthorizedRequest(candidate.getPublicationId());
+        var request = createUnauthorizedRequest(candidate.getPublicationDetails().publicationId());
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -90,7 +90,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
         var candidate =
             Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
-        var request = createRequest(candidate.getPublicationId());
+        var request = createRequest(candidate.getPublicationDetails().publicationId());
 
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -123,7 +123,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
         var candidate =
             Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
-        return Candidate.fromRequest(createUpsertNonCandidateRequest(candidate.getPublicationId()),
+        return Candidate.fromRequest(createUpsertNonCandidateRequest(candidate.getPublicationDetails().publicationId()),
                                      candidateRepository).orElseThrow();
     }
 

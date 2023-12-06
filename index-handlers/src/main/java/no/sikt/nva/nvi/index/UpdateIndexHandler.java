@@ -194,7 +194,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     private String getPublicationFromBucket(Candidate candidate) {
-        var bucketUri = candidate.getPublicationBucketUri();
+        var bucketUri = candidate.getPublicationDetails().publicationBucketUri();
         LOGGER.info("getPublicationFromBucket with candidate id {} and url {}", candidate.getIdentifier(),
                     bucketUri.toString());
         var result = storageReader.read(bucketUri);

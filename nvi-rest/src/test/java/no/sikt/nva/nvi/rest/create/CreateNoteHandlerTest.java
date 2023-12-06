@@ -20,8 +20,8 @@ import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.commons.json.JsonUtils;
@@ -105,7 +105,8 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         var candidateBO = Candidate.fromRequest(createUpsertCandidateRequest(randomUri()),
                                                 candidateRepository, periodRepository).orElseThrow();
         var nonCandidate = Candidate.fromRequest(
-            createUpsertNonCandidateRequest(candidateBO.getPublicationId()), candidateRepository).orElseThrow();
+                createUpsertNonCandidateRequest(candidateBO.getPublicationDetails().publicationId()),
+                candidateRepository).orElseThrow();
         var request = createRequest(nonCandidate.getIdentifier(), randomNote(), randomString());
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);

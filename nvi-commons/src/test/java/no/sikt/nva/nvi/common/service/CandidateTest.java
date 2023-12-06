@@ -56,7 +56,7 @@ import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.requests.PublicationDate;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
@@ -168,7 +168,8 @@ class CandidateTest extends LocalDynamoTest {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
         var candidate = Candidate.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
-        var fetchedCandidate = Candidate.fromRequest(candidate::getPublicationId, candidateRepository,
+        var fetchedCandidate = Candidate.fromRequest(() -> candidate.getPublicationDetails().publicationId(),
+                                                     candidateRepository,
                                                      periodRepository);
         assertThat(fetchedCandidate.getIdentifier(), is(equalTo(candidate.getIdentifier())));
     }
@@ -231,30 +232,36 @@ class CandidateTest extends LocalDynamoTest {
         var creators = Map.of(randomUri(), List.of(institution));
         var points = Map.of(institution, randomBigDecimal());
         var totalPoints = randomBigDecimal();
+        var publicationDate = new PublicationDate(String.valueOf(CURRENT_YEAR), null, null);
+        var instanceType = randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE);
         var createRequest = createUpsertCandidateRequest(publicationId, publicationBucketUri,
                                                          isApplicable,
-                                                         new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
+                                                         publicationDate,
                                                          creators,
-                                                         randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE),
+                                                         instanceType,
                                                          randomElement(ChannelType.values()).getValue(), randomUri(),
                                                          DbLevel.LEVEL_TWO.getVersionOneValue(), points,
                                                          randomInteger(10),
                                                          randomBoolean(),
                                                          randomBigDecimal(), randomBigDecimal(), totalPoints);
         var candidate = Candidate.fromRequest(createRequest, candidateRepository, periodRepository).orElseThrow();
-        assertEquals(candidate.getPublicationBucketUri(), publicationBucketUri);
+        assertEquals(candidate.getPublicationDetails().publicationBucketUri(), publicationBucketUri);
         assertEquals(candidate.isApplicable(), isApplicable);
-        assertEquals(candidate.getPublicationId(), publicationId);
+        assertEquals(candidate.getPublicationDetails().publicationId(), publicationId);
         assertEquals(candidate.getTotalPoints(), totalPoints);
         assertEquals(candidate.getInstitutionPoints(), points);
+        assertEquals(candidate.getPublicationDetails().publicationDate(), publicationDate);
+        assertCorrectCreatorData(creators, candidate);
+        assertEquals(candidate.getPublicationDetails().type(), instanceType.getValue());
     }
 
     @Test
     void shouldReturnCandidateWithNoPeriodWhenNotApplicable() {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
-        var tempCandidateBO = Candidate.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
-                                  .orElseThrow();
-        var updateRequest = createUpsertCandidateRequest(tempCandidateBO.getPublicationId(), randomUri(), false,
+        var tempCandidate = Candidate.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
+                                .orElseThrow();
+        var updateRequest = createUpsertCandidateRequest(tempCandidate.getPublicationDetails().publicationId(),
+                                                         randomUri(), false,
                                                          InstanceType.ACADEMIC_MONOGRAPH, 4, randomBigDecimal(),
                                                          TestUtils.randomLevelExcluding(DbLevel.NON_CANDIDATE)
                                                              .getVersionOneValue(), CURRENT_YEAR,
@@ -306,7 +313,8 @@ class CandidateTest extends LocalDynamoTest {
         var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
         var candidate = Candidate.fromRequest(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
-        var nonCandidate = Candidate.fromRequest(createUpsertNonCandidateRequest(candidate.getPublicationId()),
+        var nonCandidate = Candidate.fromRequest(createUpsertNonCandidateRequest(candidate.getPublicationDetails()
+                                                                                     .publicationId()),
                                                  candidateRepository).orElseThrow();
         assertFalse(nonCandidate.isApplicable());
 
@@ -344,7 +352,8 @@ class CandidateTest extends LocalDynamoTest {
             new UpdateStatusRequest(Arrays.stream(arguments.institutionIds()).findFirst().orElseThrow(),
                                     ApprovalStatus.APPROVED, randomString(), randomString()));
 
-        var newUpsertRequest = createUpsertCandidateRequest(candidate.getPublicationId(), randomUri(), true,
+        var newUpsertRequest = createUpsertCandidateRequest(candidate.getPublicationDetails().publicationId(),
+                                                            randomUri(), true,
                                                             new PublicationDate(String.valueOf(CURRENT_YEAR),
                                                                                 null, null),
                                                             getCreators(arguments.institutionIds()), arguments.type(),
@@ -359,6 +368,20 @@ class CandidateTest extends LocalDynamoTest {
         var updatedApproval = updatedCandidate.toDto().approvals().get(0);
 
         assertThat(updatedApproval.status(), is(equalTo(ApprovalStatus.PENDING)));
+    }
+
+    private static void assertCorrectCreatorData(Map<URI, List<URI>> creators, Candidate candidate) {
+        creators.forEach((key, value) -> {
+            var actualCreator =
+                candidate.getPublicationDetails()
+                    .creators()
+                    .stream()
+                    .filter(creator -> creator.id().equals(key))
+                    .findFirst()
+                    .orElse(null);
+            assert actualCreator != null;
+            assertEquals(value, actualCreator.affiliations());
+        });
     }
 
     private static Map<URI, BigDecimal> getPointsOriginal(URI[] institutionIdsOriginal) {

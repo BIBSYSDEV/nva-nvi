@@ -8,6 +8,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -42,15 +43,15 @@ public record NviCandidate(URI publicationId,
     }
 
     @Override
-    public no.sikt.nva.nvi.common.service.requests.PublicationDate publicationDate() {
+    public PublicationDetails.PublicationDate publicationDate() {
         return mapToPublicationDate(date);
     }
 
-    private static no.sikt.nva.nvi.common.service.requests.PublicationDate mapToPublicationDate(
+    private static PublicationDetails.PublicationDate mapToPublicationDate(
         PublicationDate publicationDate) {
-        return new no.sikt.nva.nvi.common.service.requests.PublicationDate(publicationDate.year(),
-                                                                           publicationDate.month(),
-                                                                           publicationDate.day());
+        return new PublicationDetails.PublicationDate(publicationDate.year(),
+                                                      publicationDate.month(),
+                                                      publicationDate.day());
     }
 
     public record Creator(URI id, List<URI> nviInstitutions) {
