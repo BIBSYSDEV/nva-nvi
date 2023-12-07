@@ -79,27 +79,37 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var environment = new Environment();
         var bucketName = environment.readEnv(EXPANDED_RESOURCES_BUCKET);
         s3Reader = new S3Driver(s3Client, bucketName);
-        var storageReader = new S3StorageReader(s3Client, bucketName);
         s3Writer = new S3Driver(s3Client, bucketName);
-        var storageWriter = new S3StorageWriter(s3Client, bucketName);
         var localDynamoDbClient = initializeTestDatabase();
         candidateRepository = new CandidateRepository(localDynamoDbClient);
         periodRepository = new PeriodRepository(localDynamoDbClient);
         uriRetriever = mock(AuthorizedBackendUriRetriever.class);
         var documentGenerator = new NviCandidateIndexDocumentGenerator(uriRetriever);
-        handler = new IndexDocumentHandler(storageReader, storageWriter, candidateRepository, periodRepository,
-                                           documentGenerator);
+        handler = new IndexDocumentHandler(new S3StorageReader(s3Client, bucketName),
+                                           new S3StorageWriter(s3Client, bucketName), candidateRepository,
+                                           periodRepository, documentGenerator);
+    }
+
+    @Test
+    void shouldNotFailIndexingOfWholeBatchWhenIndexingOfOneCandidateFails() {
+        var candidateToFail = randomApplicableCandidate();
+        var candidateToSucceed = randomApplicableCandidate();
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(candidateToSucceed);
+        var event = createEvent(List.of(candidateToFail.getIdentifier(), candidateToSucceed.getIdentifier()));
+        mockUriRetrieverOrgResponse(candidateToSucceed);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidateToSucceed)));
+        assertEquals(expectedIndexDocument, actualIndexDocument);
     }
 
     @Test
     void shouldBuildIndexDocumentAndPersistInS3WhenReceivingSqsEvent() {
         var candidate = randomApplicableCandidate();
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(candidate);
-        var event = createSqsEventWithDynamoDbRecord(candidate.getIdentifier());
+        var event = createEvent(candidate.getIdentifier());
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(event, CONTEXT);
-        var actualPersistedIndexDocument = s3Writer.getFile(createPath(candidate));
-        var actualIndexDocument = parseJson(actualPersistedIndexDocument);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate)));
         assertEquals(expectedIndexDocument, actualIndexDocument);
     }
 
@@ -129,6 +139,19 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return hardCodedPartOfNode;
     }
 
+    @NotNull
+    private static SQSMessage createMessage(UUID candidateIdentifier) {
+        var message = new SQSMessage();
+        message.setBody(generateSingleDynamoDbEventRecord(candidateIdentifier));
+        return message;
+    }
+
+    private static String extractResourceIdentifier(Candidate persistedCandidate) {
+        return UriWrapper.fromUri(persistedCandidate.getPublicationDetails().publicationBucketUri())
+                   .getPath()
+                   .getLastPathElement();
+    }
+
     private void mockUriRetrieverOrgResponse(Candidate candidate) {
         candidate.getPublicationDetails()
             .creators()
@@ -156,10 +179,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         Candidate persistedCandidate) {
         var expandedResource = createExpandedResource(persistedCandidate);
         var resourceIndexDocument = createResourceIndexDocument(expandedResource);
-        var resourcePath =
-            UriWrapper.fromUri(persistedCandidate.getPublicationDetails().publicationBucketUri())
-                .getPath()
-                .getLastPathElement();
+        var resourcePath = extractResourceIdentifier(persistedCandidate);
         insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
         return createExpectedNviIndexDocument(expandedResource, persistedCandidate);
     }
@@ -250,11 +270,17 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
                    .orElseThrow();
     }
 
-    private SQSEvent createSqsEventWithDynamoDbRecord(UUID candidateIdentifier) {
+    private SQSEvent createEvent(UUID candidateIdentifier) {
         var sqsEvent = new SQSEvent();
-        var message = new SQSMessage();
-        message.setBody(generateSingleDynamoDbEventRecord(candidateIdentifier));
+        var message = createMessage(candidateIdentifier);
         sqsEvent.setRecords(List.of(message));
+        return sqsEvent;
+    }
+
+    private SQSEvent createEvent(List<UUID> candidateIdentifiers) {
+        var sqsEvent = new SQSEvent();
+        var records = candidateIdentifiers.stream().map(IndexDocumentHandlerTest::createMessage).toList();
+        sqsEvent.setRecords(records);
         return sqsEvent;
     }
 }

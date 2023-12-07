@@ -9,6 +9,7 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStream
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.net.URI;
+import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
@@ -22,14 +23,20 @@ import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.attempt.Failure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
-    public static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
-    public static final String IDENTIFIER = "identifier";
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler.class);
+    private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
+    private static final String IDENTIFIER = "identifier";
+    private static final String FAILED_TO_PERSIST_MESSAGE = "Failed to save {} in bucket";
+    private static final String FAILED_TO_PARSE_EVENT_MESSAGE = "Failed to map body to DynamodbStreamRecord: {}";
+    private static final String FAILED_TO_FETCH_CANDIDATE_MESSAGE = "Failed to fetch candidate with identifier: {}";
+    private static final String FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE =
+        "Failed to generate index document for candidate with identifier: {}";
     private final StorageReader<URI> storageReader;
     private final StorageWriter<NviCandidateIndexDocument> storageWriter;
     private final CandidateRepository candidateRepository;
@@ -59,13 +66,16 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
     @Override
     public Void handleRequest(SQSEvent input, Context context) {
-        LOGGER.info("Received event with records count: {}", input.getRecords().size());
+        LOGGER.info("Received event with {} records", input.getRecords().size());
         input.getRecords()
             .stream()
             .map(SQSMessage::getBody)
             .map(this::mapToDynamoDbRecord)
+            .filter(Objects::nonNull)
             .map(this::fetchCandidate)
+            .filter(Objects::nonNull)
             .map(this::generateIndexDocument)
+            .filter(Objects::nonNull)
             .forEach(this::saveInCandidateBucket);
         return null;
     }
@@ -80,14 +90,12 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
         return UUID.fromString(record.getDynamodb().getNewImage().get(IDENTIFIER).getS());
     }
 
-    private void saveInCandidateBucket(NviCandidateIndexDocument nviCandidateIndexDocument) {
-        var uri = attempt(() -> storageWriter.write(nviCandidateIndexDocument)).orElseThrow();
-        LOGGER.info("Saved {} in bucket", uri);
-    }
-
-    private NviCandidateIndexDocument generateIndexDocument(Candidate candidate) {
-        var expandedResource = getPublicationFromBucket(candidate);
-        return documentGenerator.generateDocument(expandedResource, candidate);
+    private DynamodbStreamRecord mapToDynamoDbRecord(String body) {
+        return attempt(() -> dynamoObjectMapper.readValue(body, DynamodbStreamRecord.class))
+                   .orElse(failure -> {
+                       handleFailure(failure, FAILED_TO_PARSE_EVENT_MESSAGE, body);
+                       return null;
+                   });
     }
 
     private Candidate fetchCandidate(DynamodbStreamRecord record) {
@@ -96,7 +104,21 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     }
 
     private Candidate fetchCandidate(UUID candidateIdentifier) {
-        return Candidate.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository);
+        return attempt(() -> Candidate.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository))
+                   .orElse(failure -> {
+                       handleFailure(failure, FAILED_TO_FETCH_CANDIDATE_MESSAGE, candidateIdentifier.toString());
+                       return null;
+                   });
+    }
+
+    private NviCandidateIndexDocument generateIndexDocument(Candidate candidate) {
+        return attempt(() -> {
+            var expandedResource = getPublicationFromBucket(candidate);
+            return documentGenerator.generateDocument(expandedResource, candidate);
+        }).orElse(failure -> {
+            handleFailure(failure, FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE, candidate.toString());
+            return null;
+        });
     }
 
     private String getPublicationFromBucket(Candidate candidate) {
@@ -106,7 +128,19 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
         return result;
     }
 
-    private DynamodbStreamRecord mapToDynamoDbRecord(String body) {
-        return attempt(() -> dynamoObjectMapper.readValue(body, DynamodbStreamRecord.class)).orElseThrow();
+    private void saveInCandidateBucket(NviCandidateIndexDocument nviCandidateIndexDocument) {
+        var uri =
+            attempt(() -> storageWriter.write(nviCandidateIndexDocument)).orElse(
+                failure -> {
+                    handleFailure(failure, FAILED_TO_PERSIST_MESSAGE, nviCandidateIndexDocument.toString());
+                    return null;
+                });
+        LOGGER.info("Saved {} in bucket", uri);
+    }
+
+    private void handleFailure(Failure<?> failure, String message, String messageArgument) {
+        LOGGER.error(message, messageArgument);
+        LOGGER.error(failure.getException().getMessage());
+        //TODO: Send message to DLQ
     }
 }
