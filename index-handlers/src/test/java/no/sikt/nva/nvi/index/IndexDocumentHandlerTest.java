@@ -122,10 +122,10 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var candidateToFail = randomApplicableCandidate();
         var candidateToSucceed = randomApplicableCandidate();
         setUpExistingResourceInS3AndGenerateExpectedDocument(candidateToFail);
-        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(candidateToSucceed);
         mockUriRetrieverFailure(candidateToFail);
         mockUriRetrieverOrgResponse(candidateToSucceed);
         var event = createEvent(List.of(candidateToFail.getIdentifier(), candidateToSucceed.getIdentifier()));
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(candidateToSucceed);
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = parseJson(s3Reader.getFile(createPath(candidateToSucceed)));
         assertEquals(expectedIndexDocument, actualIndexDocument);
@@ -359,6 +359,13 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return sqsEvent;
     }
 
+    private SQSEvent createEvent(List<UUID> candidateIdentifiers) {
+        var sqsEvent = new SQSEvent();
+        var records = candidateIdentifiers.stream().map(IndexDocumentHandlerTest::createMessage).toList();
+        sqsEvent.setRecords(records);
+        return sqsEvent;
+    }
+
     private SQSEvent createEventWithOneInvalidRecord(UUID candidateIdentifier) {
         var sqsEvent = new SQSEvent();
         var message = createMessage(candidateIdentifier);
@@ -370,12 +377,5 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var message = new SQSMessage();
         message.setBody("invalid body");
         return message;
-    }
-
-    private SQSEvent createEvent(List<UUID> candidateIdentifiers) {
-        var sqsEvent = new SQSEvent();
-        var records = candidateIdentifiers.stream().map(IndexDocumentHandlerTest::createMessage).toList();
-        sqsEvent.setRecords(records);
-        return sqsEvent;
     }
 }
