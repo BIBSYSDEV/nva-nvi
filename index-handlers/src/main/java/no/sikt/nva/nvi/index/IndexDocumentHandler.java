@@ -37,6 +37,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     private static final String FAILED_TO_FETCH_CANDIDATE_MESSAGE = "Failed to fetch candidate with identifier: {}";
     private static final String FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE =
         "Failed to generate index document for candidate with identifier: {}";
+    public static final String ERROR_MESSAGE = "Error message: {}";
     private final StorageReader<URI> storageReader;
     private final StorageWriter<NviCandidateIndexDocument> storageWriter;
     private final CandidateRepository candidateRepository;
@@ -76,7 +77,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
             .filter(Objects::nonNull)
             .map(this::generateIndexDocument)
             .filter(Objects::nonNull)
-            .forEach(this::saveInCandidateBucket);
+            .forEach(this::persistIndexDocument);
         return null;
     }
 
@@ -116,7 +117,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
             var expandedResource = getPublicationFromBucket(candidate);
             return documentGenerator.generateDocument(expandedResource, candidate);
         }).orElse(failure -> {
-            handleFailure(failure, FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE, candidate.toString());
+            handleFailure(failure, FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE, candidate.getIdentifier().toString());
             return null;
         });
     }
@@ -128,7 +129,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
         return result;
     }
 
-    private void saveInCandidateBucket(NviCandidateIndexDocument nviCandidateIndexDocument) {
+    private void persistIndexDocument(NviCandidateIndexDocument nviCandidateIndexDocument) {
         var uri =
             attempt(() -> storageWriter.write(nviCandidateIndexDocument)).orElse(
                 failure -> {
@@ -140,7 +141,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
     private void handleFailure(Failure<?> failure, String message, String messageArgument) {
         LOGGER.error(message, messageArgument);
-        LOGGER.error(failure.getException().getMessage());
+        LOGGER.error(ERROR_MESSAGE, failure.getException().getMessage());
         //TODO: Send message to DLQ
     }
 }
