@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index;
 
+import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -8,9 +9,14 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStream
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.net.URI;
+import java.util.UUID;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
+import no.sikt.nva.nvi.common.StorageWriter;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
@@ -22,20 +28,32 @@ import org.slf4j.LoggerFactory;
 public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
     public static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
+    public static final String IDENTIFIER = "identifier";
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler.class);
     private final StorageReader<URI> storageReader;
-
+    private final StorageWriter<NviCandidateIndexDocument> storageWriter;
+    private final CandidateRepository candidateRepository;
+    private final PeriodRepository periodRepository;
     private final NviCandidateIndexDocumentGenerator documentGenerator;
 
     @JacocoGenerated
     public IndexDocumentHandler() {
         this(new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
+             new S3StorageWriter(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
+             new CandidateRepository(defaultDynamoClient()),
+             new PeriodRepository(defaultDynamoClient()),
              new NviCandidateIndexDocumentGenerator(defaultUriRetriever(new Environment())));
     }
 
     public IndexDocumentHandler(StorageReader<URI> storageReader,
+                                StorageWriter<NviCandidateIndexDocument> storageWriter,
+                                CandidateRepository candidateRepository,
+                                PeriodRepository periodRepository,
                                 NviCandidateIndexDocumentGenerator documentGenerator) {
         this.storageReader = storageReader;
+        this.storageWriter = storageWriter;
+        this.candidateRepository = candidateRepository;
+        this.periodRepository = periodRepository;
         this.documentGenerator = documentGenerator;
     }
 
@@ -58,8 +76,13 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
                                                  env.readEnv("BACKEND_CLIENT_SECRET_NAME"));
     }
 
+    private static UUID extractIdentifierFromNewImage(DynamodbStreamRecord record) {
+        return UUID.fromString(record.getDynamodb().getNewImage().get(IDENTIFIER).getS());
+    }
+
     private void saveInCandidateBucket(NviCandidateIndexDocument nviCandidateIndexDocument) {
-        return;
+        var uri = attempt(() -> storageWriter.write(nviCandidateIndexDocument)).orElseThrow();
+        LOGGER.info("Saved {} in bucket", uri);
     }
 
     private NviCandidateIndexDocument generateIndexDocument(Candidate candidate) {
@@ -68,7 +91,12 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     }
 
     private Candidate fetchCandidate(DynamodbStreamRecord record) {
-        return null;
+        var candidateIdentifier = extractIdentifierFromNewImage(record);
+        return fetchCandidate(candidateIdentifier);
+    }
+
+    private Candidate fetchCandidate(UUID candidateIdentifier) {
+        return Candidate.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository);
     }
 
     private String getPublicationFromBucket(Candidate candidate) {

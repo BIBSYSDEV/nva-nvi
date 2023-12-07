@@ -10,6 +10,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 
@@ -54,6 +55,10 @@ public final class ExpandedResourceGenerator {
 
         root.put("identifier", candidate.getIdentifier().toString());
 
+        var topLevelOrganizations = createAndPopulateTopLevelOrganizations(candidate);
+
+        root.set("topLevelOrganizations", topLevelOrganizations);
+
         return root;
     }
 
@@ -92,6 +97,29 @@ public final class ExpandedResourceGenerator {
     public static String extractType(JsonNode expandedResource) {
         return JsonUtils.extractJsonNodeTextValue(expandedResource,
                                                   "/entityDescription/reference/publicationInstance/type");
+    }
+
+    private static JsonNode createAndPopulateTopLevelOrganizations(Candidate candidate) {
+        var topLevelOrganizations = objectMapper.createArrayNode();
+        candidate.getPublicationDetails().creators().stream()
+            .map(Creator::affiliations)
+            .flatMap(List::stream)
+            .distinct()
+            .map(URI::toString)
+            .map(ExpandedResourceGenerator::createOrganizationNode)
+            .forEach(topLevelOrganizations::add);
+        return topLevelOrganizations;
+    }
+
+    private static JsonNode createOrganizationNode(String affiliationId) {
+        var organization = objectMapper.createObjectNode();
+        organization.put("id", affiliationId);
+        organization.put("type", "Organization");
+        var labels = objectMapper.createObjectNode();
+        labels.put(NB_FIELD, HARDCODED_NORWEGIAN_LABEL);
+        labels.put(EN_FIELD, HARDCODED_ENGLISH_LABEL);
+        organization.set("labels", labels);
+        return organization;
     }
 
     private static ObjectNode createAndPopulatePublicationDate(PublicationDate date) {

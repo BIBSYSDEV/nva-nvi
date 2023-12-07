@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.index.model;
 
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
+import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -24,6 +26,10 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    public String toJsonString() {
+        return attempt(() -> dtoObjectMapper.writeValueAsString(this)).orElseThrow();
     }
 
     @JacocoGenerated
