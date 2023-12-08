@@ -15,10 +15,10 @@ import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.events.evaluator.client.AuthorizedUriRetriever;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
-import no.sikt.nva.nvi.events.evaluator.client.OrganizationRetriever;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
+import no.sikt.nva.nvi.events.evaluator.client.AuthorizedUriRetriever;
+import no.sikt.nva.nvi.events.evaluator.client.OrganizationRetriever;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.auth.CachedJwtProvider;
@@ -70,16 +70,17 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
     @JacocoGenerated
     private static AuthorizedUriRetriever defaultAuthorizedUriRetriever() {
         return new AuthorizedUriRetriever(HttpClient.newHttpClient(), new CachedJwtProvider(
-            new CognitoAuthenticator(HttpClient.newHttpClient(), createCognitoCredentials(new SecretsReader())),
+            new CognitoAuthenticator(HttpClient.newHttpClient(),
+                                     createCognitoCredentials(new SecretsReader(), new Environment())),
             Clock.systemDefaultZone()));
     }
 
     @JacocoGenerated
-    private static CognitoCredentials createCognitoCredentials(SecretsReader secretsReader) {
-        var credentials = secretsReader.fetchClassSecret(BACKEND_CLIENT_SECRET_NAME,
+    private static CognitoCredentials createCognitoCredentials(SecretsReader secretsReader, Environment environment) {
+        var credentials = secretsReader.fetchClassSecret(environment.readEnv(BACKEND_CLIENT_SECRET_NAME),
                                                          UsernamePasswordWrapper.class);
         return new CognitoCredentials(credentials::getUsername, credentials::getPassword,
-                                      URI.create(BACKEND_CLIENT_AUTH_URL));
+                                      URI.create(environment.readEnv(BACKEND_CLIENT_AUTH_URL)));
     }
 
     private static RuntimeException handleFailure(SQSEvent input, Failure<NviSendMessageResponse> failure) {
