@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.events.evaluator.calculator;
+package no.sikt.nva.nvi.events.evaluator.client;
 
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
@@ -7,7 +7,7 @@ import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.Optional;
 import no.sikt.nva.nvi.events.evaluator.model.Organization;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,9 +19,9 @@ public class OrganizationRetriever {
     private static final String ERROR_COULD_NOT_FETCH_CRISTIN_ORG = COULD_NOT_FETCH_CRISTIN_ORG_MESSAGE + "{}. "
                                                                     + "Response code: {}";
 
-    private final AuthorizedBackendUriRetriever uriRetriever;
+    private final UriRetriever uriRetriever;
 
-    public OrganizationRetriever(AuthorizedBackendUriRetriever uriRetriever) {
+    public OrganizationRetriever(UriRetriever uriRetriever) {
         this.uriRetriever = uriRetriever;
     }
 

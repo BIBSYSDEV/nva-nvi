@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.events.evaluator.model.Organization;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.events.models.AwsEventBridgeDetail;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
 import no.unit.nva.events.models.EventReference;
@@ -53,7 +53,7 @@ public final class TestUtils {
     }
 
     public static void mockOrganizationResponseForAffiliation(URI topLevelInstitutionId, URI subUnitId,
-                                                              AuthorizedBackendUriRetriever uriRetriever) {
+                                                              UriRetriever uriRetriever) {
         var body = generateResponseBody(topLevelInstitutionId, subUnitId);
         var response = Optional.of(createResponse(200, body));
         if (isNull(subUnitId)) {
