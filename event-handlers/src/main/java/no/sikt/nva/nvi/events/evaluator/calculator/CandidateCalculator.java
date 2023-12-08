@@ -29,12 +29,14 @@ import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.events.evaluator.model.CustomerResponse;
 import no.sikt.nva.nvi.events.evaluator.model.Organization;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CandidateCalculator {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(CandidateCalculator.class);
     private static final String CREATOR = "Creator";
     private static final String CONTENT_TYPE = "application/json";
@@ -47,8 +49,8 @@ public class CandidateCalculator {
 
     private final OrganizationRetriever organizationRetriever;
 
-    public CandidateCalculator(AuthorizedBackendUriRetriever uriRetriever) {
-        this.uriRetriever = uriRetriever;
+    public CandidateCalculator(AuthorizedBackendUriRetriever authorizedBackendUriRetriever, UriRetriever uriRetriever) {
+        this.uriRetriever = authorizedBackendUriRetriever;
         this.organizationRetriever = new OrganizationRetriever(uriRetriever);
     }
 

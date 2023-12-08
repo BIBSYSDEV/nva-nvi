@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,12 +50,12 @@ class PointCalculatorTest {
     private static final String CONTRIBUTORS = "contributors";
 
     private PointCalculator pointCalculator;
-    private AuthorizedBackendUriRetriever mockUriRetriever;
+    private UriRetriever uriRetriever;
 
     @BeforeEach
     void setup() {
-        mockUriRetriever = Mockito.mock(AuthorizedBackendUriRetriever.class);
-        var organizationRetriever = new OrganizationRetriever(mockUriRetriever);
+        uriRetriever = Mockito.mock(UriRetriever.class);
+        var organizationRetriever = new OrganizationRetriever(uriRetriever);
         pointCalculator = new PointCalculator(organizationRetriever);
     }
 
@@ -66,7 +66,7 @@ class PointCalculatorTest {
 
         var creatorId = randomUri();
         var institutionId = URI.create("www.example.org/123");
-        mockOrganizationResponseForAffiliation(institutionId, null, mockUriRetriever);
+        mockOrganizationResponseForAffiliation(institutionId, null, uriRetriever);
         var expandedResource = setUpSingleContributorWithSingleInstitution(parameters, creatorId, institutionId);
 
         var pointCalculation = pointCalculator.calculatePoints(expandedResource,
@@ -87,8 +87,8 @@ class PointCalculatorTest {
         var creator2 = randomUri();
         var creator1Institutions = List.of(nviInstitution1, nviInstitution2);
         var creator2Institutions = List.of(nviInstitution1);
-        mockOrganizationResponseForAffiliation(nviInstitution1, null, mockUriRetriever);
-        mockOrganizationResponseForAffiliation(nviInstitution2, null, mockUriRetriever);
+        mockOrganizationResponseForAffiliation(nviInstitution1, null, uriRetriever);
+        mockOrganizationResponseForAffiliation(nviInstitution2, null, uriRetriever);
         var expandedResource = createExpandedResourceWithManyCreators(parameters, creator1, creator2,
                                                                       creator1Institutions,
                                                                       creator2Institutions);
@@ -115,8 +115,8 @@ class PointCalculatorTest {
         var creator2 = randomUri();
         var creator1Institutions = List.of(nviInstitution1);
         var creator2Institutions = List.of(nviInstitution2);
-        mockOrganizationResponseForAffiliation(nviInstitution1, null, mockUriRetriever);
-        mockOrganizationResponseForAffiliation(nviInstitution2, null, mockUriRetriever);
+        mockOrganizationResponseForAffiliation(nviInstitution1, null, uriRetriever);
+        mockOrganizationResponseForAffiliation(nviInstitution2, null, uriRetriever);
         var expandedResource = setUpCoPublishingTwoCreatorsTwoInstitutions(parameters, creator1, creator2,
                                                                            creator1Institutions);
 
@@ -145,8 +145,8 @@ class PointCalculatorTest {
                                                                                        COUNTRY_CODE_NO),
                                                                                 ROLE_CREATOR, 0)),
                                                       HARDCODED_JOURNAL_REFERENCE);
-        mockOrganizationResponseForAffiliation(topLevelInstitutionId, subUnit1Id, mockUriRetriever);
-        mockOrganizationResponseForAffiliation(topLevelInstitutionId, subUnit2Id, mockUriRetriever);
+        mockOrganizationResponseForAffiliation(topLevelInstitutionId, subUnit1Id, uriRetriever);
+        mockOrganizationResponseForAffiliation(topLevelInstitutionId, subUnit2Id, uriRetriever);
 
         var institutionPoints = pointCalculator.calculatePoints(expandedResource,
                                                                 Map.of(creatorId, List.of(topLevelInstitutionId)))
@@ -159,7 +159,7 @@ class PointCalculatorTest {
     void shouldNotGiveInternationalPointsIfNonCreatorAffiliatedWithInternationalInstitution() {
         var creatorId = randomUri();
         var institutionId = randomUri();
-        mockOrganizationResponseForAffiliation(institutionId, null, mockUriRetriever);
+        mockOrganizationResponseForAffiliation(institutionId, null, uriRetriever);
         var expandedResource = setUpNonCreatorAffiliatedWithInternationalInstitution(creatorId, institutionId);
 
         var institutionPoints = pointCalculator.calculatePoints(expandedResource,
@@ -173,7 +173,7 @@ class PointCalculatorTest {
     void shouldNotCountCreatorSharesForNonCreators() {
         var creatorId = randomUri();
         var institutionId = randomUri();
-        mockOrganizationResponseForAffiliation(institutionId, null, mockUriRetriever);
+        mockOrganizationResponseForAffiliation(institutionId, null, uriRetriever);
         var expandedResource = setUpResourceWithNonCreator(creatorId, institutionId);
 
         var institutionPoints = pointCalculator.calculatePoints(expandedResource,
@@ -187,7 +187,7 @@ class PointCalculatorTest {
     void shouldCountOneCreatorShareForCreatorsWithoutAffiliations() {
         var nviCreatorId = randomUri();
         var nviInstitutionId = randomUri();
-        mockOrganizationResponseForAffiliation(nviInstitutionId, null, mockUriRetriever);
+        mockOrganizationResponseForAffiliation(nviInstitutionId, null, uriRetriever);
         var expandedResource = setUpResourceWithCreatorsWithoutAffiliations(nviCreatorId, nviInstitutionId);
         var institutionPoints = pointCalculator.calculatePoints(expandedResource,
                                                                 Map.of(nviCreatorId, List.of(nviInstitutionId)))
@@ -201,7 +201,7 @@ class PointCalculatorTest {
         var nviCreatorId = randomUri();
         var nviInstitutionId = randomUri();
         int numberOfAffiliationsWithoutId = randomIntBetween(2, 10);
-        mockOrganizationResponseForAffiliation(nviInstitutionId, null, mockUriRetriever);
+        mockOrganizationResponseForAffiliation(nviInstitutionId, null, uriRetriever);
         var expandedResource = setUpResourceWithCreatorWithUnverifiedAffiliations(nviCreatorId, nviInstitutionId,
                                                                                   numberOfAffiliationsWithoutId);
 
@@ -217,7 +217,7 @@ class PointCalculatorTest {
         var nviCreatorId = randomUri();
         var nviInstitutionId = randomUri();
         int numberOfAffiliationsWithoutId = randomIntBetween(2, 10);
-        mockOrganizationResponseForAffiliation(nviInstitutionId, null, mockUriRetriever);
+        mockOrganizationResponseForAffiliation(nviInstitutionId, null, uriRetriever);
         var expandedResource = setUpResourceWithOneCreatorWithUnverifiedAffiliations(nviCreatorId, nviInstitutionId,
                                                                                      numberOfAffiliationsWithoutId);
 
@@ -557,7 +557,7 @@ class PointCalculatorTest {
     }
 
     private void mockOrganizationRetriever(List<URI> randomInstitutions) {
-        randomInstitutions.forEach(uri -> mockOrganizationResponseForAffiliation(uri, null, mockUriRetriever));
+        randomInstitutions.forEach(uri -> mockOrganizationResponseForAffiliation(uri, null, uriRetriever));
     }
 
     private record PointParameters(String instanceType, String channelType, String level,

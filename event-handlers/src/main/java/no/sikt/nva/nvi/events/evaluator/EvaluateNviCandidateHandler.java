@@ -17,6 +17,7 @@ import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
@@ -38,9 +39,9 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
     @JacocoGenerated
     public EvaluateNviCandidateHandler() {
         this(new EvaluatorService(new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")),
-                                  new CandidateCalculator(defaultUriRetriever(new Environment())),
-                                  new PointCalculator(
-                                      new OrganizationRetriever(defaultUriRetriever(new Environment())))),
+                                  new CandidateCalculator(authorizedUriRetriever(new Environment()),
+                                                          new UriRetriever()),
+                                  new PointCalculator(new OrganizationRetriever(new UriRetriever()))),
              new NviQueueClient(), new Environment());
     }
 
@@ -66,7 +67,7 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
     }
 
     @JacocoGenerated
-    private static AuthorizedBackendUriRetriever defaultUriRetriever(Environment env) {
+    private static AuthorizedBackendUriRetriever authorizedUriRetriever(Environment env) {
         return new AuthorizedBackendUriRetriever(env.readEnv(BACKEND_CLIENT_AUTH_URL),
                                                  env.readEnv(BACKEND_CLIENT_SECRET_NAME));
     }

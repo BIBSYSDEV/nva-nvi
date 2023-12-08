@@ -31,6 +31,7 @@ import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import no.unit.nva.stubs.FakeSecretsManagerClient;
@@ -62,7 +63,9 @@ public class EvaluateNviCandidateWithCristinDataTest {
     private final Context context = mock(Context.class);
     private S3Driver s3Driver;
     private EvaluateNviCandidateHandler handler;
-    private AuthorizedBackendUriRetriever uriRetriever;
+    private AuthorizedBackendUriRetriever authorizedUriRetriever;
+
+    private UriRetriever uriRetriever;
 
     private FakeSqsClient queueClient;
 
@@ -76,8 +79,9 @@ public class EvaluateNviCandidateWithCristinDataTest {
         var secretsManagerClient = new FakeSecretsManagerClient();
         var credentials = new BackendClientCredentials("id", "secret");
         secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
-        uriRetriever = mock(AuthorizedBackendUriRetriever.class);
-        var calculator = new CandidateCalculator(uriRetriever);
+        authorizedUriRetriever = mock(AuthorizedBackendUriRetriever.class);
+        uriRetriever = mock(UriRetriever.class);
+        var calculator = new CandidateCalculator(authorizedUriRetriever, uriRetriever);
         var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
         var organizationRetriever = new OrganizationRetriever(uriRetriever);
         var pointCalculator = new PointCalculator(organizationRetriever);
@@ -197,7 +201,8 @@ public class EvaluateNviCandidateWithCristinDataTest {
                                                                                  + ".0"), uriRetriever);
         mockOrganizationResponseForAffiliation(ST_OLAVS_TOP_LEVEL_ORG_ID, URI.create("https://api.sandbox.nva.aws.unit"
                                                                                      + ".no/cristin/organization/1920"
-                                                                                     + ".13.0.0"), uriRetriever);
+                                                                                     + ".13.0.0"),
+                                               uriRetriever);
         mockOrganizationResponseForAffiliation(NTNU_TOP_LEVEL_ORG_ID, URI.create("https://api.sandbox.nva.aws.unit"
                                                                                  + ".no/cristin/organization/194.65.25"
                                                                                  + ".0"), uriRetriever);
@@ -211,7 +216,8 @@ public class EvaluateNviCandidateWithCristinDataTest {
 
     private void mockCustomerApi(URI topLevelOrgId) {
         var customerApiResponse = createResponse(200, CUSTOMER_API_NVI_RESPONSE);
-        when(uriRetriever.fetchResponse(eq(createCustomerApiUri(topLevelOrgId.toString())), any())).thenReturn(
+        when(
+            authorizedUriRetriever.fetchResponse(eq(createCustomerApiUri(topLevelOrgId.toString())), any())).thenReturn(
             Optional.of(customerApiResponse));
     }
 

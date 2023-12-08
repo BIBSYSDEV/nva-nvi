@@ -52,6 +52,7 @@ import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import no.unit.nva.stubs.FakeSecretsManagerClient;
@@ -101,8 +102,8 @@ class EvaluateNviCandidateHandlerTest {
     private HttpResponse<String> okResponse;
     private S3Driver s3Driver;
     private EvaluateNviCandidateHandler handler;
-    private AuthorizedBackendUriRetriever uriRetriever;
-
+    private AuthorizedBackendUriRetriever authorizedUriRetriever;
+    private UriRetriever uriRetriever;
     private FakeSqsClient queueClient;
 
     public static Stream<Arguments> levelValues() {
@@ -122,8 +123,9 @@ class EvaluateNviCandidateHandlerTest {
         var secretsManagerClient = new FakeSecretsManagerClient();
         var credentials = new BackendClientCredentials("id", "secret");
         secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
-        uriRetriever = mock(AuthorizedBackendUriRetriever.class);
-        var calculator = new CandidateCalculator(uriRetriever);
+        authorizedUriRetriever = mock(AuthorizedBackendUriRetriever.class);
+        uriRetriever = mock(UriRetriever.class);
+        var calculator = new CandidateCalculator(authorizedUriRetriever, uriRetriever);
         var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
         var organizationRetriever = new OrganizationRetriever(uriRetriever);
         var pointCalculator = new PointCalculator(organizationRetriever);
@@ -134,7 +136,7 @@ class EvaluateNviCandidateHandlerTest {
 
     @Test
     void shouldCreateNewCandidateEventOnValidCandidate() throws IOException {
-        when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(okResponse));
+        when(authorizedUriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(okResponse));
         mockOrganizationResponseForAffiliation(SIKT_CRISTIN_ORG_ID, null, uriRetriever);
         var path = "evaluator/candidate.json";
         var content = IoUtils.inputStreamFromResources(path);
@@ -147,7 +149,7 @@ class EvaluateNviCandidateHandlerTest {
 
     @Test
     void shouldEvaluateStrippedCandidate() throws IOException {
-        when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(okResponse));
+        when(authorizedUriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(okResponse));
         mockOrganizationResponseForAffiliation(SIKT_CRISTIN_ORG_ID, null, uriRetriever);
         var path = "evaluator/candidate_stripped.json";
         var content = IoUtils.inputStreamFromResources(path);
@@ -599,14 +601,19 @@ class EvaluateNviCandidateHandlerTest {
         var cristinOrgNonNviTopLevelCustomerApiUri =
             URI.create(customerApiEndpoint + "/" + URLEncoder.encode(cristinOrgNonNviTopLevel.toString(),
                                                                      StandardCharsets.UTF_8));
-        when(uriRetriever.fetchResponse(eq(cristinOrgNonNviTopLevelCustomerApiUri), any())).thenReturn(Optional.of(
-            notFoundResponse));
+        when(
+            authorizedUriRetriever.fetchResponse(eq(cristinOrgNonNviTopLevelCustomerApiUri), any())).thenReturn(
+            Optional.of(
+                notFoundResponse));
         mockOrganizationResponseForAffiliation(cristinOrgNonNviTopLevel, cristinOrgNonNviSubUnit, uriRetriever);
     }
 
     private void mockCristinResponseAndCustomerApiResponseForNviInstitution(HttpResponse<String> httpResponse) {
-        mockOrganizationResponseForAffiliation(CRISTIN_NVI_ORG_TOP_LEVEL_ID, CRISTIN_NVI_ORG_SUB_UNIT_ID, uriRetriever);
-        when(uriRetriever.fetchResponse(eq(CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL), any())).thenReturn(Optional.of(
-            httpResponse));
+        mockOrganizationResponseForAffiliation(CRISTIN_NVI_ORG_TOP_LEVEL_ID, CRISTIN_NVI_ORG_SUB_UNIT_ID,
+                                               uriRetriever);
+        when(
+            authorizedUriRetriever.fetchResponse(eq(CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL), any())).thenReturn(
+            Optional.of(
+                httpResponse));
     }
 }
