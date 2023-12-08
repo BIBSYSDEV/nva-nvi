@@ -20,7 +20,7 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
+    public static final String ERROR_MESSAGE = "Error message: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler.class);
     private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
     private static final String IDENTIFIER = "identifier";
@@ -37,7 +38,6 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     private static final String FAILED_TO_FETCH_CANDIDATE_MESSAGE = "Failed to fetch candidate with identifier: {}";
     private static final String FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE =
         "Failed to generate index document for candidate with identifier: {}";
-    public static final String ERROR_MESSAGE = "Error message: {}";
     private final StorageReader<URI> storageReader;
     private final StorageWriter<NviCandidateIndexDocument> storageWriter;
     private final CandidateRepository candidateRepository;
@@ -50,7 +50,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
              new S3StorageWriter(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
              new CandidateRepository(defaultDynamoClient()),
              new PeriodRepository(defaultDynamoClient()),
-             new NviCandidateIndexDocumentGenerator(defaultUriRetriever(new Environment())));
+             new NviCandidateIndexDocumentGenerator(new UriRetriever()));
     }
 
     public IndexDocumentHandler(StorageReader<URI> storageReader,
@@ -79,12 +79,6 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
             .filter(Objects::nonNull)
             .forEach(this::persistIndexDocument);
         return null;
-    }
-
-    @JacocoGenerated
-    private static AuthorizedBackendUriRetriever defaultUriRetriever(Environment env) {
-        return new AuthorizedBackendUriRetriever(env.readEnv("BACKEND_CLIENT_AUTH_URL"),
-                                                 env.readEnv("BACKEND_CLIENT_SECRET_NAME"));
     }
 
     private static UUID extractIdentifierFromNewImage(DynamodbStreamRecord record) {

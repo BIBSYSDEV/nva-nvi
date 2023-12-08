@@ -49,7 +49,7 @@ import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.sikt.nva.nvi.test.ExpandedResourceGenerator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
@@ -77,7 +77,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     private PeriodRepository periodRepository;
     private S3Driver s3Reader;
     private S3Driver s3Writer;
-    private AuthorizedBackendUriRetriever uriRetriever;
+    private UriRetriever uriRetriever;
     private NviCandidateIndexDocumentGenerator documentGenerator;
 
     @BeforeEach
@@ -87,7 +87,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var localDynamoDbClient = initializeTestDatabase();
         candidateRepository = new CandidateRepository(localDynamoDbClient);
         periodRepository = new PeriodRepository(localDynamoDbClient);
-        uriRetriever = mock(AuthorizedBackendUriRetriever.class);
+        uriRetriever = mock(UriRetriever.class);
         documentGenerator = new NviCandidateIndexDocumentGenerator(uriRetriever);
         handler = new IndexDocumentHandler(new S3StorageReader(s3Client, BUCKET_NAME),
                                            new S3StorageWriter(s3Client, BUCKET_NAME), candidateRepository,
