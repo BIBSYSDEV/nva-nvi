@@ -30,6 +30,8 @@ dependencies {
     implementation libs.jackson.core
     implementation libs.jackson.databind
 
+    implementation libs.com.auth0.jwt
+
     implementation libs.bundles.logging
     implementation libs.bundles.jena
     testImplementation project(':nvi-test')

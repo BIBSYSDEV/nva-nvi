@@ -21,14 +21,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
+import no.sikt.nva.nvi.events.evaluator.client.AuthorizedUriRetriever;
+import no.sikt.nva.nvi.events.evaluator.client.OrganizationRetriever;
 import no.sikt.nva.nvi.events.evaluator.model.CustomerResponse;
 import no.sikt.nva.nvi.events.evaluator.model.Organization;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
@@ -45,12 +45,11 @@ public class CandidateCalculator {
     private static final String CRISTIN_ID = "cristinId";
     private static final String VERIFIED = "Verified";
     private static final String API_HOST = new Environment().readEnv("API_HOST");
-    private final AuthorizedBackendUriRetriever uriRetriever;
-
+    private final AuthorizedUriRetriever authorizedUriRetriever;
     private final OrganizationRetriever organizationRetriever;
 
-    public CandidateCalculator(AuthorizedBackendUriRetriever authorizedBackendUriRetriever, UriRetriever uriRetriever) {
-        this.uriRetriever = authorizedBackendUriRetriever;
+    public CandidateCalculator(AuthorizedUriRetriever authorizedUriRetriever, UriRetriever uriRetriever) {
+        this.authorizedUriRetriever = authorizedUriRetriever;
         this.organizationRetriever = new OrganizationRetriever(uriRetriever);
     }
 
@@ -150,11 +149,6 @@ public class CandidateCalculator {
     }
 
     private HttpResponse<String> getResponse(URI uri) {
-        return Optional.ofNullable(uriRetriever.fetchResponse(uri, CONTENT_TYPE))
-                   .stream()
-                   .filter(Optional::isPresent)
-                   .map(Optional::get)
-                   .findAny()
-                   .orElseThrow();
+        return authorizedUriRetriever.fetchResponse(uri, CONTENT_TYPE);
     }
 }

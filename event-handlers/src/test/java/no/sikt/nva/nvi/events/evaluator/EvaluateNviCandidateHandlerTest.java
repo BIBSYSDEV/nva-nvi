@@ -38,8 +38,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
+import no.sikt.nva.nvi.events.evaluator.client.AuthorizedUriRetriever;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
-import no.sikt.nva.nvi.events.evaluator.calculator.OrganizationRetriever;
+import no.sikt.nva.nvi.events.evaluator.client.OrganizationRetriever;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
 import no.sikt.nva.nvi.events.evaluator.model.Level;
@@ -50,7 +51,6 @@ import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.Creator;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
@@ -102,7 +102,7 @@ class EvaluateNviCandidateHandlerTest {
     private HttpResponse<String> okResponse;
     private S3Driver s3Driver;
     private EvaluateNviCandidateHandler handler;
-    private AuthorizedBackendUriRetriever authorizedUriRetriever;
+    private AuthorizedUriRetriever authorizedUriRetriever;
     private UriRetriever uriRetriever;
     private FakeSqsClient queueClient;
 
@@ -123,7 +123,7 @@ class EvaluateNviCandidateHandlerTest {
         var secretsManagerClient = new FakeSecretsManagerClient();
         var credentials = new BackendClientCredentials("id", "secret");
         secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
-        authorizedUriRetriever = mock(AuthorizedBackendUriRetriever.class);
+        authorizedUriRetriever = mock(AuthorizedUriRetriever.class);
         uriRetriever = mock(UriRetriever.class);
         var calculator = new CandidateCalculator(authorizedUriRetriever, uriRetriever);
         var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
@@ -136,7 +136,7 @@ class EvaluateNviCandidateHandlerTest {
 
     @Test
     void shouldCreateNewCandidateEventOnValidCandidate() throws IOException {
-        when(authorizedUriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(okResponse));
+        when(authorizedUriRetriever.fetchResponse(any(), any())).thenReturn(okResponse);
         mockOrganizationResponseForAffiliation(SIKT_CRISTIN_ORG_ID, null, uriRetriever);
         var path = "evaluator/candidate.json";
         var content = IoUtils.inputStreamFromResources(path);
@@ -149,7 +149,7 @@ class EvaluateNviCandidateHandlerTest {
 
     @Test
     void shouldEvaluateStrippedCandidate() throws IOException {
-        when(authorizedUriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(okResponse));
+        when(authorizedUriRetriever.fetchResponse(any(), any())).thenReturn(okResponse);
         mockOrganizationResponseForAffiliation(SIKT_CRISTIN_ORG_ID, null, uriRetriever);
         var path = "evaluator/candidate_stripped.json";
         var content = IoUtils.inputStreamFromResources(path);
@@ -603,8 +603,7 @@ class EvaluateNviCandidateHandlerTest {
                                                                      StandardCharsets.UTF_8));
         when(
             authorizedUriRetriever.fetchResponse(eq(cristinOrgNonNviTopLevelCustomerApiUri), any())).thenReturn(
-            Optional.of(
-                notFoundResponse));
+            notFoundResponse);
         mockOrganizationResponseForAffiliation(cristinOrgNonNviTopLevel, cristinOrgNonNviSubUnit, uriRetriever);
     }
 
@@ -613,7 +612,6 @@ class EvaluateNviCandidateHandlerTest {
                                                uriRetriever);
         when(
             authorizedUriRetriever.fetchResponse(eq(CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL), any())).thenReturn(
-            Optional.of(
-                httpResponse));
+            httpResponse);
     }
 }

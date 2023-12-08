@@ -6,21 +6,29 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.time.Clock;
 import no.sikt.nva.nvi.common.S3StorageReader;
+import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
+import no.sikt.nva.nvi.events.evaluator.client.AuthorizedUriRetriever;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
-import no.sikt.nva.nvi.events.evaluator.calculator.OrganizationRetriever;
+import no.sikt.nva.nvi.events.evaluator.client.OrganizationRetriever;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
+import no.unit.nva.auth.CachedJwtProvider;
+import no.unit.nva.auth.CognitoAuthenticator;
+import no.unit.nva.auth.CognitoCredentials;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
+import nva.commons.secrets.SecretsReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,8 +47,7 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
     @JacocoGenerated
     public EvaluateNviCandidateHandler() {
         this(new EvaluatorService(new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")),
-                                  new CandidateCalculator(authorizedUriRetriever(new Environment()),
-                                                          new UriRetriever()),
+                                  new CandidateCalculator(defaultAuthorizedUriRetriever(), new UriRetriever()),
                                   new PointCalculator(new OrganizationRetriever(new UriRetriever()))),
              new NviQueueClient(), new Environment());
     }
@@ -60,16 +67,25 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
         return null;
     }
 
+    @JacocoGenerated
+    private static AuthorizedUriRetriever defaultAuthorizedUriRetriever() {
+        return new AuthorizedUriRetriever(HttpClient.newHttpClient(), new CachedJwtProvider(
+            new CognitoAuthenticator(HttpClient.newHttpClient(), createCognitoCredentials(new SecretsReader())),
+            Clock.systemDefaultZone()));
+    }
+
+    @JacocoGenerated
+    private static CognitoCredentials createCognitoCredentials(SecretsReader secretsReader) {
+        var credentials = secretsReader.fetchClassSecret(BACKEND_CLIENT_SECRET_NAME,
+                                                         UsernamePasswordWrapper.class);
+        return new CognitoCredentials(credentials::getUsername, credentials::getPassword,
+                                      URI.create(BACKEND_CLIENT_AUTH_URL));
+    }
+
     private static RuntimeException handleFailure(SQSEvent input, Failure<NviSendMessageResponse> failure) {
         LOGGER.error(String.format(FAILURE_MESSAGE, input.toString(), failure.getException(),
                                    failure.getException().getMessage()));
         return new RuntimeException(failure.getException());
-    }
-
-    @JacocoGenerated
-    private static AuthorizedBackendUriRetriever authorizedUriRetriever(Environment env) {
-        return new AuthorizedBackendUriRetriever(env.readEnv(BACKEND_CLIENT_AUTH_URL),
-                                                 env.readEnv(BACKEND_CLIENT_SECRET_NAME));
     }
 
     private static PersistedResourceMessage parseBody(String body) {
