@@ -21,14 +21,15 @@ import java.math.RoundingMode;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.S3StorageReader;
-import no.sikt.nva.nvi.events.evaluator.client.AuthorizedUriRetriever;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
-import no.sikt.nva.nvi.events.evaluator.client.OrganizationRetriever;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
+import no.sikt.nva.nvi.events.evaluator.client.OrganizationRetriever;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
+import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
@@ -62,10 +63,8 @@ public class EvaluateNviCandidateWithCristinDataTest {
     private final Context context = mock(Context.class);
     private S3Driver s3Driver;
     private EvaluateNviCandidateHandler handler;
-    private AuthorizedUriRetriever authorizedUriRetriever;
-
+    private AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
     private UriRetriever uriRetriever;
-
     private FakeSqsClient queueClient;
 
     @BeforeEach
@@ -78,9 +77,9 @@ public class EvaluateNviCandidateWithCristinDataTest {
         var secretsManagerClient = new FakeSecretsManagerClient();
         var credentials = new BackendClientCredentials("id", "secret");
         secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
-        authorizedUriRetriever = mock(AuthorizedUriRetriever.class);
+        authorizedBackendUriRetriever = mock(AuthorizedBackendUriRetriever.class);
         uriRetriever = mock(UriRetriever.class);
-        var calculator = new CandidateCalculator(authorizedUriRetriever, uriRetriever);
+        var calculator = new CandidateCalculator(authorizedBackendUriRetriever, uriRetriever);
         var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
         var organizationRetriever = new OrganizationRetriever(uriRetriever);
         var pointCalculator = new PointCalculator(organizationRetriever);
@@ -216,8 +215,8 @@ public class EvaluateNviCandidateWithCristinDataTest {
     private void mockCustomerApi(URI topLevelOrgId) {
         var customerApiResponse = createResponse(200, CUSTOMER_API_NVI_RESPONSE);
         when(
-            authorizedUriRetriever.fetchResponse(eq(createCustomerApiUri(topLevelOrgId.toString())), any())).thenReturn(
-            customerApiResponse);
+            authorizedBackendUriRetriever.fetchResponse(eq(createCustomerApiUri(topLevelOrgId.toString())),
+                                                        any())).thenReturn(Optional.of(customerApiResponse));
     }
 
     private NviCandidate getMessageBody() {
