@@ -64,8 +64,8 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
         return attempt(() -> dtoObjectMapper.writeValueAsString(record)).orElseThrow();
     }
 
-    private static UUID extractIdFromRecord(DynamodbStreamRecord record) {
-        return attempt(() -> UUID.fromString(extractIdentifier(record))).orElse(failure -> null);
+    private static Optional<UUID> extractIdFromRecord(DynamodbStreamRecord record) {
+        return attempt(() -> UUID.fromString(extractIdentifier(record))).toOptional();
     }
 
     private static String extractIdentifier(DynamodbStreamRecord record) {
@@ -88,7 +88,10 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     }
 
     private void sendToDlq(Failure<Object> failure, DynamodbStreamRecord record) {
-        queueClient.sendMessage(failure.getException().getMessage(), dlqUrl, extractIdFromRecord(record));
+        var message = failure.getException().getMessage();
+        extractIdFromRecord(record)
+            .ifPresentOrElse(id -> queueClient.sendMessage(message, dlqUrl, id),
+                             () -> queueClient.sendMessage(message, dlqUrl));
     }
 
     private void sendBatch(List<String> messages) {

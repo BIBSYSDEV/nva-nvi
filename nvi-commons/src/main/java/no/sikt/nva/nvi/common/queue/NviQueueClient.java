@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.queue;
 
-import static java.util.Objects.nonNull;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -45,9 +44,7 @@ public class NviQueueClient implements QueueClient<NviSendMessageResponse, NviSe
     @Override
     public NviSendMessageResponse sendMessage(String message, String queueUrl, UUID candidateIdentifier) {
         return createResponse(sqsClient.sendMessage(createRequest(message, queueUrl,
-                                                                  nonNull(candidateIdentifier)
-                                                                      ? getMessageAttributes(candidateIdentifier)
-                                                                      : Map.of())));
+                                                                  getMessageAttributes(candidateIdentifier))));
     }
 
     @Override
