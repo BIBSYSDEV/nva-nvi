@@ -23,7 +23,6 @@ import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 import software.amazon.awssdk.services.sqs.model.SqsException;
 
@@ -57,7 +56,7 @@ public class DynamoDbEventToQueueHandlerTest {
         var candidateIdentifier = UUID.randomUUID();
         var dynamoDbEvent = eventWithCandidateIdentifier(candidateIdentifier);
         var fakeSqsClient = mock(FakeSqsClient.class);
-        when(fakeSqsClient.sendMessageBatch(any(), any())).thenThrow(sqsExceptionWIthMessage());
+        when(fakeSqsClient.sendMessageBatch(any(), any())).thenThrow(SqsException.class);
         var handler = new DynamoDbEventToQueueHandler(fakeSqsClient, new Environment());
         assertThrows(RuntimeException.class, () -> handler.handleRequest(dynamoDbEvent, CONTEXT));
         verify(fakeSqsClient, times(1)).sendMessage(anyString(), eq(DLQ_URL), eq(candidateIdentifier));
@@ -67,7 +66,7 @@ public class DynamoDbEventToQueueHandlerTest {
     void shouldSendMessageToDlqWithoutCandidateIdentifierIfSendingBatchFailsAndUnableToExtractRecordIdentifier() {
         var dynamoDbEvent = randomDynamoDbEvent();
         var fakeSqsClient = mock(FakeSqsClient.class);
-        when(fakeSqsClient.sendMessageBatch(any(), any())).thenThrow(sqsExceptionWIthMessage());
+        when(fakeSqsClient.sendMessageBatch(any(), any())).thenThrow(SqsException.class);
         var handler = new DynamoDbEventToQueueHandler(fakeSqsClient, new Environment());
         assertThrows(RuntimeException.class, () -> handler.handleRequest(dynamoDbEvent, CONTEXT));
         verify(fakeSqsClient, times(1)).sendMessage(anyString(), eq(DLQ_URL));
@@ -90,10 +89,6 @@ public class DynamoDbEventToQueueHandlerTest {
         var batchTwoMessages = extractBatchEntryMessageBodiesAtIndex(1);
         assertEquals(10, batchOneMessages.size());
         assertEquals(1, batchTwoMessages.size());
-    }
-
-    private static AwsServiceException sqsExceptionWIthMessage() {
-        return SqsException.builder().message("someError").build();
     }
 
     private List<String> extractBatchEntryMessageBodiesAtIndex(int index) {

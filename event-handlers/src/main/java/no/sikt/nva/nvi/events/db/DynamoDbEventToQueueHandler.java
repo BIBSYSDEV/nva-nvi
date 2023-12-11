@@ -27,6 +27,7 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     private static final int BATCH_SIZE = 10;
     private static final String DB_EVENTS_QUEUE_URL = "DB_EVENTS_QUEUE_URL";
     private static final String DLQ_URL = "INDEX_DLQ";
+    private static final String DLQ_MESSAGE = "Failed to process record %s. Exception message: %s ";
     private static final String FAILURE_MESSAGE = "Failure while sending database events to queue";
     private static final String FAILED_RECORDS_MESSAGE = "Failed records: {}";
     private static final String INFO_MESSAGE = "Sent {} messages to queue. Failures: {}";
@@ -83,12 +84,12 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     private RuntimeException handleFailure(Failure<Object> failure, List<DynamodbStreamRecord> records) {
         LOGGER.error(FAILURE_MESSAGE, failure.getException());
         LOGGER.error(FAILED_RECORDS_MESSAGE, records.stream().map(DynamodbStreamRecord::toString).toList());
-        records.forEach(record -> sendToDlq(failure, record));
+        records.forEach(record -> sendToDlq(record, failure.getException()));
         return new RuntimeException(failure.getException());
     }
 
-    private void sendToDlq(Failure<Object> failure, DynamodbStreamRecord record) {
-        var message = failure.getException().getMessage();
+    private void sendToDlq(DynamodbStreamRecord record, Exception exception) {
+        var message = String.format(DLQ_MESSAGE, record.toString(), exception.getMessage());
         extractIdFromRecord(record)
             .ifPresentOrElse(id -> queueClient.sendMessage(message, dlqUrl, id),
                              () -> queueClient.sendMessage(message, dlqUrl));
