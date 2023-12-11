@@ -29,15 +29,16 @@ import org.slf4j.LoggerFactory;
 
 public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
-    public static final String ERROR_MESSAGE = "Error message: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler.class);
     private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
     private static final String IDENTIFIER = "identifier";
+    private static final String ERROR_MESSAGE = "Error message: {}";
     private static final String FAILED_TO_PERSIST_MESSAGE = "Failed to save {} in bucket";
     private static final String FAILED_TO_PARSE_EVENT_MESSAGE = "Failed to map body to DynamodbStreamRecord: {}";
     private static final String FAILED_TO_FETCH_CANDIDATE_MESSAGE = "Failed to fetch candidate with identifier: {}";
     private static final String FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE =
         "Failed to generate index document for candidate with identifier: {}";
+
     private final StorageReader<URI> storageReader;
     private final StorageWriter<NviCandidateIndexDocument> storageWriter;
     private final CandidateRepository candidateRepository;
