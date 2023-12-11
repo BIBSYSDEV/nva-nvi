@@ -11,13 +11,14 @@ import nva.commons.core.JacocoGenerated;
 public record Affiliation(String id,
                           List<String> partOf) {
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public static final class Builder {
 
         private String id;
         private List<String> partOf;
-
-        public Builder() {
-        }
 
         public Builder withId(String id) {
             this.id = id;

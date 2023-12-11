@@ -1,8 +1,10 @@
 package no.sikt.nva.nvi.index.model;
 
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -21,6 +23,14 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         BigDecimal points) {
 
     private static final String CONTEXT = "@context";
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public String toJsonString() throws JsonProcessingException {
+        return dtoObjectMapper.writeValueAsString(this);
+    }
 
     @JacocoGenerated
     public static class Builder {

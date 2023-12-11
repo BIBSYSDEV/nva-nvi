@@ -62,7 +62,7 @@ import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.Environment;
 import nva.commons.core.StringUtils;
@@ -94,7 +94,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private FakeSearchClient openSearchClient;
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
-    private AuthorizedBackendUriRetriever uriRetriever;
+    private UriRetriever uriRetriever;
     private NviCandidateIndexDocumentGenerator generator;
     private QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
     private Environment env;
@@ -105,7 +105,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         when(env.readEnv("UPDATE_INDEX_DLQ_QUEUE_URL")).thenReturn(DLQ_QUEUE_URL);
 
         storageReader = mock(StorageReader.class);
-        uriRetriever = mock(AuthorizedBackendUriRetriever.class);
+        uriRetriever = mock(UriRetriever.class);
         openSearchClient = new FakeSearchClient();
         candidateRepository = new CandidateRepository(initializeTestDatabase());
         periodRepository = new PeriodRepository(initializeTestDatabase());
