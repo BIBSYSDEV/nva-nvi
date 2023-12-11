@@ -7,6 +7,8 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
@@ -24,9 +26,12 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     private static final Logger LOGGER = LoggerFactory.getLogger(DynamoDbEventToQueueHandler.class);
     private static final int BATCH_SIZE = 10;
     private static final String DB_EVENTS_QUEUE_URL = "DB_EVENTS_QUEUE_URL";
+    private static final String DLQ_URL = "INDEX_DLQ";
     private static final String FAILURE_MESSAGE = "Failure while sending database events to queue";
     private static final String FAILED_RECORDS_MESSAGE = "Failed records: {}";
     private static final String INFO_MESSAGE = "Sent {} messages to queue. Failures: {}";
+    private static final String IDENTIFIER = "identifier";
+    public final String dlqUrl;
     private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
     private final String queueUrl;
 
@@ -39,6 +44,7 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
                                        Environment environment) {
         this.queueClient = queueClient;
         this.queueUrl = environment.readEnv(DB_EVENTS_QUEUE_URL);
+        this.dlqUrl = environment.readEnv(DLQ_URL);
     }
 
     @Override
@@ -58,6 +64,16 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
         return attempt(() -> dtoObjectMapper.writeValueAsString(record)).orElseThrow();
     }
 
+    private static UUID extractIdFromRecord(DynamodbStreamRecord record) {
+        return attempt(() -> UUID.fromString(extractIdentifier(record))).orElse(failure -> null);
+    }
+
+    private static String extractIdentifier(DynamodbStreamRecord record) {
+        return Optional.ofNullable(record.getDynamodb().getOldImage())
+                   .orElse(record.getDynamodb().getNewImage())
+                   .get(IDENTIFIER).getS();
+    }
+
     private void splitIntoBatchesAndSend(DynamodbEvent input) {
         splitIntoBatches(input.getRecords())
             .map(DynamoDbEventToQueueHandler::mapToJsonStrings)
@@ -67,7 +83,12 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     private RuntimeException handleFailure(Failure<Object> failure, List<DynamodbStreamRecord> records) {
         LOGGER.error(FAILURE_MESSAGE, failure.getException());
         LOGGER.error(FAILED_RECORDS_MESSAGE, records.stream().map(DynamodbStreamRecord::toString).toList());
+        records.forEach(record -> sendToDlq(failure, record));
         return new RuntimeException(failure.getException());
+    }
+
+    private void sendToDlq(Failure<Object> failure, DynamodbStreamRecord record) {
+        queueClient.sendMessage(failure.getException().getMessage(), dlqUrl, extractIdFromRecord(record));
     }
 
     private void sendBatch(List<String> messages) {
