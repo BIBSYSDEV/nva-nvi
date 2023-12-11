@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.events.db;
 
+import static no.sikt.nva.nvi.test.DynamoDbTestUtils.eventWithCandidateIdentifier;
 import static no.sikt.nva.nvi.test.DynamoDbTestUtils.mapToMessageBodies;
+import static no.sikt.nva.nvi.test.DynamoDbTestUtils.randomDynamoDbEvent;
 import static no.sikt.nva.nvi.test.DynamoDbTestUtils.randomEventWithNumberOfDynamoRecords;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -17,7 +19,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.events.evaluator.FakeSqsClient;
-import no.sikt.nva.nvi.test.DynamoDbTestUtils;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,12 +55,22 @@ public class DynamoDbEventToQueueHandlerTest {
     @Test
     void shouldSendMessageToDlqIfSendingBatchFails() {
         var candidateIdentifier = UUID.randomUUID();
-        var dynamoDbEvent = DynamoDbTestUtils.eventWithCandidateIdentifier(candidateIdentifier);
+        var dynamoDbEvent = eventWithCandidateIdentifier(candidateIdentifier);
         var fakeSqsClient = mock(FakeSqsClient.class);
         when(fakeSqsClient.sendMessageBatch(any(), any())).thenThrow(sqsExceptionWIthMessage());
         var handler = new DynamoDbEventToQueueHandler(fakeSqsClient, new Environment());
         assertThrows(RuntimeException.class, () -> handler.handleRequest(dynamoDbEvent, CONTEXT));
         verify(fakeSqsClient, times(1)).sendMessage(anyString(), eq(DLQ_URL), eq(candidateIdentifier));
+    }
+
+    @Test
+    void shouldSendMessageToDlqWithoutCandidateIdentifierIfSendingBatchFailsAndUnableToExtractRecordIdentifier() {
+        var dynamoDbEvent = randomDynamoDbEvent();
+        var fakeSqsClient = mock(FakeSqsClient.class);
+        when(fakeSqsClient.sendMessageBatch(any(), any())).thenThrow(sqsExceptionWIthMessage());
+        var handler = new DynamoDbEventToQueueHandler(fakeSqsClient, new Environment());
+        assertThrows(RuntimeException.class, () -> handler.handleRequest(dynamoDbEvent, CONTEXT));
+        verify(fakeSqsClient, times(1)).sendMessage(anyString(), eq(DLQ_URL));
     }
 
     @Test
