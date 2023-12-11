@@ -30,6 +30,7 @@ import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
@@ -57,7 +58,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     public UpdateIndexHandler() {
         this(new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")), defaultOpenSearchClient(),
              new CandidateRepository(defaultDynamoClient()), new PeriodRepository(defaultDynamoClient()),
-             new NviCandidateIndexDocumentGenerator(defaultUriRetriever(new Environment())), new NviQueueClient(),
+             new NviCandidateIndexDocumentGenerator(new UriRetriever()), new NviQueueClient(),
              new Environment());
     }
 
@@ -109,12 +110,6 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
     private static boolean isCandidate(DynamodbStreamRecord record) {
         return CANDIDATE_TYPE.equals(extractRecordType(record));
-    }
-
-    @JacocoGenerated
-    private static AuthorizedBackendUriRetriever defaultUriRetriever(Environment env) {
-        return new AuthorizedBackendUriRetriever(env.readEnv("BACKEND_CLIENT_AUTH_URL"),
-                                                 env.readEnv("BACKEND_CLIENT_SECRET_NAME"));
     }
 
     private static String getRecordThatCouldNotBeIndexed(DynamodbStreamRecord record) {

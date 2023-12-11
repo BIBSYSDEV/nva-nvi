@@ -42,7 +42,7 @@ import no.sikt.nva.nvi.index.model.ExpandedResource.Organization;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.attempt.Failure;
 import org.apache.jena.rdf.model.RDFNode;
 import org.slf4j.Logger;
@@ -52,10 +52,10 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NviCandidateIndexDocumentGenerator.class);
     private static final String APPLICATION_JSON = "application/json";
-    private final AuthorizedBackendUriRetriever uriRetriever;
+    private final UriRetriever uriRetriever;
     private final Map<String, String> temporaryCache = new HashMap<>();
 
-    public NviCandidateIndexDocumentGenerator(AuthorizedBackendUriRetriever uriRetriever) {
+    public NviCandidateIndexDocumentGenerator(UriRetriever uriRetriever) {
         this.uriRetriever = uriRetriever;
     }
 

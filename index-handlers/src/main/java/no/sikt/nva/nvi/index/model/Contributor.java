@@ -12,6 +12,10 @@ public record Contributor(String id,
                           String role,
                           List<Affiliation> affiliations) {
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public static final class Builder {
 
         private String id;
@@ -19,9 +23,6 @@ public record Contributor(String id,
         private String orcid;
         private String role;
         private List<Affiliation> affiliations;
-
-        public Builder() {
-        }
 
         public Builder withId(String id) {
             this.id = id;
