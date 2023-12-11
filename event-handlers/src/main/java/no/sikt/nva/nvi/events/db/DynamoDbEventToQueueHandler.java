@@ -6,6 +6,8 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,7 +29,7 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     private static final int BATCH_SIZE = 10;
     private static final String DB_EVENTS_QUEUE_URL = "DB_EVENTS_QUEUE_URL";
     private static final String DLQ_URL = "INDEX_DLQ";
-    private static final String DLQ_MESSAGE = "Failed to process record %s. Exception message: %s ";
+    private static final String DLQ_MESSAGE = "Failed to process record %s. Exception: %s ";
     private static final String FAILURE_MESSAGE = "Failure while sending database events to queue";
     private static final String FAILED_RECORDS_MESSAGE = "Failed records: {}";
     private static final String INFO_MESSAGE = "Sent {} messages to queue. Failures: {}";
@@ -75,6 +77,12 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
                    .get(IDENTIFIER).getS();
     }
 
+    private static String getStackTrace(Exception exception) {
+        var stringWriter = new StringWriter();
+        exception.printStackTrace(new PrintWriter(stringWriter));
+        return stringWriter.toString();
+    }
+
     private void splitIntoBatchesAndSend(DynamodbEvent input) {
         splitIntoBatches(input.getRecords())
             .map(DynamoDbEventToQueueHandler::mapToJsonStrings)
@@ -89,7 +97,7 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     }
 
     private void sendToDlq(DynamodbStreamRecord record, Exception exception) {
-        var message = String.format(DLQ_MESSAGE, record.toString(), exception.getMessage());
+        var message = String.format(DLQ_MESSAGE, record.toString(), getStackTrace(exception));
         extractIdFromRecord(record)
             .ifPresentOrElse(id -> queueClient.sendMessage(message, dlqUrl, id),
                              () -> queueClient.sendMessage(message, dlqUrl));
