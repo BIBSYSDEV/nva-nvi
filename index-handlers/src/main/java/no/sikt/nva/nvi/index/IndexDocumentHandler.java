@@ -134,7 +134,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
                 handleFailure(failure, FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE,
                             extractIdFromRecord(record).map(UUID::toString).orElse(null));
                 return null;
-          }
+            }
         );
     }
 }
