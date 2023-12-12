@@ -1,14 +1,17 @@
 package no.sikt.nva.nvi.events.evaluator;
 
+import static no.sikt.nva.nvi.events.db.DynamoDbEventToQueueHandlerTest.MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.sqs.model.BatchResultErrorEntry;
+import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchResponse;
@@ -34,6 +37,15 @@ public class FakeSqsClient implements QueueClient<NviSendMessageResponse, NviSen
     @Override
     public NviSendMessageResponse sendMessage(String message, String queueUrl) {
         var request = createRequest(message, queueUrl);
+        sentMessages.add(request);
+        return createResponse(SendMessageResponse.builder()
+                                  .messageId(UUID.randomUUID().toString())
+                                  .build());
+    }
+
+    @Override
+    public NviSendMessageResponse sendMessage(String message, String queueUrl, UUID candidateIdentifier) {
+        var request = createRequest(message, queueUrl, candidateIdentifier);
         sentMessages.add(request);
         return createResponse(SendMessageResponse.builder()
                                   .messageId(UUID.randomUUID().toString())
@@ -73,6 +85,17 @@ public class FakeSqsClient implements QueueClient<NviSendMessageResponse, NviSen
     private SendMessageRequest createRequest(String body, String queueUrl) {
         return SendMessageRequest.builder()
                    .queueUrl(queueUrl)
+                   .messageBody(body)
+                   .build();
+    }
+
+    private SendMessageRequest createRequest(String body, String queueUrl, UUID candidateIdentifier) {
+        return SendMessageRequest.builder()
+                   .queueUrl(queueUrl)
+                   .messageAttributes(Map.of(MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE,
+                                             MessageAttributeValue.builder()
+                                                 .stringValue(candidateIdentifier.toString())
+                                                 .build()))
                    .messageBody(body)
                    .build();
     }
