@@ -32,7 +32,7 @@ public record IndexDocumentWithConsumptionAttributes(
                                                               Candidate candidate,
                                                               UriRetriever uriRetriever,
                                                               StorageReader<URI> storageReader) {
-        var indexDocument = indexDocument(candidate, uriRetriever, storageReader);
+        var indexDocument = generateIndexDocument(candidate, uriRetriever, storageReader);
         var consumptionAttributes = getConsumptionAttributes(dynamoDbOperationType, indexDocument);
         return new IndexDocumentWithConsumptionAttributes(indexDocument, consumptionAttributes);
     }
@@ -50,9 +50,9 @@ public record IndexDocumentWithConsumptionAttributes(
         return new ConsumptionAttributes(indexDocument.identifier(), Operation.parse(dynamoDbOperationType));
     }
 
-    private static NviCandidateIndexDocument indexDocument(Candidate candidate,
-                                                           UriRetriever uriRetriever,
-                                                           StorageReader<URI> storageReader) {
+    private static NviCandidateIndexDocument generateIndexDocument(Candidate candidate,
+                                                                   UriRetriever uriRetriever,
+                                                                   StorageReader<URI> storageReader) {
         return attempt(() -> {
             var expandedResource = getExpandedResourceFromBucket(candidate, storageReader);
             return NviCandidateIndexDocument.from(expandedResource, candidate, uriRetriever);
