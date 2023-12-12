@@ -1,16 +1,23 @@
 package no.sikt.nva.nvi.events.db;
 
+import static no.sikt.nva.nvi.test.DynamoDbTestUtils.eventWithCandidateIdentifier;
 import static no.sikt.nva.nvi.test.DynamoDbTestUtils.mapToMessageBodies;
+import static no.sikt.nva.nvi.test.DynamoDbTestUtils.randomDynamoDbEvent;
 import static no.sikt.nva.nvi.test.DynamoDbTestUtils.randomEventWithNumberOfDynamoRecords;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.List;
+import java.util.UUID;
 import no.sikt.nva.nvi.events.evaluator.FakeSqsClient;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
@@ -22,6 +29,8 @@ import software.amazon.awssdk.services.sqs.model.SqsException;
 public class DynamoDbEventToQueueHandlerTest {
 
     public static final Context CONTEXT = mock(Context.class);
+    public static final String DLQ_URL = "IndexDlq";
+    public static final String MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE = "candidateIdentifier";
     private DynamoDbEventToQueueHandler handler;
     private FakeSqsClient sqsClient;
 
@@ -40,6 +49,27 @@ public class DynamoDbEventToQueueHandlerTest {
         var appender = LogUtils.getTestingAppender(DynamoDbEventToQueueHandler.class);
         assertThrows(RuntimeException.class, () -> handler.handleRequest(dynamoDbEvent, CONTEXT));
         assertThat(appender.getMessages(), containsString("Failure"));
+    }
+
+    @Test
+    void shouldSendMessageToDlqIfSendingBatchFails() {
+        var candidateIdentifier = UUID.randomUUID();
+        var dynamoDbEvent = eventWithCandidateIdentifier(candidateIdentifier);
+        var fakeSqsClient = mock(FakeSqsClient.class);
+        when(fakeSqsClient.sendMessageBatch(any(), any())).thenThrow(SqsException.class);
+        var handler = new DynamoDbEventToQueueHandler(fakeSqsClient, new Environment());
+        assertThrows(RuntimeException.class, () -> handler.handleRequest(dynamoDbEvent, CONTEXT));
+        verify(fakeSqsClient, times(1)).sendMessage(anyString(), eq(DLQ_URL), eq(candidateIdentifier));
+    }
+
+    @Test
+    void shouldSendMessageToDlqWithoutCandidateIdentifierIfSendingBatchFailsAndUnableToExtractRecordIdentifier() {
+        var dynamoDbEvent = randomDynamoDbEvent();
+        var fakeSqsClient = mock(FakeSqsClient.class);
+        when(fakeSqsClient.sendMessageBatch(any(), any())).thenThrow(SqsException.class);
+        var handler = new DynamoDbEventToQueueHandler(fakeSqsClient, new Environment());
+        assertThrows(RuntimeException.class, () -> handler.handleRequest(dynamoDbEvent, CONTEXT));
+        verify(fakeSqsClient, times(1)).sendMessage(anyString(), eq(DLQ_URL));
     }
 
     @Test

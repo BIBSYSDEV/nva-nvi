@@ -21,10 +21,16 @@ public final class DynamoDbTestUtils {
     private DynamoDbTestUtils() {
     }
 
-    //TODO: To be used in new tests for new IndexDocumentHandler
     public static DynamodbEvent eventWithCandidateIdentifier(UUID candidateIdentifier) {
         var dynamoDbEvent = new DynamodbEvent();
-        var dynamoDbRecord = dynamoRecordWithIdentifier(candidateIdentifier);
+        var dynamoDbRecord = dynamoRecordWithIdentifier(payloadWithIdentifier(candidateIdentifier));
+        dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
+        return dynamoDbEvent;
+    }
+
+    public static DynamodbEvent randomDynamoDbEvent() {
+        var dynamoDbEvent = new DynamodbEvent();
+        var dynamoDbRecord = dynamoRecordWithIdentifier(randomPayload());
         dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
         return dynamoDbEvent;
     }
@@ -32,7 +38,7 @@ public final class DynamoDbTestUtils {
     public static DynamodbEvent randomEventWithNumberOfDynamoRecords(int numberOfRecords) {
         var event = new DynamodbEvent();
         var records = IntStream.range(0, numberOfRecords)
-                          .mapToObj(index -> dynamoRecordWithIdentifier(UUID.randomUUID()))
+                          .mapToObj(index -> dynamoRecordWithIdentifier(payloadWithIdentifier(UUID.randomUUID())))
                           .toList();
         event.setRecords(records);
         return event;
@@ -49,12 +55,12 @@ public final class DynamoDbTestUtils {
         return attempt(() -> dynamoObjectMapper.writeValueAsString(record)).orElseThrow();
     }
 
-    private static DynamodbStreamRecord dynamoRecordWithIdentifier(UUID candidateIdentifier) {
+    private static DynamodbStreamRecord dynamoRecordWithIdentifier(StreamRecord record) {
         var streamRecord = new DynamodbStreamRecord();
         streamRecord.setEventName(randomElement(OperationType.values()));
         streamRecord.setEventID(randomString());
         streamRecord.setAwsRegion(randomString());
-        streamRecord.setDynamodb(payloadWithIdentifier(candidateIdentifier));
+        streamRecord.setDynamodb(record);
         streamRecord.setEventSource(randomString());
         streamRecord.setEventVersion(randomString());
         return streamRecord;
@@ -64,6 +70,12 @@ public final class DynamoDbTestUtils {
         var streamRecord = new StreamRecord();
         streamRecord.setOldImage(randomDynamoPayload(candidateIdentifier));
         streamRecord.setNewImage(randomDynamoPayload(candidateIdentifier));
+        return streamRecord;
+    }
+
+    private static StreamRecord randomPayload() {
+        var streamRecord = new StreamRecord();
+        streamRecord.setOldImage(Map.of(IDENTIFIER, new AttributeValue(randomString())));
         return streamRecord;
     }
 
