@@ -1,13 +1,11 @@
 package no.sikt.nva.nvi.test;
 
 import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
-import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue;
-import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.StreamRecord;
 import java.util.List;
 import java.util.Map;
@@ -23,22 +21,14 @@ public final class DynamoDbTestUtils {
 
     public static DynamodbEvent eventWithCandidateIdentifier(UUID candidateIdentifier) {
         var dynamoDbEvent = new DynamodbEvent();
-        var dynamoDbRecord = dynamoRecordWithIdentifier(payloadWithIdentifier(candidateIdentifier),
-                                                        randomElement(OperationType.values()));
-        dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
-        return dynamoDbEvent;
-    }
-
-    public static DynamodbEvent eventWithCandidateIdentifier(UUID candidateIdentifier, OperationType operationType) {
-        var dynamoDbEvent = new DynamodbEvent();
-        var dynamoDbRecord = dynamoRecordWithIdentifier(payloadWithIdentifier(candidateIdentifier), operationType);
+        var dynamoDbRecord = dynamoRecordWithIdentifier(payloadWithIdentifier(candidateIdentifier));
         dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
         return dynamoDbEvent;
     }
 
     public static DynamodbEvent randomDynamoDbEvent() {
         var dynamoDbEvent = new DynamodbEvent();
-        var dynamoDbRecord = dynamoRecordWithIdentifier(randomPayload(), randomElement(OperationType.values()));
+        var dynamoDbRecord = dynamoRecordWithIdentifier(randomPayload());
         dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
         return dynamoDbEvent;
     }
@@ -46,8 +36,7 @@ public final class DynamoDbTestUtils {
     public static DynamodbEvent randomEventWithNumberOfDynamoRecords(int numberOfRecords) {
         var event = new DynamodbEvent();
         var records = IntStream.range(0, numberOfRecords)
-                          .mapToObj(index -> dynamoRecordWithIdentifier(payloadWithIdentifier(UUID.randomUUID()),
-                                                                        randomElement(OperationType.values())))
+                          .mapToObj(index -> dynamoRecordWithIdentifier(payloadWithIdentifier(UUID.randomUUID())))
                           .toList();
         event.setRecords(records);
         return event;
@@ -64,10 +53,9 @@ public final class DynamoDbTestUtils {
         return attempt(() -> dynamoObjectMapper.writeValueAsString(record)).orElseThrow();
     }
 
-    private static DynamodbStreamRecord dynamoRecordWithIdentifier(StreamRecord record,
-                                                                   OperationType operationType) {
+    private static DynamodbStreamRecord dynamoRecordWithIdentifier(StreamRecord record) {
         var streamRecord = new DynamodbStreamRecord();
-        streamRecord.setEventName(operationType);
+        streamRecord.setEventName(randomString());
         streamRecord.setEventID(randomString());
         streamRecord.setAwsRegion(randomString());
         streamRecord.setDynamodb(record);

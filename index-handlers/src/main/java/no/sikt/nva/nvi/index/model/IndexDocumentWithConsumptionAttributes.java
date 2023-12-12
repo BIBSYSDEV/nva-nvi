@@ -8,9 +8,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.IOException;
 import java.net.URI;
-import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.StorageWriter;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.index.PersistedResource;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 
 @JsonSerialize
@@ -18,22 +18,19 @@ public record IndexDocumentWithConsumptionAttributes(
     @JsonProperty(BODY) NviCandidateIndexDocument indexDocument,
     @JsonProperty(CONSUMPTION_ATTRIBUTES) ConsumptionAttributes consumptionAttributes) {
 
-    public static final String CONSUMPTION_ATTRIBUTES = "consumptionAttributes";
-    public static final String BODY = "body";
-    public static final String JSON_PTR_BODY = "/body";
+    private static final String CONSUMPTION_ATTRIBUTES = "consumptionAttributes";
+    private static final String BODY = "body";
 
-    public static IndexDocumentWithConsumptionAttributes from(NviCandidateIndexDocument document,
-                                                              Operation action) {
+    public static IndexDocumentWithConsumptionAttributes from(NviCandidateIndexDocument document) {
         return new IndexDocumentWithConsumptionAttributes(
-            document, new ConsumptionAttributes(document.identifier(), action));
+            document, ConsumptionAttributes.from(document.identifier()));
     }
 
-    public static IndexDocumentWithConsumptionAttributes from(String dynamoDbOperationType,
-                                                              Candidate candidate,
-                                                              UriRetriever uriRetriever,
-                                                              StorageReader<URI> storageReader) {
-        var indexDocument = generateIndexDocument(candidate, uriRetriever, storageReader);
-        var consumptionAttributes = getConsumptionAttributes(dynamoDbOperationType, indexDocument);
+    public static IndexDocumentWithConsumptionAttributes from(Candidate candidate,
+                                                              PersistedResource persistedResource,
+                                                              UriRetriever uriRetriever) {
+        var indexDocument = generateIndexDocument(candidate, uriRetriever, persistedResource.getExpandedResource());
+        var consumptionAttributes = ConsumptionAttributes.from(indexDocument.identifier());
         return new IndexDocumentWithConsumptionAttributes(indexDocument, consumptionAttributes);
     }
 
@@ -45,25 +42,9 @@ public record IndexDocumentWithConsumptionAttributes(
         return dtoObjectMapper.writeValueAsString(this);
     }
 
-    private static ConsumptionAttributes getConsumptionAttributes(String dynamoDbOperationType,
-                                                                  NviCandidateIndexDocument indexDocument) {
-        return new ConsumptionAttributes(indexDocument.identifier(), Operation.parse(dynamoDbOperationType));
-    }
-
     private static NviCandidateIndexDocument generateIndexDocument(Candidate candidate,
                                                                    UriRetriever uriRetriever,
-                                                                   StorageReader<URI> storageReader) {
-        return attempt(() -> {
-            var expandedResource = getExpandedResourceFromBucket(candidate, storageReader);
-            return NviCandidateIndexDocument.from(expandedResource, candidate, uriRetriever);
-        }).orElseThrow();
-    }
-
-    private static JsonNode getExpandedResourceFromBucket(Candidate candidate,
-                                                          StorageReader<URI> storageReader)
-        throws JsonProcessingException {
-        var bucketUri = candidate.getPublicationDetails().publicationBucketUri();
-        var result = storageReader.read(bucketUri);
-        return dtoObjectMapper.readTree(result).at(JSON_PTR_BODY);
+                                                                   JsonNode expandedResource) {
+        return attempt(() -> NviCandidateIndexDocument.from(expandedResource, candidate, uriRetriever)).orElseThrow();
     }
 }

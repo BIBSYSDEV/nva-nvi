@@ -118,23 +118,27 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
                    });
     }
 
-    private void handleFailure(Failure<?> failure, String message, String messageArgument) {
-        LOGGER.error(message, messageArgument);
-        LOGGER.error(ERROR_MESSAGE, failure.getException().getMessage());
-        //TODO: Send message to DLQ
+    private PersistedResource fetchPersistedResource(Candidate candidate) {
+        return PersistedResource.fromUri(candidate.getPublicationDetails().publicationBucketUri(), storageReader);
     }
 
     private IndexDocumentWithConsumptionAttributes generateIndexDocument(DynamodbStreamRecord record) {
         return attempt(
             () -> {
                 var candidate = fetchCandidate(record);
-                return IndexDocumentWithConsumptionAttributes.from(
-                    record.getEventName(), candidate, uriRetriever, storageReader);
+                var persistedResource = fetchPersistedResource(candidate);
+                return IndexDocumentWithConsumptionAttributes.from(candidate, persistedResource, uriRetriever);
             }).orElse(failure -> {
                 handleFailure(failure, FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE,
-                            extractIdFromRecord(record).map(UUID::toString).orElse(null));
+                              extractIdFromRecord(record).map(UUID::toString).orElse(null));
                 return null;
             }
         );
+    }
+
+    private void handleFailure(Failure<?> failure, String message, String messageArgument) {
+        LOGGER.error(message, messageArgument);
+        LOGGER.error(ERROR_MESSAGE, failure.getException().getMessage());
+        //TODO: Send message to DLQ
     }
 }
