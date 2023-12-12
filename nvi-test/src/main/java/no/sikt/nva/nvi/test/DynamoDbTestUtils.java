@@ -21,6 +21,14 @@ public final class DynamoDbTestUtils {
     private DynamoDbTestUtils() {
     }
 
+    public static DynamodbEvent eventWithCandidateIdentifier(UUID candidateIdentifier) {
+        var dynamoDbEvent = new DynamodbEvent();
+        var dynamoDbRecord = dynamoRecordWithIdentifier(payloadWithIdentifier(candidateIdentifier),
+                                                        randomElement(OperationType.values()));
+        dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
+        return dynamoDbEvent;
+    }
+
     public static DynamodbEvent eventWithCandidateIdentifier(UUID candidateIdentifier, OperationType operationType) {
         var dynamoDbEvent = new DynamodbEvent();
         var dynamoDbRecord = dynamoRecordWithIdentifier(payloadWithIdentifier(candidateIdentifier), operationType);
