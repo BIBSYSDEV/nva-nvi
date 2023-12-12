@@ -29,7 +29,6 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -97,7 +96,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     }
 
     private static NviCandidateIndexDocument toIndexDocumentWithId(UUID candidateIdentifier) {
-        return new NviCandidateIndexDocument.Builder().withIdentifier(candidateIdentifier.toString()).build();
+        return new NviCandidateIndexDocument.Builder().withIdentifier(candidateIdentifier).build();
     }
 
     private static UUID extractIdentifierFromNewImage(DynamodbStreamRecord record) {

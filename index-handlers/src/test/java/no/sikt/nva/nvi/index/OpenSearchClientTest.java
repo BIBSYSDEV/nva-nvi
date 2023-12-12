@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
@@ -469,7 +470,7 @@ public class OpenSearchClientTest {
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
         var approvals = randomApprovalList();
-        return new NviCandidateIndexDocument(randomUri(), randomString(), randomPublicationDetails(),
+        return new NviCandidateIndexDocument(randomUri(), UUID.randomUUID(), randomPublicationDetails(),
                                              approvals, approvals.size(), TestUtils.randomBigDecimal());
     }
 
@@ -478,7 +479,7 @@ public class OpenSearchClientTest {
                                                                                          String assignee,
                                                                                          String year,
                                                                                          String title) {
-        return new NviCandidateIndexDocument(randomUri(), randomString(),
+        return new NviCandidateIndexDocument(randomUri(), UUID.randomUUID(),
                                              randomPublicationDetailsWithCustomer(customer,contributor, year, title),
                                              List.of(randomApprovalWithCustomerAndAssignee(customer, assignee)), 1,
                                              TestUtils.randomBigDecimal());

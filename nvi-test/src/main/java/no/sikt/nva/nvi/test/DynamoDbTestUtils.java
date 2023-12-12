@@ -21,10 +21,9 @@ public final class DynamoDbTestUtils {
     private DynamoDbTestUtils() {
     }
 
-    //TODO: To be used in new tests for new IndexDocumentHandler
-    public static DynamodbEvent eventWithCandidateIdentifier(UUID candidateIdentifier) {
+    public static DynamodbEvent eventWithCandidateIdentifier(UUID candidateIdentifier, OperationType operationType) {
         var dynamoDbEvent = new DynamodbEvent();
-        var dynamoDbRecord = dynamoRecordWithIdentifier(candidateIdentifier);
+        var dynamoDbRecord = dynamoRecordWithIdentifier(candidateIdentifier, operationType);
         dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
         return dynamoDbEvent;
     }
@@ -32,7 +31,8 @@ public final class DynamoDbTestUtils {
     public static DynamodbEvent randomEventWithNumberOfDynamoRecords(int numberOfRecords) {
         var event = new DynamodbEvent();
         var records = IntStream.range(0, numberOfRecords)
-                          .mapToObj(index -> dynamoRecordWithIdentifier(UUID.randomUUID()))
+                          .mapToObj(index -> dynamoRecordWithIdentifier(UUID.randomUUID(),
+                                                                        randomElement(OperationType.values())))
                           .toList();
         event.setRecords(records);
         return event;
@@ -49,9 +49,10 @@ public final class DynamoDbTestUtils {
         return attempt(() -> dynamoObjectMapper.writeValueAsString(record)).orElseThrow();
     }
 
-    private static DynamodbStreamRecord dynamoRecordWithIdentifier(UUID candidateIdentifier) {
+    private static DynamodbStreamRecord dynamoRecordWithIdentifier(UUID candidateIdentifier,
+                                                                   OperationType operationType) {
         var streamRecord = new DynamodbStreamRecord();
-        streamRecord.setEventName(randomElement(OperationType.values()));
+        streamRecord.setEventName(operationType);
         streamRecord.setEventID(randomString());
         streamRecord.setAwsRegion(randomString());
         streamRecord.setDynamodb(payloadWithIdentifier(candidateIdentifier));

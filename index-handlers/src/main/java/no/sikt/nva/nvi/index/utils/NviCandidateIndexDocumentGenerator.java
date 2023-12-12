@@ -66,10 +66,14 @@ public final class NviCandidateIndexDocumentGenerator {
                 .orElseThrow(), candidate);
     }
 
+    public NviCandidateIndexDocument generateDocument(JsonNode expandedResource, Candidate candidate) {
+        return createNviCandidateIndexDocument(expandedResource, candidate);
+    }
+
     private NviCandidateIndexDocument createNviCandidateIndexDocument(JsonNode resource, Candidate candidate) {
         var approvals = createApprovals(resource, getApprovals(candidate.getApprovals()));
         return new NviCandidateIndexDocument.Builder().withContext(URI.create(Contexts.NVI_CONTEXT))
-                   .withIdentifier(candidate.getIdentifier().toString())
+                   .withIdentifier(candidate.getIdentifier())
                    .withApprovals(approvals)
                    .withPublicationDetails(extractPublicationDetails(resource))
                    .withNumberOfApprovals(approvals.size())
