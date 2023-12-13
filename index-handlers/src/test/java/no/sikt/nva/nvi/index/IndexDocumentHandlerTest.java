@@ -1,7 +1,5 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.test.DynamoDbTestUtils.eventWithCandidateIdentifier;
-import static no.sikt.nva.nvi.test.DynamoDbTestUtils.mapToString;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.EN_FIELD;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_LABEL;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_NORWEGIAN_LABEL;
@@ -22,8 +20,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.events.SQSEvent;
-import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -206,7 +202,6 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return attempt(() -> dtoObjectMapper.writeValueAsString(jsonNode)).orElseThrow();
     }
 
-
     @NotNull
     private static ObjectNode generateOrganizationNode(String hardCodedPartOf) {
         var hardCodedPartOfNode = dtoObjectMapper.createObjectNode();
@@ -215,8 +210,6 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         hardCodedPartOfNode.put("@context", ORGANIZATION_CONTEXT);
         return hardCodedPartOfNode;
     }
-
-
 
     private static String extractResourceIdentifier(Candidate persistedCandidate) {
         return UriWrapper.fromUri(persistedCandidate.getPublicationDetails().publicationBucketUri())
@@ -363,6 +356,4 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return Candidate.fromRequest(createUpsertCandidateRequest(2023), candidateRepository, periodRepository)
                    .orElseThrow();
     }
-
-
 }

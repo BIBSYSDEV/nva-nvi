@@ -8,7 +8,6 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao;
-import no.sikt.nva.nvi.common.service.model.Candidate;
 
 public final class QueueServiceTestUtils {
 
