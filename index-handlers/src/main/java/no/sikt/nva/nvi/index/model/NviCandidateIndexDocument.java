@@ -1,14 +1,17 @@
 package no.sikt.nva.nvi.index.model;
 
-import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
+import java.util.UUID;
+import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.JacocoGenerated;
 
 @JacocoGenerated
@@ -16,7 +19,7 @@ import nva.commons.core.JacocoGenerated;
 @JsonSerialize
 @JsonTypeName("NviCandidate")
 public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
-                                        String identifier,
+                                        UUID identifier,
                                         PublicationDetails publicationDetails,
                                         List<Approval> approvals,
                                         int numberOfApprovals,
@@ -24,19 +27,21 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
 
     private static final String CONTEXT = "@context";
 
-    public static Builder builder() {
-        return new Builder();
+    public static NviCandidateIndexDocument from(JsonNode expandedResource, Candidate candidate,
+                                                 UriRetriever uriRetriever) {
+        var documentGenerator = new NviCandidateIndexDocumentGenerator(uriRetriever);
+        return documentGenerator.generateDocument(expandedResource, candidate);
     }
 
-    public String toJsonString() throws JsonProcessingException {
-        return dtoObjectMapper.writeValueAsString(this);
+    public static Builder builder() {
+        return new Builder();
     }
 
     @JacocoGenerated
     public static class Builder {
 
         private URI context;
-        private String identifier;
+        private UUID identifier;
         private PublicationDetails publicationDetails;
         private List<Approval> approvals;
         private int numberOfApprovals;
@@ -47,7 +52,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             return this;
         }
 
-        public Builder withIdentifier(String identifier) {
+        public Builder withIdentifier(UUID identifier) {
             this.identifier = identifier;
             return this;
         }

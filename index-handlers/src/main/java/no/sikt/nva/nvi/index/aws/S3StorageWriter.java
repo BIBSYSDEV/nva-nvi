@@ -2,14 +2,15 @@ package no.sikt.nva.nvi.index.aws;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.UUID;
 import no.sikt.nva.nvi.common.StorageWriter;
-import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.IndexDocumentWithConsumptionAttributes;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UnixPath;
 import software.amazon.awssdk.services.s3.S3Client;
 
-public class S3StorageWriter implements StorageWriter<NviCandidateIndexDocument> {
+public class S3StorageWriter implements StorageWriter<IndexDocumentWithConsumptionAttributes> {
 
     public static final String NVI_CANDIDATES_FOLDER = "nvi-candidates";
     public static final String GZIP_ENDING = ".gz";
@@ -25,11 +26,13 @@ public class S3StorageWriter implements StorageWriter<NviCandidateIndexDocument>
     }
 
     @Override
-    public URI write(NviCandidateIndexDocument document) throws IOException {
-        return s3Driver.insertFile(createFilePath(document), document.toJsonString());
+    public URI write(IndexDocumentWithConsumptionAttributes document)
+        throws IOException {
+        var filePath = createFilePath(document.consumptionAttributes().documentIdentifier());
+        return s3Driver.insertFile(filePath, document.toJsonString());
     }
 
-    private static UnixPath createFilePath(NviCandidateIndexDocument document) {
-        return UnixPath.of(NVI_CANDIDATES_FOLDER).addChild(document.identifier() + GZIP_ENDING);
+    private static UnixPath createFilePath(UUID identifier) {
+        return UnixPath.of(NVI_CANDIDATES_FOLDER).addChild(identifier + GZIP_ENDING);
     }
 }

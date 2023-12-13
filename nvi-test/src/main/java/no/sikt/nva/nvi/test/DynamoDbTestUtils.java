@@ -1,13 +1,11 @@
 package no.sikt.nva.nvi.test;
 
 import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
-import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue;
-import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.StreamRecord;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +55,7 @@ public final class DynamoDbTestUtils {
 
     private static DynamodbStreamRecord dynamoRecordWithIdentifier(StreamRecord record) {
         var streamRecord = new DynamodbStreamRecord();
-        streamRecord.setEventName(randomElement(OperationType.values()));
+        streamRecord.setEventName(randomString());
         streamRecord.setEventID(randomString());
         streamRecord.setAwsRegion(randomString());
         streamRecord.setDynamodb(record);

@@ -415,7 +415,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private NviCandidateIndexDocument constructExpectedDocument(Candidate candidate) {
         return new NviCandidateIndexDocument.Builder().withContext(
                 URI.create("https://bibsysdev.github.io/src/nvi-context.json"))
-                   .withIdentifier(candidate.getIdentifier().toString())
+                   .withIdentifier(candidate.getIdentifier())
                    .withApprovals(constructExpectedApprovals(candidate.getApprovals()))
                    .withPublicationDetails(constructPublicationDetails())
                    .withNumberOfApprovals(candidate.getApprovals().size())
@@ -427,7 +427,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                                                                                    PublicationDate publicationDate) {
         return new NviCandidateIndexDocument.Builder().withContext(
                 URI.create("https://bibsysdev.github.io/src/nvi-context.json"))
-                   .withIdentifier(candidate.getIdentifier().toString())
+                   .withIdentifier(candidate.getIdentifier())
                    .withApprovals(constructExpectedApprovals(candidate.getApprovals()))
                    .withPublicationDetails(constructPublicationDetailsWithPublicationDate(publicationDate))
                    .withNumberOfApprovals(candidate.getApprovals().size())

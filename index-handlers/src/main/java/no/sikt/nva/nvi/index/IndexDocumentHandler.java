@@ -10,6 +10,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.net.URI;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
@@ -18,8 +19,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
-import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
+import no.sikt.nva.nvi.index.model.IndexDocumentWithConsumptionAttributes;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -40,10 +40,10 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
         "Failed to generate index document for candidate with identifier: {}";
 
     private final StorageReader<URI> storageReader;
-    private final StorageWriter<NviCandidateIndexDocument> storageWriter;
+    private final StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter;
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
-    private final NviCandidateIndexDocumentGenerator documentGenerator;
+    private final UriRetriever uriRetriever;
 
     @JacocoGenerated
     public IndexDocumentHandler() {
@@ -51,19 +51,19 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
              new S3StorageWriter(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
              new CandidateRepository(defaultDynamoClient()),
              new PeriodRepository(defaultDynamoClient()),
-             new NviCandidateIndexDocumentGenerator(new UriRetriever()));
+             new UriRetriever());
     }
 
     public IndexDocumentHandler(StorageReader<URI> storageReader,
-                                StorageWriter<NviCandidateIndexDocument> storageWriter,
+                                StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter,
                                 CandidateRepository candidateRepository,
                                 PeriodRepository periodRepository,
-                                NviCandidateIndexDocumentGenerator documentGenerator) {
+                                UriRetriever uriRetriever) {
         this.storageReader = storageReader;
         this.storageWriter = storageWriter;
         this.candidateRepository = candidateRepository;
         this.periodRepository = periodRepository;
-        this.documentGenerator = documentGenerator;
+        this.uriRetriever = uriRetriever;
     }
 
     @Override
@@ -74,16 +74,28 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
             .map(SQSMessage::getBody)
             .map(this::mapToDynamoDbRecord)
             .filter(Objects::nonNull)
-            .map(this::fetchCandidate)
-            .filter(Objects::nonNull)
             .map(this::generateIndexDocument)
             .filter(Objects::nonNull)
-            .forEach(this::persistIndexDocument);
+            .forEach(this::persistDocument);
         return null;
     }
 
-    private static UUID extractIdentifierFromNewImage(DynamodbStreamRecord record) {
-        return UUID.fromString(record.getDynamodb().getNewImage().get(IDENTIFIER).getS());
+    private static Optional<UUID> extractIdFromRecord(DynamodbStreamRecord record) {
+        return attempt(() -> UUID.fromString(extractIdentifier(record))).toOptional();
+    }
+
+    private static String extractIdentifier(DynamodbStreamRecord record) {
+        return Optional.ofNullable(record.getDynamodb().getOldImage())
+                   .orElse(record.getDynamodb().getNewImage())
+                   .get(IDENTIFIER).getS();
+    }
+
+    private void persistDocument(IndexDocumentWithConsumptionAttributes document) {
+        attempt(() -> document.persist(storageWriter))
+            .orElse(failure -> {
+                handleFailure(failure, FAILED_TO_PERSIST_MESSAGE, document.indexDocument().identifier().toString());
+                return null;
+            });
     }
 
     private DynamodbStreamRecord mapToDynamoDbRecord(String body) {
@@ -95,8 +107,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     }
 
     private Candidate fetchCandidate(DynamodbStreamRecord record) {
-        var candidateIdentifier = extractIdentifierFromNewImage(record);
-        return fetchCandidate(candidateIdentifier);
+        return extractIdFromRecord(record).map(this::fetchCandidate).orElse(null);
     }
 
     private Candidate fetchCandidate(UUID candidateIdentifier) {
@@ -107,31 +118,24 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
                    });
     }
 
-    private NviCandidateIndexDocument generateIndexDocument(Candidate candidate) {
-        return attempt(() -> {
-            var expandedResource = getPublicationFromBucket(candidate);
-            return documentGenerator.generateDocument(expandedResource, candidate);
-        }).orElse(failure -> {
-            handleFailure(failure, FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE, candidate.getIdentifier().toString());
-            return null;
-        });
+    private PersistedResource fetchPersistedResource(Candidate candidate) {
+        return PersistedResource.fromUri(candidate.getPublicationDetails().publicationBucketUri(), storageReader);
     }
 
-    private String getPublicationFromBucket(Candidate candidate) {
-        var bucketUri = candidate.getPublicationDetails().publicationBucketUri();
-        var result = storageReader.read(bucketUri);
-        LOGGER.info("Fetched {} from bucket", bucketUri);
-        return result;
+    private IndexDocumentWithConsumptionAttributes generateIndexDocument(DynamodbStreamRecord record) {
+        return attempt(() -> generateIndexDocumentWithConsumptionAttributes(record))
+                   .orElse(failure -> {
+                       handleFailure(failure, FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE,
+                                     extractIdFromRecord(record).map(UUID::toString).orElse(null));
+                       return null;
+                   });
     }
 
-    private void persistIndexDocument(NviCandidateIndexDocument nviCandidateIndexDocument) {
-        var uri =
-            attempt(() -> storageWriter.write(nviCandidateIndexDocument)).orElse(
-                failure -> {
-                    handleFailure(failure, FAILED_TO_PERSIST_MESSAGE, nviCandidateIndexDocument.toString());
-                    return null;
-                });
-        LOGGER.info("Saved {} in bucket", uri);
+    private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
+        DynamodbStreamRecord record) {
+        var candidate = fetchCandidate(record);
+        var persistedResource = fetchPersistedResource(candidate);
+        return IndexDocumentWithConsumptionAttributes.from(candidate, persistedResource, uriRetriever);
     }
 
     private void handleFailure(Failure<?> failure, String message, String messageArgument) {
