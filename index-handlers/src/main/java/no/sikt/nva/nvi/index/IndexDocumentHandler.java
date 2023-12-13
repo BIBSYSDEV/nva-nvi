@@ -123,17 +123,19 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     }
 
     private IndexDocumentWithConsumptionAttributes generateIndexDocument(DynamodbStreamRecord record) {
-        return attempt(
-            () -> {
-                var candidate = fetchCandidate(record);
-                var persistedResource = fetchPersistedResource(candidate);
-                return IndexDocumentWithConsumptionAttributes.from(candidate, persistedResource, uriRetriever);
-            }).orElse(failure -> {
-                handleFailure(failure, FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE,
-                              extractIdFromRecord(record).map(UUID::toString).orElse(null));
-                return null;
-            }
-        );
+        return attempt(() -> generateIndexDocumentWithConsumptionAttributes(record))
+                   .orElse(failure -> {
+                       handleFailure(failure, FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE,
+                                     extractIdFromRecord(record).map(UUID::toString).orElse(null));
+                       return null;
+                   });
+    }
+
+    private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
+        DynamodbStreamRecord record) {
+        var candidate = fetchCandidate(record);
+        var persistedResource = fetchPersistedResource(candidate);
+        return IndexDocumentWithConsumptionAttributes.from(candidate, persistedResource, uriRetriever);
     }
 
     private void handleFailure(Failure<?> failure, String message, String messageArgument) {
