@@ -46,6 +46,7 @@ aws-sdk2-eventbridge = { group = 'software.amazon.awssdk', name = 'eventbridge',
 aws-sdk2-urlconnectionclient = { group = 'software.amazon.awssdk', name = 'url-connection-client', version.ref = 'awsSdk2' }
 aws-sdk2-s3 = { group = 'software.amazon.awssdk', name = 's3', version.ref = 'awsSdk2' }
 aws-sdk2-sqs = { group = 'software.amazon.awssdk', name = 'sqs', version.ref = 'awsSdk2' }
+aws-sdk2-sns = { group = 'software.amazon.awssdk', name = 'sns', version.ref = 'awsSdk2' }
 aws-sdk2-core = { group = 'software.amazon.awssdk', name = 'sdk-core', version.ref = 'awsSdk2' }
 aws-sdk2-urlconnection = { group = 'software.amazon.awssdk', name = 'url-connection-client', version.ref = 'awsSdk2' }
 aws-sdk2-apache-client = { group = 'software.amazon.awssdk', name = 'apache-client', version.ref = 'awsSdk2' }

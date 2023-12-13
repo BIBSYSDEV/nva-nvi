@@ -7,10 +7,16 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.StreamRecord;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.db.Dao;
+import no.sikt.nva.nvi.common.db.DynamoEntryWithRangeKey;
 
 public final class DynamoDbTestUtils {
 
@@ -22,6 +28,13 @@ public final class DynamoDbTestUtils {
     public static DynamodbEvent eventWithCandidateIdentifier(UUID candidateIdentifier) {
         var dynamoDbEvent = new DynamodbEvent();
         var dynamoDbRecord = dynamoRecordWithIdentifier(payloadWithIdentifier(candidateIdentifier));
+        dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
+        return dynamoDbEvent;
+    }
+
+    public static DynamodbEvent eventWithCandidate(CandidateDao candidate) {
+        var dynamoDbEvent = new DynamodbEvent();
+        var dynamoDbRecord = dynamoRecordWithIdentifier(payloadWithCandidate(candidate));
         dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
         return dynamoDbEvent;
     }
@@ -69,6 +82,46 @@ public final class DynamoDbTestUtils {
         streamRecord.setOldImage(randomDynamoPayload(candidateIdentifier));
         streamRecord.setNewImage(randomDynamoPayload(candidateIdentifier));
         return streamRecord;
+    }
+
+    private static StreamRecord payloadWithCandidate(CandidateDao candidate) {
+        var attributeValueMap = attempt(() -> toAttributeValueMap(candidate)).orElseThrow();
+
+        return createPayload(attributeValueMap, attributeValueMap);
+    }
+
+    private static StreamRecord createPayload(Map<String, AttributeValue> oldImage,
+                                              Map<String, AttributeValue> newImage) {
+        var streamRecord = new StreamRecord();
+        streamRecord.setOldImage(oldImage);
+        streamRecord.setNewImage(newImage);
+        return streamRecord;
+    }
+
+    private static Map<String, AttributeValue> toAttributeValueMap(Dao dao) {
+        var dynamoFormat = dao.toDynamoFormat();
+        return getAttributeValueMap(dynamoFormat);
+    }
+
+    private static Map<String, AttributeValue> getAttributeValueMap(
+        Map<String, software.amazon.awssdk.services.dynamodb.model.AttributeValue> value) {
+        return value.entrySet()
+                   .stream()
+                   .collect(Collectors.toMap(Entry::getKey, mapValue -> getAttributeValue(mapValue.getValue())));
+    }
+
+    private static AttributeValue getAttributeValue(
+        software.amazon.awssdk.services.dynamodb.model.AttributeValue value) {
+        return switch (value.type()) {
+            case S -> new AttributeValue().withS(value.s());
+            case SS -> new AttributeValue().withSS(value.ss());
+            case N -> new AttributeValue().withN(value.n());
+            case M -> new AttributeValue().withM(getAttributeValueMap(value.m()));
+            case L -> new AttributeValue().withL(value.l().stream().map(DynamoDbTestUtils::getAttributeValue).toList());
+            case NUL -> new AttributeValue().withNULL(value.nul());
+            case BOOL -> new AttributeValue().withBOOL(value.bool());
+            default -> throw new IllegalArgumentException("Unknown type: " + value.type());
+        };
     }
 
     private static StreamRecord randomPayload() {

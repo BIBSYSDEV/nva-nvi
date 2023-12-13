@@ -8,6 +8,8 @@ import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_NORWEGIAN
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.NB_FIELD;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.createExpandedResource;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractAffiliations;
+import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
+import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
@@ -204,9 +206,6 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return attempt(() -> dtoObjectMapper.writeValueAsString(jsonNode)).orElseThrow();
     }
 
-    private static String generateSingleDynamoDbEventRecord(UUID candidateIdentifier) {
-        return mapToString(eventWithCandidateIdentifier(candidateIdentifier).getRecords().get(0));
-    }
 
     @NotNull
     private static ObjectNode generateOrganizationNode(String hardCodedPartOf) {
@@ -217,12 +216,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return hardCodedPartOfNode;
     }
 
-    @NotNull
-    private static SQSMessage createMessage(UUID candidateIdentifier) {
-        var message = new SQSMessage();
-        message.setBody(generateSingleDynamoDbEventRecord(candidateIdentifier));
-        return message;
-    }
+
 
     private static String extractResourceIdentifier(Candidate persistedCandidate) {
         return UriWrapper.fromUri(persistedCandidate.getPublicationDetails().publicationBucketUri())
@@ -370,31 +364,5 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
                    .orElseThrow();
     }
 
-    private SQSEvent createEvent(UUID candidateIdentifier) {
-        var sqsEvent = new SQSEvent();
-        var message = createMessage(candidateIdentifier);
-        sqsEvent.setRecords(List.of(message));
-        return sqsEvent;
-    }
 
-    private SQSEvent createEvent(List<UUID> candidateIdentifiers) {
-        var sqsEvent = new SQSEvent();
-        var records = candidateIdentifiers.stream().map(
-            IndexDocumentHandlerTest::createMessage).toList();
-        sqsEvent.setRecords(records);
-        return sqsEvent;
-    }
-
-    private SQSEvent createEventWithOneInvalidRecord(UUID candidateIdentifier) {
-        var sqsEvent = new SQSEvent();
-        var message = createMessage(candidateIdentifier);
-        sqsEvent.setRecords(List.of(message, invalidSqsMessage()));
-        return sqsEvent;
-    }
-
-    private SQSMessage invalidSqsMessage() {
-        var message = new SQSMessage();
-        message.setBody("invalid indexDocument");
-        return message;
-    }
 }
