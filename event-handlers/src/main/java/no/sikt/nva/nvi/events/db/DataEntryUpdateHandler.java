@@ -123,11 +123,22 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
         return attempt(() -> dtoObjectMapper.writeValueAsString(attributeValue)).orElseThrow();
     }
 
+    private static boolean isNotCandidateOrApproval(Dao dao, OperationType operationType) {
+        if (!(dao instanceof CandidateDao || dao instanceof ApprovalStatusDao)) {
+            LOGGER.info("Skipping event with operation type {} for dao type {}", operationType, dao.getClass());
+            return true;
+        }
+        return false;
+    }
+
     private void publishToTopic(DynamodbStreamRecord record) {
         var operationType = OperationType.fromValue(record.getEventName());
-        var daoClass = extractDao(record);
+        var dao = extractDao(record);
+        if (isNotCandidateOrApproval(dao, operationType)) {
+            return;
+        }
         var message = writeAsString(record);
-        var topic = getTopic(operationType, daoClass);
+        var topic = getTopic(operationType, dao);
         var response = snsClient.publish(message, topic);
         LOGGER.info("Published message with id: {} to topic {}", response.messageId(), topic);
     }
