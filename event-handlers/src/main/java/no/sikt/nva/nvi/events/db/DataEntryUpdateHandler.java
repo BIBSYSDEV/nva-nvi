@@ -1,7 +1,13 @@
 package no.sikt.nva.nvi.events.db;
 
-import static java.util.Objects.nonNull;
-import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
+import static no.sikt.nva.nvi.events.db.DynamoDbUtils.getImage;
+import static no.sikt.nva.nvi.events.db.TopicConstants.APPROVAL_INSERT_TOPIC;
+import static no.sikt.nva.nvi.events.db.TopicConstants.APPROVAL_REMOVE_TOPIC;
+import static no.sikt.nva.nvi.events.db.TopicConstants.APPROVAL_UPDATE_TOPIC;
+import static no.sikt.nva.nvi.events.db.TopicConstants.CANDIDATE_INSERT_TOPIC;
+import static no.sikt.nva.nvi.events.db.TopicConstants.CANDIDATE_REMOVED_TOPIC;
+import static no.sikt.nva.nvi.events.db.TopicConstants.CANDIDATE_UPDATE_APPLICABLE_TOPIC;
+import static no.sikt.nva.nvi.events.db.TopicConstants.CANDIDATE_UPDATE_NOT_APPLICABLE_TOPIC;
 import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -9,11 +15,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
-import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.Dao;
@@ -30,13 +32,6 @@ import software.amazon.awssdk.services.dynamodb.model.OperationType;
 public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(DataEntryUpdateHandler.class);
-    public static final String CANDIDATE_INSERT_TOPIC = "Candidate.Insert";
-    public static final String CANDIDATE_UPDATE_APPLICABLE_TOPIC = "Candidate.Update.Applicable";
-    public static final String CANDIDATE_UPDATE_NOT_APPLICABLE_TOPIC = "Candidate.Update.NotApplicable";
-    public static final String CANDIDATE_REMOVED_TOPIC = "Candidate.Removed";
-    private static final String APPROVAL_INSERT_TOPIC = "Approval.Insert";
-    private static final String APPROVAL_UPDATE_TOPIC = "Approval.Update";
-    private static final String APPROVAL_REMOVE_TOPIC = "Approval.Remove";
     private static final String ERROR_MESSAGE = "Error message: {}";
     private static final String FAILED_TO_PARSE_EVENT_MESSAGE = "Failed to map body to DynamodbStreamRecord: {}";
     private final NotificationClient<NviPublishMessageResponse> snsClient;
@@ -101,29 +96,6 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
         }
     }
 
-    private static Map<String, software.amazon.awssdk.services.dynamodb.model.AttributeValue> getImage(
-        DynamodbStreamRecord record) {
-        var image = nonNull(record.getDynamodb().getNewImage())
-                        ? record.getDynamodb().getNewImage()
-                        : record.getDynamodb().getOldImage();
-        return image.entrySet()
-                   .stream()
-                   .collect(Collectors.toMap(Entry::getKey,
-                                             attributeValue -> mapToDynamoDbValue(attributeValue.getValue())));
-    }
-
-    private static software.amazon.awssdk.services.dynamodb.model.AttributeValue mapToDynamoDbValue(
-        AttributeValue value) {
-        var json = writeAsString(value);
-        return attempt(() -> dtoObjectMapper.readValue(json,
-                                                       software.amazon.awssdk.services.dynamodb.model.AttributeValue.serializableBuilderClass())
-                                 .build()).orElseThrow();
-    }
-
-    private static String writeAsString(AttributeValue attributeValue) {
-        return attempt(() -> dtoObjectMapper.writeValueAsString(attributeValue)).orElseThrow();
-    }
-
     private static boolean isNotCandidateOrApproval(Dao dao, OperationType operationType) {
         if (!(dao instanceof CandidateDao || dao instanceof ApprovalStatusDao)) {
             LOGGER.info("Skipping event with operation type {} for dao type {}", operationType, dao.getClass());
@@ -138,14 +110,19 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
         if (isNotCandidateOrApproval(dao, operationType)) {
             return;
         }
-        var message = writeAsString(record);
-        var topic = getTopic(operationType, dao);
-        var response = snsClient.publish(message, topic);
+        publish(record, getTopic(operationType, dao));
+    }
+
+    private void publish(DynamodbStreamRecord record, String topic) {
+        var response = snsClient.publish(writeAsString(record), topic);
         LOGGER.info("Published message with id: {} to topic {}", response.messageId(), topic);
     }
 
     private Dao extractDao(DynamodbStreamRecord record) {
-        return DynamoEntryWithRangeKey.parseAttributeValuesMap(getImage(record), Dao.class);
+        return attempt(() -> DynamoEntryWithRangeKey.parseAttributeValuesMap(getImage(record), Dao.class)).orElse(daoFailure -> {
+            handleFailure(daoFailure, "Failed to parse dao from dynamodb record: {}", record.toString());
+            return null;
+        });
     }
 
     private String writeAsString(DynamodbStreamRecord record) {

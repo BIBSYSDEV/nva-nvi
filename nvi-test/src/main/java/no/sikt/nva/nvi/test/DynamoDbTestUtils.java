@@ -136,18 +136,8 @@ public final class DynamoDbTestUtils {
 
     private static AttributeValue getAttributeValue(
         software.amazon.awssdk.services.dynamodb.model.AttributeValue value) {
-        //This is a workaround because we were not able to serialize with jackson
-        //Do not use this method in production code
-        return switch (value.type()) {
-            case S -> new AttributeValue().withS(value.s());
-            case SS -> new AttributeValue().withSS(value.ss());
-            case N -> new AttributeValue().withN(value.n());
-            case M -> new AttributeValue().withM(getAttributeValueMap(value.m()));
-            case L -> new AttributeValue().withL(value.l().stream().map(DynamoDbTestUtils::getAttributeValue).toList());
-            case NUL -> new AttributeValue().withNULL(value.nul());
-            case BOOL -> new AttributeValue().withBOOL(value.bool());
-            default -> throw new IllegalArgumentException("Unknown type: " + value.type());
-        };
+        var json = attempt(() -> dynamoObjectMapper.writeValueAsString(value.toBuilder())).orElseThrow();
+        return attempt(() -> dynamoObjectMapper.readValue(json, AttributeValue.class)).orElseThrow();
     }
 
     private static StreamRecord randomPayload() {
