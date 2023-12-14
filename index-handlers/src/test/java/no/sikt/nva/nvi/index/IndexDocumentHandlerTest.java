@@ -1,13 +1,13 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.test.DynamoDbTestUtils.eventWithCandidateIdentifier;
-import static no.sikt.nva.nvi.test.DynamoDbTestUtils.mapToString;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.EN_FIELD;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_LABEL;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_NORWEGIAN_LABEL;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.NB_FIELD;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.createExpandedResource;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractAffiliations;
+import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
+import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
@@ -20,8 +20,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.events.SQSEvent;
-import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -204,10 +202,6 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return attempt(() -> dtoObjectMapper.writeValueAsString(jsonNode)).orElseThrow();
     }
 
-    private static String generateSingleDynamoDbEventRecord(UUID candidateIdentifier) {
-        return mapToString(eventWithCandidateIdentifier(candidateIdentifier).getRecords().get(0));
-    }
-
     @NotNull
     private static ObjectNode generateOrganizationNode(String hardCodedPartOf) {
         var hardCodedPartOfNode = dtoObjectMapper.createObjectNode();
@@ -215,13 +209,6 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         hardCodedPartOfNode.put("type", "Organization");
         hardCodedPartOfNode.put("@context", ORGANIZATION_CONTEXT);
         return hardCodedPartOfNode;
-    }
-
-    @NotNull
-    private static SQSMessage createMessage(UUID candidateIdentifier) {
-        var message = new SQSMessage();
-        message.setBody(generateSingleDynamoDbEventRecord(candidateIdentifier));
-        return message;
     }
 
     private static String extractResourceIdentifier(Candidate persistedCandidate) {
@@ -368,33 +355,5 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     private Candidate randomApplicableCandidate() {
         return Candidate.fromRequest(createUpsertCandidateRequest(2023), candidateRepository, periodRepository)
                    .orElseThrow();
-    }
-
-    private SQSEvent createEvent(UUID candidateIdentifier) {
-        var sqsEvent = new SQSEvent();
-        var message = createMessage(candidateIdentifier);
-        sqsEvent.setRecords(List.of(message));
-        return sqsEvent;
-    }
-
-    private SQSEvent createEvent(List<UUID> candidateIdentifiers) {
-        var sqsEvent = new SQSEvent();
-        var records = candidateIdentifiers.stream().map(
-            IndexDocumentHandlerTest::createMessage).toList();
-        sqsEvent.setRecords(records);
-        return sqsEvent;
-    }
-
-    private SQSEvent createEventWithOneInvalidRecord(UUID candidateIdentifier) {
-        var sqsEvent = new SQSEvent();
-        var message = createMessage(candidateIdentifier);
-        sqsEvent.setRecords(List.of(message, invalidSqsMessage()));
-        return sqsEvent;
-    }
-
-    private SQSMessage invalidSqsMessage() {
-        var message = new SQSMessage();
-        message.setBody("invalid indexDocument");
-        return message;
     }
 }

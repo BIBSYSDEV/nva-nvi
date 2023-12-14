@@ -72,8 +72,8 @@ public class NviQueueClient implements QueueClient<NviSendMessageResponse, NviSe
         return ApacheHttpClient.builder()
                    .useIdleConnectionReaper(true)
                    .maxConnections(MAX_CONNECTIONS)
-                   .connectionMaxIdleTime(Duration.ofMinutes(IDLE_TIME))
-                   .connectionTimeout(Duration.ofMinutes(TIMEOUT_TIME))
+                   .connectionMaxIdleTime(Duration.ofSeconds(IDLE_TIME))
+                   .connectionTimeout(Duration.ofSeconds(TIMEOUT_TIME))
                    .build();
     }
 
