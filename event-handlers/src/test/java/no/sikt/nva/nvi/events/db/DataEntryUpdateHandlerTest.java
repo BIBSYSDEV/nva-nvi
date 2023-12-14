@@ -1,13 +1,13 @@
 package no.sikt.nva.nvi.events.db;
 
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao;
-import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
@@ -49,6 +49,6 @@ public class DataEntryUpdateHandlerTest {
     }
 
     private CandidateDao randomCandidateDao() {
-        return new CandidateDao(UUID.randomUUID(), TestUtils.randomCandidate(), UUID.randomUUID().toString());
+        return new CandidateDao(UUID.randomUUID(), randomCandidate(), UUID.randomUUID().toString());
     }
 }
