@@ -32,8 +32,7 @@ public class DataEntryUpdateHandlerTest {
         var event = createEvent(candidate);
 
         handler.handleRequest(event, CONTEXT);
-        var expectedPublishedMessage = createExpectedPublishedMessage(extractFirstMessage(event)
-        );
+        var expectedPublishedMessage = createExpectedPublishedMessage(extractFirstMessage(event));
         assertEquals(expectedPublishedMessage, snsClient.getPublishedMessages().get(0));
     }
 

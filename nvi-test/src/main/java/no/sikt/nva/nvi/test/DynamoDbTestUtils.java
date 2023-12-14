@@ -110,6 +110,8 @@ public final class DynamoDbTestUtils {
 
     private static AttributeValue getAttributeValue(
         software.amazon.awssdk.services.dynamodb.model.AttributeValue value) {
+        //This is a workaround because we were not able to serialize with jackson
+        //Do not use this method in production code
         return switch (value.type()) {
             case S -> new AttributeValue().withS(value.s());
             case SS -> new AttributeValue().withSS(value.ss());
