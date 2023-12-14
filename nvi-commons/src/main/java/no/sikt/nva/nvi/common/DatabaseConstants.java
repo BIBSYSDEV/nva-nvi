@@ -13,6 +13,7 @@ public final class DatabaseConstants {
     public static final String DATA_FIELD = "data";
     public static final String VERSION_FIELD = "version";
     public static final String IDENTIFIER_FIELD = "identifier";
+    public static final String PRIMARY_KEY_DELIMITER = "#";
 
     private DatabaseConstants() {
 

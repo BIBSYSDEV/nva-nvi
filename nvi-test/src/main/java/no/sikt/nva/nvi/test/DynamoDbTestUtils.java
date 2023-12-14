@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -98,7 +100,26 @@ public final class DynamoDbTestUtils {
                                        ? attempt(() -> toAttributeValueMap(newImage)).orElseThrow()
                                        : null;
 
-        return createPayload(oldAttributeValueMap, newAttributeValueMap);
+        return createPayload(oldImage, newImage, oldAttributeValueMap, newAttributeValueMap);
+    }
+
+    private static StreamRecord createPayload(Dao oldImage, Dao newImage,
+                                              Map<String, AttributeValue> oldAttributeValueMap,
+                                              Map<String, AttributeValue> newAttributeValueMap) {
+        var streamRecord = new StreamRecord();
+        setKeys(oldImage, newImage, streamRecord);
+        streamRecord.setOldImage(oldAttributeValueMap);
+        streamRecord.setNewImage(newAttributeValueMap);
+        return streamRecord;
+    }
+
+    private static void setKeys(Dao oldImage, Dao newImage, StreamRecord streamRecord) {
+        streamRecord.setKeys(Map.of(HASH_KEY, new AttributeValue(nonNull(oldImage)
+                                                                     ? oldImage.primaryKeyHashKey()
+                                                                     : newImage.primaryKeyHashKey())));
+        streamRecord.setKeys(Map.of(SORT_KEY, new AttributeValue(nonNull(oldImage)
+                                                                     ? oldImage.primaryKeyRangeKey()
+                                                                     : newImage.primaryKeyRangeKey())));
     }
 
     private static StreamRecord createPayload(Map<String, AttributeValue> oldImage,
