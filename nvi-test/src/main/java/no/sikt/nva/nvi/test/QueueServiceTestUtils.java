@@ -7,7 +7,8 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.List;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.db.Dao;
+import software.amazon.awssdk.services.dynamodb.model.OperationType;
 
 public final class QueueServiceTestUtils {
 
@@ -21,9 +22,9 @@ public final class QueueServiceTestUtils {
         return sqsEvent;
     }
 
-    public static SQSEvent createEvent(CandidateDao candidate) {
+    public static SQSEvent createEvent(Dao oldImage, Dao newImage, OperationType operationType) {
         var sqsEvent = new SQSEvent();
-        var message = createMessage(candidate);
+        var message = createMessage(oldImage, newImage, operationType);
         sqsEvent.setRecords(List.of(message));
         return sqsEvent;
     }
@@ -49,9 +50,9 @@ public final class QueueServiceTestUtils {
         return message;
     }
 
-    private static SQSMessage createMessage(CandidateDao candidate) {
+    private static SQSMessage createMessage(Dao oldImage, Dao newImage, OperationType operationType) {
         var message = new SQSMessage();
-        message.setBody(generateSingleDynamoDbEventRecord(candidate));
+        message.setBody(generateSingleDynamoDbEventRecord(oldImage, newImage, operationType));
         return message;
     }
 
@@ -59,8 +60,9 @@ public final class QueueServiceTestUtils {
         return mapToString(eventWithCandidateIdentifier(candidateIdentifier).getRecords().get(0));
     }
 
-    private static String generateSingleDynamoDbEventRecord(CandidateDao candidate) {
-        return mapToString(eventWithCandidate(candidate).getRecords().get(0));
+    private static String generateSingleDynamoDbEventRecord(Dao oldImage, Dao newImage, OperationType operationType) {
+        return mapToString(eventWithCandidate(oldImage, newImage,
+                                              operationType).getRecords().get(0));
     }
 
     private static SQSMessage invalidSqsMessage() {

@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.test;
 
+import static java.util.Objects.nonNull;
 import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
@@ -13,8 +15,8 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.Dao;
+import software.amazon.awssdk.services.dynamodb.model.OperationType;
 
 public final class DynamoDbTestUtils {
 
@@ -25,21 +27,22 @@ public final class DynamoDbTestUtils {
 
     public static DynamodbEvent eventWithCandidateIdentifier(UUID candidateIdentifier) {
         var dynamoDbEvent = new DynamodbEvent();
-        var dynamoDbRecord = dynamoRecordWithIdentifier(payloadWithIdentifier(candidateIdentifier));
+        var dynamoDbRecord = dynamoRecordWithIdentifier(payloadWithIdentifier(candidateIdentifier),
+                                                        randomOperationType());
         dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
         return dynamoDbEvent;
     }
 
-    public static DynamodbEvent eventWithCandidate(CandidateDao candidate) {
+    public static DynamodbEvent eventWithCandidate(Dao oldImage, Dao newImage, OperationType operationType) {
         var dynamoDbEvent = new DynamodbEvent();
-        var dynamoDbRecord = dynamoRecordWithIdentifier(payloadWithCandidate(candidate));
+        var dynamoDbRecord = dynamoRecordWithIdentifier(payloadWithCandidate(oldImage, newImage), operationType);
         dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
         return dynamoDbEvent;
     }
 
     public static DynamodbEvent randomDynamoDbEvent() {
         var dynamoDbEvent = new DynamodbEvent();
-        var dynamoDbRecord = dynamoRecordWithIdentifier(randomPayload());
+        var dynamoDbRecord = dynamoRecordWithIdentifier(randomPayload(), randomOperationType());
         dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
         return dynamoDbEvent;
     }
@@ -47,7 +50,8 @@ public final class DynamoDbTestUtils {
     public static DynamodbEvent randomEventWithNumberOfDynamoRecords(int numberOfRecords) {
         var event = new DynamodbEvent();
         var records = IntStream.range(0, numberOfRecords)
-                          .mapToObj(index -> dynamoRecordWithIdentifier(payloadWithIdentifier(UUID.randomUUID())))
+                          .mapToObj(index -> dynamoRecordWithIdentifier(payloadWithIdentifier(UUID.randomUUID()),
+                                                                        randomOperationType()))
                           .toList();
         event.setRecords(records);
         return event;
@@ -64,9 +68,13 @@ public final class DynamoDbTestUtils {
         return attempt(() -> dynamoObjectMapper.writeValueAsString(record)).orElseThrow();
     }
 
-    private static DynamodbStreamRecord dynamoRecordWithIdentifier(StreamRecord record) {
+    private static OperationType randomOperationType() {
+        return randomElement(OperationType.values());
+    }
+
+    private static DynamodbStreamRecord dynamoRecordWithIdentifier(StreamRecord record, OperationType operationType) {
         var streamRecord = new DynamodbStreamRecord();
-        streamRecord.setEventName(randomString());
+        streamRecord.setEventName(operationType.name());
         streamRecord.setEventID(randomString());
         streamRecord.setAwsRegion(randomString());
         streamRecord.setDynamodb(record);
@@ -82,10 +90,15 @@ public final class DynamoDbTestUtils {
         return streamRecord;
     }
 
-    private static StreamRecord payloadWithCandidate(CandidateDao candidate) {
-        var attributeValueMap = attempt(() -> toAttributeValueMap(candidate)).orElseThrow();
+    private static StreamRecord payloadWithCandidate(Dao oldImage, Dao newImage) {
+        var oldAttributeValueMap = nonNull(oldImage)
+                                       ? attempt(() -> toAttributeValueMap(oldImage)).orElseThrow()
+                                       : null;
+        var newAttributeValueMap = nonNull(newImage)
+                                       ? attempt(() -> toAttributeValueMap(newImage)).orElseThrow()
+                                       : null;
 
-        return createPayload(attributeValueMap, attributeValueMap);
+        return createPayload(oldAttributeValueMap, newAttributeValueMap);
     }
 
     private static StreamRecord createPayload(Map<String, AttributeValue> oldImage,
