@@ -30,15 +30,15 @@ import software.amazon.awssdk.services.dynamodb.model.OperationType;
 public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(DataEntryUpdateHandler.class);
-    public static final String CANDIDATE_UPDATE_APPLICABLE_TOPIC = "Candidate.Update.Applicable";
     public static final String CANDIDATE_INSERT_TOPIC = "Candidate.Insert";
+    public static final String CANDIDATE_UPDATE_APPLICABLE_TOPIC = "Candidate.Update.Applicable";
+    public static final String CANDIDATE_UPDATE_NOT_APPLICABLE_TOPIC = "Candidate.Update.NotApplicable";
     public static final String CANDIDATE_REMOVED_TOPIC = "Candidate.Removed";
     private static final String APPROVAL_INSERT_TOPIC = "Approval.Insert";
     private static final String APPROVAL_UPDATE_TOPIC = "Approval.Update";
     private static final String APPROVAL_REMOVE_TOPIC = "Approval.Remove";
     private static final String ERROR_MESSAGE = "Error message: {}";
     private static final String FAILED_TO_PARSE_EVENT_MESSAGE = "Failed to map body to DynamodbStreamRecord: {}";
-
     private final NotificationClient<NviPublishMessageResponse> snsClient;
 
     @JacocoGenerated
@@ -50,7 +50,6 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
         this.snsClient = snsClient;
     }
 
-    //TODO: Handle all dao types
     @Override
     public Void handleRequest(SQSEvent input, Context context) {
         input.getRecords().stream()
@@ -81,8 +80,10 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
     }
 
     private static String getUpdateTopic(Dao dao) {
-        if (dao instanceof CandidateDao) {
-            return CANDIDATE_UPDATE_APPLICABLE_TOPIC;
+        if (dao instanceof CandidateDao candidateDao) {
+            return candidateDao.candidate().applicable()
+                       ? CANDIDATE_UPDATE_APPLICABLE_TOPIC
+                       : CANDIDATE_UPDATE_NOT_APPLICABLE_TOPIC;
         } else if (dao instanceof ApprovalStatusDao) {
             return APPROVAL_UPDATE_TOPIC;
         } else {
