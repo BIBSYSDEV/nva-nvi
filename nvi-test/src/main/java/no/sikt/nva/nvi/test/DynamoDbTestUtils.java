@@ -122,14 +122,6 @@ public final class DynamoDbTestUtils {
                                                                      : newImage.primaryKeyRangeKey())));
     }
 
-    private static StreamRecord createPayload(Map<String, AttributeValue> oldImage,
-                                              Map<String, AttributeValue> newImage) {
-        var streamRecord = new StreamRecord();
-        streamRecord.setOldImage(oldImage);
-        streamRecord.setNewImage(newImage);
-        return streamRecord;
-    }
-
     private static Map<String, AttributeValue> toAttributeValueMap(Dao dao) {
         var dynamoFormat = dao.toDynamoFormat();
         return getAttributeValueMap(dynamoFormat);

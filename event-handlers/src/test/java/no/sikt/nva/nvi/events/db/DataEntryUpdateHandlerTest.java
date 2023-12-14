@@ -3,6 +3,10 @@ package no.sikt.nva.nvi.events.db;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.randomUsername;
+import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -12,6 +16,10 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.Dao;
+import no.sikt.nva.nvi.common.db.NoteDao;
+import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
+import no.sikt.nva.nvi.common.db.NviPeriodDao;
+import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -42,6 +50,11 @@ public class DataEntryUpdateHandlerTest {
                          Arguments.of(randomApproval, null, APPROVAL_REMOVE_TOPIC, OperationType.REMOVE));
     }
 
+    public static Stream<Arguments> otherDaoTypesProvider() {
+        return Stream.of(Arguments.of(randomPeriodDao()),
+                         Arguments.of(randomNoteDao()));
+    }
+
     @BeforeEach
     void setUp() {
         snsClient = new FakeNotificationClient();
@@ -58,6 +71,28 @@ public class DataEntryUpdateHandlerTest {
         var expectedPublishedMessage = createExpectedPublishedMessage(extractFirstMessage(event),
                                                                       expectedTopic);
         assertEquals(expectedPublishedMessage, snsClient.getPublishedMessages().get(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource("otherDaoTypesProvider")
+    void shouldDoNothingWhenReceivingEventWithOtherDaoTypes(Dao dao) {
+        var event = createEvent(dao, dao, randomElement(OperationType.values()));
+
+        handler.handleRequest(event, CONTEXT);
+        assertEquals(0, snsClient.getPublishedMessages().size());
+    }
+
+    private static NoteDao randomNoteDao() {
+        return new NoteDao(UUID.randomUUID(),
+                           new DbNote(UUID.randomUUID(), randomUsername(), randomString(), randomInstant()),
+                           UUID.randomUUID().toString());
+    }
+
+    private static NviPeriodDao randomPeriodDao() {
+        return new NviPeriodDao(UUID.randomUUID().toString(),
+                                new DbNviPeriod(randomString(), randomInstant(), randomInstant(),
+                                                randomUsername(), randomUsername()),
+                                UUID.randomUUID().toString());
     }
 
     private static ApprovalStatusDao generateRandomApproval() {
