@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.events.db;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.randomUsername;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
@@ -29,6 +30,7 @@ import software.amazon.awssdk.services.sns.model.PublishRequest;
 
 public class DataEntryUpdateHandlerTest {
 
+    public static final String CANDIDATE_UPDATE_NOT_APPLICABLE_TOPIC = "Candidate.Update.NotApplicable";
     private static final Context CONTEXT = mock(Context.class);
     private static final String CANDIDATE_INSERT_TOPIC = "Candidate.Insert";
     private static final String CANDIDATE_REMOVED_TOPIC = "Candidate.Removed";
@@ -40,11 +42,19 @@ public class DataEntryUpdateHandlerTest {
     private DataEntryUpdateHandler handler;
 
     public static Stream<Arguments> dynamoDbEventProvider() {
-        var randomCandidate = randomCandidateDao();
+        var randomApplicableCandidate = randomCandidateDao();
+        var nonApplicableCandidate = nonApplicableCandidateDao();
         var randomApproval = generateRandomApproval();
-        return Stream.of(Arguments.of(null, randomCandidate, CANDIDATE_INSERT_TOPIC, OperationType.INSERT),
-                         Arguments.of(randomCandidate, randomCandidate, CANDIDATE_UPDATE_TOPIC, OperationType.MODIFY),
-                         Arguments.of(randomCandidate, null, CANDIDATE_REMOVED_TOPIC, OperationType.REMOVE),
+        return Stream.of(Arguments.of(null, randomApplicableCandidate, CANDIDATE_INSERT_TOPIC, OperationType.INSERT),
+                         Arguments.of(randomApplicableCandidate, randomApplicableCandidate, CANDIDATE_UPDATE_TOPIC,
+                                      OperationType.MODIFY),
+                         Arguments.of(randomApplicableCandidate, null, CANDIDATE_REMOVED_TOPIC, OperationType.REMOVE),
+                         Arguments.of(randomApplicableCandidate, nonApplicableCandidate,
+                                      CANDIDATE_UPDATE_NOT_APPLICABLE_TOPIC, OperationType.MODIFY),
+                         Arguments.of(nonApplicableCandidate, randomApplicableCandidate, CANDIDATE_UPDATE_TOPIC,
+                                      OperationType.MODIFY),
+                          Arguments.of(nonApplicableCandidate, null,
+                                       CANDIDATE_REMOVED_TOPIC, OperationType.REMOVE),
                          Arguments.of(null, randomApproval, APPROVAL_INSERT_TOPIC, OperationType.INSERT),
                          Arguments.of(randomApproval, randomApproval, APPROVAL_UPDATE_TOPIC, OperationType.MODIFY),
                          Arguments.of(randomApproval, null, APPROVAL_REMOVE_TOPIC, OperationType.REMOVE));
@@ -112,5 +122,9 @@ public class DataEntryUpdateHandlerTest {
 
     private static CandidateDao randomCandidateDao() {
         return new CandidateDao(UUID.randomUUID(), randomCandidate(), UUID.randomUUID().toString());
+    }
+
+    private static CandidateDao nonApplicableCandidateDao() {
+        return new CandidateDao(UUID.randomUUID(), randomCandidateBuilder(false).build(), UUID.randomUUID().toString());
     }
 }
