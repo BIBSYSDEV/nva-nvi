@@ -29,6 +29,7 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
     private static final String APPLICABLE = "Applicable";
     private static final String NOT_APPLICABLE = "NotApplicable";
     private static final String TOPIC_DELIMITER = ".";
+    private static final String TOPIC_PREFIX = joinStrings("Nvi", "EntryUpdate");
     private static final String PUBLISHED_MESSAGE = "Published message with id: {} to topic {}";
     private static final String FAILED_TO_PUBLISH_MESSAGE = "Failed to publish message for record {}";
     private static final String FAILED_TO_PARSE_EVENT_MESSAGE = "Failed to map body to DynamodbStreamRecord: {}";
@@ -61,7 +62,7 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
 
     private static String getTopic(OperationType operationType, Dao dao) {
         return switch (operationType) {
-            case INSERT, REMOVE -> joinStrings(dao.type(), operationType.toString());
+            case INSERT, REMOVE -> joinStrings(TOPIC_PREFIX, dao.type(), operationType.toString());
             case MODIFY -> getUpdateTopic(dao);
             default -> throw new IllegalArgumentException("Illegal operation type: " + operationType);
         };
@@ -73,7 +74,7 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
                 return getCandidateUpdateTopic(dao);
             }
             case ApprovalStatusDao.TYPE -> {
-                return joinStrings(dao.type(), OperationType.MODIFY.toString());
+                return joinStrings(TOPIC_PREFIX, dao.type(), OperationType.MODIFY.toString());
             }
             default -> throw new IllegalArgumentException("Illegal dao type: " + dao.type());
         }
@@ -82,7 +83,7 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
     private static String getCandidateUpdateTopic(Dao dao) {
         var candidateDao = (CandidateDao) dao;
         var applicableTopicString = candidateDao.candidate().applicable() ? APPLICABLE : NOT_APPLICABLE;
-        return joinStrings(dao.type(), OperationType.MODIFY.toString(), applicableTopicString);
+        return joinStrings(TOPIC_PREFIX, dao.type(), OperationType.MODIFY.toString(), applicableTopicString);
     }
 
     private static String joinStrings(String... args) {

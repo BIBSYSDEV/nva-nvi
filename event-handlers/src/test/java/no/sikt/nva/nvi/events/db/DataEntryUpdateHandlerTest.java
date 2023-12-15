@@ -41,6 +41,7 @@ public class DataEntryUpdateHandlerTest {
 
     private static final Context CONTEXT = mock(Context.class);
     private static final String TOPIC_DELIMITER = ".";
+    private static final String TOPIC_PREFIX = "Nvi.EntryUpdate";
     public static final String CANDIDATE_UPDATE_NOT_APPLICABLE_TOPIC = joinStrings(CandidateDao.TYPE, MODIFY.toString(),
                                                                                    "NotApplicable");
     private static final String CANDIDATE_INSERT_TOPIC = joinStrings(CandidateDao.TYPE, INSERT.toString());
@@ -158,6 +159,7 @@ public class DataEntryUpdateHandlerTest {
 
     private static String joinStrings(String... args) {
         var joiner = new StringJoiner(TOPIC_DELIMITER);
+        joiner.add(TOPIC_PREFIX);
         for (String arg : args) {
             joiner.add(arg);
         }
