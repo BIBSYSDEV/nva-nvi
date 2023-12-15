@@ -16,10 +16,10 @@ public final class DynamoDbUtils {
     private DynamoDbUtils() {
     }
 
-    static Map<String, AttributeValue> getImage(DynamodbStreamRecord record) {
-        var image = nonNull(record.getDynamodb().getNewImage())
-                        ? record.getDynamodb().getNewImage()
-                        : record.getDynamodb().getOldImage();
+    public static Map<String, AttributeValue> getImage(DynamodbStreamRecord streamRecord) {
+        var image = nonNull(streamRecord.getDynamodb().getNewImage())
+                        ? streamRecord.getDynamodb().getNewImage()
+                        : streamRecord.getDynamodb().getOldImage();
         return mapToDynamoDbAttributeValue(image);
     }
 

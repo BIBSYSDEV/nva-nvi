@@ -98,36 +98,36 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
         return OperationType.UNKNOWN_TO_SDK_VERSION.equals(operationType);
     }
 
-    private void publishToTopic(DynamodbStreamRecord record) {
-        attempt(() -> extractDaoAndPublish(record)).orElse(failure -> {
-            handleFailure(failure, FAILED_TO_PUBLISH_MESSAGE, record.toString());
+    private void publishToTopic(DynamodbStreamRecord streamRecord) {
+        attempt(() -> extractDaoAndPublish(streamRecord)).orElse(failure -> {
+            handleFailure(failure, FAILED_TO_PUBLISH_MESSAGE, streamRecord.toString());
             return null;
         });
     }
 
-    private NviPublishMessageResponse extractDaoAndPublish(DynamodbStreamRecord record) {
-        var operationType = OperationType.fromValue(record.getEventName());
-        var dao = extractDao(record);
+    private NviPublishMessageResponse extractDaoAndPublish(DynamodbStreamRecord streamRecord) {
+        var operationType = OperationType.fromValue(streamRecord.getEventName());
+        var dao = extractDao(streamRecord);
         if (isNotCandidateOrApproval(dao) || isUnknownOperationType(operationType)) {
             LOGGER.info(SKIPPING_EVENT_MESSAGE, operationType, dao.getClass());
             return null;
         }
-        return publish(record, getTopic(operationType, dao));
+        return publish(streamRecord, getTopic(operationType, dao));
     }
 
-    private NviPublishMessageResponse publish(DynamodbStreamRecord record, String topic) {
-        var response = snsClient.publish(writeAsString(record), topic);
+    private NviPublishMessageResponse publish(DynamodbStreamRecord streamRecord, String topic) {
+        var response = snsClient.publish(writeAsString(streamRecord), topic);
         LOGGER.info(PUBLISHED_MESSAGE, response.messageId(), topic);
         return response;
     }
 
-    private Dao extractDao(DynamodbStreamRecord record) {
-        return attempt(() -> DynamoEntryWithRangeKey.parseAttributeValuesMap(getImage(record), Dao.class))
+    private Dao extractDao(DynamodbStreamRecord streamRecord) {
+        return attempt(() -> DynamoEntryWithRangeKey.parseAttributeValuesMap(getImage(streamRecord), Dao.class))
                    .orElseThrow();
     }
 
-    private String writeAsString(DynamodbStreamRecord record) {
-        return attempt(() -> dynamoObjectMapper.writeValueAsString(record)).orElseThrow();
+    private String writeAsString(DynamodbStreamRecord streamRecord) {
+        return attempt(() -> dynamoObjectMapper.writeValueAsString(streamRecord)).orElseThrow();
     }
 
     private DynamodbStreamRecord mapToDynamoDbRecord(String body) {
