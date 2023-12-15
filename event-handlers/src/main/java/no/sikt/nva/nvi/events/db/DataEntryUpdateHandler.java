@@ -1,13 +1,6 @@
 package no.sikt.nva.nvi.events.db;
 
 import static no.sikt.nva.nvi.events.db.DynamoDbUtils.getImage;
-import static no.sikt.nva.nvi.events.db.TopicConstants.APPROVAL_INSERT_TOPIC;
-import static no.sikt.nva.nvi.events.db.TopicConstants.APPROVAL_REMOVE_TOPIC;
-import static no.sikt.nva.nvi.events.db.TopicConstants.APPROVAL_UPDATE_TOPIC;
-import static no.sikt.nva.nvi.events.db.TopicConstants.CANDIDATE_INSERT_TOPIC;
-import static no.sikt.nva.nvi.events.db.TopicConstants.CANDIDATE_REMOVED_TOPIC;
-import static no.sikt.nva.nvi.events.db.TopicConstants.CANDIDATE_UPDATE_APPLICABLE_TOPIC;
-import static no.sikt.nva.nvi.events.db.TopicConstants.CANDIDATE_UPDATE_NOT_APPLICABLE_TOPIC;
 import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -16,6 +9,7 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStream
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Objects;
+import java.util.StringJoiner;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.Dao;
@@ -31,9 +25,15 @@ import software.amazon.awssdk.services.dynamodb.model.OperationType;
 
 public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
 
-    public static final Logger LOGGER = LoggerFactory.getLogger(DataEntryUpdateHandler.class);
-    private static final String ERROR_MESSAGE = "Error message: {}";
+    public static final String APPLICABLE = "Applicable";
+    public static final String NOT_APPLICABLE = "NotApplicable";
+    private static final Logger LOGGER = LoggerFactory.getLogger(DataEntryUpdateHandler.class);
+    private static final String PUBLISHED_MESSAGE = "Published message with id: {} to topic {}";
+    private static final String FAILED_TO_PARSE_TO_DAO_MESSAGE = "Failed to parse dao from dynamodb record: {}";
     private static final String FAILED_TO_PARSE_EVENT_MESSAGE = "Failed to map body to DynamodbStreamRecord: {}";
+    private static final String SKIPPING_EVENT_MESSAGE = "Skipping event with operation type {} for dao type {}";
+    private static final String ERROR_MESSAGE = "Error message: {}";
+    private static final String TOPIC_DELIMITER = ".";
     private final NotificationClient<NviPublishMessageResponse> snsClient;
 
     @JacocoGenerated
@@ -57,57 +57,55 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
 
     private static String getTopic(OperationType operationType, Dao dao) {
         return switch (operationType) {
-            case INSERT -> getInsertTopic(dao);
+            case INSERT, REMOVE -> joinStrings(dao.type(), operationType.toString());
             case MODIFY -> getUpdateTopic(dao);
-            case REMOVE -> getCandidateRemovedTopic(dao);
-            case UNKNOWN_TO_SDK_VERSION -> null;
+            default -> throw new IllegalArgumentException("Illegal operation type: " + operationType);
         };
     }
 
-    private static String getCandidateRemovedTopic(Dao dao) {
-        if (dao instanceof CandidateDao) {
-            return CANDIDATE_REMOVED_TOPIC;
-        } else if (dao instanceof ApprovalStatusDao) {
-            return APPROVAL_REMOVE_TOPIC;
-        } else {
-            return null;
+    private static String joinStrings(String... args) {
+        var joiner = new StringJoiner(TOPIC_DELIMITER);
+        for (String arg : args) {
+            joiner.add(arg);
         }
+        return joiner.toString();
     }
 
     private static String getUpdateTopic(Dao dao) {
-        if (dao instanceof CandidateDao candidateDao) {
-            return candidateDao.candidate().applicable()
-                       ? CANDIDATE_UPDATE_APPLICABLE_TOPIC
-                       : CANDIDATE_UPDATE_NOT_APPLICABLE_TOPIC;
-        } else if (dao instanceof ApprovalStatusDao) {
-            return APPROVAL_UPDATE_TOPIC;
-        } else {
-            return null;
+        switch (dao.type()) {
+            case CandidateDao.TYPE -> {
+                return getCandidateUpdateTopic(dao);
+            }
+            case ApprovalStatusDao.TYPE -> {
+                return joinStrings(dao.type(), OperationType.MODIFY.toString());
+            }
+            default -> throw new IllegalArgumentException("Illegal dao type: " + dao.type());
         }
     }
 
-    private static String getInsertTopic(Dao dao) {
-        if (dao instanceof CandidateDao) {
-            return CANDIDATE_INSERT_TOPIC;
-        } else if (dao instanceof ApprovalStatusDao) {
-            return APPROVAL_INSERT_TOPIC;
-        } else {
-            return null;
-        }
+    private static String getCandidateUpdateTopic(Dao dao) {
+        var candidateDao = (CandidateDao) dao;
+        var applicableTopicString = candidateDao.candidate().applicable() ? APPLICABLE : NOT_APPLICABLE;
+        return joinStrings(dao.type(), OperationType.MODIFY.toString(), applicableTopicString);
     }
 
     private static boolean isNotCandidateOrApproval(Dao dao, OperationType operationType) {
         if (!(dao instanceof CandidateDao || dao instanceof ApprovalStatusDao)) {
-            LOGGER.info("Skipping event with operation type {} for dao type {}", operationType, dao.getClass());
+            LOGGER.info(SKIPPING_EVENT_MESSAGE, operationType, dao.getClass());
             return true;
         }
         return false;
     }
 
+    private static boolean unknownOperationType(OperationType operationType) {
+        return OperationType.UNKNOWN_TO_SDK_VERSION.equals(
+            operationType);
+    }
+
     private void publishToTopic(DynamodbStreamRecord record) {
         var operationType = OperationType.fromValue(record.getEventName());
         var dao = extractDao(record);
-        if (isNotCandidateOrApproval(dao, operationType)) {
+        if (isNotCandidateOrApproval(dao, operationType) || unknownOperationType(operationType)) {
             return;
         }
         publish(record, getTopic(operationType, dao));
@@ -115,14 +113,15 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
 
     private void publish(DynamodbStreamRecord record, String topic) {
         var response = snsClient.publish(writeAsString(record), topic);
-        LOGGER.info("Published message with id: {} to topic {}", response.messageId(), topic);
+        LOGGER.info(PUBLISHED_MESSAGE, response.messageId(), topic);
     }
 
     private Dao extractDao(DynamodbStreamRecord record) {
-        return attempt(() -> DynamoEntryWithRangeKey.parseAttributeValuesMap(getImage(record), Dao.class)).orElse(daoFailure -> {
-            handleFailure(daoFailure, "Failed to parse dao from dynamodb record: {}", record.toString());
-            return null;
-        });
+        return attempt(() -> DynamoEntryWithRangeKey.parseAttributeValuesMap(getImage(record), Dao.class))
+                   .orElse(daoFailure -> {
+                       handleFailure(daoFailure, FAILED_TO_PARSE_TO_DAO_MESSAGE, record.toString());
+                       return null;
+                   });
     }
 
     private String writeAsString(DynamodbStreamRecord record) {
