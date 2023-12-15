@@ -11,9 +11,12 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-public class DynamoDbUtils {
+public final class DynamoDbUtils {
 
-    protected static Map<String, AttributeValue> getImage(DynamodbStreamRecord record) {
+    private DynamoDbUtils() {
+    }
+
+    static Map<String, AttributeValue> getImage(DynamodbStreamRecord record) {
         var image = nonNull(record.getDynamodb().getNewImage())
                         ? record.getDynamodb().getNewImage()
                         : record.getDynamodb().getOldImage();

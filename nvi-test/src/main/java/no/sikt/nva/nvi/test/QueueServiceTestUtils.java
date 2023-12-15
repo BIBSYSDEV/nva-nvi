@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.test.DynamoDbTestUtils.eventWithCandidateIdentifie
 import static no.sikt.nva.nvi.test.DynamoDbTestUtils.mapToString;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao;
@@ -30,6 +31,13 @@ public final class QueueServiceTestUtils {
         return sqsEvent;
     }
 
+    public static SQSEvent createEventWithMessages(List<SQSMessage> messages) {
+        var sqsEvent = new SQSEvent();
+        sqsEvent.setRecords(messages);
+        return sqsEvent;
+    }
+
+
     public static SQSEvent createEvent(List<UUID> candidateIdentifiers) {
         var sqsEvent = new SQSEvent();
         var records = candidateIdentifiers.stream().map(
@@ -52,13 +60,13 @@ public final class QueueServiceTestUtils {
         return sqsEvent;
     }
 
-    private static SQSMessage createMessage(UUID candidateIdentifier) {
+    public static SQSMessage createMessage(UUID candidateIdentifier) {
         var message = new SQSMessage();
         message.setBody(generateSingleDynamoDbEventRecord(candidateIdentifier));
         return message;
     }
 
-    private static SQSMessage createMessage(Dao oldImage, Dao newImage, OperationType operationType) {
+    public static SQSMessage createMessage(Dao oldImage, Dao newImage, OperationType operationType) {
         var message = new SQSMessage();
         message.setBody(generateSingleDynamoDbEventRecord(oldImage, newImage, operationType));
         return message;

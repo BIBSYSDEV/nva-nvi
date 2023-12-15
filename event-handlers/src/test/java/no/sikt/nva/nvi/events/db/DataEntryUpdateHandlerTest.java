@@ -4,7 +4,9 @@ import static com.amazonaws.services.dynamodbv2.model.OperationType.INSERT;
 import static com.amazonaws.services.dynamodbv2.model.OperationType.MODIFY;
 import static com.amazonaws.services.dynamodbv2.model.OperationType.REMOVE;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
+import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithMessages;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
+import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createMessage;
 import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
@@ -16,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
+import java.util.List;
 import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -26,7 +29,6 @@ import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
-import no.sikt.nva.nvi.test.QueueServiceTestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -105,6 +107,15 @@ public class DataEntryUpdateHandlerTest {
     @Test
     void shouldNotFailForWholeBatchWhenFailingToParseOneDynamoDbEvent() {
         var eventWithOneInvalidRecord = createEventWithOneInvalidRecord(randomCandidateDao());
+        handler.handleRequest(eventWithOneInvalidRecord, CONTEXT);
+        assertEquals(1, snsClient.getPublishedMessages().size());
+    }
+
+    @Test
+    void shouldNotFailForWholeBatchWhenFailingExtractDaoForOneRecord() {
+        CandidateDao dao = randomCandidateDao();
+        var eventWithOneInvalidRecord = createEventWithMessages(
+            List.of(createMessage(dao, dao, OperationType.INSERT), createMessage(UUID.randomUUID())));
         handler.handleRequest(eventWithOneInvalidRecord, CONTEXT);
         assertEquals(1, snsClient.getPublishedMessages().size());
     }

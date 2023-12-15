@@ -29,7 +29,6 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
     public static final String NOT_APPLICABLE = "NotApplicable";
     private static final Logger LOGGER = LoggerFactory.getLogger(DataEntryUpdateHandler.class);
     private static final String PUBLISHED_MESSAGE = "Published message with id: {} to topic {}";
-    private static final String FAILED_TO_PARSE_TO_DAO_MESSAGE = "Failed to parse dao from dynamodb record: {}";
     private static final String FAILED_TO_PARSE_EVENT_MESSAGE = "Failed to map body to DynamodbStreamRecord: {}";
     private static final String SKIPPING_EVENT_MESSAGE = "Skipping event with operation type {} for dao type {}";
     private static final String ERROR_MESSAGE = "Error message: {}";
@@ -103,33 +102,34 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
     }
 
     private void publishToTopic(DynamodbStreamRecord record) {
+        attempt(() -> extractDaoAndPublish(record)).orElse(failure -> {
+            handleFailure(failure, "Failed to publish message for record {}", record.toString());
+            return null;
+        });
+    }
+
+    private NviPublishMessageResponse extractDaoAndPublish(DynamodbStreamRecord record) {
         var operationType = OperationType.fromValue(record.getEventName());
         var dao = extractDao(record);
         if (isNotCandidateOrApproval(dao, operationType) || unknownOperationType(operationType)) {
-            return;
+            return null;
         }
-        publish(record, getTopic(operationType, dao));
+        return publish(record, getTopic(operationType, dao));
     }
 
-    private void publish(DynamodbStreamRecord record, String topic) {
+    private NviPublishMessageResponse publish(DynamodbStreamRecord record, String topic) {
         var response = snsClient.publish(writeAsString(record), topic);
         LOGGER.info(PUBLISHED_MESSAGE, response.messageId(), topic);
+        return response;
     }
 
     private Dao extractDao(DynamodbStreamRecord record) {
         return attempt(() -> DynamoEntryWithRangeKey.parseAttributeValuesMap(getImage(record), Dao.class))
-                   .orElse(daoFailure -> {
-                       handleFailure(daoFailure, FAILED_TO_PARSE_TO_DAO_MESSAGE, record.toString());
-                       return null;
-                   });
+                   .orElseThrow();
     }
 
     private String writeAsString(DynamodbStreamRecord record) {
-        return attempt(() -> dynamoObjectMapper.writeValueAsString(record))
-                   .orElse(failure -> {
-                       handleFailure(failure, FAILED_TO_PARSE_EVENT_MESSAGE, record.toString());
-                       return null;
-                   });
+        return attempt(() -> dynamoObjectMapper.writeValueAsString(record)).orElseThrow();
     }
 
     private DynamodbStreamRecord mapToDynamoDbRecord(String body) {
