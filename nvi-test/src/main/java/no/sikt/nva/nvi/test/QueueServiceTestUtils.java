@@ -5,7 +5,6 @@ import static no.sikt.nva.nvi.test.DynamoDbTestUtils.eventWithCandidateIdentifie
 import static no.sikt.nva.nvi.test.DynamoDbTestUtils.mapToString;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao;
@@ -36,7 +35,6 @@ public final class QueueServiceTestUtils {
         sqsEvent.setRecords(messages);
         return sqsEvent;
     }
-
 
     public static SQSEvent createEvent(List<UUID> candidateIdentifiers) {
         var sqsEvent = new SQSEvent();

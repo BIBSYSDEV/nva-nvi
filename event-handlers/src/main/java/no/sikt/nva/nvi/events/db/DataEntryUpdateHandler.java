@@ -25,14 +25,15 @@ import software.amazon.awssdk.services.dynamodb.model.OperationType;
 
 public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
 
-    public static final String APPLICABLE = "Applicable";
-    public static final String NOT_APPLICABLE = "NotApplicable";
     private static final Logger LOGGER = LoggerFactory.getLogger(DataEntryUpdateHandler.class);
+    private static final String APPLICABLE = "Applicable";
+    private static final String NOT_APPLICABLE = "NotApplicable";
+    private static final String TOPIC_DELIMITER = ".";
     private static final String PUBLISHED_MESSAGE = "Published message with id: {} to topic {}";
+    private static final String FAILED_TO_PUBLISH_MESSAGE = "Failed to publish message for record {}";
     private static final String FAILED_TO_PARSE_EVENT_MESSAGE = "Failed to map body to DynamodbStreamRecord: {}";
     private static final String SKIPPING_EVENT_MESSAGE = "Skipping event with operation type {} for dao type {}";
     private static final String ERROR_MESSAGE = "Error message: {}";
-    private static final String TOPIC_DELIMITER = ".";
     private final NotificationClient<NviPublishMessageResponse> snsClient;
 
     @JacocoGenerated
@@ -103,7 +104,7 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
 
     private void publishToTopic(DynamodbStreamRecord record) {
         attempt(() -> extractDaoAndPublish(record)).orElse(failure -> {
-            handleFailure(failure, "Failed to publish message for record {}", record.toString());
+            handleFailure(failure, FAILED_TO_PUBLISH_MESSAGE, record.toString());
             return null;
         });
     }
