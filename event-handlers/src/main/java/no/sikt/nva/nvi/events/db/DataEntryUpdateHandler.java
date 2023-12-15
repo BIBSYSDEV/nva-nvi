@@ -55,20 +55,16 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
         return null;
     }
 
+    private static boolean isNotCandidateOrApproval(Dao dao) {
+        return !(dao instanceof CandidateDao || dao instanceof ApprovalStatusDao);
+    }
+
     private static String getTopic(OperationType operationType, Dao dao) {
         return switch (operationType) {
             case INSERT, REMOVE -> joinStrings(dao.type(), operationType.toString());
             case MODIFY -> getUpdateTopic(dao);
             default -> throw new IllegalArgumentException("Illegal operation type: " + operationType);
         };
-    }
-
-    private static String joinStrings(String... args) {
-        var joiner = new StringJoiner(TOPIC_DELIMITER);
-        for (String arg : args) {
-            joiner.add(arg);
-        }
-        return joiner.toString();
     }
 
     private static String getUpdateTopic(Dao dao) {
@@ -89,17 +85,16 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
         return joinStrings(dao.type(), OperationType.MODIFY.toString(), applicableTopicString);
     }
 
-    private static boolean isNotCandidateOrApproval(Dao dao, OperationType operationType) {
-        if (!(dao instanceof CandidateDao || dao instanceof ApprovalStatusDao)) {
-            LOGGER.info(SKIPPING_EVENT_MESSAGE, operationType, dao.getClass());
-            return true;
+    private static String joinStrings(String... args) {
+        var joiner = new StringJoiner(TOPIC_DELIMITER);
+        for (String arg : args) {
+            joiner.add(arg);
         }
-        return false;
+        return joiner.toString();
     }
 
-    private static boolean unknownOperationType(OperationType operationType) {
-        return OperationType.UNKNOWN_TO_SDK_VERSION.equals(
-            operationType);
+    private static boolean isUnknownOperationType(OperationType operationType) {
+        return OperationType.UNKNOWN_TO_SDK_VERSION.equals(operationType);
     }
 
     private void publishToTopic(DynamodbStreamRecord record) {
@@ -112,7 +107,8 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
     private NviPublishMessageResponse extractDaoAndPublish(DynamodbStreamRecord record) {
         var operationType = OperationType.fromValue(record.getEventName());
         var dao = extractDao(record);
-        if (isNotCandidateOrApproval(dao, operationType) || unknownOperationType(operationType)) {
+        if (isNotCandidateOrApproval(dao) || isUnknownOperationType(operationType)) {
+            LOGGER.info(SKIPPING_EVENT_MESSAGE, operationType, dao.getClass());
             return null;
         }
         return publish(record, getTopic(operationType, dao));

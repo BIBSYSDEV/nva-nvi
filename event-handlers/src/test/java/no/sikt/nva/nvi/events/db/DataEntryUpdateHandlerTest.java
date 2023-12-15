@@ -113,7 +113,7 @@ public class DataEntryUpdateHandlerTest {
 
     @Test
     void shouldNotFailForWholeBatchWhenFailingExtractDaoForOneRecord() {
-        CandidateDao dao = randomCandidateDao();
+        var dao = randomCandidateDao();
         var eventWithOneInvalidRecord = createEventWithMessages(
             List.of(createMessage(dao, dao, OperationType.INSERT), createMessage(UUID.randomUUID())));
         handler.handleRequest(eventWithOneInvalidRecord, CONTEXT);
