@@ -4,6 +4,7 @@ import static com.amazonaws.services.dynamodbv2.model.OperationType.INSERT;
 import static com.amazonaws.services.dynamodbv2.model.OperationType.MODIFY;
 import static com.amazonaws.services.dynamodbv2.model.OperationType.REMOVE;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
+import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
@@ -25,7 +26,9 @@ import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
+import no.sikt.nva.nvi.test.QueueServiceTestUtils;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -97,6 +100,13 @@ public class DataEntryUpdateHandlerTest {
 
         handler.handleRequest(event, CONTEXT);
         assertEquals(0, snsClient.getPublishedMessages().size());
+    }
+
+    @Test
+    void shouldNotFailForWholeBatchWhenFailingToParseOneDynamoDbEvent() {
+        var eventWithOneInvalidRecord = createEventWithOneInvalidRecord(randomCandidateDao());
+        handler.handleRequest(eventWithOneInvalidRecord, CONTEXT);
+        assertEquals(1, snsClient.getPublishedMessages().size());
     }
 
     private static NoteDao randomNoteDao() {

@@ -7,6 +7,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.List;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.Dao;
 import software.amazon.awssdk.services.dynamodb.model.OperationType;
 
@@ -40,6 +41,13 @@ public final class QueueServiceTestUtils {
     public static SQSEvent createEventWithOneInvalidRecord(UUID candidateIdentifier) {
         var sqsEvent = new SQSEvent();
         var message = createMessage(candidateIdentifier);
+        sqsEvent.setRecords(List.of(message, invalidSqsMessage()));
+        return sqsEvent;
+    }
+
+    public static SQSEvent createEventWithOneInvalidRecord(CandidateDao dao) {
+        var sqsEvent = new SQSEvent();
+        var message = createMessage(null, dao, OperationType.INSERT);
         sqsEvent.setRecords(List.of(message, invalidSqsMessage()));
         return sqsEvent;
     }
