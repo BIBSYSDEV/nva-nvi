@@ -31,8 +31,8 @@ public final class DynamoDbUtils {
     }
 
     private static Collector<Entry<String,
-                                      com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue>, ?
-                                , Map<String, AttributeValue>> toDynamoDbMap() {
+                                      com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue>, ?,
+                                Map<String, AttributeValue>> toDynamoDbMap() {
         return Collectors.toMap(Entry::getKey,
                                 attributeValue -> attempt(
                                     () -> mapToDynamoDbValue(attributeValue.getValue())).orElseThrow());
