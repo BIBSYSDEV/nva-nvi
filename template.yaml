@@ -52,6 +52,9 @@ Parameters:
   NewCandidateQueueName:
     Type: String
     Default: NewCandidateQueue
+  DbEventQueueName:
+    Type: String
+    Default: !Sub 'nva-nvi-${AWS::StackName}-db-event-queue'
   NewCandidateDLQName:
     Type: String
     Default: NewCandidateDLQ
@@ -263,6 +266,10 @@ Resources:
     Properties:
       QueueName: !Ref ReEvaluateDLQName
       MessageRetentionPeriod: 1209600 #14 days
+  DbEventQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref DbEventQueueName
   GenerateIndexDocumentQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -711,7 +718,7 @@ Resources:
         SqsEvent:
           Type: SQS
           Properties:
-            Queue: !GetAtt DbEventQueue.Arn
+            Queue: !Ref DbEventQueue
 
   DynamoDbEventToQueueHandler:
     Type: AWS::Serverless::Function
@@ -722,6 +729,9 @@ Resources:
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
       Timeout: 900
+      Environment:
+        Variables:
+          DB_EVENTS_QUEUE_URL: !Ref DbEventQueue
       Events:
         FanoutSource:
           Type: DynamoDB
