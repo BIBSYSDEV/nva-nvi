@@ -355,13 +355,13 @@ Resources:
                 Action:
                   - sns:Publish
                 Resource:
-                  - !GetAtt NviDataEntryUpdateCandidateInsertTopic.Arn
-                  - !GetAtt NviDataEntryUpdateCandidateApplicableUpdateTopic.Arn
-                  - !GetAtt NviDataEntryUpdateCandidateNotApplicableUpdateTopic.Arn
-                  - !GetAtt NviDataEntryUpdateCandidateRemoveTopic.Arn
-                  - !GetAtt NviDataEntryUpdateApprovalInsertTopic.Arn
-                  - !GetAtt NviDataEntryUpdateApprovalUpdateTopic.Arn
-                  - !GetAtt NviDataEntryUpdateApprovalRemoveTopic.Arn
+                  - !Ref NviDataEntryUpdateCandidateInsertTopic
+                  - !Ref NviDataEntryUpdateCandidateApplicableUpdateTopic
+                  - !Ref NviDataEntryUpdateCandidateNotApplicableUpdateTopic
+                  - !Ref NviDataEntryUpdateCandidateRemoveTopic
+                  - !Ref NviDataEntryUpdateApprovalInsertTopic
+                  - !Ref NviDataEntryUpdateApprovalUpdateTopic
+                  - !Ref NviDataEntryUpdateApprovalRemoveTopic
         - PolicyName: subsubscribeOnSnsTopic
           PolicyDocument:
             Version: '2012-10-17'
@@ -370,13 +370,8 @@ Resources:
                 Action:
                   - sns:Subscribe
                 Resource:
-                  - !GetAtt NviDataEntryUpdateCandidateInsertTopic.Arn
-                  - !GetAtt NviDataEntryUpdateCandidateApplicableUpdateTopic.Arn
-                  - !GetAtt NviDataEntryUpdateCandidateNotApplicableUpdateTopic.Arn
-                  - !GetAtt NviDataEntryUpdateCandidateRemoveTopic.Arn
-                  - !GetAtt NviDataEntryUpdateApprovalInsertTopic.Arn
-                  - !GetAtt NviDataEntryUpdateApprovalUpdateTopic.Arn
-                  - !GetAtt NviDataEntryUpdateApprovalRemoveTopic.Arn
+                  - !GetAtt GenerateIndexDocumentQueue.Arn
+                  - !GetAtt RemoveDocumentFromIndexQueue.Arn
         - PolicyName: readSecret
           PolicyDocument:
             Version: 2012-10-17
