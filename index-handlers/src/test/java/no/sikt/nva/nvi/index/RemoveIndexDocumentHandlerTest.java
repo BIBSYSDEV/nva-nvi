@@ -7,6 +7,8 @@ import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
@@ -34,6 +36,17 @@ class RemoveIndexDocumentHandlerTest {
     }
 
     @Test
+    void shouldNotFailForWholeBatchFailingToRemoveOneIndexDocument() {
+        var candidateToSucceed = randomCandidateDao();
+        var candidateToFail = randomCandidateDao();
+        var event = createEvent(
+            List.of(candidateToSucceed.identifier(), candidateToFail.identifier()));
+        mockOpenSearchFailure(candidateToFail);
+        handler.handleRequest(event, null);
+        verify(openSearchClient, times(1)).removeDocumentFromIndex(candidateToSucceed.identifier());
+    }
+
+    @Test
     void shouldNotFailForWholeBatchWhenParsingOneEventFails() {
         var candidate = randomCandidateDao();
         var eventWithOneInvalidRecord = createEventWithOneInvalidRecord(candidate);
@@ -51,5 +64,10 @@ class RemoveIndexDocumentHandlerTest {
 
     private static CandidateDao randomCandidateDao() {
         return new CandidateDao(UUID.randomUUID(), randomCandidate(), UUID.randomUUID().toString());
+    }
+
+    private void mockOpenSearchFailure(CandidateDao candidateToFail) {
+        when(openSearchClient.removeDocumentFromIndex(candidateToFail.identifier()))
+            .thenThrow(RuntimeException.class);
     }
 }
