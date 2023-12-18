@@ -177,49 +177,49 @@ Resources:
     Properties:
       Protocol: sqs
       Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
-      TopicArn: !GetAtt NviDataEntryUpdateCandidateInsertTopic.Arn
+      TopicArn: !Ref NviDataEntryUpdateCandidateInsertTopic
 
   NviDataEntryUpdateCandidateApplicableUpdateSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: sqs
       Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
-      TopicArn: !GetAtt NviDataEntryUpdateCandidateApplicableUpdateTopic.Arn
+      TopicArn: !Ref NviDataEntryUpdateCandidateApplicableUpdateTopic
 
   NviDataEntryUpdateCandidateNotApplicableUpdateSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: sqs
       Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
-      TopicArn: !GetAtt NviDataEntryUpdateCandidateNotApplicableUpdateTopic.Arn
+      TopicArn: !Ref NviDataEntryUpdateCandidateNotApplicableUpdateTopic
 
   NviDataEntryUpdateCandidateRemoveSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: sqs
       Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
-      TopicArn: !GetAtt NviDataEntryUpdateCandidateRemoveTopic.Arn
+      TopicArn: !Ref NviDataEntryUpdateCandidateRemoveTopic
 
   NviDataEntryUpdateApprovalInsertSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: sqs
       Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
-      TopicArn: !GetAtt NviDataEntryUpdateApprovalInsertTopic.Arn
+      TopicArn: !Ref NviDataEntryUpdateApprovalInsertTopic
 
   NviDataEntryUpdateApprovalUpdateSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: sqs
       Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
-      TopicArn: !GetAtt NviDataEntryUpdateApprovalUpdateTopic.Arn
+      TopicArn: !Ref NviDataEntryUpdateApprovalUpdateTopic
 
   NviDataEntryUpdateApprovalRemoveSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: sqs
       Endpoint: !GetAtt RemoveDocumentFromIndexQueue.Arn
-      TopicArn: !GetAtt NviDataEntryUpdateApprovalRemoveTopic.Arn
+      TopicArn: !Ref NviDataEntryUpdateApprovalRemoveTopic
 
 
   #=============================== SQSs ============================================================
