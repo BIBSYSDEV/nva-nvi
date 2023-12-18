@@ -93,6 +93,27 @@ Parameters:
   SlackSnsArn:
     Type: AWS::SSM::Parameter::Value<String>
     Default: '/NVA/Monitoring/SlackSnsArn'
+  NviDataEntryUpdateCandidateInsertTopicName:
+    Type: String
+    Default: 'Nvi.DataEntryUpdate.Candidate.Insert'
+  NviDataEntryUpdateCandidateApplicableUpdateTopicName:
+    Type: String
+    Default: 'Nvi.DataEntryUpdate.Candidate.Applicable.Update'
+  NviDataEntryUpdateCandidateNotApplicableUpdateTopicName:
+    Type: String
+    Default: 'Nvi.DataEntryUpdate.Candidate.NotApplicable.Update'
+  NviDataEntryUpdateCandidateRemoveTopicName:
+    Type: String
+    Default: 'Nvi-DataEntryUpdate-Candidate.Remove'
+  NviDataEntryUpdateApprovalInsertTopicName:
+    Type: String
+    Default: 'Nvi.DataEntryUpdate.Approval.Insert'
+  NviDataEntryUpdateApprovalUpdateTopicName:
+    Type: String
+    Default: 'Nvi.DataEntryUpdate.Approval.Update'
+  NviDataEntryUpdateApprovalRemoveTopicName:
+    Type: String
+    Default: 'Nvi.DataEntryUpdate.Approval.Remove'
 
 Conditions:
   WithSuffix: !Not [ !Equals [ !Ref Suffix, '' ] ]
@@ -111,37 +132,37 @@ Resources:
   NviDataEntryUpdateCandidateInsertTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Ref NviDataEntryUpdateTopicName
+      TopicName: !Ref NviDataEntryUpdateCandidateInsertTopicName
   
   NviDataEntryUpdateCandidateApplicableUpdateTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Ref NviDataEntryUpdateTopicName
+      TopicName: !Ref NviDataEntryUpdateCandidateApplicableUpdateTopicName
 
   NviDataEntryUpdateCandidateNotApplicableUpdateTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Ref NviDataEntryUpdateTopicName
+      TopicName: !Ref NviDataEntryUpdateCandidateNotApplicableUpdateTopicName
   
   NviDataEntryUpdateCandidateRemoveTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Ref NviDataEntryUpdateTopicName
+      TopicName: !Ref NviDataEntryUpdateCandidateRemoveTopic
 
   NviDataEntryUpdateApprovalInsertTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Ref NviDataEntryUpdateTopicName
+      TopicName: !Ref NviDataEntryUpdateApprovalInsertTopicName
   
   NviDataEntryUpdateApprovalUpdateTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Ref NviDataEntryUpdateTopicName
+      TopicName: !Ref NviDataEntryUpdateApprovalUpdateTopicName
 
   NviDataEntryUpdateApprovalRemoveTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Ref NviDataEntryUpdateTopicName
+      TopicName: !Ref NviDataEntryUpdateApprovalRemoveTopicName
 
   #=============================== SNS subscriptions ======================================================
 
@@ -678,6 +699,15 @@ Resources:
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
       Timeout: 900
+      Environment:
+        Variables:
+          TOPIC_CANDIDATE_INSERT: !Ref NviDataEntryUpdateCandidateInsertTopicName
+          TOPIC_CANDIDATE_APPLICABLE_UPDATE: !Ref NviDataEntryUpdateCandidateApplicableUpdateTopicName
+          TOPIC_CANDIDATE_NOT_APPLICABLE_UPDATE: !Ref NviDataEntryUpdateCandidateNotApplicableUpdateTopicName
+          TOPIC_CANDIDATE_REMOVE: !Ref NviDataEntryUpdateCandidateRemoveTopicName
+          TOPIC_APPROVAL_INSERT: !Ref NviDataEntryUpdateApprovalInsertTopicName
+          TOPIC_APPROVAL_UPDATE: !Ref NviDataEntryUpdateApprovalUpdateTopicName
+          TOPIC_APPROVAL_REMOVE: !Ref NviDataEntryUpdateApprovalRemoveTopicName
       Events:
         SqsEvent:
           Type: SQS

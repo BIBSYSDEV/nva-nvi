@@ -1,8 +1,5 @@
 package no.sikt.nva.nvi.events.db;
 
-import static com.amazonaws.services.dynamodbv2.model.OperationType.INSERT;
-import static com.amazonaws.services.dynamodbv2.model.OperationType.MODIFY;
-import static com.amazonaws.services.dynamodbv2.model.OperationType.REMOVE;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithMessages;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
@@ -19,7 +16,6 @@ import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import java.util.List;
-import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
@@ -29,6 +25,7 @@ import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
+import nva.commons.core.Environment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -39,18 +36,16 @@ import software.amazon.awssdk.services.sns.model.PublishRequest;
 
 public class DataEntryUpdateHandlerTest {
 
+    private static final Environment ENVIRONMENT = new Environment();
     private static final Context CONTEXT = mock(Context.class);
-    private static final String TOPIC_DELIMITER = ".";
-    private static final String TOPIC_PREFIX = "Nvi.EntryUpdate";
-    public static final String CANDIDATE_UPDATE_NOT_APPLICABLE_TOPIC = joinStrings(CandidateDao.TYPE, MODIFY.toString(),
-                                                                                   "NotApplicable");
-    private static final String CANDIDATE_INSERT_TOPIC = joinStrings(CandidateDao.TYPE, INSERT.toString());
-    private static final String CANDIDATE_REMOVED_TOPIC = joinStrings(CandidateDao.TYPE, REMOVE.toString());
-    private static final String APPROVAL_INSERT_TOPIC = joinStrings(ApprovalStatusDao.TYPE, INSERT.toString());
-    private static final String APPROVAL_UPDATE_TOPIC = joinStrings(ApprovalStatusDao.TYPE, MODIFY.toString());
-    private static final String APPROVAL_REMOVE_TOPIC = joinStrings(ApprovalStatusDao.TYPE, REMOVE.toString());
-    private static final String CANDIDATE_UPDATE_TOPIC = joinStrings(CandidateDao.TYPE, MODIFY.toString(),
-                                                                     "Applicable");
+    private static final String CANDIDATE_INSERT_TOPIC = ENVIRONMENT.readEnv("CANDIDATE_INSERT_TOPIC");
+    private static final String CANDIDATE_UPDATE_TOPIC = ENVIRONMENT.readEnv("CANDIDATE_APPLICABLE_UPDATE_TOPIC");
+    private static final String CANDIDATE_UPDATE_NOT_APPLICABLE_TOPIC =
+        ENVIRONMENT.readEnv("CANDIDATE_NOT_APPLICABLE_UPDATE_TOPIC");
+    private static final String CANDIDATE_REMOVED_TOPIC = ENVIRONMENT.readEnv("CANDIDATE_REMOVE_TOPIC");
+    private static final String APPROVAL_INSERT_TOPIC = ENVIRONMENT.readEnv("APPROVAL_INSERT_TOPIC");
+    private static final String APPROVAL_UPDATE_TOPIC = ENVIRONMENT.readEnv("APPROVAL_UPDATE_TOPIC");
+    private static final String APPROVAL_REMOVE_TOPIC = ENVIRONMENT.readEnv("APPROVAL_REMOVE_TOPIC");
     private FakeNotificationClient snsClient;
     private DataEntryUpdateHandler handler;
 
@@ -81,7 +76,7 @@ public class DataEntryUpdateHandlerTest {
     @BeforeEach
     void setUp() {
         snsClient = new FakeNotificationClient();
-        handler = new DataEntryUpdateHandler(snsClient);
+        handler = new DataEntryUpdateHandler(snsClient, ENVIRONMENT);
     }
 
     @ParameterizedTest
@@ -155,14 +150,5 @@ public class DataEntryUpdateHandlerTest {
 
     private static CandidateDao nonApplicableCandidateDao() {
         return new CandidateDao(UUID.randomUUID(), randomCandidateBuilder(false).build(), UUID.randomUUID().toString());
-    }
-
-    private static String joinStrings(String... args) {
-        var joiner = new StringJoiner(TOPIC_DELIMITER);
-        joiner.add(TOPIC_PREFIX);
-        for (String arg : args) {
-            joiner.add(arg);
-        }
-        return joiner.toString();
     }
 }
