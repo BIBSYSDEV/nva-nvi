@@ -97,25 +97,25 @@ Parameters:
     Default: '/NVA/Monitoring/SlackSnsArn'
   NviDataEntryUpdateCandidateInsertTopicName:
     Type: String
-    Default: 'Nvi.DataEntryUpdate.Candidate.Insert'
+    Default: nvi-data-entry-update-candidate-insert
   NviDataEntryUpdateCandidateApplicableUpdateTopicName:
     Type: String
-    Default: 'Nvi.DataEntryUpdate.Candidate.Applicable.Update'
+    Default: nvi-data-entry-update-candidate-applicable-update
   NviDataEntryUpdateCandidateNotApplicableUpdateTopicName:
     Type: String
-    Default: 'Nvi.DataEntryUpdate.Candidate.NotApplicable.Update'
+    Default: nvi-data-entry-update-candidate-not-applicable-update
   NviDataEntryUpdateCandidateRemoveTopicName:
     Type: String
-    Default: 'Nvi-DataEntryUpdate-Candidate.Remove'
+    Default: nvi-data-entry-update-candidate-remove
   NviDataEntryUpdateApprovalInsertTopicName:
     Type: String
-    Default: 'Nvi.DataEntryUpdate.Approval.Insert'
+    Default: nvi-data-entry-update-approval-insert
   NviDataEntryUpdateApprovalUpdateTopicName:
     Type: String
-    Default: 'Nvi.DataEntryUpdate.Approval.Update'
+    Default: nvi-data-entry-update-approval-update
   NviDataEntryUpdateApprovalRemoveTopicName:
     Type: String
-    Default: 'Nvi.DataEntryUpdate.Approval.Remove'
+    Default: nvi-data-entry-update-approval-remove
 
 Conditions:
   WithSuffix: !Not [ !Equals [ !Ref Suffix, '' ] ]
