@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Clock;
+import java.util.UUID;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
 import no.sikt.nva.nvi.index.Aggregations;
 import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
@@ -87,10 +88,11 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     @Override
-    public DeleteResponse removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) {
-        return attempt(() -> client.withTransportOptions(getOptions()).delete(contructDeleteRequest(indexDocument)))
+    public DeleteResponse removeDocumentFromIndex(UUID identifier) {
+        return attempt(() -> client.withTransportOptions(getOptions()).delete(contructDeleteRequest(
+            identifier)))
                    .map(deleteResponse -> {
-                       LOGGER.info("Removing document from index: {}", indexDocument.identifier());
+                       LOGGER.info("Removing document from index: {}", identifier);
                        return deleteResponse;
                    })
                    .orElseThrow(
@@ -121,9 +123,9 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
                     params.size());
     }
 
-    private static DeleteRequest contructDeleteRequest(NviCandidateIndexDocument indexDocument) {
+    private static DeleteRequest contructDeleteRequest(UUID identifier) {
         return new DeleteRequest.Builder().index(NVI_CANDIDATES_INDEX)
-                   .id(indexDocument.identifier().toString())
+                   .id(identifier.toString())
                    .build();
     }
 
