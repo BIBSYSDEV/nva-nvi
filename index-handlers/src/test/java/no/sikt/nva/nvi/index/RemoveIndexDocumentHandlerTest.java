@@ -1,8 +1,9 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
+import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithDynamoEventMissingIdentifier;
+import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -15,18 +16,37 @@ import software.amazon.awssdk.services.dynamodb.model.OperationType;
 
 class RemoveIndexDocumentHandlerTest {
 
+    private OpenSearchClient openSearchClient;
+    private RemoveIndexDocumentHandler handler;
+
     @BeforeEach
     void setUp() {
+        openSearchClient = mock(OpenSearchClient.class);
+        handler = new RemoveIndexDocumentHandler(openSearchClient);
     }
 
     @Test
     void shouldRemoveIndexDocumentWhenReceivingEvent() {
         var candidate = randomCandidateDao();
         var event = createEvent(candidate, candidate, OperationType.REMOVE);
-        var openSearchClient = mock(OpenSearchClient.class);
-        var handler = new RemoveIndexDocumentHandler(openSearchClient);
         handler.handleRequest(event, null);
-        verify(openSearchClient, times(1)).removeDocumentFromIndex(any());
+        verify(openSearchClient, times(1)).removeDocumentFromIndex(candidate.identifier());
+    }
+
+    @Test
+    void shouldNotFailForWholeBatchWhenParsingOneEventFails() {
+        var candidate = randomCandidateDao();
+        var eventWithOneInvalidRecord = createEventWithOneInvalidRecord(candidate);
+        handler.handleRequest(eventWithOneInvalidRecord, null);
+        verify(openSearchClient, times(1)).removeDocumentFromIndex(candidate.identifier());
+    }
+
+    @Test
+    void shouldNotFailForWholeBatchFailingToExtractOneIdentifier() {
+        var candidate = randomCandidateDao();
+        var eventWithOneInvalidRecord = createEventWithDynamoEventMissingIdentifier(candidate);
+        handler.handleRequest(eventWithOneInvalidRecord, null);
+        verify(openSearchClient, times(1)).removeDocumentFromIndex(candidate.identifier());
     }
 
     private static CandidateDao randomCandidateDao() {

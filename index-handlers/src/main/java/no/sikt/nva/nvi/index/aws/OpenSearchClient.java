@@ -115,6 +115,30 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
             .delete(new DeleteIndexRequest.Builder().index(NVI_CANDIDATES_INDEX).build());
     }
 
+    //TODO change with .exists() when sws index handler is cleaned up.
+    public boolean indexExists() {
+        try {
+            client.withTransportOptions(getOptions())
+                .indices()
+                .get(GetIndexRequest.of(r -> r.index(NVI_CANDIDATES_INDEX)));
+        } catch (IOException io) {
+            throw new RuntimeException(io);
+        } catch (OpenSearchException osex) {
+            if (osex.status() == 404 && INDEX_NOT_FOUND_EXCEPTION.equals(osex.error().type())) {
+                return false;
+            }
+            throw osex;
+        }
+        return true;
+    }
+
+    public void createIndex() {
+        attempt(() -> client.withTransportOptions(getOptions())
+                          .indices()
+                          .create(getCreateIndexRequest()))
+            .orElseThrow(failure -> handleFailure(ERROR_MSG_CREATE_INDEX, failure.getException()));
+    }
+
     private static void logSearchRequest(CandidateSearchParameters params) {
         LOGGER.info("Generating search request with affiliations: {}, excludeSubUnits: {}, filter: {}, username: {}, "
                     + "customer: {}, offset: "
@@ -150,30 +174,6 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
 
     private TransportOptions getOptions() {
         return RestClientOptions.builder().addHeader(AUTHORIZATION, cachedJwtProvider.getValue().getToken()).build();
-    }
-
-    //TODO change with .exists() when sws index handler is cleaned up.
-    public boolean indexExists() {
-        try {
-            client.withTransportOptions(getOptions())
-                .indices()
-                .get(GetIndexRequest.of(r -> r.index(NVI_CANDIDATES_INDEX)));
-        } catch (IOException io) {
-            throw new RuntimeException(io);
-        } catch (OpenSearchException osex) {
-            if (osex.status() == 404 && INDEX_NOT_FOUND_EXCEPTION.equals(osex.error().type())) {
-                return false;
-            }
-            throw osex;
-        }
-        return true;
-    }
-
-    public void createIndex() {
-        attempt(() -> client.withTransportOptions(getOptions())
-                          .indices()
-                          .create(getCreateIndexRequest()))
-            .orElseThrow(failure -> handleFailure(ERROR_MSG_CREATE_INDEX, failure.getException()));
     }
 
     private RuntimeException handleFailure(String msg, Exception exception) {

@@ -7,6 +7,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
@@ -34,15 +35,27 @@ public class RemoveIndexDocumentHandler implements RequestHandler<SQSEvent, Void
         input.getRecords().stream()
             .map(SQSMessage::getBody)
             .map(this::mapToDynamoDbRecord)
+            .filter(Objects::nonNull)
             .map(RemoveIndexDocumentHandler::extractIdentifier)
+            .filter(Objects::nonNull)
             .forEach(openSearchClient::removeDocumentFromIndex);
         return null;
     }
 
     private static UUID extractIdentifier(DynamodbStreamRecord record) {
-        return UUID.fromString(Optional.ofNullable(record.getDynamodb().getOldImage())
-                                   .orElse(record.getDynamodb().getNewImage())
-                                   .get(IDENTIFIER).getS());
+        return attempt(() -> UUID.fromString(Optional.ofNullable(record.getDynamodb().getOldImage())
+                                                 .orElse(record.getDynamodb().getNewImage())
+                                                 .get(IDENTIFIER).getS()))
+                   .orElse(failure -> {
+                       handleFailure(failure, ERROR_MESSAGE, record.toString());
+                       return null;
+                   });
+    }
+
+    private static void handleFailure(Failure<?> failure, String message, String messageArgument) {
+        LOGGER.error(message, messageArgument);
+        LOGGER.error(ERROR_MESSAGE, failure.getException().getMessage());
+        //TODO: Send message to DLQ
     }
 
     private DynamodbStreamRecord mapToDynamoDbRecord(String body) {
@@ -51,11 +64,5 @@ public class RemoveIndexDocumentHandler implements RequestHandler<SQSEvent, Void
                        handleFailure(failure, FAILED_TO_PARSE_EVENT_MESSAGE, body);
                        return null;
                    });
-    }
-
-    private void handleFailure(Failure<?> failure, String message, String messageArgument) {
-        LOGGER.error(message, messageArgument);
-        LOGGER.error(ERROR_MESSAGE, failure.getException().getMessage());
-        //TODO: Send message to DLQ
     }
 }
