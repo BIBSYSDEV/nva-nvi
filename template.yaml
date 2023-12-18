@@ -54,7 +54,7 @@ Parameters:
     Default: NewCandidateQueue
   DbEventQueueName:
     Type: String
-    Default: !Sub 'nva-nvi-${AWS::StackName}-db-event-queue'
+    Default: DbEventQueue
   NewCandidateDLQName:
     Type: String
     Default: NewCandidateDLQ
