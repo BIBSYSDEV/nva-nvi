@@ -44,7 +44,7 @@ public class RemoveIndexDocumentHandler implements RequestHandler<SQSEvent, Void
             .filter(Objects::nonNull)
             .map(RemoveIndexDocumentHandler::extractIdentifier)
             .filter(Objects::nonNull)
-            .forEach(this::getRemoveDocumentFromIndex);
+            .forEach(this::removeDocumentFromIndex);
         return null;
     }
 
@@ -68,11 +68,12 @@ public class RemoveIndexDocumentHandler implements RequestHandler<SQSEvent, Void
         //TODO: Send message to DLQ
     }
 
-    private void getRemoveDocumentFromIndex(UUID identifier) {
-        attempt(() -> openSearchClient.removeDocumentFromIndex(identifier)).orElse(failure -> {
-            handleFailure(failure, FAILED_TO_REMOVE_DOCUMENT_MESSAGE, identifier.toString());
-            return null;
-        });
+    private void removeDocumentFromIndex(UUID identifier) {
+        attempt(() -> openSearchClient.removeDocumentFromIndex(identifier)).orElse(
+            failure -> {
+                handleFailure(failure, FAILED_TO_REMOVE_DOCUMENT_MESSAGE, identifier.toString());
+                return null;
+            });
     }
 
     private DynamodbStreamRecord mapToDynamoDbRecord(String body) {
