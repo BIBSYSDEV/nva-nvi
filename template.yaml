@@ -149,7 +149,7 @@ Resources:
   NviDataEntryUpdateCandidateRemoveTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Ref NviDataEntryUpdateCandidateRemoveTopic
+      TopicName: !Ref NviDataEntryUpdateCandidateRemoveTopicName
 
   NviDataEntryUpdateApprovalInsertTopic:
     Type: AWS::SNS::Topic
@@ -570,131 +570,26 @@ Resources:
           Properties:
             Queue: !GetAtt NewCandidateQueue.Arn
 
-  CreateNviPeriodHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: nvi-rest
-      Handler: no.sikt.nva.nvi.rest.create.CreateNviPeriodHandler::handleRequest
-      Role: !GetAtt NvaNviRole.Arn
-      Timeout: 600
-      MemorySize: 1536
-      AutoPublishAlias: live
-      Environment:
-        Variables:
-          ALLOWED_ORIGIN: '*'
-      Events:
-        ApiEvent:
-          Type: Api
-          Properties:
-            Path: /period
-            Method: post
-            RestApiId: !Ref ScientificIndexApi
-
-  FetchNviPeriodsHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: nvi-rest
-      Handler: no.sikt.nva.nvi.rest.fetch.FetchNviPeriodsHandler::handleRequest
-      Role: !GetAtt NvaNviRole.Arn
-      Timeout: 600
-      MemorySize: 1536
-      AutoPublishAlias: live
-      Environment:
-        Variables:
-          ALLOWED_ORIGIN: '*'
-      Events:
-        ApiEvent:
-          Type: Api
-          Properties:
-            Path: /period
-            Method: get
-            RestApiId: !Ref ScientificIndexApi
-
-  UpdateNviPeriodHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: nvi-rest
-      Handler: no.sikt.nva.nvi.rest.upsert.UpdateNviPeriodHandler::handleRequest
-      Role: !GetAtt NvaNviRole.Arn
-      Timeout: 600
-      MemorySize: 1536
-      AutoPublishAlias: live
-      Environment:
-        Variables:
-          ALLOWED_ORIGIN: '*'
-      Events:
-        ApiEvent:
-          Type: Api
-          Properties:
-            Path: /period
-            Method: put
-            RestApiId: !Ref ScientificIndexApi
-
-  SearchNviCandidatesHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.index.SearchNviCandidatesHandler::handleRequest
-      Role: !GetAtt NvaNviRole.Arn
-      Timeout: 600
-      MemorySize: 1536
-      AutoPublishAlias: live
-      Environment:
-        Variables:
-          ALLOWED_ORIGIN: '*'
-          COGNITO_HOST: !Ref CognitoAuthorizationUri
-          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
-          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
-      Events:
-        GetEvent:
-          Type: Api
-          Properties:
-            Path: /candidate
-            Method: get
-            RestApiId: !Ref ScientificIndexApi
-
-  InitHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      Description: Lambda that creates indices. Needs to be run manually from Test
-      CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.index.InitHandler::handleRequest
-      Role: !GetAtt NvaNviRole.Arn
-
-  DeleteNviCandidateIndexHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      Description: Lambda that deletes scientific index. Needs to be run manually from Test
-      CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
-      Role: !GetAtt NvaNviRole.Arn
-
-  NviEventBasedBatchScanHandler:
+  DynamoDbEventToQueueHandler:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: event-handlers
-      Handler: no.sikt.nva.nvi.events.batch.EventBasedBatchScanHandler::handleRequest
+      Handler: no.sikt.nva.nvi.events.db.DynamoDbEventToQueueHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
       Timeout: 900
       Environment:
         Variables:
-          EVENT_BUS_NAME: !GetAtt InternalBus.Name
+          DB_EVENTS_QUEUE_URL: !Ref DbEventQueue
       Events:
-        EventBridgeEvent:
-          Type: EventBridgeRule
+        FanoutSource:
+          Type: DynamoDB
           Properties:
-            EventBusName: !GetAtt InternalBus.Name
-            Pattern:
-              detail:
-                topic: [ "NviService.BatchScan" ]
-
-      EventInvokeConfig:
-        DestinationConfig:
-          OnFailure:
-            Type: SQS
-            Destination: !GetAtt BatchScanDLQ.Arn
+            Stream: !GetAtt NvaNviTable.StreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 1
+            Enabled: true
 
   DataEntryUpdateHandler:
     Type: AWS::Serverless::Function
@@ -720,29 +615,50 @@ Resources:
           Properties:
             Queue: !Ref DbEventQueue
 
-  DynamoDbEventToQueueHandler:
+  NviEventBasedBatchScanHandler:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: event-handlers
-      Handler: no.sikt.nva.nvi.events.db.DynamoDbEventToQueueHandler::handleRequest
+      Handler: no.sikt.nva.nvi.events.batch.EventBasedBatchScanHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
       Timeout: 900
       Environment:
         Variables:
-          DB_EVENTS_QUEUE_URL: !Ref DbEventQueue
+          EVENT_BUS_NAME: !GetAtt InternalBus.Name
       Events:
-        FanoutSource:
-          Type: DynamoDB
+        EventBridgeEvent:
+          Type: EventBridgeRule
           Properties:
-            Stream: !GetAtt NvaNviTable.StreamArn
-            StartingPosition: TRIM_HORIZON
-            BatchSize: 1
-            Enabled: true
+            EventBusName: !GetAtt InternalBus.Name
+            Pattern:
+              detail:
+                topic: [ "NviService.BatchScan" ]
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt BatchScanDLQ.Arn
 
 
   #==========================Manually triggered functions=============================================
+
+  InitHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Lambda that creates indices. Needs to be run manually from Test
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.InitHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+
+  DeleteNviCandidateIndexHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Lambda that deletes scientific index. Needs to be run manually from Test
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
 
   NviBatchScanStartHandler:
     Type: AWS::Serverless::Function
@@ -934,6 +850,89 @@ Resources:
           Type: Api
           Properties:
             Path: /report/{institutionId}
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+
+  CreateNviPeriodHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.create.CreateNviPeriodHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /period
+            Method: post
+            RestApiId: !Ref ScientificIndexApi
+
+  FetchNviPeriodsHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.fetch.FetchNviPeriodsHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /period
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+
+  UpdateNviPeriodHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.upsert.UpdateNviPeriodHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /period
+            Method: put
+            RestApiId: !Ref ScientificIndexApi
+
+  SearchNviCandidatesHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.SearchNviCandidatesHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+          COGNITO_HOST: !Ref CognitoAuthorizationUri
+          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
+          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /candidate
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
