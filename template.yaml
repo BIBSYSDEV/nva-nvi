@@ -608,7 +608,7 @@ Resources:
         SqsEvent:
           Type: SQS
           Properties:
-            Queue: !Ref DbEventQueue
+            Queue: !GetAtt DbEventQueue.Arn
 
   NviEventBasedBatchScanHandler:
     Type: AWS::Serverless::Function
