@@ -11,8 +11,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
-import org.opensearch.client.opensearch.core.DeleteResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,14 +21,18 @@ public class RemoveIndexDocumentHandler implements RequestHandler<SQSEvent, Void
     private static final Logger LOGGER = LoggerFactory.getLogger(RemoveIndexDocumentHandler.class);
     private static final String FAILED_TO_REMOVE_DOCUMENT_MESSAGE = "Failed to remove document from index: {}";
     private static final String FAILED_TO_EXTRACT_IDENTIFIER_MESSAGE = "Failed to extract identifier from dynamodb "
-                                                                      + "record: {}";
+                                                                       + "record: {}";
     private static final String FAILED_TO_PARSE_EVENT_MESSAGE = "Failed to map body to DynamodbStreamRecord: {}";
     private static final String ERROR_MESSAGE = "Error message: {}";
     private static final String IDENTIFIER = "identifier";
     private final OpenSearchClient openSearchClient;
 
-    public RemoveIndexDocumentHandler(OpenSearchClient openSearchClient) {
+    @JacocoGenerated
+    public RemoveIndexDocumentHandler() {
+        this(OpenSearchClient.defaultOpenSearchClient());
+    }
 
+    public RemoveIndexDocumentHandler(OpenSearchClient openSearchClient) {
         this.openSearchClient = openSearchClient;
     }
 
@@ -40,7 +44,7 @@ public class RemoveIndexDocumentHandler implements RequestHandler<SQSEvent, Void
             .filter(Objects::nonNull)
             .map(RemoveIndexDocumentHandler::extractIdentifier)
             .filter(Objects::nonNull)
-            .forEach(identifier -> getRemoveDocumentFromIndex(identifier));
+            .forEach(this::getRemoveDocumentFromIndex);
         return null;
     }
 
@@ -64,8 +68,8 @@ public class RemoveIndexDocumentHandler implements RequestHandler<SQSEvent, Void
         //TODO: Send message to DLQ
     }
 
-    private DeleteResponse getRemoveDocumentFromIndex(UUID identifier) {
-        return attempt(() -> openSearchClient.removeDocumentFromIndex(identifier)).orElse(failure -> {
+    private void getRemoveDocumentFromIndex(UUID identifier) {
+        attempt(() -> openSearchClient.removeDocumentFromIndex(identifier)).orElse(failure -> {
             handleFailure(failure, FAILED_TO_REMOVE_DOCUMENT_MESSAGE, identifier.toString());
             return null;
         });
