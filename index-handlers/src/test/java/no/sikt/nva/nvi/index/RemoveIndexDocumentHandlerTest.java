@@ -36,7 +36,7 @@ class RemoveIndexDocumentHandlerTest {
     }
 
     @Test
-    void shouldNotFailForWholeBatchFailingToRemoveOneIndexDocument() {
+    void shouldNotFailForWholeBatchWhenFailingToRemoveOneIndexDocument() {
         var candidateToSucceed = randomCandidateDao();
         var candidateToFail = randomCandidateDao();
         var event = createEvent(
@@ -55,7 +55,7 @@ class RemoveIndexDocumentHandlerTest {
     }
 
     @Test
-    void shouldNotFailForWholeBatchFailingToExtractOneIdentifier() {
+    void shouldNotFailForWholeBatchWhenFailingToExtractOneIdentifier() {
         var candidate = randomCandidateDao();
         var eventWithOneInvalidRecord = createEventWithDynamoEventMissingIdentifier(candidate);
         handler.handleRequest(eventWithOneInvalidRecord, null);
