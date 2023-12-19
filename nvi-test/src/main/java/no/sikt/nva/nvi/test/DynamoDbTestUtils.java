@@ -49,6 +49,13 @@ public final class DynamoDbTestUtils {
         return dynamoDbEvent;
     }
 
+    public static DynamodbEvent dynamoDbEventWithEmptyPayload() {
+        var dynamoDbEvent = new DynamodbEvent();
+        var dynamoDbRecord = dynamoRecordWithIdentifier(new StreamRecord(), randomOperationType());
+        dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
+        return dynamoDbEvent;
+    }
+
     public static DynamodbEvent randomEventWithNumberOfDynamoRecords(int numberOfRecords) {
         var event = new DynamodbEvent();
         var records = IntStream.range(0, numberOfRecords)

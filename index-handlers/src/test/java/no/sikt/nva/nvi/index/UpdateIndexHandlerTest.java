@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
@@ -450,7 +451,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         }
 
         @Override
-        public DeleteResponse removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) {
+        public DeleteResponse removeDocumentFromIndex(UUID identifier) {
 
             return null;
         }

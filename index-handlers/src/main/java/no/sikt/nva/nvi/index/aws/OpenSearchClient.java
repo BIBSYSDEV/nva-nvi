@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Clock;
+import java.util.UUID;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
 import no.sikt.nva.nvi.index.Aggregations;
 import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
@@ -87,10 +88,11 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     @Override
-    public DeleteResponse removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) {
-        return attempt(() -> client.withTransportOptions(getOptions()).delete(contructDeleteRequest(indexDocument)))
+    public DeleteResponse removeDocumentFromIndex(UUID identifier) {
+        return attempt(() -> client.withTransportOptions(getOptions()).delete(contructDeleteRequest(
+            identifier)))
                    .map(deleteResponse -> {
-                       LOGGER.info("Removing document from index: {}", indexDocument.identifier());
+                       LOGGER.info("Removing document from index: {}", identifier);
                        return deleteResponse;
                    })
                    .orElseThrow(
@@ -111,43 +113,6 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         client.withTransportOptions(getOptions())
             .indices()
             .delete(new DeleteIndexRequest.Builder().index(NVI_CANDIDATES_INDEX).build());
-    }
-
-    private static void logSearchRequest(CandidateSearchParameters params) {
-        LOGGER.info("Generating search request with affiliations: {}, excludeSubUnits: {}, filter: {}, username: {}, "
-                    + "customer: {}, offset: "
-                    + "{}, size: {}", params.affiliations(), params.excludeSubUnits(), params.filter(),
-                    params.username(), params.username(), params.offset(),
-                    params.size());
-    }
-
-    private static DeleteRequest contructDeleteRequest(NviCandidateIndexDocument indexDocument) {
-        return new DeleteRequest.Builder().index(NVI_CANDIDATES_INDEX)
-                   .id(indexDocument.identifier().toString())
-                   .build();
-    }
-
-    private static IndexRequest<NviCandidateIndexDocument> constructIndexRequest(
-        NviCandidateIndexDocument indexDocument) {
-        return new IndexRequest.Builder<NviCandidateIndexDocument>().index(NVI_CANDIDATES_INDEX)
-                   .id(indexDocument.identifier().toString())
-                   .document(indexDocument)
-                   .build();
-    }
-
-    private static CognitoCredentials createCognitoCredentials(SecretsReader secretsReader) {
-        var credentials = secretsReader.fetchClassSecret(SEARCH_INFRASTRUCTURE_CREDENTIALS,
-                                                         UsernamePasswordWrapper.class);
-        return new CognitoCredentials(credentials::getUsername, credentials::getPassword,
-                                      URI.create(SEARCH_INFRASTRUCTURE_AUTH_URI));
-    }
-
-    private static CreateIndexRequest getCreateIndexRequest() {
-        return new CreateIndexRequest.Builder().mappings(mappings()).index(NVI_CANDIDATES_INDEX).build();
-    }
-
-    private TransportOptions getOptions() {
-        return RestClientOptions.builder().addHeader(AUTHORIZATION, cachedJwtProvider.getValue().getToken()).build();
     }
 
     //TODO change with .exists() when sws index handler is cleaned up.
@@ -172,6 +137,43 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
                           .indices()
                           .create(getCreateIndexRequest()))
             .orElseThrow(failure -> handleFailure(ERROR_MSG_CREATE_INDEX, failure.getException()));
+    }
+
+    private static void logSearchRequest(CandidateSearchParameters params) {
+        LOGGER.info("Generating search request with affiliations: {}, excludeSubUnits: {}, filter: {}, username: {}, "
+                    + "customer: {}, offset: "
+                    + "{}, size: {}", params.affiliations(), params.excludeSubUnits(), params.filter(),
+                    params.username(), params.username(), params.offset(),
+                    params.size());
+    }
+
+    private static DeleteRequest contructDeleteRequest(UUID identifier) {
+        return new DeleteRequest.Builder().index(NVI_CANDIDATES_INDEX)
+                   .id(identifier.toString())
+                   .build();
+    }
+
+    private static IndexRequest<NviCandidateIndexDocument> constructIndexRequest(
+        NviCandidateIndexDocument indexDocument) {
+        return new IndexRequest.Builder<NviCandidateIndexDocument>().index(NVI_CANDIDATES_INDEX)
+                   .id(indexDocument.identifier().toString())
+                   .document(indexDocument)
+                   .build();
+    }
+
+    private static CognitoCredentials createCognitoCredentials(SecretsReader secretsReader) {
+        var credentials = secretsReader.fetchClassSecret(SEARCH_INFRASTRUCTURE_CREDENTIALS,
+                                                         UsernamePasswordWrapper.class);
+        return new CognitoCredentials(credentials::getUsername, credentials::getPassword,
+                                      URI.create(SEARCH_INFRASTRUCTURE_AUTH_URI));
+    }
+
+    private static CreateIndexRequest getCreateIndexRequest() {
+        return new CreateIndexRequest.Builder().mappings(mappings()).index(NVI_CANDIDATES_INDEX).build();
+    }
+
+    private TransportOptions getOptions() {
+        return RestClientOptions.builder().addHeader(AUTHORIZATION, cachedJwtProvider.getValue().getToken()).build();
     }
 
     private RuntimeException handleFailure(String msg, Exception exception) {
