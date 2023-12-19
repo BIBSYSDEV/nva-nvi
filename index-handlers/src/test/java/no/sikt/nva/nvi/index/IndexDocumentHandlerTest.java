@@ -87,8 +87,10 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         candidateRepository = new CandidateRepository(localDynamoDbClient);
         periodRepository = new PeriodRepository(localDynamoDbClient);
         uriRetriever = mock(UriRetriever.class);
+        var sqsClient = new FakeSqsClient();
         handler = new IndexDocumentHandler(new S3StorageReader(s3Client, BUCKET_NAME),
                                            new S3StorageWriter(s3Client, BUCKET_NAME),
+                                           sqsClient,
                                            candidateRepository, periodRepository, uriRetriever);
     }
 
@@ -165,7 +167,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var s3Writer = mockS3WriterFailingForOneCandidate(candidateToSucceed, candidateToFail
         );
         var handler = new IndexDocumentHandler(new S3StorageReader(s3Client, BUCKET_NAME),
-                                               s3Writer, candidateRepository, periodRepository, uriRetriever);
+                                               s3Writer, sqsClient, candidateRepository, periodRepository, uriRetriever);
         assertDoesNotThrow(() -> handler.handleRequest(event, CONTEXT));
     }
 

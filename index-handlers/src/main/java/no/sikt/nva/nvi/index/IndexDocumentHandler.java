@@ -17,6 +17,10 @@ import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.StorageWriter;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
+import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
+import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.IndexDocumentWithConsumptionAttributes;
@@ -44,23 +48,26 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
     private final UriRetriever uriRetriever;
+    private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> sqsClient;
 
     @JacocoGenerated
     public IndexDocumentHandler() {
         this(new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
              new S3StorageWriter(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
-             new CandidateRepository(defaultDynamoClient()),
+             new NviQueueClient(), new CandidateRepository(defaultDynamoClient()),
              new PeriodRepository(defaultDynamoClient()),
              new UriRetriever());
     }
 
     public IndexDocumentHandler(StorageReader<URI> storageReader,
                                 StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter,
+                                QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> sqsClient,
                                 CandidateRepository candidateRepository,
                                 PeriodRepository periodRepository,
                                 UriRetriever uriRetriever) {
         this.storageReader = storageReader;
         this.storageWriter = storageWriter;
+        this.sqsClient = sqsClient;
         this.candidateRepository = candidateRepository;
         this.periodRepository = periodRepository;
         this.uriRetriever = uriRetriever;
