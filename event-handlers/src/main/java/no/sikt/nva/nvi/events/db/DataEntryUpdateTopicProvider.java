@@ -8,13 +8,13 @@ import software.amazon.awssdk.services.dynamodb.model.OperationType;
 
 public class DataEntryUpdateTopicProvider {
 
-    public static final String CANDIDATE_REMOVE_TOPIC = "CANDIDATE_REMOVE_TOPIC";
-    public static final String APPROVAL_REMOVE_TOPIC = "APPROVAL_REMOVE_TOPIC";
-    public static final String CANDIDATE_INSERT_TOPIC = "CANDIDATE_INSERT_TOPIC";
-    public static final String APPROVAL_INSERT_TOPIC = "APPROVAL_INSERT_TOPIC";
-    public static final String APPROVAL_UPDATE_TOPIC = "APPROVAL_UPDATE_TOPIC";
-    public static final String CANDIDATE_APPLICABLE_UPDATE_TOPIC = "CANDIDATE_APPLICABLE_UPDATE_TOPIC";
-    public static final String CANDIDATE_NOT_APPLICABLE_UPDATE_TOPIC = "CANDIDATE_NOT_APPLICABLE_UPDATE_TOPIC";
+    public static final String CANDIDATE_REMOVE_TOPIC = "TOPIC_CANDIDATE_REMOVE";
+    public static final String APPROVAL_REMOVE_TOPIC = "TOPIC_APPROVAL_REMOVE";
+    public static final String CANDIDATE_INSERT_TOPIC = "TOPIC_CANDIDATE_INSERT";
+    public static final String APPROVAL_INSERT_TOPIC = "TOPIC_APPROVAL_INSERT";
+    public static final String APPROVAL_UPDATE_TOPIC = "TOPIC_APPROVAL_UPDATE";
+    public static final String CANDIDATE_APPLICABLE_UPDATE_TOPIC = "TOPIC_CANDIDATE_APPLICABLE_UPDATE";
+    public static final String CANDIDATE_NOT_APPLICABLE_UPDATE_TOPIC = "TOPIC_CANDIDATE_NOT_APPLICABLE_UPDATE";
     public static final String ILLEGAL_DAO_TYPE_MESSAGE = "Illegal dao type: ";
     private final Environment environment;
 
