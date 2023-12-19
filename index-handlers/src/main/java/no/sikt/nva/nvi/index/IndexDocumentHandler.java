@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
+    public static final String FAILED_SENDING_EVENT_MESSAGE = "Failed to send message to queue: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler.class);
     private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
     private static final String QUEUE_URL = "PERSISTED_INDEX_DOCUMENT_QUEUE_URL";
@@ -104,9 +105,9 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     }
 
     private void sendEvent(URI uri) {
-        attempt(() -> sqsClient.sendMessage(new PersistedIndexDocumentMessage(uri).toJsonString(), queueUrl))
+        attempt(() -> sqsClient.sendMessage(new PersistedIndexDocumentMessage(uri).asJsonString(), queueUrl))
             .orElse(failure -> {
-                handleFailure(failure, "Failed to send message to queue", uri.toString());
+                handleFailure(failure, FAILED_SENDING_EVENT_MESSAGE, uri.toString());
                 return null;
             });
     }

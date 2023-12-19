@@ -6,8 +6,7 @@ import java.net.URI;
 
 public record PersistedIndexDocumentMessage(URI documentUri) {
 
-    public String toJsonString() {
-        return attempt(() -> dtoObjectMapper.writeValueAsString(this))
-                   .orElseThrow();
+    public String asJsonString() {
+        return attempt(() -> dtoObjectMapper.writeValueAsString(this)).orElseThrow();
     }
 }

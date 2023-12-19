@@ -16,6 +16,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -54,10 +55,10 @@ import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.sqs.model.SqsException;
 
 public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
@@ -109,6 +110,18 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldBuildIndexDocumentWithConsumptionAttributes() {
+        var candidate = randomApplicableCandidate();
+        var expectedConsumptionAttributes = setUpExistingResourceInS3AndGenerateExpectedDocument(
+            candidate).consumptionAttributes();
+        var event = createEvent(candidate.getIdentifier());
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate)));
+        assertEquals(expectedConsumptionAttributes, actualIndexDocument.consumptionAttributes());
+    }
+
+    @Test
     void shouldSendSqsEventWhenIndexDocumentIsPersisted() {
         var candidate = randomApplicableCandidate();
         setUpExistingResourceInS3(candidate);
@@ -120,15 +133,21 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldBuildIndexDocumentWithConsumptionAttributes() {
-        var candidate = randomApplicableCandidate();
-        var expectedConsumptionAttributes = setUpExistingResourceInS3AndGenerateExpectedDocument(
-            candidate).consumptionAttributes();
-        var event = createEvent(candidate.getIdentifier());
-        mockUriRetrieverOrgResponse(candidate);
-        handler.handleRequest(event, CONTEXT);
-        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate)));
-        assertEquals(expectedConsumptionAttributes, actualIndexDocument.consumptionAttributes());
+    void shouldNotFailForWholeBatchWhenFailingToSendEventForOneCandidate() {
+        var candidateToFail = randomApplicableCandidate();
+        var candidateToSucceed = randomApplicableCandidate();
+        setUpExistingResourceInS3(candidateToSucceed);
+        setUpExistingResourceInS3(candidateToFail);
+        mockUriRetrieverOrgResponse(candidateToSucceed);
+        mockUriRetrieverOrgResponse(candidateToFail);
+        var mockedSqsClient = setupFailingSqsClient(candidateToFail);
+        var handler = new IndexDocumentHandler(new S3StorageReader(s3Client, BUCKET_NAME),
+                                               new S3StorageWriter(s3Client, BUCKET_NAME),
+                                               mockedSqsClient,
+                                               candidateRepository, periodRepository, uriRetriever,
+                                               ENVIRONMENT);
+        var event = createEvent(List.of(candidateToFail.getIdentifier(), candidateToSucceed.getIdentifier()));
+        assertDoesNotThrow(() -> handler.handleRequest(event, CONTEXT));
     }
 
     @Test
@@ -198,6 +217,14 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         assertEquals(expectedIndexDocument, actualIndexDocument);
     }
 
+    private static FakeSqsClient setupFailingSqsClient(Candidate candidate) {
+        var expectedFailingMessage = new PersistedIndexDocumentMessage(
+            generateBucketUri(candidate)).asJsonString();
+        var mockedSqsClient = mock(FakeSqsClient.class);
+        when(mockedSqsClient.sendMessage(eq(expectedFailingMessage), anyString())).thenThrow(SqsException.class);
+        return mockedSqsClient;
+    }
+
     private static URI extractOneAffiliation(Candidate candidateToFail) {
         return candidateToFail.getPublicationDetails()
                    .creators()
@@ -226,7 +253,6 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return attempt(() -> dtoObjectMapper.writeValueAsString(jsonNode)).orElseThrow();
     }
 
-    @NotNull
     private static ObjectNode generateOrganizationNode(String hardCodedPartOf) {
         var hardCodedPartOfNode = dtoObjectMapper.createObjectNode();
         hardCodedPartOfNode.put("id", hardCodedPartOf);
@@ -242,7 +268,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     private String createExpectedEventMessageBody(Candidate candidate) {
-        return new PersistedIndexDocumentMessage(generateBucketUri(candidate)).toJsonString();
+        return new PersistedIndexDocumentMessage(generateBucketUri(candidate)).asJsonString();
     }
 
     private void mockUriRetrieverFailure(Candidate candidate) {
