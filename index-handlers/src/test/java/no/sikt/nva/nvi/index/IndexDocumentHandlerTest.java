@@ -46,6 +46,7 @@ import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.test.ExpandedResourceGenerator;
+import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
@@ -76,6 +77,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     private S3Driver s3Reader;
     private S3Driver s3Writer;
     private UriRetriever uriRetriever;
+    private FakeSqsClient sqsClient;
 
     @BeforeEach
     void setup() {
@@ -100,6 +102,17 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
         assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @Test
+    void shouldSendSqsEventWhenIndexDocumentIsPersisted() {
+        var candidate = randomApplicableCandidate();
+        setUpExistingResourceInS3(candidate);
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(createEvent(candidate.getIdentifier()), CONTEXT);
+        var expectedEvent = createExpectedEventMessageBody(candidate);
+        var actualEvent = sqsClient.getSentMessages().get(0).messageBody();
+        assertEquals(expectedEvent, actualEvent);
     }
 
     @Test
@@ -193,6 +206,12 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return UnixPath.of(NVI_CANDIDATES_FOLDER).addChild(candidate.getIdentifier().toString() + GZIP_ENDING);
     }
 
+    private static URI generateBucketUri(Candidate candidate) {
+        return new UriWrapper(S3_SCHEME, BUCKET_NAME)
+                   .addChild(createPath(candidate))
+                   .getUri();
+    }
+
     private static IndexDocumentWithConsumptionAttributes parseJson(String actualPersistedIndexDocument) {
         return attempt(() -> dtoObjectMapper.readValue(
             actualPersistedIndexDocument, IndexDocumentWithConsumptionAttributes.class)).orElseThrow();
@@ -215,6 +234,10 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return UriWrapper.fromUri(persistedCandidate.getPublicationDetails().publicationBucketUri())
                    .getPath()
                    .getLastPathElement();
+    }
+
+    private String createExpectedEventMessageBody(Candidate candidate) {
+        return new PersistedIndexDocumentMessage(generateBucketUri(candidate)).toJsonString();
     }
 
     private void mockUriRetrieverFailure(Candidate candidate) {
@@ -271,14 +294,21 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return IndexDocumentWithConsumptionAttributes.from(indexDocument);
     }
 
+    private URI setUpExistingResourceInS3(Candidate persistedCandidate) {
+        var expandedResource = createExpandedResource(persistedCandidate);
+        var resourceIndexDocument = createResourceIndexDocument(expandedResource);
+        var resourcePath = extractResourceIdentifier(persistedCandidate);
+        return insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
+    }
+
     private JsonNode createResourceIndexDocument(JsonNode expandedResource) {
         var root = objectMapper.createObjectNode();
         root.set(BODY, expandedResource);
         return root;
     }
 
-    private void insertResourceInS3(JsonNode indexDocument, UnixPath path) {
-        attempt(() -> s3Reader.insertFile(path, asString(indexDocument)));
+    private URI insertResourceInS3(JsonNode indexDocument, UnixPath path) {
+        return attempt(() -> s3Reader.insertFile(path, asString(indexDocument))).orElseThrow();
     }
 
     private NviCandidateIndexDocument createExpectedNviIndexDocument(JsonNode expandedResource, Candidate candidate) {
