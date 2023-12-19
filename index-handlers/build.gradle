@@ -55,4 +55,5 @@ test {
     environment("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
     environment("BACKEND_CLIENT_AUTH_URL", "My url")
     environment("BACKEND_CLIENT_SECRET_NAME", "My secret name")
+    environment("PERSISTED_INDEX_DOCUMENT_QUEUE_URL", "PersistedIndexDocumentQueue")
 }
