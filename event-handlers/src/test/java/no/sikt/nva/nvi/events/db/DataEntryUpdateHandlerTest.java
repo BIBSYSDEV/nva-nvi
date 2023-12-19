@@ -38,14 +38,14 @@ public class DataEntryUpdateHandlerTest {
 
     private static final Environment ENVIRONMENT = new Environment();
     private static final Context CONTEXT = mock(Context.class);
-    private static final String CANDIDATE_INSERT_TOPIC = ENVIRONMENT.readEnv("CANDIDATE_INSERT_TOPIC");
-    private static final String CANDIDATE_UPDATE_TOPIC = ENVIRONMENT.readEnv("CANDIDATE_APPLICABLE_UPDATE_TOPIC");
+    private static final String CANDIDATE_INSERT_TOPIC = ENVIRONMENT.readEnv("TOPIC_CANDIDATE_INSERT");
+    private static final String CANDIDATE_UPDATE_TOPIC = ENVIRONMENT.readEnv("TOPIC_CANDIDATE_APPLICABLE_UPDATE");
     private static final String CANDIDATE_UPDATE_NOT_APPLICABLE_TOPIC =
-        ENVIRONMENT.readEnv("CANDIDATE_NOT_APPLICABLE_UPDATE_TOPIC");
-    private static final String CANDIDATE_REMOVED_TOPIC = ENVIRONMENT.readEnv("CANDIDATE_REMOVE_TOPIC");
-    private static final String APPROVAL_INSERT_TOPIC = ENVIRONMENT.readEnv("APPROVAL_INSERT_TOPIC");
-    private static final String APPROVAL_UPDATE_TOPIC = ENVIRONMENT.readEnv("APPROVAL_UPDATE_TOPIC");
-    private static final String APPROVAL_REMOVE_TOPIC = ENVIRONMENT.readEnv("APPROVAL_REMOVE_TOPIC");
+        ENVIRONMENT.readEnv("TOPIC_CANDIDATE_NOT_APPLICABLE_UPDATE");
+    private static final String CANDIDATE_REMOVED_TOPIC = ENVIRONMENT.readEnv("TOPIC_CANDIDATE_REMOVE");
+    private static final String APPROVAL_INSERT_TOPIC = ENVIRONMENT.readEnv("TOPIC_APPROVAL_INSERT");
+    private static final String APPROVAL_UPDATE_TOPIC = ENVIRONMENT.readEnv("TOPIC_APPROVAL_UPDATE");
+    private static final String APPROVAL_REMOVE_TOPIC = ENVIRONMENT.readEnv("TOPIC_APPROVAL_REMOVE");
     private FakeNotificationClient snsClient;
     private DataEntryUpdateHandler handler;
 
