@@ -195,7 +195,7 @@ Resources:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: sqs
-      Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
+      Endpoint: !GetAtt RemoveDocumentFromIndexQueue.Arn
       TopicArn: !Ref NviDataEntryUpdateCandidateNotApplicableUpdateTopic
       RawMessageDelivery: true
 
@@ -203,7 +203,7 @@ Resources:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: sqs
-      Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
+      Endpoint: !GetAtt RemoveDocumentFromIndexQueue.Arn
       TopicArn: !Ref NviDataEntryUpdateCandidateRemoveTopic
       RawMessageDelivery: true
 
