@@ -270,6 +270,7 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref DbEventQueueName
+      VisibilityTimeout: 60
   GenerateIndexDocumentQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -576,7 +577,7 @@ Resources:
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
-      Timeout: 900
+      Timeout: 60
       Environment:
         Variables:
           DB_EVENTS_QUEUE_URL: !Ref DbEventQueue
@@ -597,7 +598,7 @@ Resources:
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
-      Timeout: 900
+      Timeout: 60
       Environment:
         Variables:
           TOPIC_CANDIDATE_INSERT: !Ref NviDataEntryUpdateCandidateInsertTopicName
