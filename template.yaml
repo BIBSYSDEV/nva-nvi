@@ -476,7 +476,8 @@ Resources:
                   - !Ref NviDataEntryUpdateApprovalUpdateTopic
                   - !Ref NviDataEntryUpdateApprovalRemoveTopic
       Queues:
-        - !Ref NviDataEntryUpdateApprovalRemoveQueue
+        - !Ref GenerateIndexDocumentQueue
+        - !Ref RemoveDocumentFromIndexQueue
 
   #============================= Roles ==========================================================
   ScientificIndexApi:
