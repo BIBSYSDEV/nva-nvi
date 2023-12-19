@@ -181,6 +181,7 @@ Resources:
       Protocol: sqs
       Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
       TopicArn: !Ref NviDataEntryUpdateCandidateInsertTopic
+      RawMessageDelivery: true
 
   NviDataEntryUpdateCandidateApplicableUpdateSubscription:
     Type: AWS::SNS::Subscription
@@ -188,6 +189,7 @@ Resources:
       Protocol: sqs
       Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
       TopicArn: !Ref NviDataEntryUpdateCandidateApplicableUpdateTopic
+      RawMessageDelivery: true
 
   NviDataEntryUpdateCandidateNotApplicableUpdateSubscription:
     Type: AWS::SNS::Subscription
@@ -195,6 +197,7 @@ Resources:
       Protocol: sqs
       Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
       TopicArn: !Ref NviDataEntryUpdateCandidateNotApplicableUpdateTopic
+      RawMessageDelivery: true
 
   NviDataEntryUpdateCandidateRemoveSubscription:
     Type: AWS::SNS::Subscription
@@ -202,6 +205,7 @@ Resources:
       Protocol: sqs
       Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
       TopicArn: !Ref NviDataEntryUpdateCandidateRemoveTopic
+      RawMessageDelivery: true
 
   NviDataEntryUpdateApprovalInsertSubscription:
     Type: AWS::SNS::Subscription
@@ -209,6 +213,7 @@ Resources:
       Protocol: sqs
       Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
       TopicArn: !Ref NviDataEntryUpdateApprovalInsertTopic
+      RawMessageDelivery: true
 
   NviDataEntryUpdateApprovalUpdateSubscription:
     Type: AWS::SNS::Subscription
@@ -216,6 +221,7 @@ Resources:
       Protocol: sqs
       Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
       TopicArn: !Ref NviDataEntryUpdateApprovalUpdateTopic
+      RawMessageDelivery: true
 
   NviDataEntryUpdateApprovalRemoveSubscription:
     Type: AWS::SNS::Subscription
@@ -223,6 +229,7 @@ Resources:
       Protocol: sqs
       Endpoint: !GetAtt RemoveDocumentFromIndexQueue.Arn
       TopicArn: !Ref NviDataEntryUpdateApprovalRemoveTopic
+      RawMessageDelivery: true
 
 
   #=============================== SQSs ============================================================
