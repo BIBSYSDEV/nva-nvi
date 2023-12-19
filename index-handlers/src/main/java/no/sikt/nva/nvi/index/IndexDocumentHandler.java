@@ -35,6 +35,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler.class);
     private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
+    private static final String QUEUE_URL = "PERSISTED_INDEX_DOCUMENT_QUEUE_URL";
     private static final String IDENTIFIER = "identifier";
     private static final String ERROR_MESSAGE = "Error message: {}";
     private static final String FAILED_TO_PERSIST_MESSAGE = "Failed to save {} in bucket";
@@ -42,13 +43,13 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     private static final String FAILED_TO_FETCH_CANDIDATE_MESSAGE = "Failed to fetch candidate with identifier: {}";
     private static final String FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE =
         "Failed to generate index document for candidate with identifier: {}";
-
     private final StorageReader<URI> storageReader;
     private final StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter;
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
     private final UriRetriever uriRetriever;
     private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> sqsClient;
+    private final String queueUrl;
 
     @JacocoGenerated
     public IndexDocumentHandler() {
@@ -56,7 +57,8 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
              new S3StorageWriter(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
              new NviQueueClient(), new CandidateRepository(defaultDynamoClient()),
              new PeriodRepository(defaultDynamoClient()),
-             new UriRetriever());
+             new UriRetriever(),
+             new Environment());
     }
 
     public IndexDocumentHandler(StorageReader<URI> storageReader,
@@ -64,13 +66,15 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
                                 QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> sqsClient,
                                 CandidateRepository candidateRepository,
                                 PeriodRepository periodRepository,
-                                UriRetriever uriRetriever) {
+                                UriRetriever uriRetriever,
+                                Environment environment) {
         this.storageReader = storageReader;
         this.storageWriter = storageWriter;
         this.sqsClient = sqsClient;
         this.candidateRepository = candidateRepository;
         this.periodRepository = periodRepository;
         this.uriRetriever = uriRetriever;
+        this.queueUrl = environment.readEnv(QUEUE_URL);
     }
 
     @Override
@@ -83,7 +87,9 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
             .filter(Objects::nonNull)
             .map(this::generateIndexDocument)
             .filter(Objects::nonNull)
-            .forEach(this::persistDocument);
+            .map(this::persistDocument)
+            .filter(Objects::nonNull)
+            .forEach(this::sendEvent);
         return null;
     }
 
@@ -97,12 +103,21 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
                    .get(IDENTIFIER).getS();
     }
 
-    private void persistDocument(IndexDocumentWithConsumptionAttributes document) {
-        attempt(() -> document.persist(storageWriter))
+    private void sendEvent(URI uri) {
+        attempt(() -> sqsClient.sendMessage(new PersistedIndexDocumentMessage(uri).toJsonString(), queueUrl))
             .orElse(failure -> {
-                handleFailure(failure, FAILED_TO_PERSIST_MESSAGE, document.indexDocument().identifier().toString());
+                handleFailure(failure, "Failed to send message to queue", uri.toString());
                 return null;
             });
+    }
+
+    private URI persistDocument(IndexDocumentWithConsumptionAttributes document) {
+        return attempt(() -> document.persist(storageWriter))
+                   .orElse(failure -> {
+                       handleFailure(failure, FAILED_TO_PERSIST_MESSAGE,
+                                     document.indexDocument().identifier().toString());
+                       return null;
+                   });
     }
 
     private DynamodbStreamRecord mapToDynamoDbRecord(String body) {

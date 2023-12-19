@@ -61,6 +61,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
+    public static final Environment ENVIRONMENT = new Environment();
     private static final String BODY = "body";
     private static final String NVI_CANDIDATES_FOLDER = "nvi-candidates";
     private static final String GZIP_ENDING = ".gz";
@@ -69,7 +70,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     private static final String HARD_CODED_PART_OF = "https://example.org/organization/hardCodedPartOf";
     private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
     private static final Context CONTEXT = mock(Context.class);
-    private static final String BUCKET_NAME = new Environment().readEnv(EXPANDED_RESOURCES_BUCKET);
+    private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
     private final S3Client s3Client = new FakeS3Client();
     private IndexDocumentHandler handler;
     private CandidateRepository candidateRepository;
@@ -87,11 +88,12 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         candidateRepository = new CandidateRepository(localDynamoDbClient);
         periodRepository = new PeriodRepository(localDynamoDbClient);
         uriRetriever = mock(UriRetriever.class);
-        var sqsClient = new FakeSqsClient();
+        sqsClient = new FakeSqsClient();
         handler = new IndexDocumentHandler(new S3StorageReader(s3Client, BUCKET_NAME),
                                            new S3StorageWriter(s3Client, BUCKET_NAME),
                                            sqsClient,
-                                           candidateRepository, periodRepository, uriRetriever);
+                                           candidateRepository, periodRepository, uriRetriever,
+                                           ENVIRONMENT);
     }
 
     @Test
@@ -167,7 +169,8 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var s3Writer = mockS3WriterFailingForOneCandidate(candidateToSucceed, candidateToFail
         );
         var handler = new IndexDocumentHandler(new S3StorageReader(s3Client, BUCKET_NAME),
-                                               s3Writer, sqsClient, candidateRepository, periodRepository, uriRetriever);
+                                               s3Writer, sqsClient, candidateRepository, periodRepository, uriRetriever,
+                                               ENVIRONMENT);
         assertDoesNotThrow(() -> handler.handleRequest(event, CONTEXT));
     }
 
