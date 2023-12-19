@@ -347,6 +347,9 @@ Resources:
                 Resource:
                   - !GetAtt NewCandidateQueue.Arn
                   - !GetAtt PersistedResourceQueue.Arn
+                  - !GetAtt DbEventQueue.Arn
+                  - !GetAtt GenerateIndexDocumentQueue.Arn
+                  - !GetAtt RemoveDocumentFromIndexQueue.Arn
         - PolicyName: publishToSnsTopic
           PolicyDocument:
             Version: '2012-10-17'
