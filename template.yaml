@@ -610,13 +610,13 @@ Resources:
       Timeout: 60
       Environment:
         Variables:
-          TOPIC_CANDIDATE_INSERT: !GetAtt NviDataEntryUpdateCandidateInsertTopic.Arn
-          TOPIC_CANDIDATE_APPLICABLE_UPDATE: !GetAtt NviDataEntryUpdateCandidateApplicableUpdateTopic.Arn
-          TOPIC_CANDIDATE_NOT_APPLICABLE_UPDATE: !GetAtt NviDataEntryUpdateCandidateNotApplicableUpdateTopic.Arn
-          TOPIC_CANDIDATE_REMOVE: !GetAtt NviDataEntryUpdateCandidateRemoveTopic.Arn
-          TOPIC_APPROVAL_INSERT: !GetAtt NviDataEntryUpdateApprovalInsertTopic.Arn
-          TOPIC_APPROVAL_UPDATE: !GetAtt NviDataEntryUpdateApprovalUpdateTopic.Arn
-          TOPIC_APPROVAL_REMOVE: !GetAtt NviDataEntryUpdateApprovalRemoveTopic.Arn
+          TOPIC_CANDIDATE_INSERT: !Ref NviDataEntryUpdateCandidateInsertTopic
+          TOPIC_CANDIDATE_APPLICABLE_UPDATE: !Ref NviDataEntryUpdateCandidateApplicableUpdateTopic
+          TOPIC_CANDIDATE_NOT_APPLICABLE_UPDATE: !Ref NviDataEntryUpdateCandidateNotApplicableUpdateTopic
+          TOPIC_CANDIDATE_REMOVE: !Ref NviDataEntryUpdateCandidateRemoveTopic
+          TOPIC_APPROVAL_INSERT: !Ref NviDataEntryUpdateApprovalInsertTopic
+          TOPIC_APPROVAL_UPDATE: !Ref NviDataEntryUpdateApprovalUpdateTopic
+          TOPIC_APPROVAL_REMOVE: !Ref NviDataEntryUpdateApprovalRemoveTopic
       Events:
         SqsEvent:
           Type: SQS
