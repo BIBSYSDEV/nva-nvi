@@ -76,6 +76,9 @@ Parameters:
   RemoveDocumentFromIndexQueueName:
     Type: String
     Default: RemoveDocumentFromIndexQueue
+  IndexDLQName:
+    Type: String
+    Default: IndexDLQ
   SearchInfrastructureApiHost:
     Type: String
     Description: Host of external search infrastructure API (SWS).
@@ -271,6 +274,11 @@ Resources:
     Properties:
       QueueName: !Ref DbEventQueueName
       VisibilityTimeout: 60
+  IndexDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref IndexDLQName
+      MessageRetentionPeriod: 1209600 #14 days
   GenerateIndexDocumentQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -581,6 +589,7 @@ Resources:
       Environment:
         Variables:
           DB_EVENTS_QUEUE_URL: !Ref DbEventQueue
+          INDEX_DLQ: !Ref IndexDLQ
       Events:
         FanoutSource:
           Type: DynamoDB
