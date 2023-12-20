@@ -96,8 +96,8 @@ public class FakeSqsClient implements QueueClient<NviSendMessageResponse, NviSen
                    .messageAttributes(Map.of(
                        MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE,
                        MessageAttributeValue.builder()
-                                                 .stringValue(candidateIdentifier.toString())
-                                                 .build()))
+                           .stringValue(candidateIdentifier.toString())
+                           .build()))
                    .messageBody(body)
                    .build();
     }

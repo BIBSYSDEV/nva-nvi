@@ -78,6 +78,12 @@ public final class QueueServiceTestUtils {
         return message;
     }
 
+    public static SQSMessage invalidSqsMessage() {
+        var message = new SQSMessage();
+        message.setBody("invalid indexDocument");
+        return message;
+    }
+
     private static SQSMessage messageWithoutIdentifier() {
         var message = new SQSMessage();
         message.setBody(generateSingleDynamoDbEventRecordWithEmptyPayload());
@@ -101,11 +107,5 @@ public final class QueueServiceTestUtils {
                                                                             OperationType operationType) {
         return mapToString(eventWithCandidate(oldImage, newImage,
                                               operationType).getRecords().get(0));
-    }
-
-    private static SQSMessage invalidSqsMessage() {
-        var message = new SQSMessage();
-        message.setBody("invalid indexDocument");
-        return message;
     }
 }

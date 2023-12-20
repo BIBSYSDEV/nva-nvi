@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.net.URI;
 import no.sikt.nva.nvi.common.StorageWriter;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.index.PersistedResource;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 
 @JsonSerialize
