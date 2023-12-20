@@ -74,8 +74,7 @@ public class UpdateIndexHandlerV2 implements RequestHandler<SQSEvent, Void> {
     }
 
     private NviCandidateIndexDocument fetchDocument(URI documentUri) {
-        return attempt(
-            () -> parseBlob(storageReader.read(documentUri)).indexDocument()).orElse(
+        return attempt(() -> parseBlob(storageReader.read(documentUri)).indexDocument()).orElse(
             failure -> {
                 handleFailure(failure, FAILED_TO_FETCH_DOCUMENT_MESSAGE, documentUri.toString());
                 return null;
