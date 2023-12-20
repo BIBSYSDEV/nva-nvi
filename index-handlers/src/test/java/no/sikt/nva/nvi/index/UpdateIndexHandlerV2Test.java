@@ -16,6 +16,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.net.URI;
 import java.util.List;
+import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -40,7 +41,6 @@ class UpdateIndexHandlerV2Test extends LocalDynamoTest {
     private PeriodRepository periodRepository;
     private S3Driver s3Driver;
     private UpdateIndexHandlerV2 handler;
-
     private OpenSearchClient openSearchClient;
 
     @BeforeEach
@@ -49,16 +49,15 @@ class UpdateIndexHandlerV2Test extends LocalDynamoTest {
         candidateRepository = new CandidateRepository(localDynamo);
         periodRepository = new PeriodRepository(localDynamo);
         s3Driver = new S3Driver(s3Client, BUCKET_NAME);
-        handler = new UpdateIndexHandlerV2();
         openSearchClient = mock(OpenSearchClient.class);
+        handler = new UpdateIndexHandlerV2(openSearchClient, new S3StorageReader(s3Client, BUCKET_NAME));
     }
 
     @Test
     void shouldUpdateIndexWithDocumentFromS3WhenReceivingEventWithDocumentUri() {
         var candidate = setupRandomIndexDocumentInBucket();
         var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate);
-        var event = createUpdateIndexEvent(candidate);
-        handler.handleRequest(event, null);
+        handler.handleRequest(createUpdateIndexEvent(candidate), null);
         verify(openSearchClient, times(1)).addDocumentToIndex(expectedIndexDocument);
     }
 
