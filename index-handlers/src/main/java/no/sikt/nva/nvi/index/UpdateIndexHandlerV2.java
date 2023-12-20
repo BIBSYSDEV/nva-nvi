@@ -7,6 +7,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.net.URI;
+import java.util.Objects;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
@@ -14,12 +15,18 @@ import no.sikt.nva.nvi.index.model.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.attempt.Failure;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+////TODO: Rename to UpdateIndexHandler when the old UpdateIndexHandler is removed
 public class UpdateIndexHandlerV2 implements RequestHandler<SQSEvent, Void> {
 
-    public static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
+    public static final String FAILED_TO_MAP_BODY_MESSAGE = "Failed to map body to PersistedIndexDocumentMessage: {}";
+    private static final Logger LOGGER = LoggerFactory.getLogger(UpdateIndexHandlerV2.class);
+    private static final String ERROR_MESSAGE = "Error message: {}";
+    private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
     private final OpenSearchClient openSearchClient;
-
     private final StorageReader<URI> storageReader;
 
     @JacocoGenerated
@@ -39,13 +46,23 @@ public class UpdateIndexHandlerV2 implements RequestHandler<SQSEvent, Void> {
             .stream()
             .map(SQSMessage::getBody)
             .map(UpdateIndexHandlerV2::parseBody)
+            .filter(Objects::nonNull)
             .map(this::fetchDocument)
             .forEach(openSearchClient::addDocumentToIndex);
         return null;
     }
 
     private static PersistedIndexDocumentMessage parseBody(String body) {
-        return attempt(() -> dtoObjectMapper.readValue(body, PersistedIndexDocumentMessage.class)).orElseThrow();
+        return attempt(() -> dtoObjectMapper.readValue(body, PersistedIndexDocumentMessage.class)).orElse(failure -> {
+            handleFailure(failure, FAILED_TO_MAP_BODY_MESSAGE, body);
+            return null;
+        });
+    }
+
+    private static void handleFailure(Failure<?> failure, String message, String messageArgument) {
+        LOGGER.error(message, messageArgument);
+        LOGGER.error(ERROR_MESSAGE, failure.getException().getMessage());
+        //TODO: Send message to DLQ
     }
 
     private NviCandidateIndexDocument fetchDocument(

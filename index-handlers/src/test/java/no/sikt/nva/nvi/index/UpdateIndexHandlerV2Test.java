@@ -5,10 +5,12 @@ import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.NVI_CONTEXT;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.createPath;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandApprovals;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandPublicationDetails;
+import static no.sikt.nva.nvi.test.QueueServiceTestUtils.invalidSqsMessage;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static nva.commons.core.attempt.Try.attempt;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -55,16 +57,32 @@ class UpdateIndexHandlerV2Test extends LocalDynamoTest {
 
     @Test
     void shouldUpdateIndexWithDocumentFromS3WhenReceivingEventWithDocumentUri() {
-        var candidate = setupRandomIndexDocumentInBucket();
+        var candidate = randomApplicableCandidate();
         var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate);
         handler.handleRequest(createUpdateIndexEvent(candidate), null);
         verify(openSearchClient, times(1)).addDocumentToIndex(expectedIndexDocument);
+    }
+
+    @Test
+    void shouldNotFailForWholeBatchWhenFailingToParseOneMessageBody() {
+        var candidateToSucceed = randomApplicableCandidate();
+        setupExistingIndexDocumentInBucket(candidateToSucceed);
+        var event = createUpdateIndexEventWithOneInvalidMessageBody(candidateToSucceed);
+        assertDoesNotThrow(() -> handler.handleRequest(event, null));
     }
 
     private static URI generateBucketUri(Candidate candidate) {
         return new UriWrapper(S3_SCHEME, BUCKET_NAME)
                    .addChild(createPath(candidate))
                    .getUri();
+    }
+
+    private SQSEvent createUpdateIndexEventWithOneInvalidMessageBody(Candidate candidateToSucceed) {
+        var event = new SQSEvent();
+        var message = new SQSMessage();
+        message.setBody(new PersistedIndexDocumentMessage(generateBucketUri(candidateToSucceed)).asJsonString());
+        event.setRecords(List.of(message, invalidSqsMessage()));
+        return event;
     }
 
     private SQSEvent createUpdateIndexEvent(Candidate candidate) {
@@ -91,7 +109,7 @@ class UpdateIndexHandlerV2Test extends LocalDynamoTest {
         return indexDocument;
     }
 
-    private Candidate setupRandomIndexDocumentInBucket() {
+    private Candidate randomApplicableCandidate() {
         return Candidate.fromRequest(createUpsertCandidateRequest(2023), candidateRepository, periodRepository)
                    .orElseThrow();
     }
