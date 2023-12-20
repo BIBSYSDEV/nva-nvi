@@ -451,7 +451,7 @@ Resources:
                 Resource:
                   - !GetAtt NvaNviTable.StreamArn
 
-  NviDataEntryUpdateQueuePolicy:
+  GenerateIndexDocumentQueuePolicy:
     Type: AWS::SQS::QueuePolicy
     Properties:
       PolicyDocument:
@@ -464,19 +464,36 @@ Resources:
             Action: sqs:SendMessage
             Resource:
               - !GetAtt GenerateIndexDocumentQueue.Arn
-              - !GetAtt RemoveDocumentFromIndexQueue.Arn
             Condition:
               ArnEquals:
                 aws:SourceArn:
                   - !Ref NviDataEntryUpdateCandidateInsertTopic
                   - !Ref NviDataEntryUpdateCandidateApplicableUpdateTopic
-                  - !Ref NviDataEntryUpdateCandidateNotApplicableUpdateTopic
-                  - !Ref NviDataEntryUpdateCandidateRemoveTopic
                   - !Ref NviDataEntryUpdateApprovalInsertTopic
                   - !Ref NviDataEntryUpdateApprovalUpdateTopic
                   - !Ref NviDataEntryUpdateApprovalRemoveTopic
       Queues:
         - !Ref GenerateIndexDocumentQueue
+
+  RemoveDocumentFromIndexQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Id: MyQueuePolicy
+        Version: '2012-10-17'
+        Statement:
+          - Sid: Allow-SNS-SendMessage
+            Effect: Allow
+            Principal: '*'
+            Action: sqs:SendMessage
+            Resource:
+              - !GetAtt RemoveDocumentFromIndexQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn:
+                  - !Ref NviDataEntryUpdateCandidateNotApplicableUpdateTopic
+                  - !Ref NviDataEntryUpdateCandidateRemoveTopic
+      Queues:
         - !Ref RemoveDocumentFromIndexQueue
 
   #============================= Roles ==========================================================
