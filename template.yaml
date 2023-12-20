@@ -76,6 +76,9 @@ Parameters:
   RemoveDocumentFromIndexQueueName:
     Type: String
     Default: RemoveDocumentFromIndexQueue
+  PersistedIndexDocumentQueueName:
+    Type: String
+    Default: PersistedIndexDocumentQueue
   IndexDLQName:
     Type: String
     Default: IndexDLQ
@@ -294,6 +297,10 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref RemoveDocumentFromIndexQueueName
+  PersistedIndexDocumentQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref PersistedIndexDocumentQueueName
 
   #============================= Permissions =======================================================
   NvaNviRole:
@@ -366,6 +373,9 @@ Resources:
                   - !GetAtt DbEventQueue.Arn
                   - !GetAtt GenerateIndexDocumentQueue.Arn
                   - !GetAtt RemoveDocumentFromIndexQueue.Arn
+                  - !GetAtt PersistedIndexDocumentQueue.Arn
+                  - !GetAtt GenerateIndexDocumentQueue.Arn
+                  - !GetAtt RemoveDocumentFromIndexQueue.Arn
         - PolicyName: publishToSnsTopic
           PolicyDocument:
             Version: '2012-10-17'
@@ -381,7 +391,7 @@ Resources:
                   - !Ref NviDataEntryUpdateApprovalInsertTopic
                   - !Ref NviDataEntryUpdateApprovalUpdateTopic
                   - !Ref NviDataEntryUpdateApprovalRemoveTopic
-        - PolicyName: subsubscribeOnSnsTopic
+        - PolicyName: subscribeOnSnsTopic
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -524,7 +534,7 @@ Resources:
       RestApiId: !Ref ScientificIndexApi
       Stage: !Ref ScientificIndexApi.Stage
 
-  #============================= Handlers ==========================================================
+  #============================= Event Handlers ======================================================
   QueuePersistedResourceHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -673,6 +683,58 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt DbEventQueue.Arn
+
+  IndexDocumentHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.index.IndexDocumentHandler::handleRequest
+      Runtime: java17
+      Role: !GetAtt NvaNviRole.Arn
+      AutoPublishAlias: live
+      Timeout: 60
+      Environment:
+        Variables:
+          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+          PERSISTED_INDEX_DOCUMENT_QUEUE_URL: !Ref PersistedIndexDocumentQueue
+      Events:
+        SqsEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt GenerateIndexDocumentQueue.Arn
+
+  UpdateIndexHandlerV2:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.index.UpdateIndexHandlerV2::handleRequest
+      Runtime: java17
+      Role: !GetAtt NvaNviRole.Arn
+      AutoPublishAlias: live
+      Timeout: 60
+      Environment:
+        Variables: 
+          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+      Events:
+        SqsEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt PersistedIndexDocumentQueue.Arn
+
+  RemoveIndexDocumentHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.index.RemoveIndexDocumentHandler::handleRequest
+      Runtime: java17
+      Role: !GetAtt NvaNviRole.Arn
+      AutoPublishAlias: live
+      Timeout: 60
+      Events:
+        SqsEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt RemoveDocumentFromIndexQueue.Arn
 
   NviEventBasedBatchScanHandler:
     Type: AWS::Serverless::Function
