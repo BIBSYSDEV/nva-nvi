@@ -179,15 +179,15 @@ public class SearchNviCandidatesHandlerTest {
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
 
         var actualId = paginatedSearchResult.getId().toString();
-        var expectedInstitutionQuery = QUERY_PARAM_AFFILIATIONS
-                                       + "=" + randomInstitutions.get(0)
-                                       + "," + randomInstitutions.get(1);
-        var expectedExcludeQuery = QUERY_PARAM_EXCLUDE_SUB_UNITS + "=true";
 
         assertThat(actualId, containsString(QUERY_PARAM_FILTER + "=" + randomFilter));
         assertThat(actualId, containsString(QUERY_PARAM_CATEGORY + "=" + randomCategory));
         assertThat(actualId, containsString(QUERY_PARAM_TITLE + "=" + randomTitle));
         assertThat(actualId, containsString(QUERY_PARAM_SEARCH_TERM + "=" + randomSearchTerm));
+        var expectedInstitutionQuery = QUERY_PARAM_AFFILIATIONS
+                                       + "=" + randomInstitutions.get(0)
+                                       + "," + randomInstitutions.get(1);
+        var expectedExcludeQuery = QUERY_PARAM_EXCLUDE_SUB_UNITS + "=true";
         assertThat(actualId, containsString(expectedInstitutionQuery));
         assertThat(actualId, containsString(expectedExcludeQuery));
     }

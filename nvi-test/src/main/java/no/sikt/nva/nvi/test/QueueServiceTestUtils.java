@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.test;
 
+import static no.sikt.nva.nvi.test.DynamoDbTestUtils.dynamoDbEventWithEmptyPayload;
 import static no.sikt.nva.nvi.test.DynamoDbTestUtils.eventWithCandidate;
 import static no.sikt.nva.nvi.test.DynamoDbTestUtils.eventWithCandidateIdentifier;
 import static no.sikt.nva.nvi.test.DynamoDbTestUtils.mapToString;
@@ -58,6 +59,13 @@ public final class QueueServiceTestUtils {
         return sqsEvent;
     }
 
+    public static SQSEvent createEventWithDynamoEventMissingIdentifier(CandidateDao candidate) {
+        var sqsEvent = new SQSEvent();
+        var message = createMessage(null, candidate, OperationType.INSERT);
+        sqsEvent.setRecords(List.of(message, messageWithoutIdentifier()));
+        return sqsEvent;
+    }
+
     public static SQSMessage createMessage(UUID candidateIdentifier) {
         var message = new SQSMessage();
         message.setBody(generateSingleDynamoDbEventRecord(candidateIdentifier));
@@ -66,7 +74,13 @@ public final class QueueServiceTestUtils {
 
     public static SQSMessage createMessage(Dao oldImage, Dao newImage, OperationType operationType) {
         var message = new SQSMessage();
-        message.setBody(generateSingleDynamoDbEventRecord(oldImage, newImage, operationType));
+        message.setBody(generateSingleDynamoDbEventRecordWithEmptyPayload(oldImage, newImage, operationType));
+        return message;
+    }
+
+    private static SQSMessage messageWithoutIdentifier() {
+        var message = new SQSMessage();
+        message.setBody(generateSingleDynamoDbEventRecordWithEmptyPayload());
         return message;
     }
 
@@ -77,6 +91,16 @@ public final class QueueServiceTestUtils {
     private static String generateSingleDynamoDbEventRecord(Dao oldImage, Dao newImage,
                                                             OperationType operationType) {
         return mapToString(eventWithCandidate(oldImage, newImage, operationType).getRecords().get(0));
+    }
+
+    private static String generateSingleDynamoDbEventRecordWithEmptyPayload() {
+        return mapToString(dynamoDbEventWithEmptyPayload().getRecords().get(0));
+    }
+
+    private static String generateSingleDynamoDbEventRecordWithEmptyPayload(Dao oldImage, Dao newImage,
+                                                                            OperationType operationType) {
+        return mapToString(eventWithCandidate(oldImage, newImage,
+                                              operationType).getRecords().get(0));
     }
 
     private static SQSMessage invalidSqsMessage() {

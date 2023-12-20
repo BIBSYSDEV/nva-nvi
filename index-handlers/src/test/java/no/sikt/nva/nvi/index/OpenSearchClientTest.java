@@ -183,7 +183,7 @@ public class OpenSearchClientTest {
     void shouldRemoveDocumentFromIndex() throws InterruptedException, IOException {
         var document = singleNviCandidateIndexDocument();
         addDocumentsToIndex(document);
-        openSearchClient.removeDocumentFromIndex(document);
+        openSearchClient.removeDocumentFromIndex(document.identifier());
         Thread.sleep(DELAY_ON_INDEX);
         var searchParameters = defaultSearchParameters().build();
         var searchResponse =
