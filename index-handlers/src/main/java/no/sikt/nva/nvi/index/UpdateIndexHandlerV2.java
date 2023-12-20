@@ -22,8 +22,9 @@ import org.slf4j.LoggerFactory;
 ////TODO: Rename to UpdateIndexHandler when the old UpdateIndexHandler is removed
 public class UpdateIndexHandlerV2 implements RequestHandler<SQSEvent, Void> {
 
-    public static final String FAILED_TO_MAP_BODY_MESSAGE = "Failed to map body to PersistedIndexDocumentMessage: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateIndexHandlerV2.class);
+    private static final String FAILED_TO_MAP_BODY_MESSAGE = "Failed to map body to PersistedIndexDocumentMessage: {}";
+    private static final String FAILED_TO_FETCH_DOCUMENT_MESSAGE = "Failed to fetch document from S3: {}";
     private static final String ERROR_MESSAGE = "Error message: {}";
     private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
     private final OpenSearchClient openSearchClient;
@@ -45,18 +46,19 @@ public class UpdateIndexHandlerV2 implements RequestHandler<SQSEvent, Void> {
         input.getRecords()
             .stream()
             .map(SQSMessage::getBody)
-            .map(UpdateIndexHandlerV2::parseBody)
+            .map(UpdateIndexHandlerV2::extractDocumentUriFromBody)
             .filter(Objects::nonNull)
             .map(this::fetchDocument)
             .forEach(openSearchClient::addDocumentToIndex);
         return null;
     }
 
-    private static PersistedIndexDocumentMessage parseBody(String body) {
-        return attempt(() -> dtoObjectMapper.readValue(body, PersistedIndexDocumentMessage.class)).orElse(failure -> {
-            handleFailure(failure, FAILED_TO_MAP_BODY_MESSAGE, body);
-            return null;
-        });
+    private static URI extractDocumentUriFromBody(String body) {
+        return attempt(() -> dtoObjectMapper.readValue(body, PersistedIndexDocumentMessage.class).documentUri()).orElse(
+            failure -> {
+                handleFailure(failure, FAILED_TO_MAP_BODY_MESSAGE, body);
+                return null;
+            });
     }
 
     private static void handleFailure(Failure<?> failure, String message, String messageArgument) {
@@ -65,11 +67,18 @@ public class UpdateIndexHandlerV2 implements RequestHandler<SQSEvent, Void> {
         //TODO: Send message to DLQ
     }
 
-    private NviCandidateIndexDocument fetchDocument(
-        PersistedIndexDocumentMessage persistedIndexDocumentMessage) {
-        var blob = storageReader.read(persistedIndexDocumentMessage.documentUri());
-        var documentWithConsumptionAttributes = attempt(
+    private static IndexDocumentWithConsumptionAttributes parseBlob(String blob) {
+        return attempt(
             () -> dtoObjectMapper.readValue(blob, IndexDocumentWithConsumptionAttributes.class)).orElseThrow();
-        return documentWithConsumptionAttributes.indexDocument();
+    }
+
+    private NviCandidateIndexDocument fetchDocument(
+        URI documentUri) {
+        return attempt(
+            () -> parseBlob(storageReader.read(documentUri)).indexDocument()).orElse(
+            failure -> {
+                handleFailure(failure, FAILED_TO_FETCH_DOCUMENT_MESSAGE, documentUri.toString());
+                return null;
+            });
     }
 }
