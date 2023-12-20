@@ -315,7 +315,7 @@ Resources:
               Service: [ lambda.amazonaws.com ]
             Action: [ 'sts:AssumeRole' ]
       Policies:
-        - PolicyName: readFromS3
+        - PolicyName: S3Access
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -323,7 +323,7 @@ Resources:
                 Action:
                   - s3:Get*
                   - s3:List*
-                  - events:*
+                  - s3:PutObject
                   - secretsmanager:*
                 Resource: '*'
         - PolicyName: Events
@@ -333,19 +333,9 @@ Resources:
               - Effect: Allow
                 Action:
                   - events:*
-                  - sqs:SendMessage
-                  - sqs:GetQueueUrl
                 Resource:
                   - !Ref EventBusArn
                   - !GetAtt InternalBus.Arn
-                  - !GetAtt NewCandidateQueue.Arn
-                  - !GetAtt PersistedResourceQueue.Arn
-                  - !GetAtt PersistedResourceDLQ.Arn
-                  - !GetAtt NewCandidateDLQ.Arn
-                  - !GetAtt BatchScanDLQ.Arn
-                  - !GetAtt UpdateIndexDLQ.Arn
-                  - !GetAtt UpsertCandidateDLQ.Arn
-                  - !GetAtt ReEvaluateDLQ.Arn
         - PolicyName: writeLog
           PolicyDocument:
             Version: 2012-10-17
@@ -362,7 +352,6 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - events:*
                   - sqs:SendMessage
                   - sqs:ReceiveMessage
                   - sqs:DeleteMessage
@@ -370,13 +359,17 @@ Resources:
                   - sqs:ChangeMessageVisibility
                 Resource:
                   - !GetAtt NewCandidateQueue.Arn
-                  - !GetAtt PersistedResourceQueue.Arn
                   - !GetAtt DbEventQueue.Arn
-                  - !GetAtt GenerateIndexDocumentQueue.Arn
-                  - !GetAtt RemoveDocumentFromIndexQueue.Arn
                   - !GetAtt PersistedIndexDocumentQueue.Arn
                   - !GetAtt GenerateIndexDocumentQueue.Arn
                   - !GetAtt RemoveDocumentFromIndexQueue.Arn
+                  - !GetAtt PersistedResourceQueue.Arn
+                  - !GetAtt PersistedResourceDLQ.Arn
+                  - !GetAtt NewCandidateDLQ.Arn
+                  - !GetAtt BatchScanDLQ.Arn
+                  - !GetAtt UpdateIndexDLQ.Arn
+                  - !GetAtt UpsertCandidateDLQ.Arn
+                  - !GetAtt ReEvaluateDLQ.Arn
         - PolicyName: publishToSnsTopic
           PolicyDocument:
             Version: '2012-10-17'
