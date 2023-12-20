@@ -1,11 +1,12 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.EN_FIELD;
-import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_LABEL;
-import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_NORWEGIAN_LABEL;
-import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.NB_FIELD;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.createExpandedResource;
-import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractAffiliations;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.GZIP_ENDING;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.HARD_CODED_PART_OF;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.NVI_CANDIDATES_FOLDER;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.NVI_CONTEXT;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandApprovals;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandPublicationDetails;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
@@ -22,31 +23,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
-import no.sikt.nva.nvi.index.model.Affiliation;
-import no.sikt.nva.nvi.index.model.ApprovalStatus;
-import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.index.model.PublicationDate;
-import no.sikt.nva.nvi.index.model.PublicationDetails;
-import no.sikt.nva.nvi.test.ExpandedResourceGenerator;
 import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -64,11 +53,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     public static final Environment ENVIRONMENT = new Environment();
     private static final String BODY = "body";
-    private static final String NVI_CANDIDATES_FOLDER = "nvi-candidates";
-    private static final String GZIP_ENDING = ".gz";
     private static final String ORGANIZATION_CONTEXT = "https://bibsysdev.github.io/src/organization-context.json";
-    private static final URI NVI_CONTEXT = URI.create("https://bibsysdev.github.io/src/nvi-context.json");
-    private static final String HARD_CODED_PART_OF = "https://example.org/organization/hardCodedPartOf";
     private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
     private static final Context CONTEXT = mock(Context.class);
     private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
@@ -350,66 +335,6 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
                    .withPoints(candidate.getTotalPoints())
                    .withPublicationDetails(expandPublicationDetails(candidate, expandedResource))
                    .withNumberOfApprovals(candidate.getApprovals().size())
-                   .build();
-    }
-
-    private PublicationDetails expandPublicationDetails(Candidate candidate, JsonNode expandedResource) {
-        return PublicationDetails.builder()
-                   .withType(ExpandedResourceGenerator.extractType(expandedResource))
-                   .withId(candidate.getPublicationDetails().publicationId().toString())
-                   .withTitle(ExpandedResourceGenerator.extractTitle(expandedResource))
-                   .withPublicationDate(mapToPublicationDate(candidate.getPublicationDetails().publicationDate()))
-                   .withContributors(mapToContributors(ExpandedResourceGenerator.extractContributors(expandedResource)))
-                   .build();
-    }
-
-    private PublicationDate mapToPublicationDate(
-        no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate publicationDate) {
-        return new PublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
-    }
-
-    private List<Contributor> mapToContributors(ArrayNode contributorNodes) {
-        return JsonUtils.streamNode(contributorNodes)
-                   .map(this::toContributor)
-                   .toList();
-    }
-
-    private Contributor toContributor(JsonNode contributorNode) {
-        return Contributor.builder()
-                   .withId(ExpandedResourceGenerator.extractId(contributorNode))
-                   .withName(ExpandedResourceGenerator.extractName(contributorNode))
-                   .withOrcid(ExpandedResourceGenerator.extractOrcid(contributorNode))
-                   .withRole(ExpandedResourceGenerator.extractRole(contributorNode))
-                   .withAffiliations(mapToAffiliations(extractAffiliations(contributorNode)))
-                   .build();
-    }
-
-    private List<Affiliation> mapToAffiliations(List<URI> uris) {
-        return uris.stream().map(this::toAffiliation).toList();
-    }
-
-    private Affiliation toAffiliation(URI uri) {
-        return Affiliation.builder()
-                   .withId(uri.toString())
-                   .withPartOf(List.of(HARD_CODED_PART_OF))
-                   .build();
-    }
-
-    private List<no.sikt.nva.nvi.index.model.Approval> expandApprovals(Candidate candidate) {
-        return candidate.getApprovals()
-                   .entrySet()
-                   .stream()
-                   .map(this::toApproval)
-                   .toList();
-    }
-
-    private no.sikt.nva.nvi.index.model.Approval toApproval(Entry<URI, Approval> approvalEntry) {
-        var assignee = approvalEntry.getValue().getAssignee();
-        return no.sikt.nva.nvi.index.model.Approval.builder()
-                   .withId(approvalEntry.getKey().toString())
-                   .withApprovalStatus(ApprovalStatus.fromValue(approvalEntry.getValue().getStatus().getValue()))
-                   .withAssignee(Objects.nonNull(assignee) ? assignee.value() : null)
-                   .withLabels(Map.of(EN_FIELD, HARDCODED_ENGLISH_LABEL, NB_FIELD, HARDCODED_NORWEGIAN_LABEL))
                    .build();
     }
 

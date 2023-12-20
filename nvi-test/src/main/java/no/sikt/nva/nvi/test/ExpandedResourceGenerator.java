@@ -24,7 +24,6 @@ public final class ExpandedResourceGenerator {
     private ExpandedResourceGenerator() {
     }
 
-    //TODO: To be used in new tests for new IndexDocumentHandler
     public static JsonNode createExpandedResource(Candidate candidate) {
         var root = objectMapper.createObjectNode();
 

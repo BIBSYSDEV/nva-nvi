@@ -4,6 +4,7 @@ plugins {
 }
 dependencies {
     implementation project(':nvi-commons')
+    implementation project(':index-handlers')
     implementation libs.bundles.testing
     implementation libs.nva.commons.core
     implementation libs.nva.commons.apigateway
