@@ -293,6 +293,7 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref GenerateIndexDocumentQueueName
+      VisibilityTimeout: 60
   RemoveDocumentFromIndexQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -711,7 +712,7 @@ Resources:
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
-      Timeout: 60
+      Timeout: 30
       Environment:
         Variables: 
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
@@ -729,7 +730,7 @@ Resources:
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
-      Timeout: 60
+      Timeout: 30
       Events:
         SqsEvent:
           Type: SQS
