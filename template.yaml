@@ -688,7 +688,7 @@ Resources:
   IndexDocumentHandler:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: event-handlers
+      CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.IndexDocumentHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
@@ -707,7 +707,7 @@ Resources:
   UpdateIndexHandlerV2:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: event-handlers
+      CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.UpdateIndexHandlerV2::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
@@ -725,7 +725,7 @@ Resources:
   RemoveIndexDocumentHandler:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: event-handlers
+      CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.RemoveIndexDocumentHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
