@@ -49,6 +49,7 @@ public class UpdateIndexHandlerV2 implements RequestHandler<SQSEvent, Void> {
             .map(UpdateIndexHandlerV2::extractDocumentUriFromBody)
             .filter(Objects::nonNull)
             .map(this::fetchDocument)
+            .filter(Objects::nonNull)
             .forEach(openSearchClient::addDocumentToIndex);
         return null;
     }
@@ -72,8 +73,7 @@ public class UpdateIndexHandlerV2 implements RequestHandler<SQSEvent, Void> {
             () -> dtoObjectMapper.readValue(blob, IndexDocumentWithConsumptionAttributes.class)).orElseThrow();
     }
 
-    private NviCandidateIndexDocument fetchDocument(
-        URI documentUri) {
+    private NviCandidateIndexDocument fetchDocument(URI documentUri) {
         return attempt(
             () -> parseBlob(storageReader.read(documentUri)).indexDocument()).orElse(
             failure -> {

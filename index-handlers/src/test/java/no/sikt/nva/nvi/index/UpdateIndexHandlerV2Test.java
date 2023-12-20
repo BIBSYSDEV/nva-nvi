@@ -11,6 +11,8 @@ import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -81,19 +83,30 @@ class UpdateIndexHandlerV2Test extends LocalDynamoTest {
     void shouldNotFailForWholeBatchWhenFailingToReadOneS3Blob() throws JsonProcessingException {
         var candidateToSucceed = randomApplicableCandidate();
         var candidateToFail = randomApplicableCandidate();
-        var storageReader = mock(StorageReader.class);
-        when(storageReader.read(generateBucketUri(candidateToSucceed))).thenReturn(
-                setupExistingIndexDocumentInBucket(candidateToSucceed).toJsonString());
-        when(storageReader.read(generateBucketUri(candidateToFail))).thenThrow(new RuntimeException());
+        var storageReader = setUpStorageReaderFailingForOneCandidate(candidateToSucceed, candidateToFail);
         handler = new UpdateIndexHandlerV2(openSearchClient, storageReader);
         var event = createUpdateIndexEvent(List.of(candidateToSucceed, candidateToFail));
-        assertDoesNotThrow(() -> handler.handleRequest(event, CONTEXT));
+        handler.handleRequest(event, CONTEXT);
+        verify(openSearchClient, times(0)).addDocumentToIndex(eq(null));
+        verify(openSearchClient, times(1)).addDocumentToIndex(any(NviCandidateIndexDocument.class));
     }
 
     private static URI generateBucketUri(Candidate candidate) {
         return new UriWrapper(S3_SCHEME, BUCKET_NAME)
                    .addChild(createPath(candidate))
                    .getUri();
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private StorageReader setUpStorageReaderFailingForOneCandidate(Candidate candidateToSucceed,
+                                                                   Candidate candidateToFail)
+        throws JsonProcessingException {
+        var storageReader = mock(StorageReader.class);
+        var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidateToSucceed);
+        when(storageReader.read(generateBucketUri(candidateToSucceed))).thenReturn(
+            expectedIndexDocument.toJsonString());
+        when(storageReader.read(generateBucketUri(candidateToFail))).thenThrow(new RuntimeException());
+        return storageReader;
     }
 
     private SQSEvent createUpdateIndexEventWithOneInvalidMessageBody(Candidate candidateToSucceed) {
