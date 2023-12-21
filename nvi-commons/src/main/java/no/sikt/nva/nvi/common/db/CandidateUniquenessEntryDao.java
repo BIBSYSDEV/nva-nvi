@@ -90,18 +90,18 @@ public final class CandidateUniquenessEntryDao extends Dao {
             return false;
         }
         var that = (CandidateUniquenessEntryDao) obj;
-        return Objects.equals(this.partitionKey, that.partitionKey) &&
-               Objects.equals(this.sortKey, that.sortKey) &&
-               Objects.equals(this.version, that.version);
+        return Objects.equals(this.partitionKey, that.partitionKey)
+               && Objects.equals(this.sortKey, that.sortKey)
+               && Objects.equals(this.version, that.version);
     }
 
     @Override
     @JacocoGenerated
     public String toString() {
-        return "CandidateUniquenessEntryDao[" +
-               "partitionKey=" + partitionKey + ", " +
-               "sortKey=" + sortKey + ", " +
-               "version=" + version + ']';
+        return "CandidateUniquenessEntryDao["
+               + "partitionKey=" + partitionKey + ", "
+               + "sortKey=" + sortKey + ", "
+               + "version=" + version + ']';
     }
 
     @DynamoDbIgnore
