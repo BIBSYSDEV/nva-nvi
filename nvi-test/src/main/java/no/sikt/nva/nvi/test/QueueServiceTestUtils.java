@@ -32,17 +32,17 @@ public final class QueueServiceTestUtils {
         return sqsEvent;
     }
 
-    public static SQSEvent createEventWithMessages(List<SQSMessage> messages) {
-        var sqsEvent = new SQSEvent();
-        sqsEvent.setRecords(messages);
-        return sqsEvent;
-    }
-
     public static SQSEvent createEvent(List<UUID> candidateIdentifiers) {
         var sqsEvent = new SQSEvent();
         var records = candidateIdentifiers.stream().map(
             QueueServiceTestUtils::createMessage).toList();
         sqsEvent.setRecords(records);
+        return sqsEvent;
+    }
+
+    public static SQSEvent createEventWithMessages(List<SQSMessage> messages) {
+        var sqsEvent = new SQSEvent();
+        sqsEvent.setRecords(messages);
         return sqsEvent;
     }
 
