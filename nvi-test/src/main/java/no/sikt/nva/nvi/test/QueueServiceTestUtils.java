@@ -94,6 +94,11 @@ public final class QueueServiceTestUtils {
         return mapToString(eventWithCandidateIdentifier(candidateIdentifier).getRecords().get(0));
     }
 
+    private static String generateSingleDynamoDbEventRecord(Dao oldImage, Dao newImage,
+                                                            OperationType operationType) {
+        return mapToString(eventWithCandidate(oldImage, newImage, operationType).getRecords().get(0));
+    }
+
     private static String generateSingleDynamoDbEventRecordWithEmptyPayload() {
         return mapToString(dynamoDbEventWithEmptyPayload().getRecords().get(0));
     }
