@@ -82,6 +82,15 @@ Parameters:
   IndexDLQName:
     Type: String
     Default: IndexDLQ
+  DynamoDbEventToQueueDLQName:
+    Type: String
+    Default: DynamoDbEventToQueueDLQ
+  DataEntryUpdateDLQName:
+    Type: String
+    Default: DataEntryUpdateDLQ
+  IndexDocumentDLQName:
+    Type: String
+    Default: IndexDocumentDLQ
   SearchInfrastructureApiHost:
     Type: String
     Description: Host of external search infrastructure API (SWS).
@@ -302,6 +311,21 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref PersistedIndexDocumentQueueName
+  DynamoDbEventToQueueDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref DynamoDbEventToQueueDLQName
+      MessageRetentionPeriod: 1209600 #14 days
+  DataEntryUpdateDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref DataEntryUpdateDLQName
+      MessageRetentionPeriod: 1209600 #14 days
+  IndexDocumentDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref IndexDocumentDLQName
+      MessageRetentionPeriod: 1209600 #14 days
 
   #============================= Permissions =======================================================
   NvaNviRole:
@@ -629,6 +653,11 @@ Resources:
             StartingPosition: TRIM_HORIZON
             BatchSize: 1
             Enabled: true
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt DynamoDbEventToQueueDLQ.Arn
 
   DataEntryUpdateHandler:
     Type: AWS::Serverless::Function
@@ -654,6 +683,11 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt DbEventQueue.Arn
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt DataEntryUpdateDLQ.Arn
 
   IndexDocumentHandler:
     Type: AWS::Serverless::Function
@@ -673,6 +707,11 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt GenerateIndexDocumentQueue.Arn
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt IndexDocumentDLQ.Arn
 
   UpdateIndexHandlerV2:
     Type: AWS::Serverless::Function
@@ -691,6 +730,11 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt PersistedIndexDocumentQueue.Arn
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt UpdateIndexDLQ.Arn
 
   RemoveIndexDocumentHandler:
     Type: AWS::Serverless::Function
@@ -1139,6 +1183,74 @@ Resources:
       Dimensions:
         - Name: QueueName
           Value: !GetAtt UpsertCandidateDLQ.QueueName
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  DataEntryUpdateDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=DataEntryUpdateDLQ
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt DataEntryUpdateDLQ.QueueName
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  IndexDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=IndexDLQ
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt IndexDLQ.QueueName
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  DynamoDbEventToQueueDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=DynamoDbEventToQueueDLQ
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt DynamoDbEventToQueueDLQ.QueueName
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  IndexDocumentDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=IndexDocumentDLQ
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt IndexDocumentDLQ.QueueName
       Period: 300
       EvaluationPeriods: 1
       Threshold: 1
