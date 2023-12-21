@@ -8,14 +8,14 @@ import software.amazon.awssdk.services.dynamodb.model.OperationType;
 
 public class DataEntryUpdateTopicProvider {
 
-    public static final String CANDIDATE_REMOVE_TOPIC = "TOPIC_CANDIDATE_REMOVE";
-    public static final String APPROVAL_REMOVE_TOPIC = "TOPIC_APPROVAL_REMOVE";
-    public static final String CANDIDATE_INSERT_TOPIC = "TOPIC_CANDIDATE_INSERT";
-    public static final String APPROVAL_INSERT_TOPIC = "TOPIC_APPROVAL_INSERT";
-    public static final String APPROVAL_UPDATE_TOPIC = "TOPIC_APPROVAL_UPDATE";
-    public static final String CANDIDATE_APPLICABLE_UPDATE_TOPIC = "TOPIC_CANDIDATE_APPLICABLE_UPDATE";
-    public static final String CANDIDATE_NOT_APPLICABLE_UPDATE_TOPIC = "TOPIC_CANDIDATE_NOT_APPLICABLE_UPDATE";
-    public static final String ILLEGAL_DAO_TYPE_MESSAGE = "Illegal dao type: ";
+    private static final String CANDIDATE_REMOVE_TOPIC = "TOPIC_CANDIDATE_REMOVE";
+    private static final String APPROVAL_REMOVE_TOPIC = "TOPIC_APPROVAL_REMOVE";
+    private static final String CANDIDATE_INSERT_TOPIC = "TOPIC_CANDIDATE_INSERT";
+    private static final String APPROVAL_INSERT_TOPIC = "TOPIC_APPROVAL_INSERT";
+    private static final String APPROVAL_UPDATE_TOPIC = "TOPIC_APPROVAL_UPDATE";
+    private static final String CANDIDATE_APPLICABLE_UPDATE_TOPIC = "TOPIC_CANDIDATE_APPLICABLE_UPDATE";
+    private static final String CANDIDATE_NOT_APPLICABLE_UPDATE_TOPIC = "TOPIC_CANDIDATE_NOT_APPLICABLE_UPDATE";
+    private static final String ILLEGAL_DAO_TYPE_MESSAGE = "Illegal dao type: ";
     private final Environment environment;
 
     public DataEntryUpdateTopicProvider(Environment environment) {

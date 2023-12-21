@@ -589,31 +589,6 @@ Resources:
             Type: SQS
             Destination: !GetAtt NewCandidateDLQ.Arn
 
-  #UpdateIndexHandler:
-  #  Type: AWS::Serverless::Function
-  #  Properties:
-  #    Description: 'Listens to DynamoDbStream and creates, modifies and deletes record from nvi-index'
-  #    CodeUri: index-handlers
-  #    Handler: no.sikt.nva.nvi.index.UpdateIndexHandler::handleRequest
-  #    Timeout: 600
-  #    MemorySize: 1536
-  #    Role: !GetAtt NvaNviRole.Arn
-  #    AutoPublishAlias: live
-  #    Environment:
-  #      Variables:
-  #        EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-  #        BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
-  #        BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
-  #        UPDATE_INDEX_DLQ_QUEUE_URL: !Ref UpdateIndexDLQ
-  #    Events:
-  #      FanoutSource:
-  #        Type: DynamoDB
-  #        Properties:
-  #          Stream: !GetAtt NvaNviTable.StreamArn
-  #          StartingPosition: TRIM_HORIZON
-  #          BatchSize: 1
-  #          Enabled: true
-
   UpsertNviCandidateHandler:
     Type: AWS::Serverless::Function
     Properties:
