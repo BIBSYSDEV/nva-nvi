@@ -81,6 +81,11 @@ public class UpdateIndexHandlerV2 implements RequestHandler<SQSEvent, Void> {
         return filename.replace(GZIP_ENDING, "");
     }
 
+    private static void logFailure(String message, String messageArgument, Exception failure) {
+        LOGGER.error(message, messageArgument);
+        LOGGER.error(ERROR_MESSAGE, failure.getMessage());
+    }
+
     private URI extractDocumentUriFromBody(String body) {
         return attempt(() -> dtoObjectMapper.readValue(body, PersistedIndexDocumentMessage.class).documentUri()).orElse(
             failure -> {
@@ -91,14 +96,12 @@ public class UpdateIndexHandlerV2 implements RequestHandler<SQSEvent, Void> {
 
     private void handleFailure(Failure<?> failure, String message, String messageArgument,
                                UUID candidateIdentifier) {
-        LOGGER.error(message, messageArgument);
-        LOGGER.error(ERROR_MESSAGE, failure.getException().getMessage());
+        logFailure(message, messageArgument, failure.getException());
         queueClient.sendMessage(messageArgument, dlqUrl, candidateIdentifier);
     }
 
     private void handleFailure(Failure<?> failure, String messageArgument) {
-        LOGGER.error(UpdateIndexHandlerV2.FAILED_TO_MAP_BODY_MESSAGE, messageArgument);
-        LOGGER.error(ERROR_MESSAGE, failure.getException().getMessage());
+        logFailure(FAILED_TO_MAP_BODY_MESSAGE, messageArgument, failure.getException());
         queueClient.sendMessage(messageArgument, dlqUrl);
     }
 

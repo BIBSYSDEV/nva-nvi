@@ -118,6 +118,11 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
         return filename.replace(GZIP_ENDING, "");
     }
 
+    private static void logFailure(String message, String messageArgument, Exception failure) {
+        LOGGER.error(message, messageArgument);
+        LOGGER.error(ERROR_MESSAGE, failure.getMessage());
+    }
+
     private void sendEvent(URI uri) {
         attempt(() -> sqsClient.sendMessage(new PersistedIndexDocumentMessage(uri).asJsonString(), queueUrl))
             .orElse(failure -> {
@@ -179,14 +184,12 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     }
 
     private void handleFailure(Failure<?> failure, String messageArgument) {
-        LOGGER.error(IndexDocumentHandler.FAILED_TO_PARSE_EVENT_MESSAGE, messageArgument);
-        LOGGER.error(ERROR_MESSAGE, failure.getException().getMessage());
+        logFailure(FAILED_TO_PARSE_EVENT_MESSAGE, messageArgument, failure.getException());
         sqsClient.sendMessage(failure.getException().getMessage(), dlqUrl);
     }
 
     private void handleFailure(Failure<?> failure, String message, String messageArgument, UUID candidateIdentifier) {
-        LOGGER.error(message, messageArgument);
-        LOGGER.error(ERROR_MESSAGE, failure.getException().getMessage());
+        logFailure(message, messageArgument, failure.getException());
         sqsClient.sendMessage(failure.getException().getMessage(), dlqUrl, candidateIdentifier);
     }
 }
