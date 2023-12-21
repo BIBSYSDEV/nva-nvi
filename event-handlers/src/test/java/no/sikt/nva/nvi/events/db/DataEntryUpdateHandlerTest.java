@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.db;
 
+import static no.sikt.nva.nvi.test.DynamoDbTestUtils.randomDynamoDbEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithMessages;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
@@ -12,7 +13,9 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import java.util.List;
@@ -25,6 +28,7 @@ import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
+import no.sikt.nva.nvi.test.FakeSqsClient;
 import nva.commons.core.Environment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +37,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import software.amazon.awssdk.services.dynamodb.model.OperationType;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
+import software.amazon.awssdk.services.sns.model.SnsException;
 
 public class DataEntryUpdateHandlerTest {
 
@@ -48,6 +53,7 @@ public class DataEntryUpdateHandlerTest {
     private static final String APPROVAL_REMOVE_TOPIC = ENVIRONMENT.readEnv("TOPIC_APPROVAL_REMOVE");
     private FakeNotificationClient snsClient;
     private DataEntryUpdateHandler handler;
+    private FakeSqsClient queueClient;
 
     public static Stream<Arguments> dynamoDbEventProvider() {
         var randomApplicableCandidate = randomCandidateDao();
@@ -76,7 +82,8 @@ public class DataEntryUpdateHandlerTest {
     @BeforeEach
     void setUp() {
         snsClient = new FakeNotificationClient();
-        handler = new DataEntryUpdateHandler(snsClient, ENVIRONMENT);
+        queueClient = new FakeSqsClient();
+        handler = new DataEntryUpdateHandler(snsClient, ENVIRONMENT, queueClient);
     }
 
     @ParameterizedTest
@@ -98,6 +105,32 @@ public class DataEntryUpdateHandlerTest {
 
         handler.handleRequest(event, CONTEXT);
         assertEquals(0, snsClient.getPublishedMessages().size());
+    }
+
+    @Test
+    void shouldSendMessageToDlqWhenFailingToPublishEvent() {
+        var dao = randomCandidateDao();
+        var eventWithOneInvalidRecord = createEventWithMessages(
+            List.of(createMessage(dao, dao, OperationType.INSERT), createMessage(UUID.randomUUID())));
+        handler.handleRequest(eventWithOneInvalidRecord, CONTEXT);
+        assertEquals(1, queueClient.getSentMessages().size());
+    }
+
+    @Test
+    void shouldSendMessageToDlqWithoutCandidateIdentifierFailingToPublishEventAndUnableToExtractRecordIdentifier() {
+        var event = createEvent(randomDynamoDbEvent().getRecords().get(0));
+        var fakeSnsClient = mock(FakeNotificationClient.class);
+        when(fakeSnsClient.publish(any(), any())).thenThrow(SnsException.class);
+        var handler = new DataEntryUpdateHandler(fakeSnsClient, new Environment(), queueClient);
+        handler.handleRequest(event, CONTEXT);
+        assertEquals(1, queueClient.getSentMessages().size());
+    }
+
+    @Test
+    void shouldSendMessageToDlqWhenFailingToParseDynamoDbEvent() {
+        var eventWithOneInvalidRecord = createEventWithOneInvalidRecord(randomCandidateDao());
+        handler.handleRequest(eventWithOneInvalidRecord, CONTEXT);
+        assertEquals(1, queueClient.getSentMessages().size());
     }
 
     @Test

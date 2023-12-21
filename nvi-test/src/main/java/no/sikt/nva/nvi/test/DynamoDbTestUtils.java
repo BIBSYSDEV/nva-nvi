@@ -29,29 +29,29 @@ public final class DynamoDbTestUtils {
 
     public static DynamodbEvent eventWithCandidateIdentifier(UUID candidateIdentifier) {
         var dynamoDbEvent = new DynamodbEvent();
-        var dynamoDbRecord = dynamoRecordWithIdentifier(payloadWithIdentifier(candidateIdentifier),
-                                                        randomOperationType());
+        var dynamoDbRecord = dynamoRecord(payloadWithIdentifier(candidateIdentifier),
+                                          randomOperationType());
         dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
         return dynamoDbEvent;
     }
 
     public static DynamodbEvent eventWithCandidate(Dao oldImage, Dao newImage, OperationType operationType) {
         var dynamoDbEvent = new DynamodbEvent();
-        var dynamoDbRecord = dynamoRecordWithIdentifier(payloadWithCandidate(oldImage, newImage), operationType);
+        var dynamoDbRecord = dynamoRecord(payloadWithCandidate(oldImage, newImage), operationType);
         dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
         return dynamoDbEvent;
     }
 
     public static DynamodbEvent randomDynamoDbEvent() {
         var dynamoDbEvent = new DynamodbEvent();
-        var dynamoDbRecord = dynamoRecordWithIdentifier(randomPayload(), randomOperationType());
+        var dynamoDbRecord = dynamoRecord(randomPayload(), randomOperationType());
         dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
         return dynamoDbEvent;
     }
 
     public static DynamodbEvent dynamoDbEventWithEmptyPayload() {
         var dynamoDbEvent = new DynamodbEvent();
-        var dynamoDbRecord = dynamoRecordWithIdentifier(new StreamRecord(), randomOperationType());
+        var dynamoDbRecord = dynamoRecord(new StreamRecord(), randomOperationType());
         dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
         return dynamoDbEvent;
     }
@@ -59,8 +59,8 @@ public final class DynamoDbTestUtils {
     public static DynamodbEvent randomEventWithNumberOfDynamoRecords(int numberOfRecords) {
         var event = new DynamodbEvent();
         var records = IntStream.range(0, numberOfRecords)
-                          .mapToObj(index -> dynamoRecordWithIdentifier(payloadWithIdentifier(UUID.randomUUID()),
-                                                                        randomOperationType()))
+                          .mapToObj(index -> dynamoRecord(payloadWithIdentifier(UUID.randomUUID()),
+                                                          randomOperationType()))
                           .toList();
         event.setRecords(records);
         return event;
@@ -81,15 +81,15 @@ public final class DynamoDbTestUtils {
         return randomElement(OperationType.values());
     }
 
-    private static DynamodbStreamRecord dynamoRecordWithIdentifier(StreamRecord record, OperationType operationType) {
-        var streamRecord = new DynamodbStreamRecord();
-        streamRecord.setEventName(operationType.name());
-        streamRecord.setEventID(randomString());
-        streamRecord.setAwsRegion(randomString());
-        streamRecord.setDynamodb(record);
-        streamRecord.setEventSource(randomString());
-        streamRecord.setEventVersion(randomString());
-        return streamRecord;
+    private static DynamodbStreamRecord dynamoRecord(StreamRecord streamRecord, OperationType operationType) {
+        var dynamodbStreamRecord = new DynamodbStreamRecord();
+        dynamodbStreamRecord.setEventName(operationType.name());
+        dynamodbStreamRecord.setEventID(randomString());
+        dynamodbStreamRecord.setAwsRegion(randomString());
+        dynamodbStreamRecord.setDynamodb(streamRecord);
+        dynamodbStreamRecord.setEventSource(randomString());
+        dynamodbStreamRecord.setEventVersion(randomString());
+        return dynamodbStreamRecord;
     }
 
     private static StreamRecord payloadWithIdentifier(UUID candidateIdentifier) {
