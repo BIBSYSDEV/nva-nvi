@@ -23,6 +23,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.db.CandidateUniquenessEntryDao;
 import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
@@ -76,7 +77,8 @@ public class DataEntryUpdateHandlerTest {
 
     public static Stream<Arguments> otherDaoTypesProvider() {
         return Stream.of(Arguments.of(randomPeriodDao()),
-                         Arguments.of(randomNoteDao()));
+                         Arguments.of(randomNoteDao()),
+                         Arguments.of(candidateUniquenessEntryDao()));
     }
 
     @BeforeEach
@@ -147,6 +149,10 @@ public class DataEntryUpdateHandlerTest {
             List.of(createMessage(dao, dao, OperationType.INSERT), createMessage(UUID.randomUUID())));
         handler.handleRequest(eventWithOneInvalidRecord, CONTEXT);
         assertEquals(1, snsClient.getPublishedMessages().size());
+    }
+
+    private static CandidateUniquenessEntryDao candidateUniquenessEntryDao() {
+        return new CandidateUniquenessEntryDao(UUID.randomUUID().toString());
     }
 
     private static NoteDao randomNoteDao() {
