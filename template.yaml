@@ -395,6 +395,9 @@ Resources:
                   - !GetAtt UpsertCandidateDLQ.Arn
                   - !GetAtt ReEvaluateDLQ.Arn
                   - !GetAtt IndexDLQ.Arn
+                  - !GetAtt DynamoDbEventToQueueDLQ.Arn
+                  - !GetAtt DataEntryUpdateDLQ.Arn
+                  - !GetAtt IndexDocumentDLQ.Arn
         - PolicyName: publishToSnsTopic
           PolicyDocument:
             Version: '2012-10-17'
