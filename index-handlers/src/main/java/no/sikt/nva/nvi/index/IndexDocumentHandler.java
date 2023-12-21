@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
+    public static final String INDEX_DLQ = "INDEX_DLQ";
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler.class);
     private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
     private static final String QUEUE_URL = "PERSISTED_INDEX_DOCUMENT_QUEUE_URL";
@@ -47,7 +48,6 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     private static final String FAILED_TO_FETCH_CANDIDATE_MESSAGE = "Failed to fetch candidate with identifier: {}";
     private static final String FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE =
         "Failed to generate index document for candidate with identifier: {}";
-    public static final String INDEX_DLQ = "INDEX_DLQ";
     private final StorageReader<URI> storageReader;
     private final StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter;
     private final CandidateRepository candidateRepository;
@@ -110,12 +110,12 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
                    .get(IDENTIFIER).getS();
     }
 
-    private static String removeGz(String filename) {
-        return filename.replace(GZIP_ENDING, "");
+    private static UUID extractCandidateIdentifier(URI docuemntUri) {
+        return UUID.fromString(removeGz(UriWrapper.fromUri(docuemntUri).getPath().getLastPathElement()));
     }
 
-    private static UUID extractCandidateIdentifier(URI uri) {
-        return UUID.fromString(removeGz(UriWrapper.fromUri(uri).getPath().getLastPathElement()));
+    private static String removeGz(String filename) {
+        return filename.replace(GZIP_ENDING, "");
     }
 
     private void sendEvent(URI uri) {
@@ -138,7 +138,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     private DynamodbStreamRecord mapToDynamoDbRecord(String body) {
         return attempt(() -> dynamoObjectMapper.readValue(body, DynamodbStreamRecord.class))
                    .orElse(failure -> {
-                       handleFailure(failure, FAILED_TO_PARSE_EVENT_MESSAGE, body, null);
+                       handleFailure(failure, body);
                        return null;
                    });
     }
@@ -176,6 +176,12 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
         var candidate = fetchCandidate(record);
         var persistedResource = fetchPersistedResource(candidate);
         return IndexDocumentWithConsumptionAttributes.from(candidate, persistedResource, uriRetriever);
+    }
+
+    private void handleFailure(Failure<?> failure, String messageArgument) {
+        LOGGER.error(IndexDocumentHandler.FAILED_TO_PARSE_EVENT_MESSAGE, messageArgument);
+        LOGGER.error(ERROR_MESSAGE, failure.getException().getMessage());
+        sqsClient.sendMessage(failure.getException().getMessage(), dlqUrl);
     }
 
     private void handleFailure(Failure<?> failure, String message, String messageArgument, UUID candidateIdentifier) {

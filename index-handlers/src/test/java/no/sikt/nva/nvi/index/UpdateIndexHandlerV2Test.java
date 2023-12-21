@@ -27,10 +27,14 @@ import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
+import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
+import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.model.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
@@ -38,19 +42,24 @@ import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import software.amazon.awssdk.services.s3.S3Client;
 
 class UpdateIndexHandlerV2Test extends LocalDynamoTest {
 
     public static final Context CONTEXT = mock(Context.class);
     private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
-    private static final String BUCKET_NAME = new Environment().readEnv(EXPANDED_RESOURCES_BUCKET);
+    public static final Environment ENVIRONMENT = new Environment();
+    private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
+    public static final String INDEX_DLQ = "INDEX_DLQ";
+    public static final String INDEX_DLQ_URL = ENVIRONMENT.readEnv(INDEX_DLQ);
     private final S3Client s3Client = new FakeS3Client();
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
     private S3Driver s3Driver;
     private UpdateIndexHandlerV2 handler;
     private OpenSearchClient openSearchClient;
+    private QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> sqsClient;
 
     @BeforeEach
     void setUp() {
@@ -59,7 +68,8 @@ class UpdateIndexHandlerV2Test extends LocalDynamoTest {
         periodRepository = new PeriodRepository(localDynamo);
         s3Driver = new S3Driver(s3Client, BUCKET_NAME);
         openSearchClient = mock(OpenSearchClient.class);
-        handler = new UpdateIndexHandlerV2(openSearchClient, new S3StorageReader(s3Client, BUCKET_NAME));
+        sqsClient = mock(FakeSqsClient.class);
+        handler = new UpdateIndexHandlerV2(openSearchClient, new S3StorageReader(s3Client, BUCKET_NAME), sqsClient);
     }
 
     @Test
@@ -68,6 +78,16 @@ class UpdateIndexHandlerV2Test extends LocalDynamoTest {
         var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
         handler.handleRequest(createUpdateIndexEvent(List.of(candidate)), CONTEXT);
         verify(openSearchClient, times(1)).addDocumentToIndex(expectedIndexDocument);
+    }
+
+    @Test
+    void shouldSendMessageToDlqWhenHandlingError() {
+        var candidate = randomApplicableCandidate();
+        var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
+        var event = createUpdateIndexEvent(List.of(candidate));
+        when(openSearchClient.addDocumentToIndex(expectedIndexDocument)).thenThrow(new RuntimeException());
+        handler.handleRequest(event, CONTEXT);
+        verify(sqsClient, times(1)).sendMessage(any(), eq(INDEX_DLQ_URL), eq(candidate.getIdentifier()));
     }
 
     @Test
@@ -84,11 +104,21 @@ class UpdateIndexHandlerV2Test extends LocalDynamoTest {
         var candidateToSucceed = randomApplicableCandidate();
         var candidateToFail = randomApplicableCandidate();
         var storageReader = setUpStorageReaderFailingForOneCandidate(candidateToSucceed, candidateToFail);
-        handler = new UpdateIndexHandlerV2(openSearchClient, storageReader);
+        handler = new UpdateIndexHandlerV2(openSearchClient, storageReader, sqsClient);
         var event = createUpdateIndexEvent(List.of(candidateToSucceed, candidateToFail));
         handler.handleRequest(event, CONTEXT);
         verify(openSearchClient, times(0)).addDocumentToIndex(eq(null));
         verify(openSearchClient, times(1)).addDocumentToIndex(any(NviCandidateIndexDocument.class));
+    }
+
+    @Test
+    void shouldNotFailForWholeBatchWhenFailingToAddDocumentToIndex() {
+        var candidate = randomApplicableCandidate();
+        var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
+        var event = createUpdateIndexEvent(List.of(candidate));
+        when(openSearchClient.addDocumentToIndex(expectedIndexDocument)).thenThrow(OpenSearchException.class);
+        handler.handleRequest(event, CONTEXT);
+        assertDoesNotThrow(() -> handler.handleRequest(event, CONTEXT));
     }
 
     private static URI generateBucketUri(Candidate candidate) {

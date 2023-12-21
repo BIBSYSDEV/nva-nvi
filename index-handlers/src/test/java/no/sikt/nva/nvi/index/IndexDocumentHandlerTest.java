@@ -48,7 +48,6 @@ import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.sqs.model.SqsException;
 
@@ -123,7 +122,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldSendMessageToDlqWhenFailingToSendEvent() {
+    void shouldSendMessageToDlqWhenFailingToProcessEvent() {
         var candidate = randomApplicableCandidate();
         setUpExistingResourceInS3(candidate);
         mockUriRetrieverOrgResponse(candidate);
@@ -333,11 +332,11 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return IndexDocumentWithConsumptionAttributes.from(indexDocument);
     }
 
-    private URI setUpExistingResourceInS3(Candidate persistedCandidate) {
+    private void setUpExistingResourceInS3(Candidate persistedCandidate) {
         var expandedResource = createExpandedResource(persistedCandidate);
         var resourceIndexDocument = createResourceIndexDocument(expandedResource);
         var resourcePath = extractResourceIdentifier(persistedCandidate);
-        return insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
+        insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
     }
 
     private JsonNode createResourceIndexDocument(JsonNode expandedResource) {
