@@ -20,6 +20,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -51,12 +53,14 @@ import software.amazon.awssdk.services.sqs.model.SqsException;
 
 public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
-    public static final Environment ENVIRONMENT = new Environment();
+    private static final Environment ENVIRONMENT = new Environment();
     private static final String BODY = "body";
     private static final String ORGANIZATION_CONTEXT = "https://bibsysdev.github.io/src/organization-context.json";
     private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
     private static final Context CONTEXT = mock(Context.class);
     private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
+    private static final String INDEX_DLQ = "INDEX_DLQ";
+    private static final String INDEX_DLQ_URL = ENVIRONMENT.readEnv(INDEX_DLQ);
     private final S3Client s3Client = new FakeS3Client();
     private IndexDocumentHandler handler;
     private CandidateRepository candidateRepository;
@@ -115,6 +119,22 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var expectedEvent = createExpectedEventMessageBody(candidate);
         var actualEvent = sqsClient.getSentMessages().get(0).messageBody();
         assertEquals(expectedEvent, actualEvent);
+    }
+
+    @Test
+    void shouldSendMessageToDlqWhenFailingToSendEvent(){
+        var candidate = randomApplicableCandidate();
+        setUpExistingResourceInS3(candidate);
+        mockUriRetrieverOrgResponse(candidate);
+        var mockedSqsClient = setupFailingSqsClient(candidate);
+        var handler = new IndexDocumentHandler(new S3StorageReader(s3Client, BUCKET_NAME),
+                                               new S3StorageWriter(s3Client, BUCKET_NAME),
+                                               mockedSqsClient,
+                                               candidateRepository, periodRepository, uriRetriever,
+                                               ENVIRONMENT);
+        var event = createEvent(List.of(candidate.getIdentifier()));
+        handler.handleRequest(event, CONTEXT);
+        verify(mockedSqsClient, times(1)).sendMessage(anyString(), eq(INDEX_DLQ_URL));
     }
 
     @Test
