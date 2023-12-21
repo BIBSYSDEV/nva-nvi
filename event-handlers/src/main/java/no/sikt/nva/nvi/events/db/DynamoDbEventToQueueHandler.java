@@ -1,16 +1,14 @@
 package no.sikt.nva.nvi.events.db;
 
+import static no.sikt.nva.nvi.events.db.DynamoDbUtils.extractIdFromRecord;
+import static no.sikt.nva.nvi.events.db.ExceptionUtils.getStackTrace;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
@@ -33,7 +31,6 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     private static final String FAILURE_MESSAGE = "Failure while sending database events to queue";
     private static final String FAILED_RECORDS_MESSAGE = "Failed records: {}";
     private static final String INFO_MESSAGE = "Sent {} messages to queue. Failures: {}";
-    private static final String IDENTIFIER = "identifier";
     public final String dlqUrl;
     private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
     private final String queueUrl;
@@ -65,22 +62,6 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
 
     private static String writeAsJsonString(DynamodbStreamRecord record) {
         return attempt(() -> dtoObjectMapper.writeValueAsString(record)).orElseThrow();
-    }
-
-    private static Optional<UUID> extractIdFromRecord(DynamodbStreamRecord record) {
-        return attempt(() -> UUID.fromString(extractIdentifier(record))).toOptional();
-    }
-
-    private static String extractIdentifier(DynamodbStreamRecord record) {
-        return Optional.ofNullable(record.getDynamodb().getOldImage())
-                   .orElse(record.getDynamodb().getNewImage())
-                   .get(IDENTIFIER).getS();
-    }
-
-    private static String getStackTrace(Exception exception) {
-        var stringWriter = new StringWriter();
-        exception.printStackTrace(new PrintWriter(stringWriter));
-        return stringWriter.toString();
     }
 
     private void splitIntoBatchesAndSend(DynamodbEvent input) {

@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.events.db;
 
+import static no.sikt.nva.nvi.events.db.DynamoDbUtils.extractIdFromRecord;
 import static no.sikt.nva.nvi.events.db.DynamoDbUtils.getImage;
+import static no.sikt.nva.nvi.events.db.ExceptionUtils.getStackTrace;
 import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -16,6 +18,10 @@ import no.sikt.nva.nvi.common.db.DynamoEntryWithRangeKey;
 import no.sikt.nva.nvi.common.notification.NotificationClient;
 import no.sikt.nva.nvi.common.notification.NviNotificationClient;
 import no.sikt.nva.nvi.common.notification.NviPublishMessageResponse;
+import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
+import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
+import no.sikt.nva.nvi.common.queue.QueueClient;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
@@ -31,17 +37,24 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
     private static final String FAILED_TO_PARSE_EVENT_MESSAGE = "Failed to map body to DynamodbStreamRecord: {}";
     private static final String SKIPPING_EVENT_MESSAGE = "Skipping event with operation type {} for dao type {}";
     private static final String ERROR_MESSAGE = "Error message: {}";
+    private static final String DLQ_MESSAGE = "Failed to process record %s. Exception: %s ";
+    private static final String INDEX_DLQ = "INDEX_DLQ";
     private final NotificationClient<NviPublishMessageResponse> snsClient;
     private final Environment environment;
+    private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
+    private final String dlqUrl;
 
     @JacocoGenerated
     public DataEntryUpdateHandler() {
-        this(new NviNotificationClient(), new Environment());
+        this(new NviNotificationClient(), new Environment(), new NviQueueClient());
     }
 
-    public DataEntryUpdateHandler(NotificationClient<NviPublishMessageResponse> snsClient, Environment environment) {
+    public DataEntryUpdateHandler(NotificationClient<NviPublishMessageResponse> snsClient, Environment environment,
+                                  QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient) {
         this.snsClient = snsClient;
         this.environment = environment;
+        this.queueClient = queueClient;
+        this.dlqUrl = environment.readEnv(INDEX_DLQ);
     }
 
     @Override
@@ -64,7 +77,7 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
 
     private void publishToTopic(DynamodbStreamRecord streamRecord) {
         attempt(() -> extractDaoAndPublish(streamRecord)).orElse(failure -> {
-            handleFailure(failure, FAILED_TO_PUBLISH_MESSAGE, streamRecord.toString());
+            handleFailure(failure, streamRecord);
             return null;
         });
     }
@@ -101,14 +114,32 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
     private DynamodbStreamRecord mapToDynamoDbRecord(String body) {
         return attempt(() -> dynamoObjectMapper.readValue(body, DynamodbStreamRecord.class))
                    .orElse(failure -> {
-                       handleFailure(failure, FAILED_TO_PARSE_EVENT_MESSAGE, body);
+                       handleFailure(failure, body);
                        return null;
                    });
     }
 
-    private void handleFailure(Failure<?> failure, String message, String messageArgument) {
-        LOGGER.error(message, messageArgument);
+    private void handleFailure(Failure<?> failure, String body) {
+        LOGGER.error(FAILED_TO_PARSE_EVENT_MESSAGE, body);
         LOGGER.error(ERROR_MESSAGE, failure.getException().getMessage());
-        //TODO: Send message to DLQ
+        sendToDlq(body, failure.getException());
+    }
+
+    private void handleFailure(Failure<?> failure, DynamodbStreamRecord record) {
+        LOGGER.error(FAILED_TO_PUBLISH_MESSAGE, DataEntryUpdateHandler.FAILED_TO_PUBLISH_MESSAGE);
+        LOGGER.error(ERROR_MESSAGE, failure.getException().getMessage());
+        sendToDlq(record, failure.getException());
+    }
+
+    private void sendToDlq(DynamodbStreamRecord record, Exception exception) {
+        var message = String.format(DLQ_MESSAGE, record.toString(), getStackTrace(exception));
+        extractIdFromRecord(record)
+            .ifPresentOrElse(id -> queueClient.sendMessage(message, dlqUrl, id),
+                             () -> queueClient.sendMessage(message, dlqUrl));
+    }
+
+    private void sendToDlq(String body, Exception exception) {
+        var message = String.format(DLQ_MESSAGE, body, getStackTrace(exception));
+        queueClient.sendMessage(message, dlqUrl);
     }
 }

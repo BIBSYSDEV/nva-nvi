@@ -7,13 +7,27 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStream
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 public final class DynamoDbUtils {
 
+    private static final String IDENTIFIER = "identifier";
+
     private DynamoDbUtils() {
+    }
+
+    public static Optional<UUID> extractIdFromRecord(DynamodbStreamRecord record) {
+        return attempt(() -> UUID.fromString(extractIdentifier(record))).toOptional();
+    }
+
+    private static String extractIdentifier(DynamodbStreamRecord record) {
+        return Optional.ofNullable(record.getDynamodb().getOldImage())
+                   .orElse(record.getDynamodb().getNewImage())
+                   .get(IDENTIFIER).getS();
     }
 
     public static Map<String, AttributeValue> getImage(DynamodbStreamRecord streamRecord) {
