@@ -25,6 +25,14 @@ public final class QueueServiceTestUtils {
         return sqsEvent;
     }
 
+    public static SQSEvent createEvent(List<UUID> candidateIdentifiers) {
+        var sqsEvent = new SQSEvent();
+        var records = candidateIdentifiers.stream().map(
+            QueueServiceTestUtils::createMessage).toList();
+        sqsEvent.setRecords(records);
+        return sqsEvent;
+    }
+
     public static SQSEvent createEvent(Dao oldImage, Dao newImage, OperationType operationType) {
         var sqsEvent = new SQSEvent();
         var message = createMessage(oldImage, newImage, operationType);
@@ -32,11 +40,11 @@ public final class QueueServiceTestUtils {
         return sqsEvent;
     }
 
-    public static SQSEvent createEvent(List<UUID> candidateIdentifiers) {
+    public static SQSEvent createEvent(DynamodbStreamRecord streamRecord) {
         var sqsEvent = new SQSEvent();
-        var records = candidateIdentifiers.stream().map(
-            QueueServiceTestUtils::createMessage).toList();
-        sqsEvent.setRecords(records);
+        var message = new SQSMessage();
+        message.setBody(mapToString(streamRecord));
+        sqsEvent.setRecords(List.of(message));
         return sqsEvent;
     }
 
@@ -50,14 +58,6 @@ public final class QueueServiceTestUtils {
         var sqsEvent = new SQSEvent();
         var message = createMessage(candidateIdentifier);
         sqsEvent.setRecords(List.of(message, invalidSqsMessage()));
-        return sqsEvent;
-    }
-
-    public static SQSEvent createEvent(DynamodbStreamRecord streamRecord) {
-        var sqsEvent = new SQSEvent();
-        var message = new SQSMessage();
-        message.setBody(mapToString(streamRecord));
-        sqsEvent.setRecords(List.of(message));
         return sqsEvent;
     }
 
