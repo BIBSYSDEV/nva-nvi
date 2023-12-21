@@ -647,6 +647,7 @@ Resources:
           TOPIC_APPROVAL_INSERT: !Ref NviDataEntryUpdateApprovalInsertTopic
           TOPIC_APPROVAL_UPDATE: !Ref NviDataEntryUpdateApprovalUpdateTopic
           TOPIC_APPROVAL_REMOVE: !Ref NviDataEntryUpdateApprovalRemoveTopic
+          INDEX_DLQ: !Ref IndexDLQ
       Events:
         SqsEvent:
           Type: SQS
