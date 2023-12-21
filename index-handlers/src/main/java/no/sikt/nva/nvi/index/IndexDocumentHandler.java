@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.index.aws.S3StorageWriter.GZIP_ENDING;
 import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -29,22 +30,24 @@ import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
+import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
-    public static final String FAILED_SENDING_EVENT_MESSAGE = "Failed to send message to queue: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler.class);
     private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
     private static final String QUEUE_URL = "PERSISTED_INDEX_DOCUMENT_QUEUE_URL";
     private static final String IDENTIFIER = "identifier";
     private static final String ERROR_MESSAGE = "Error message: {}";
+    private static final String FAILED_SENDING_EVENT_MESSAGE = "Failed to send message to queue: {}";
     private static final String FAILED_TO_PERSIST_MESSAGE = "Failed to save {} in bucket";
     private static final String FAILED_TO_PARSE_EVENT_MESSAGE = "Failed to map body to DynamodbStreamRecord: {}";
     private static final String FAILED_TO_FETCH_CANDIDATE_MESSAGE = "Failed to fetch candidate with identifier: {}";
     private static final String FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE =
         "Failed to generate index document for candidate with identifier: {}";
+    public static final String INDEX_DLQ = "INDEX_DLQ";
     private final StorageReader<URI> storageReader;
     private final StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter;
     private final CandidateRepository candidateRepository;
@@ -52,6 +55,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     private final UriRetriever uriRetriever;
     private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> sqsClient;
     private final String queueUrl;
+    private final String dlqUrl;
 
     @JacocoGenerated
     public IndexDocumentHandler() {
@@ -77,6 +81,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
         this.periodRepository = periodRepository;
         this.uriRetriever = uriRetriever;
         this.queueUrl = environment.readEnv(QUEUE_URL);
+        this.dlqUrl = environment.readEnv(INDEX_DLQ);
     }
 
     @Override
@@ -105,10 +110,18 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
                    .get(IDENTIFIER).getS();
     }
 
+    private static String removeGz(String filename) {
+        return filename.replace(GZIP_ENDING, "");
+    }
+
+    private static UUID extractCandidateIdentifier(URI uri) {
+        return UUID.fromString(removeGz(UriWrapper.fromUri(uri).getPath().getLastPathElement()));
+    }
+
     private void sendEvent(URI uri) {
         attempt(() -> sqsClient.sendMessage(new PersistedIndexDocumentMessage(uri).asJsonString(), queueUrl))
             .orElse(failure -> {
-                handleFailure(failure, FAILED_SENDING_EVENT_MESSAGE, uri.toString());
+                handleFailure(failure, FAILED_SENDING_EVENT_MESSAGE, uri.toString(), extractCandidateIdentifier(uri));
                 return null;
             });
     }
@@ -116,8 +129,8 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     private URI persistDocument(IndexDocumentWithConsumptionAttributes document) {
         return attempt(() -> document.persist(storageWriter))
                    .orElse(failure -> {
-                       handleFailure(failure, FAILED_TO_PERSIST_MESSAGE,
-                                     document.indexDocument().identifier().toString());
+                       var identifier = document.indexDocument().identifier();
+                       handleFailure(failure, FAILED_TO_PERSIST_MESSAGE, identifier.toString(), identifier);
                        return null;
                    });
     }
@@ -125,7 +138,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     private DynamodbStreamRecord mapToDynamoDbRecord(String body) {
         return attempt(() -> dynamoObjectMapper.readValue(body, DynamodbStreamRecord.class))
                    .orElse(failure -> {
-                       handleFailure(failure, FAILED_TO_PARSE_EVENT_MESSAGE, body);
+                       handleFailure(failure, FAILED_TO_PARSE_EVENT_MESSAGE, body, null);
                        return null;
                    });
     }
@@ -137,7 +150,8 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     private Candidate fetchCandidate(UUID candidateIdentifier) {
         return attempt(() -> Candidate.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository))
                    .orElse(failure -> {
-                       handleFailure(failure, FAILED_TO_FETCH_CANDIDATE_MESSAGE, candidateIdentifier.toString());
+                       handleFailure(failure, FAILED_TO_FETCH_CANDIDATE_MESSAGE, candidateIdentifier.toString(),
+                                     candidateIdentifier);
                        return null;
                    });
     }
@@ -149,8 +163,10 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     private IndexDocumentWithConsumptionAttributes generateIndexDocument(DynamodbStreamRecord record) {
         return attempt(() -> generateIndexDocumentWithConsumptionAttributes(record))
                    .orElse(failure -> {
+                       var identifier = extractIdFromRecord(record);
                        handleFailure(failure, FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE,
-                                     extractIdFromRecord(record).map(UUID::toString).orElse(null));
+                                     identifier.map(UUID::toString).orElse(null),
+                                     identifier.orElse(null));
                        return null;
                    });
     }
@@ -162,9 +178,9 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
         return IndexDocumentWithConsumptionAttributes.from(candidate, persistedResource, uriRetriever);
     }
 
-    private void handleFailure(Failure<?> failure, String message, String messageArgument) {
+    private void handleFailure(Failure<?> failure, String message, String messageArgument, UUID candidateIdentifier) {
         LOGGER.error(message, messageArgument);
         LOGGER.error(ERROR_MESSAGE, failure.getException().getMessage());
-        //TODO: Send message to DLQ
+        sqsClient.sendMessage(failure.getException().getMessage(), dlqUrl, candidateIdentifier);
     }
 }

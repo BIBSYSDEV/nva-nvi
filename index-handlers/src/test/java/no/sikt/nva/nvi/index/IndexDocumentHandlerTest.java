@@ -48,6 +48,7 @@ import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.sqs.model.SqsException;
 
@@ -122,7 +123,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldSendMessageToDlqWhenFailingToSendEvent(){
+    void shouldSendMessageToDlqWhenFailingToSendEvent() {
         var candidate = randomApplicableCandidate();
         setUpExistingResourceInS3(candidate);
         mockUriRetrieverOrgResponse(candidate);
@@ -134,7 +135,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
                                                ENVIRONMENT);
         var event = createEvent(List.of(candidate.getIdentifier()));
         handler.handleRequest(event, CONTEXT);
-        verify(mockedSqsClient, times(1)).sendMessage(anyString(), eq(INDEX_DLQ_URL));
+        verify(mockedSqsClient, times(1)).sendMessage(any(), eq(INDEX_DLQ_URL), eq(candidate.getIdentifier()));
     }
 
     @Test
@@ -226,7 +227,9 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var expectedFailingMessage = new PersistedIndexDocumentMessage(
             generateBucketUri(candidate)).asJsonString();
         var mockedSqsClient = mock(FakeSqsClient.class);
-        when(mockedSqsClient.sendMessage(eq(expectedFailingMessage), anyString())).thenThrow(SqsException.class);
+        var sqsException = SqsException.builder().message("Some exception message").build();
+        when(mockedSqsClient.sendMessage(eq(expectedFailingMessage), anyString())).thenThrow(
+            sqsException);
         return mockedSqsClient;
     }
 
