@@ -4,6 +4,7 @@ import static no.sikt.nva.nvi.test.DynamoDbTestUtils.dynamoDbEventWithEmptyPaylo
 import static no.sikt.nva.nvi.test.DynamoDbTestUtils.eventWithCandidate;
 import static no.sikt.nva.nvi.test.DynamoDbTestUtils.eventWithCandidateIdentifier;
 import static no.sikt.nva.nvi.test.DynamoDbTestUtils.mapToString;
+import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.List;
@@ -52,6 +53,14 @@ public final class QueueServiceTestUtils {
         return sqsEvent;
     }
 
+    public static SQSEvent createEvent(DynamodbStreamRecord streamRecord) {
+        var sqsEvent = new SQSEvent();
+        var message = new SQSMessage();
+        message.setBody(mapToString(streamRecord));
+        sqsEvent.setRecords(List.of(message));
+        return sqsEvent;
+    }
+
     public static SQSEvent createEventWithOneInvalidRecord(CandidateDao dao) {
         var sqsEvent = new SQSEvent();
         var message = createMessage(null, dao, OperationType.INSERT);
@@ -92,11 +101,6 @@ public final class QueueServiceTestUtils {
 
     private static String generateSingleDynamoDbEventRecord(UUID candidateIdentifier) {
         return mapToString(eventWithCandidateIdentifier(candidateIdentifier).getRecords().get(0));
-    }
-
-    private static String generateSingleDynamoDbEventRecord(Dao oldImage, Dao newImage,
-                                                            OperationType operationType) {
-        return mapToString(eventWithCandidate(oldImage, newImage, operationType).getRecords().get(0));
     }
 
     private static String generateSingleDynamoDbEventRecordWithEmptyPayload() {
