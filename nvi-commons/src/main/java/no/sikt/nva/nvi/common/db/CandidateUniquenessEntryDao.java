@@ -24,6 +24,7 @@ public final class CandidateUniquenessEntryDao extends Dao {
         String sortKey,
         String version
     ) {
+        super();
         this.partitionKey = partitionKey;
         this.sortKey = sortKey;
         this.version = version;
