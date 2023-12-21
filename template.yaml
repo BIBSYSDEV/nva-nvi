@@ -667,6 +667,7 @@ Resources:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
           PERSISTED_INDEX_DOCUMENT_QUEUE_URL: !Ref PersistedIndexDocumentQueue
+          INDEX_DLQ: !Ref IndexDLQ
       Events:
         SqsEvent:
           Type: SQS
@@ -685,6 +686,7 @@ Resources:
       Environment:
         Variables: 
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+          INDEX_DLQ: !Ref IndexDLQ
       Events:
         SqsEvent:
           Type: SQS
