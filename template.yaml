@@ -370,6 +370,7 @@ Resources:
                   - !GetAtt UpdateIndexDLQ.Arn
                   - !GetAtt UpsertCandidateDLQ.Arn
                   - !GetAtt ReEvaluateDLQ.Arn
+                  - !GetAtt IndexDLQ.Arn
         - PolicyName: publishToSnsTopic
           PolicyDocument:
             Version: '2012-10-17'
