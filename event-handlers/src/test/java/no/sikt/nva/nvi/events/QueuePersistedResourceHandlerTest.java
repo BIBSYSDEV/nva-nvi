@@ -11,7 +11,7 @@ import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import no.sikt.nva.nvi.events.evaluator.FakeSqsClient;
+import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;

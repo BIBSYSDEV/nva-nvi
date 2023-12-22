@@ -4,6 +4,7 @@ import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.db.model.InstanceType.NON_CANDIDATE;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -27,6 +28,8 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
@@ -112,6 +115,15 @@ public final class TestUtils {
 
     public static DbCandidate randomCandidate() {
         return randomCandidateBuilder(true).build();
+    }
+
+    public static DbApprovalStatus randomApproval() {
+        return new DbApprovalStatus(randomUri(),
+                                    randomElement(DbStatus.values()),
+                                    randomUsername(),
+                                    randomUsername(),
+                                    randomInstant(),
+                                    randomString());
     }
 
     public static List<CandidateDao> createNumberOfCandidatesForYear(String year, int number,

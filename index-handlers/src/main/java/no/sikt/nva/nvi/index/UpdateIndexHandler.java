@@ -93,10 +93,6 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
         return record.getDynamodb().getKeys().get(SORT_KEY).getS().split(PRIMARY_KEY_DELIMITER)[0];
     }
 
-    private static NviCandidateIndexDocument toIndexDocumentWithId(UUID candidateIdentifier) {
-        return new NviCandidateIndexDocument.Builder().withIdentifier(candidateIdentifier).build();
-    }
-
     private static UUID extractIdentifierFromNewImage(DynamodbStreamRecord record) {
         return UUID.fromString(record.getDynamodb().getNewImage().get(IDENTIFIER).getS());
     }
@@ -164,7 +160,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
 
     private void removeDocumentFromIndex(Candidate candidate) {
         LOGGER.info("removeDocumentFromIndex for {}", candidate.getIdentifier());
-        var result = openSearchClient.removeDocumentFromIndex(toIndexDocumentWithId(candidate.getIdentifier()));
+        var result = openSearchClient.removeDocumentFromIndex(candidate.getIdentifier());
         LOGGER.info("done removeDocumentFromIndex for {}, result: {}", candidate.getIdentifier(),
                     result.result().jsonValue());
     }

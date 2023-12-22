@@ -50,6 +50,7 @@ import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.Creator;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
+import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.auth.uriretriever.UriRetriever;

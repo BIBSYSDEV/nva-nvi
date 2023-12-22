@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
@@ -274,6 +275,16 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         return approvals.get(institutionId);
     }
 
+    private static List<ApprovalStatusDao> getApproval(Candidate persistedCandidate) {
+        var approval = persistedCandidate.getApprovals().get(INSTITUTION_ID_FROM_EVENT);
+        return List.of(ApprovalStatusDao.builder()
+                           .approvalStatus(DbApprovalStatus.builder()
+                                               .institutionId(approval.getInstitutionId())
+                                               .status(DbStatus.PENDING)
+                                               .build())
+                           .build());
+    }
+
     private static ApprovalStatus getStatus(Map<URI, Approval> approvals, URI approval) {
         return ApprovalStatus.fromValue(
             getApproval(approvals, approval)
@@ -388,16 +399,6 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private List<ApprovalStatusDao> getApproval(Candidate persistedCandidate) {
-        var approval = persistedCandidate.getApprovals().get(INSTITUTION_ID_FROM_EVENT);
-        return List.of(ApprovalStatusDao.builder()
-                           .approvalStatus(DbApprovalStatus.builder()
-                                               .institutionId(approval.getInstitutionId())
-                                               .status(DbStatus.PENDING)
-                                               .build())
-                           .build());
-    }
-
     private Candidate randomApplicableCandidate() {
         return Candidate.fromRequest(createUpsertCandidateRequest(INSTITUTION_ID_FROM_EVENT), candidateRepository,
                                      periodRepository).orElseThrow();
@@ -448,7 +449,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         }
 
         @Override
-        public DeleteResponse removeDocumentFromIndex(NviCandidateIndexDocument indexDocument) {
+        public DeleteResponse removeDocumentFromIndex(UUID identifier) {
 
             return null;
         }

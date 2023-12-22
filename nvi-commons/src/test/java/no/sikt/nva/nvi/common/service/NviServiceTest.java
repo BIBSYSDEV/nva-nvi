@@ -94,9 +94,9 @@ public class NviServiceTest extends LocalDynamoTest {
 
     @Test
     void shouldFetchCandidatesByGivenYearAndPageSize() {
-        var searchYear = randomYear();
+        var searchYear = "2023";
         var candidates = createNumberOfCandidatesForYear(searchYear, 10, candidateRepository);
-        createNumberOfCandidatesForYear(randomYear(), 10, candidateRepository);
+        createNumberOfCandidatesForYear("2022", 10, candidateRepository);
         int pageSize = 5;
         var expectedCandidates = sortByIdentifier(candidates, pageSize);
         var results = nviService.fetchCandidatesByYear(searchYear, pageSize, null).getDatabaseEntries();

@@ -17,9 +17,14 @@ import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.StorageWriter;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
+import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
+import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.IndexDocumentWithConsumptionAttributes;
+import no.sikt.nva.nvi.index.model.PersistedResource;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -29,8 +34,10 @@ import org.slf4j.LoggerFactory;
 
 public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
+    public static final String FAILED_SENDING_EVENT_MESSAGE = "Failed to send message to queue: {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler.class);
     private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
+    private static final String QUEUE_URL = "PERSISTED_INDEX_DOCUMENT_QUEUE_URL";
     private static final String IDENTIFIER = "identifier";
     private static final String ERROR_MESSAGE = "Error message: {}";
     private static final String FAILED_TO_PERSIST_MESSAGE = "Failed to save {} in bucket";
@@ -38,32 +45,38 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     private static final String FAILED_TO_FETCH_CANDIDATE_MESSAGE = "Failed to fetch candidate with identifier: {}";
     private static final String FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE =
         "Failed to generate index document for candidate with identifier: {}";
-
     private final StorageReader<URI> storageReader;
     private final StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter;
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
     private final UriRetriever uriRetriever;
+    private final QueueClient sqsClient;
+    private final String queueUrl;
 
     @JacocoGenerated
     public IndexDocumentHandler() {
         this(new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
              new S3StorageWriter(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
-             new CandidateRepository(defaultDynamoClient()),
+             new NviQueueClient(), new CandidateRepository(defaultDynamoClient()),
              new PeriodRepository(defaultDynamoClient()),
-             new UriRetriever());
+             new UriRetriever(),
+             new Environment());
     }
 
     public IndexDocumentHandler(StorageReader<URI> storageReader,
                                 StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter,
+                                QueueClient sqsClient,
                                 CandidateRepository candidateRepository,
                                 PeriodRepository periodRepository,
-                                UriRetriever uriRetriever) {
+                                UriRetriever uriRetriever,
+                                Environment environment) {
         this.storageReader = storageReader;
         this.storageWriter = storageWriter;
+        this.sqsClient = sqsClient;
         this.candidateRepository = candidateRepository;
         this.periodRepository = periodRepository;
         this.uriRetriever = uriRetriever;
+        this.queueUrl = environment.readEnv(QUEUE_URL);
     }
 
     @Override
@@ -76,7 +89,9 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
             .filter(Objects::nonNull)
             .map(this::generateIndexDocument)
             .filter(Objects::nonNull)
-            .forEach(this::persistDocument);
+            .map(this::persistDocument)
+            .filter(Objects::nonNull)
+            .forEach(this::sendEvent);
         return null;
     }
 
@@ -90,12 +105,21 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
                    .get(IDENTIFIER).getS();
     }
 
-    private void persistDocument(IndexDocumentWithConsumptionAttributes document) {
-        attempt(() -> document.persist(storageWriter))
+    private void sendEvent(URI uri) {
+        attempt(() -> sqsClient.sendMessage(new PersistedIndexDocumentMessage(uri).asJsonString(), queueUrl))
             .orElse(failure -> {
-                handleFailure(failure, FAILED_TO_PERSIST_MESSAGE, document.indexDocument().identifier().toString());
+                handleFailure(failure, FAILED_SENDING_EVENT_MESSAGE, uri.toString());
                 return null;
             });
+    }
+
+    private URI persistDocument(IndexDocumentWithConsumptionAttributes document) {
+        return attempt(() -> document.persist(storageWriter))
+                   .orElse(failure -> {
+                       handleFailure(failure, FAILED_TO_PERSIST_MESSAGE,
+                                     document.indexDocument().identifier().toString());
+                       return null;
+                   });
     }
 
     private DynamodbStreamRecord mapToDynamoDbRecord(String body) {

@@ -4,7 +4,6 @@ Description: >
   AWS
   
   SAM Template for NVA NVI API
-
 Globals:
   Function:
     Timeout: 20
@@ -53,6 +52,9 @@ Parameters:
   NewCandidateQueueName:
     Type: String
     Default: NewCandidateQueue
+  DbEventQueueName:
+    Type: String
+    Default: DbEventQueue
   NewCandidateDLQName:
     Type: String
     Default: NewCandidateDLQ
@@ -68,6 +70,27 @@ Parameters:
   ReEvaluateDLQName:
     Type: String
     Default: ReEvaluateDLQ
+  GenerateIndexDocumentQueueName:
+    Type: String
+    Default: GenerateIndexDocumentQueue
+  RemoveDocumentFromIndexQueueName:
+    Type: String
+    Default: RemoveDocumentFromIndexQueue
+  PersistedIndexDocumentQueueName:
+    Type: String
+    Default: PersistedIndexDocumentQueue
+  IndexDLQName:
+    Type: String
+    Default: IndexDLQ
+  DynamoDbEventToQueueDLQName:
+    Type: String
+    Default: DynamoDbEventToQueueDLQ
+  DataEntryUpdateDLQName:
+    Type: String
+    Default: DataEntryUpdateDLQ
+  IndexDocumentDLQName:
+    Type: String
+    Default: IndexDocumentDLQ
   SearchInfrastructureApiHost:
     Type: String
     Description: Host of external search infrastructure API (SWS).
@@ -87,6 +110,27 @@ Parameters:
   SlackSnsArn:
     Type: AWS::SSM::Parameter::Value<String>
     Default: '/NVA/Monitoring/SlackSnsArn'
+  NviDataEntryUpdateCandidateInsertTopicName:
+    Type: String
+    Default: nvi-data-entry-update-candidate-insert
+  NviDataEntryUpdateCandidateApplicableUpdateTopicName:
+    Type: String
+    Default: nvi-data-entry-update-candidate-applicable-update
+  NviDataEntryUpdateCandidateNotApplicableUpdateTopicName:
+    Type: String
+    Default: nvi-data-entry-update-candidate-not-applicable-update
+  NviDataEntryUpdateCandidateRemoveTopicName:
+    Type: String
+    Default: nvi-data-entry-update-candidate-remove
+  NviDataEntryUpdateApprovalInsertTopicName:
+    Type: String
+    Default: nvi-data-entry-update-approval-insert
+  NviDataEntryUpdateApprovalUpdateTopicName:
+    Type: String
+    Default: nvi-data-entry-update-approval-update
+  NviDataEntryUpdateApprovalRemoveTopicName:
+    Type: String
+    Default: nvi-data-entry-update-approval-remove
 
 Conditions:
   WithSuffix: !Not [ !Equals [ !Ref Suffix, '' ] ]
@@ -100,6 +144,105 @@ Resources:
     Type: AWS::Events::EventBus
     Properties:
       Name: !Join [ '',[ 'nvi-internal-bus',!Ref Suffix ] ]
+
+  #=============================== SNS topics ======================================================
+  NviDataEntryUpdateCandidateInsertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref NviDataEntryUpdateCandidateInsertTopicName
+
+  NviDataEntryUpdateCandidateApplicableUpdateTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref NviDataEntryUpdateCandidateApplicableUpdateTopicName
+
+  NviDataEntryUpdateCandidateNotApplicableUpdateTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref NviDataEntryUpdateCandidateNotApplicableUpdateTopicName
+
+  NviDataEntryUpdateCandidateRemoveTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref NviDataEntryUpdateCandidateRemoveTopicName
+
+  NviDataEntryUpdateApprovalInsertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref NviDataEntryUpdateApprovalInsertTopicName
+
+  NviDataEntryUpdateApprovalUpdateTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref NviDataEntryUpdateApprovalUpdateTopicName
+
+  NviDataEntryUpdateApprovalRemoveTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref NviDataEntryUpdateApprovalRemoveTopicName
+
+  #=============================== SNS subscriptions ======================================================
+
+  #The reason subscriptions are defined seperately, from aws docs:
+  #If you specify the Subscription property in the AWS::SNS::Topic resource, and it creates an associated
+  #subscription resource, the associated subscription is not deleted when the AWS::SNS::Topic resource is deleted.
+
+  NviDataEntryUpdateCandidateInsertSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
+      TopicArn: !Ref NviDataEntryUpdateCandidateInsertTopic
+      RawMessageDelivery: true
+
+  NviDataEntryUpdateCandidateApplicableUpdateSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
+      TopicArn: !Ref NviDataEntryUpdateCandidateApplicableUpdateTopic
+      RawMessageDelivery: true
+
+  NviDataEntryUpdateCandidateNotApplicableUpdateSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt RemoveDocumentFromIndexQueue.Arn
+      TopicArn: !Ref NviDataEntryUpdateCandidateNotApplicableUpdateTopic
+      RawMessageDelivery: true
+
+  NviDataEntryUpdateCandidateRemoveSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt RemoveDocumentFromIndexQueue.Arn
+      TopicArn: !Ref NviDataEntryUpdateCandidateRemoveTopic
+      RawMessageDelivery: true
+
+  NviDataEntryUpdateApprovalInsertSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
+      TopicArn: !Ref NviDataEntryUpdateApprovalInsertTopic
+      RawMessageDelivery: true
+
+  NviDataEntryUpdateApprovalUpdateSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
+      TopicArn: !Ref NviDataEntryUpdateApprovalUpdateTopic
+      RawMessageDelivery: true
+
+  NviDataEntryUpdateApprovalRemoveSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt RemoveDocumentFromIndexQueue.Arn
+      TopicArn: !Ref NviDataEntryUpdateApprovalRemoveTopic
+      RawMessageDelivery: true
+
 
   #=============================== SQSs ============================================================
   NewCandidateQueue:
@@ -145,6 +288,44 @@ Resources:
     Properties:
       QueueName: !Ref ReEvaluateDLQName
       MessageRetentionPeriod: 1209600 #14 days
+  DbEventQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref DbEventQueueName
+      VisibilityTimeout: 60
+  IndexDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref IndexDLQName
+      MessageRetentionPeriod: 1209600 #14 days
+  GenerateIndexDocumentQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref GenerateIndexDocumentQueueName
+      VisibilityTimeout: 60
+  RemoveDocumentFromIndexQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref RemoveDocumentFromIndexQueueName
+  PersistedIndexDocumentQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref PersistedIndexDocumentQueueName
+  DynamoDbEventToQueueDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref DynamoDbEventToQueueDLQName
+      MessageRetentionPeriod: 1209600 #14 days
+  DataEntryUpdateDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref DataEntryUpdateDLQName
+      MessageRetentionPeriod: 1209600 #14 days
+  IndexDocumentDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref IndexDocumentDLQName
+      MessageRetentionPeriod: 1209600 #14 days
 
   #============================= Permissions =======================================================
   NvaNviRole:
@@ -158,7 +339,7 @@ Resources:
               Service: [ lambda.amazonaws.com ]
             Action: [ 'sts:AssumeRole' ]
       Policies:
-        - PolicyName: readFromS3
+        - PolicyName: S3Access
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -166,7 +347,7 @@ Resources:
                 Action:
                   - s3:Get*
                   - s3:List*
-                  - events:*
+                  - s3:PutObject
                   - secretsmanager:*
                 Resource: '*'
         - PolicyName: Events
@@ -176,19 +357,9 @@ Resources:
               - Effect: Allow
                 Action:
                   - events:*
-                  - sqs:SendMessage
-                  - sqs:GetQueueUrl
                 Resource:
                   - !Ref EventBusArn
                   - !GetAtt InternalBus.Arn
-                  - !GetAtt NewCandidateQueue.Arn
-                  - !GetAtt PersistedResourceQueue.Arn
-                  - !GetAtt PersistedResourceDLQ.Arn
-                  - !GetAtt NewCandidateDLQ.Arn
-                  - !GetAtt BatchScanDLQ.Arn
-                  - !GetAtt UpdateIndexDLQ.Arn
-                  - !GetAtt UpsertCandidateDLQ.Arn
-                  - !GetAtt ReEvaluateDLQ.Arn
         - PolicyName: writeLog
           PolicyDocument:
             Version: 2012-10-17
@@ -205,7 +376,6 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - events:*
                   - sqs:SendMessage
                   - sqs:ReceiveMessage
                   - sqs:DeleteMessage
@@ -213,7 +383,46 @@ Resources:
                   - sqs:ChangeMessageVisibility
                 Resource:
                   - !GetAtt NewCandidateQueue.Arn
+                  - !GetAtt DbEventQueue.Arn
+                  - !GetAtt PersistedIndexDocumentQueue.Arn
+                  - !GetAtt GenerateIndexDocumentQueue.Arn
+                  - !GetAtt RemoveDocumentFromIndexQueue.Arn
                   - !GetAtt PersistedResourceQueue.Arn
+                  - !GetAtt PersistedResourceDLQ.Arn
+                  - !GetAtt NewCandidateDLQ.Arn
+                  - !GetAtt BatchScanDLQ.Arn
+                  - !GetAtt UpdateIndexDLQ.Arn
+                  - !GetAtt UpsertCandidateDLQ.Arn
+                  - !GetAtt ReEvaluateDLQ.Arn
+                  - !GetAtt IndexDLQ.Arn
+                  - !GetAtt DynamoDbEventToQueueDLQ.Arn
+                  - !GetAtt DataEntryUpdateDLQ.Arn
+                  - !GetAtt IndexDocumentDLQ.Arn
+        - PolicyName: publishToSnsTopic
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource:
+                  - !Ref NviDataEntryUpdateCandidateInsertTopic
+                  - !Ref NviDataEntryUpdateCandidateApplicableUpdateTopic
+                  - !Ref NviDataEntryUpdateCandidateNotApplicableUpdateTopic
+                  - !Ref NviDataEntryUpdateCandidateRemoveTopic
+                  - !Ref NviDataEntryUpdateApprovalInsertTopic
+                  - !Ref NviDataEntryUpdateApprovalUpdateTopic
+                  - !Ref NviDataEntryUpdateApprovalRemoveTopic
+        - PolicyName: subscribeOnSnsTopic
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Subscribe
+                Resource:
+                  - !GetAtt GenerateIndexDocumentQueue.Arn
+                  - !GetAtt RemoveDocumentFromIndexQueue.Arn
         - PolicyName: readSecret
           PolicyDocument:
             Version: 2012-10-17
@@ -274,6 +483,50 @@ Resources:
                 Resource:
                   - !GetAtt NvaNviTable.StreamArn
 
+  GenerateIndexDocumentQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Id: MyQueuePolicy
+        Version: '2012-10-17'
+        Statement:
+          - Sid: Allow-SNS-SendMessage
+            Effect: Allow
+            Principal: '*'
+            Action: sqs:SendMessage
+            Resource:
+              - !GetAtt GenerateIndexDocumentQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn:
+                  - !Ref NviDataEntryUpdateCandidateInsertTopic
+                  - !Ref NviDataEntryUpdateCandidateApplicableUpdateTopic
+                  - !Ref NviDataEntryUpdateApprovalInsertTopic
+                  - !Ref NviDataEntryUpdateApprovalUpdateTopic
+                  - !Ref NviDataEntryUpdateApprovalRemoveTopic
+      Queues:
+        - !Ref GenerateIndexDocumentQueue
+
+  RemoveDocumentFromIndexQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Id: MyQueuePolicy
+        Version: '2012-10-17'
+        Statement:
+          - Sid: Allow-SNS-SendMessage
+            Effect: Allow
+            Principal: '*'
+            Action: sqs:SendMessage
+            Resource:
+              - !GetAtt RemoveDocumentFromIndexQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn:
+                  - !Ref NviDataEntryUpdateCandidateNotApplicableUpdateTopic
+                  - !Ref NviDataEntryUpdateCandidateRemoveTopic
+      Queues:
+        - !Ref RemoveDocumentFromIndexQueue
 
   #============================= Roles ==========================================================
   ScientificIndexApi:
@@ -303,7 +556,7 @@ Resources:
       RestApiId: !Ref ScientificIndexApi
       Stage: !Ref ScientificIndexApi.Stage
 
-  #============================= Handlers ==========================================================
+  #============================= Event Handlers ======================================================
   QueuePersistedResourceHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -364,31 +617,6 @@ Resources:
             Type: SQS
             Destination: !GetAtt NewCandidateDLQ.Arn
 
-  UpdateIndexHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      Description: 'Listens to DynamoDbStream and creates, modifies and deletes record from nvi-index'
-      CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.index.UpdateIndexHandler::handleRequest
-      Timeout: 600
-      MemorySize: 1536
-      Role: !GetAtt NvaNviRole.Arn
-      AutoPublishAlias: live
-      Environment:
-        Variables:
-          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
-          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
-          UPDATE_INDEX_DLQ_QUEUE_URL: !Ref UpdateIndexDLQ
-      Events:
-        FanoutSource:
-          Type: DynamoDB
-          Properties:
-            Stream: !GetAtt NvaNviTable.StreamArn
-            StartingPosition: TRIM_HORIZON
-            BatchSize: 1
-            Enabled: true
-
   UpsertNviCandidateHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -407,104 +635,124 @@ Resources:
           Properties:
             Queue: !GetAtt NewCandidateQueue.Arn
 
-  CreateNviPeriodHandler:
+  DynamoDbEventToQueueHandler:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: nvi-rest
-      Handler: no.sikt.nva.nvi.rest.create.CreateNviPeriodHandler::handleRequest
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.db.DynamoDbEventToQueueHandler::handleRequest
+      Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
-      Timeout: 600
-      MemorySize: 1536
       AutoPublishAlias: live
+      Timeout: 60
       Environment:
         Variables:
-          ALLOWED_ORIGIN: '*'
+          DB_EVENTS_QUEUE_URL: !Ref DbEventQueue
+          INDEX_DLQ: !Ref IndexDLQ
       Events:
-        ApiEvent:
-          Type: Api
+        FanoutSource:
+          Type: DynamoDB
           Properties:
-            Path: /period
-            Method: post
-            RestApiId: !Ref ScientificIndexApi
+            Stream: !GetAtt NvaNviTable.StreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 1
+            Enabled: true
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt DynamoDbEventToQueueDLQ.Arn
 
-  FetchNviPeriodsHandler:
+  DataEntryUpdateHandler:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: nvi-rest
-      Handler: no.sikt.nva.nvi.rest.fetch.FetchNviPeriodsHandler::handleRequest
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.db.DataEntryUpdateHandler::handleRequest
+      Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
-      Timeout: 600
-      MemorySize: 1536
       AutoPublishAlias: live
+      Timeout: 60
       Environment:
         Variables:
-          ALLOWED_ORIGIN: '*'
+          TOPIC_CANDIDATE_INSERT: !Ref NviDataEntryUpdateCandidateInsertTopic
+          TOPIC_CANDIDATE_APPLICABLE_UPDATE: !Ref NviDataEntryUpdateCandidateApplicableUpdateTopic
+          TOPIC_CANDIDATE_NOT_APPLICABLE_UPDATE: !Ref NviDataEntryUpdateCandidateNotApplicableUpdateTopic
+          TOPIC_CANDIDATE_REMOVE: !Ref NviDataEntryUpdateCandidateRemoveTopic
+          TOPIC_APPROVAL_INSERT: !Ref NviDataEntryUpdateApprovalInsertTopic
+          TOPIC_APPROVAL_UPDATE: !Ref NviDataEntryUpdateApprovalUpdateTopic
+          TOPIC_APPROVAL_REMOVE: !Ref NviDataEntryUpdateApprovalRemoveTopic
+          INDEX_DLQ: !Ref IndexDLQ
       Events:
-        ApiEvent:
-          Type: Api
+        SqsEvent:
+          Type: SQS
           Properties:
-            Path: /period
-            Method: get
-            RestApiId: !Ref ScientificIndexApi
+            Queue: !GetAtt DbEventQueue.Arn
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt DataEntryUpdateDLQ.Arn
 
-  UpdateNviPeriodHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: nvi-rest
-      Handler: no.sikt.nva.nvi.rest.upsert.UpdateNviPeriodHandler::handleRequest
-      Role: !GetAtt NvaNviRole.Arn
-      Timeout: 600
-      MemorySize: 1536
-      AutoPublishAlias: live
-      Environment:
-        Variables:
-          ALLOWED_ORIGIN: '*'
-      Events:
-        ApiEvent:
-          Type: Api
-          Properties:
-            Path: /period
-            Method: put
-            RestApiId: !Ref ScientificIndexApi
-
-  SearchNviCandidatesHandler:
+  IndexDocumentHandler:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.index.SearchNviCandidatesHandler::handleRequest
+      Handler: no.sikt.nva.nvi.index.IndexDocumentHandler::handleRequest
+      Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
-      Timeout: 600
-      MemorySize: 1536
       AutoPublishAlias: live
+      Timeout: 60
       Environment:
         Variables:
-          ALLOWED_ORIGIN: '*'
-          COGNITO_HOST: !Ref CognitoAuthorizationUri
-          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
-          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
+          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+          PERSISTED_INDEX_DOCUMENT_QUEUE_URL: !Ref PersistedIndexDocumentQueue
       Events:
-        GetEvent:
-          Type: Api
+        SqsEvent:
+          Type: SQS
           Properties:
-            Path: /candidate
-            Method: get
-            RestApiId: !Ref ScientificIndexApi
+            Queue: !GetAtt GenerateIndexDocumentQueue.Arn
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt IndexDocumentDLQ.Arn
 
-  InitHandler:
+  UpdateIndexHandlerV2:
     Type: AWS::Serverless::Function
     Properties:
-      Description: Lambda that creates indices. Needs to be run manually from Test
       CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.index.InitHandler::handleRequest
+      Handler: no.sikt.nva.nvi.index.UpdateIndexHandlerV2::handleRequest
+      Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
+      AutoPublishAlias: live
+      Timeout: 30
+      Environment:
+        Variables:
+          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+      Events:
+        SqsEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt PersistedIndexDocumentQueue.Arn
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt UpdateIndexDLQ.Arn
 
-  DeleteNviCandidateIndexHandler:
+  RemoveIndexDocumentHandler:
     Type: AWS::Serverless::Function
     Properties:
-      Description: Lambda that deletes scientific index. Needs to be run manually from Test
       CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
+      Handler: no.sikt.nva.nvi.index.RemoveIndexDocumentHandler::handleRequest
+      Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
+      AutoPublishAlias: live
+      Timeout: 30
+      Events:
+        SqsEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt RemoveDocumentFromIndexQueue.Arn
 
   NviEventBasedBatchScanHandler:
     Type: AWS::Serverless::Function
@@ -526,14 +774,30 @@ Resources:
             Pattern:
               detail:
                 topic: [ "NviService.BatchScan" ]
-
       EventInvokeConfig:
         DestinationConfig:
           OnFailure:
             Type: SQS
             Destination: !GetAtt BatchScanDLQ.Arn #TODO move to code and add candidateIdentifier to message metadata
 
+
   #==========================Manually triggered functions=============================================
+
+  InitHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Lambda that creates indices. Needs to be run manually from Test
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.InitHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+
+  DeleteNviCandidateIndexHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Lambda that deletes scientific index. Needs to be run manually from Test
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
 
   NviBatchScanStartHandler:
     Type: AWS::Serverless::Function
@@ -739,6 +1003,89 @@ Resources:
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
+  CreateNviPeriodHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.create.CreateNviPeriodHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /period
+            Method: post
+            RestApiId: !Ref ScientificIndexApi
+
+  FetchNviPeriodsHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.fetch.FetchNviPeriodsHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /period
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+
+  UpdateNviPeriodHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.upsert.UpdateNviPeriodHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /period
+            Method: put
+            RestApiId: !Ref ScientificIndexApi
+
+  SearchNviCandidatesHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.SearchNviCandidatesHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+          COGNITO_HOST: !Ref CognitoAuthorizationUri
+          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
+          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /candidate
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+
   #============================= Database =========================================================
   NvaNviTable:
     Type: AWS::DynamoDB::Table
@@ -850,6 +1197,74 @@ Resources:
       Dimensions:
         - Name: QueueName
           Value: !GetAtt UpsertCandidateDLQ.QueueName
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  DataEntryUpdateDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=DataEntryUpdateDLQ
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt DataEntryUpdateDLQ.QueueName
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  IndexDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=IndexDLQ
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt IndexDLQ.QueueName
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  DynamoDbEventToQueueDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=DynamoDbEventToQueueDLQ
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt DynamoDbEventToQueueDLQ.QueueName
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  IndexDocumentDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=IndexDocumentDLQ
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt IndexDocumentDLQ.QueueName
       Period: 300
       EvaluationPeriods: 1
       Threshold: 1

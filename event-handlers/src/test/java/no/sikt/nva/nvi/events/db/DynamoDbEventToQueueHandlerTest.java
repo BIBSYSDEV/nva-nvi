@@ -18,7 +18,7 @@ import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.List;
 import java.util.UUID;
-import no.sikt.nva.nvi.events.evaluator.FakeSqsClient;
+import no.sikt.nva.nvi.test.FakeSqsClient;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +30,6 @@ public class DynamoDbEventToQueueHandlerTest {
 
     public static final Context CONTEXT = mock(Context.class);
     public static final String DLQ_URL = "IndexDlq";
-    public static final String MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE = "candidateIdentifier";
     private DynamoDbEventToQueueHandler handler;
     private FakeSqsClient sqsClient;
 

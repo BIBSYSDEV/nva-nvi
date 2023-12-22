@@ -1,6 +1,5 @@
-package no.sikt.nva.nvi.events.evaluator;
+package no.sikt.nva.nvi.test;
 
-import static no.sikt.nva.nvi.events.db.DynamoDbEventToQueueHandlerTest.MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -26,6 +25,8 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 @JacocoGenerated
 public class FakeSqsClient implements QueueClient {
+
+    public static final String MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE = "candidateIdentifier";
 
     private final List<SendMessageRequest> sentMessages = new ArrayList<>();
 
@@ -116,10 +117,11 @@ public class FakeSqsClient implements QueueClient {
     private SendMessageRequest createRequest(String body, String queueUrl, UUID candidateIdentifier) {
         return SendMessageRequest.builder()
                    .queueUrl(queueUrl)
-                   .messageAttributes(Map.of(MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE,
-                                             MessageAttributeValue.builder()
-                                                 .stringValue(candidateIdentifier.toString())
-                                                 .build()))
+                   .messageAttributes(Map.of(
+                       MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE,
+                       MessageAttributeValue.builder()
+                           .stringValue(candidateIdentifier.toString())
+                           .build()))
                    .messageBody(body)
                    .build();
     }
