@@ -57,8 +57,8 @@ public record NviCandidate(URI publicationId,
                    .withInstanceType(details.type())
                    .withDate(toPublicationDate(details.publicationDate()))
                    .withVerifiedCreators(details.creators().stream()
-                                            .map(creator -> new Creator(creator.id(), creator.affiliations()))
-                                            .toList())
+                                             .map(creator -> new Creator(creator.id(), creator.affiliations()))
+                                             .toList())
                    .withChannelType(details.channelType().getValue())
                    .withPublicationChannelId(details.publicationChannelId())
                    .withLevel(details.level())
@@ -73,7 +73,7 @@ public record NviCandidate(URI publicationId,
 
     private static NviCandidate.PublicationDate toPublicationDate(
         no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate pubDate) {
-            return new NviCandidate.PublicationDate(pubDate.day(), pubDate.month(), pubDate.year());
+        return new NviCandidate.PublicationDate(pubDate.day(), pubDate.month(), pubDate.year());
     }
 
     private static PublicationDetails.PublicationDate mapToPublicationDate(
