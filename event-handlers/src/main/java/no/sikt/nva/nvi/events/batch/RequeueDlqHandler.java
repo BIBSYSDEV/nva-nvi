@@ -28,6 +28,16 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
     private static final int MAX_FAILURES = 5;
     public static final int MAX_SQS_MESSAGE_COUNT_LIMIT = 10;
     public static final String DUPLICATE_MESSAGE_FOUND_IN_DLQ = "Duplicate message found in DLQ: %s";
+    public static final String DLQ_QUEUE_URL_ENV_NAME = "DLQ_QUEUE_URL";
+    public static final String HANDLER_FINISH_REPORT_LOG =
+        "Requeue DLQ finished. In total {} messages processed. Success count: {}. "
+        + "Failure count: {}. {} batches with errors.";
+    public static final String REQUEUE_DLQ_STARTED_LOG = "Requeue DLQ started. {} messages to process.";
+    public static final String DELETING_MESSAGE_FROM_DLQ_LOG = "Deleting message from DLQ: {}";
+    public static final String PROCESSING_MESSAGE_LOG = "Processing message: {}";
+    public static final String CANDIDATE_IDENTIFIER_ATTRIBUTE_NAME = "candidateIdentifier";
+    public static final String COULD_NOT_UPDATE_CANDIDATE = "Could not update candidate: %s";
+    public static final String COULD_NOT_PROCESS_MESSAGE_LOG = "Could not process message: {}";
 
     private final NviQueueClient queueClient;
     private final String queueUrl;
@@ -38,7 +48,7 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
     public RequeueDlqHandler() {
         this(
             new NviQueueClient(),
-            new Environment().readEnv("DLQ_QUEUE_URL"),
+            new Environment().readEnv(DLQ_QUEUE_URL_ENV_NAME),
             new CandidateRepository(defaultDynamoClient()),
             new PeriodRepository(defaultDynamoClient()));
     }
@@ -53,7 +63,7 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
 
     @Override
     public RequeueDlqOutput handleRequest(RequeueDlqInput input, Context context) {
-        LOGGER.info("Requeue DLQ started. {} messages to process.", input.count());
+        LOGGER.info(REQUEUE_DLQ_STARTED_LOG, input.count());
 
         Set<String> messageIdDuplicateCheck = new HashSet<>();
 
@@ -77,8 +87,7 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
         }
 
         LOGGER.info(
-            "Requeue DLQ finished. In total {} messages processed. Success count: {}. "
-            + "Failure count: {}. {} batches with errors.",
+            HANDLER_FINISH_REPORT_LOG,
             result.size(),
             result.stream().filter(NviProcessMessageResult::success).count(),
             result.stream().filter(a -> !a.success()).count(),
@@ -119,7 +128,7 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
     }
 
     private NviProcessMessageResult deleteMessageFromDlq(NviProcessMessageResult message) {
-        LOGGER.info("Deleting message from DLQ: {}", message.message().body());
+        LOGGER.info(DELETING_MESSAGE_FROM_DLQ_LOG, message.message().body());
         if (message.success()) {
             queueClient.deleteMessage(queueUrl, message.message().receiptHandle());
         }
@@ -127,14 +136,14 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
     }
 
     private NviProcessMessageResult processMessage(NviProcessMessageResult input) {
-        LOGGER.info("Processing message: {}", input.message().body());
+        LOGGER.info(PROCESSING_MESSAGE_LOG, input.message().body());
 
         if (!input.success()) {
             return input;
         }
 
         try {
-            var identifier = input.message().messageAttributes().get("candidateIdentifier");
+            var identifier = input.message().messageAttributes().get(CANDIDATE_IDENTIFIER_ATTRIBUTE_NAME);
             var candidate = Candidate.fromRequest(() -> UUID.fromString(identifier), candidateRepository,
                                                   periodRepository);
             var nviCandidate = NviCandidate.fromCandidate(candidate);
@@ -143,10 +152,10 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
 
             if (updatedCandidate.isEmpty()) {
                 return new NviProcessMessageResult(input.message(), false,
-                                                   Optional.of("Could not update candidate: " + identifier));
+                                                   Optional.of(String.format(COULD_NOT_UPDATE_CANDIDATE, identifier)));
             }
         } catch (Exception e) {
-            LOGGER.error("Could not process message: " + input.message().body(), e);
+            LOGGER.error(COULD_NOT_PROCESS_MESSAGE_LOG, input.message().body(), e);
             return new NviProcessMessageResult(input.message(), false, Optional.of(getStackTrace(e)));
         }
 
