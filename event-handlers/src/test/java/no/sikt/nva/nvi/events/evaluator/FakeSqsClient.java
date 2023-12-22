@@ -6,12 +6,17 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.queue.NviReceiveMessage;
+import no.sikt.nva.nvi.common.queue.NviReceiveMessageResponse;
 import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.sqs.model.BatchResultErrorEntry;
+import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchResponse;
@@ -20,11 +25,15 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 @JacocoGenerated
-public class FakeSqsClient implements QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> {
+public class FakeSqsClient implements QueueClient {
 
     private final List<SendMessageRequest> sentMessages = new ArrayList<>();
 
     private final List<SendMessageBatchRequest> sentBatches = new ArrayList<>();
+
+    private final List<ReceiveMessageRequest> receivedMessages = new ArrayList<>();
+
+    private final List<DeleteMessageRequest> deleteMessages = new ArrayList<>();
 
     public List<SendMessageRequest> getSentMessages() {
         return sentMessages;
@@ -57,6 +66,21 @@ public class FakeSqsClient implements QueueClient<NviSendMessageResponse, NviSen
         var request = createBatchRequest(messages, queueUrl);
         sentBatches.add(request);
         return createResponse(SendMessageBatchResponse.builder().build());
+    }
+
+    @Override
+    public NviReceiveMessageResponse receiveMessage(String queueUrl, int maxNumberOfMessages) {
+        receivedMessages.add(createReceiveRequest(queueUrl, maxNumberOfMessages));
+        return createResponse(ReceiveMessageResponse.builder().build());
+    }
+
+    @Override
+    public void deleteMessage(String queueUrl, String receiptHandle) {
+        var request = DeleteMessageRequest.builder()
+                          .queueUrl(queueUrl)
+                          .receiptHandle(receiptHandle)
+                          .build();
+        deleteMessages.add(request);
     }
 
     private static List<String> extractSuccessfulEntryIds(SendMessageBatchResponse response) {
@@ -100,6 +124,14 @@ public class FakeSqsClient implements QueueClient<NviSendMessageResponse, NviSen
                    .build();
     }
 
+    private ReceiveMessageRequest createReceiveRequest(String queueUrl, int maxNumberOfMessages) {
+        return ReceiveMessageRequest
+                   .builder()
+                   .queueUrl(queueUrl)
+                   .maxNumberOfMessages(maxNumberOfMessages)
+                   .build();
+    }
+
     private NviSendMessageResponse createResponse(
         software.amazon.awssdk.services.sqs.model.SendMessageResponse response) {
         return new NviSendMessageResponse(response.messageId());
@@ -108,5 +140,15 @@ public class FakeSqsClient implements QueueClient<NviSendMessageResponse, NviSen
     private NviSendMessageBatchResponse createResponse(
         software.amazon.awssdk.services.sqs.model.SendMessageBatchResponse response) {
         return new NviSendMessageBatchResponse(extractSuccessfulEntryIds(response), extractFailedEntryIds(response));
+    }
+
+    private NviReceiveMessageResponse createResponse(
+        software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse receiveMessageResponse) {
+        return new NviReceiveMessageResponse(receiveMessageResponse.messages()
+                                                 .stream()
+                                                 .map(m -> new NviReceiveMessage(m.body(), m.messageId(),
+                                                                                 m.attributesAsStrings(),
+                                                                                 m.receiptHandle()))
+                                                 .toList());
     }
 }

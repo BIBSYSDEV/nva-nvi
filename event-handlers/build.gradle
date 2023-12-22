@@ -35,7 +35,6 @@ dependencies {
 
     implementation libs.bundles.logging
     implementation libs.bundles.jena
-    testImplementation project(':nvi-test')
 
     testImplementation libs.nva.testutils
     testImplementation(group: 'com.amazonaws', name: 'DynamoDBLocal', version: '1.19.0') {

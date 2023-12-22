@@ -468,8 +468,15 @@ public final class Candidate {
                                       candidateDao.candidate().publicationBucketUri(),
                                       candidateDao.candidate().instanceType().getValue(),
                                       mapToPublicationDate(candidateDao.candidate().publicationDate()),
-                                      mapToCreators(candidateDao.candidate().creators())
-        );
+                                      mapToCreators(candidateDao.candidate().creators()),
+                                      candidateDao.candidate().channelType(),
+                                      candidateDao.candidate().channelId(),
+                                      candidateDao.candidate().level()
+                                          .getValues().stream().findFirst().orElse(null),
+                                      candidateDao.candidate().basePoints(),
+                                      candidateDao.candidate().internationalCollaboration(),
+                                      candidateDao.candidate().collaborationFactor(),
+                                      candidateDao.candidate().creatorShareCount());
     }
 
     private void validateCandidateState() {

@@ -14,8 +14,6 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
-import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
-import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -35,7 +33,7 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     private static final String INFO_MESSAGE = "Sent {} messages to queue. Failures: {}";
     private static final String IDENTIFIER = "identifier";
     public final String dlqUrl;
-    private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
+    private final QueueClient queueClient;
     private final String queueUrl;
 
     @JacocoGenerated
@@ -43,7 +41,7 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
         this(new NviQueueClient(), new Environment());
     }
 
-    public DynamoDbEventToQueueHandler(QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient,
+    public DynamoDbEventToQueueHandler(QueueClient queueClient,
                                        Environment environment) {
         this.queueClient = queueClient;
         this.queueUrl = environment.readEnv(DB_EVENTS_QUEUE_URL);

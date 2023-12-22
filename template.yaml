@@ -531,7 +531,7 @@ Resources:
         DestinationConfig:
           OnFailure:
             Type: SQS
-            Destination: !GetAtt BatchScanDLQ.Arn
+            Destination: !GetAtt BatchScanDLQ.Arn #TODO move to code and add candidateIdentifier to message metadata
 
   #==========================Manually triggered functions=============================================
 
@@ -548,7 +548,18 @@ Resources:
         Variables:
           EVENT_BUS_NAME: !GetAtt InternalBus.Name
           OUTPUT_EVENT_TOPIC: 'NviService.BatchScan'
-  
+
+  NviRequeueDlqHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.batch.RequeueDlqHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          DLQ_QUEUE_URL: !Ref BatchScanDLQ
+
   ReEvaluateNviCandidatesHandler:
     Type: AWS::Serverless::Function
     Properties:

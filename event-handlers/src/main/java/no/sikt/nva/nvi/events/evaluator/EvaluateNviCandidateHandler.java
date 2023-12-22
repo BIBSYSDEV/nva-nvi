@@ -8,7 +8,6 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
-import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
@@ -33,7 +32,7 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
     private static final String EVALUATION_MESSAGE = "Nvi candidacy has been evaluated for publication: {}. Type: {}";
     private static final String FAILURE_MESSAGE = "Failure while calculating NVI Candidate: %s, ex: %s, msg: %s";
     private final EvaluatorService evaluatorService;
-    private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
+    private final QueueClient queueClient;
     private final String queueUrl;
 
     @JacocoGenerated
@@ -46,7 +45,7 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
     }
 
     public EvaluateNviCandidateHandler(EvaluatorService evaluatorService,
-                                       QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient,
+                                       QueueClient queueClient,
                                        Environment environment) {
         this.evaluatorService = evaluatorService;
         this.queueClient = queueClient;

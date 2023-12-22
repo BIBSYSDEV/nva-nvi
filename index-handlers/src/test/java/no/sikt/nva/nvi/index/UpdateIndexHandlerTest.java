@@ -46,8 +46,6 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
-import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
-import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -96,7 +94,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private PeriodRepository periodRepository;
     private UriRetriever uriRetriever;
     private NviCandidateIndexDocumentGenerator generator;
-    private QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
+    private QueueClient queueClient;
     private Environment env;
 
     @BeforeEach

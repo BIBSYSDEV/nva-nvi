@@ -22,8 +22,6 @@ import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
-import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
-import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.SearchClient;
@@ -50,7 +48,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
     private final NviCandidateIndexDocumentGenerator documentGenerator;
-    private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
+    private final QueueClient queueClient;
     private final String dlqUrl;
 
     @JacocoGenerated
@@ -65,7 +63,7 @@ public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
                               SearchClient<NviCandidateIndexDocument> openSearchClient,
                               CandidateRepository candidateRepository, PeriodRepository periodRepository,
                               NviCandidateIndexDocumentGenerator documentGenerator,
-                              QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient,
+                              QueueClient queueClient,
                               Environment environment) {
         this.storageReader = storageReader;
         this.openSearchClient = openSearchClient;
