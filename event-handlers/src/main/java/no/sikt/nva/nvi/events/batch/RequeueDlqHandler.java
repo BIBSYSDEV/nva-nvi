@@ -77,7 +77,8 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
         }
 
         LOGGER.info(
-            "Requeue DLQ finished. In total {} messages processed. Success count: {}. Failure count: {}. {} batches with errors.",
+            "Requeue DLQ finished. In total {} messages processed. Success count: {}. "
+            + "Failure count: {}. {} batches with errors.",
             result.size(),
             result.stream().filter(NviProcessMessageResult::success).count(),
             result.stream().filter(a -> !a.success()).count(),

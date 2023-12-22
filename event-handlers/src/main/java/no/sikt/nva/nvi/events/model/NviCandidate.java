@@ -71,8 +71,9 @@ public record NviCandidate(URI publicationId,
                    .build();
     }
 
-    private static NviCandidate.PublicationDate toPublicationDate(no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate pubDate) {
-        return new NviCandidate.PublicationDate(pubDate.day(), pubDate.month(), pubDate.year());
+    private static NviCandidate.PublicationDate toPublicationDate(
+        no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate pubDate) {
+            return new NviCandidate.PublicationDate(pubDate.day(), pubDate.month(), pubDate.year());
     }
 
     private static PublicationDetails.PublicationDate mapToPublicationDate(
