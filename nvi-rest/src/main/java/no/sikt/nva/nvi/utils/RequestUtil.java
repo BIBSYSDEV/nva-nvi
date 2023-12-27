@@ -17,7 +17,7 @@ public final class RequestUtil {
     }
 
     public static void hasAccessRight(RequestInfo requestInfo, AccessRight accessRight) throws UnauthorizedException {
-        if (!requestInfo.userIsAuthorized(accessRight.name())) {
+        if (!requestInfo.userIsAuthorized(accessRight)) {
             throw new UnauthorizedException();
         }
     }

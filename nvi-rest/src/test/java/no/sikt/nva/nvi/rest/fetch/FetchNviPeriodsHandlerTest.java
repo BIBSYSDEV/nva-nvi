@@ -83,7 +83,7 @@ public class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
         var customerId = randomUri();
         return new HandlerRequestBuilder<NviPeriodDto>(JsonUtils.dtoObjectMapper)
                    .withCurrentCustomer(customerId)
-                   .withAccessRights(customerId, accessRight.name())
+                   .withAccessRights(customerId, accessRight)
                    .withUserName(randomString())
                    .build();
     }
