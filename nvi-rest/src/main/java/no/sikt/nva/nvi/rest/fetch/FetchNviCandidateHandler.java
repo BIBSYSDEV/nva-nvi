@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.rest.fetch;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.utils.RequestUtil.hasAccessRight;
-import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATE;
+import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.URI;
@@ -56,7 +56,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
     }
 
     private static void validateAccessRight(RequestInfo requestInfo) throws UnauthorizedException {
-        hasAccessRight(requestInfo, MANAGE_NVI_CANDIDATE);
+        hasAccessRight(requestInfo, MANAGE_NVI_CANDIDATES);
     }
 
     private static Candidate validateTopLevelOrg(Candidate candidate, URI topLevelOrgCristinId)
