@@ -90,7 +90,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
     }
 
     private void validateRequest(ApprovalDto input, RequestInfo requestInfo) throws UnauthorizedException {
-        RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
+        RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATES);
         hasSameCustomer(input, requestInfo);
         if (nonNull(input.assignee())) {
             assigneeHasAccessRight(input.assignee());
@@ -109,7 +109,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
                    .stream()
                    .map(Role::accessRights)
                    .flatMap(List::stream)
-                   .anyMatch(accessRights -> accessRights.name().equals(AccessRight.MANAGE_NVI_CANDIDATE.name()));
+                   .anyMatch(accessRights -> accessRights.name().equals(AccessRight.MANAGE_NVI_CANDIDATES.name()));
     }
 
     private User fetchUser(String assignee) {

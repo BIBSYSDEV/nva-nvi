@@ -120,7 +120,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper).withBody(body)
                    .withCurrentCustomer(customerId)
                    .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
-                   .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE)
+                   .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
                    .withUserName(userName)
                    .build();
     }
@@ -130,7 +130,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         return new HandlerRequestBuilder<String>(JsonUtils.dtoObjectMapper).withBody(body)
                    .withCurrentCustomer(customerId)
                    .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
-                   .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATE)
+                   .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
                    .withUserName(userName)
                    .build();
     }

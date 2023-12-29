@@ -138,6 +138,6 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
         var customerId = randomUri();
         return createRequestWithoutAccessRights(customerId, candidateIdentifier.toString(), noteIdentifier.toString(),
                                                 userName).withAccessRights(customerId,
-                                                                           AccessRight.MANAGE_NVI_CANDIDATE);
+                                                                           AccessRight.MANAGE_NVI_CANDIDATES);
     }
 }

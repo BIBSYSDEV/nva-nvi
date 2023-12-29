@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.rest.fetch;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.utils.RequestUtil.hasAccessRight;
-import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATE;
+import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.google.common.net.MediaType;
@@ -76,7 +76,7 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, String> {
 
     private static void validateRequest(URI requestedInstitution, RequestInfo requestInfo)
         throws UnauthorizedException, ForbiddenException {
-        hasAccessRight(requestInfo, MANAGE_NVI_CANDIDATE);
+        hasAccessRight(requestInfo, MANAGE_NVI_CANDIDATES);
         hasSameCustomer(requestInfo, requestedInstitution);
     }
 

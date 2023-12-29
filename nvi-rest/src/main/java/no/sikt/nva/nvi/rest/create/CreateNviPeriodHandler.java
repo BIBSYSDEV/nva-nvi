@@ -35,7 +35,7 @@ public class CreateNviPeriodHandler extends ApiGatewayHandler<NviPeriodDto, NviP
     protected NviPeriodDto processInput(NviPeriodDto input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
 
-        RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_PERIODS);
+        RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI);
 
         return attempt(input::toNviPeriod)
                    .map(DbNviPeriod::copy)

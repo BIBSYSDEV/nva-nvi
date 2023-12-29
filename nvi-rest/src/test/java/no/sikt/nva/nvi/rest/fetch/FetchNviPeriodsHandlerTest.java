@@ -54,7 +54,7 @@ public class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
     void shouldReturnPeriodsWhenUserHasAccessRights() throws IOException {
         nviService.createPeriod(periodWithPublishingYear(String.valueOf(ZonedDateTime.now().getYear())));
         nviService.createPeriod(periodWithPublishingYear(String.valueOf(ZonedDateTime.now().plusYears(1).getYear())));
-        handler.handleRequest(createRequestWithAccessRight(AccessRight.MANAGE_NVI_PERIODS), output, context);
+        handler.handleRequest(createRequestWithAccessRight(AccessRight.MANAGE_NVI), output, context);
         var response = GatewayResponse.fromOutputStream(output, NviPeriodsResponse.class);
 
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
@@ -63,7 +63,7 @@ public class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnSuccessWhenThereIsNoPeriods() throws IOException {
-        handler.handleRequest(createRequestWithAccessRight(AccessRight.MANAGE_NVI_PERIODS), output, context);
+        handler.handleRequest(createRequestWithAccessRight(AccessRight.MANAGE_NVI), output, context);
         var response = GatewayResponse.fromOutputStream(output, NviPeriodsResponse.class);
 
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));

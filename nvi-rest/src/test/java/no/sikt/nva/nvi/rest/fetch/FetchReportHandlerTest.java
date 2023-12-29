@@ -10,7 +10,7 @@ import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeri
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATE;
+import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -92,7 +92,7 @@ class FetchReportHandlerTest extends LocalDynamoTest {
         var candidate = Candidate.fromRequest(createUpsertCandidateRequest(randomUri()),
                                                 candidateRepository, periodRepository).orElseThrow();
         var request = createRequest(candidate.getIdentifier(), randomUri(), randomUri(), CURRENT_YEAR,
-                                    MANAGE_NVI_CANDIDATE).build();
+                                    MANAGE_NVI_CANDIDATES).build();
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -109,7 +109,7 @@ class FetchReportHandlerTest extends LocalDynamoTest {
         throws IOException {
         var institutionId = randomUri();
         var request = createRequest(UUID.randomUUID(), institutionId, institutionId, CURRENT_YEAR,
-                                    MANAGE_NVI_CANDIDATE).build();
+                                    MANAGE_NVI_CANDIDATES).build();
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, String.class);
 
@@ -124,7 +124,7 @@ class FetchReportHandlerTest extends LocalDynamoTest {
     void shouldReturnMediaTypeMicrosoftExcelWhenRequested() throws IOException {
         var institutionId = randomUri();
         var request = createRequest(UUID.randomUUID(), institutionId, institutionId, CURRENT_YEAR,
-                                    MANAGE_NVI_CANDIDATE)
+                                    MANAGE_NVI_CANDIDATES)
                           .withHeaders(Map.of(ACCEPT, MICROSOFT_EXCEL.toString()))
                           .build();
         handler.handleRequest(request, output, CONTEXT);
@@ -136,7 +136,7 @@ class FetchReportHandlerTest extends LocalDynamoTest {
     void shouldReturnMediaTypeMicrosoftExcelAsDefault() throws IOException {
         var institutionId = randomUri();
         var request = createRequest(UUID.randomUUID(), institutionId, institutionId, CURRENT_YEAR,
-                                    MANAGE_NVI_CANDIDATE)
+                                    MANAGE_NVI_CANDIDATES)
                           .withHeaders(Map.of(ACCEPT, ANY_APPLICATION_TYPE.toString()))
                           .build();
         handler.handleRequest(request, output, CONTEXT);
