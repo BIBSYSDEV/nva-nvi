@@ -151,7 +151,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     }
 
     private Candidate fetchCandidate(UUID candidateIdentifier) {
-        return attempt(() -> Candidate.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository))
+        return attempt(() -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
                    .orElse(failure -> {
                        handleFailure(failure, FAILED_TO_FETCH_CANDIDATE_MESSAGE, candidateIdentifier.toString(),
                                      candidateIdentifier);

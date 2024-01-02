@@ -76,8 +76,8 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnUnauthorizedWhenUserOIsNonAuthorized() throws IOException {
         var institutionId = randomUri();
-        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(institutionId),
-                                                candidateRepository, periodRepository).orElseThrow();
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(institutionId),
+                                         candidateRepository, periodRepository).orElseThrow();
         var request = createUnauthorizedRequest(candidate.getPublicationDetails().publicationId());
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -89,7 +89,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
     void shouldReturnValidCandidateWhenCandidateExists() throws IOException {
         var institutionId = randomUri();
         var candidate =
-            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         var request = createRequest(candidate.getPublicationDetails().publicationId());
 
@@ -122,10 +122,11 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
 
     private Candidate setUpNonApplicableCandidate(URI institutionId) {
         var candidate =
-            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
-        return Candidate.fromRequest(createUpsertNonCandidateRequest(candidate.getPublicationDetails().publicationId()),
-                                     candidateRepository).orElseThrow();
+        return Candidate.updateNonCandidate(
+            createUpsertNonCandidateRequest(candidate.getPublicationDetails().publicationId()),
+            candidateRepository).orElseThrow();
     }
 
     private GatewayResponse<CandidateDto> getGatewayResponse()

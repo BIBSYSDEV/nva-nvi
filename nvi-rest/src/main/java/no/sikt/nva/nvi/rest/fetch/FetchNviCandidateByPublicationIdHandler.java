@@ -43,7 +43,7 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
         throws ApiGatewayException {
         validateRequest(requestInfo);
         return attempt(() -> getPublicationId(requestInfo))
-                   .map(identifier -> Candidate.fromRequest(() -> identifier, candidateRepository, periodRepository))
+                   .map(identifier -> Candidate.fetchByPublicationId(() -> identifier, candidateRepository, periodRepository))
                    .map(this::checkIfApplicable)
                    .map(Candidate::toDto)
                    .orElseThrow(ExceptionMapper::map);

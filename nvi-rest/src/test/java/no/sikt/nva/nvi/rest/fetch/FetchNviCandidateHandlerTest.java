@@ -80,8 +80,8 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnUnauthorizedWhenUserDoesNotBelongToSameInstitutionAsAnyOfCandidateApprovalInstitutions()
         throws IOException {
-        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(randomUri()),
-                                              candidateRepository, periodRepository).orElseThrow();
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()),
+                                         candidateRepository, periodRepository).orElseThrow();
         var request = createRequest(candidate.getIdentifier(), randomUri(), MANAGE_NVI_CANDIDATES);
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -92,8 +92,8 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnUnauthorizedWhenUserDoesNotHaveSufficientAccessRight() throws IOException {
         var institutionId = randomUri();
-        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(institutionId),
-                                              candidateRepository, periodRepository).orElseThrow();
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(institutionId),
+                                         candidateRepository, periodRepository).orElseThrow();
         var request = createRequestWithoutAccessRight(candidate.getIdentifier(), institutionId);
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -105,7 +105,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     void shouldReturnValidCandidateWhenCandidateExists() throws IOException {
         var institutionId = randomUri();
         var candidate =
-            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         var request = createRequest(candidate.getIdentifier(), institutionId, MANAGE_NVI_CANDIDATES);
 
@@ -145,10 +145,11 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
 
     private Candidate setUpNonApplicableCandidate(URI institutionId) {
         var candidate =
-            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
-        return Candidate.fromRequest(createUpsertNonCandidateRequest(candidate.getPublicationDetails().publicationId()),
-                                     candidateRepository).orElseThrow();
+        return Candidate.updateNonCandidate(
+            createUpsertNonCandidateRequest(candidate.getPublicationDetails().publicationId()),
+            candidateRepository).orElseThrow();
     }
 
     private GatewayResponse<CandidateDto> getGatewayResponse()

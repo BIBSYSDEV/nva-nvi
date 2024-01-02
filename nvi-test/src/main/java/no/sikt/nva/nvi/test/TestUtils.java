@@ -48,7 +48,7 @@ import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
-import no.sikt.nva.nvi.common.service.requests.UpsertNonCandidateRequest;
+import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
 import nva.commons.core.paths.UriWrapper;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -217,7 +217,7 @@ public final class TestUtils {
                    .build();
     }
 
-    public static UpsertNonCandidateRequest createUpsertNonCandidateRequest(URI publicationId) {
+    public static UpdateNonCandidateRequest createUpsertNonCandidateRequest(URI publicationId) {
         return () -> publicationId;
     }
 

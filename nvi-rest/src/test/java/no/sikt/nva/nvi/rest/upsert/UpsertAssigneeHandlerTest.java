@@ -83,9 +83,9 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnUnauthorizedWhenAssigningToUserWithoutAccessRight() throws IOException {
         mockUserApiResponse("userResponseBodyWithoutAccessRight.json");
-        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(randomUri()),
-                                              candidateRepository,
-                                              periodRepository).orElseThrow();
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()),
+                                         candidateRepository,
+                                         periodRepository).orElseThrow();
         var assignee = randomString();
         handler.handleRequest(createRequest(candidate, assignee), output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -105,9 +105,9 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnConflictWhenUpdatingAssigneeAndReportingPeriodIsClosed() throws IOException {
         mockUserApiResponse("userResponseBodyWithAccessRight.json");
-        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(randomUri()),
-                                              candidateRepository,
-                                              periodRepository).orElseThrow();
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()),
+                                         candidateRepository,
+                                         periodRepository).orElseThrow();
         var assignee = randomString();
         var periodRepository = periodRepositoryReturningClosedPeriod(YEAR);
         var handler = new UpsertAssigneeHandler(candidateRepository, periodRepository, uriRetriever);
@@ -120,9 +120,9 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnConflictWhenUpdatingAssigneeAndReportingPeriodIsNotOpenedYet() throws IOException {
         mockUserApiResponse("userResponseBodyWithAccessRight.json");
-        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(randomUri()),
-                                              candidateRepository,
-                                              periodRepository).orElseThrow();
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()),
+                                         candidateRepository,
+                                         periodRepository).orElseThrow();
         var assignee = randomString();
         var periodRepository = periodRepositoryReturningNotOpenedPeriod(YEAR);
         var handler = new UpsertAssigneeHandler(candidateRepository, periodRepository, uriRetriever);
@@ -135,9 +135,9 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     @Test
     void shouldUpdateAssigneeWhenAssigneeIsNotPresent() throws IOException {
         mockUserApiResponse("userResponseBodyWithAccessRight.json");
-        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(randomUri()),
-                                              candidateRepository,
-                                              periodRepository).orElseThrow();
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()),
+                                         candidateRepository,
+                                         periodRepository).orElseThrow();
         var assignee = randomString();
         handler.handleRequest(createRequest(candidate, assignee), output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -150,9 +150,9 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     @Test
     void shouldRemoveAssigneeWhenAssigneeIsPresent() throws IOException {
         mockUserApiResponse("userResponseBodyWithAccessRight.json");
-        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(randomUri()),
-                                              candidateRepository,
-                                              periodRepository).orElseThrow();
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()),
+                                         candidateRepository,
+                                         periodRepository).orElseThrow();
         handler.handleRequest(createRequest(candidate, null), output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
@@ -176,9 +176,9 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
     private Candidate candidateWithFinalizedApproval(String newAssignee) {
         var institutionId = randomUri();
-        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(institutionId),
-                                              candidateRepository,
-                                              periodRepository).orElseThrow();
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(institutionId),
+                                         candidateRepository,
+                                         periodRepository).orElseThrow();
         candidate.updateApproval(new UpdateAssigneeRequest(institutionId, newAssignee));
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
@@ -206,7 +206,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
     private InputStream createRequestWithNonExistingCandidate() throws JsonProcessingException {
         var approvalToUpdate =
-            Candidate.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository, periodRepository)
+            Candidate.upsert(createUpsertCandidateRequest(randomUri()), candidateRepository, periodRepository)
                 .orElseThrow().toDto().approvals().get(0);
         var requestBody = new ApprovalDto(randomString(), approvalToUpdate.institutionId());
         var customerId = randomUri();

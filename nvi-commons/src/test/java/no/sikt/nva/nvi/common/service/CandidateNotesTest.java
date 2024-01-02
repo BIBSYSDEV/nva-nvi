@@ -41,7 +41,7 @@ public class CandidateNotesTest extends LocalDynamoTest {
         var noteRequest = createNoteRequest(randomString(), randomString());
         candidate.createNote(noteRequest);
 
-        var actualNote = Candidate.fromRequest(candidate::getIdentifier, candidateRepository, periodRepository)
+        var actualNote = Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository)
                              .toDto()
                              .notes()
                              .get(0);
@@ -90,7 +90,7 @@ public class CandidateNotesTest extends LocalDynamoTest {
     }
 
     private Candidate createCandidate() {
-        return Candidate.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
-                                     periodRepository).orElseThrow();
+        return Candidate.upsert(createUpsertCandidateRequest(randomUri()), candidateRepository,
+                                periodRepository).orElseThrow();
     }
 }

@@ -162,12 +162,12 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
     }
 
     private Optional<Candidate> upsertNviCandidate(NviCandidate nviCandidate) {
-        return Candidate.fromRequest(nviCandidate, candidateRepository, periodRepository);
+        return Candidate.upsert(nviCandidate, candidateRepository, periodRepository);
     }
 
     private NviCandidate getNviCandidate(String identifier) {
-        var candidate = Candidate.fromRequest(() -> UUID.fromString(identifier), candidateRepository,
-                                              periodRepository);
+        var candidate = Candidate.fetch(() -> UUID.fromString(identifier), candidateRepository,
+                                        periodRepository);
         return NviCandidate.fromCandidate(candidate);
     }
 

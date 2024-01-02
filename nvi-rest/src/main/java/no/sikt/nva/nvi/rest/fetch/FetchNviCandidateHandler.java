@@ -43,7 +43,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
         validateAccessRight(requestInfo);
         var topLevelCristinOrg = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER)).map(UUID::fromString)
-                   .map(identifier -> Candidate.fromRequest(() -> identifier, candidateRepository, periodRepository))
+                   .map(identifier -> Candidate.fetch(() -> identifier, candidateRepository, periodRepository))
                    .map(this::checkIfApplicable)
                    .map(candidate -> validateTopLevelOrg(candidate, topLevelCristinOrg))
                    .map(Candidate::toDto)

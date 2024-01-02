@@ -44,7 +44,7 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto> {
         var username = RequestUtil.getUsername(requestInfo).value();
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
         var noteIdentifier = UUID.fromString(requestInfo.getPathParameter(PARAM_NOTE_IDENTIFIER));
-        return attempt(() -> Candidate.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository))
+        return attempt(() -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
                    .map(candidate -> candidate.deleteNote(new DeleteNoteRequest(noteIdentifier, username)))
                    .map(Candidate::toDto)
                    .orElseThrow(ExceptionMapper::map);
