@@ -20,6 +20,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -51,12 +53,14 @@ import software.amazon.awssdk.services.sqs.model.SqsException;
 
 public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
-    public static final Environment ENVIRONMENT = new Environment();
+    private static final Environment ENVIRONMENT = new Environment();
     private static final String BODY = "body";
     private static final String ORGANIZATION_CONTEXT = "https://bibsysdev.github.io/src/organization-context.json";
     private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
     private static final Context CONTEXT = mock(Context.class);
     private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
+    private static final String INDEX_DLQ = "INDEX_DLQ";
+    private static final String INDEX_DLQ_URL = ENVIRONMENT.readEnv(INDEX_DLQ);
     private final S3Client s3Client = new FakeS3Client();
     private IndexDocumentHandler handler;
     private CandidateRepository candidateRepository;
@@ -115,6 +119,22 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var expectedEvent = createExpectedEventMessageBody(candidate);
         var actualEvent = sqsClient.getSentMessages().get(0).messageBody();
         assertEquals(expectedEvent, actualEvent);
+    }
+
+    @Test
+    void shouldSendMessageToDlqWhenFailingToProcessEvent() {
+        var candidate = randomApplicableCandidate();
+        setUpExistingResourceInS3(candidate);
+        mockUriRetrieverOrgResponse(candidate);
+        var mockedSqsClient = setupFailingSqsClient(candidate);
+        var handler = new IndexDocumentHandler(new S3StorageReader(s3Client, BUCKET_NAME),
+                                               new S3StorageWriter(s3Client, BUCKET_NAME),
+                                               mockedSqsClient,
+                                               candidateRepository, periodRepository, uriRetriever,
+                                               ENVIRONMENT);
+        var event = createEvent(List.of(candidate.getIdentifier()));
+        handler.handleRequest(event, CONTEXT);
+        verify(mockedSqsClient, times(1)).sendMessage(any(), eq(INDEX_DLQ_URL), eq(candidate.getIdentifier()));
     }
 
     @Test
@@ -206,7 +226,9 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var expectedFailingMessage = new PersistedIndexDocumentMessage(
             generateBucketUri(candidate)).asJsonString();
         var mockedSqsClient = mock(FakeSqsClient.class);
-        when(mockedSqsClient.sendMessage(eq(expectedFailingMessage), anyString())).thenThrow(SqsException.class);
+        var sqsException = SqsException.builder().message("Some exception message").build();
+        when(mockedSqsClient.sendMessage(eq(expectedFailingMessage), anyString())).thenThrow(
+            sqsException);
         return mockedSqsClient;
     }
 
@@ -310,11 +332,11 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return IndexDocumentWithConsumptionAttributes.from(indexDocument);
     }
 
-    private URI setUpExistingResourceInS3(Candidate persistedCandidate) {
+    private void setUpExistingResourceInS3(Candidate persistedCandidate) {
         var expandedResource = createExpandedResource(persistedCandidate);
         var resourceIndexDocument = createResourceIndexDocument(expandedResource);
         var resourcePath = extractResourceIdentifier(persistedCandidate);
-        return insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
+        insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
     }
 
     private JsonNode createResourceIndexDocument(JsonNode expandedResource) {

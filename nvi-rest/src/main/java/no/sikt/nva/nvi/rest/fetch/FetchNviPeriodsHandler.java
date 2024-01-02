@@ -34,7 +34,7 @@ public class FetchNviPeriodsHandler extends ApiGatewayHandler<Void, NviPeriodsRe
     protected NviPeriodsResponse processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
 
-        RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_PERIODS);
+        RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI);
 
         return attempt(nviService::getPeriods)
                    .map(this::toNviPeriodsResponse)

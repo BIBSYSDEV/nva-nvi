@@ -247,7 +247,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
                    .withBody(requestBody)
                    .withCurrentCustomer(institutionId)
                    .withTopLevelCristinOrgId(institutionId)
-                   .withAccessRights(institutionId, AccessRight.MANAGE_NVI_CANDIDATE.name())
+                   .withAccessRights(institutionId, AccessRight.MANAGE_NVI_CANDIDATES)
                    .withUserName(randomString())
                    .build();
     }
@@ -259,7 +259,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
                    .withBody(requestBody)
                    .withCurrentCustomer(institutionId)
                    .withTopLevelCristinOrgId(institutionId)
-                   .withAccessRights(institutionId, AccessRight.MANAGE_NVI_CANDIDATE.name())
+                   .withAccessRights(institutionId, AccessRight.MANAGE_NVI_CANDIDATES)
                    .withUserName(username)
                    .build();
     }

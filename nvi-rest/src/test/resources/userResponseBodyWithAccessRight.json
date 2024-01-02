@@ -10,8 +10,8 @@
     {
       "rolename": "App-admin",
       "accessRights": [
-        "MANAGE_NVI_PERIODS",
-        "MANAGE_NVI_CANDIDATE",
+        "MANAGE_NVI",
+        "MANAGE_NVI_CANDIDATES",
         "ADMINISTRATE_APPLICATION",
         "PROCESS_IMPORT_CANDIDATE"
       ],

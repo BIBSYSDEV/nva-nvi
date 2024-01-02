@@ -1,13 +1,13 @@
 [versions]
 junit = { strictly = '5.8.2' }
-nva = { strictly = '1.35.0' }
+nva = { strictly = '1.36.8' }
 jackson = { strictly = '2.15.2' }
 mockito = { strictly = '4.5.1' }
 hamcrest = { strictly = '2.2' }
 zalando = { strictly = '0.27.1' }
 awsLambdaJavaCore = { strictly = '1.2.2' }
-awsLambdaEvents = { strictly = '3.11.2' }
-log4j = { strictly = '2.18.0' }
+awsLambdaEvents = { strictly = '3.11.4' }
+log4j = { strictly = '2.22.0' }
 slf4j = { strictly = '2.0.9' }
 awslog4j2 = { strictly = '1.5.1' }
 wiremock = { strictly = "3.0.2" }
@@ -79,7 +79,7 @@ opensearch-java = { group = 'org.opensearch.client', name = 'opensearch-java', v
 
 log4j-core = { group = 'org.apache.logging.log4j', name = 'log4j-core', version.ref = 'log4j' }
 log4j-api = { group = 'org.apache.logging.log4j', name = 'log4j-api', version.ref = 'log4j' }
-log4j-slf4j18-impl = { group = 'org.apache.logging.log4j', name = 'log4j-slf4j18-impl', version.ref = 'log4j' }
+log4j-slf4j18-impl = { group = 'org.apache.logging.log4j', name = 'log4j-slf4j2-impl', version.ref = 'log4j' }
 slf4j-api = { group = 'org.slf4j', name = 'slf4j-api', version.ref = 'slf4j' }
 
 wiremock = { group = "org.wiremock", name = "wiremock", version.ref = "wiremock" }

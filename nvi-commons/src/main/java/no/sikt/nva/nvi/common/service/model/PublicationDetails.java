@@ -14,10 +14,6 @@ public record PublicationDetails(URI publicationId,
                                  ChannelType channelType,
                                  URI publicationChannelId,
                                  String level) {
-                                 //BigDecimal basePoints,
-                                 //boolean internationalCollaboration,
-                                 //BigDecimal collaborationFactor,
-                                 //int creatorShareCount
 
     public record PublicationDate(String year, String month, String day) {
 

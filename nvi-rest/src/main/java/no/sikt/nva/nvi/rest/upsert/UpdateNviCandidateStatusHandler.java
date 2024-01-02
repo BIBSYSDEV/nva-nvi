@@ -56,7 +56,7 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
 
     private static void validateRequest(NviStatusRequest input, RequestInfo requestInfo)
         throws UnauthorizedException, ForbiddenException {
-        RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATE);
+        RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATES);
         hasSameCustomer(requestInfo, input);
     }
 

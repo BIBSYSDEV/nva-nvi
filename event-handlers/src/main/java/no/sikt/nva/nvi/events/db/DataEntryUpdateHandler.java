@@ -73,6 +73,11 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
         return OperationType.UNKNOWN_TO_SDK_VERSION.equals(operationType);
     }
 
+    private static void logFailure(String message, String body, Exception failure) {
+        LOGGER.error(message, body);
+        LOGGER.error(ERROR_MESSAGE, failure.getMessage());
+    }
+
     private void publishToTopic(DynamodbStreamRecord streamRecord) {
         attempt(() -> extractDaoAndPublish(streamRecord)).orElse(failure -> {
             handleFailure(failure, streamRecord);
@@ -118,14 +123,12 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
     }
 
     private void handleFailure(Failure<?> failure, String body) {
-        LOGGER.error(FAILED_TO_PARSE_EVENT_MESSAGE, body);
-        LOGGER.error(ERROR_MESSAGE, failure.getException().getMessage());
+        logFailure(FAILED_TO_PARSE_EVENT_MESSAGE, body, failure.getException());
         sendToDlq(body, failure.getException());
     }
 
     private void handleFailure(Failure<?> failure, DynamodbStreamRecord record) {
-        LOGGER.error(FAILED_TO_PUBLISH_MESSAGE, DataEntryUpdateHandler.FAILED_TO_PUBLISH_MESSAGE);
-        LOGGER.error(ERROR_MESSAGE, failure.getException().getMessage());
+        logFailure(FAILED_TO_PUBLISH_MESSAGE, record.toString(), failure.getException());
         sendToDlq(record, failure.getException());
     }
 

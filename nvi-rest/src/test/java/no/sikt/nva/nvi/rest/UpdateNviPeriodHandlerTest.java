@@ -81,7 +81,7 @@ public class UpdateNviPeriodHandlerTest extends LocalDynamoTest {
         var customerId = randomUri();
         return new HandlerRequestBuilder<NviPeriodDto>(JsonUtils.dtoObjectMapper).withBody(randomPeriod())
                    .withCurrentCustomer(customerId)
-                   .withAccessRights(customerId, AccessRight.MANAGE_NVI_PERIODS.name())
+                   .withAccessRights(customerId, AccessRight.MANAGE_NVI)
                    .withUserName(randomString())
                    .withBody(period)
                    .build();

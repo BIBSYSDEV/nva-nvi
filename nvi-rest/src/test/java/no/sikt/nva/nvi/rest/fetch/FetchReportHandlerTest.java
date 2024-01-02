@@ -10,7 +10,7 @@ import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeri
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATE;
+import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -38,6 +38,7 @@ import no.sikt.nva.nvi.rest.model.ReportRow;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
+import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
@@ -77,8 +78,8 @@ class FetchReportHandlerTest extends LocalDynamoTest {
                                               candidateRepository, periodRepository).orElseThrow();
         var year = Year.now().getValue();
         var institutionId = randomUri();
-        var request = createRequest(candidate.getIdentifier(), institutionId, institutionId, year,
-                                    "SomeAccessRight").build();
+        var request = createRequestWithoutAccessRight(candidate.getIdentifier(), institutionId, institutionId, year)
+                          .build();
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -91,7 +92,7 @@ class FetchReportHandlerTest extends LocalDynamoTest {
         var candidate = Candidate.fromRequest(createUpsertCandidateRequest(randomUri()),
                                                 candidateRepository, periodRepository).orElseThrow();
         var request = createRequest(candidate.getIdentifier(), randomUri(), randomUri(), CURRENT_YEAR,
-                                    MANAGE_NVI_CANDIDATE.name()).build();
+                                    MANAGE_NVI_CANDIDATES).build();
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -108,7 +109,7 @@ class FetchReportHandlerTest extends LocalDynamoTest {
         throws IOException {
         var institutionId = randomUri();
         var request = createRequest(UUID.randomUUID(), institutionId, institutionId, CURRENT_YEAR,
-                                    MANAGE_NVI_CANDIDATE.toString()).build();
+                                    MANAGE_NVI_CANDIDATES).build();
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, String.class);
 
@@ -123,7 +124,7 @@ class FetchReportHandlerTest extends LocalDynamoTest {
     void shouldReturnMediaTypeMicrosoftExcelWhenRequested() throws IOException {
         var institutionId = randomUri();
         var request = createRequest(UUID.randomUUID(), institutionId, institutionId, CURRENT_YEAR,
-                                    MANAGE_NVI_CANDIDATE.toString())
+                                    MANAGE_NVI_CANDIDATES)
                           .withHeaders(Map.of(ACCEPT, MICROSOFT_EXCEL.toString()))
                           .build();
         handler.handleRequest(request, output, CONTEXT);
@@ -135,7 +136,7 @@ class FetchReportHandlerTest extends LocalDynamoTest {
     void shouldReturnMediaTypeMicrosoftExcelAsDefault() throws IOException {
         var institutionId = randomUri();
         var request = createRequest(UUID.randomUUID(), institutionId, institutionId, CURRENT_YEAR,
-                                    MANAGE_NVI_CANDIDATE.toString())
+                                    MANAGE_NVI_CANDIDATES)
                           .withHeaders(Map.of(ACCEPT, ANY_APPLICATION_TYPE.toString()))
                           .build();
         handler.handleRequest(request, output, CONTEXT);
@@ -145,12 +146,27 @@ class FetchReportHandlerTest extends LocalDynamoTest {
 
     private static HandlerRequestBuilder<InputStream> createRequest(UUID candidateIdentifier,
                                                                     URI userTopLevelCristinInstitution,
-                                                                    URI institutionId, int year, String accessRight) {
+                                                                    URI institutionId, int year,
+                                                                    AccessRight accessRight) {
         var customerId = randomUri();
         return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
                    .withCurrentCustomer(customerId)
                    .withTopLevelCristinOrgId(userTopLevelCristinInstitution)
                    .withAccessRights(customerId, accessRight)
+                   .withUserName(randomString())
+                   .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateIdentifier.toString(),
+                                              INSTITUTION_ID,
+                                              URLEncoder.encode(institutionId.toString(), StandardCharsets.UTF_8),
+                                              YEAR, String.valueOf(year)));
+    }
+
+    private static HandlerRequestBuilder<InputStream> createRequestWithoutAccessRight(UUID candidateIdentifier,
+                                                                    URI userTopLevelCristinInstitution,
+                                                                    URI institutionId, int year) {
+        var customerId = randomUri();
+        return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
+                   .withCurrentCustomer(customerId)
+                   .withTopLevelCristinOrgId(userTopLevelCristinInstitution)
                    .withUserName(randomString())
                    .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateIdentifier.toString(),
                                               INSTITUTION_ID,
