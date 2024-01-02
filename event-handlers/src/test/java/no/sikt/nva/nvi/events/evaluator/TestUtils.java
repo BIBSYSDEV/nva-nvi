@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.evaluator;
 
-import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -66,12 +65,11 @@ public final class TestUtils {
     private static String generateResponseBody(URI topLevelInstitutionId, URI subUnitId) {
         return attempt(
             () -> dtoObjectMapper.writeValueAsString(isNull(subUnitId)
-                                                         ? new Organization(topLevelInstitutionId, emptyList(), null,
-                                                                            null, null)
-                                                         : new Organization(subUnitId, List.of(
-                                                             new Organization(topLevelInstitutionId,
-                                                                              emptyList(), null, null, null)), null,
-                                                                            null, null))).orElseThrow();
+                                                         ? Organization.builder().withId(topLevelInstitutionId).build()
+                                                         : Organization.builder().withId(subUnitId).withPartOf(List.of(
+                                                             Organization.builder()
+                                                                 .withId(topLevelInstitutionId)
+                                                                 .build())).build())).orElseThrow();
     }
 
     private static InputStream createEventInputStream(EventReference eventReference) throws IOException {
