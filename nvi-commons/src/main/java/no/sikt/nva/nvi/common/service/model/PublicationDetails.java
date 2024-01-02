@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
