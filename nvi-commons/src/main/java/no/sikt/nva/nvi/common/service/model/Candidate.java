@@ -159,7 +159,7 @@ public final class Candidate {
         return basePoints;
     }
 
-    public boolean getIsInternationalCollaboration() {
+    public boolean isInternationalCollaboration() {
         return internationalCollaboration;
     }
 

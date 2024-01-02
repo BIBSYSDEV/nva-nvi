@@ -257,7 +257,7 @@ class CandidateTest extends LocalDynamoTest {
         assertEquals(candidate.getPublicationDetails().publicationChannelId(), createRequest.publicationChannelId());
         assertEquals(candidate.getPublicationDetails().level(), createRequest.level());
         assertEquals(candidate.getBasePoints(), createRequest.basePoints());
-        assertEquals(candidate.getIsInternationalCollaboration(),
+        assertEquals(candidate.isInternationalCollaboration(),
                      createRequest.isInternationalCollaboration());
         assertEquals(candidate.getCollaborationFactor(), createRequest.collaborationFactor());
         assertEquals(candidate.getCreatorShareCount(), createRequest.creatorShareCount());

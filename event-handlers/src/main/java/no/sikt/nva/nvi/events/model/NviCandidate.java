@@ -63,7 +63,7 @@ public record NviCandidate(URI publicationId,
                    .withPublicationChannelId(details.publicationChannelId())
                    .withLevel(details.level())
                    .withBasePoints(candidate.getBasePoints())
-                   .withIsInternationalCollaboration(candidate.getIsInternationalCollaboration())
+                   .withIsInternationalCollaboration(candidate.isInternationalCollaboration())
                    .withCollaborationFactor(candidate.getCollaborationFactor())
                    .withCreatorShareCount(candidate.getCreatorShareCount())
                    .withInstitutionPoints(candidate.getInstitutionPoints())
