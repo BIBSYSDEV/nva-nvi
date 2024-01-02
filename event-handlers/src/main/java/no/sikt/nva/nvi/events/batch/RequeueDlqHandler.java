@@ -147,7 +147,7 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
 
             var nviCandidate = getNviCandidate(identifier);
 
-            var updatedCandidate = upsertCandidate(nviCandidate);
+            var updatedCandidate = upsertNviCandidate(nviCandidate);
 
             if (updatedCandidate.isEmpty()) {
                 return new NviProcessMessageResult(input.message(), false,
@@ -161,7 +161,7 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
         return new NviProcessMessageResult(input.message(), true, Optional.empty());
     }
 
-    private Optional<Candidate> upsertCandidate(NviCandidate nviCandidate) {
+    private Optional<Candidate> upsertNviCandidate(NviCandidate nviCandidate) {
         return Candidate.fromRequest(nviCandidate, candidateRepository, periodRepository);
     }
 
