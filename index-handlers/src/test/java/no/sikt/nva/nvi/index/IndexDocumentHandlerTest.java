@@ -392,8 +392,8 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return root;
     }
 
-    private URI insertResourceInS3(JsonNode indexDocument, UnixPath path) {
-        return attempt(() -> s3Reader.insertFile(path, asString(indexDocument))).orElseThrow();
+    private void insertResourceInS3(JsonNode indexDocument, UnixPath path) {
+        attempt(() -> s3Reader.insertFile(path, asString(indexDocument))).orElseThrow();
     }
 
     private NviCandidateIndexDocument createExpectedNviIndexDocument(JsonNode expandedResource, Candidate candidate) {
