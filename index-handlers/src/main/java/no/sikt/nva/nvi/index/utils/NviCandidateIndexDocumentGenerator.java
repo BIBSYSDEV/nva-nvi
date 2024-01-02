@@ -32,7 +32,6 @@ import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.Username;
-import no.sikt.nva.nvi.common.utils.JsonPointers;
 import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contexts;
@@ -57,13 +56,6 @@ public final class NviCandidateIndexDocumentGenerator {
 
     public NviCandidateIndexDocumentGenerator(UriRetriever uriRetriever) {
         this.uriRetriever = uriRetriever;
-    }
-
-    public NviCandidateIndexDocument generateDocument(String resource, Candidate candidate) {
-        LOGGER.info("Starting generateDocument for {}", candidate.getIdentifier());
-        return createNviCandidateIndexDocument(
-            attempt(() -> dtoObjectMapper.readTree(resource)).map(root -> root.at(JsonPointers.JSON_PTR_BODY))
-                .orElseThrow(), candidate);
     }
 
     public NviCandidateIndexDocument generateDocument(JsonNode expandedResource, Candidate candidate) {
@@ -92,7 +84,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private Map<String, String> extractLabel(JsonNode resource, Approval approval) {
         return getTopLevelOrgs(resource.toString()).stream()
-                   .filter(organization -> organization.hasAffiliation(approval.getInstitutionId().toString()))
+                   .filter(organization -> organization.getId().equals(approval.getInstitutionId().toString()))
                    .findFirst()
                    .orElseThrow()
                    .getLabels();
