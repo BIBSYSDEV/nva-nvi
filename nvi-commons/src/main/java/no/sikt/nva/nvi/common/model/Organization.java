@@ -14,13 +14,15 @@ import nva.commons.core.SingletonCollector;
 public record Organization(@JsonProperty(ID) URI id,
                            @JsonProperty(PART_OF) List<Organization> partOf,
                            @JsonProperty(LABELS) Map<String, String> labels,
-                           @JsonProperty("type") String type,
-                           @JsonProperty("@context") String context)
+                           @JsonProperty(TYPE) String type,
+                           @JsonProperty(CONTEXT) String context)
     implements JsonSerializable {
 
-    public static final String ID = "id";
-    public static final String PART_OF = "partOf";
-    public static final String LABELS = "labels";
+    private static final String ID = "id";
+    private static final String PART_OF = "partOf";
+    private static final String LABELS = "labels";
+    private static final String TYPE = "type";
+    private static final String CONTEXT = "@context";
 
     @JsonIgnore
     public Organization getTopLevelOrg() {

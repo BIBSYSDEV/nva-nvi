@@ -105,11 +105,9 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     void shouldFetchOrganizationLabelsFromCristinApiWhenExpandedResourceIsMissingTopLevelOrganization() {
         var candidate = randomApplicableCandidate();
         var expandedResource = createExpandedResource(candidate);
-        var expandedResourceWithoutTopLevelOrganization = removeTopLevelOrganization((ObjectNode) expandedResource);
-        insertResourceInS3(createResourceIndexDocument(expandedResourceWithoutTopLevelOrganization), UnixPath.of(
-            extractResourceIdentifier(candidate)));
-        var indexDocument = createExpectedNviIndexDocument(expandedResource, candidate);
-        var expectedIndexDocument = IndexDocumentWithConsumptionAttributes.from(indexDocument).indexDocument();
+        setupResourceMissingTopLevelOrganizationsInS3(expandedResource, candidate);
+        var expectedIndexDocument = IndexDocumentWithConsumptionAttributes.from(
+            createExpectedNviIndexDocument(expandedResource, candidate)).indexDocument();
         var event = createEvent(candidate.getIdentifier());
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(event, CONTEXT);
@@ -241,6 +239,14 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         assertEquals(expectedIndexDocument, actualIndexDocument);
     }
 
+    @SuppressWarnings("unchecked")
+    private static HttpResponse<String> createResponse(String body) {
+        var response = (HttpResponse<String>) mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(200);
+        when(response.body()).thenReturn(body);
+        return response;
+    }
+
     private static FakeSqsClient setupFailingSqsClient(Candidate candidate) {
         var expectedFailingMessage = new PersistedIndexDocumentMessage(
             generateBucketUri(candidate)).asJsonString();
@@ -301,6 +307,12 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
                    .getLastPathElement();
     }
 
+    private void setupResourceMissingTopLevelOrganizationsInS3(JsonNode expandedResource, Candidate candidate) {
+        var expandedResourceWithoutTopLevelOrganization = removeTopLevelOrganization((ObjectNode) expandedResource);
+        insertResourceInS3(createResourceIndexDocument(expandedResourceWithoutTopLevelOrganization), UnixPath.of(
+            extractResourceIdentifier(candidate)));
+    }
+
     private JsonNode removeTopLevelOrganization(ObjectNode expandedResource) {
         expandedResource.remove("topLevelOrganizations");
         return expandedResource;
@@ -355,14 +367,6 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         affiliationOrganizationNode.set("partOf", partOfArrayNode);
         return Optional.of(createResponse(
             attempt(() -> dtoObjectMapper.writeValueAsString(affiliationOrganizationNode)).orElseThrow()));
-    }
-
-    @SuppressWarnings("unchecked")
-    public static HttpResponse<String> createResponse(String body) {
-        var response = (HttpResponse<String>) mock(HttpResponse.class);
-        when(response.statusCode()).thenReturn(200);
-        when(response.body()).thenReturn(body);
-        return response;
     }
 
     private IndexDocumentWithConsumptionAttributes setUpExistingResourceInS3AndGenerateExpectedDocument(

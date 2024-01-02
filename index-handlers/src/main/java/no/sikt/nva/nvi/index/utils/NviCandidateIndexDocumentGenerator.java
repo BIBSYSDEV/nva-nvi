@@ -32,20 +32,18 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
+import no.sikt.nva.nvi.common.model.Organization;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.Username;
-import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contexts;
 import no.sikt.nva.nvi.index.model.Contributor;
-import no.sikt.nva.nvi.index.model.ExpandedResource.Organization;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.unit.nva.auth.uriretriever.UriRetriever;
-import nva.commons.core.attempt.Failure;
 import org.apache.jena.rdf.model.RDFNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,11 +87,11 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private Map<String, String> extractLabels(JsonNode resource, Approval approval) {
-        return extractTopLevelOrgs(resource).stream()
-                   .filter(organization -> organization.getId().equals(approval.getInstitutionId().toString()))
+        return extractTopLevelOrganzations(resource).stream()
+                   .filter(organization -> organization.id().equals(approval.getInstitutionId()))
                    .findFirst()
                    .orElse(fetchOrganization(approval.getInstitutionId()))
-                   .getLabels();
+                   .labels();
     }
 
     private Organization fetchOrganization(URI institutionId) {
@@ -114,11 +112,11 @@ public final class NviCandidateIndexDocumentGenerator {
         return Optional.of(approval).map(Approval::getAssignee).map(Username::value).orElse(null);
     }
 
-    private List<Organization> extractTopLevelOrgs(JsonNode resource) {
-        var topLevelOrgs = resource.at("/topLevelOrganizations");
-        return topLevelOrgs.isMissingNode()
+    private List<Organization> extractTopLevelOrganzations(JsonNode resource) {
+        var topLevelOrganizations = resource.at("/topLevelOrganizations");
+        return topLevelOrganizations.isMissingNode()
                    ? Collections.emptyList()
-                   : mapToOrganizations((ArrayNode)topLevelOrgs);
+                   : mapToOrganizations((ArrayNode) topLevelOrganizations);
     }
 
     private List<Organization> mapToOrganizations(ArrayNode topLevelOrgs) {
@@ -173,7 +171,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .map(model -> model.listObjectsOfProperty(model.createProperty(PART_OF_PROPERTY)))
                    .map(nodeIterator -> nodeIterator.toList().stream().map(RDFNode::toString).toList())
                    .map(result -> new Affiliation.Builder().withId(id).withPartOf(result).build())
-                   .orElseThrow(this::logAndReThrow);
+                   .orElseThrow();
     }
 
     private Optional<String> getRawContentFromUriCached(String id) {
@@ -191,11 +189,6 @@ public final class NviCandidateIndexDocumentGenerator {
     private RuntimeException logFailingAffiliationHttpRequest(String id) {
         LOGGER.error("Failure while retrieving affiliation. Uri: {}", id);
         return new RuntimeException("Failure while retrieving affiliation");
-    }
-
-    private RuntimeException logAndReThrow(Failure<Affiliation> failure) {
-        LOGGER.error("Failure while mapping affiliation: {}", failure.getException().getMessage());
-        return new RuntimeException(failure.getException());
     }
 
     private Optional<String> getRawContentFromUri(String uri) {
