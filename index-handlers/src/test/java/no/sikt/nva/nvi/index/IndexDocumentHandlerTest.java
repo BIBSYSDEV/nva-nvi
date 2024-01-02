@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.index;
 
+import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_LABEL;
+import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_NORWEGIAN_LABEL;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.createExpandedResource;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.GZIP_ENDING;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.HARD_CODED_PART_OF;
@@ -28,6 +30,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.net.URI;
+import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -89,12 +92,8 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     @Test
     void shouldBuildIndexDocumentAndPersistInS3WhenReceivingSqsEvent() {
         var candidate = randomApplicableCandidate();
-        var expandedResource = createExpandedResource(candidate);
-        var resourceIndexDocument = createResourceIndexDocument(expandedResource);
-        var resourcePath = extractResourceIdentifier(candidate);
-        insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
-        var indexDocument = createExpectedNviIndexDocument(expandedResource, candidate);
-        var expectedIndexDocument = IndexDocumentWithConsumptionAttributes.from(indexDocument).indexDocument();
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
+            candidate).indexDocument();
         var event = createEvent(candidate.getIdentifier());
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(event, CONTEXT);
@@ -103,7 +102,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldFetchOrganizationLabelsFromCristinApiWhenExpandedResourceIsMissingTopLevelOrganization(){
+    void shouldFetchOrganizationLabelsFromCristinApiWhenExpandedResourceIsMissingTopLevelOrganization() {
         var candidate = randomApplicableCandidate();
         var expandedResource = createExpandedResource(candidate);
         var expandedResourceWithoutTopLevelOrganization = removeTopLevelOrganization((ObjectNode) expandedResource);
@@ -118,19 +117,11 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         assertEquals(expectedIndexDocument, actualIndexDocument);
     }
 
-    private JsonNode removeTopLevelOrganization(ObjectNode expandedResource) {
-        return expandedResource.remove("/topLevelOrganizations");
-    }
-
     @Test
     void shouldBuildIndexDocumentWithConsumptionAttributes() {
         var candidate = randomApplicableCandidate();
-        var expandedResource = createExpandedResource(candidate);
-        var resourceIndexDocument = createResourceIndexDocument(expandedResource);
-        var resourcePath = extractResourceIdentifier(candidate);
-        insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
-        var indexDocument = createExpectedNviIndexDocument(expandedResource, candidate);
-        var expectedConsumptionAttributes = IndexDocumentWithConsumptionAttributes.from(indexDocument).consumptionAttributes();
+        var expectedConsumptionAttributes = setUpExistingResourceInS3AndGenerateExpectedDocument(
+            candidate).consumptionAttributes();
         var event = createEvent(candidate.getIdentifier());
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(event, CONTEXT);
@@ -187,12 +178,8 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     void shouldNotFailForWholeBatchWhenFailingToReadOneResourceFromStorage() {
         var candidateToFail = randomApplicableCandidate();
         var candidateToSucceed = randomApplicableCandidate();
-        var expandedResource = createExpandedResource(candidateToSucceed);
-        var resourceIndexDocument = createResourceIndexDocument(expandedResource);
-        var resourcePath = extractResourceIdentifier(candidateToSucceed);
-        insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
-        var indexDocument = createExpectedNviIndexDocument(expandedResource, candidateToSucceed);
-        var expectedIndexDocument = IndexDocumentWithConsumptionAttributes.from(indexDocument);
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
+            candidateToSucceed);
         var event = createEvent(List.of(candidateToFail.getIdentifier(), candidateToSucceed.getIdentifier()));
         mockUriRetrieverOrgResponse(candidateToSucceed);
         handler.handleRequest(event, CONTEXT);
@@ -204,21 +191,12 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     void shouldNotFailForWholeBatchWhenFailingToGenerateDocumentForOneCandidate() {
         var candidateToFail = randomApplicableCandidate();
         var candidateToSucceed = randomApplicableCandidate();
-        var expandedResource1 = createExpandedResource(candidateToFail);
-        var resourceIndexDocument1 = createResourceIndexDocument(expandedResource1);
-        var resourcePath1 = extractResourceIdentifier(candidateToFail);
-        insertResourceInS3(resourceIndexDocument1, UnixPath.of(resourcePath1));
-        var indexDocument1 = createExpectedNviIndexDocument(expandedResource1, candidateToFail);
-        IndexDocumentWithConsumptionAttributes.from(indexDocument1);
+        setUpExistingResourceInS3AndGenerateExpectedDocument(candidateToFail);
         mockUriRetrieverFailure(candidateToFail);
         mockUriRetrieverOrgResponse(candidateToSucceed);
         var event = createEvent(List.of(candidateToFail.getIdentifier(), candidateToSucceed.getIdentifier()));
-        var expandedResource = createExpandedResource(candidateToSucceed);
-        var resourceIndexDocument = createResourceIndexDocument(expandedResource);
-        var resourcePath = extractResourceIdentifier(candidateToSucceed);
-        insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
-        var indexDocument = createExpectedNviIndexDocument(expandedResource, candidateToSucceed);
-        var expectedIndexDocument = IndexDocumentWithConsumptionAttributes.from(indexDocument);
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
+            candidateToSucceed);
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = parseJson(s3Reader.getFile(createPath(candidateToSucceed)));
         assertEquals(expectedIndexDocument, actualIndexDocument);
@@ -242,12 +220,8 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     @Test
     void shouldNotFailForWholeBatchWhenFailingToFetchOneCandidate() {
         var candidateToSucceed = randomApplicableCandidate();
-        var expandedResource = createExpandedResource(candidateToSucceed);
-        var resourceIndexDocument = createResourceIndexDocument(expandedResource);
-        var resourcePath = extractResourceIdentifier(candidateToSucceed);
-        insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
-        var indexDocument = createExpectedNviIndexDocument(expandedResource, candidateToSucceed);
-        var expectedIndexDocument = IndexDocumentWithConsumptionAttributes.from(indexDocument);
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
+            candidateToSucceed);
         var event = createEvent(List.of(UUID.randomUUID(), candidateToSucceed.getIdentifier()));
         mockUriRetrieverOrgResponse(candidateToSucceed);
         handler.handleRequest(event, CONTEXT);
@@ -258,12 +232,8 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     @Test
     void shouldNotFailForWholeBatchWhenFailingParseOneEventRecord() {
         var candidateToSucceed = randomApplicableCandidate();
-        var expandedResource = createExpandedResource(candidateToSucceed);
-        var resourceIndexDocument = createResourceIndexDocument(expandedResource);
-        var resourcePath = extractResourceIdentifier(candidateToSucceed);
-        insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
-        var indexDocument = createExpectedNviIndexDocument(expandedResource, candidateToSucceed);
-        var expectedIndexDocument = IndexDocumentWithConsumptionAttributes.from(indexDocument);
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
+            candidateToSucceed);
         var event = createEventWithOneInvalidRecord(candidateToSucceed.getIdentifier());
         mockUriRetrieverOrgResponse(candidateToSucceed);
         handler.handleRequest(event, CONTEXT);
@@ -309,18 +279,31 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return attempt(() -> dtoObjectMapper.writeValueAsString(jsonNode)).orElseThrow();
     }
 
-    private static ObjectNode generateOrganizationNode(String hardCodedPartOf) {
-        var hardCodedPartOfNode = dtoObjectMapper.createObjectNode();
-        hardCodedPartOfNode.put("id", hardCodedPartOf);
-        hardCodedPartOfNode.put("type", "Organization");
-        hardCodedPartOfNode.put("@context", ORGANIZATION_CONTEXT);
-        return hardCodedPartOfNode;
+    private static ObjectNode generateOrganizationNode(String organizationId) {
+        var organizationNode = dtoObjectMapper.createObjectNode();
+        organizationNode.put("id", organizationId);
+        organizationNode.put("type", "Organization");
+        addLabels(organizationNode);
+        organizationNode.put("@context", ORGANIZATION_CONTEXT);
+        return organizationNode;
+    }
+
+    private static void addLabels(ObjectNode organizationNode) {
+        var labels = dtoObjectMapper.createObjectNode();
+        labels.put("nb", HARDCODED_NORWEGIAN_LABEL);
+        labels.put("en", HARDCODED_ENGLISH_LABEL);
+        organizationNode.set("labels", labels);
     }
 
     private static String extractResourceIdentifier(Candidate persistedCandidate) {
         return UriWrapper.fromUri(persistedCandidate.getPublicationDetails().publicationBucketUri())
                    .getPath()
                    .getLastPathElement();
+    }
+
+    private JsonNode removeTopLevelOrganization(ObjectNode expandedResource) {
+        expandedResource.remove("topLevelOrganizations");
+        return expandedResource;
     }
 
     private String createExpectedEventMessageBody(Candidate candidate) {
@@ -334,18 +317,10 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     private S3StorageWriter mockS3WriterFailingForOneCandidate(Candidate candidateToSucceed,
                                                                Candidate candidateToFail)
         throws IOException {
-        var expandedResource1 = createExpandedResource(candidateToFail);
-        var resourceIndexDocument1 = createResourceIndexDocument(expandedResource1);
-        var resourcePath1 = extractResourceIdentifier(candidateToFail);
-        insertResourceInS3(resourceIndexDocument1, UnixPath.of(resourcePath1));
-        var indexDocument1 = createExpectedNviIndexDocument(expandedResource1, candidateToFail);
-        var expectedIndexDocumentToFail = IndexDocumentWithConsumptionAttributes.from(indexDocument1);
-        var expandedResource = createExpandedResource(candidateToSucceed);
-        var resourceIndexDocument = createResourceIndexDocument(expandedResource);
-        var resourcePath = extractResourceIdentifier(candidateToSucceed);
-        insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
-        var indexDocument = createExpectedNviIndexDocument(expandedResource, candidateToSucceed);
-        var expectedIndexDocument = IndexDocumentWithConsumptionAttributes.from(indexDocument);
+        var expectedIndexDocumentToFail = setUpExistingResourceInS3AndGenerateExpectedDocument(candidateToFail
+        );
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(candidateToSucceed
+        );
         var s3Writer = mock(S3StorageWriter.class);
         when(s3Writer.write(eq(expectedIndexDocumentToFail))).thenThrow(new IOException("Some exception message"));
         when(s3Writer.write(eq(expectedIndexDocument))).thenReturn(
@@ -363,20 +338,31 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
             .stream()
             .flatMap(creator -> creator.affiliations().stream())
             .forEach(this::mockOrganizationResponse);
+
+        candidate.getApprovals().keySet().forEach(this::mockOrganizationResponse);
     }
 
-    private void mockOrganizationResponse(URI affiliation) {
-        when(uriRetriever.getRawContent(eq(affiliation), any())).thenReturn(generateResponse(affiliation));
+    private void mockOrganizationResponse(URI affiliationId) {
+        var httpResponse = generateResponse(affiliationId);
+        when(uriRetriever.fetchResponse(eq(affiliationId), any())).thenReturn(httpResponse);
     }
 
-    private Optional<String> generateResponse(URI affiliation) {
+    private Optional<HttpResponse<String>> generateResponse(URI affiliation) {
         var affiliationOrganizationNode = generateOrganizationNode(affiliation.toString());
         var partOfArrayNode = dtoObjectMapper.createArrayNode();
         var partOfOrganizationNode = generateOrganizationNode(HARD_CODED_PART_OF);
         partOfArrayNode.add(partOfOrganizationNode);
         affiliationOrganizationNode.set("partOf", partOfArrayNode);
-        return Optional.of(
-            attempt(() -> dtoObjectMapper.writeValueAsString(affiliationOrganizationNode)).orElseThrow());
+        return Optional.of(createResponse(
+            attempt(() -> dtoObjectMapper.writeValueAsString(affiliationOrganizationNode)).orElseThrow()));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static HttpResponse<String> createResponse(String body) {
+        var response = (HttpResponse<String>) mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(200);
+        when(response.body()).thenReturn(body);
+        return response;
     }
 
     private IndexDocumentWithConsumptionAttributes setUpExistingResourceInS3AndGenerateExpectedDocument(

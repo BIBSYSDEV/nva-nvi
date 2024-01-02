@@ -1,18 +1,26 @@
-package no.sikt.nva.nvi.events.evaluator.model;
+package no.sikt.nva.nvi.common.model;
 
 import static java.util.Objects.nonNull;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.core.SingletonCollector;
 
-public record Organization(@JsonProperty(ID) URI id, @JsonProperty(PART_OF) List<Organization> partOf)
+public record Organization(@JsonProperty(ID) URI id,
+                           @JsonProperty(PART_OF) List<Organization> partOf,
+                           @JsonProperty(LABELS) Map<String, String> labels,
+                           @JsonProperty("type") String type,
+                           @JsonProperty("@context") String context)
     implements JsonSerializable {
 
     public static final String ID = "id";
     public static final String PART_OF = "partOf";
+    public static final String LABELS = "labels";
 
     @JsonIgnore
     public Organization getTopLevelOrg() {
@@ -28,6 +36,10 @@ public record Organization(@JsonProperty(ID) URI id, @JsonProperty(PART_OF) List
         }
 
         return this;
+    }
+
+    public String asJsonString() throws JsonProcessingException {
+        return dtoObjectMapper.writeValueAsString(this);
     }
 
     private static boolean hasPartOf(Organization org) {
