@@ -818,6 +818,9 @@ Resources:
   NviRequeueDlqHandler:
     Type: AWS::Serverless::Function
     Properties:
+      Description: >
+        Lambda that requeues messages from DLQ. Needs to be run manually from Test tab in 
+        AWS console. Run with count as parameter to limit number of messages to requeue. Default is 10.
       CodeUri: event-handlers
       Handler: no.sikt.nva.nvi.events.batch.RequeueDlqHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
