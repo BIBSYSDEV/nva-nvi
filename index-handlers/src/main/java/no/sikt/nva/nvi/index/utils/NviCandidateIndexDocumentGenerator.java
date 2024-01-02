@@ -87,7 +87,7 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private Map<String, String> extractLabels(JsonNode resource, Approval approval) {
-        return extractTopLevelOrganzations(resource).stream()
+        return extractTopLevelOrganizations(resource).stream()
                    .filter(organization -> organization.id().equals(approval.getInstitutionId()))
                    .findFirst()
                    .orElse(fetchOrganization(approval.getInstitutionId()))
@@ -112,7 +112,7 @@ public final class NviCandidateIndexDocumentGenerator {
         return Optional.of(approval).map(Approval::getAssignee).map(Username::value).orElse(null);
     }
 
-    private List<Organization> extractTopLevelOrganzations(JsonNode resource) {
+    private List<Organization> extractTopLevelOrganizations(JsonNode resource) {
         var topLevelOrganizations = resource.at("/topLevelOrganizations");
         return topLevelOrganizations.isMissingNode()
                    ? Collections.emptyList()
@@ -165,8 +165,7 @@ public final class NviCandidateIndexDocumentGenerator {
             return null;
         }
 
-        return attempt(() -> getRawContentFromUriCached(id)).map(
-                rawContent -> rawContent.orElseThrow(() -> logFailingAffiliationHttpRequest(id)))
+        return attempt(() -> getRawContentFromUriCached(id)).map(Optional::get)
                    .map(str -> createModel(dtoObjectMapper.readTree(str)))
                    .map(model -> model.listObjectsOfProperty(model.createProperty(PART_OF_PROPERTY)))
                    .map(nodeIterator -> nodeIterator.toList().stream().map(RDFNode::toString).toList())
