@@ -780,7 +780,7 @@ Resources:
         DestinationConfig:
           OnFailure:
             Type: SQS
-            Destination: !GetAtt BatchScanDLQ.Arn #TODO move to code and add candidateIdentifier to message metadata
+            Destination: !GetAtt BatchScanDLQ.Arn
 
 
   #==========================Manually triggered functions=============================================
@@ -827,7 +827,7 @@ Resources:
       AutoPublishAlias: live
       Environment:
         Variables:
-          DLQ_QUEUE_URL: !Ref BatchScanDLQ
+          DLQ_QUEUE_URL: !Ref IndexDLQ
 
   ReEvaluateNviCandidatesHandler:
     Type: AWS::Serverless::Function
