@@ -1,194 +1,124 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
-import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
-import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient;
+import static no.sikt.nva.nvi.index.aws.S3StorageWriter.GZIP_ENDING;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
-import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
-import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue;
-import com.amazonaws.services.lambda.runtime.events.models.dynamodb.OperationType;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import com.amazonaws.services.lambda.runtime.events.SQSEvent;
+import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.net.URI;
-import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.index.aws.SearchClient;
+import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.model.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.attempt.Failure;
+import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@JacocoGenerated
-public class UpdateIndexHandler implements RequestHandler<DynamodbEvent, Void> {
+public class UpdateIndexHandler implements RequestHandler<SQSEvent, Void> {
 
+    public static final String FAILED_TO_ADD_DOCUMENT_TO_INDEX = "Failed to add document to index: {}";
+    public static final String INDEX_DLQ = "INDEX_DLQ";
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateIndexHandler.class);
-    private static final String COULD_NOT_UPDATE_INDEX_MESSAGE = "Could not update index for record: {}";
-    private static final String CANDIDATE_TYPE = "CANDIDATE";
-    private static final String APPROVAL_TYPE = "APPROVAL_STATUS";
-    private static final String PRIMARY_KEY_DELIMITER = "#";
-    private static final String IDENTIFIER = "identifier";
-    private static final String UPDATE_INDEX_DLQ_QUEUE_URL = "UPDATE_INDEX_DLQ_QUEUE_URL";
-    private final SearchClient<NviCandidateIndexDocument> openSearchClient;
+    private static final String FAILED_TO_MAP_BODY_MESSAGE = "Failed to map body to PersistedIndexDocumentMessage: {}";
+    private static final String FAILED_TO_FETCH_DOCUMENT_MESSAGE = "Failed to fetch document from S3: {}";
+    private static final String ERROR_MESSAGE = "Error message: {}";
+    private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
+    private final OpenSearchClient openSearchClient;
     private final StorageReader<URI> storageReader;
-    private final CandidateRepository candidateRepository;
-    private final PeriodRepository periodRepository;
-    private final NviCandidateIndexDocumentGenerator documentGenerator;
     private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
     private final String dlqUrl;
 
     @JacocoGenerated
     public UpdateIndexHandler() {
-        this(new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")), defaultOpenSearchClient(),
-             new CandidateRepository(defaultDynamoClient()), new PeriodRepository(defaultDynamoClient()),
-             new NviCandidateIndexDocumentGenerator(new UriRetriever()), new NviQueueClient(),
-             new Environment());
+        this(OpenSearchClient.defaultOpenSearchClient(),
+             new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)), new NviQueueClient());
     }
 
-    public UpdateIndexHandler(StorageReader<URI> storageReader,
-                              SearchClient<NviCandidateIndexDocument> openSearchClient,
-                              CandidateRepository candidateRepository, PeriodRepository periodRepository,
-                              NviCandidateIndexDocumentGenerator documentGenerator,
-                              QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient,
-                              Environment environment) {
-        this.storageReader = storageReader;
+    public UpdateIndexHandler(OpenSearchClient openSearchClient, StorageReader<URI> storageReader,
+                              QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient) {
         this.openSearchClient = openSearchClient;
-        this.candidateRepository = candidateRepository;
-        this.periodRepository = periodRepository;
-        this.documentGenerator = documentGenerator;
+        this.storageReader = storageReader;
         this.queueClient = queueClient;
-        this.dlqUrl = environment.readEnv(UPDATE_INDEX_DLQ_QUEUE_URL);
+        this.dlqUrl = new Environment().readEnv(INDEX_DLQ);
     }
 
-    public Void handleRequest(DynamodbEvent event, Context context) {
-        LOGGER.info("Starting handleRequest. Records count: {}", event.getRecords().size());
-        event.getRecords()
+    @Override
+    public Void handleRequest(SQSEvent input, Context context) {
+        input.getRecords()
             .stream()
-            .filter(this::isUpdate)
-            .filter(this::isCandidateOrApproval)
-            .forEach(this::updateIndex);
-        LOGGER.info("Done executing handleRequest");
+            .map(SQSMessage::getBody)
+            .map(this::extractDocumentUriFromBody)
+            .filter(Objects::nonNull)
+            .map(this::fetchDocument)
+            .filter(Objects::nonNull)
+            .forEach(this::addDocumentToIndex);
         return null;
     }
 
-    protected OperationType getEventType(DynamodbStreamRecord record) {
-        return OperationType.fromValue(record.getEventName());
+    private static IndexDocumentWithConsumptionAttributes parseBlob(String blob) {
+        return attempt(
+            () -> dtoObjectMapper.readValue(blob, IndexDocumentWithConsumptionAttributes.class)).orElseThrow();
     }
 
-    private static String extractRecordType(DynamodbStreamRecord record) {
-        return record.getDynamodb().getKeys().get(SORT_KEY).getS().split(PRIMARY_KEY_DELIMITER)[0];
+    private static UUID extractCandidateIdentifier(URI docuemntUri) {
+        return UUID.fromString(removeGz(UriWrapper.fromUri(docuemntUri).getPath().getLastPathElement()));
     }
 
-    private static UUID extractIdentifierFromNewImage(DynamodbStreamRecord record) {
-        return UUID.fromString(record.getDynamodb().getNewImage().get(IDENTIFIER).getS());
+    private static String removeGz(String filename) {
+        return filename.replace(GZIP_ENDING, "");
     }
 
-    private static boolean isApproval(DynamodbStreamRecord record) {
-        return APPROVAL_TYPE.equals(extractRecordType(record));
+    private static void logFailure(String message, String messageArgument, Exception failure) {
+        LOGGER.error(message, messageArgument);
+        LOGGER.error(ERROR_MESSAGE, failure.getMessage());
     }
 
-    private static boolean isCandidate(DynamodbStreamRecord record) {
-        return CANDIDATE_TYPE.equals(extractRecordType(record));
+    private URI extractDocumentUriFromBody(String body) {
+        return attempt(() -> dtoObjectMapper.readValue(body, PersistedIndexDocumentMessage.class).documentUri()).orElse(
+            failure -> {
+                handleFailure(failure, body);
+                return null;
+            });
     }
 
-    private static String getRecordThatCouldNotBeIndexed(DynamodbStreamRecord record) {
-        return attempt(() -> dtoObjectMapper.writeValueAsString(record)).orElseThrow();
+    private void handleFailure(Failure<?> failure, String message, String messageArgument,
+                               UUID candidateIdentifier) {
+        logFailure(message, messageArgument, failure.getException());
+        queueClient.sendMessage(messageArgument, dlqUrl, candidateIdentifier);
     }
 
-    private static String getStackTrace(Exception e) {
-        var stringWriter = new StringWriter();
-        e.printStackTrace(new PrintWriter(stringWriter));
-        return stringWriter.toString();
+    private void handleFailure(Failure<?> failure, String messageArgument) {
+        logFailure(FAILED_TO_MAP_BODY_MESSAGE, messageArgument, failure.getException());
+        queueClient.sendMessage(messageArgument, dlqUrl);
     }
 
-    private static String extractIdFromRecord(DynamodbStreamRecord record) {
-        return Optional.ofNullable(record.getDynamodb().getOldImage())
-                   .orElse(record.getDynamodb().getNewImage())
-                   .getOrDefault(IDENTIFIER, new AttributeValue().withS("no id found")).getS();
+    private void addDocumentToIndex(NviCandidateIndexDocument document) {
+        attempt(() -> openSearchClient.addDocumentToIndex(document)).orElse(
+            failure -> {
+                handleFailure(failure, FAILED_TO_ADD_DOCUMENT_TO_INDEX, document.identifier().toString(),
+                              document.identifier());
+                return null;
+            });
     }
 
-    private boolean isCandidateOrApproval(DynamodbStreamRecord record) {
-        LOGGER.info("Record id {} type {}", extractIdFromRecord(record), extractRecordType(record));
-        return isCandidate(record) || isApproval(record);
-    }
-
-    private void updateIndex(DynamodbStreamRecord record) {
-        try {
-            var candidateIdentifier = extractIdentifierFromNewImage(record);
-            LOGGER.info("Doing updateIndex on {}", candidateIdentifier);
-            var candidate = fetchCandidate(candidateIdentifier);
-            if (candidate.isApplicable()) {
-                addDocumentToIndex(candidate);
-            } else {
-                removeDocumentFromIndex(candidate);
-            }
-        } catch (Exception e) {
-            LOGGER.error("updateIndex failed", e);
-            LOGGER.error(COULD_NOT_UPDATE_INDEX_MESSAGE, getRecordThatCouldNotBeIndexed(record));
-            attempt(() -> queueClient.sendMessage(dtoObjectMapper.writeValueAsString(Map.of(
-                "exception", getStackTrace(e),
-                "dynamodb", record
-            )), dlqUrl));
-        }
-    }
-
-    private Candidate fetchCandidate(UUID candidateIdentifier) {
-        return Candidate.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository);
-    }
-
-    private boolean isUpdate(DynamodbStreamRecord record) {
-        var eventType = getEventType(record);
-        var identifier = extractIdFromRecord(record);
-
-        LOGGER.info("Record id: {} Event type: {}", identifier, eventType.toString());
-        return OperationType.INSERT.equals(eventType) || OperationType.MODIFY.equals(eventType);
-    }
-
-    private void removeDocumentFromIndex(Candidate candidate) {
-        LOGGER.info("removeDocumentFromIndex for {}", candidate.getIdentifier());
-        var result = openSearchClient.removeDocumentFromIndex(candidate.getIdentifier());
-        LOGGER.info("done removeDocumentFromIndex for {}, result: {}", candidate.getIdentifier(),
-                    result.result().jsonValue());
-    }
-
-    private void addDocumentToIndex(Candidate candidate) {
-        LOGGER.info("addDocumentToIndex for {}", candidate.getIdentifier());
-        var result = attempt(() -> getPublicationFromBucket(candidate))
-                         .map(blob -> documentGenerator.generateDocument(blob, candidate))
-                         .map(indexDocument -> {
-                             LOGGER.info("Adding document to index, candidateId: {} publicationId: {}",
-                                         indexDocument.identifier(),
-                                         indexDocument.publicationDetails().id());
-                             return indexDocument;
-                         })
-                         .map(openSearchClient::addDocumentToIndex)
-                         .orElseThrow();
-        LOGGER.info("done addDocumentToIndex for {}, result:{}", candidate.getIdentifier(),
-                    result.result().jsonValue());
-    }
-
-    private String getPublicationFromBucket(Candidate candidate) {
-        var bucketUri = candidate.getPublicationDetails().publicationBucketUri();
-        LOGGER.info("getPublicationFromBucket with candidate id {} and url {}", candidate.getIdentifier(),
-                    bucketUri.toString());
-        var result = storageReader.read(bucketUri);
-        LOGGER.info("Done fetching {}, string length {}", bucketUri, result.length());
-        return result;
+    private NviCandidateIndexDocument fetchDocument(URI documentUri) {
+        return attempt(() -> parseBlob(storageReader.read(documentUri)).indexDocument()).orElse(
+            failure -> {
+                handleFailure(failure, FAILED_TO_FETCH_DOCUMENT_MESSAGE, documentUri.toString(),
+                              extractCandidateIdentifier(documentUri));
+                return null;
+            });
     }
 }
