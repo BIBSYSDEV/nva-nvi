@@ -24,6 +24,14 @@ public record Organization(@JsonProperty(ID) URI id,
     private static final String TYPE = "type";
     private static final String CONTEXT = "@context";
 
+    public static Organization from(String json) throws JsonProcessingException {
+        return dtoObjectMapper.readValue(json, Organization.class);
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
     @JsonIgnore
     public Organization getTopLevelOrg() {
         if (nonNull(partOf()) && !partOf().isEmpty()) {
@@ -46,5 +54,46 @@ public record Organization(@JsonProperty(ID) URI id,
 
     private static boolean hasPartOf(Organization org) {
         return nonNull(org.partOf()) && !org.partOf().isEmpty();
+    }
+
+    public static final class Builder {
+
+        private URI id;
+        private List<Organization> partOf;
+        private Map<String, String> labels;
+        private String type;
+        private String context;
+
+        private Builder() {
+        }
+
+        public Builder withId(URI id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder withPartOf(List<Organization> partOf) {
+            this.partOf = partOf;
+            return this;
+        }
+
+        public Builder withLabels(Map<String, String> labels) {
+            this.labels = labels;
+            return this;
+        }
+
+        public Builder withType(String type) {
+            this.type = type;
+            return this;
+        }
+
+        public Builder withContext(String context) {
+            this.context = context;
+            return this;
+        }
+
+        public Organization build() {
+            return new Organization(id, partOf, labels, type, context);
+        }
     }
 }
