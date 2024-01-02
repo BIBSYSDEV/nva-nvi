@@ -71,6 +71,10 @@ public final class Candidate {
     private final BigDecimal totalPoints;
     private final PeriodStatus periodStatus;
     private final PublicationDetails publicationDetails;
+    private final BigDecimal basePoints;
+    private final boolean internationalCollaboration;
+    private final BigDecimal collaborationFactor;
+    private final int creatorShareCount;
 
     private Candidate(CandidateRepository repository, CandidateDao candidateDao, List<ApprovalStatusDao> approvals,
                       List<NoteDao> notes, PeriodStatus periodStatus) {
@@ -83,6 +87,10 @@ public final class Candidate {
         this.totalPoints = candidateDao.candidate().totalPoints();
         this.periodStatus = periodStatus;
         this.publicationDetails = mapToPublicationDetails(candidateDao);
+        this.basePoints = candidateDao.candidate().basePoints();
+        this.internationalCollaboration = candidateDao.candidate().internationalCollaboration();
+        this.collaborationFactor = candidateDao.candidate().collaborationFactor();
+        this.creatorShareCount = candidateDao.candidate().creatorShareCount();
     }
 
     public static Candidate fromRequest(FetchByPublicationRequest request, CandidateRepository repository,
@@ -145,6 +153,22 @@ public final class Candidate {
 
     public Map<URI, Approval> getApprovals() {
         return new HashMap<>(approvals);
+    }
+
+    public BigDecimal getBasePoints() {
+        return basePoints;
+    }
+
+    public boolean getIsInternationalCollaboration() {
+        return internationalCollaboration;
+    }
+
+    public BigDecimal getCollaborationFactor() {
+        return collaborationFactor;
+    }
+
+    public int getCreatorShareCount() {
+        return creatorShareCount;
     }
 
     public BigDecimal getTotalPoints() {
@@ -472,11 +496,7 @@ public final class Candidate {
                                       candidateDao.candidate().channelType(),
                                       candidateDao.candidate().channelId(),
                                       candidateDao.candidate().level()
-                                          .getValues().stream().findFirst().orElse(null),
-                                      candidateDao.candidate().basePoints(),
-                                      candidateDao.candidate().internationalCollaboration(),
-                                      candidateDao.candidate().collaborationFactor(),
-                                      candidateDao.candidate().creatorShareCount());
+                                          .getValues().stream().findFirst().orElse(null));
     }
 
     private void validateCandidateState() {

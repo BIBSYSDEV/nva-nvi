@@ -14,11 +14,11 @@ public record PublicationDetails(URI publicationId,
                                  List<Creator> creators,
                                  ChannelType channelType,
                                  URI publicationChannelId,
-                                 String level,
-                                 BigDecimal basePoints,
-                                 boolean internationalCollaboration,
-                                 BigDecimal collaborationFactor,
-                                 int creatorShareCount) {
+                                 String level) {
+                                 //BigDecimal basePoints,
+                                 //boolean internationalCollaboration,
+                                 //BigDecimal collaborationFactor,
+                                 //int creatorShareCount
 
     public record PublicationDate(String year, String month, String day) {
 

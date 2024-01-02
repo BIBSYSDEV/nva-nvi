@@ -62,18 +62,21 @@ public record NviCandidate(URI publicationId,
                    .withChannelType(details.channelType().getValue())
                    .withPublicationChannelId(details.publicationChannelId())
                    .withLevel(details.level())
-                   .withBasePoints(details.basePoints())
-                   .withIsInternationalCollaboration(details.internationalCollaboration())
-                   .withCollaborationFactor(details.collaborationFactor())
-                   .withCreatorShareCount(details.creatorShareCount())
+                   .withBasePoints(candidate.getBasePoints())
+                   .withIsInternationalCollaboration(candidate.getIsInternationalCollaboration())
+                   .withCollaborationFactor(candidate.getCollaborationFactor())
+                   .withCreatorShareCount(candidate.getCreatorShareCount())
                    .withInstitutionPoints(candidate.getInstitutionPoints())
                    .withTotalPoints(candidate.getTotalPoints())
                    .build();
     }
 
     private static NviCandidate.PublicationDate toPublicationDate(
-        no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate pubDate) {
-        return new NviCandidate.PublicationDate(pubDate.day(), pubDate.month(), pubDate.year());
+        no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate publicationDate) {
+        return new NviCandidate.PublicationDate(
+            publicationDate.day(),
+            publicationDate.month(),
+            publicationDate.year());
     }
 
     private static PublicationDetails.PublicationDate mapToPublicationDate(

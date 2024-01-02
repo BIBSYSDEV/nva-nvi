@@ -26,7 +26,7 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequeueDlqHandler.class);
     private static final int MAX_FAILURES = 5;
-    public static final int MAX_SQS_MESSAGE_COUNT_LIMIT = 10;
+    private static final int MAX_SQS_MESSAGE_COUNT_LIMIT = 10;
     public static final String DUPLICATE_MESSAGE_FOUND_IN_DLQ = "Duplicate message found in DLQ: %s";
     public static final String DLQ_QUEUE_URL_ENV_NAME = "DLQ_QUEUE_URL";
     public static final String HANDLER_FINISH_REPORT_LOG =
@@ -65,7 +65,7 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
     public RequeueDlqOutput handleRequest(RequeueDlqInput input, Context context) {
         LOGGER.info(REQUEUE_DLQ_STARTED_LOG, input.count());
 
-        Set<String> messageIdDuplicateCheck = new HashSet<>();
+        Set<String> messageIds = new HashSet<>();
 
         var remainingMessages = input.count();
         var failedBatchesCount = 0;
@@ -79,7 +79,7 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
                 break;
             }
 
-            var processedMessages = processMessages(response, messageIdDuplicateCheck);
+            var processedMessages = processMessages(response, messageIds);
 
             result.addAll(processedMessages);
             failedBatchesCount += checkForFailedBatch(processedMessages);
@@ -101,17 +101,17 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
     }
 
     private Set<NviProcessMessageResult> processMessages(NviReceiveMessageResponse response,
-                                                         Set<String> messageIdDuplicateCheck) {
+                                                         Set<String> messageIds) {
         return response.messages().stream()
-                   .map(message -> checkForDuplicates(messageIdDuplicateCheck, message))
+                   .map(message -> checkForDuplicates(messageIds, message))
                    .map(this::processMessage)
                    .map(this::deleteMessageFromDlq)
                    .collect(Collectors.toSet());
     }
 
-    private static NviProcessMessageResult checkForDuplicates(Set<String> messageIdDuplicateCheck,
+    private static NviProcessMessageResult checkForDuplicates(Set<String> messageIds,
                                                               NviReceiveMessage message) {
-        var isUnique = messageIdDuplicateCheck.add(message.messageId());
+        var isUnique = messageIds.add(message.messageId());
         if (!isUnique) {
             var warning = String.format(DUPLICATE_MESSAGE_FOUND_IN_DLQ, message.messageId());
             LOGGER.warn(warning);
@@ -144,11 +144,10 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
 
         try {
             var identifier = input.message().messageAttributes().get(CANDIDATE_IDENTIFIER_ATTRIBUTE_NAME);
-            var candidate = Candidate.fromRequest(() -> UUID.fromString(identifier), candidateRepository,
-                                                  periodRepository);
-            var nviCandidate = NviCandidate.fromCandidate(candidate);
 
-            var updatedCandidate = Candidate.fromRequest(nviCandidate, candidateRepository, periodRepository);
+            var nviCandidate = getNviCandidate(identifier);
+
+            var updatedCandidate = upsertCandidate(nviCandidate);
 
             if (updatedCandidate.isEmpty()) {
                 return new NviProcessMessageResult(input.message(), false,
@@ -160,6 +159,16 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
         }
 
         return new NviProcessMessageResult(input.message(), true, Optional.empty());
+    }
+
+    private Optional<Candidate> upsertCandidate(NviCandidate nviCandidate) {
+        return Candidate.fromRequest(nviCandidate, candidateRepository, periodRepository);
+    }
+
+    private NviCandidate getNviCandidate(String identifier) {
+        var candidate = Candidate.fromRequest(() -> UUID.fromString(identifier), candidateRepository,
+                                              periodRepository);
+        return NviCandidate.fromCandidate(candidate);
     }
 
     private static String getStackTrace(Exception exception) {
