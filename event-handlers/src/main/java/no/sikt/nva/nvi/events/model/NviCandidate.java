@@ -8,6 +8,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 
@@ -45,6 +46,37 @@ public record NviCandidate(URI publicationId,
     @Override
     public PublicationDetails.PublicationDate publicationDate() {
         return mapToPublicationDate(date);
+    }
+
+    public static NviCandidate fromCandidate(Candidate candidate) {
+        var details = candidate.getPublicationDetails();
+
+        return NviCandidate.builder()
+                   .withPublicationId(details.publicationId())
+                   .withPublicationBucketUri(details.publicationBucketUri())
+                   .withInstanceType(details.type())
+                   .withDate(toPublicationDate(details.publicationDate()))
+                   .withVerifiedCreators(details.creators().stream()
+                                             .map(creator -> new Creator(creator.id(), creator.affiliations()))
+                                             .toList())
+                   .withChannelType(details.channelType().getValue())
+                   .withPublicationChannelId(details.publicationChannelId())
+                   .withLevel(details.level())
+                   .withBasePoints(candidate.getBasePoints())
+                   .withIsInternationalCollaboration(candidate.isInternationalCollaboration())
+                   .withCollaborationFactor(candidate.getCollaborationFactor())
+                   .withCreatorShareCount(candidate.getCreatorShareCount())
+                   .withInstitutionPoints(candidate.getInstitutionPoints())
+                   .withTotalPoints(candidate.getTotalPoints())
+                   .build();
+    }
+
+    private static NviCandidate.PublicationDate toPublicationDate(
+        no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate publicationDate) {
+        return new NviCandidate.PublicationDate(
+            publicationDate.day(),
+            publicationDate.month(),
+            publicationDate.year());
     }
 
     private static PublicationDetails.PublicationDate mapToPublicationDate(

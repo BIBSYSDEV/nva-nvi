@@ -27,8 +27,6 @@ import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
-import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
@@ -59,7 +57,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     private S3Driver s3Driver;
     private UpdateIndexHandler handler;
     private OpenSearchClient openSearchClient;
-    private QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> sqsClient;
+    private QueueClient sqsClient;
 
     @BeforeEach
     void setUp() {

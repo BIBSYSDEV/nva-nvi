@@ -13,8 +13,6 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
-import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
-import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.model.IndexDocumentWithConsumptionAttributes;
@@ -37,7 +35,7 @@ public class UpdateIndexHandler implements RequestHandler<SQSEvent, Void> {
     private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
     private final OpenSearchClient openSearchClient;
     private final StorageReader<URI> storageReader;
-    private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
+    private final QueueClient queueClient;
     private final String dlqUrl;
 
     @JacocoGenerated
@@ -47,7 +45,7 @@ public class UpdateIndexHandler implements RequestHandler<SQSEvent, Void> {
     }
 
     public UpdateIndexHandler(OpenSearchClient openSearchClient, StorageReader<URI> storageReader,
-                              QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient) {
+                              QueueClient queueClient) {
         this.openSearchClient = openSearchClient;
         this.storageReader = storageReader;
         this.queueClient = queueClient;

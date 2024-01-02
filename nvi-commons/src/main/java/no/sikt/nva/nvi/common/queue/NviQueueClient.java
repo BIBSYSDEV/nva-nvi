@@ -4,14 +4,19 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.utils.ApplicationConstants;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.BatchResultErrorEntry;
+import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchResponse;
@@ -19,7 +24,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageBatchResultEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
-public class NviQueueClient implements QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> {
+public class NviQueueClient implements QueueClient {
 
     public static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
     private static final int MAX_CONNECTIONS = 10_000;
@@ -38,18 +43,32 @@ public class NviQueueClient implements QueueClient<NviSendMessageResponse, NviSe
 
     @Override
     public NviSendMessageResponse sendMessage(String message, String queueUrl) {
-        return createResponse(sqsClient.sendMessage(createRequest(message, queueUrl)));
+        return createResponse(sqsClient.sendMessage(createSendRequest(message, queueUrl)));
     }
 
     @Override
     public NviSendMessageResponse sendMessage(String message, String queueUrl, UUID candidateIdentifier) {
-        return createResponse(sqsClient.sendMessage(createRequest(message, queueUrl,
-                                                                  getMessageAttributes(candidateIdentifier))));
+        return createResponse(sqsClient.sendMessage(createSendRequest(message, queueUrl,
+                                                                      getMessageAttributes(candidateIdentifier))));
     }
 
     @Override
     public NviSendMessageBatchResponse sendMessageBatch(Collection<String> messages, String queueUrl) {
         return createResponse(sqsClient.sendMessageBatch(createBatchRequest(messages, queueUrl)));
+    }
+
+    @Override
+    public NviReceiveMessageResponse receiveMessage(String queueUrl, int maxNumberOfMessages) {
+        return createResponse(sqsClient.receiveMessage(createReceiveRequest(queueUrl, maxNumberOfMessages)));
+    }
+
+    @Override
+    public void deleteMessage(String queueUrl, String receiptHandle) {
+        var response = sqsClient.deleteMessage(createDeleteRequest(queueUrl, receiptHandle));
+
+        if (!response.sdkHttpResponse().isSuccessful()) {
+            throw new RuntimeException(response.toString());
+        }
     }
 
     @JacocoGenerated
@@ -85,15 +104,15 @@ public class NviQueueClient implements QueueClient<NviSendMessageResponse, NviSe
         return response.successful().stream().map(SendMessageBatchResultEntry::id).toList();
     }
 
-    private SendMessageRequest createRequest(String body, String queueUrl) {
+    private SendMessageRequest createSendRequest(String body, String queueUrl) {
         return SendMessageRequest.builder()
                    .queueUrl(queueUrl)
                    .messageBody(body)
                    .build();
     }
 
-    private SendMessageRequest createRequest(String body, String queueUrl,
-                                             Map<String, MessageAttributeValue> messageAttributes) {
+    private SendMessageRequest createSendRequest(String body, String queueUrl,
+                                                 Map<String, MessageAttributeValue> messageAttributes) {
         return SendMessageRequest.builder()
                    .queueUrl(queueUrl)
                    .messageBody(body)
@@ -101,10 +120,26 @@ public class NviQueueClient implements QueueClient<NviSendMessageResponse, NviSe
                    .build();
     }
 
+    private ReceiveMessageRequest createReceiveRequest(String queueUrl, int maxNumberOfMessages) {
+        return ReceiveMessageRequest
+                   .builder()
+                   .messageAttributeNames("All")
+                   .queueUrl(queueUrl)
+                   .maxNumberOfMessages(maxNumberOfMessages)
+                   .build();
+    }
+
     private SendMessageBatchRequest createBatchRequest(Collection<String> messages, String queueUrl) {
         return SendMessageBatchRequest.builder()
                    .queueUrl(queueUrl)
                    .entries(createBatchEntries(messages))
+                   .build();
+    }
+
+    private DeleteMessageRequest createDeleteRequest(String queueUrl, String receiptHandle) {
+        return DeleteMessageRequest.builder()
+                   .queueUrl(queueUrl)
+                   .receiptHandle(receiptHandle)
                    .build();
     }
 
@@ -122,5 +157,19 @@ public class NviQueueClient implements QueueClient<NviSendMessageResponse, NviSe
 
     private NviSendMessageBatchResponse createResponse(SendMessageBatchResponse response) {
         return new NviSendMessageBatchResponse(extractSuccessfulEntryIds(response), extractFailedEntryIds(response));
+    }
+
+    private NviReceiveMessageResponse createResponse(ReceiveMessageResponse receiveMessageResponse) {
+        return new NviReceiveMessageResponse(receiveMessageResponse.messages()
+                                                 .stream()
+                                                 .map(m -> new NviReceiveMessage(m.body(),
+                                                         m.messageId(),
+                                                         m.messageAttributes().entrySet().stream()
+                                                             .collect(Collectors.toMap(
+                                                                 Entry::getKey,
+                                                                 e -> e.getValue().stringValue()
+                                                             )),
+                                                         m.receiptHandle()))
+                                                 .toList());
     }
 }

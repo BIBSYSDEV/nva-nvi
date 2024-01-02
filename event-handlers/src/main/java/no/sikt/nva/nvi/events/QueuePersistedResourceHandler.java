@@ -4,8 +4,6 @@ import static java.util.Objects.isNull;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
-import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
-import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.events.handlers.DestinationsEventBridgeEventHandler;
@@ -22,7 +20,7 @@ public class QueuePersistedResourceHandler extends DestinationsEventBridgeEventH
     public static final String QUEUE_PERSISTED_RESOURCE_QUEUE_URL = "PERSISTED_RESOURCE_QUEUE_URL";
     private static final Logger LOGGER = LoggerFactory.getLogger(QueuePersistedResourceHandler.class);
     private static final String ERROR_MSG = "Invalid EventReference, missing uri: %s";
-    private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient;
+    private final QueueClient queueClient;
     private final String queueUrl;
 
     @JacocoGenerated
@@ -30,7 +28,7 @@ public class QueuePersistedResourceHandler extends DestinationsEventBridgeEventH
         this(new NviQueueClient(), new Environment());
     }
 
-    public QueuePersistedResourceHandler(QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> queueClient,
+    public QueuePersistedResourceHandler(QueueClient queueClient,
                                          Environment environment) {
         super(EventReference.class);
         this.queueClient = queueClient;

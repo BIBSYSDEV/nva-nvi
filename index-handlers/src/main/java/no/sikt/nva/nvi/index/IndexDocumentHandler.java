@@ -19,8 +19,6 @@ import no.sikt.nva.nvi.common.StorageWriter;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
-import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
-import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
@@ -53,7 +51,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
     private final UriRetriever uriRetriever;
-    private final QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> sqsClient;
+    private final QueueClient sqsClient;
     private final String queueUrl;
     private final String dlqUrl;
 
@@ -69,7 +67,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
     public IndexDocumentHandler(StorageReader<URI> storageReader,
                                 StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter,
-                                QueueClient<NviSendMessageResponse, NviSendMessageBatchResponse> sqsClient,
+                                QueueClient sqsClient,
                                 CandidateRepository candidateRepository,
                                 PeriodRepository periodRepository,
                                 UriRetriever uriRetriever,
