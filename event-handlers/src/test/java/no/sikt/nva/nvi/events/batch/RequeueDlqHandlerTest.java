@@ -9,6 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,7 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -250,6 +252,12 @@ public class RequeueDlqHandlerTest {
 
         var response = handler.handleRequest(new RequeueDlqInput(100), CONTEXT);
         assertEquals(1, response.failedBatchesCount());
+    }
+
+    @Test
+    void testMissingInputCount() throws JsonProcessingException {
+        var input = JsonUtils.dtoObjectMapper.readValue("{}", RequeueDlqInput.class);
+        assertEquals(10, input.count());
     }
 
     private static CandidateDao createCandidateDao() {

@@ -86,8 +86,8 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     @Test
     void shouldBeForbiddenToChangeStatusOfOtherInstitution() throws IOException {
         var institutionId = randomUri();
-        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository,
-                                              periodRepository).orElseThrow();
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository,
+                                         periodRepository).orElseThrow();
         var request = createUnauthorizedRequest(candidate.getIdentifier(), institutionId);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -102,7 +102,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository);
         var institutionId = randomUri();
         var candidate =
-            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         var request = createRequest(candidate.getIdentifier(), institutionId, ApprovalStatus.APPROVED);
         handler.handleRequest(request, output, context);
@@ -118,7 +118,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository);
         var institutionId = randomUri();
         var candidate =
-            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         var request = createRequest(candidate.getIdentifier(), institutionId, ApprovalStatus.APPROVED);
         handler.handleRequest(request, output, context);
@@ -131,7 +131,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldReturnBadRequestIfRejectionDoesNotContainReason() throws IOException {
         var institutionId = randomUri();
         var candidate =
-            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         var request = createRequestWithoutReason(candidate.getIdentifier(), institutionId);
         handler.handleRequest(request, output, context);
@@ -146,7 +146,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldUpdateApprovalStatus(ApprovalStatus oldStatus, ApprovalStatus newStatus) throws IOException {
         var institutionId = randomUri();
         var candidate =
-            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         candidate.updateApproval(createStatusRequest(oldStatus));
         var request = createRequest(candidate.getIdentifier(), institutionId, newStatus);
@@ -162,7 +162,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldResetFinalizedValuesWhenUpdatingStatusToPending(ApprovalStatus oldStatus) throws IOException {
         var institutionId = randomUri();
         var candidate =
-            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         candidate.updateApproval(createStatusRequest(oldStatus));
         var newStatus = ApprovalStatus.PENDING;
@@ -181,7 +181,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldUpdateApprovalStatusToRejectedWithReason(ApprovalStatus oldStatus) throws IOException {
         var institutionId = randomUri();
         var candidate =
-            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         candidate.updateApproval(createStatusRequest(oldStatus));
         var rejectionReason = randomString();
@@ -202,7 +202,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldRemoveReasonWhenUpdatingStatusFromRejected(ApprovalStatus newStatus) throws IOException {
         var institutionId = randomUri();
         var candidate =
-            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         candidate.updateApproval(createStatusRequest(ApprovalStatus.REJECTED));
         var request = createRequest(candidate.getIdentifier(), institutionId,
@@ -220,7 +220,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldUpdateAssigneeWhenFinalizingApprovalWithoutAssignee() throws IOException {
         var institutionId = randomUri();
         var candidate =
-            Candidate.fromRequest(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         var assignee = randomString();
         var requestBody = new NviStatusRequest(candidate.getIdentifier(), institutionId, ApprovalStatus.APPROVED, null);

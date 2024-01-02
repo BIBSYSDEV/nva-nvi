@@ -44,7 +44,7 @@ import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchByPublicationRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
-import no.sikt.nva.nvi.common.service.requests.UpsertNonCandidateRequest;
+import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
@@ -93,8 +93,8 @@ public final class Candidate {
         this.creatorShareCount = candidateDao.candidate().creatorShareCount();
     }
 
-    public static Candidate fromRequest(FetchByPublicationRequest request, CandidateRepository repository,
-                                        PeriodRepository periodRepository) {
+    public static Candidate fetchByPublicationId(FetchByPublicationRequest request, CandidateRepository repository,
+                                                 PeriodRepository periodRepository) {
         var candidateDao = repository.findByPublicationId(request.publicationId())
                                .orElseThrow(CandidateNotFoundException::new);
         var approvalDaoList = repository.fetchApprovals(candidateDao.identifier());
@@ -103,8 +103,8 @@ public final class Candidate {
         return new Candidate(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
     }
 
-    public static Candidate fromRequest(FetchCandidateRequest request, CandidateRepository repository,
-                                        PeriodRepository periodRepository) {
+    public static Candidate fetch(FetchCandidateRequest request, CandidateRepository repository,
+                                  PeriodRepository periodRepository) {
         var candidateDao = repository.findCandidateById(request.identifier())
                                .orElseThrow(CandidateNotFoundException::new);
         var approvalDaoList = repository.fetchApprovals(candidateDao.identifier());
@@ -113,8 +113,8 @@ public final class Candidate {
         return new Candidate(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
     }
 
-    public static Optional<Candidate> fromRequest(UpsertCandidateRequest request, CandidateRepository repository,
-                                                  PeriodRepository periodRepository) {
+    public static Optional<Candidate> upsert(UpsertCandidateRequest request, CandidateRepository repository,
+                                             PeriodRepository periodRepository) {
         if (isNotExistingCandidate(request, repository)) {
             return Optional.of(createCandidate(request, repository, periodRepository));
         }
@@ -124,7 +124,8 @@ public final class Candidate {
         return Optional.empty();
     }
 
-    public static Optional<Candidate> fromRequest(UpsertNonCandidateRequest request, CandidateRepository repository) {
+    public static Optional<Candidate> updateNonCandidate(UpdateNonCandidateRequest request,
+                                                         CandidateRepository repository) {
         if (isExistingCandidate(request.publicationId(), repository)) {
             return Optional.of(deleteCandidate(request, repository));
         }
@@ -250,7 +251,7 @@ public final class Candidate {
         return !isExistingCandidate(request.publicationId(), repository);
     }
 
-    private static Candidate deleteCandidate(UpsertNonCandidateRequest request, CandidateRepository repository) {
+    private static Candidate deleteCandidate(UpdateNonCandidateRequest request, CandidateRepository repository) {
         var existingCandidateDao = repository.findByPublicationId(request.publicationId())
                                        .orElseThrow(CandidateNotFoundException::new);
         var nonApplicableCandidate = updateCandidateToNonApplicable(existingCandidateDao);

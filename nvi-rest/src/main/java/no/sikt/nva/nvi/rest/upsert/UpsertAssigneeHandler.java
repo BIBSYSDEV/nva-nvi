@@ -68,7 +68,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
         var institutionId = input.institutionId();
         var assignee = input.assignee();
-        return attempt(() -> Candidate.fromRequest(() -> candidateIdentifier, candidateRepository, periodRepository))
+        return attempt(() -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
                    .map(candidate -> candidate.updateApproval(new UpdateAssigneeRequest(institutionId, assignee)))
                    .map(Candidate::toDto)
                    .orElseThrow(ExceptionMapper::map);

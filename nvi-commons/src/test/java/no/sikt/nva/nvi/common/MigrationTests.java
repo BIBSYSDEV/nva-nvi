@@ -40,8 +40,8 @@ public class MigrationTests extends LocalDynamoTest {
         nviService = new NviService(periodRepository, candidateRepository);
         var candidate = setupCandidateWithApprovalAndNotes();
         nviService.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null);
-        var migratedCandidate = Candidate.fromRequest(candidate::getIdentifier, candidateRepository,
-                                                      periodRepository);
+        var migratedCandidate = Candidate.fetch(candidate::getIdentifier, candidateRepository,
+                                                periodRepository);
         assertEquals(candidate, migratedCandidate);
     }
 
@@ -58,8 +58,8 @@ public class MigrationTests extends LocalDynamoTest {
     }
 
     private Candidate setupCandidateWithApprovalAndNotes() {
-        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(CURRENT_YEAR), candidateRepository,
-                                              periodRepository)
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(CURRENT_YEAR), candidateRepository,
+                                         periodRepository)
                             .orElseThrow()
                             .createNote(createNoteRequest(randomString(), randomString()));
 

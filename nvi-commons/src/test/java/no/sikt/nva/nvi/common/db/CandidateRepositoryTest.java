@@ -44,11 +44,11 @@ class CandidateRepositoryTest extends LocalDynamoTest {
     @Test
     public void shouldOverwriteExistingCandidateWhenUpdating() {
         var originalRequest = createUpsertCandidateRequest(randomUri());
-        var candidate = Candidate.fromRequest(originalRequest, candidateRepository, periodRepository).orElseThrow();
+        var candidate = Candidate.upsert(originalRequest, candidateRepository, periodRepository).orElseThrow();
         var originalDbCandidate = candidateRepository.findCandidateById(candidate.getIdentifier()).get().candidate();
 
         var newUpsertRequest = copyRequestWithNewInstanceType(originalRequest, randomUri());
-        Candidate.fromRequest(newUpsertRequest, candidateRepository, periodRepository).orElseThrow();
+        Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository).orElseThrow();
         var updatedDbCandidate = candidateRepository.findCandidateById(candidate.getIdentifier()).get().candidate();
 
         assertThat(scanDB().count(), is(equalTo(3)));

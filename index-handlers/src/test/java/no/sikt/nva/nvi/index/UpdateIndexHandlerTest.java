@@ -177,7 +177,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     private Candidate randomApplicableCandidate() {
-        return Candidate.fromRequest(createUpsertCandidateRequest(2023), candidateRepository, periodRepository)
+        return Candidate.upsert(createUpsertCandidateRequest(2023), candidateRepository, periodRepository)
                    .orElseThrow();
     }
 }

@@ -74,8 +74,8 @@ class FetchReportHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnUnauthorizedWhenUserDoesNotHaveSufficientAccessRight() throws IOException {
-        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(randomUri()),
-                                              candidateRepository, periodRepository).orElseThrow();
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()),
+                                         candidateRepository, periodRepository).orElseThrow();
         var year = Year.now().getValue();
         var institutionId = randomUri();
         var request = createRequestWithoutAccessRight(candidate.getIdentifier(), institutionId, institutionId, year)
@@ -89,8 +89,8 @@ class FetchReportHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnForbiddenWhenUserDoesNotBelongToSameInstitutionAsRequestedInstitution()
         throws IOException {
-        var candidate = Candidate.fromRequest(createUpsertCandidateRequest(randomUri()),
-                                                candidateRepository, periodRepository).orElseThrow();
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()),
+                                         candidateRepository, periodRepository).orElseThrow();
         var request = createRequest(candidate.getIdentifier(), randomUri(), randomUri(), CURRENT_YEAR,
                                     MANAGE_NVI_CANDIDATES).build();
         handler.handleRequest(request, output, CONTEXT);

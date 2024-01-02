@@ -230,7 +230,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     private boolean isSameBodyAsRepositoryCopy(Candidate candidate) {
         //TODO: should replace this comparison with the actual data field (equals in CandidateBO?)
         return candidate.toDto()
-                   .equals(Candidate.fromRequest(candidate::getIdentifier, candidateRepository, periodRepository)
+                   .equals(Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository)
                                .toDto());
     }
 
@@ -279,8 +279,8 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     private Stream<Candidate> createRandomCandidates(int i) {
         return IntStream.range(0, i)
                    .boxed()
-                   .map(item -> Candidate.fromRequest(createUpsertCandidateRequest(randomUri()), candidateRepository,
-                                                      periodRepository))
+                   .map(item -> Candidate.upsert(createUpsertCandidateRequest(randomUri()), candidateRepository,
+                                                 periodRepository))
                    .map(Optional::orElseThrow)
                    .map(a -> a.createNote(new CreateNoteRequest(randomString(), randomString())));
     }
