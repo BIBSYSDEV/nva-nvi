@@ -15,6 +15,7 @@ import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,6 +40,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
+import no.sikt.nva.nvi.index.model.ConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.test.FakeSqsClient;
@@ -120,6 +122,17 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var candidate = randomApplicableCandidate();
         var expectedConsumptionAttributes = setUpExistingResourceInS3AndGenerateExpectedDocument(
             candidate).consumptionAttributes();
+        var event = createEvent(candidate.getIdentifier());
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate)));
+        assertEquals(expectedConsumptionAttributes, actualIndexDocument.consumptionAttributes());
+    }
+
+    @Test
+    void shouldNotExpandAffiliationsWhenContributorIsNotNviCreator() {
+        var candidate = randomApplicableCandidate();
+        var expectedConsumptionAttributes = setUpExistingResourceWithNonNviCreatorAffiliations(candidate);
         var event = createEvent(candidate.getIdentifier());
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(event, CONTEXT);
@@ -305,6 +318,17 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return UriWrapper.fromUri(persistedCandidate.getPublicationDetails().publicationBucketUri())
                    .getPath()
                    .getLastPathElement();
+    }
+
+    private ConsumptionAttributes setUpExistingResourceWithNonNviCreatorAffiliations(Candidate candidate) {
+        var expandedResource = createExpandedResource(candidate, List.of(randomUri()));
+        var resourceIndexDocument = createResourceIndexDocument(expandedResource);
+        var resourcePath = extractResourceIdentifier(candidate);
+        insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
+        var indexDocument = createExpectedNviIndexDocument(expandedResource, candidate);
+        var expectedConsumptionAttributes = IndexDocumentWithConsumptionAttributes.from(indexDocument)
+                                                .consumptionAttributes();
+        return expectedConsumptionAttributes;
     }
 
     private void setupResourceMissingTopLevelOrganizationsInS3(JsonNode expandedResource, Candidate candidate) {

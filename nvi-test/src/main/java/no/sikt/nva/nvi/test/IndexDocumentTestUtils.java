@@ -50,7 +50,8 @@ public final class IndexDocumentTestUtils {
                    .withId(candidate.getPublicationDetails().publicationId().toString())
                    .withTitle(ExpandedResourceGenerator.extractTitle(expandedResource))
                    .withPublicationDate(mapToPublicationDate(candidate.getPublicationDetails().publicationDate()))
-                   .withContributors(mapToContributors(ExpandedResourceGenerator.extractContributors(expandedResource)))
+                   .withContributors(
+                       mapToContributors(ExpandedResourceGenerator.extractContributors(expandedResource), candidate))
                    .build();
     }
 
@@ -69,27 +70,45 @@ public final class IndexDocumentTestUtils {
         return new PublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
     }
 
-    private static List<Contributor> mapToContributors(ArrayNode contributorNodes) {
+    private static List<Contributor> mapToContributors(ArrayNode contributorNodes, Candidate candidate) {
         return JsonUtils.streamNode(contributorNodes)
-                   .map(IndexDocumentTestUtils::toContributor)
+                   .map(contributorNode -> toContributorWithExpandedAffiliation(contributorNode,
+                                                                                isNviCreator(contributorNode,
+                                                                                             candidate)))
                    .toList();
     }
 
-    private static Contributor toContributor(JsonNode contributorNode) {
+    private static boolean isNviCreator(JsonNode contributorNode, Candidate candidate) {
+        return candidate.getPublicationDetails()
+                   .creators()
+                   .stream()
+                   .anyMatch(
+                       creator -> creator.id().toString().equals(ExpandedResourceGenerator.extractId(contributorNode)));
+    }
+
+    private static Contributor toContributorWithExpandedAffiliation(JsonNode contributorNode, boolean isNviCreator) {
+        var affiliations = extractAffiliations(contributorNode);
         return Contributor.builder()
                    .withId(ExpandedResourceGenerator.extractId(contributorNode))
                    .withName(ExpandedResourceGenerator.extractName(contributorNode))
                    .withOrcid(ExpandedResourceGenerator.extractOrcid(contributorNode))
                    .withRole(ExpandedResourceGenerator.extractRole(contributorNode))
-                   .withAffiliations(mapToAffiliations(extractAffiliations(contributorNode)))
+                   .withAffiliations(isNviCreator ? expandAffiliationsWithPartOf(affiliations)
+                                         : expandAffiliations(affiliations))
                    .build();
     }
 
-    private static List<Affiliation> mapToAffiliations(List<URI> uris) {
-        return uris.stream().map(IndexDocumentTestUtils::toAffiliation).toList();
+    private static List<Affiliation> expandAffiliations(List<URI> uris) {
+        return uris.stream().map(uri -> Affiliation.builder()
+                                            .withId(uri.toString())
+                                            .build()).toList();
     }
 
-    private static Affiliation toAffiliation(URI uri) {
+    private static List<Affiliation> expandAffiliationsWithPartOf(List<URI> uris) {
+        return uris.stream().map(IndexDocumentTestUtils::toAffiliationWithPartOf).toList();
+    }
+
+    private static Affiliation toAffiliationWithPartOf(URI uri) {
         return Affiliation.builder()
                    .withId(uri.toString())
                    .withPartOf(List.of(HARD_CODED_PART_OF))
