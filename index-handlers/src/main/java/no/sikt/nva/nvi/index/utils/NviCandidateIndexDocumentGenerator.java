@@ -146,7 +146,7 @@ public final class NviCandidateIndexDocumentGenerator {
         return candidate.getPublicationDetails()
                    .creators()
                    .stream()
-                   .anyMatch(creator -> creator.id().toString().equals(extractId(contributor)));
+                   .anyMatch(creator -> creator.id().toString().equals(extractId(contributor.at(JSON_PTR_IDENTITY))));
     }
 
     private Contributor createContributor(JsonNode contributor, boolean isNviCreator) {
