@@ -326,9 +326,8 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var resourcePath = extractResourceIdentifier(candidate);
         insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
         var indexDocument = createExpectedNviIndexDocument(expandedResource, candidate);
-        var expectedConsumptionAttributes = IndexDocumentWithConsumptionAttributes.from(indexDocument)
-                                                .consumptionAttributes();
-        return expectedConsumptionAttributes;
+        return IndexDocumentWithConsumptionAttributes.from(indexDocument)
+                   .consumptionAttributes();
     }
 
     private void setupResourceMissingTopLevelOrganizationsInS3(JsonNode expandedResource, Candidate candidate) {

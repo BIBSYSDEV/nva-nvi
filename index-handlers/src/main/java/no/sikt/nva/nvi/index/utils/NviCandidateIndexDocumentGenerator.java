@@ -71,7 +71,7 @@ public final class NviCandidateIndexDocumentGenerator {
         return new NviCandidateIndexDocument.Builder().withContext(URI.create(Contexts.NVI_CONTEXT))
                    .withIdentifier(candidate.getIdentifier())
                    .withApprovals(approvals)
-                   .withPublicationDetails(extractPublicationDetails(resource))
+                   .withPublicationDetails(extractPublicationDetails(resource, candidate))
                    .withNumberOfApprovals(approvals.size())
                    .withPoints(candidate.getTotalPoints())
                    .build();
@@ -127,37 +127,46 @@ public final class NviCandidateIndexDocumentGenerator {
         return attempt(() -> dtoObjectMapper.readValue(jsonNode.toString(), Organization.class)).orElseThrow();
     }
 
-    private PublicationDetails extractPublicationDetails(JsonNode resource) {
+    private PublicationDetails extractPublicationDetails(JsonNode resource, Candidate candidate) {
         return PublicationDetails.builder()
                    .withId(extractId(resource))
-                   .withContributors(extractContributors(resource))
+                   .withContributors(expandContributors(resource, candidate))
                    .withType(extractInstanceType(resource))
                    .withPublicationDate(extractPublicationDate(resource))
                    .withTitle(extractMainTitle(resource))
                    .build();
     }
 
-    private List<Contributor> extractContributors(JsonNode resource) {
-        return getJsonNodeStream(resource, JSON_PTR_CONTRIBUTOR).map(this::createContributor).toList();
+    private List<Contributor> expandContributors(JsonNode resource, Candidate candidate) {
+        return getJsonNodeStream(resource, JSON_PTR_CONTRIBUTOR).map(
+            contributor -> createContributor(contributor, isNviCreator(contributor, candidate))).toList();
     }
 
-    private Contributor createContributor(JsonNode contributor) {
+    private boolean isNviCreator(JsonNode contributor, Candidate candidate) {
+        return candidate.getPublicationDetails()
+                   .creators()
+                   .stream()
+                   .anyMatch(creator -> creator.id().toString().equals(extractId(contributor)));
+    }
+
+    private Contributor createContributor(JsonNode contributor, boolean isNviCreator) {
         var identity = contributor.at(JSON_PTR_IDENTITY);
         return new Contributor.Builder().withId(extractId(identity))
                    .withName(extractJsonNodeTextValue(identity, JSON_PTR_NAME))
                    .withOrcid(extractJsonNodeTextValue(identity, JSON_PTR_ORCID))
                    .withRole(extractRoleType(contributor))
-                   .withAffiliations(expandAffiliations(contributor))
+                   .withAffiliations(expandAffiliations(contributor, isNviCreator))
                    .build();
     }
 
-    private List<Affiliation> expandAffiliations(JsonNode contributor) {
-        return streamNode(contributor.at(JSON_PTR_AFFILIATIONS)).map(this::expandAffiliation)
+    private List<Affiliation> expandAffiliations(JsonNode contributor, boolean expandPartOf) {
+        return streamNode(contributor.at(JSON_PTR_AFFILIATIONS))
+                   .map(affiliationNode -> expandAffiliation(affiliationNode, expandPartOf))
                    .filter(Objects::nonNull)
                    .toList();
     }
 
-    private Affiliation expandAffiliation(JsonNode affiliation) {
+    private Affiliation expandAffiliation(JsonNode affiliation, boolean expandPartOf) {
         var id = extractJsonNodeTextValue(affiliation, JSON_PTR_ID);
 
         if (isNull(id)) {
@@ -165,6 +174,10 @@ public final class NviCandidateIndexDocumentGenerator {
             return null;
         }
 
+        return expandPartOf ? generateAffiliationWithPartOf(id) : new Affiliation.Builder().withId(id).build();
+    }
+
+    private Affiliation generateAffiliationWithPartOf(String id) {
         return attempt(() -> getRawContentFromUriCached(id)).map(Optional::get)
                    .map(str -> createModel(dtoObjectMapper.readTree(str)))
                    .map(model -> model.listObjectsOfProperty(model.createProperty(PART_OF_PROPERTY)))
