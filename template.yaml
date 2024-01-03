@@ -76,6 +76,9 @@ Parameters:
   RemoveDocumentFromIndexQueueName:
     Type: String
     Default: RemoveDocumentFromIndexQueue
+  RemoveDocumentFromIndexDLQName:
+    Type: String
+    Default: RemoveDocumentFromIndexDLQ
   PersistedIndexDocumentQueueName:
     Type: String
     Default: PersistedIndexDocumentQueue
@@ -245,32 +248,7 @@ Resources:
 
 
   #=============================== SQSs ============================================================
-  NewCandidateQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Ref NewCandidateQueueName
-      RedrivePolicy:
-        deadLetterTargetArn: !GetAtt NewCandidateDLQ.Arn
-        maxReceiveCount: 5
-  NewCandidateDLQ:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Ref NewCandidateDLQName
-      MessageRetentionPeriod: 1209600 #14 days
-  BatchScanDLQ:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Ref BatchScanDLQName
-  UpdateIndexDLQ:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Ref UpdateIndexDLQName
-      MessageRetentionPeriod: 1209600 #14 days
-  UpsertCandidateDLQ:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Ref UpsertCandidateDLQName
-      MessageRetentionPeriod: 1209600 #14 days
+  #=============================== For event handling ==============================================
   PersistedResourceQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -278,6 +256,29 @@ Resources:
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt PersistedResourceDLQ.Arn
         maxReceiveCount: 5
+  NewCandidateQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref NewCandidateQueueName
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt NewCandidateDLQ.Arn
+        maxReceiveCount: 5
+  #=============================== Event handling DLQs =============================================
+  NewCandidateDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref NewCandidateDLQName
+      MessageRetentionPeriod: 1209600 #14 days
+  UpsertCandidateDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref UpsertCandidateDLQName
+      MessageRetentionPeriod: 1209600 #14 days
+  BatchScanDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref BatchScanDLQName
+      MessageRetentionPeriod: 1209600 #14 days
   PersistedResourceDLQ:
     Type: AWS::SQS::Queue
     Properties:
@@ -288,29 +289,17 @@ Resources:
     Properties:
       QueueName: !Ref ReEvaluateDLQName
       MessageRetentionPeriod: 1209600 #14 days
+
+  #=============================== For database events ============================================
   DbEventQueue:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref DbEventQueueName
       VisibilityTimeout: 60
-  IndexDLQ:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Ref IndexDLQName
-      MessageRetentionPeriod: 1209600 #14 days
-  GenerateIndexDocumentQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Ref GenerateIndexDocumentQueueName
-      VisibilityTimeout: 60
-  RemoveDocumentFromIndexQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Ref RemoveDocumentFromIndexQueueName
-  PersistedIndexDocumentQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Ref PersistedIndexDocumentQueueName
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DataEntryUpdateDLQ.Arn
+        maxReceiveCount: 5
+  #=============================== Database event DLQs ============================================
   DynamoDbEventToQueueDLQ:
     Type: AWS::SQS::Queue
     Properties:
@@ -321,10 +310,49 @@ Resources:
     Properties:
       QueueName: !Ref DataEntryUpdateDLQName
       MessageRetentionPeriod: 1209600 #14 days
+  #=============================== For index handling =============================================
+  GenerateIndexDocumentQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref GenerateIndexDocumentQueueName
+      VisibilityTimeout: 60
+      RedrivePolicy:
+          deadLetterTargetArn: !GetAtt IndexDocumentDLQ.Arn
+          maxReceiveCount: 5
+  RemoveDocumentFromIndexQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref RemoveDocumentFromIndexQueueName
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt RemoveDocumentFromIndexDLQ.Arn
+        maxReceiveCount: 5
+  PersistedIndexDocumentQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref PersistedIndexDocumentQueueName
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt UpdateIndexDLQ.Arn
+        maxReceiveCount: 5
+  #=============================== Index handling DLQs ============================================
+  IndexDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref IndexDLQName
+      MessageRetentionPeriod: 1209600 #14 days
   IndexDocumentDLQ:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref IndexDocumentDLQName
+      MessageRetentionPeriod: 1209600 #14 days
+  UpdateIndexDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref UpdateIndexDLQName
+      MessageRetentionPeriod: 1209600 #14 days
+  RemoveDocumentFromIndexQueueDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref RemoveDocumentFromIndexQueueDLQName
       MessageRetentionPeriod: 1209600 #14 days
 
   #============================= Permissions =======================================================
@@ -382,12 +410,13 @@ Resources:
                   - sqs:GetQueueAttributes
                   - sqs:ChangeMessageVisibility
                 Resource:
+                  - !GetAtt PersistedResourceQueue.Arn
                   - !GetAtt NewCandidateQueue.Arn
                   - !GetAtt DbEventQueue.Arn
                   - !GetAtt PersistedIndexDocumentQueue.Arn
                   - !GetAtt GenerateIndexDocumentQueue.Arn
                   - !GetAtt RemoveDocumentFromIndexQueue.Arn
-                  - !GetAtt PersistedResourceQueue.Arn
+                  - !GetAtt RemoveDocumentFromIndexDLQ.Arn
                   - !GetAtt PersistedResourceDLQ.Arn
                   - !GetAtt NewCandidateDLQ.Arn
                   - !GetAtt BatchScanDLQ.Arn
@@ -755,6 +784,11 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt RemoveDocumentFromIndexQueue.Arn
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt RemoveDocumentFromIndexDLQ.Arn
 
   NviEventBasedBatchScanHandler:
     Type: AWS::Serverless::Function
