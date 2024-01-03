@@ -261,11 +261,6 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref BatchScanDLQName
-  UpdateIndexDLQ:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Ref UpdateIndexDLQName
-      MessageRetentionPeriod: 1209600 #14 days
   UpsertCandidateDLQ:
     Type: AWS::SQS::Queue
     Properties:
@@ -293,6 +288,9 @@ Resources:
     Properties:
       QueueName: !Ref DbEventQueueName
       VisibilityTimeout: 60
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DataEntryUpdateDLQ.Arn
+        maxReceiveCount: 5
   IndexDLQ:
     Type: AWS::SQS::Queue
     Properties:
