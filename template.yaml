@@ -352,7 +352,7 @@ Resources:
   RemoveDocumentFromIndexDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref RemoveDocumentFromIndexQueueDLQName
+      QueueName: !Ref RemoveDocumentFromIndexDLQName
       MessageRetentionPeriod: 1209600 #14 days
 
   #============================= Permissions =======================================================
