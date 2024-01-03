@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.evaluator;
 
-import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -18,7 +17,7 @@ import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Optional;
-import no.sikt.nva.nvi.events.evaluator.model.Organization;
+import no.sikt.nva.nvi.common.model.Organization;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.events.models.AwsEventBridgeDetail;
@@ -66,10 +65,11 @@ public final class TestUtils {
     private static String generateResponseBody(URI topLevelInstitutionId, URI subUnitId) {
         return attempt(
             () -> dtoObjectMapper.writeValueAsString(isNull(subUnitId)
-                                                         ? new Organization(topLevelInstitutionId, emptyList())
-                                                         : new Organization(subUnitId, List.of(
-                                                             new Organization(topLevelInstitutionId,
-                                                                              emptyList()))))).orElseThrow();
+                                                         ? Organization.builder().withId(topLevelInstitutionId).build()
+                                                         : Organization.builder().withId(subUnitId).withPartOf(List.of(
+                                                             Organization.builder()
+                                                                 .withId(topLevelInstitutionId)
+                                                                 .build())).build())).orElseThrow();
     }
 
     private static InputStream createEventInputStream(EventReference eventReference) throws IOException {

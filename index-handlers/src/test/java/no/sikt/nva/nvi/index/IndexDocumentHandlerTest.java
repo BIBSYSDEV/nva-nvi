@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.index;
 
+import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_LABEL;
+import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_NORWEGIAN_LABEL;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.createExpandedResource;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.GZIP_ENDING;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.HARD_CODED_PART_OF;
@@ -28,6 +30,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.net.URI;
+import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -91,6 +94,20 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var candidate = randomApplicableCandidate();
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
             candidate).indexDocument();
+        var event = createEvent(candidate.getIdentifier());
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @Test
+    void shouldFetchOrganizationLabelsFromCristinApiWhenExpandedResourceIsMissingTopLevelOrganization() {
+        var candidate = randomApplicableCandidate();
+        var expandedResource = createExpandedResource(candidate);
+        setupResourceMissingTopLevelOrganizationsInS3(expandedResource, candidate);
+        var expectedIndexDocument = IndexDocumentWithConsumptionAttributes.from(
+            createExpectedNviIndexDocument(expandedResource, candidate)).indexDocument();
         var event = createEvent(candidate.getIdentifier());
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(event, CONTEXT);
@@ -222,6 +239,14 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         assertEquals(expectedIndexDocument, actualIndexDocument);
     }
 
+    @SuppressWarnings("unchecked")
+    private static HttpResponse<String> createResponse(String body) {
+        var response = (HttpResponse<String>) mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(200);
+        when(response.body()).thenReturn(body);
+        return response;
+    }
+
     private static FakeSqsClient setupFailingSqsClient(Candidate candidate) {
         var expectedFailingMessage = new PersistedIndexDocumentMessage(
             generateBucketUri(candidate)).asJsonString();
@@ -260,18 +285,37 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return attempt(() -> dtoObjectMapper.writeValueAsString(jsonNode)).orElseThrow();
     }
 
-    private static ObjectNode generateOrganizationNode(String hardCodedPartOf) {
-        var hardCodedPartOfNode = dtoObjectMapper.createObjectNode();
-        hardCodedPartOfNode.put("id", hardCodedPartOf);
-        hardCodedPartOfNode.put("type", "Organization");
-        hardCodedPartOfNode.put("@context", ORGANIZATION_CONTEXT);
-        return hardCodedPartOfNode;
+    private static ObjectNode generateOrganizationNode(String organizationId) {
+        var organizationNode = dtoObjectMapper.createObjectNode();
+        organizationNode.put("id", organizationId);
+        organizationNode.put("type", "Organization");
+        addLabels(organizationNode);
+        organizationNode.put("@context", ORGANIZATION_CONTEXT);
+        return organizationNode;
+    }
+
+    private static void addLabels(ObjectNode organizationNode) {
+        var labels = dtoObjectMapper.createObjectNode();
+        labels.put("nb", HARDCODED_NORWEGIAN_LABEL);
+        labels.put("en", HARDCODED_ENGLISH_LABEL);
+        organizationNode.set("labels", labels);
     }
 
     private static String extractResourceIdentifier(Candidate persistedCandidate) {
         return UriWrapper.fromUri(persistedCandidate.getPublicationDetails().publicationBucketUri())
                    .getPath()
                    .getLastPathElement();
+    }
+
+    private void setupResourceMissingTopLevelOrganizationsInS3(JsonNode expandedResource, Candidate candidate) {
+        var expandedResourceWithoutTopLevelOrganization = removeTopLevelOrganization((ObjectNode) expandedResource);
+        insertResourceInS3(createResourceIndexDocument(expandedResourceWithoutTopLevelOrganization), UnixPath.of(
+            extractResourceIdentifier(candidate)));
+    }
+
+    private JsonNode removeTopLevelOrganization(ObjectNode expandedResource) {
+        expandedResource.remove("topLevelOrganizations");
+        return expandedResource;
     }
 
     private String createExpectedEventMessageBody(Candidate candidate) {
@@ -306,20 +350,23 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
             .stream()
             .flatMap(creator -> creator.affiliations().stream())
             .forEach(this::mockOrganizationResponse);
+
+        candidate.getApprovals().keySet().forEach(this::mockOrganizationResponse);
     }
 
-    private void mockOrganizationResponse(URI affiliation) {
-        when(uriRetriever.getRawContent(eq(affiliation), any())).thenReturn(generateResponse(affiliation));
+    private void mockOrganizationResponse(URI affiliationId) {
+        var httpResponse = generateResponse(affiliationId);
+        when(uriRetriever.fetchResponse(eq(affiliationId), any())).thenReturn(httpResponse);
     }
 
-    private Optional<String> generateResponse(URI affiliation) {
+    private Optional<HttpResponse<String>> generateResponse(URI affiliation) {
         var affiliationOrganizationNode = generateOrganizationNode(affiliation.toString());
         var partOfArrayNode = dtoObjectMapper.createArrayNode();
         var partOfOrganizationNode = generateOrganizationNode(HARD_CODED_PART_OF);
         partOfArrayNode.add(partOfOrganizationNode);
         affiliationOrganizationNode.set("partOf", partOfArrayNode);
-        return Optional.of(
-            attempt(() -> dtoObjectMapper.writeValueAsString(affiliationOrganizationNode)).orElseThrow());
+        return Optional.of(createResponse(
+            attempt(() -> dtoObjectMapper.writeValueAsString(affiliationOrganizationNode)).orElseThrow()));
     }
 
     private IndexDocumentWithConsumptionAttributes setUpExistingResourceInS3AndGenerateExpectedDocument(
@@ -345,8 +392,8 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return root;
     }
 
-    private URI insertResourceInS3(JsonNode indexDocument, UnixPath path) {
-        return attempt(() -> s3Reader.insertFile(path, asString(indexDocument))).orElseThrow();
+    private void insertResourceInS3(JsonNode indexDocument, UnixPath path) {
+        attempt(() -> s3Reader.insertFile(path, asString(indexDocument))).orElseThrow();
     }
 
     private NviCandidateIndexDocument createExpectedNviIndexDocument(JsonNode expandedResource, Candidate candidate) {

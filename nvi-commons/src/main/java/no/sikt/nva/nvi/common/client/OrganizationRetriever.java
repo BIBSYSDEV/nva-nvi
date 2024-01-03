@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.events.evaluator.client;
+package no.sikt.nva.nvi.common.client;
 
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
@@ -6,7 +6,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.Optional;
-import no.sikt.nva.nvi.events.evaluator.model.Organization;
+import no.sikt.nva.nvi.common.model.Organization;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

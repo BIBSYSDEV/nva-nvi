@@ -25,7 +25,6 @@ import nva.commons.core.paths.UnixPath;
 public final class IndexDocumentTestUtils {
 
     public static final String HARD_CODED_PART_OF = "https://example.org/organization/hardCodedPartOf";
-
     public static final URI NVI_CONTEXT = URI.create("https://bibsysdev.github.io/src/nvi-context.json");
     public static final String NVI_CANDIDATES_FOLDER = "nvi-candidates";
     public static final String GZIP_ENDING = ".gz";
