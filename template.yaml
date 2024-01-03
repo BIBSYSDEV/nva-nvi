@@ -717,11 +717,11 @@ Resources:
             Type: SQS
             Destination: !GetAtt IndexDocumentDLQ.Arn
 
-  UpdateIndexHandlerV2:
+  UpdateIndexHandler:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.index.UpdateIndexHandlerV2::handleRequest
+      Handler: no.sikt.nva.nvi.index.UpdateIndexHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
