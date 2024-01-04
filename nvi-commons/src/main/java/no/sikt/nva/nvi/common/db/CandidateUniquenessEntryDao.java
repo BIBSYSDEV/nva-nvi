@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 import no.sikt.nva.nvi.common.db.CandidateUniquenessEntryDao.Builder;
 import nva.commons.core.JacocoGenerated;
@@ -15,14 +16,15 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 public final class CandidateUniquenessEntryDao extends Dao {
 
     public static final String TYPE = "CandidateUniquenessEntry";
+    public static final String VERSION = "version";
     private final String partitionKey;
     private final String sortKey;
     private final String version;
 
     public CandidateUniquenessEntryDao(
-        String partitionKey,
-        String sortKey,
-        String version
+        @JsonProperty(HASH_KEY) String partitionKey,
+        @JsonProperty(SORT_KEY) String sortKey,
+        @JsonProperty(VERSION) String version
     ) {
         super();
         this.partitionKey = partitionKey;
