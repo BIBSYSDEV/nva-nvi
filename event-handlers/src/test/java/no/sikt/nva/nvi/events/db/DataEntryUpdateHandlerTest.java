@@ -107,6 +107,7 @@ public class DataEntryUpdateHandlerTest {
 
         handler.handleRequest(event, CONTEXT);
         assertEquals(0, snsClient.getPublishedMessages().size());
+        assertEquals(0, queueClient.getSentMessages().size());
     }
 
     @Test
