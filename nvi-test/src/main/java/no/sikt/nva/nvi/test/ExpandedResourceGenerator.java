@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -25,13 +26,17 @@ public final class ExpandedResourceGenerator {
     }
 
     public static JsonNode createExpandedResource(Candidate candidate) {
+        return createExpandedResource(candidate, Collections.emptyList());
+    }
+
+    public static JsonNode createExpandedResource(Candidate candidate, List<URI> nonNviContributorAffiliationIds) {
         var root = objectMapper.createObjectNode();
 
         root.put("id", candidate.getPublicationDetails().publicationId().toString());
 
         var entityDescription = objectMapper.createObjectNode();
 
-        var contributors = populateAndCreateContributors(candidate);
+        var contributors = populateAndCreateContributors(candidate, nonNviContributorAffiliationIds);
 
         entityDescription.set("contributors", contributors);
 
@@ -134,19 +139,20 @@ public final class ExpandedResourceGenerator {
         return publicationDate;
     }
 
-    private static ArrayNode populateAndCreateContributors(Candidate candidate) {
+    private static ArrayNode populateAndCreateContributors(Candidate candidate,
+                                                           List<URI> nonNviContributorAffiliationIds) {
 
         var contributors = objectMapper.createArrayNode();
         var creators = candidate.getPublicationDetails().creators();
         creators.stream()
             .map(creator -> createContributorNode(creator.affiliations(), creator.id()))
             .forEach(contributors::add);
-        addOtherRandomContributors(contributors);
+        addOtherRandomContributors(contributors, nonNviContributorAffiliationIds);
         return contributors;
     }
 
-    private static void addOtherRandomContributors(ArrayNode contributors) {
-        IntStream.range(0, 10).mapToObj(i -> createContributorNode(List.of(), URI.create(randomString())))
+    private static void addOtherRandomContributors(ArrayNode contributors, List<URI> affiliationsIds) {
+        IntStream.range(0, 10).mapToObj(i -> createContributorNode(affiliationsIds, URI.create(randomString())))
             .forEach(contributors::add);
     }
 
