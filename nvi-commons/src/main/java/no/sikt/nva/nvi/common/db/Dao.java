@@ -15,7 +15,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
     @JsonSubTypes.Type(value = ApprovalStatusDao.class, name = ApprovalStatusDao.TYPE),
     @JsonSubTypes.Type(value = CandidateDao.class, name = CandidateDao.TYPE),
     @JsonSubTypes.Type(value = NoteDao.class, name = NoteDao.TYPE),
-    @JsonSubTypes.Type(value = NviPeriodDao.class, name = NviPeriodDao.TYPE)
+    @JsonSubTypes.Type(value = NviPeriodDao.class, name = NviPeriodDao.TYPE),
+    @JsonSubTypes.Type(value = CandidateUniquenessEntryDao.class, name = CandidateUniquenessEntryDao.TYPE)
 })
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 public abstract class Dao implements DynamoEntryWithRangeKey {
