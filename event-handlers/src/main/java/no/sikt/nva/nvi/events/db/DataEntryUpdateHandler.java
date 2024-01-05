@@ -85,7 +85,7 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
         });
     }
 
-    private NviPublishMessageResponse extractDaoAndPublish(DynamodbStreamRecord streamRecord) {
+    private NviPublishMessageResponse extractDaoAndPublish(DynamodbStreamRecord streamRecord) throws Exception {
         var operationType = OperationType.fromValue(streamRecord.getEventName());
         var dao = extractDao(streamRecord);
         if (isNotCandidateOrApproval(dao) || isUnknownOperationType(operationType)) {
@@ -105,9 +105,13 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
         return response;
     }
 
-    private Dao extractDao(DynamodbStreamRecord streamRecord) {
-        return attempt(() -> DynamoEntryWithRangeKey.parseAttributeValuesMap(getImage(streamRecord), Dao.class))
-                   .orElseThrow();
+    private Dao extractDao(DynamodbStreamRecord streamRecord) throws Exception {
+        var image = getImage(streamRecord);
+        return attempt(() -> DynamoEntryWithRangeKey.parseAttributeValuesMap(image, Dao.class))
+                   .orElseThrow(daoFailure -> {
+                       LOGGER.error("Failed to parse image: {}", image.toString());
+                       return daoFailure.getException();
+                   });
     }
 
     private String writeAsString(DynamodbStreamRecord streamRecord) {
