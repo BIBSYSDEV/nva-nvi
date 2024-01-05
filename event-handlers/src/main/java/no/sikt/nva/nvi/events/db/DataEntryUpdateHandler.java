@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.events.db;
 
 import static no.sikt.nva.nvi.events.db.DynamoDbUtils.extractIdFromRecord;
 import static no.sikt.nva.nvi.events.db.DynamoDbUtils.getImage;
-import static no.sikt.nva.nvi.events.db.ExceptionUtils.getStackTrace;
+import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -73,9 +73,9 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
         return OperationType.UNKNOWN_TO_SDK_VERSION.equals(operationType);
     }
 
-    private static void logFailure(String message, String body, Exception failure) {
+    private static void logFailure(String message, String body, Exception exception) {
         LOGGER.error(message, body);
-        LOGGER.error(ERROR_MESSAGE, failure.getMessage());
+        LOGGER.error(ERROR_MESSAGE, getStackTrace(exception));
     }
 
     private void publishToTopic(DynamodbStreamRecord streamRecord) {
