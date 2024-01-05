@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.GZIP_ENDING;
 import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
@@ -116,9 +117,9 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
         return filename.replace(GZIP_ENDING, "");
     }
 
-    private static void logFailure(String message, String messageArgument, Exception failure) {
+    private static void logFailure(String message, String messageArgument, Exception exception) {
         LOGGER.error(message, messageArgument);
-        LOGGER.error(ERROR_MESSAGE, failure.getMessage());
+        LOGGER.error(ERROR_MESSAGE, getStackTrace(exception));
     }
 
     private void sendEvent(URI uri) {

@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.events.db;
+package no.sikt.nva.nvi.common.utils;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
