@@ -20,10 +20,8 @@ class DynamoDbUtilsTest {
     }
 
     private static DynamodbStreamRecord setUpStreamRecordWithFieldWithNullValue() {
-        return (DynamodbStreamRecord) new DynamodbStreamRecord()
-                                          .withDynamodb(new StreamRecord().withNewImage(
-                                              Map.of(SOME_FIELD_NAME,
-                                                     new com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue().withNULL(
-                                                         true))));
+        return (DynamodbStreamRecord) new DynamodbStreamRecord().withDynamodb(new StreamRecord().withNewImage(
+            Map.of(SOME_FIELD_NAME,
+                   new com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue().withNULL(true))));
     }
 }
