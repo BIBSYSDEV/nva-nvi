@@ -45,6 +45,7 @@ import software.amazon.awssdk.services.sns.model.SnsException;
 
 public class DataEntryUpdateHandlerTest {
 
+    public static final String CANDIDATE_IDENTIFIER_MESSAGE_ATTRIBUTE = "candidateIdentifier";
     private static final Environment ENVIRONMENT = new Environment();
     private static final Context CONTEXT = mock(Context.class);
     private static final String CANDIDATE_INSERT_TOPIC = ENVIRONMENT.readEnv("TOPIC_CANDIDATE_INSERT");
@@ -115,11 +116,15 @@ public class DataEntryUpdateHandlerTest {
 
     @Test
     void shouldSendMessageToDlqWhenFailingToPublishEvent() {
-        var dao = randomCandidateDao();
-        var eventWithOneInvalidRecord = createEventWithMessages(
-            List.of(createMessage(dao, dao, OperationType.INSERT), createMessage(UUID.randomUUID())));
+        var failingUuid = UUID.randomUUID();
+        var eventWithOneInvalidRecord = createEventWithMessages(List.of(createMessage(failingUuid)));
         handler.handleRequest(eventWithOneInvalidRecord, CONTEXT);
         assertEquals(1, queueClient.getSentMessages().size());
+        var dlqSendMessageRequest = queueClient.getSentMessages().get(0);
+        assertEquals(failingUuid.toString(), dlqSendMessageRequest.messageAttributes().get(
+            CANDIDATE_IDENTIFIER_MESSAGE_ATTRIBUTE).stringValue());
+        assertEquals("String", dlqSendMessageRequest.messageAttributes().get(
+            CANDIDATE_IDENTIFIER_MESSAGE_ATTRIBUTE).dataType());
     }
 
     @Test
