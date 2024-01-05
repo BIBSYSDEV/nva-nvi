@@ -11,6 +11,8 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.StreamRecord;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -18,11 +20,13 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.db.Dao;
+import software.amazon.awssdk.enhanced.dynamodb.document.EnhancedDocument;
 import software.amazon.awssdk.services.dynamodb.model.OperationType;
 
 public final class DynamoDbTestUtils {
 
     public static final String IDENTIFIER = "identifier";
+    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().registerModule(new JavaTimeModule());
 
     private DynamoDbTestUtils() {
     }
@@ -130,8 +134,13 @@ public final class DynamoDbTestUtils {
     }
 
     private static Map<String, AttributeValue> toAttributeValueMap(Dao dao) {
-        var dynamoFormat = dao.toDynamoFormat();
+        var dynamoFormat = toDynamoFormat(dao);
         return getAttributeValueMap(dynamoFormat);
+    }
+
+    private static Map<String, software.amazon.awssdk.services.dynamodb.model.AttributeValue> toDynamoFormat(Dao dao) {
+        return EnhancedDocument.fromJson(attempt(() -> OBJECT_MAPPER.writeValueAsString(dao)).orElseThrow())
+                   .toMap();
     }
 
     private static Map<String, AttributeValue> getAttributeValueMap(
@@ -143,8 +152,17 @@ public final class DynamoDbTestUtils {
 
     private static AttributeValue getAttributeValue(
         software.amazon.awssdk.services.dynamodb.model.AttributeValue value) {
-        var json = attempt(() -> dynamoObjectMapper.writeValueAsString(value.toBuilder())).orElseThrow();
-        return attempt(() -> dynamoObjectMapper.readValue(json, AttributeValue.class)).orElseThrow();
+        //This is a workaround because I´m not able to create null attributes with the dynamoObjectMapper
+        return switch (value.type()) {
+            case S -> new AttributeValue().withS(value.s());
+            case SS -> new AttributeValue().withSS(value.ss());
+            case N -> new AttributeValue().withN(value.n());
+            case M -> new AttributeValue().withM(getAttributeValueMap(value.m()));
+            case L -> new AttributeValue().withL(value.l().stream().map(DynamoDbTestUtils::getAttributeValue).toList());
+            case NUL -> new AttributeValue().withNULL(value.nul());
+            case BOOL -> new AttributeValue().withBOOL(value.bool());
+            default -> throw new IllegalArgumentException("Unknown type: " + value.type());
+        };
     }
 
     private static StreamRecord randomPayload() {

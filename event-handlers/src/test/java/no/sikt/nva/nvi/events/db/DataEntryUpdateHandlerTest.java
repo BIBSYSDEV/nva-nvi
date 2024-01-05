@@ -12,6 +12,7 @@ import static no.sikt.nva.nvi.test.TestUtils.randomUsername;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -22,6 +23,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateUniquenessEntryDao;
 import no.sikt.nva.nvi.common.db.Dao;
@@ -70,7 +73,7 @@ public class DataEntryUpdateHandlerTest {
                                       OperationType.MODIFY),
                          Arguments.of(nonApplicableCandidate, null,
                                       CANDIDATE_REMOVED_TOPIC, OperationType.REMOVE),
-                         Arguments.of(null, randomApproval, APPROVAL_INSERT_TOPIC, OperationType.INSERT),
+                         Arguments.of(null, generatePendingApproval(), APPROVAL_INSERT_TOPIC, OperationType.INSERT),
                          Arguments.of(randomApproval, randomApproval, APPROVAL_UPDATE_TOPIC, OperationType.MODIFY),
                          Arguments.of(randomApproval, null, APPROVAL_REMOVE_TOPIC, OperationType.REMOVE));
     }
@@ -190,5 +193,16 @@ public class DataEntryUpdateHandlerTest {
 
     private static CandidateDao nonApplicableCandidateDao() {
         return new CandidateDao(UUID.randomUUID(), randomCandidateBuilder(false).build(), UUID.randomUUID().toString());
+    }
+
+    private static ApprovalStatusDao generatePendingApproval() {
+        return new ApprovalStatusDao(UUID.randomUUID(),
+                                     new DbApprovalStatus(randomUri(),
+                                                          DbStatus.PENDING,
+                                                          null,
+                                                          null,
+                                                          null,
+                                                          null),
+                                     UUID.randomUUID().toString());
     }
 }

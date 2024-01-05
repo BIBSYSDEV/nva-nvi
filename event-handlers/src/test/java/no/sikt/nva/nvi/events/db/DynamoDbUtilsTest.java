@@ -15,7 +15,7 @@ class DynamoDbUtilsTest {
     void shouldParseNullValuesWhenGettingImage() {
         var streamRecordWithNullValue = setUpStreamRecordWithFieldWithNullValue();
         var attributeValueMap = DynamoDbUtils.getImage(streamRecordWithNullValue);
-        AttributeValue expectedAttributeValue = AttributeValue.builder().nul(true).build();
+        var expectedAttributeValue = AttributeValue.builder().nul(true).build();
         assertEquals(expectedAttributeValue, attributeValueMap.get(SOME_FIELD_NAME));
     }
 
