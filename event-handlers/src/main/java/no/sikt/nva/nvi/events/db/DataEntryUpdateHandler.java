@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.events.db;
 
+import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.sikt.nva.nvi.events.db.DynamoDbUtils.extractIdFromRecord;
 import static no.sikt.nva.nvi.events.db.DynamoDbUtils.getImage;
-import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -85,7 +85,7 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
         });
     }
 
-    private NviPublishMessageResponse extractDaoAndPublish(DynamodbStreamRecord streamRecord) {
+    private NviPublishMessageResponse extractDaoAndPublish(DynamodbStreamRecord streamRecord) throws Exception {
         var operationType = OperationType.fromValue(streamRecord.getEventName());
         var dao = extractDao(streamRecord);
         if (isNotCandidateOrApproval(dao) || isUnknownOperationType(operationType)) {
@@ -105,9 +105,13 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
         return response;
     }
 
-    private Dao extractDao(DynamodbStreamRecord streamRecord) {
-        return attempt(() -> DynamoEntryWithRangeKey.parseAttributeValuesMap(getImage(streamRecord), Dao.class))
-                   .orElseThrow();
+    private Dao extractDao(DynamodbStreamRecord streamRecord) throws Exception {
+        var image = getImage(streamRecord);
+        return attempt(() -> DynamoEntryWithRangeKey.parseAttributeValuesMap(image, Dao.class))
+                   .orElseThrow(daoFailure -> {
+                       LOGGER.error("Failed to parse image: {}", image.toString());
+                       return daoFailure.getException();
+                   });
     }
 
     private String writeAsString(DynamodbStreamRecord streamRecord) {
