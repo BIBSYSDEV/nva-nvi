@@ -55,11 +55,16 @@ public final class DynamoDbUtils {
     private static AttributeValue mapToDynamoDbValue(
         com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue value)
         throws JsonProcessingException {
-        if (value.isNULL()) {
+        if (isNullValue(value)) {
             return AttributeValue.builder().nul(true).build();
         }
         var json = writeAsString(value);
         return dynamoObjectMapper.readValue(json, AttributeValue.serializableBuilderClass()).build();
+    }
+
+    private static boolean isNullValue(
+        com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue value) {
+        return nonNull(value.isNULL()) && value.isNULL();
     }
 
     private static String writeAsString(
