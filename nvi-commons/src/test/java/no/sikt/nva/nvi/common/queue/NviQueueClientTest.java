@@ -39,6 +39,7 @@ public class NviQueueClientTest {
     private static final String TEST_RECEIPT_HANDLE = "some_test_receipt_handle";
     public static final String MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER = "candidateIdentifier";
     public static final int MAX_NUMBER_OF_MESSAGES = 10;
+    public static final String DATA_TYPE_STRING = "String";
 
     @Test
     void shouldSendSqsMessageAndReturnId() {
@@ -154,6 +155,7 @@ public class NviQueueClientTest {
                    .messageAttributes(Map.of(MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER,
                                              MessageAttributeValue.builder()
                                                  .stringValue(candidateIdentifier.toString())
+                                                 .dataType(DATA_TYPE_STRING)
                                                  .build()))
                    .queueUrl(TEST_QUEUE_URL).build();
     }

@@ -27,6 +27,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 public class FakeSqsClient implements QueueClient {
 
     public static final String MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE = "candidateIdentifier";
+    public static final String DATA_TYPE_STRING = "String";
 
     private final List<SendMessageRequest> sentMessages = new ArrayList<>();
 
@@ -121,6 +122,7 @@ public class FakeSqsClient implements QueueClient {
                        MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE,
                        MessageAttributeValue.builder()
                            .stringValue(candidateIdentifier.toString())
+                            .dataType(DATA_TYPE_STRING)
                            .build()))
                    .messageBody(body)
                    .build();

@@ -30,6 +30,7 @@ public class NviQueueClient implements QueueClient {
     private static final int MAX_CONNECTIONS = 10_000;
     private static final int IDLE_TIME = 30;
     private static final int TIMEOUT_TIME = 30;
+    public static final String DATA_TYPE_STRING = "String";
     protected final SqsClient sqsClient;
 
     @JacocoGenerated
@@ -83,6 +84,7 @@ public class NviQueueClient implements QueueClient {
         return Map.of(CANDIDATE_IDENTIFIER,
                       MessageAttributeValue.builder()
                           .stringValue(candidateIdentifier.toString())
+                          .dataType(DATA_TYPE_STRING)
                           .build());
     }
 
@@ -163,13 +165,15 @@ public class NviQueueClient implements QueueClient {
         return new NviReceiveMessageResponse(receiveMessageResponse.messages()
                                                  .stream()
                                                  .map(m -> new NviReceiveMessage(m.body(),
-                                                         m.messageId(),
-                                                         m.messageAttributes().entrySet().stream()
-                                                             .collect(Collectors.toMap(
-                                                                 Entry::getKey,
-                                                                 e -> e.getValue().stringValue()
-                                                             )),
-                                                         m.receiptHandle()))
+                                                                                 m.messageId(),
+                                                                                 m.messageAttributes()
+                                                                                     .entrySet()
+                                                                                     .stream()
+                                                                                     .collect(Collectors.toMap(
+                                                                                         Entry::getKey,
+                                                                                         e -> e.getValue().stringValue()
+                                                                                     )),
+                                                                                 m.receiptHandle()))
                                                  .toList());
     }
 }
