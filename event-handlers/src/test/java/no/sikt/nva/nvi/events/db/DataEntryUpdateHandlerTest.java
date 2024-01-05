@@ -113,12 +113,12 @@ public class DataEntryUpdateHandlerTest {
 
     @Test
     void shouldSendMessageToDlqWhenFailingToPublishEvent() {
-        var failingUUID = UUID.randomUUID();
-        var eventWithOneInvalidRecord = createEventWithMessages(List.of(createMessage(failingUUID)));
+        var failingUuid = UUID.randomUUID();
+        var eventWithOneInvalidRecord = createEventWithMessages(List.of(createMessage(failingUuid)));
         handler.handleRequest(eventWithOneInvalidRecord, CONTEXT);
         assertEquals(1, queueClient.getSentMessages().size());
         var dlqSendMessageRequest = queueClient.getSentMessages().get(0);
-        assertEquals(failingUUID.toString(), dlqSendMessageRequest.messageAttributes().get(
+        assertEquals(failingUuid.toString(), dlqSendMessageRequest.messageAttributes().get(
             CANDIDATE_IDENTIFIER_MESSAGE_ATTRIBUTE).stringValue());
         assertEquals("String", dlqSendMessageRequest.messageAttributes().get(
             CANDIDATE_IDENTIFIER_MESSAGE_ATTRIBUTE).dataType());
