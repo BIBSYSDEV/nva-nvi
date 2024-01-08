@@ -66,6 +66,8 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
     private static final String INDEX_DLQ = "INDEX_DLQ";
     private static final String INDEX_DLQ_URL = ENVIRONMENT.readEnv(INDEX_DLQ);
+    private static final String CRISTIN_VERSION = "; version=2023-05-26";
+    private static final String MEDIA_TYPE_JSON_V2 = "application/json" + CRISTIN_VERSION;
     private final S3Client s3Client = new FakeS3Client();
     private IndexDocumentHandler handler;
     private CandidateRepository candidateRepository;
@@ -379,7 +381,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     private void mockOrganizationResponse(URI affiliationId) {
         var httpResponse = generateResponse(affiliationId);
-        when(uriRetriever.fetchResponse(eq(affiliationId), any())).thenReturn(httpResponse);
+        when(uriRetriever.fetchResponse(eq(affiliationId), eq(MEDIA_TYPE_JSON_V2))).thenReturn(httpResponse);
     }
 
     private Optional<HttpResponse<String>> generateResponse(URI affiliation) {
