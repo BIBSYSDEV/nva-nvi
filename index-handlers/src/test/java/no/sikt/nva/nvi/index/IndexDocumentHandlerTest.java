@@ -19,6 +19,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -54,6 +55,7 @@ import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.sqs.model.SqsException;
 
 public class IndexDocumentHandlerTest extends LocalDynamoTest {
@@ -103,6 +105,17 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
         assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @Test
+    void shouldNotBuildIndexDocumentIfCandidateIsNotApplicable() {
+        var candidate = randomApplicableCandidate();
+        setUpExistingResourceInS3AndGenerateExpectedDocument(candidate);
+        mockUriRetrieverOrgResponse(candidate);
+        makeNonApplicable(candidate);
+        var event = createEvent(candidate.getIdentifier());
+        handler.handleRequest(event, CONTEXT);
+        assertThrows(NoSuchKeyException.class, () -> s3Reader.getFile(createPath(candidate)));
     }
 
     @Test
@@ -320,6 +333,10 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return UriWrapper.fromUri(persistedCandidate.getPublicationDetails().publicationBucketUri())
                    .getPath()
                    .getLastPathElement();
+    }
+
+    private void makeNonApplicable(Candidate candidate) {
+        Candidate.updateNonCandidate(() -> candidate.getPublicationDetails().publicationId(), candidateRepository);
     }
 
     private ConsumptionAttributes setUpExistingResourceWithNonNviCreatorAffiliations(Candidate candidate) {

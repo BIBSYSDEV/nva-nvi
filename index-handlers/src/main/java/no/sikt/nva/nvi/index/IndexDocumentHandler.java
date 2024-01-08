@@ -122,6 +122,10 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
         LOGGER.error(ERROR_MESSAGE, getStackTrace(exception));
     }
 
+    private static boolean isNotApplicable(Candidate candidate) {
+        return !candidate.isApplicable();
+    }
+
     private void sendEvent(URI uri) {
         attempt(() -> sqsClient.sendMessage(new PersistedIndexDocumentMessage(uri).asJsonString(), queueUrl))
             .orElse(failure -> {
@@ -178,6 +182,9 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
         DynamodbStreamRecord record) {
         var candidate = fetchCandidate(record);
+        if (isNotApplicable(candidate)) {
+            return null;
+        }
         var persistedResource = fetchPersistedResource(candidate);
         return IndexDocumentWithConsumptionAttributes.from(candidate, persistedResource, uriRetriever);
     }
