@@ -730,6 +730,7 @@ Resources:
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
       Timeout: 60
+      ReservedConcurrentExecutions: 25
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
@@ -755,6 +756,7 @@ Resources:
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
       Timeout: 30
+      ReservedConcurrentExecutions: 50
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
@@ -859,6 +861,7 @@ Resources:
       Handler: no.sikt.nva.nvi.events.batch.RequeueDlqHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
+      Timeout: 300
       Environment:
         Variables:
           DLQ_QUEUE_URL: !Ref IndexDLQ
