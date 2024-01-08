@@ -48,7 +48,6 @@ public class DeletePersistedIndexDocumentHandler implements RequestHandler<SQSEv
         try {
             storageWriter.delete(identifier);
         } catch (IOException e) {
-            return;
         }
     }
 
