@@ -1,9 +1,10 @@
-package no.sikt.nva.nvi.events.db;
+package no.sikt.nva.nvi.common.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.StreamRecord;
 import java.util.Map;
+import no.sikt.nva.nvi.common.utils.DynamoDbUtils;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 

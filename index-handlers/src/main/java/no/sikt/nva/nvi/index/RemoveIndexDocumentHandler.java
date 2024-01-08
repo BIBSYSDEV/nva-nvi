@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.index;
 
-import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
+import static no.sikt.nva.nvi.common.utils.DynamoDbUtils.toDynamodbStreamRecord;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -77,7 +77,7 @@ public class RemoveIndexDocumentHandler implements RequestHandler<SQSEvent, Void
     }
 
     private DynamodbStreamRecord mapToDynamoDbRecord(String body) {
-        return attempt(() -> dynamoObjectMapper.readValue(body, DynamodbStreamRecord.class))
+        return attempt(() -> toDynamodbStreamRecord(body))
                    .orElse(failure -> {
                        handleFailure(failure, FAILED_TO_PARSE_EVENT_MESSAGE, body);
                        return null;

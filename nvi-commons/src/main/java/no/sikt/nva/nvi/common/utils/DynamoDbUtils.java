@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.events.db;
+package no.sikt.nva.nvi.common.utils;
 
 import static java.util.Objects.nonNull;
 import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
@@ -29,6 +29,10 @@ public final class DynamoDbUtils {
                         ? streamRecord.getDynamodb().getNewImage()
                         : streamRecord.getDynamodb().getOldImage();
         return mapToDynamoDbAttributeValue(image);
+    }
+
+    public static DynamodbStreamRecord toDynamodbStreamRecord(String body) throws JsonProcessingException {
+        return dynamoObjectMapper.readValue(body, DynamodbStreamRecord.class);
     }
 
     private static String extractIdentifier(DynamodbStreamRecord record) {

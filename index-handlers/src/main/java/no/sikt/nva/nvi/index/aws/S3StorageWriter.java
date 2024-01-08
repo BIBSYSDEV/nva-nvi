@@ -32,6 +32,12 @@ public class S3StorageWriter implements StorageWriter<IndexDocumentWithConsumpti
         return s3Driver.insertFile(filePath, document.toJsonString());
     }
 
+    @Override
+    public void delete(UUID identifier) {
+        var filePath = createFilePath(identifier);
+        s3Driver.deleteFile(filePath);
+    }
+
     private static UnixPath createFilePath(UUID identifier) {
         return UnixPath.of(NVI_CANDIDATES_FOLDER).addChild(identifier + GZIP_ENDING);
     }
