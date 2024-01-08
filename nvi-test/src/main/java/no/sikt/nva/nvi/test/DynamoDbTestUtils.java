@@ -143,7 +143,7 @@ public final class DynamoDbTestUtils {
                    .toMap();
     }
 
-    private static Map<String, AttributeValue> getAttributeValueMap(
+    public static Map<String, AttributeValue> getAttributeValueMap(
         Map<String, software.amazon.awssdk.services.dynamodb.model.AttributeValue> value) {
         return value.entrySet()
                    .stream()

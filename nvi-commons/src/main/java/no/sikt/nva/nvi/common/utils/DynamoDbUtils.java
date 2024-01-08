@@ -36,8 +36,8 @@ public final class DynamoDbUtils {
     }
 
     private static String extractIdentifier(DynamodbStreamRecord record) {
-        return Optional.ofNullable(record.getDynamodb().getOldImage())
-                   .orElse(record.getDynamodb().getNewImage())
+        return Optional.ofNullable(record.getDynamodb().getNewImage())
+                   .orElse(record.getDynamodb().getOldImage())
                    .get(IDENTIFIER).getS();
     }
 
