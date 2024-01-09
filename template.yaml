@@ -912,7 +912,7 @@ Resources:
         DestinationConfig:
           OnFailure:
             Type: SQS
-            Destination: !GetAtt DeletePersistedIndexDocumentDlQ.Arn
+            Destination: !GetAtt DeletePersistedIndexDocumentDLQ.Arn
 
   NviEventBasedBatchScanHandler:
     Type: AWS::Serverless::Function
