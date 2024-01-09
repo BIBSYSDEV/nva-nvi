@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.events.db;
 
+import static no.sikt.nva.nvi.common.utils.DynamoDbUtils.extractIdFromRecord;
+import static no.sikt.nva.nvi.common.utils.DynamoDbUtils.getImage;
 import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
-import static no.sikt.nva.nvi.events.db.DynamoDbUtils.extractIdFromRecord;
-import static no.sikt.nva.nvi.events.db.DynamoDbUtils.getImage;
 import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;

@@ -81,6 +81,13 @@ public final class DynamoDbTestUtils {
         return attempt(() -> dynamoObjectMapper.writeValueAsString(record)).orElseThrow();
     }
 
+    public static Map<String, AttributeValue> getAttributeValueMap(
+        Map<String, software.amazon.awssdk.services.dynamodb.model.AttributeValue> value) {
+        return value.entrySet()
+                   .stream()
+                   .collect(Collectors.toMap(Entry::getKey, mapValue -> getAttributeValue(mapValue.getValue())));
+    }
+
     private static OperationType randomOperationType() {
         return randomElement(OperationType.values());
     }
@@ -141,13 +148,6 @@ public final class DynamoDbTestUtils {
     private static Map<String, software.amazon.awssdk.services.dynamodb.model.AttributeValue> toDynamoFormat(Dao dao) {
         return EnhancedDocument.fromJson(attempt(() -> OBJECT_MAPPER.writeValueAsString(dao)).orElseThrow())
                    .toMap();
-    }
-
-    private static Map<String, AttributeValue> getAttributeValueMap(
-        Map<String, software.amazon.awssdk.services.dynamodb.model.AttributeValue> value) {
-        return value.entrySet()
-                   .stream()
-                   .collect(Collectors.toMap(Entry::getKey, mapValue -> getAttributeValue(mapValue.getValue())));
     }
 
     private static AttributeValue getAttributeValue(

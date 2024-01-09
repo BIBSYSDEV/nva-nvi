@@ -16,6 +16,7 @@ dependencies {
     implementation libs.aws.sdk2.dynamodb
     implementation libs.aws.sdk2.dynamodbenhanced
     implementation libs.aws.sdk2.urlconnection
+    implementation libs.aws.lambda.events
     implementation libs.bundles.jena
 
     testImplementation(group: 'com.amazonaws', name: 'DynamoDBLocal', version: '1.19.0') {
