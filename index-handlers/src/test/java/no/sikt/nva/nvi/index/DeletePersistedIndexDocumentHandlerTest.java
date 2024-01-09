@@ -7,6 +7,9 @@ import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInval
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
@@ -18,9 +21,12 @@ import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UnixPath;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.model.OperationType;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 public class DeletePersistedIndexDocumentHandlerTest {
 
@@ -28,15 +34,16 @@ public class DeletePersistedIndexDocumentHandlerTest {
     private static final Environment ENVIRONMENT = new Environment();
     private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
     private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
-    private final S3Client s3Client = new FakeS3Client();
+    private S3Client s3Client;
     private DeletePersistedIndexDocumentHandler handler;
     private S3Driver s3Driver;
     private FakeSqsClient sqsClient;
 
     @BeforeEach
     void setUp() {
-        s3Driver = new S3Driver(s3Client, BUCKET_NAME);
         sqsClient = new FakeSqsClient();
+        s3Client = new FakeS3Client();
+        s3Driver = new S3Driver(s3Client, BUCKET_NAME);
         handler = new DeletePersistedIndexDocumentHandler(new S3StorageWriter(s3Client, BUCKET_NAME), sqsClient,
                                                           new Environment());
     }
@@ -48,6 +55,17 @@ public class DeletePersistedIndexDocumentHandlerTest {
         var event = createEvent(dao, dao, OperationType.REMOVE);
         handler.handleRequest(event, null);
         assertEquals(0, s3Driver.listAllFiles(UnixPath.fromString(PERSISTED_NVI_CANDIDATES_FOLDER)).size());
+    }
+
+    @Test
+    void shouldSendMessageToDlqWhenFailingToDeletePersistedIndexDocument() {
+        var dao = randomCandidateDao();
+        var event = createEvent(dao, dao, OperationType.REMOVE);
+        handler = new DeletePersistedIndexDocumentHandler(new S3StorageWriter(setupFailingS3Client(), BUCKET_NAME),
+                                                          sqsClient,
+                                                          new Environment());
+        handler.handleRequest(event, null);
+        assertEquals(1, sqsClient.getSentMessages().size());
     }
 
     @Test
@@ -66,6 +84,12 @@ public class DeletePersistedIndexDocumentHandlerTest {
 
     private static CandidateDao randomCandidateDao() {
         return new CandidateDao(UUID.randomUUID(), randomCandidate(), UUID.randomUUID().toString());
+    }
+
+    private S3Client setupFailingS3Client() {
+        s3Client = mock(FakeS3Client.class);
+        when(s3Client.deleteObject(any(DeleteObjectRequest.class))).thenThrow(S3Exception.class);
+        return s3Client;
     }
 
     private void setUpExistingDocumentInS3(CandidateDao candidate) {

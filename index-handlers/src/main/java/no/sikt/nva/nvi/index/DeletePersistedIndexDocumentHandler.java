@@ -22,6 +22,7 @@ import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 public class DeletePersistedIndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
@@ -34,7 +35,7 @@ public class DeletePersistedIndexDocumentHandler implements RequestHandler<SQSEv
     private final StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter;
 
     private final QueueClient queueClient;
-    private String dlqUrl;
+    private final String dlqUrl;
 
     @JacocoGenerated
     public DeletePersistedIndexDocumentHandler() {
@@ -69,7 +70,9 @@ public class DeletePersistedIndexDocumentHandler implements RequestHandler<SQSEv
     private void deletePersistedIndexDocument(UUID identifier) {
         try {
             storageWriter.delete(identifier);
-        } catch (IOException e) {
+        } catch (S3Exception | IOException exception) {
+            handleFailure(new Failure<>(exception), identifier.toString(),
+                          identifier);
         }
     }
 
@@ -95,8 +98,8 @@ public class DeletePersistedIndexDocumentHandler implements RequestHandler<SQSEv
         queueClient.sendMessage(failure.getException().getMessage(), dlqUrl);
     }
 
-    private void handleFailure(Failure<?> failure, String message, String messageArgument, UUID candidateIdentifier) {
-        logFailure(message, messageArgument, failure.getException());
-        queueClient.sendMessage(failure.getException().getMessage(), dlqUrl, candidateIdentifier);
+    private void handleFailure(Failure<?> failure, String messageArgument, UUID candidateIdentifier) {
+        logFailure("Failed to delete file with identifier {}", messageArgument, failure.getException());
+        queueClient.sendMessage(getStackTrace(failure.getException()), dlqUrl, candidateIdentifier);
     }
 }
