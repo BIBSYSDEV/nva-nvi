@@ -59,10 +59,10 @@ class DynamoDbUtilsTest {
 
     private static Map<String, AttributeValue> randomAttributeValueMap() {
         return Map.of("someMapField", AttributeValue.builder()
-                                           .m(Map.of("someField", AttributeValue.builder()
-                                                                      .s("someValue")
-                                                                      .build()))
-                                           .build());
+                                          .m(Map.of("someField", AttributeValue.builder()
+                                                                     .s("someValue")
+                                                                     .build()))
+                                          .build());
     }
 
     private static DynamodbStreamRecord dynamodbRecordWithStreamRecord(StreamRecord streamRecord) {
@@ -75,9 +75,10 @@ class DynamoDbUtilsTest {
                 Map.of(IDENTIFIER,
                        new com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue().withS(
                            newImageIdentifier.toString())))
-                   .withOldImage(Map.of(IDENTIFIER,
-                                        new com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue().withS(
-                                            UUID.randomUUID().toString())));
+                   .withOldImage(
+                       Map.of(IDENTIFIER,
+                              new com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue().withS(
+                                  UUID.randomUUID().toString())));
     }
 
     private static StreamRecord streamRecordWithOnlyOldImage(UUID identifier) {

@@ -82,6 +82,12 @@ public final class QueueServiceTestUtils {
         return sqsEvent;
     }
 
+    public static SQSMessage invalidSqsMessage() {
+        var message = new SQSMessage();
+        message.setBody("invalid indexDocument");
+        return message;
+    }
+
     public static SQSMessage createMessage(UUID candidateIdentifier) {
         var message = new SQSMessage();
         message.setBody(generateSingleDynamoDbEventRecord(candidateIdentifier));
@@ -91,12 +97,6 @@ public final class QueueServiceTestUtils {
     public static SQSMessage createMessage(Dao oldImage, Dao newImage, OperationType operationType) {
         var message = new SQSMessage();
         message.setBody(generateSingleDynamoDbEventRecordWithEmptyPayload(oldImage, newImage, operationType));
-        return message;
-    }
-
-    public static SQSMessage invalidSqsMessage() {
-        var message = new SQSMessage();
-        message.setBody("invalid indexDocument");
         return message;
     }
 
