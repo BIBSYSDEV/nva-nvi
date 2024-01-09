@@ -26,14 +26,15 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 
 public class DeletePersistedIndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
-    public static final String INDEX_DLQ = "INDEX_DLQ";
     private static final Logger LOGGER = LoggerFactory.getLogger(DeletePersistedIndexDocumentHandler.class);
+    private static final String INDEX_DLQ = "INDEX_DLQ";
     private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
     private static final String ERROR_MESSAGE = "Error message: {}";
-
+    private static final String SUCCESS_INFO_MESSAGE = "Successfully deleted file with identifier {}";
+    private static final String FAILED_TO_EXTRACT_IDENTIFIER_MESSAGE = "Failed to extract identifier from record %s";
+    private static final String FAILED_TO_DELETE_MESSAGE = "Failed to delete file with identifier {}";
     private static final String FAILED_TO_PARSE_EVENT_MESSAGE = "Failed to map body to DynamodbStreamRecord: {}";
     private final StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter;
-
     private final QueueClient queueClient;
     private final String dlqUrl;
 
@@ -70,7 +71,7 @@ public class DeletePersistedIndexDocumentHandler implements RequestHandler<SQSEv
     private void deletePersistedIndexDocument(UUID identifier) {
         try {
             storageWriter.delete(identifier);
-            LOGGER.info("Successfully deleted file with identifier {}", identifier);
+            LOGGER.info(SUCCESS_INFO_MESSAGE, identifier);
         } catch (S3Exception | IOException exception) {
             handleFailure(new Failure<>(exception), identifier.toString(),
                           identifier);
@@ -79,7 +80,7 @@ public class DeletePersistedIndexDocumentHandler implements RequestHandler<SQSEv
 
     private UUID extractIdentifier(DynamodbStreamRecord dynamodbStreamRecord) {
         return extractIdFromRecord(dynamodbStreamRecord).orElseGet(() -> {
-            var message = String.format("Failed to extract identifier from record %s", dynamodbStreamRecord.toString());
+            var message = String.format(FAILED_TO_EXTRACT_IDENTIFIER_MESSAGE, dynamodbStreamRecord.toString());
             LOGGER.error(message);
             queueClient.sendMessage(message, dlqUrl);
             return null;
@@ -100,7 +101,7 @@ public class DeletePersistedIndexDocumentHandler implements RequestHandler<SQSEv
     }
 
     private void handleFailure(Failure<?> failure, String messageArgument, UUID candidateIdentifier) {
-        logFailure("Failed to delete file with identifier {}", messageArgument, failure.getException());
+        logFailure(FAILED_TO_DELETE_MESSAGE, messageArgument, failure.getException());
         queueClient.sendMessage(getStackTrace(failure.getException()), dlqUrl, candidateIdentifier);
     }
 }
