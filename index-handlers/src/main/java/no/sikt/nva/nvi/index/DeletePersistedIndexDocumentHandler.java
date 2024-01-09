@@ -74,7 +74,12 @@ public class DeletePersistedIndexDocumentHandler implements RequestHandler<SQSEv
     }
 
     private UUID extractIdentifier(DynamodbStreamRecord dynamodbStreamRecord) {
-        return extractIdFromRecord(dynamodbStreamRecord).orElseThrow();
+        return extractIdFromRecord(dynamodbStreamRecord).orElseGet(() -> {
+            var message = String.format("Failed to extract identifier from record %s", dynamodbStreamRecord.toString());
+            LOGGER.error(message);
+            queueClient.sendMessage(message, dlqUrl);
+            return null;
+        });
     }
 
     private DynamodbStreamRecord mapToDynamodbStreamRecord(String body) {

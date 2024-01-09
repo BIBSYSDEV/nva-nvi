@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.GZIP_ENDING;
+import static no.sikt.nva.nvi.test.DynamoDbTestUtils.randomDynamoDbEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
@@ -51,9 +52,15 @@ public class DeletePersistedIndexDocumentHandlerTest {
 
     @Test
     void shouldSendMessageToDlqWhenFailingToParseEvent() {
-        var candidate = randomCandidateDao();
-        var eventWithOneInvalidRecord = createEventWithOneInvalidRecord(candidate);
+        var eventWithOneInvalidRecord = createEventWithOneInvalidRecord(randomCandidateDao());
         handler.handleRequest(eventWithOneInvalidRecord, null);
+        assertEquals(1, sqsClient.getSentMessages().size());
+    }
+
+    @Test
+    void shouldSendMessageToDqlWhenFailingToExtractIdentifierFromRecord() {
+        var event = createEvent(randomDynamoDbEvent().getRecords().get(0));
+        handler.handleRequest(event, null);
         assertEquals(1, sqsClient.getSentMessages().size());
     }
 
