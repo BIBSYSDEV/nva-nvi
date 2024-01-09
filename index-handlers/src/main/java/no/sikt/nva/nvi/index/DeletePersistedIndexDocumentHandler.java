@@ -70,6 +70,7 @@ public class DeletePersistedIndexDocumentHandler implements RequestHandler<SQSEv
     private void deletePersistedIndexDocument(UUID identifier) {
         try {
             storageWriter.delete(identifier);
+            LOGGER.info("Successfully deleted file with identifier {}", identifier);
         } catch (S3Exception | IOException exception) {
             handleFailure(new Failure<>(exception), identifier.toString(),
                           identifier);

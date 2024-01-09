@@ -33,6 +33,13 @@ public final class QueueServiceTestUtils {
         return sqsEvent;
     }
 
+    public static SQSEvent createEventWithDynamodbRecords(List<DynamodbStreamRecord> streamRecords) {
+        var sqsEvent = new SQSEvent();
+        var messages = streamRecords.stream().map(QueueServiceTestUtils::createMessage).toList();
+        sqsEvent.setRecords(messages);
+        return sqsEvent;
+    }
+
     public static SQSEvent createEvent(Dao oldImage, Dao newImage, OperationType operationType) {
         var sqsEvent = new SQSEvent();
         var message = createMessage(oldImage, newImage, operationType);
@@ -90,6 +97,12 @@ public final class QueueServiceTestUtils {
     public static SQSMessage invalidSqsMessage() {
         var message = new SQSMessage();
         message.setBody("invalid indexDocument");
+        return message;
+    }
+
+    private static SQSMessage createMessage(DynamodbStreamRecord record) {
+        var message = new SQSMessage();
+        message.setBody(mapToString(record));
         return message;
     }
 

@@ -1,27 +1,31 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.GZIP_ENDING;
+import static no.sikt.nva.nvi.index.aws.S3StorageWriter.NVI_CANDIDATES_FOLDER;
 import static no.sikt.nva.nvi.test.DynamoDbTestUtils.randomDynamoDbEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
+import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithDynamodbRecords;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static nva.commons.core.attempt.Try.attempt;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.test.DynamoDbTestUtils;
 import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UnixPath;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.model.OperationType;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -61,11 +65,23 @@ public class DeletePersistedIndexDocumentHandlerTest {
     void shouldSendMessageToDlqWhenFailingToDeletePersistedIndexDocument() {
         var dao = randomCandidateDao();
         var event = createEvent(dao, dao, OperationType.REMOVE);
-        handler = new DeletePersistedIndexDocumentHandler(new S3StorageWriter(setupFailingS3Client(), BUCKET_NAME),
-                                                          sqsClient,
-                                                          new Environment());
+        handler = new DeletePersistedIndexDocumentHandler(
+            new S3StorageWriter(setupFailingS3Client(dao.identifier()), BUCKET_NAME),
+            sqsClient,
+            new Environment());
         handler.handleRequest(event, null);
         assertEquals(1, sqsClient.getSentMessages().size());
+    }
+
+    @Test
+    void shouldNotFailForWholeBatchWhenFailingToDeletePersistedIndexDocument() {
+        var daoToFail = randomCandidateDao();
+        var event = createEvent(List.of(randomCandidateDao().identifier(), daoToFail.identifier()));
+        handler = new DeletePersistedIndexDocumentHandler(
+            new S3StorageWriter(setupFailingS3Client(daoToFail.identifier()), BUCKET_NAME),
+            sqsClient,
+            new Environment());
+        assertDoesNotThrow(() -> handler.handleRequest(event, null));
     }
 
     @Test
@@ -76,19 +92,47 @@ public class DeletePersistedIndexDocumentHandlerTest {
     }
 
     @Test
+    void shouldNotFailForWholeBatchWhenFailingToParseOneEvent() {
+        var candidateToSucceed = randomCandidateDao();
+        setUpExistingDocumentInS3(candidateToSucceed);
+        var eventWithOneInvalidRecord = createEventWithOneInvalidRecord(candidateToSucceed);
+        handler.handleRequest(eventWithOneInvalidRecord, null);
+        assertEquals(0, s3Driver.listAllFiles(UnixPath.fromString(PERSISTED_NVI_CANDIDATES_FOLDER)).size());
+    }
+
+    @Test
     void shouldSendMessageToDqlWhenFailingToExtractIdentifierFromRecord() {
         var event = createEvent(randomDynamoDbEvent().getRecords().get(0));
         handler.handleRequest(event, null);
         assertEquals(1, sqsClient.getSentMessages().size());
     }
 
+    @Test
+    void shouldNotFailForWholeBatchWhenFailingToExtractIdentifierFromRecord() {
+        var daoToSucceed = randomCandidateDao();
+        setUpExistingDocumentInS3(daoToSucceed);
+        var streamRecord = DynamoDbTestUtils.eventWithCandidate(daoToSucceed, daoToSucceed, OperationType.REMOVE)
+                               .getRecords().get(0);
+        var event = createEventWithDynamodbRecords(List.of(randomDynamoDbEvent().getRecords().get(0), streamRecord));
+        handler.handleRequest(event, null);
+        assertEquals(0, s3Driver.listAllFiles(UnixPath.fromString(PERSISTED_NVI_CANDIDATES_FOLDER)).size());
+    }
+
     private static CandidateDao randomCandidateDao() {
         return new CandidateDao(UUID.randomUUID(), randomCandidate(), UUID.randomUUID().toString());
     }
 
-    private S3Client setupFailingS3Client() {
+    private static DeleteObjectRequest getDeleteObjectRequest(UUID identifier) {
+        return DeleteObjectRequest.builder()
+                   .bucket(BUCKET_NAME)
+                   .key(UnixPath.of(NVI_CANDIDATES_FOLDER, identifier.toString() + GZIP_ENDING)
+                            .toString())
+                   .build();
+    }
+
+    private S3Client setupFailingS3Client(UUID identifier) {
         s3Client = mock(FakeS3Client.class);
-        when(s3Client.deleteObject(any(DeleteObjectRequest.class))).thenThrow(S3Exception.class);
+        when(s3Client.deleteObject(eq(getDeleteObjectRequest(identifier)))).thenThrow(S3Exception.class);
         return s3Client;
     }
 
