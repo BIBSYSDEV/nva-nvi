@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.GZIP_ENDING;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
+import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -10,6 +11,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
@@ -28,11 +30,14 @@ public class DeletePersistedIndexDocumentHandlerTest {
     private final S3Client s3Client = new FakeS3Client();
     private DeletePersistedIndexDocumentHandler handler;
     private S3Driver s3Driver;
+    private FakeSqsClient sqsClient;
 
     @BeforeEach
     void setUp() {
         s3Driver = new S3Driver(s3Client, BUCKET_NAME);
-        handler = new DeletePersistedIndexDocumentHandler(new S3StorageWriter(s3Client, BUCKET_NAME));
+        sqsClient = new FakeSqsClient();
+        handler = new DeletePersistedIndexDocumentHandler(new S3StorageWriter(s3Client, BUCKET_NAME), sqsClient,
+                                                          new Environment());
     }
 
     @Test
@@ -42,6 +47,14 @@ public class DeletePersistedIndexDocumentHandlerTest {
         var event = createEvent(dao, dao, OperationType.REMOVE);
         handler.handleRequest(event, null);
         assertEquals(0, s3Driver.listAllFiles(UnixPath.fromString(PERSISTED_NVI_CANDIDATES_FOLDER)).size());
+    }
+
+    @Test
+    void shouldSendMessageToDlqWhenFailingToParseEvent() {
+        var candidate = randomCandidateDao();
+        var eventWithOneInvalidRecord = createEventWithOneInvalidRecord(candidate);
+        handler.handleRequest(eventWithOneInvalidRecord, null);
+        assertEquals(1, sqsClient.getSentMessages().size());
     }
 
     private static CandidateDao randomCandidateDao() {
