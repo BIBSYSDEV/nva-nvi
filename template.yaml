@@ -79,6 +79,12 @@ Parameters:
   RemoveDocumentFromIndexDLQName:
     Type: String
     Default: RemoveDocumentFromIndexDLQ
+  DeletePersistedIndexDocumentQueueName:
+    Type: String
+    Default: DeletePersistedIndexDocumentQueue
+  DeletePersistedIndexDocumentDLQName:
+    Type: String
+    Default: DeletePersistedIndexDocumentDLQ
   PersistedIndexDocumentQueueName:
     Type: String
     Default: PersistedIndexDocumentQueue
@@ -222,6 +228,22 @@ Resources:
       TopicArn: !Ref NviDataEntryUpdateCandidateRemoveTopic
       RawMessageDelivery: true
 
+  NviDataEntryUpdateCandidateNotApplicableUpdateDeleteDocumentSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt DeletePersistedIndexDocumentQueue.Arn
+      TopicArn: !Ref NviDataEntryUpdateCandidateNotApplicableUpdateTopic
+      RawMessageDelivery: true
+
+  NviDataEntryUpdateCandidateRemoveDeleteDocumentSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt DeletePersistedIndexDocumentQueue.Arn
+      TopicArn: !Ref NviDataEntryUpdateCandidateRemoveTopic
+      RawMessageDelivery: true
+
   NviDataEntryUpdateApprovalInsertSubscription:
     Type: AWS::SNS::Subscription
     Properties:
@@ -242,7 +264,7 @@ Resources:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: sqs
-      Endpoint: !GetAtt RemoveDocumentFromIndexQueue.Arn
+      Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
       TopicArn: !Ref NviDataEntryUpdateApprovalRemoveTopic
       RawMessageDelivery: true
 
@@ -333,6 +355,13 @@ Resources:
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt UpdateIndexDLQ.Arn
         maxReceiveCount: 5
+  DeletePersistedIndexDocumentQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref DeletePersistedIndexDocumentQueueName
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeletePersistedIndexDocumentDLQ.Arn
+        maxReceiveCount: 5
   #=============================== Index handling DLQs ============================================
   IndexDLQ:
     Type: AWS::SQS::Queue
@@ -353,6 +382,11 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: !Ref RemoveDocumentFromIndexDLQName
+      MessageRetentionPeriod: 1209600 #14 days
+  DeletePersistedIndexDocumentDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref DeletePersistedIndexDocumentDLQName
       MessageRetentionPeriod: 1209600 #14 days
 
   #============================= Permissions =======================================================
@@ -427,6 +461,8 @@ Resources:
                   - !GetAtt DynamoDbEventToQueueDLQ.Arn
                   - !GetAtt DataEntryUpdateDLQ.Arn
                   - !GetAtt IndexDocumentDLQ.Arn
+                  - !GetAtt DeletePersistedIndexDocumentDLQ.Arn
+                  - !GetAtt DeletePersistedIndexDocumentQueue.Arn
         - PolicyName: publishToSnsTopic
           PolicyDocument:
             Version: '2012-10-17'
@@ -452,6 +488,7 @@ Resources:
                 Resource:
                   - !GetAtt GenerateIndexDocumentQueue.Arn
                   - !GetAtt RemoveDocumentFromIndexQueue.Arn
+                  - !GetAtt DeletePersistedIndexDocumentQueue.Arn
         - PolicyName: readSecret
           PolicyDocument:
             Version: 2012-10-17
@@ -556,6 +593,27 @@ Resources:
                   - !Ref NviDataEntryUpdateCandidateRemoveTopic
       Queues:
         - !Ref RemoveDocumentFromIndexQueue
+
+  DeletePersistedIndexDocumentQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Id: MyQueuePolicy
+        Version: '2012-10-17'
+        Statement:
+          - Sid: Allow-SNS-SendMessage
+            Effect: Allow
+            Principal: '*'
+            Action: sqs:SendMessage
+            Resource:
+              - !GetAtt DeletePersistedIndexDocumentQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn:
+                  - !Ref NviDataEntryUpdateCandidateNotApplicableUpdateTopic
+                  - !Ref NviDataEntryUpdateCandidateRemoveTopic
+      Queues:
+        - !Ref DeletePersistedIndexDocumentQueue
 
   #============================= Roles ==========================================================
   ScientificIndexApi:
@@ -789,6 +847,30 @@ Resources:
           OnFailure:
             Type: SQS
             Destination: !GetAtt RemoveDocumentFromIndexDLQ.Arn
+
+  DeletePersistedIndexDocumentHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.DeletePersistedIndexDocumentHandler::handleRequest
+      Runtime: java17
+      Role: !GetAtt NvaNviRole.Arn
+      AutoPublishAlias: live
+      Timeout: 30
+      Environment:
+        Variables:
+          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+          INDEX_DLQ: !Ref IndexDLQ
+      Events:
+        SqsEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt DeletePersistedIndexDocumentQueue.Arn
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt DeletePersistedIndexDocumentDlQ.Arn
 
   NviEventBasedBatchScanHandler:
     Type: AWS::Serverless::Function
