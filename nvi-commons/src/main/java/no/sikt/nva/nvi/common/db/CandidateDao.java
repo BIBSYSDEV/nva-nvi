@@ -308,6 +308,29 @@ public final class CandidateDao extends Dao {
                        .totalPoints(totalPoints);
         }
 
+        @Override
+        @JacocoGenerated
+        public String toString() {
+            return "DbCandidate{" +
+                   "publicationId=" + publicationId +
+                   ", publicationBucketUri=" + publicationBucketUri +
+                   ", applicable=" + applicable +
+                   ", instanceType=" + instanceType +
+                   ", channelType=" + channelType +
+                   ", channelId=" + channelId +
+                   ", level=" + level +
+                   ", publicationDate=" + publicationDate +
+                   ", internationalCollaboration=" + internationalCollaboration +
+                   ", collaborationFactor=" + collaborationFactor +
+                   ", creatorCount=" + creatorCount +
+                   ", creatorShareCount=" + creatorShareCount +
+                   ", creators=" + creators +
+                   ", basePoints=" + basePoints +
+                   ", points=" + points +
+                   ", totalPoints=" + totalPoints +
+                   '}';
+        }
+
         public static final class Builder {
 
             private URI builderPublicationId;

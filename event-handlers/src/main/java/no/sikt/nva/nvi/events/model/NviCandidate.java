@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import nva.commons.core.JacocoGenerated;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
@@ -69,6 +70,27 @@ public record NviCandidate(URI publicationId,
                    .withInstitutionPoints(candidate.getInstitutionPoints())
                    .withTotalPoints(candidate.getTotalPoints())
                    .build();
+    }
+
+    @Override
+    @JacocoGenerated
+    public String toString() {
+        return "NviCandidate{" +
+               "publicationId=" + publicationId +
+               ", publicationBucketUri=" + publicationBucketUri +
+               ", instanceType='" + instanceType + '\'' +
+               ", date=" + date +
+               ", verifiedCreators=" + verifiedCreators +
+               ", channelType='" + channelType + '\'' +
+               ", publicationChannelId=" + publicationChannelId +
+               ", level='" + level + '\'' +
+               ", basePoints=" + basePoints +
+               ", isInternationalCollaboration=" + isInternationalCollaboration +
+               ", collaborationFactor=" + collaborationFactor +
+               ", creatorShareCount=" + creatorShareCount +
+               ", institutionPoints=" + institutionPoints +
+               ", totalPoints=" + totalPoints +
+               '}';
     }
 
     private static NviCandidate.PublicationDate toPublicationDate(

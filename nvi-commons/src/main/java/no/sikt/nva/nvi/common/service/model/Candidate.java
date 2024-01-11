@@ -43,13 +43,17 @@ import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchByPublicationRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchCandidateRequest;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
+import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class Candidate {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Candidate.class);
 
     private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
     private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
@@ -116,9 +120,11 @@ public final class Candidate {
     public static Optional<Candidate> upsert(UpsertCandidateRequest request, CandidateRepository repository,
                                              PeriodRepository periodRepository) {
         if (isNotExistingCandidate(request, repository)) {
+            LOGGER.info("No existing candidate found for request with publicationId: {}", request.publicationId());
             return Optional.of(createCandidate(request, repository, periodRepository));
         }
         if (isExistingCandidate(request.publicationId(), repository)) {
+            LOGGER.info("Existing candidate found for request with publicationId: {}", request.publicationId());
             return Optional.of(updateCandidate(request, repository, periodRepository));
         }
         return Optional.empty();
@@ -267,8 +273,12 @@ public final class Candidate {
         var existingCandidateDao = repository.findByPublicationId(request.publicationId())
                                        .orElseThrow(CandidateNotFoundException::new);
         if (shouldResetCandidate(request, existingCandidateDao) || isNotApplicable(existingCandidateDao)) {
+            LOGGER.info("Resetting candidate with publicationId: {}", request.publicationId());
+            LOGGER.info("Existing candidate: {}", existingCandidateDao);
+            LOGGER.info("Upsert Request: {}", request);
             return resetCandidate(request, repository, periodRepository, existingCandidateDao);
         } else {
+            LOGGER.info("Updating candidate with publicationId: {}", request.publicationId());
             return updateCandidateKeepingApprovalsAndNotes(request, repository, periodRepository, existingCandidateDao);
         }
     }
