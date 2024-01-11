@@ -4,6 +4,7 @@ import static java.util.UUID.randomUUID;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,8 +54,9 @@ import org.slf4j.LoggerFactory;
 
 public final class Candidate {
 
+    public static final int SCALE = 4;
+    public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private static final Logger LOGGER = LoggerFactory.getLogger(Candidate.class);
-
     private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
     private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
                                                             + " forbidden!";
@@ -441,11 +443,15 @@ public final class Candidate {
                    .instanceType(InstanceType.parse(request.instanceType()))
                    .publicationDate(mapToPublicationDate(request.publicationDate()))
                    .internationalCollaboration(request.isInternationalCollaboration())
-                   .collaborationFactor(request.collaborationFactor())
-                   .basePoints(request.basePoints())
+                   .collaborationFactor(format(request.collaborationFactor()))
+                   .basePoints(format(request.basePoints()))
                    .points(mapToPoints(request.institutionPoints()))
-                   .totalPoints(request.totalPoints())
+                   .totalPoints(format(request.totalPoints()))
                    .build();
+    }
+
+    private static BigDecimal format(BigDecimal bigDecimal) {
+        return bigDecimal.setScale(SCALE, ROUNDING_MODE);
     }
 
     private static CandidateDao updateCandidateDaoFromRequest(CandidateDao candidateDao,
@@ -462,17 +468,20 @@ public final class Candidate {
                                   .instanceType(InstanceType.parse(request.instanceType()))
                                   .publicationDate(mapToPublicationDate(request.publicationDate()))
                                   .internationalCollaboration(request.isInternationalCollaboration())
-                                  .collaborationFactor(request.collaborationFactor())
-                                  .basePoints(request.basePoints())
+                                  .collaborationFactor(format(request.collaborationFactor()))
+                                  .basePoints(format(request.basePoints()))
                                   .points(mapToPoints(request.institutionPoints()))
-                                  .totalPoints(request.totalPoints())
+                                  .totalPoints(format(request.totalPoints()))
                                   .build())
                    .version(randomUUID().toString())
                    .build();
     }
 
     private static List<DbInstitutionPoints> mapToPoints(Map<URI, BigDecimal> points) {
-        return points.entrySet().stream().map(e -> new DbInstitutionPoints(e.getKey(), e.getValue())).toList();
+        return points.entrySet()
+                   .stream()
+                   .map(entry -> new DbInstitutionPoints(entry.getKey(), format(entry.getValue())))
+                   .toList();
     }
 
     private static DbPublicationDate mapToPublicationDate(PublicationDate publicationDate) {

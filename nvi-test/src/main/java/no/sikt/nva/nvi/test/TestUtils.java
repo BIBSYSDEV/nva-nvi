@@ -162,9 +162,13 @@ public final class TestUtils {
     }
 
     public static BigDecimal randomBigDecimal() {
+        return randomBigDecimal(SCALE);
+    }
+
+    public static BigDecimal randomBigDecimal(int scale) {
         var randomBigDecimal = MIN_BIG_DECIMAL.add(
             BigDecimal.valueOf(Math.random()).multiply(MAX_BIG_DECIMAL.subtract(MIN_BIG_DECIMAL)));
-        return randomBigDecimal.setScale(SCALE, RoundingMode.HALF_UP);
+        return randomBigDecimal.setScale(scale, RoundingMode.HALF_UP);
     }
 
     public static NviService nviServiceReturningOpenPeriod(DynamoDbClient client, int year) {
@@ -265,7 +269,7 @@ public final class TestUtils {
                            .collect(Collectors.toMap(Function.identity(), e -> List.of(institutions)));
 
         var points = Arrays.stream(institutions)
-                         .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal()));
+                         .collect(Collectors.toMap(Function.identity(), e -> BigDecimal.valueOf(3)));
 
         return createUpsertCandidateRequest(publicationId, publicationBucketUri, isApplicable,
                                             new PublicationDate(String.valueOf(year), null, null), creators,
