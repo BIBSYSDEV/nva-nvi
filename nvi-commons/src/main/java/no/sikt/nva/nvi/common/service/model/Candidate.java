@@ -317,23 +317,38 @@ public final class Candidate {
     }
 
     private static boolean publicationYearIsUpdated(UpsertCandidateRequest request, CandidateDao candidate) {
-        return !request.publicationDate().year().equals(candidate.candidate().publicationDate().year());
+        boolean publicationYearIsUpdated = !request.publicationDate()
+                                                .year()
+                                                .equals(candidate.candidate().publicationDate().year());
+        LOGGER.info("Publication year is updated: {}", publicationYearIsUpdated);
+        return publicationYearIsUpdated;
     }
 
     private static boolean pointsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(request.institutionPoints(), mapToPointsMap(existingCandidateDao));
+        boolean pointsAreUpdated = !Objects.equals(request.institutionPoints(), mapToPointsMap(existingCandidateDao));
+        LOGGER.info("Points are updated: {}", pointsAreUpdated);
+        return pointsAreUpdated;
     }
 
     private static boolean creatorsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(mapToCreators(request.creators()), existingCandidateDao.candidate().creators());
+        boolean creatorsAreUpdated = !Objects.equals(mapToCreators(request.creators()),
+                                                     existingCandidateDao.candidate().creators());
+        LOGGER.info("Creators are updated: {}", creatorsAreUpdated);
+        return creatorsAreUpdated;
     }
 
     private static boolean instanceTypeIsUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(request.instanceType(), existingCandidateDao.candidate().instanceType().getValue());
+        boolean instanceTypeIsUpdated = !Objects.equals(request.instanceType(),
+                                                        existingCandidateDao.candidate().instanceType().getValue());
+        LOGGER.info("Instance type is updated: {}", instanceTypeIsUpdated);
+        return instanceTypeIsUpdated;
     }
 
     private static boolean levelIsUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(DbLevel.parse(request.level()), existingCandidateDao.candidate().level());
+        boolean levelIsUpdated = !Objects.equals(DbLevel.parse(request.level()),
+                                                 existingCandidateDao.candidate().level());
+        LOGGER.info("Level is updated: {}", levelIsUpdated);
+        return levelIsUpdated;
     }
 
     private static Candidate createCandidate(UpsertCandidateRequest request, CandidateRepository repository,
