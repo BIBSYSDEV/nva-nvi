@@ -591,7 +591,7 @@ Resources:
       Queues:
         - !Ref DeletePersistedIndexDocumentQueue
 
-  #============================= Roles ==========================================================
+  #============================= API ===============================================================
   ScientificIndexApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -630,6 +630,8 @@ Resources:
       Timeout: 30
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           PERSISTED_RESOURCE_QUEUE_URL: !Ref PersistedResourceQueue
@@ -659,13 +661,15 @@ Resources:
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 30
       MemorySize: 1536
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
           BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
           CANDIDATE_QUEUE_URL: !Ref NewCandidateQueue
-      AutoPublishAlias: live
       Events:
         SqsEvent:
           Type: SQS
@@ -689,6 +693,8 @@ Resources:
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           UPSERT_CANDIDATE_DLQ_QUEUE_URL: !Ref UpsertCandidateDLQ
@@ -706,6 +712,8 @@ Resources:
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Timeout: 60
       Environment:
         Variables:
@@ -733,6 +741,8 @@ Resources:
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Timeout: 60
       Environment:
         Variables:
@@ -763,6 +773,8 @@ Resources:
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Timeout: 60
       ReservedConcurrentExecutions: 25
       Environment:
@@ -789,6 +801,8 @@ Resources:
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Timeout: 30
       ReservedConcurrentExecutions: 50
       Environment:
@@ -814,6 +828,8 @@ Resources:
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Timeout: 30
       Events:
         SqsEvent:
@@ -834,6 +850,8 @@ Resources:
       Runtime: java17
       Role: !GetAtt DeletePersistedDocumentRole.Arn
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Timeout: 30
       Environment:
         Variables:
@@ -858,6 +876,8 @@ Resources:
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Timeout: 900
       Environment:
         Variables:
@@ -894,6 +914,8 @@ Resources:
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
+      SnapStart:
+        ApplyOn: PublishedVersions
 
   NviBatchScanStartHandler:
     Type: AWS::Serverless::Function
@@ -963,6 +985,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -983,6 +1007,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1003,6 +1029,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1023,6 +1051,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1046,6 +1076,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1069,6 +1101,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1092,6 +1126,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1112,6 +1148,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1132,6 +1170,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1152,6 +1192,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1172,6 +1214,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
