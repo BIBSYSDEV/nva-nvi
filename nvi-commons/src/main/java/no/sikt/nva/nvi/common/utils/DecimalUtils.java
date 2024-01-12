@@ -12,7 +12,7 @@ public final class DecimalUtils {
     private DecimalUtils() {
     }
 
-    public static BigDecimal setScaleAndRoundingMode(BigDecimal bigDecimal) {
+    public static BigDecimal adjustScaleAndRoundingMode(BigDecimal bigDecimal) {
         return nonNull(bigDecimal) ? bigDecimal.setScale(SCALE, ROUNDING_MODE) : null;
     }
 }
