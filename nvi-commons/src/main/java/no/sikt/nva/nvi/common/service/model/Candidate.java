@@ -315,7 +315,7 @@ public final class Candidate {
         return existingCandidateDao.candidate()
                    .points()
                    .stream()
-                   .anyMatch(institutionPoints -> !equalsIgnoringScaleAndRoundingMode(
+                   .anyMatch(institutionPoints -> isNotequalIgnoringScaleAndRoundingMode(
                        institutionPoints.points(),
                        extractRequestPoints(request, institutionPoints.institutionId())
                    ));
@@ -325,8 +325,8 @@ public final class Candidate {
         return request.institutionPoints().get(institutionId);
     }
 
-    private static boolean equalsIgnoringScaleAndRoundingMode(BigDecimal existingPoints, BigDecimal requestPoints) {
-        return Objects.equals(adjustScaleAndRoundingMode(requestPoints), adjustScaleAndRoundingMode(existingPoints));
+    private static boolean isNotequalIgnoringScaleAndRoundingMode(BigDecimal existingPoints, BigDecimal requestPoints) {
+        return !Objects.equals(adjustScaleAndRoundingMode(requestPoints), adjustScaleAndRoundingMode(existingPoints));
     }
 
     private static boolean creatorsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
