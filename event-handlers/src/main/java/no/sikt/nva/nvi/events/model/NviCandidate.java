@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
-import nva.commons.core.JacocoGenerated;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
@@ -32,21 +31,6 @@ public record NviCandidate(URI publicationId,
 
     public static Builder builder() {
         return new Builder();
-    }
-
-    @Override
-    public boolean isApplicable() {
-        return true;
-    }
-
-    @Override
-    public Map<URI, List<URI>> creators() {
-        return verifiedCreators().stream().collect(Collectors.toMap(Creator::id, Creator::nviInstitutions));
-    }
-
-    @Override
-    public PublicationDetails.PublicationDate publicationDate() {
-        return mapToPublicationDate(date);
     }
 
     public static NviCandidate fromCandidate(Candidate candidate) {
@@ -73,24 +57,18 @@ public record NviCandidate(URI publicationId,
     }
 
     @Override
-    @JacocoGenerated
-    public String toString() {
-        return "NviCandidate{" +
-               "publicationId=" + publicationId +
-               ", publicationBucketUri=" + publicationBucketUri +
-               ", instanceType='" + instanceType + '\'' +
-               ", date=" + date +
-               ", verifiedCreators=" + verifiedCreators +
-               ", channelType='" + channelType + '\'' +
-               ", publicationChannelId=" + publicationChannelId +
-               ", level='" + level + '\'' +
-               ", basePoints=" + basePoints +
-               ", isInternationalCollaboration=" + isInternationalCollaboration +
-               ", collaborationFactor=" + collaborationFactor +
-               ", creatorShareCount=" + creatorShareCount +
-               ", institutionPoints=" + institutionPoints +
-               ", totalPoints=" + totalPoints +
-               '}';
+    public boolean isApplicable() {
+        return true;
+    }
+
+    @Override
+    public Map<URI, List<URI>> creators() {
+        return verifiedCreators().stream().collect(Collectors.toMap(Creator::id, Creator::nviInstitutions));
+    }
+
+    @Override
+    public PublicationDetails.PublicationDate publicationDate() {
+        return mapToPublicationDate(date);
     }
 
     private static NviCandidate.PublicationDate toPublicationDate(

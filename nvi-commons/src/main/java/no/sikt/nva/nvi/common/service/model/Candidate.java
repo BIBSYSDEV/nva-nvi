@@ -1,11 +1,10 @@
 package no.sikt.nva.nvi.common.service.model;
 
-import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.common.utils.DecimalUtils.setScaleAndRoundingMode;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -64,8 +63,6 @@ public final class Candidate {
     private static final PeriodStatus PERIOD_STATUS_NO_PERIOD = PeriodStatus.builder()
                                                                     .withStatus(Status.NO_PERIOD)
                                                                     .build();
-    private static final int SCALE = 4;
-    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private final CandidateRepository repository;
     private final UUID identifier;
     private final boolean applicable;
@@ -443,10 +440,6 @@ public final class Candidate {
                    .points(mapToPoints(request.institutionPoints()))
                    .totalPoints(setScaleAndRoundingMode(request.totalPoints()))
                    .build();
-    }
-
-    private static BigDecimal setScaleAndRoundingMode(BigDecimal bigDecimal) {
-        return nonNull(bigDecimal) ? bigDecimal.setScale(SCALE, ROUNDING_MODE) : null;
     }
 
     private static CandidateDao updateCandidateDaoFromRequest(CandidateDao candidateDao,

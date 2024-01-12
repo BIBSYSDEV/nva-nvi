@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.events.persist;
 
 import static no.sikt.nva.nvi.common.db.model.InstanceType.NON_CANDIDATE;
+import static no.sikt.nva.nvi.common.utils.DecimalUtils.setScaleAndRoundingMode;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
@@ -20,7 +21,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.StringContains.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,7 +33,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.URI;
 import java.time.Year;
 import java.util.List;
@@ -330,7 +329,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withNotes(List.of())
                    .withApprovalStatuses(institutionPoints.entrySet().stream().map(this::mapToApprovalStatus).toList())
                    .withPeriodStatus(toPeriodStatus(period))
-                   .withTotalPoints(totalPoints)
+                   .withTotalPoints(setScaleAndRoundingMode(totalPoints))
                    .build();
     }
 
@@ -338,7 +337,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         return ApprovalDto.builder()
                    .withInstitutionId(pointsMap.getKey())
                    .withStatus(ApprovalStatus.PENDING)
-                   .withPoints(pointsMap.getValue())
+                   .withPoints(setScaleAndRoundingMode(pointsMap.getValue()))
                    .build();
     }
 
