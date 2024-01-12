@@ -308,18 +308,16 @@ public final class Candidate {
     }
 
     private static boolean publicationYearIsUpdated(UpsertCandidateRequest request, CandidateDao candidate) {
-        return !request.publicationDate()
-                    .year()
-                    .equals(candidate.candidate().publicationDate().year());
+        return !request.publicationDate().year().equals(candidate.candidate().publicationDate().year());
     }
 
     private static boolean pointsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
         return existingCandidateDao.candidate()
                    .points()
                    .stream()
-                   .anyMatch(institutionPoints1 -> !equalsIgnoringScaleAndRoundingMode(
-                       institutionPoints1.points(),
-                       extractRequestPoints(request, institutionPoints1.institutionId())
+                   .anyMatch(institutionPoints -> !equalsIgnoringScaleAndRoundingMode(
+                       institutionPoints.points(),
+                       extractRequestPoints(request, institutionPoints.institutionId())
                    ));
     }
 
@@ -332,13 +330,11 @@ public final class Candidate {
     }
 
     private static boolean creatorsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(mapToCreators(request.creators()),
-                               existingCandidateDao.candidate().creators());
+        return !Objects.equals(mapToCreators(request.creators()), existingCandidateDao.candidate().creators());
     }
 
     private static boolean instanceTypeIsUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(request.instanceType(),
-                               existingCandidateDao.candidate().instanceType().getValue());
+        return !Objects.equals(request.instanceType(), existingCandidateDao.candidate().instanceType().getValue());
     }
 
     private static boolean levelIsUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
@@ -466,8 +462,7 @@ public final class Candidate {
     }
 
     private static List<DbInstitutionPoints> mapToPoints(Map<URI, BigDecimal> points) {
-        return points.entrySet()
-                   .stream()
+        return points.entrySet().stream()
                    .map(entry -> new DbInstitutionPoints(entry.getKey(), setScaleAndRoundingMode(entry.getValue())))
                    .toList();
     }
