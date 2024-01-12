@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service.model;
 
+import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
@@ -327,9 +328,23 @@ public final class Candidate {
     }
 
     private static boolean pointsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        boolean pointsAreUpdated = !Objects.equals(request.institutionPoints(), mapToPointsMap(existingCandidateDao));
+        boolean pointsAreUpdated = existingCandidateDao.candidate()
+                                       .points()
+                                       .stream()
+                                       .anyMatch(institutionPoints -> !equalsIgnoringScaleAndRoundingMode(
+                                           institutionPoints.points(),
+                                           extractRequestPoints(request, institutionPoints.institutionId())
+                                       ));
         LOGGER.info("Points are updated: {}", pointsAreUpdated);
         return pointsAreUpdated;
+    }
+
+    private static BigDecimal extractRequestPoints(UpsertCandidateRequest request, URI institutionId) {
+        return request.institutionPoints().get(institutionId);
+    }
+
+    private static boolean equalsIgnoringScaleAndRoundingMode(BigDecimal existingPoints, BigDecimal requestPoints) {
+        return Objects.equals(format(requestPoints), format(existingPoints));
     }
 
     private static boolean creatorsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
@@ -451,7 +466,8 @@ public final class Candidate {
     }
 
     private static BigDecimal format(BigDecimal bigDecimal) {
-        return bigDecimal.setScale(SCALE, ROUNDING_MODE);
+        return nonNull(bigDecimal) ? bigDecimal.setScale(SCALE, ROUNDING_MODE)
+                   : null;
     }
 
     private static CandidateDao updateCandidateDaoFromRequest(CandidateDao candidateDao,

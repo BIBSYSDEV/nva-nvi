@@ -35,6 +35,7 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -160,7 +161,7 @@ class CandidateTest extends LocalDynamoTest {
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 4})
     void shouldPersistNewCandidateWithCorrectScaleForAllDecimals(int scale) {
-        var request = createUpsertRequestWithDecimalScale(scale);
+        var request = createUpsertRequestWithDecimalScale(scale, randomUri());
         var candidateIdentifier = Candidate.upsert(request, candidateRepository, periodRepository)
                                       .orElseThrow()
                                       .getIdentifier();
@@ -241,7 +242,7 @@ class CandidateTest extends LocalDynamoTest {
             assertThat(dto.publicationId(), is(equalTo(createRequest.publicationId())));
             assertThat(dto.approvals().size(), is(equalTo(createRequest.institutionPoints().size())));
             assertThat(dto.notes().size(), is(2));
-            assertThat(dto.totalPoints(), is(equalTo(totalPoints)));
+            assertThat(dto.totalPoints(), is(equalTo(format(totalPoints))));
             var note = dto.notes().get(0);
             assertThat(note.text(), is(notNullValue()));
             assertThat(note.user(), is(notNullValue()));
@@ -254,7 +255,8 @@ class CandidateTest extends LocalDynamoTest {
             var rejectedAP = approvalMap.get(institutionToReject);
             assertThat(rejectedAP.status(), is(equalTo(ApprovalStatus.REJECTED)));
             assertThat(rejectedAP.reason(), is(notNullValue()));
-            assertThat(rejectedAP.points(), is(createRequest.institutionPoints().get(rejectedAP.institutionId())));
+            assertThat(rejectedAP.points(),
+                       is(format(createRequest.institutionPoints().get(rejectedAP.institutionId()))));
         });
     }
 
@@ -283,18 +285,18 @@ class CandidateTest extends LocalDynamoTest {
         assertEquals(candidate.getPublicationDetails().publicationBucketUri(), publicationBucketUri);
         assertEquals(candidate.isApplicable(), isApplicable);
         assertEquals(candidate.getPublicationDetails().publicationId(), publicationId);
-        assertEquals(candidate.getTotalPoints(), totalPoints);
-        assertEquals(candidate.getInstitutionPoints(), points);
+        assertEquals(candidate.getTotalPoints(), format(totalPoints));
+        assertEquals(candidate.getInstitutionPoints(), format(points));
         assertEquals(candidate.getPublicationDetails().publicationDate(), publicationDate);
         assertCorrectCreatorData(creators, candidate);
         assertEquals(candidate.getPublicationDetails().type(), instanceType.getValue());
         assertEquals(candidate.getPublicationDetails().channelType().getValue(), createRequest.channelType());
         assertEquals(candidate.getPublicationDetails().publicationChannelId(), createRequest.publicationChannelId());
         assertEquals(candidate.getPublicationDetails().level(), createRequest.level());
-        assertEquals(candidate.getBasePoints(), createRequest.basePoints());
+        assertEquals(candidate.getBasePoints(), format(createRequest.basePoints()));
         assertEquals(candidate.isInternationalCollaboration(),
                      createRequest.isInternationalCollaboration());
-        assertEquals(candidate.getCollaborationFactor(), createRequest.collaborationFactor());
+        assertEquals(candidate.getCollaborationFactor(), format(createRequest.collaborationFactor()));
         assertEquals(candidate.getCreatorShareCount(), createRequest.creatorShareCount());
     }
 
@@ -337,6 +339,23 @@ class CandidateTest extends LocalDynamoTest {
     void shouldNotResetApprovalsWhenUpdatingCandidateFieldsNotEffectingApprovals() {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var candidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
+                            .orElseThrow();
+        candidate.updateApproval(
+            new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
+        var approval = candidate.toDto().approvals().get(0);
+        var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
+        var updatedCandidate = Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository)
+                                   .orElseThrow();
+        var updatedApproval = updatedCandidate.toDto().approvals().get(0);
+
+        assertThat(updatedApproval, is(equalTo(approval)));
+    }
+
+    @Test
+    void shouldNotResetApprovalsWhenUpsertRequestContainsSameDecimalsWithAnotherScale() {
+        var institutionId = randomUri();
+        var upsertCandidateRequest = createUpsertRequestWithDecimalScale(0, institutionId);
         var candidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
         candidate.updateApproval(
@@ -414,13 +433,12 @@ class CandidateTest extends LocalDynamoTest {
         assertThat(updatedApproval.status(), is(equalTo(ApprovalStatus.PENDING)));
     }
 
-    private static UpsertCandidateRequest createUpsertRequestWithDecimalScale(int scale) {
+    private static UpsertCandidateRequest createUpsertRequestWithDecimalScale(int scale, URI institutionId) {
         var creators = IntStream.of(1)
                            .mapToObj(i -> randomUri())
-                           .collect(Collectors.toMap(Function.identity(), e -> List.of(new URI[]{randomUri()})));
+                           .collect(Collectors.toMap(Function.identity(), e -> List.of(institutionId)));
 
-        var points = Arrays.stream(new URI[]{randomUri()})
-                         .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal(scale)));
+        var points = Map.of(institutionId, randomBigDecimal(scale));
 
         return createUpsertCandidateRequest(randomUri(), randomUri(), true,
                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
@@ -467,6 +485,10 @@ class CandidateTest extends LocalDynamoTest {
 
     private static BigDecimal format(BigDecimal bigDecimal) {
         return bigDecimal.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
+    }
+
+    private Map<URI, BigDecimal> format(Map<URI, BigDecimal> points) {
+        return points.entrySet().stream().collect(Collectors.toMap(Entry::getKey, e -> format(e.getValue())));
     }
 
     private UpsertCandidateRequest getUpdateRequestForExistingCandidate() {

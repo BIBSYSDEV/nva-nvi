@@ -269,7 +269,7 @@ public final class TestUtils {
                            .collect(Collectors.toMap(Function.identity(), e -> List.of(institutions)));
 
         var points = Arrays.stream(institutions)
-                         .collect(Collectors.toMap(Function.identity(), e -> BigDecimal.valueOf(3)));
+                         .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal()));
 
         return createUpsertCandidateRequest(publicationId, publicationBucketUri, isApplicable,
                                             new PublicationDate(String.valueOf(year), null, null), creators,
