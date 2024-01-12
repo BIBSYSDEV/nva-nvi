@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.events.persist;
 
 import static no.sikt.nva.nvi.common.db.model.InstanceType.NON_CANDIDATE;
+import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
@@ -328,7 +329,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withNotes(List.of())
                    .withApprovalStatuses(institutionPoints.entrySet().stream().map(this::mapToApprovalStatus).toList())
                    .withPeriodStatus(toPeriodStatus(period))
-                   .withTotalPoints(totalPoints)
+                   .withTotalPoints(adjustScaleAndRoundingMode(totalPoints))
                    .build();
     }
 
@@ -336,7 +337,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         return ApprovalDto.builder()
                    .withInstitutionId(pointsMap.getKey())
                    .withStatus(ApprovalStatus.PENDING)
-                   .withPoints(pointsMap.getValue())
+                   .withPoints(adjustScaleAndRoundingMode(pointsMap.getValue()))
                    .build();
     }
 

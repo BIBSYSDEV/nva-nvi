@@ -33,21 +33,6 @@ public record NviCandidate(URI publicationId,
         return new Builder();
     }
 
-    @Override
-    public boolean isApplicable() {
-        return true;
-    }
-
-    @Override
-    public Map<URI, List<URI>> creators() {
-        return verifiedCreators().stream().collect(Collectors.toMap(Creator::id, Creator::nviInstitutions));
-    }
-
-    @Override
-    public PublicationDetails.PublicationDate publicationDate() {
-        return mapToPublicationDate(date);
-    }
-
     public static NviCandidate fromCandidate(Candidate candidate) {
         var details = candidate.getPublicationDetails();
 
@@ -69,6 +54,21 @@ public record NviCandidate(URI publicationId,
                    .withInstitutionPoints(candidate.getInstitutionPoints())
                    .withTotalPoints(candidate.getTotalPoints())
                    .build();
+    }
+
+    @Override
+    public boolean isApplicable() {
+        return true;
+    }
+
+    @Override
+    public Map<URI, List<URI>> creators() {
+        return verifiedCreators().stream().collect(Collectors.toMap(Creator::id, Creator::nviInstitutions));
+    }
+
+    @Override
+    public PublicationDetails.PublicationDate publicationDate() {
+        return mapToPublicationDate(date);
     }
 
     private static NviCandidate.PublicationDate toPublicationDate(

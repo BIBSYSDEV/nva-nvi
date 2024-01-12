@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
 import java.math.BigDecimal;
@@ -43,21 +44,21 @@ import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchByPublicationRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchCandidateRequest;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
+import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
 public final class Candidate {
 
-    private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
-    private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
-                                                            + " forbidden!";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
     private static final String CANDIDATE_PATH = "candidate";
+    private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
+    private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
+                                                            + " forbidden!";
     private static final String INVALID_CANDIDATE_MESSAGE = "Candidate is missing mandatory fields";
     private static final PeriodStatus PERIOD_STATUS_NO_PERIOD = PeriodStatus.builder()
                                                                     .withStatus(Status.NO_PERIOD)
@@ -311,7 +312,21 @@ public final class Candidate {
     }
 
     private static boolean pointsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(request.institutionPoints(), mapToPointsMap(existingCandidateDao));
+        return existingCandidateDao.candidate()
+                   .points()
+                   .stream()
+                   .anyMatch(institutionPoints -> isNotequalIgnoringScaleAndRoundingMode(
+                       institutionPoints.points(),
+                       extractRequestPoints(request, institutionPoints.institutionId())
+                   ));
+    }
+
+    private static BigDecimal extractRequestPoints(UpsertCandidateRequest request, URI institutionId) {
+        return request.institutionPoints().get(institutionId);
+    }
+
+    private static boolean isNotequalIgnoringScaleAndRoundingMode(BigDecimal existingPoints, BigDecimal requestPoints) {
+        return !Objects.equals(adjustScaleAndRoundingMode(requestPoints), adjustScaleAndRoundingMode(existingPoints));
     }
 
     private static boolean creatorsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
@@ -416,10 +431,10 @@ public final class Candidate {
                    .instanceType(InstanceType.parse(request.instanceType()))
                    .publicationDate(mapToPublicationDate(request.publicationDate()))
                    .internationalCollaboration(request.isInternationalCollaboration())
-                   .collaborationFactor(request.collaborationFactor())
-                   .basePoints(request.basePoints())
+                   .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
+                   .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
                    .points(mapToPoints(request.institutionPoints()))
-                   .totalPoints(request.totalPoints())
+                   .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
                    .build();
     }
 
@@ -437,17 +452,19 @@ public final class Candidate {
                                   .instanceType(InstanceType.parse(request.instanceType()))
                                   .publicationDate(mapToPublicationDate(request.publicationDate()))
                                   .internationalCollaboration(request.isInternationalCollaboration())
-                                  .collaborationFactor(request.collaborationFactor())
-                                  .basePoints(request.basePoints())
+                                  .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
+                                  .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
                                   .points(mapToPoints(request.institutionPoints()))
-                                  .totalPoints(request.totalPoints())
+                                  .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
                                   .build())
                    .version(randomUUID().toString())
                    .build();
     }
 
     private static List<DbInstitutionPoints> mapToPoints(Map<URI, BigDecimal> points) {
-        return points.entrySet().stream().map(e -> new DbInstitutionPoints(e.getKey(), e.getValue())).toList();
+        return points.entrySet().stream()
+                   .map(entry -> new DbInstitutionPoints(entry.getKey(), adjustScaleAndRoundingMode(entry.getValue())))
+                   .toList();
     }
 
     private static DbPublicationDate mapToPublicationDate(PublicationDate publicationDate) {
