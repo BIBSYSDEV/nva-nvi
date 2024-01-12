@@ -50,25 +50,22 @@ import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class Candidate {
 
-    public static final int SCALE = 4;
-    public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
-    private static final Logger LOGGER = LoggerFactory.getLogger(Candidate.class);
-    private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
-    private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
-                                                            + " forbidden!";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
     private static final String CANDIDATE_PATH = "candidate";
+    private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
+    private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
+                                                            + " forbidden!";
     private static final String INVALID_CANDIDATE_MESSAGE = "Candidate is missing mandatory fields";
     private static final PeriodStatus PERIOD_STATUS_NO_PERIOD = PeriodStatus.builder()
                                                                     .withStatus(Status.NO_PERIOD)
                                                                     .build();
+    private static final int SCALE = 4;
+    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private final CandidateRepository repository;
     private final UUID identifier;
     private final boolean applicable;
@@ -123,11 +120,9 @@ public final class Candidate {
     public static Optional<Candidate> upsert(UpsertCandidateRequest request, CandidateRepository repository,
                                              PeriodRepository periodRepository) {
         if (isNotExistingCandidate(request, repository)) {
-            LOGGER.info("No existing candidate found for request with publicationId: {}", request.publicationId());
             return Optional.of(createCandidate(request, repository, periodRepository));
         }
         if (isExistingCandidate(request.publicationId(), repository)) {
-            LOGGER.info("Existing candidate found for request with publicationId: {}", request.publicationId());
             return Optional.of(updateCandidate(request, repository, periodRepository));
         }
         return Optional.empty();
@@ -276,12 +271,8 @@ public final class Candidate {
         var existingCandidateDao = repository.findByPublicationId(request.publicationId())
                                        .orElseThrow(CandidateNotFoundException::new);
         if (shouldResetCandidate(request, existingCandidateDao) || isNotApplicable(existingCandidateDao)) {
-            LOGGER.info("Resetting candidate with publicationId: {}", request.publicationId());
-            LOGGER.info("Existing candidate: {}", existingCandidateDao);
-            LOGGER.info("Upsert Request: {}", request);
             return resetCandidate(request, repository, periodRepository, existingCandidateDao);
         } else {
-            LOGGER.info("Updating candidate with publicationId: {}", request.publicationId());
             return updateCandidateKeepingApprovalsAndNotes(request, repository, periodRepository, existingCandidateDao);
         }
     }
@@ -320,23 +311,19 @@ public final class Candidate {
     }
 
     private static boolean publicationYearIsUpdated(UpsertCandidateRequest request, CandidateDao candidate) {
-        boolean publicationYearIsUpdated = !request.publicationDate()
-                                                .year()
-                                                .equals(candidate.candidate().publicationDate().year());
-        LOGGER.info("Publication year is updated: {}", publicationYearIsUpdated);
-        return publicationYearIsUpdated;
+        return !request.publicationDate()
+                    .year()
+                    .equals(candidate.candidate().publicationDate().year());
     }
 
     private static boolean pointsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        boolean pointsAreUpdated = existingCandidateDao.candidate()
-                                       .points()
-                                       .stream()
-                                       .anyMatch(institutionPoints -> !equalsIgnoringScaleAndRoundingMode(
-                                           institutionPoints.points(),
-                                           extractRequestPoints(request, institutionPoints.institutionId())
-                                       ));
-        LOGGER.info("Points are updated: {}", pointsAreUpdated);
-        return pointsAreUpdated;
+        return existingCandidateDao.candidate()
+                   .points()
+                   .stream()
+                   .anyMatch(institutionPoints1 -> !equalsIgnoringScaleAndRoundingMode(
+                       institutionPoints1.points(),
+                       extractRequestPoints(request, institutionPoints1.institutionId())
+                   ));
     }
 
     private static BigDecimal extractRequestPoints(UpsertCandidateRequest request, URI institutionId) {
@@ -348,24 +335,17 @@ public final class Candidate {
     }
 
     private static boolean creatorsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        boolean creatorsAreUpdated = !Objects.equals(mapToCreators(request.creators()),
-                                                     existingCandidateDao.candidate().creators());
-        LOGGER.info("Creators are updated: {}", creatorsAreUpdated);
-        return creatorsAreUpdated;
+        return !Objects.equals(mapToCreators(request.creators()),
+                               existingCandidateDao.candidate().creators());
     }
 
     private static boolean instanceTypeIsUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        boolean instanceTypeIsUpdated = !Objects.equals(request.instanceType(),
-                                                        existingCandidateDao.candidate().instanceType().getValue());
-        LOGGER.info("Instance type is updated: {}", instanceTypeIsUpdated);
-        return instanceTypeIsUpdated;
+        return !Objects.equals(request.instanceType(),
+                               existingCandidateDao.candidate().instanceType().getValue());
     }
 
     private static boolean levelIsUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        boolean levelIsUpdated = !Objects.equals(DbLevel.parse(request.level()),
-                                                 existingCandidateDao.candidate().level());
-        LOGGER.info("Level is updated: {}", levelIsUpdated);
-        return levelIsUpdated;
+        return !Objects.equals(DbLevel.parse(request.level()), existingCandidateDao.candidate().level());
     }
 
     private static Candidate createCandidate(UpsertCandidateRequest request, CandidateRepository repository,
