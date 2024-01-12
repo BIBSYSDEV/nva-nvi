@@ -331,7 +331,7 @@ public final class Candidate {
     }
 
     private static boolean equalsIgnoringScaleAndRoundingMode(BigDecimal existingPoints, BigDecimal requestPoints) {
-        return Objects.equals(format(requestPoints), format(existingPoints));
+        return Objects.equals(setScaleAndRoundingMode(requestPoints), setScaleAndRoundingMode(existingPoints));
     }
 
     private static boolean creatorsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
@@ -438,16 +438,15 @@ public final class Candidate {
                    .instanceType(InstanceType.parse(request.instanceType()))
                    .publicationDate(mapToPublicationDate(request.publicationDate()))
                    .internationalCollaboration(request.isInternationalCollaboration())
-                   .collaborationFactor(format(request.collaborationFactor()))
-                   .basePoints(format(request.basePoints()))
+                   .collaborationFactor(setScaleAndRoundingMode(request.collaborationFactor()))
+                   .basePoints(setScaleAndRoundingMode(request.basePoints()))
                    .points(mapToPoints(request.institutionPoints()))
-                   .totalPoints(format(request.totalPoints()))
+                   .totalPoints(setScaleAndRoundingMode(request.totalPoints()))
                    .build();
     }
 
-    private static BigDecimal format(BigDecimal bigDecimal) {
-        return nonNull(bigDecimal) ? bigDecimal.setScale(SCALE, ROUNDING_MODE)
-                   : null;
+    private static BigDecimal setScaleAndRoundingMode(BigDecimal bigDecimal) {
+        return nonNull(bigDecimal) ? bigDecimal.setScale(SCALE, ROUNDING_MODE) : null;
     }
 
     private static CandidateDao updateCandidateDaoFromRequest(CandidateDao candidateDao,
@@ -464,10 +463,10 @@ public final class Candidate {
                                   .instanceType(InstanceType.parse(request.instanceType()))
                                   .publicationDate(mapToPublicationDate(request.publicationDate()))
                                   .internationalCollaboration(request.isInternationalCollaboration())
-                                  .collaborationFactor(format(request.collaborationFactor()))
-                                  .basePoints(format(request.basePoints()))
+                                  .collaborationFactor(setScaleAndRoundingMode(request.collaborationFactor()))
+                                  .basePoints(setScaleAndRoundingMode(request.basePoints()))
                                   .points(mapToPoints(request.institutionPoints()))
-                                  .totalPoints(format(request.totalPoints()))
+                                  .totalPoints(setScaleAndRoundingMode(request.totalPoints()))
                                   .build())
                    .version(randomUUID().toString())
                    .build();
@@ -476,7 +475,7 @@ public final class Candidate {
     private static List<DbInstitutionPoints> mapToPoints(Map<URI, BigDecimal> points) {
         return points.entrySet()
                    .stream()
-                   .map(entry -> new DbInstitutionPoints(entry.getKey(), format(entry.getValue())))
+                   .map(entry -> new DbInstitutionPoints(entry.getKey(), setScaleAndRoundingMode(entry.getValue())))
                    .toList();
     }
 

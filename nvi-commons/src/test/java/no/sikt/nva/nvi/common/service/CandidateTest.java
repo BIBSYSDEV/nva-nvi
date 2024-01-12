@@ -242,7 +242,7 @@ class CandidateTest extends LocalDynamoTest {
             assertThat(dto.publicationId(), is(equalTo(createRequest.publicationId())));
             assertThat(dto.approvals().size(), is(equalTo(createRequest.institutionPoints().size())));
             assertThat(dto.notes().size(), is(2));
-            assertThat(dto.totalPoints(), is(equalTo(format(totalPoints))));
+            assertThat(dto.totalPoints(), is(equalTo(setScaleAndRoundingMode(totalPoints))));
             var note = dto.notes().get(0);
             assertThat(note.text(), is(notNullValue()));
             assertThat(note.user(), is(notNullValue()));
@@ -256,7 +256,7 @@ class CandidateTest extends LocalDynamoTest {
             assertThat(rejectedAP.status(), is(equalTo(ApprovalStatus.REJECTED)));
             assertThat(rejectedAP.reason(), is(notNullValue()));
             assertThat(rejectedAP.points(),
-                       is(format(createRequest.institutionPoints().get(rejectedAP.institutionId()))));
+                       is(setScaleAndRoundingMode(createRequest.institutionPoints().get(rejectedAP.institutionId()))));
         });
     }
 
@@ -285,18 +285,18 @@ class CandidateTest extends LocalDynamoTest {
         assertEquals(candidate.getPublicationDetails().publicationBucketUri(), publicationBucketUri);
         assertEquals(candidate.isApplicable(), isApplicable);
         assertEquals(candidate.getPublicationDetails().publicationId(), publicationId);
-        assertEquals(candidate.getTotalPoints(), format(totalPoints));
-        assertEquals(candidate.getInstitutionPoints(), format(points));
+        assertEquals(candidate.getTotalPoints(), setScaleAndRoundingMode(totalPoints));
+        assertEquals(candidate.getInstitutionPoints(), setScaleAndRoundingMode(points));
         assertEquals(candidate.getPublicationDetails().publicationDate(), publicationDate);
         assertCorrectCreatorData(creators, candidate);
         assertEquals(candidate.getPublicationDetails().type(), instanceType.getValue());
         assertEquals(candidate.getPublicationDetails().channelType().getValue(), createRequest.channelType());
         assertEquals(candidate.getPublicationDetails().publicationChannelId(), createRequest.publicationChannelId());
         assertEquals(candidate.getPublicationDetails().level(), createRequest.level());
-        assertEquals(candidate.getBasePoints(), format(createRequest.basePoints()));
+        assertEquals(candidate.getBasePoints(), setScaleAndRoundingMode(createRequest.basePoints()));
         assertEquals(candidate.isInternationalCollaboration(),
                      createRequest.isInternationalCollaboration());
-        assertEquals(candidate.getCollaborationFactor(), format(createRequest.collaborationFactor()));
+        assertEquals(candidate.getCollaborationFactor(), setScaleAndRoundingMode(createRequest.collaborationFactor()));
         assertEquals(candidate.getCreatorShareCount(), createRequest.creatorShareCount());
     }
 
@@ -483,12 +483,14 @@ class CandidateTest extends LocalDynamoTest {
         return new UriWrapper(HTTPS, API_DOMAIN).addChild(BASE_PATH, "candidate", identifier.toString()).getUri();
     }
 
-    private static BigDecimal format(BigDecimal bigDecimal) {
+    private static BigDecimal setScaleAndRoundingMode(BigDecimal bigDecimal) {
         return bigDecimal.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
     }
 
-    private Map<URI, BigDecimal> format(Map<URI, BigDecimal> points) {
-        return points.entrySet().stream().collect(Collectors.toMap(Entry::getKey, e -> format(e.getValue())));
+    private Map<URI, BigDecimal> setScaleAndRoundingMode(Map<URI, BigDecimal> points) {
+        return points.entrySet()
+                   .stream()
+                   .collect(Collectors.toMap(Entry::getKey, e -> setScaleAndRoundingMode(e.getValue())));
     }
 
     private UpsertCandidateRequest getUpdateRequestForExistingCandidate() {
@@ -535,13 +537,13 @@ class CandidateTest extends LocalDynamoTest {
                                     .channelType(ChannelType.parse(request.channelType()))
                                     .channelId(request.publicationChannelId())
                                     .level(DbLevel.parse(request.level()))
-                                    .basePoints(format(request.basePoints()))
+                                    .basePoints(setScaleAndRoundingMode(request.basePoints()))
                                     .internationalCollaboration(request.isInternationalCollaboration())
-                                    .collaborationFactor(format(request.collaborationFactor()))
+                                    .collaborationFactor(setScaleAndRoundingMode(request.collaborationFactor()))
                                     .creators(mapToDbCreators(request.creators()))
                                     .creatorShareCount(request.creatorShareCount())
                                     .points(mapToDbInstitutionPoints(request.institutionPoints()))
-                                    .totalPoints(format(request.totalPoints()))
+                                    .totalPoints(setScaleAndRoundingMode(request.totalPoints()))
                                     .build(), randomString()).candidate();
     }
 
@@ -552,7 +554,7 @@ class CandidateTest extends LocalDynamoTest {
     private List<DbInstitutionPoints> mapToDbInstitutionPoints(Map<URI, BigDecimal> points) {
         return points.entrySet()
                    .stream()
-                   .map(entry -> new DbInstitutionPoints(entry.getKey(), format(entry.getValue())))
+                   .map(entry -> new DbInstitutionPoints(entry.getKey(), setScaleAndRoundingMode(entry.getValue())))
                    .toList();
     }
 
