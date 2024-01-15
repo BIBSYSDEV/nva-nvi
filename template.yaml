@@ -875,9 +875,6 @@ Resources:
       Handler: no.sikt.nva.nvi.events.batch.EventBasedBatchScanHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
-      AutoPublishAlias: live
-      SnapStart:
-        ApplyOn: PublishedVersions
       Timeout: 900
       Environment:
         Variables:
@@ -914,7 +911,6 @@ Resources:
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
-      AutoPublishAlias: live
 
   NviBatchScanStartHandler:
     Type: AWS::Serverless::Function
