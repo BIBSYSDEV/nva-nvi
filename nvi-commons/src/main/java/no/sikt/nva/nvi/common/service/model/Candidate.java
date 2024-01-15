@@ -55,7 +55,7 @@ public final class Candidate {
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
-    public static final URI CONTEXT_URI = new UriWrapper(UriWrapper.HTTPS, API_DOMAIN)
+    public static final URI CONTEXT_URI = UriWrapper.fromHost(API_DOMAIN)
                                               .addChild(BASE_PATH, "context")
                                               .getUri();
     private static final String CANDIDATE_PATH = "candidate";
