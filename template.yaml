@@ -914,8 +914,7 @@ Resources:
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
-      SnapStart:
-        ApplyOn: PublishedVersions
+      AutoPublishAlias: live
 
   NviBatchScanStartHandler:
     Type: AWS::Serverless::Function
