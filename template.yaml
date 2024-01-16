@@ -49,7 +49,7 @@ Parameters:
   PersistedResourceDLQName:
     Type: String
     Default: PersistedResourceDLQ
-  CristinImportNviQueue:
+  CristinImportNviQueueArn:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Queues/CristinImportNviQueue
   NewCandidateQueueName:
@@ -518,7 +518,7 @@ Resources:
                   - !GetAtt IndexDocumentDLQ.Arn
                   - !GetAtt DeletePersistedIndexDocumentDLQ.Arn
                   - !GetAtt DeletePersistedIndexDocumentQueue.Arn
-                  - !Sub 'arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${CristinImportNviQueue}'
+                  - !Ref CristinImportNviQueueArn
         - PolicyName: publishToSnsTopic
           PolicyDocument:
             Version: '2012-10-17'
@@ -973,7 +973,7 @@ Resources:
         SqsEvent:
           Type: SQS
           Properties:
-            Queue: !Ref CristinImportNviQueue
+            Queue: !Ref CristinImportNviQueueArn
 
   #==========================Manually triggered functions=============================================
 
