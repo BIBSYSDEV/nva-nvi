@@ -8,7 +8,7 @@ public enum InstanceType {
 
     ACADEMIC_MONOGRAPH("AcademicMonograph"), ACADEMIC_CHAPTER("AcademicChapter"),
     ACADEMIC_ARTICLE("AcademicArticle"), ACADEMIC_LITERATURE_REVIEW("AcademicLiteratureReview"),
-    NON_CANDIDATE("NonCandidateInstanceType");
+    NON_CANDIDATE("NonCandidateInstanceType"), IMPORTED_CANDIDATE("ImportedCandidate");
 
     private final String value;
 
@@ -21,7 +21,7 @@ public enum InstanceType {
         return Arrays.stream(InstanceType.values())
                    .filter(type -> type.getValue().equalsIgnoreCase(value))
                    .findFirst()
-                   .orElse(NON_CANDIDATE);
+                   .orElse(IMPORTED_CANDIDATE);
     }
 
     @JsonCreator

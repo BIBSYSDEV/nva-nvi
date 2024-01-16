@@ -49,6 +49,9 @@ Parameters:
   PersistedResourceDLQName:
     Type: String
     Default: PersistedResourceDLQ
+  CristinImportNviQueueName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /NVA/Queue/CristinNviQueue
   NewCandidateQueueName:
     Type: String
     Default: NewCandidateQueue
@@ -952,6 +955,24 @@ Resources:
             Type: SQS
             Destination: !GetAtt BatchScanDLQ.Arn
 
+  CristinNviEventConsumer:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.cristin.CristinNviReportEventConsumer::handleRequest
+      Runtime: java17
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 30
+      MemorySize: 1536
+      Environment:
+        Variables:
+          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+      AutoPublishAlias: live
+      Events:
+        SqsEvent:
+          Type: SQS
+          Properties:
+            Queue: !Ref CristinImportNviQueueName
 
   #==========================Manually triggered functions=============================================
 

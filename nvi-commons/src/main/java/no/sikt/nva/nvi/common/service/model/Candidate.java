@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.common.service.model;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
@@ -43,8 +45,8 @@ import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchByPublicationRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchCandidateRequest;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
+import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
@@ -360,16 +362,20 @@ public final class Candidate {
     }
 
     private static void assertIsCandidate(UpsertCandidateRequest candidate) {
-        if (InstanceType.NON_CANDIDATE.getValue().equals(candidate.instanceType())) {
+        if (InstanceType.IMPORTED_CANDIDATE.getValue().equals(candidate.instanceType())) {
             throw new InvalidNviCandidateException("Can not update invalid candidate");
         }
     }
 
     private static Map<URI, BigDecimal> mapToPointsMap(CandidateDao candidateDao) {
-        return candidateDao.candidate()
-                   .points()
-                   .stream()
-                   .collect(Collectors.toMap(DbInstitutionPoints::institutionId, DbInstitutionPoints::points));
+        if (isNull(candidateDao.candidate().points()) || candidateDao.candidate().points().isEmpty()) {
+            return Collections.emptyMap();
+        } else {
+            return candidateDao.candidate()
+                .points()
+                .stream()
+                .collect(Collectors.toMap(DbInstitutionPoints::institutionId, DbInstitutionPoints::points));
+        }
     }
 
     private static Map<UUID, Note> mapToNotesMap(CandidateRepository repository, List<NoteDao> notes) {
@@ -467,7 +473,7 @@ public final class Candidate {
     }
 
     private static List<Creator> mapToCreators(List<DbCreator> creators) {
-        return creators.stream().map(Candidate::mapToCreator).toList();
+        return nonNull(creators) ? creators.stream().map(Candidate::mapToCreator).toList() : List.of();
     }
 
     private static Creator mapToCreator(DbCreator dbCreator) {
