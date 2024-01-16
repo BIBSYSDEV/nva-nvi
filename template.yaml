@@ -314,6 +314,27 @@ Resources:
       MessageRetentionPeriod: 1209600 #14 days
 
   #============================= Permissions =======================================================
+  BasicWriteLogRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ lambda.amazonaws.com ]
+            Action: [ 'sts:AssumeRole' ]
+      Policies:
+        - PolicyName: writeLog
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*'
   DeletePersistedDocumentRole:
     Type: AWS::IAM::Role
     Properties:
@@ -1222,6 +1243,25 @@ Resources:
           Type: Api
           Properties:
             Path: /candidate
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+
+  FetchNviCandidateContextHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.fetch.FetchNviCandidateContextHandler::handleRequest
+      Role: !GetAtt BasicWriteLogRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /context
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
