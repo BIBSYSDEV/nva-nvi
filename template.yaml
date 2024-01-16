@@ -518,6 +518,7 @@ Resources:
                   - !GetAtt IndexDocumentDLQ.Arn
                   - !GetAtt DeletePersistedIndexDocumentDLQ.Arn
                   - !GetAtt DeletePersistedIndexDocumentQueue.Arn
+                  - !Sub 'arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${CristinImportNviQueue}'
         - PolicyName: publishToSnsTopic
           PolicyDocument:
             Version: '2012-10-17'
