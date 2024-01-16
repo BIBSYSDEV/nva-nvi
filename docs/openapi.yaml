@@ -13,7 +13,7 @@ paths:
       description: 'Get json ld context for NVI'
       x-amazon-apigateway-integration:
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviContextHandler.Arn}:live/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviCandidateContextHandler.Arn}:live/invocations
         responses: { }
         httpMethod: POST
         type: AWS_PROXY
