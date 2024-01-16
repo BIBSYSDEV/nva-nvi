@@ -3,9 +3,11 @@ package no.sikt.nva.nvi.common.service.model;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static nva.commons.core.attempt.Try.attempt;
+import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +58,8 @@ public final class Candidate {
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
     private static final String CANDIDATE_PATH = "candidate";
+    private static final String CONTEXT = stringFromResources(Path.of("nviCandidateContext.json"));
+
     private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
     private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
                                                             + " forbidden!";
@@ -131,6 +135,10 @@ public final class Candidate {
             return Optional.of(deleteCandidate(request, repository));
         }
         return Optional.empty();
+    }
+
+    public static String getJsonLdContext() {
+        return CONTEXT;
     }
 
     public PublicationDetails getPublicationDetails() {
