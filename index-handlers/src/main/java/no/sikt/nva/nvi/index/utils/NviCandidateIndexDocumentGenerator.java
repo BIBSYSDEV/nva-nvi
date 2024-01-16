@@ -22,6 +22,7 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -66,8 +67,12 @@ public final class NviCandidateIndexDocumentGenerator {
         return attempt(() -> dtoObjectMapper.readValue(response, Organization.class)).orElseThrow();
     }
 
+    private static BigDecimal getInstitutionPoints(Approval approval, Candidate candidate) {
+        return candidate.getInstitutionPoints().get(approval.getInstitutionId());
+    }
+
     private NviCandidateIndexDocument createNviCandidateIndexDocument(JsonNode resource, Candidate candidate) {
-        var approvals = createApprovals(resource, getApprovals(candidate.getApprovals()));
+        var approvals = createApprovals(resource, candidate);
         return new NviCandidateIndexDocument.Builder().withContext(URI.create(Contexts.NVI_CONTEXT))
                    .withIdentifier(candidate.getIdentifier())
                    .withApprovals(approvals)
@@ -77,13 +82,14 @@ public final class NviCandidateIndexDocumentGenerator {
                    .build();
     }
 
-    private List<Approval> getApprovals(Map<URI, Approval> approvals) {
-        return approvals.values().stream().toList();
+    private Stream<Approval> streamValues(Map<URI, Approval> approvals) {
+        return approvals.values().stream();
     }
 
     private List<no.sikt.nva.nvi.index.model.Approval> createApprovals(JsonNode resource,
-                                                                       List<Approval> approvals) {
-        return approvals.stream().map(approval -> toApproval(resource, approval)).toList();
+                                                                       Candidate candidate) {
+        return streamValues(candidate.getApprovals()).map(approval -> toApproval(resource, approval, candidate))
+                   .toList();
     }
 
     private Map<String, String> extractLabels(JsonNode resource, Approval approval) {
@@ -100,10 +106,12 @@ public final class NviCandidateIndexDocumentGenerator {
                    .orElseThrow(() -> logFailingAffiliationHttpRequest(institutionId.toString()));
     }
 
-    private no.sikt.nva.nvi.index.model.Approval toApproval(JsonNode resource, Approval approval) {
-        return new no.sikt.nva.nvi.index.model.Approval.Builder().withId(approval.getInstitutionId().toString())
+    private no.sikt.nva.nvi.index.model.Approval toApproval(JsonNode resource, Approval approval, Candidate candidate) {
+        return no.sikt.nva.nvi.index.model.Approval.builder()
+                   .withId(approval.getInstitutionId().toString())
                    .withLabels(extractLabels(resource, approval))
                    .withApprovalStatus(ApprovalStatus.fromValue(approval.getStatus().getValue()))
+                   .withPoints(getInstitutionPoints(approval, candidate))
                    .withAssignee(extractAssignee(approval))
                    .build();
     }

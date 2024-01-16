@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
@@ -51,7 +52,6 @@ import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
-import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
 import no.unit.nva.commons.json.JsonUtils;
@@ -74,10 +74,6 @@ public class OpenSearchClientTest {
 
     public static final String JSON_POINTER_FILTER = "/filter#";
     public static final String JSON_POINTER_DOC_COUNT = "/doc_count";
-    private static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:2.0.0";
-    private static final URI CUSTOMER = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
-    private static final String USERNAME = "user1";
-    private static final OpensearchContainer container = new OpensearchContainer(OPEN_SEARCH_IMAGE);
     public static final int DELAY_ON_INDEX = 2000;
     public static final String YEAR = "2023";
     public static final String CATEGORY = "AcademicArticle";
@@ -86,6 +82,11 @@ public class OpenSearchClientTest {
         = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
     public static final URI SIKT_INSTITUTION_ID
         = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
+    public static final int SCALE = 4;
+    private static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:2.0.0";
+    private static final URI CUSTOMER = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
+    private static final String USERNAME = "user1";
+    private static final OpensearchContainer container = new OpensearchContainer(OPEN_SEARCH_IMAGE);
     private static RestClient restClient;
     private static OpenSearchClient openSearchClient;
 
@@ -221,7 +222,6 @@ public class OpenSearchClientTest {
                             documentFromString("document_with_contributor_from_sikt.json"),
                             documentFromString("document_with_contributor_from_sikt_but_not_creator.json")
         );
-
 
         var searchParameters = defaultSearchParameters().withAffiliations(List.of(SIKT_INSTITUTION_ID)).build();
         var searchResponse =
@@ -471,7 +471,7 @@ public class OpenSearchClientTest {
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
         var approvals = randomApprovalList();
         return new NviCandidateIndexDocument(randomUri(), UUID.randomUUID(), randomPublicationDetails(),
-                                             approvals, approvals.size(), TestUtils.randomBigDecimal());
+                                             approvals, approvals.size(), randomBigDecimal());
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomer(String customer,
@@ -480,11 +480,10 @@ public class OpenSearchClientTest {
                                                                                          String year,
                                                                                          String title) {
         return new NviCandidateIndexDocument(randomUri(), UUID.randomUUID(),
-                                             randomPublicationDetailsWithCustomer(customer,contributor, year, title),
+                                             randomPublicationDetailsWithCustomer(customer, contributor, year, title),
                                              List.of(randomApprovalWithCustomerAndAssignee(customer, assignee)), 1,
-                                             TestUtils.randomBigDecimal());
+                                             randomBigDecimal());
     }
-
 
     private static PublicationDetails randomPublicationDetailsWithCustomer(String affiliation,
                                                                            String contributor,
@@ -494,7 +493,7 @@ public class OpenSearchClientTest {
                                   ? PublicationDate.builder().withYear(year).build()
                                   : PublicationDate.builder().withYear(YEAR).build();
         var contributorBuilder = new Contributor.Builder().withRole("Creator")
-            .withAffiliations(List.of(new Affiliation(affiliation, List.of())));
+                                     .withAffiliations(List.of(new Affiliation(affiliation, List.of())));
         if (contributor != null) {
             contributorBuilder.withName(contributor);
         }
@@ -504,17 +503,15 @@ public class OpenSearchClientTest {
     }
 
     private static Approval randomApprovalWithCustomerAndAssignee(String affiliation, String assignee) {
-        return new Approval(affiliation, Map.of(), randomStatus(), assignee);
+        return new Approval(affiliation, Map.of(), randomStatus(), randomBigDecimal(SCALE), assignee);
     }
-
-
 
     private static List<Approval> randomApprovalList() {
         return IntStream.range(0, 5).boxed().map(i -> randomApproval()).toList();
     }
 
     private static Approval randomApproval() {
-        return new Approval(randomString(), Map.of(), randomStatus(), null);
+        return new Approval(randomString(), Map.of(), randomStatus(), randomBigDecimal(SCALE), null);
     }
 
     private static ApprovalStatus randomStatus() {
@@ -567,8 +564,8 @@ public class OpenSearchClientTest {
 
     private static CandidateSearchParameters.Builder defaultSearchParameters() {
         return CandidateSearchParameters.builder()
-            .withAffiliations(List.of())
-            .withCustomer(CUSTOMER).withUsername(USERNAME).withYear(YEAR);
+                   .withAffiliations(List.of())
+                   .withCustomer(CUSTOMER).withUsername(USERNAME).withYear(YEAR);
     }
 
     private static String getRandomWord(String str) {
