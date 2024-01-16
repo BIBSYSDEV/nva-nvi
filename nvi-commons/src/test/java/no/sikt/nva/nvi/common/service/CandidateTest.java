@@ -16,6 +16,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -31,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
+import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -83,6 +85,7 @@ class CandidateTest extends LocalDynamoTest {
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
+    public static final URI CONTEXT_URI = UriWrapper.fromHost(API_DOMAIN).addChild(BASE_PATH, "context").getUri();
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
 
@@ -239,6 +242,7 @@ class CandidateTest extends LocalDynamoTest {
                               .collect(Collectors.toMap(ApprovalDto::institutionId, Function.identity()));
 
         assertAll(() -> {
+            assertThat(dto.context(), is(equalTo(CONTEXT_URI)));
             assertThat(dto.publicationId(), is(equalTo(createRequest.publicationId())));
             assertThat(dto.approvals().size(), is(equalTo(createRequest.institutionPoints().size())));
             assertThat(dto.notes().size(), is(2));
@@ -431,6 +435,18 @@ class CandidateTest extends LocalDynamoTest {
         var updatedApproval = updatedCandidate.toDto().approvals().get(0);
 
         assertThat(updatedApproval.status(), is(equalTo(ApprovalStatus.PENDING)));
+    }
+
+    @Test
+    void shouldReturnNviCandidateContextAsString() {
+        var expectedContext = stringFromResources(Path.of("nviCandidateContext.json"));
+        assertThat(Candidate.getJsonLdContext(), is(equalTo(expectedContext)));
+    }
+
+    @Test
+    void shouldReturnContextUri() {
+        var contextUri = Candidate.getContextUri();
+        assertThat(contextUri, is(equalTo(CONTEXT_URI)));
     }
 
     private static UpsertCandidateRequest createUpsertRequestWithDecimalScale(int scale, URI institutionId) {

@@ -8,6 +8,37 @@ x-amazon-apigateway-request-validators:
     validateRequestBody: true
     validateRequestParameters: false
 paths:
+  /context:
+    get:
+      description: 'Get json ld context for NVI'
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviContextHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NviCandidateContext"
+            application/ld+json:
+              schema:
+                $ref: "#/components/schemas/NviCandidateContext"
+        '415':
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '500':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /period:
     post:
       requestBody:
@@ -791,6 +822,9 @@ components:
       properties:
         text:
           type: string
+    NviCandidateContext:
+      type: object
+      description: NVI Candidate context
   securitySchemes:
     CognitoUserPool:
       type: apiKey
