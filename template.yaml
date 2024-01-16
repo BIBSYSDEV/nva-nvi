@@ -49,9 +49,9 @@ Parameters:
   PersistedResourceDLQName:
     Type: String
     Default: PersistedResourceDLQ
-  CristinImportNviQueueName:
+  CristinImportNviQueue:
     Type: AWS::SSM::Parameter::Value<String>
-    Default: /NVA/Queue/CristinNviQueue
+    Default: /NVA/Queues/CristinImportNviQueue
   NewCandidateQueueName:
     Type: String
     Default: NewCandidateQueue
@@ -972,7 +972,7 @@ Resources:
         SqsEvent:
           Type: SQS
           Properties:
-            Queue: !Ref CristinImportNviQueueName
+            Queue: !Ref CristinImportNviQueue
 
   #==========================Manually triggered functions=============================================
 
