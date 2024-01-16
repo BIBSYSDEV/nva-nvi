@@ -85,6 +85,7 @@ class CandidateTest extends LocalDynamoTest {
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
+    public static final URI CONTEXT_URI = UriWrapper.fromHost(API_DOMAIN).addChild(BASE_PATH, "context").getUri();
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
 
@@ -241,6 +242,7 @@ class CandidateTest extends LocalDynamoTest {
                               .collect(Collectors.toMap(ApprovalDto::institutionId, Function.identity()));
 
         assertAll(() -> {
+            assertThat(dto.context(), is(equalTo(CONTEXT_URI)));
             assertThat(dto.publicationId(), is(equalTo(createRequest.publicationId())));
             assertThat(dto.approvals().size(), is(equalTo(createRequest.institutionPoints().size())));
             assertThat(dto.notes().size(), is(2));
@@ -439,6 +441,12 @@ class CandidateTest extends LocalDynamoTest {
     void shouldReturnNviCandidateContextAsString() {
         var expectedContext = stringFromResources(Path.of("nviCandidateContext.json"));
         assertThat(Candidate.getJsonLdContext(), is(equalTo(expectedContext)));
+    }
+
+    @Test
+    void shouldReturnContextUri() {
+        var contextUri = Candidate.getContextUri();
+        assertThat(contextUri, is(equalTo(CONTEXT_URI)));
     }
 
     private static UpsertCandidateRequest createUpsertRequestWithDecimalScale(int scale, URI institutionId) {

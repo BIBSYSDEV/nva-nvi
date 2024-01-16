@@ -57,6 +57,9 @@ public final class Candidate {
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
+    public static final URI CONTEXT_URI = UriWrapper.fromHost(API_DOMAIN)
+                                              .addChild(BASE_PATH, "context")
+                                              .getUri();
     private static final String CANDIDATE_PATH = "candidate";
     private static final String CONTEXT = stringFromResources(Path.of("nviCandidateContext.json"));
 
@@ -141,6 +144,10 @@ public final class Candidate {
         return CONTEXT;
     }
 
+    public static URI getContextUri() {
+        return CONTEXT_URI;
+    }
+
     public PublicationDetails getPublicationDetails() {
         return publicationDetails;
     }
@@ -188,9 +195,10 @@ public final class Candidate {
     public CandidateDto toDto() {
         return CandidateDto.builder()
                    .withId(constructId(identifier))
+                   .withContext(CONTEXT_URI)
                    .withIdentifier(identifier)
                    .withPublicationId(publicationDetails.publicationId())
-                   .withApprovalStatuses(mapToApprovalDtos())
+                   .withApprovals(mapToApprovalDtos())
                    .withNotes(mapToNoteDtos())
                    .withPeriodStatus(mapToPeriodStatusDto())
                    .withTotalPoints(totalPoints)

@@ -323,11 +323,12 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var id = new UriWrapper(HTTPS, API_DOMAIN).addChild(BASE_PATH, CANDIDATE_PATH, identifier.toString()).getUri();
         var period = periodRepository.findByPublishingYear(Year.now().toString()).orElseThrow();
         return CandidateDto.builder()
+                   .withContext(Candidate.getContextUri())
                    .withIdentifier(identifier)
                    .withPublicationId(publicationId)
                    .withId(id)
                    .withNotes(List.of())
-                   .withApprovalStatuses(institutionPoints.entrySet().stream().map(this::mapToApprovalStatus).toList())
+                   .withApprovals(institutionPoints.entrySet().stream().map(this::mapToApprovalStatus).toList())
                    .withPeriodStatus(toPeriodStatus(period))
                    .withTotalPoints(adjustScaleAndRoundingMode(totalPoints))
                    .build();

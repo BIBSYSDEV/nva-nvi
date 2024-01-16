@@ -38,7 +38,6 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.Username;
 import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
-import no.sikt.nva.nvi.index.model.Contexts;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDate;
@@ -68,7 +67,8 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private NviCandidateIndexDocument createNviCandidateIndexDocument(JsonNode resource, Candidate candidate) {
         var approvals = createApprovals(resource, getApprovals(candidate.getApprovals()));
-        return new NviCandidateIndexDocument.Builder().withContext(URI.create(Contexts.NVI_CONTEXT))
+        return new NviCandidateIndexDocument.Builder()
+                   .withContext(Candidate.getContextUri())
                    .withIdentifier(candidate.getIdentifier())
                    .withApprovals(approvals)
                    .withPublicationDetails(extractPublicationDetails(resource, candidate))
