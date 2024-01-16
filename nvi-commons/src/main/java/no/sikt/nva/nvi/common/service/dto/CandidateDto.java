@@ -36,6 +36,7 @@ public record CandidateDto(
 
         private Builder() {
         }
+
         public Builder withId(URI id) {
             this.id = id;
             return this;
