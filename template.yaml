@@ -51,7 +51,7 @@ Parameters:
     Default: PersistedResourceDLQ
   CristinImportNviQueueArn:
     Type: AWS::SSM::Parameter::Value<String>
-    Default: /NVA/Queues/CristinImportNviQueue
+    Default: /NVA/Queues/CristinImportNviQueueArn
   NewCandidateQueueName:
     Type: String
     Default: NewCandidateQueue
