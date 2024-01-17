@@ -6,7 +6,6 @@ import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.createExpandedResou
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.GZIP_ENDING;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.HARD_CODED_PART_OF;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.NVI_CANDIDATES_FOLDER;
-import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.NVI_CONTEXT;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandApprovals;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandPublicationDetails;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
@@ -440,7 +439,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     private NviCandidateIndexDocument createExpectedNviIndexDocument(JsonNode expandedResource, Candidate candidate) {
         return NviCandidateIndexDocument.builder()
-                   .withContext(NVI_CONTEXT)
+                   .withContext(Candidate.getContextUri())
                    .withIdentifier(candidate.getIdentifier())
                    .withApprovals(expandApprovals(candidate))
                    .withPoints(candidate.getTotalPoints())

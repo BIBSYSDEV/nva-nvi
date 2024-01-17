@@ -11,6 +11,7 @@ import java.util.UUID;
 @JsonSerialize
 public record CandidateDto(
     URI id,
+    URI context,
     UUID identifier,
     URI publicationId,
     List<ApprovalDto> approvals,
@@ -25,9 +26,10 @@ public record CandidateDto(
     public static final class Builder {
 
         private URI id;
+        private URI context;
         private UUID identifier;
         private URI publicationId;
-        private List<ApprovalDto> approvalDtos;
+        private List<ApprovalDto> approvals;
         private BigDecimal totalPoints;
         private List<NoteDto> notes;
         private PeriodStatusDto periodStatus;
@@ -37,6 +39,11 @@ public record CandidateDto(
 
         public Builder withId(URI id) {
             this.id = id;
+            return this;
+        }
+
+        public Builder withContext(URI context) {
+            this.context = context;
             return this;
         }
 
@@ -50,8 +57,8 @@ public record CandidateDto(
             return this;
         }
 
-        public Builder withApprovalStatuses(List<ApprovalDto> approvalDtos) {
-            this.approvalDtos = approvalDtos;
+        public Builder withApprovals(List<ApprovalDto> approvals) {
+            this.approvals = approvals;
             return this;
         }
 
@@ -71,8 +78,8 @@ public record CandidateDto(
         }
 
         public CandidateDto build() {
-            return new CandidateDto(id, identifier, publicationId, approvalDtos, totalPoints,
-                                    notes, periodStatus);
+            return new CandidateDto(id, context, identifier, publicationId, approvals, totalPoints, notes,
+                                    periodStatus);
         }
     }
 }

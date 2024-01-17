@@ -277,14 +277,12 @@ Resources:
   PersistedResourceQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref PersistedResourceQueueName
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt PersistedResourceDLQ.Arn
         maxReceiveCount: 5
   NewCandidateQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref NewCandidateQueueName
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt NewCandidateDLQ.Arn
         maxReceiveCount: 5
@@ -292,34 +290,28 @@ Resources:
   NewCandidateDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref NewCandidateDLQName
       MessageRetentionPeriod: 1209600 #14 days
   UpsertCandidateDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref UpsertCandidateDLQName
       MessageRetentionPeriod: 1209600 #14 days
   BatchScanDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref BatchScanDLQName
       MessageRetentionPeriod: 1209600 #14 days
   PersistedResourceDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref PersistedResourceDLQName
       MessageRetentionPeriod: 1209600 #14 days
   ReEvaluateDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref ReEvaluateDLQName
       MessageRetentionPeriod: 1209600 #14 days
 
   #=============================== For database events ============================================
   DbEventQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref DbEventQueueName
       VisibilityTimeout: 60
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt DataEntryUpdateDLQ.Arn
@@ -328,18 +320,15 @@ Resources:
   DynamoDbEventToQueueDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref DynamoDbEventToQueueDLQName
       MessageRetentionPeriod: 1209600 #14 days
   DataEntryUpdateDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref DataEntryUpdateDLQName
       MessageRetentionPeriod: 1209600 #14 days
   #=============================== For index handling =============================================
   GenerateIndexDocumentQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref GenerateIndexDocumentQueueName
       VisibilityTimeout: 60
       RedrivePolicy:
           deadLetterTargetArn: !GetAtt IndexDocumentDLQ.Arn
@@ -347,21 +336,18 @@ Resources:
   RemoveDocumentFromIndexQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref RemoveDocumentFromIndexQueueName
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt RemoveDocumentFromIndexDLQ.Arn
         maxReceiveCount: 5
   PersistedIndexDocumentQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref PersistedIndexDocumentQueueName
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt UpdateIndexDLQ.Arn
         maxReceiveCount: 5
   DeletePersistedIndexDocumentQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref DeletePersistedIndexDocumentQueueName
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt DeletePersistedIndexDocumentDLQ.Arn
         maxReceiveCount: 5
@@ -369,30 +355,46 @@ Resources:
   IndexDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref IndexDLQName
       MessageRetentionPeriod: 1209600 #14 days
   IndexDocumentDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref IndexDocumentDLQName
       MessageRetentionPeriod: 1209600 #14 days
   UpdateIndexDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref UpdateIndexDLQName
       MessageRetentionPeriod: 1209600 #14 days
   RemoveDocumentFromIndexDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref RemoveDocumentFromIndexDLQName
       MessageRetentionPeriod: 1209600 #14 days
   DeletePersistedIndexDocumentDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Ref DeletePersistedIndexDocumentDLQName
       MessageRetentionPeriod: 1209600 #14 days
 
   #============================= Permissions =======================================================
+  BasicWriteLogRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ lambda.amazonaws.com ]
+            Action: [ 'sts:AssumeRole' ]
+      Policies:
+        - PolicyName: writeLog
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*'
   DeletePersistedDocumentRole:
     Type: AWS::IAM::Role
     Properties:
@@ -671,7 +673,7 @@ Resources:
       Queues:
         - !Ref DeletePersistedIndexDocumentQueue
 
-  #============================= Roles ==========================================================
+  #============================= API ===============================================================
   ScientificIndexApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -710,6 +712,8 @@ Resources:
       Timeout: 30
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           PERSISTED_RESOURCE_QUEUE_URL: !Ref PersistedResourceQueue
@@ -739,13 +743,15 @@ Resources:
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 30
       MemorySize: 1536
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
           BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
           CANDIDATE_QUEUE_URL: !Ref NewCandidateQueue
-      AutoPublishAlias: live
       Events:
         SqsEvent:
           Type: SQS
@@ -769,6 +775,8 @@ Resources:
       MemorySize: 1536
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           UPSERT_CANDIDATE_DLQ_QUEUE_URL: !Ref UpsertCandidateDLQ
@@ -786,6 +794,8 @@ Resources:
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Timeout: 60
       Environment:
         Variables:
@@ -813,6 +823,8 @@ Resources:
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Timeout: 60
       Environment:
         Variables:
@@ -843,6 +855,8 @@ Resources:
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Timeout: 60
       ReservedConcurrentExecutions: 25
       Environment:
@@ -869,6 +883,8 @@ Resources:
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Timeout: 30
       ReservedConcurrentExecutions: 50
       Environment:
@@ -894,6 +910,8 @@ Resources:
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Timeout: 30
       Events:
         SqsEvent:
@@ -914,6 +932,8 @@ Resources:
       Runtime: java17
       Role: !GetAtt DeletePersistedDocumentRole.Arn
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Timeout: 30
       Environment:
         Variables:
@@ -937,7 +957,6 @@ Resources:
       Handler: no.sikt.nva.nvi.events.batch.EventBasedBatchScanHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
-      AutoPublishAlias: live
       Timeout: 900
       Environment:
         Variables:
@@ -1061,6 +1080,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1081,6 +1102,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1101,6 +1124,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1121,6 +1146,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1144,6 +1171,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1167,6 +1196,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1190,6 +1221,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1210,6 +1243,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1230,6 +1265,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1250,6 +1287,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1270,6 +1309,8 @@ Resources:
       Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
       Environment:
         Variables:
           ALLOWED_ORIGIN: '*'
@@ -1281,6 +1322,28 @@ Resources:
           Type: Api
           Properties:
             Path: /candidate
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+
+  FetchNviCandidateContextHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nvi-rest
+      Handler: no.sikt.nva.nvi.rest.fetch.FetchNviCandidateContextHandler::handleRequest
+      Role: !GetAtt BasicWriteLogRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /context
             Method: get
             RestApiId: !Ref ScientificIndexApi
 

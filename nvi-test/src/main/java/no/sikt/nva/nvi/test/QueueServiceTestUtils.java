@@ -33,13 +33,6 @@ public final class QueueServiceTestUtils {
         return sqsEvent;
     }
 
-    public static SQSEvent createEventWithDynamodbRecords(List<DynamodbStreamRecord> streamRecords) {
-        var sqsEvent = new SQSEvent();
-        var messages = streamRecords.stream().map(QueueServiceTestUtils::createMessage).toList();
-        sqsEvent.setRecords(messages);
-        return sqsEvent;
-    }
-
     public static SQSEvent createEvent(Dao oldImage, Dao newImage, OperationType operationType) {
         var sqsEvent = new SQSEvent();
         var message = createMessage(oldImage, newImage, operationType);
@@ -52,6 +45,13 @@ public final class QueueServiceTestUtils {
         var message = new SQSMessage();
         message.setBody(mapToString(streamRecord));
         sqsEvent.setRecords(List.of(message));
+        return sqsEvent;
+    }
+
+    public static SQSEvent createEventWithDynamodbRecords(List<DynamodbStreamRecord> streamRecords) {
+        var sqsEvent = new SQSEvent();
+        var messages = streamRecords.stream().map(QueueServiceTestUtils::createMessage).toList();
+        sqsEvent.setRecords(messages);
         return sqsEvent;
     }
 

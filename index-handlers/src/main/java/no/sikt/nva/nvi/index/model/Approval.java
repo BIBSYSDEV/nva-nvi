@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.model;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.math.BigDecimal;
 import java.util.Map;
 import nva.commons.core.JacocoGenerated;
 
@@ -11,6 +12,7 @@ import nva.commons.core.JacocoGenerated;
 public record Approval(String id,
                        Map<String, String> labels,
                        ApprovalStatus approvalStatus,
+                       BigDecimal points,
                        String assignee) {
 
     public static Builder builder() {
@@ -22,7 +24,11 @@ public record Approval(String id,
         private String id;
         private Map<String, String> labels;
         private ApprovalStatus approvalStatus;
+        private BigDecimal points;
         private String assignee;
+
+        private Builder() {
+        }
 
         public Builder withId(String id) {
             this.id = id;
@@ -39,14 +45,18 @@ public record Approval(String id,
             return this;
         }
 
-        @JacocoGenerated
+        public Builder withPoints(BigDecimal points) {
+            this.points = points;
+            return this;
+        }
+
         public Builder withAssignee(String assignee) {
             this.assignee = assignee;
             return this;
         }
 
         public Approval build() {
-            return new Approval(id, labels, approvalStatus, assignee);
+            return new Approval(id, labels, approvalStatus, points, assignee);
         }
     }
 }
