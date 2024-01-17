@@ -1,8 +1,12 @@
 package no.sikt.nva.nvi.events.cristin;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
 import java.util.List;
 
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+@JsonSerialize
 public record CristinNviReport(String publicationIdentifier,
                                String cristinIdentifier,
                                List<CristinLocale> nviReport,

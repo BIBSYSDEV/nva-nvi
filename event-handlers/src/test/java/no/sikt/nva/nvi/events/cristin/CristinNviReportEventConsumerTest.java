@@ -78,10 +78,6 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
         assertThat(candidate.getPublicationDetails().publicationBucketUri(),
                    is(equalTo(expectedPublicationBucketUri(cristinNviReport.publicationIdentifier()))));
         assertThat(candidate.isApplicable(), is(true));
-        assertThatAllApprovalsAreApproved(candidate);
-    }
-
-    private static void assertThatAllApprovalsAreApproved(Candidate candidate) {
         candidate.getApprovals().values().stream()
             .map(Approval::getStatus)
             .forEach(status -> assertThat(status, is(equalTo(ApprovalStatus.APPROVED))));
