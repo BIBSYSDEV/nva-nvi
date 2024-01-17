@@ -233,7 +233,7 @@ class CandidateTest extends LocalDynamoTest {
         var points = Map.of(institution, randomBigDecimal());
         var totalPoints = randomBigDecimal();
         var publicationDate = new PublicationDate(String.valueOf(CURRENT_YEAR), null, null);
-        var instanceType = randomInstanceTypeExcluding(InstanceType.IMPORTED_CANDIDATE);
+        var instanceType = randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE);
         var createRequest = createUpsertCandidateRequest(publicationId, publicationBucketUri,
                                                          isApplicable,
                                                          publicationDate,

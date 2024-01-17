@@ -21,7 +21,7 @@ public enum InstanceType {
         return Arrays.stream(InstanceType.values())
                    .filter(type -> type.getValue().equalsIgnoreCase(value))
                    .findFirst()
-                   .orElse(IMPORTED_CANDIDATE);
+                   .orElse(NON_CANDIDATE);
     }
 
     @JsonCreator

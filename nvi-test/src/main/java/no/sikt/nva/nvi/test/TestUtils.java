@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.common.db.model.InstanceType.IMPORTED_CANDIDATE;
+import static no.sikt.nva.nvi.common.db.model.InstanceType.NON_CANDIDATE;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
@@ -47,8 +47,8 @@ import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
+import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import nva.commons.core.paths.UriWrapper;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -85,7 +85,7 @@ public final class TestUtils {
                    .publicationId(randomUri())
                    .publicationBucketUri(randomUri())
                    .applicable(applicable)
-                   .instanceType(randomInstanceTypeExcluding(IMPORTED_CANDIDATE))
+                   .instanceType(randomInstanceTypeExcluding(NON_CANDIDATE))
                    .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
                    .level(randomElement(DbLevel.values()))
                    .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
@@ -233,13 +233,13 @@ public final class TestUtils {
 
     public static UpsertCandidateRequest createUpsertCandidateRequestWithLevel(String level, URI... institutions) {
         return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(
-                                                IMPORTED_CANDIDATE),
+                                                NON_CANDIDATE),
                                             1, randomBigDecimal(), level, CURRENT_YEAR, institutions);
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(int year) {
         return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(
-                                                IMPORTED_CANDIDATE),
+                                                NON_CANDIDATE),
                                             1, randomBigDecimal(),
                                             randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
                                             year,
@@ -248,7 +248,7 @@ public final class TestUtils {
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI... institutions) {
         return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(
-                                                IMPORTED_CANDIDATE),
+                                                NON_CANDIDATE),
                                             1, randomBigDecimal(),
                                             randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
                                             CURRENT_YEAR,

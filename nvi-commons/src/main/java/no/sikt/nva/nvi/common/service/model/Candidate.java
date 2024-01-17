@@ -362,7 +362,7 @@ public final class Candidate {
     }
 
     private static void assertIsCandidate(UpsertCandidateRequest candidate) {
-        if (InstanceType.IMPORTED_CANDIDATE.getValue().equals(candidate.instanceType())) {
+        if (InstanceType.NON_CANDIDATE.getValue().equals(candidate.instanceType())) {
             throw new InvalidNviCandidateException("Can not update invalid candidate");
         }
     }

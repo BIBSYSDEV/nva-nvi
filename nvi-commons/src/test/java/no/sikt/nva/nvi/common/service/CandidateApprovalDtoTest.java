@@ -197,7 +197,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
         var candidateBO = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
                               .orElseThrow();
         var updateRequest = createUpsertCandidateRequest(candidateBO.toDto().publicationId(),
-                                                         randomUri(), true, InstanceType.IMPORTED_CANDIDATE, 2,
+                                                         randomUri(), true, InstanceType.NON_CANDIDATE, 2,
                                                          randomBigDecimal(),
                                                          randomLevelExcluding(DbLevel.NON_CANDIDATE)
                                                              .getVersionOneValue(), TestUtils.CURRENT_YEAR,

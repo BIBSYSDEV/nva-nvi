@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.events.persist;
 
 import static no.sikt.nva.nvi.common.db.model.InstanceType.IMPORTED_CANDIDATE;
+import static no.sikt.nva.nvi.common.db.model.InstanceType.NON_CANDIDATE;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
@@ -133,7 +134,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var institutionId = randomUri();
         var identifier = UUID.randomUUID();
         var creators = List.of(new Creator(randomUri(), List.of(institutionId)));
-        var instanceType = randomInstanceTypeExcluding(IMPORTED_CANDIDATE);
+        var instanceType = randomInstanceTypeExcluding(NON_CANDIDATE);
         var randomLevel = randomElement(DbLevel.values());
         var publicationDate = randomPublicationDate();
         var institutionPoints = Map.of(institutionId, randomBigDecimal());
@@ -209,7 +210,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withCandidateType(NviCandidate.builder()
                                           .withPublicationId(generatePublicationId(identifier))
                                           .withPublicationBucketUri(generateS3BucketUri(identifier))
-                                          .withInstanceType(randomInstanceTypeExcluding(IMPORTED_CANDIDATE).getValue())
+                                          .withInstanceType(randomInstanceTypeExcluding(NON_CANDIDATE).getValue())
                                           .withLevel(randomElement(DbLevel.values()).getVersionOneValue())
                                           .withTotalPoints(randomBigDecimal())
                                           .withBasePoints(randomBigDecimal())
@@ -358,7 +359,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     private SQSEvent createEvent(URI keep, URI publicationId, URI publicationBucketUri) {
         var institutionId = randomUri();
         var creators = List.of(new Creator(randomUri(), List.of(institutionId, keep)));
-        var instanceType = randomInstanceTypeExcluding(IMPORTED_CANDIDATE);
+        var instanceType = randomInstanceTypeExcluding(NON_CANDIDATE);
         var randomLevel = randomElement(DbLevel.values());
         var publicationDate = randomPublicationDate();
         var institutionPoints = Map.of(institutionId, randomBigDecimal(), keep, randomBigDecimal());
