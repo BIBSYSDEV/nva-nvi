@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.persist;
 
+import static no.sikt.nva.nvi.common.db.model.InstanceType.IMPORTED_CANDIDATE;
 import static no.sikt.nva.nvi.common.db.model.InstanceType.NON_CANDIDATE;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;

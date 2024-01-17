@@ -47,8 +47,8 @@ import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
+import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import nva.commons.core.paths.UriWrapper;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -236,12 +236,14 @@ public final class TestUtils {
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequestWithLevel(String level, URI... institutions) {
-        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(NON_CANDIDATE),
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(
+                                                NON_CANDIDATE),
                                             1, randomBigDecimal(), level, CURRENT_YEAR, institutions);
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(int year) {
-        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(NON_CANDIDATE),
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(
+                                                NON_CANDIDATE),
                                             1, randomBigDecimal(),
                                             randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
                                             year,
@@ -249,7 +251,8 @@ public final class TestUtils {
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI... institutions) {
-        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(NON_CANDIDATE),
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(
+                                                NON_CANDIDATE),
                                             1, randomBigDecimal(),
                                             randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
                                             CURRENT_YEAR,

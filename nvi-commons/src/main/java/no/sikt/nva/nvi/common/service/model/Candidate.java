@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.common.service.model;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static nva.commons.core.attempt.Try.attempt;
@@ -397,10 +399,14 @@ public final class Candidate {
     }
 
     private static Map<URI, BigDecimal> mapToPointsMap(CandidateDao candidateDao) {
-        return candidateDao.candidate()
-                   .points()
-                   .stream()
-                   .collect(Collectors.toMap(DbInstitutionPoints::institutionId, DbInstitutionPoints::points));
+        if (isNull(candidateDao.candidate().points()) || candidateDao.candidate().points().isEmpty()) {
+            return Collections.emptyMap();
+        } else {
+            return candidateDao.candidate()
+                .points()
+                .stream()
+                .collect(Collectors.toMap(DbInstitutionPoints::institutionId, DbInstitutionPoints::points));
+        }
     }
 
     private static Map<UUID, Note> mapToNotesMap(CandidateRepository repository, List<NoteDao> notes) {
@@ -500,7 +506,7 @@ public final class Candidate {
     }
 
     private static List<Creator> mapToCreators(List<DbCreator> creators) {
-        return creators.stream().map(Candidate::mapToCreator).toList();
+        return nonNull(creators) ? creators.stream().map(Candidate::mapToCreator).toList() : List.of();
     }
 
     private static Creator mapToCreator(DbCreator dbCreator) {

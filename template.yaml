@@ -460,6 +460,7 @@ Resources:
                   - !GetAtt IndexDocumentDLQ.Arn
                   - !GetAtt DeletePersistedIndexDocumentDLQ.Arn
                   - !GetAtt DeletePersistedIndexDocumentQueue.Arn
+                  - !Ref CristinImportNviQueueArn
         - PolicyName: publishToSnsTopic
           PolicyDocument:
             Version: '2012-10-17'
@@ -914,6 +915,24 @@ Resources:
             Type: SQS
             Destination: !GetAtt BatchScanDLQ.Arn
 
+  CristinNviEventConsumer:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.cristin.CristinNviReportEventConsumer::handleRequest
+      Runtime: java17
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 30
+      MemorySize: 1536
+      Environment:
+        Variables:
+          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+      AutoPublishAlias: live
+      Events:
+        SqsEvent:
+          Type: SQS
+          Properties:
+            Queue: !Ref CristinImportNviQueueArn
 
   #==========================Manually triggered functions=============================================
 
