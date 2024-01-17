@@ -43,66 +43,6 @@ Parameters:
   ResourcesBucket:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/PersistedEntriesBucketName
-  PersistedResourceQueueName:
-    Type: String
-    Default: PersistedResourceQueue
-  PersistedResourceDLQName:
-    Type: String
-    Default: PersistedResourceDLQ
-  CristinImportNviQueueArn:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: /NVA/Queues/CristinImportNviQueueArn
-  NewCandidateQueueName:
-    Type: String
-    Default: NewCandidateQueue
-  DbEventQueueName:
-    Type: String
-    Default: DbEventQueue
-  NewCandidateDLQName:
-    Type: String
-    Default: NewCandidateDLQ
-  BatchScanDLQName:
-    Type: String
-    Default: BatchScanDLQ
-  UpdateIndexDLQName:
-    Type: String
-    Default: UpdateIndexDLQ
-  UpsertCandidateDLQName:
-    Type: String
-    Default: UpsertCandidateDLQ
-  ReEvaluateDLQName:
-    Type: String
-    Default: ReEvaluateDLQ
-  GenerateIndexDocumentQueueName:
-    Type: String
-    Default: GenerateIndexDocumentQueue
-  RemoveDocumentFromIndexQueueName:
-    Type: String
-    Default: RemoveDocumentFromIndexQueue
-  RemoveDocumentFromIndexDLQName:
-    Type: String
-    Default: RemoveDocumentFromIndexDLQ
-  DeletePersistedIndexDocumentQueueName:
-    Type: String
-    Default: DeletePersistedIndexDocumentQueue
-  DeletePersistedIndexDocumentDLQName:
-    Type: String
-    Default: DeletePersistedIndexDocumentDLQ
-  PersistedIndexDocumentQueueName:
-    Type: String
-    Default: PersistedIndexDocumentQueue
-  IndexDLQName:
-    Type: String
-    Default: IndexDLQ
-  DynamoDbEventToQueueDLQName:
-    Type: String
-    Default: DynamoDbEventToQueueDLQ
-  DataEntryUpdateDLQName:
-    Type: String
-    Default: DataEntryUpdateDLQ
-  IndexDocumentDLQName:
-    Type: String
-    Default: IndexDocumentDLQ
   SearchInfrastructureApiHost:
     Type: String
     Description: Host of external search infrastructure API (SWS).
