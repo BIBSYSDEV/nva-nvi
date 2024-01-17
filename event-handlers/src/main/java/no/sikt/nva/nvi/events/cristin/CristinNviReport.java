@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.events.cristin;
 
 import java.time.Instant;
 import java.util.List;
-import nva.commons.core.JacocoGenerated;
 
 public record CristinNviReport(String publicationIdentifier,
                                String cristinIdentifier,
@@ -51,7 +50,8 @@ public record CristinNviReport(String publicationIdentifier,
         }
 
         public CristinNviReport build() {
-            return new CristinNviReport(publicationIdentifier, cristinIdentifier, nviReport, yearReported, publicationDate);
+            return new CristinNviReport(publicationIdentifier, cristinIdentifier, nviReport,
+                                        yearReported, publicationDate);
         }
 
     }

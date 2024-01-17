@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.events.cristin;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.AFFILIATION_DELIMITER;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
+import static no.sikt.nva.nvi.events.cristin.CristinMapper.PERSISTED_RESOURCES_BUCKET;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
@@ -10,16 +11,23 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.net.URI;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.model.Approval;
+import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,8 +37,8 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
 
     public static final LocalDate DATE_CONTROLLED = LocalDate.now();
     public static final String STATUS_CONTROLLED = "J";
-    private static final Context CONTEXT = mock(Context.class);
     public static final String PUBLICATION = "publication";
+    private static final Context CONTEXT = mock(Context.class);
     private CristinNviReportEventConsumer handler;
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
@@ -63,10 +71,43 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
     private void assertThatNviCandidateHasExpectedValues(Candidate candidate, CristinNviReport cristinNviReport) {
         assertThat(candidate.getApprovals().keySet().stream().toList(),
                    containsInAnyOrder(generateExpectedApprovalsIds(cristinNviReport).toArray()));
+        assertThat(candidate.getPublicationDetails().publicationDate(),
+                   is(equalTo(toPublicationDate(cristinNviReport.publicationDate()))));
+        assertThat(candidate.getPublicationDetails().publicationId(),
+                   is(equalTo(expectedPublicationId(cristinNviReport.publicationIdentifier()))));
+        assertThat(candidate.getPublicationDetails().publicationBucketUri(),
+                   is(equalTo(expectedPublicationBucketUri(cristinNviReport.publicationIdentifier()))));
+        assertThat(candidate.isApplicable(), is(true));
+        assertThatAllApprovalsAreApproved(candidate);
+    }
+
+    private static void assertThatAllApprovalsAreApproved(Candidate candidate) {
+        candidate.getApprovals().values().stream()
+            .map(Approval::getStatus)
+            .forEach(status -> assertThat(status, is(equalTo(ApprovalStatus.APPROVED))));
+    }
+
+    private URI expectedPublicationBucketUri(String value) {
+        return UriWrapper.fromUri(PERSISTED_RESOURCES_BUCKET)
+            .addChild("resources")
+            .addChild(value)
+            .getUri();
+    }
+
+    private URI expectedPublicationId(String value) {
+        return UriWrapper.fromHost(API_HOST).addChild("publication").addChild(value).getUri();
+    }
+
+    private PublicationDate toPublicationDate(Instant instant) {
+        var zonedDateTime = instant.atZone(ZoneOffset.UTC.getRules().getOffset(Instant.now()));
+        return new PublicationDate(String.valueOf(zonedDateTime.getYear()),
+                                   String.valueOf(zonedDateTime.getMonth()),
+                                   String.valueOf(zonedDateTime.getDayOfMonth()));
     }
 
     private List<URI> generateExpectedApprovalsIds(CristinNviReport cristinNviReport) {
-        return cristinNviReport.nviReport().stream()
+        return cristinNviReport.nviReport()
+                   .stream()
                    .map(this::toOrganizationIdentifier)
                    .map(this::toOrganizationId)
                    .toList();

@@ -8,7 +8,7 @@ import nva.commons.core.JacocoGenerated;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public class CristinLocale {
+public final class CristinLocale {
 
     public static final String OWNER_CODE_FIELD = "eierkode";
     public static final String INSTITUTION_IDENTIFIER_FIELD = "institusjonsnr";

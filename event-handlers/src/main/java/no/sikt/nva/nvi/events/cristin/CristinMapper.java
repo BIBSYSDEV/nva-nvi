@@ -19,12 +19,14 @@ import nva.commons.core.paths.UriWrapper;
 public final class CristinMapper {
 
     public static final String API_HOST = new Environment().readEnv("API_HOST");
-    private static final String PERSISTED_RESOURCES_BUCKET = new Environment().readEnv("EXPANDED_RESOURCES_BUCKET");
+    public static final String PERSISTED_RESOURCES_BUCKET = new Environment().readEnv("EXPANDED_RESOURCES_BUCKET");
     public static final String AFFILIATION_DELIMITER = ".";
     public static final String CRISTIN = "cristin";
     public static final String ORGANIZATION = "organization";
 
-    private CristinMapper() {}
+    private CristinMapper() {
+
+    }
 
     public static DbCandidate toDbCandidate(CristinNviReport cristinNviReport) {
         return DbCandidate.builder()
