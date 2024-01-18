@@ -18,7 +18,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, Void> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CristinNviReportEventConsumer.class);
-    public static final String PARSE_EVENT_BODY_ERROR_MESSAGE = "Could not parse event body: ";
     private final CandidateRepository repository;
     private final S3Client s3Client;
 
@@ -41,10 +40,16 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
             .map(SQSMessage::getBody)
             .map(EventReference::fromJson)
             .map(this::fetchS3Content)
-            .map(this::toCristinNviReport)
+            .map(this::toEventBody)
+            .map(EventReferenceWithContent::cristinNviReport)
             .forEach(this::createAndPersist);
 
         return null;
+    }
+
+    private EventReferenceWithContent toEventBody(String value) {
+        LOGGER.info("Event body {}", value);
+        return attempt(() -> dtoObjectMapper.readValue(value, EventReferenceWithContent.class)).orElseThrow();
     }
 
     private String fetchS3Content(EventReference eventReference) {
@@ -54,11 +59,5 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
 
     private void createAndPersist(CristinNviReport cristinNviReport) {
         repository.create(CristinMapper.toDbCandidate(cristinNviReport), CristinMapper.toApprovals(cristinNviReport));
-    }
-
-    private CristinNviReport toCristinNviReport(String body) {
-        LOGGER.info("Creating nvi candidate from event body {}", body);
-        return attempt(() -> dtoObjectMapper.readValue(body, CristinNviReport.class))
-                   .orElseThrow();
     }
 }

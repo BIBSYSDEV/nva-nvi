@@ -4,7 +4,6 @@ import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.AFFILIATION_DELIMITER;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.PERSISTED_RESOURCES_BUCKET;
-import static no.sikt.nva.nvi.events.cristin.CristinNviReportEventConsumer.PARSE_EVENT_BODY_ERROR_MESSAGE;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -12,7 +11,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
@@ -63,20 +61,11 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
     @Test
     void shouldCreateNviCandidateFromNviReport() throws IOException {
         var cristinNviReport = randomCristinNviReport();
-        var fileUri = s3Driver.insertFile(UnixPath.of(randomString(), randomString()), cristinNviReport.toJsonString());
-        var eventReference = new EventReference(randomString(), randomString(), fileUri, Instant.now());
-        handler.handleRequest(eventWithBody(eventReference.toJsonString()), CONTEXT);
+        handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
         var publicationId = toPublicationId(cristinNviReport);
         var nviCandidate = Candidate.fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository);
 
         assertThatNviCandidateHasExpectedValues(nviCandidate, cristinNviReport);
-    }
-
-    @Test
-    void shouldThrowRuntimeExceptionWithExpectedMessageWhenCanNotParseEventBody() {
-        var eventBody = randomString();
-        assertThrows(RuntimeException.class, () -> handler.handleRequest(eventWithBody(eventBody), CONTEXT),
-                     PARSE_EVENT_BODY_ERROR_MESSAGE + eventBody);
     }
 
     private static URI toPublicationId(CristinNviReport cristinNviReport) {
@@ -160,10 +149,15 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private SQSEvent eventWithBody(String value) {
+    private SQSEvent createEvent(CristinNviReport cristinNviReport) throws IOException {
+        UnixPath fullPath = UnixPath.of(randomString(), randomString());
+        var fileUri = s3Driver.insertFile(fullPath, cristinNviReport.toJsonString());
+        var eventReference = new EventReference(randomString(), randomString(), fileUri, Instant.now());
+        var body = new EventReferenceWithContent(cristinNviReport);
+        s3Driver.insertFile(fullPath, body.toJsonString());
         var sqsEvent = new SQSEvent();
         var message = new SQSMessage();
-        message.setBody(value);
+        message.setBody(eventReference.toJsonString());
         sqsEvent.setRecords(List.of(message));
         return sqsEvent;
     }
