@@ -8,10 +8,15 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.events.db.DynamoDbEventToQueueHandler;
 import nva.commons.core.JacocoGenerated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, Void> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(CristinNviReportEventConsumer.class);
+    public static final String PARSE_EVENT_BODY_ERROR_MESSAGE = "Could not parse event body: ";
     private final CandidateRepository repository;
 
     @JacocoGenerated
@@ -41,6 +46,8 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     }
 
     private CristinNviReport toCristinNviReport(String body) {
-        return attempt(() -> dtoObjectMapper.readValue(body, CristinNviReport.class)).orElseThrow();
+        LOGGER.info("Creating nvi candidate from event body {}", body);
+        return attempt(() -> dtoObjectMapper.readValue(body, CristinNviReport.class))
+                   .orElseThrow(new RuntimeException(PARSE_EVENT_BODY_ERROR_MESSAGE + body));
     }
 }

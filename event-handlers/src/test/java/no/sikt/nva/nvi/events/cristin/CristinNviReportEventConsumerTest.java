@@ -4,6 +4,7 @@ import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.AFFILIATION_DELIMITER;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.PERSISTED_RESOURCES_BUCKET;
+import static no.sikt.nva.nvi.events.cristin.CristinNviReportEventConsumer.PARSE_EVENT_BODY_ERROR_MESSAGE;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
@@ -13,10 +14,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -29,6 +32,7 @@ import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,6 +65,13 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
         assertThatNviCandidateHasExpectedValues(nviCandidate, cristinNviReport);
     }
 
+    @Test
+    void shouldThrowRuntimeExceptionWithExpectedMessageWhenCanNotParseEventBody() {
+        var eventBody = randomString();
+        assertThrows(RuntimeException.class, () -> handler.handleRequest(eventWithBody(eventBody), CONTEXT),
+                     PARSE_EVENT_BODY_ERROR_MESSAGE + eventBody);
+    }
+
     private static URI toPublicationId(CristinNviReport cristinNviReport) {
         return UriWrapper.fromHost(API_HOST)
                    .addChild(PUBLICATION)
@@ -78,16 +89,15 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
         assertThat(candidate.getPublicationDetails().publicationBucketUri(),
                    is(equalTo(expectedPublicationBucketUri(cristinNviReport.publicationIdentifier()))));
         assertThat(candidate.isApplicable(), is(true));
-        candidate.getApprovals().values().stream()
+        candidate.getApprovals()
+            .values()
+            .stream()
             .map(Approval::getStatus)
             .forEach(status -> assertThat(status, is(equalTo(ApprovalStatus.APPROVED))));
     }
 
     private URI expectedPublicationBucketUri(String value) {
-        return UriWrapper.fromUri(PERSISTED_RESOURCES_BUCKET)
-            .addChild("resources")
-            .addChild(value)
-            .getUri();
+        return UriWrapper.fromUri(PERSISTED_RESOURCES_BUCKET).addChild("resources").addChild(value).getUri();
     }
 
     private URI expectedPublicationId(String value) {
@@ -96,8 +106,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
 
     private PublicationDate toPublicationDate(Instant instant) {
         var zonedDateTime = instant.atZone(ZoneOffset.UTC.getRules().getOffset(Instant.now()));
-        return new PublicationDate(String.valueOf(zonedDateTime.getYear()),
-                                   String.valueOf(zonedDateTime.getMonth()),
+        return new PublicationDate(String.valueOf(zonedDateTime.getYear()), String.valueOf(zonedDateTime.getMonth()),
                                    String.valueOf(zonedDateTime.getDayOfMonth()));
     }
 
@@ -149,6 +158,14 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
         var message = new SQSMessage();
         var body = attempt(() -> objectMapper.writeValueAsString(cristinNviReport)).orElseThrow();
         message.setBody(body);
+        sqsEvent.setRecords(List.of(message));
+        return sqsEvent;
+    }
+
+    private SQSEvent eventWithBody(String value) {
+        var sqsEvent = new SQSEvent();
+        var message = new SQSMessage();
+        message.setBody(value);
         sqsEvent.setRecords(List.of(message));
         return sqsEvent;
     }
