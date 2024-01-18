@@ -23,7 +23,7 @@
   },
   "approvals": [
     {
-      "id": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
+      "institutionId": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
       "labels": {
         "nb": "Sikt – Kunnskapssektorens tjenesteleverandør",
         "en": "Sikt - Norwegian Agency for Shared Services in Education and Research"
@@ -31,7 +31,7 @@
       "approvalStatus": "Pending"
     },
     {
-      "id": "https://api.dev.nva.aws.unit.no/cristin/organization/2333.0.0.0",
+      "institutionId": "https://api.dev.nva.aws.unit.no/cristin/organization/2333.0.0.0",
       "labels": {
         "nb": "NTNU",
         "en": "NTNU"

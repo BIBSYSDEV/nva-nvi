@@ -11,7 +11,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNED_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNMENTS_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.ID;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NUMBER_OF_APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_COLLABORATION_AGG;
@@ -34,10 +34,10 @@ import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 
 public final class Aggregations {
 
-    private static final CharSequence JSON_PATH_DELIMITER = ".";
     public static final String COMPLETED_AGGREGATION_AGG = "completed";
     public static final String TOTAL_COUNT_AGGREGATION_AGG = "totalCount";
     public static final int MULTIPLE = 2;
+    private static final CharSequence JSON_PATH_DELIMITER = ".";
 
     private Aggregations() {
     }
@@ -75,13 +75,13 @@ public final class Aggregations {
 
     public static Query statusQuery(String customer, ApprovalStatus status) {
         return nestedQuery(APPROVALS,
-                           termQuery(customer, jsonPathOf(APPROVALS, ID)),
+                           termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)),
                            termQuery(status.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)));
     }
 
     public static Query statusQueryWithAssignee(String customer, ApprovalStatus status, boolean hasAssignee) {
         return nestedQuery(APPROVALS,
-                           termQuery(customer, jsonPathOf(APPROVALS, ID)),
+                           termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)),
                            termQuery(status.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)),
                            hasAssignee
                                ? existsQuery(jsonPathOf(APPROVALS, ASSIGNEE))
@@ -117,7 +117,7 @@ public final class Aggregations {
 
     public static Query assignmentsQuery(String username, String customer) {
         return nestedQuery(APPROVALS,
-                           termQuery(customer, jsonPathOf(APPROVALS, ID)),
+                           termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)),
                            termQuery(username, jsonPathOf(APPROVALS, ASSIGNEE)));
     }
 
@@ -135,14 +135,15 @@ public final class Aggregations {
 
     private static Aggregation totalCountAggregation(String customer) {
         return new Aggregation.Builder()
-                   .filter(mustMatch(nestedQuery(APPROVALS, termQuery(customer, jsonPathOf(APPROVALS, ID)))))
+                   .filter(
+                       mustMatch(nestedQuery(APPROVALS, termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)))))
                    .build();
     }
 
     private static Aggregation completedAggregation(String customer) {
         var notPendingQuery = nestedQuery(APPROVALS,
-                                      termQuery(customer, jsonPathOf(APPROVALS, ID)),
-                                      mustNotMatch(PENDING.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)));
+                                          termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)),
+                                          mustNotMatch(PENDING.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)));
 
         return new Aggregation.Builder()
                    .filter(mustMatch(notPendingQuery))

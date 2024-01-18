@@ -174,7 +174,7 @@ public class OpenSearchClientTest {
     }
 
     @Test
-    void shoulThrowWhenUsingUndefinedFilterName() {
+    void shouldThrowWhenUsingUndefinedFilterName() {
         var searchParameters = defaultSearchParameters().withFilter(UNEXISTING_FILTER).build();
         assertThrows(IllegalStateException.class,
                      () -> openSearchClient.search(searchParameters));
