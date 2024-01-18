@@ -150,7 +150,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
     }
 
     private SQSEvent createEvent(CristinNviReport cristinNviReport) throws IOException {
-        UnixPath fullPath = UnixPath.of(randomString(), randomString());
+        var fullPath = UnixPath.of(randomString(), randomString());
         var fileUri = s3Driver.insertFile(fullPath, cristinNviReport.toJsonString());
         var eventReference = new EventReference(randomString(), randomString(), fileUri, Instant.now());
         var body = new EventReferenceWithContent(cristinNviReport);

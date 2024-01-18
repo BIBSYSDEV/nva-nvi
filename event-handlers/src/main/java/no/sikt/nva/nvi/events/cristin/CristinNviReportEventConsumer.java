@@ -11,13 +11,10 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.unit.nva.events.models.EventReference;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.JacocoGenerated;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
 
 public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, Void> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CristinNviReportEventConsumer.class);
     private final CandidateRepository repository;
     private final S3Client s3Client;
 
@@ -48,7 +45,6 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     }
 
     private EventReferenceWithContent toEventBody(String value) {
-        LOGGER.info("Event body {}", value);
         return attempt(() -> dtoObjectMapper.readValue(value, EventReferenceWithContent.class)).orElseThrow();
     }
 
