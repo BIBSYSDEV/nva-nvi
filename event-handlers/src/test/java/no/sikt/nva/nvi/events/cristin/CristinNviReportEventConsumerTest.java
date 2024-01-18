@@ -6,10 +6,8 @@ import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.PERSISTED_RESOURCES_BUCKET;
 import static no.sikt.nva.nvi.events.cristin.CristinNviReportEventConsumer.PARSE_EVENT_BODY_ERROR_MESSAGE;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
-import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -19,7 +17,7 @@ import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -32,7 +30,10 @@ import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
-import no.unit.nva.commons.json.JsonUtils;
+import no.unit.nva.events.models.EventReference;
+import no.unit.nva.s3.S3Driver;
+import no.unit.nva.stubs.FakeS3Client;
+import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,23 +43,29 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
     public static final LocalDate DATE_CONTROLLED = LocalDate.now();
     public static final String STATUS_CONTROLLED = "J";
     public static final String PUBLICATION = "publication";
+    private static final String BUCKET_NAME = "not-important";
     private static final Context CONTEXT = mock(Context.class);
     private CristinNviReportEventConsumer handler;
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
+    private S3Driver s3Driver;
 
     @BeforeEach
     void setup() {
         localDynamo = initializeTestDatabase();
         candidateRepository = new CandidateRepository(localDynamo);
         periodRepository = new PeriodRepository(localDynamo);
-        handler = new CristinNviReportEventConsumer(candidateRepository);
+        var s3Client = new FakeS3Client();
+        s3Driver = new S3Driver(s3Client, BUCKET_NAME);
+        handler = new CristinNviReportEventConsumer(candidateRepository, s3Client);
     }
 
     @Test
-    void shouldCreateNviCandidateFromNviReport() {
+    void shouldCreateNviCandidateFromNviReport() throws IOException {
         var cristinNviReport = randomCristinNviReport();
-        handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
+        var fileUri = s3Driver.insertFile(UnixPath.of(randomString(), randomString()), cristinNviReport.toJsonString());
+        var eventReference = new EventReference(randomString(), randomString(), fileUri, Instant.now());
+        handler.handleRequest(eventWithBody(eventReference.toJsonString()), CONTEXT);
         var publicationId = toPublicationId(cristinNviReport);
         var nviCandidate = Candidate.fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository);
 
@@ -151,15 +158,6 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
                    .withOwnerCode(randomString())
                    .withGroupIdentifier(randomString())
                    .build();
-    }
-
-    private SQSEvent createEvent(CristinNviReport cristinNviReport) {
-        var sqsEvent = new SQSEvent();
-        var message = new SQSMessage();
-        var body = attempt(() -> objectMapper.writeValueAsString(cristinNviReport)).orElseThrow();
-        message.setBody(body);
-        sqsEvent.setRecords(List.of(message));
-        return sqsEvent;
     }
 
     private SQSEvent eventWithBody(String value) {

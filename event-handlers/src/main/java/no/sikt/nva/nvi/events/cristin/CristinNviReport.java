@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
 import java.util.List;
+import no.unit.nva.commons.json.JsonSerializable;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -11,7 +12,7 @@ public record CristinNviReport(String publicationIdentifier,
                                String cristinIdentifier,
                                List<CristinLocale> nviReport,
                                int yearReported,
-                               Instant publicationDate) {
+                               Instant publicationDate) implements JsonSerializable {
 
     public static Builder builder() {
         return new Builder();

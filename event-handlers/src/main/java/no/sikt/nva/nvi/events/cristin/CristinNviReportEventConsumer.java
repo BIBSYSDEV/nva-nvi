@@ -8,24 +8,29 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.events.db.DynamoDbEventToQueueHandler;
+import no.unit.nva.events.models.EventReference;
+import no.unit.nva.s3.S3Driver;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.services.s3.S3Client;
 
 public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, Void> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CristinNviReportEventConsumer.class);
     public static final String PARSE_EVENT_BODY_ERROR_MESSAGE = "Could not parse event body: ";
     private final CandidateRepository repository;
+    private final S3Client s3Client;
 
     @JacocoGenerated
     public CristinNviReportEventConsumer() {
         this.repository = new CandidateRepository(defaultDynamoClient());
+        this.s3Client = S3Driver.defaultS3Client().build();
     }
 
-    public CristinNviReportEventConsumer(CandidateRepository candidateRepository) {
+    public CristinNviReportEventConsumer(CandidateRepository candidateRepository, S3Client s3Client) {
         this.repository = candidateRepository;
+        this.s3Client = s3Client;
     }
 
     @Override
@@ -34,12 +39,18 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
         sqsEvent.getRecords()
             .stream()
             .map(SQSMessage::getBody)
+            .map(EventReference::fromJson)
+            .map(this::fetchS3Content)
             .map(this::toCristinNviReport)
             .forEach(this::createAndPersist);
 
         return null;
     }
 
+    private String fetchS3Content(EventReference eventReference) {
+        return new S3Driver(s3Client, eventReference.extractBucketName())
+                   .readEvent(eventReference.getUri());
+    }
 
     private void createAndPersist(CristinNviReport cristinNviReport) {
         repository.create(CristinMapper.toDbCandidate(cristinNviReport), CristinMapper.toApprovals(cristinNviReport));
@@ -48,6 +59,6 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     private CristinNviReport toCristinNviReport(String body) {
         LOGGER.info("Creating nvi candidate from event body {}", body);
         return attempt(() -> dtoObjectMapper.readValue(body, CristinNviReport.class))
-                   .orElseThrow(new RuntimeException(PARSE_EVENT_BODY_ERROR_MESSAGE + body));
+                   .orElseThrow();
     }
 }
