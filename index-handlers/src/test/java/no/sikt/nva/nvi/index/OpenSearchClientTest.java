@@ -470,8 +470,13 @@ public class OpenSearchClientTest {
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
         var approvals = randomApprovalList();
-        return new NviCandidateIndexDocument(randomUri(), UUID.randomUUID(), randomPublicationDetails(),
-                                             approvals, approvals.size(), randomBigDecimal());
+        return NviCandidateIndexDocument.builder()
+                   .withIdentifier(UUID.randomUUID())
+                   .withPublicationDetails(randomPublicationDetails())
+                   .withApprovals(approvals)
+                   .withNumberOfApprovals(approvals.size())
+                   .withPoints(randomBigDecimal())
+                   .build();
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomer(String customer,
@@ -479,10 +484,13 @@ public class OpenSearchClientTest {
                                                                                          String assignee,
                                                                                          String year,
                                                                                          String title) {
-        return new NviCandidateIndexDocument(randomUri(), UUID.randomUUID(),
-                                             randomPublicationDetailsWithCustomer(customer, contributor, year, title),
-                                             List.of(randomApprovalWithCustomerAndAssignee(customer, assignee)), 1,
-                                             randomBigDecimal());
+        return NviCandidateIndexDocument.builder()
+                   .withIdentifier(UUID.randomUUID())
+                   .withPublicationDetails(randomPublicationDetailsWithCustomer(customer, contributor, year, title))
+                   .withApprovals(List.of(randomApprovalWithCustomerAndAssignee(customer, assignee)))
+                   .withNumberOfApprovals(1)
+                   .withPoints(randomBigDecimal())
+                   .build();
     }
 
     private static PublicationDetails randomPublicationDetailsWithCustomer(String affiliation,

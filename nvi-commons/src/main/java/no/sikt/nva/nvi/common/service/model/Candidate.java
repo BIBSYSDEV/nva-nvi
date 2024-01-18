@@ -162,6 +162,10 @@ public final class Candidate {
         return identifier;
     }
 
+    public URI getId() {
+        return new UriWrapper(HTTPS, API_DOMAIN).addChild(BASE_PATH, CANDIDATE_PATH, identifier.toString()).getUri();
+    }
+
     public boolean isApplicable() {
         return applicable;
     }
@@ -196,7 +200,7 @@ public final class Candidate {
 
     public CandidateDto toDto() {
         return CandidateDto.builder()
-                   .withId(constructId(identifier))
+                   .withId(getId())
                    .withContext(CONTEXT_URI)
                    .withIdentifier(identifier)
                    .withPublicationId(publicationDetails.publicationId())
@@ -403,9 +407,9 @@ public final class Candidate {
             return Collections.emptyMap();
         } else {
             return candidateDao.candidate()
-                .points()
-                .stream()
-                .collect(Collectors.toMap(DbInstitutionPoints::institutionId, DbInstitutionPoints::points));
+                       .points()
+                       .stream()
+                       .collect(Collectors.toMap(DbInstitutionPoints::institutionId, DbInstitutionPoints::points));
         }
     }
 
@@ -426,10 +430,6 @@ public final class Candidate {
         return periodRepository.findByPublishingYear(year)
                    .map(PeriodStatus::fromPeriod)
                    .orElse(PERIOD_STATUS_NO_PERIOD);
-    }
-
-    private static URI constructId(UUID identifier) {
-        return new UriWrapper(HTTPS, API_DOMAIN).addChild(BASE_PATH, CANDIDATE_PATH, identifier.toString()).getUri();
     }
 
     private static List<DbApprovalStatus> mapToApprovals(Map<URI, BigDecimal> points) {
