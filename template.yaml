@@ -43,6 +43,9 @@ Parameters:
   ResourcesBucket:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/PersistedEntriesBucketName
+  CristinImportNviQueueArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /NVA/Queues/CristinImportNviQueueArn
   SearchInfrastructureApiHost:
     Type: String
     Description: Host of external search infrastructure API (SWS).
