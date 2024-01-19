@@ -440,6 +440,21 @@ public class OpenSearchClientTest {
         assertThat(searchResponse.hits().hits(), hasSize(1));
     }
 
+    @Test
+    void shouldReturnAllSearchResultsWhenSearchingWithoutCustomerAndAffiliations()
+        throws IOException, InterruptedException {
+        addDocumentsToIndex(documentFromString("document_with_contributor_from_ntnu_subunit.json"),
+                            documentFromString("document_with_contributor_from_sikt.json"),
+                            documentFromString("document_with_contributor_from_sikt_but_not_creator.json")
+        );
+
+        var searchParameters = CandidateSearchParameters.builder().build();
+        var searchResponse =
+            openSearchClient.search(searchParameters);
+
+        assertThat(searchResponse.hits().hits(), hasSize(3));
+    }
+
     private static int getDocCount(SearchResponse<NviCandidateIndexDocument> response, String aggregationName) {
         var aggregations = extractAggregations(response);
         assert aggregations != null;

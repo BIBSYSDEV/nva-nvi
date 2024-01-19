@@ -204,7 +204,7 @@ public class CandidateQuery {
     }
 
     private List<Query> specificMatch() {
-        var institutionQuery = createInstitutionQuery();
+        var institutionQuery = affiliations.isEmpty() ? Optional.<Query>empty() : createInstitutionQuery();
         var filterQuery = constructQueryWithFilter();
         var searchTermQuery = createSearchTermQuery(searchTerm);
         var yearQuery = createYearQuery(year);

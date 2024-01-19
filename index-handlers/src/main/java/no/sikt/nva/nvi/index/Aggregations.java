@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.REJECTED;
@@ -26,6 +27,7 @@ import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.ExistsQuery;
+import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -101,6 +103,14 @@ public final class Aggregations {
     }
 
     public static Query termQuery(String value, String field) {
+        return nonNull(value) ? toTermQuery(value, field) : matchAllQuery();
+    }
+
+    private static Query matchAllQuery() {
+        return new MatchAllQuery.Builder().build()._toQuery();
+    }
+
+    private static Query toTermQuery(String value, String field) {
         return new TermQuery.Builder()
                    .value(new FieldValue.Builder().stringValue(value).build())
                    .field(field)

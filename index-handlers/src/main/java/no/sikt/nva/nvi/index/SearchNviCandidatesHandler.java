@@ -23,6 +23,7 @@ import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
+import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
@@ -73,12 +74,13 @@ public class SearchNviCandidatesHandler
                                                                             Context context)
         throws UnauthorizedException {
         var candidateSearchParameters = getCandidateSearchParameters(requestInfo);
-        assertUserIsAllowedToSearchAffiliations(candidateSearchParameters.affiliations(),
-                                                candidateSearchParameters.customer());
-
         return attempt(() -> openSearchClient.search(candidateSearchParameters))
             .map(searchResponse -> toPaginatedResult(searchResponse, candidateSearchParameters))
             .orElseThrow();
+    }
+
+    private static boolean userIsNotNviAdmin(RequestInfo requestInfo) {
+        return !requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI);
     }
 
     private CandidateSearchParameters getCandidateSearchParameters(RequestInfo requestInfo)
@@ -87,9 +89,8 @@ public class SearchNviCandidatesHandler
         var size = extractQueryParamSizeOrDefault(requestInfo);
         var filter = extractQueryParamFilterOrDefault(requestInfo);
         var excludeSubUnits = extractQueryParamExcludeSubUnitsOrDefault(requestInfo);
-        var topLevelOrg = requestInfo.getTopLevelOrgCristinId().orElseThrow();
-        var affiliations = Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
-            .orElse(List.of(topLevelOrg));
+        var topLevelOrg = userIsNotNviAdmin(requestInfo) ? requestInfo.getTopLevelOrgCristinId().orElseThrow() : null;
+        var affiliations = getAffiliations(requestInfo, topLevelOrg);
         var username = requestInfo.getUserName();
         var searchTerm = extractQueryParamSearchTermOrDefault(requestInfo);
         var year = extractQueryParamPublicationDateOrDefault(requestInfo);
@@ -98,13 +99,24 @@ public class SearchNviCandidatesHandler
         var contributor = extractQueryParamContributor(requestInfo);
         var assignee = extractQueryParamAssignee(requestInfo);
 
-        assertUserIsAllowedToSearchAffiliations(affiliations, topLevelOrg);
+        if (userIsNotNviAdmin(requestInfo)) {
+            assertUserIsAllowedToSearchAffiliations(affiliations, topLevelOrg);
+        }
 
-        var candidateSearchParameters = new CandidateSearchParameters(searchTerm, affiliations, excludeSubUnits,
-                                                                      filter, username,
-                                                                      year, category, title, contributor,
-                                                                      assignee, topLevelOrg, offset, size);
-        return candidateSearchParameters;
+        return new CandidateSearchParameters(searchTerm, affiliations, excludeSubUnits,
+                                             filter, username,
+                                             year, category, title, contributor,
+                                             assignee, topLevelOrg, offset, size);
+    }
+
+    private static List<URI> getAffiliations(RequestInfo requestInfo, URI topLevelOrg) {
+        if (userIsNotNviAdmin(requestInfo)) {
+            return Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
+                       .orElse(List.of(topLevelOrg));
+        } else {
+            return Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
+                       .orElse(List.of());
+        }
     }
 
     private void assertUserIsAllowedToSearchAffiliations(List<URI> affiliations, URI topLevelOrg)
