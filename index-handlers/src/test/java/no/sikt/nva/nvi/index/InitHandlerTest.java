@@ -20,7 +20,7 @@ class InitHandlerTest {
     }
 
     @Test
-    void shouldCreateIndexWhenNotExsisting() {
+    void shouldCreateIndexWhenNotExisting() {
         when(openSearchClient.indexExists()).thenReturn(false);
 
         handler.handleRequest(null, null);
@@ -29,7 +29,7 @@ class InitHandlerTest {
     }
 
     @Test
-    void shouldNotCreateIndexWhenExsisting() {
+    void shouldNotCreateIndexWhenExisting() {
         when(openSearchClient.indexExists()).thenReturn(true);
 
         handler.handleRequest(null, null);

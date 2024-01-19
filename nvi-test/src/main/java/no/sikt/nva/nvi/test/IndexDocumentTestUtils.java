@@ -60,6 +60,7 @@ public final class IndexDocumentTestUtils {
                                                                    Candidate candidate) {
         var assignee = approvalEntry.getValue().getAssignee();
         return no.sikt.nva.nvi.index.model.Approval.builder()
+                   .withId(approvalEntry.getKey().toString())
                    .withInstitutionId(approvalEntry.getKey().toString())
                    .withApprovalStatus(ApprovalStatus.fromValue(approvalEntry.getValue().getStatus().getValue()))
                    .withAssignee(Objects.nonNull(assignee) ? assignee.value() : null)
