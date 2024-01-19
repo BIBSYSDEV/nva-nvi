@@ -14,6 +14,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 
 import nva.commons.core.Environment;
+import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 
 public final class CristinMapper {
@@ -94,10 +95,14 @@ public final class CristinMapper {
     }
 
     private static URI constructPublicationBucketUri(String publicationIdentifier) {
-        return UriWrapper.fromUri(PERSISTED_RESOURCES_BUCKET)
+        return UriWrapper.fromHost(PERSISTED_RESOURCES_BUCKET)
                    .addChild("resources")
-                   .addChild(publicationIdentifier)
+                   .addChild(publicationIdentifierKeyInS3Bucket(publicationIdentifier))
                    .getUri();
+    }
+
+    private static String publicationIdentifierKeyInS3Bucket(String publicationIdentifier) {
+        return publicationIdentifier  + ".gz";
     }
 
     private static URI constructPublicationId(String publicationIdentifier) {

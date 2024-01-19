@@ -144,7 +144,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         LOGGER.info("Generating search request with affiliations: {}, excludeSubUnits: {}, filter: {}, username: {}, "
                     + "customer: {}, offset: "
                     + "{}, size: {}", params.affiliations(), params.excludeSubUnits(), params.filter(),
-                    params.username(), params.username(), params.offset(),
+                    params.username(), params.customer(), params.offset(),
                     params.size());
     }
 
