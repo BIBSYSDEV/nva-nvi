@@ -4,11 +4,12 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.LocalDate;
+import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.core.JacocoGenerated;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public final class CristinLocale {
+public final class CristinLocale implements JsonSerializable {
 
     public static final String OWNER_CODE_FIELD = "eierkode";
     public static final String INSTITUTION_IDENTIFIER_FIELD = "institusjonsnr";
