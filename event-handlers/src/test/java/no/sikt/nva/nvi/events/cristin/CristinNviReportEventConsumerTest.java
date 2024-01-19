@@ -93,7 +93,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
     }
 
     private URI expectedPublicationBucketUri(String value) {
-        return UriWrapper.fromUri(PERSISTED_RESOURCES_BUCKET).addChild("resources").addChild(value).getUri();
+        return UriWrapper.fromHost(PERSISTED_RESOURCES_BUCKET).addChild("resources").addChild(value + ".gz").getUri();
     }
 
     private URI expectedPublicationId(String value) {
