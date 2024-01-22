@@ -52,6 +52,7 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     }
 
     private String fetchS3Content(EventReference eventReference) {
+        logger.info("Event to fetch: {}", eventReference.toJsonString());
         return new S3Driver(s3Client, eventReference.extractBucketName())
                    .readEvent(eventReference.getUri());
     }
