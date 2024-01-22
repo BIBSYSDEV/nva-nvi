@@ -4,12 +4,11 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.util.Map;
-import nva.commons.core.JacocoGenerated;
 
-@JacocoGenerated
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record Approval(String id,
+public record Approval(@Deprecated String id,
+                       String institutionId,
                        Map<String, String> labels,
                        ApprovalStatus approvalStatus,
                        BigDecimal points,
@@ -21,7 +20,9 @@ public record Approval(String id,
 
     public static final class Builder {
 
+        @Deprecated
         private String id;
+        private String institutionId;
         private Map<String, String> labels;
         private ApprovalStatus approvalStatus;
         private BigDecimal points;
@@ -30,8 +31,14 @@ public record Approval(String id,
         private Builder() {
         }
 
+        @Deprecated
         public Builder withId(String id) {
             this.id = id;
+            return this;
+        }
+
+        public Builder withInstitutionId(String institutionId) {
+            this.institutionId = institutionId;
             return this;
         }
 
@@ -56,7 +63,7 @@ public record Approval(String id,
         }
 
         public Approval build() {
-            return new Approval(id, labels, approvalStatus, points, assignee);
+            return new Approval(id, institutionId, labels, approvalStatus, points, assignee);
         }
     }
 }

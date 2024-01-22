@@ -174,7 +174,7 @@ public class OpenSearchClientTest {
     }
 
     @Test
-    void shoulThrowWhenUsingUndefinedFilterName() {
+    void shouldThrowWhenUsingUndefinedFilterName() {
         var searchParameters = defaultSearchParameters().withFilter(UNEXISTING_FILTER).build();
         assertThrows(IllegalStateException.class,
                      () -> openSearchClient.search(searchParameters));
@@ -511,7 +511,7 @@ public class OpenSearchClientTest {
     }
 
     private static Approval randomApprovalWithCustomerAndAssignee(String affiliation, String assignee) {
-        return new Approval(affiliation, Map.of(), randomStatus(), randomBigDecimal(SCALE), assignee);
+        return new Approval(affiliation, affiliation, Map.of(), randomStatus(), randomBigDecimal(SCALE), assignee);
     }
 
     private static List<Approval> randomApprovalList() {
@@ -519,7 +519,7 @@ public class OpenSearchClientTest {
     }
 
     private static Approval randomApproval() {
-        return new Approval(randomString(), Map.of(), randomStatus(), randomBigDecimal(SCALE), null);
+        return new Approval(randomString(), randomString(), Map.of(), randomStatus(), randomBigDecimal(SCALE), null);
     }
 
     private static ApprovalStatus randomStatus() {

@@ -24,6 +24,7 @@ public final class SearchConstants {
     public static final String REJECTED_COLLABORATION_AGG = "rejectedCollaboration";
     public static final String ASSIGNMENTS_AGG = "assignments";
     public static final String ID = "id";
+    public static final String INSTITUTION_ID = "institutionId";
     public static final String ASSIGNEE = "assignee";
     public static final String NUMBER_OF_APPROVALS = "numberOfApprovals";
     public static final String APPROVALS = "approvals";
@@ -101,7 +102,7 @@ public final class SearchConstants {
     }
 
     private static Map<String, Property> approvalProperties() {
-        return Map.of(ID, keywordProperty(), ASSIGNEE, textPropertyWithNetsedKeyword(),
+        return Map.of(INSTITUTION_ID, keywordProperty(), ASSIGNEE, textPropertyWithNetsedKeyword(),
                       APPROVAL_STATUS, keywordProperty());
     }
 
