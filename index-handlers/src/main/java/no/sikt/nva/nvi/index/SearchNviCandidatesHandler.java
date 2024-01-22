@@ -32,8 +32,6 @@ import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.StringUtils;
 import org.apache.jena.rdf.model.RDFNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
@@ -148,7 +146,9 @@ public class SearchNviCandidatesHandler
     private String extractQueryParamPublicationDateOrDefault(RequestInfo requestInfo, boolean isAdmin) {
         var yearQueryParam =  requestInfo.getQueryParameters()
             .getOrDefault(QUERY_PARAM_YEAR, null);
-        return nonNull(yearQueryParam) ? yearQueryParam : String.valueOf(ZonedDateTime.now().getYear());
+        return isAdmin
+                   ? yearQueryParam
+                   : nonNull(yearQueryParam) ? yearQueryParam : String.valueOf(ZonedDateTime.now().getYear());
     }
 
     @Override
