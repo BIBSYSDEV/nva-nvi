@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.APPLICATION_JSON;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.HAS_PART_PROPERTY;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
@@ -37,7 +38,6 @@ import org.slf4j.LoggerFactory;
 public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
-    private static final Logger logger = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
     public static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     public static final String QUERY_PARAM_EXCLUDE_SUB_UNITS = "excludeSubUnits";
     public static final String QUERY_PARAM_FILTER = "filter";
@@ -77,33 +77,33 @@ public class SearchNviCandidatesHandler
                                                                             Context context)
         throws UnauthorizedException {
         var candidateSearchParameters = getCandidateSearchParameters(requestInfo);
-        logger.info("Searching given following search parameters: {}", candidateSearchParameters.toJsonString());
         return attempt(() -> openSearchClient.search(candidateSearchParameters))
             .map(searchResponse -> toPaginatedResult(searchResponse, candidateSearchParameters))
             .orElseThrow();
     }
 
-    private static boolean userIsNotNviAdmin(RequestInfo requestInfo) {
-        return !requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI);
+    private static boolean userIsNviAdmin(RequestInfo requestInfo) {
+        return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI);
     }
 
     private CandidateSearchParameters getCandidateSearchParameters(RequestInfo requestInfo)
         throws UnauthorizedException {
+        boolean isAdmin = userIsNviAdmin(requestInfo);
         var offset = extractQueryParamOffsetOrDefault(requestInfo);
         var size = extractQueryParamSizeOrDefault(requestInfo);
         var filter = extractQueryParamFilterOrDefault(requestInfo);
         var excludeSubUnits = extractQueryParamExcludeSubUnitsOrDefault(requestInfo);
-        var topLevelOrg = userIsNotNviAdmin(requestInfo) ? requestInfo.getTopLevelOrgCristinId().orElseThrow() : null;
+        var topLevelOrg = !isAdmin ? requestInfo.getTopLevelOrgCristinId().orElseThrow() : null;
         var affiliations = getAffiliations(requestInfo, topLevelOrg);
         var username = requestInfo.getUserName();
         var searchTerm = extractQueryParamSearchTermOrDefault(requestInfo);
-        var year = extractQueryParamPublicationDateOrDefault(requestInfo);
+        var year = extractQueryParamPublicationDateOrDefault(requestInfo, isAdmin);
         var category = extractQueryParamCategoryOrDefault(requestInfo);
         var title = extractQueryParamTitle(requestInfo);
         var contributor = extractQueryParamContributor(requestInfo);
         var assignee = extractQueryParamAssignee(requestInfo);
 
-        if (userIsNotNviAdmin(requestInfo)) {
+        if (!isAdmin) {
             assertUserIsAllowedToSearchAffiliations(affiliations, topLevelOrg);
         }
 
@@ -114,7 +114,7 @@ public class SearchNviCandidatesHandler
     }
 
     private static List<URI> getAffiliations(RequestInfo requestInfo, URI topLevelOrg) {
-        if (userIsNotNviAdmin(requestInfo)) {
+        if (!userIsNviAdmin(requestInfo)) {
             return Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
                        .orElse(List.of(topLevelOrg));
         } else {
@@ -145,9 +145,10 @@ public class SearchNviCandidatesHandler
         }
     }
 
-    private String extractQueryParamPublicationDateOrDefault(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameters()
-            .getOrDefault(QUERY_PARAM_YEAR, String.valueOf(ZonedDateTime.now().getYear()));
+    private String extractQueryParamPublicationDateOrDefault(RequestInfo requestInfo, boolean isAdmin) {
+        var yearQueryParam =  requestInfo.getQueryParameters()
+            .getOrDefault(QUERY_PARAM_YEAR, null);
+        return nonNull(yearQueryParam) ? yearQueryParam : String.valueOf(ZonedDateTime.now().getYear());
     }
 
     @Override

@@ -63,7 +63,7 @@ public final class SearchConstants {
             .withExcludeSubUnits(params.excludeSubUnits())
             .withFilter(filterType)
             .withUsername(params.username())
-            .withCustomer(Optional.ofNullable(params.customer()).map(URI::toString).orElse("*"))
+            .withCustomer(Optional.ofNullable(params.customer()).map(URI::toString).orElse(null))
             .withYear(params.year())
             .withCategory(params.category())
             .withTitle(params.title())

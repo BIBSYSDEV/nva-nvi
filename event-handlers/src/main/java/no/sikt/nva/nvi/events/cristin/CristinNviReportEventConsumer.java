@@ -11,13 +11,10 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.unit.nva.events.models.EventReference;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.JacocoGenerated;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
 
 public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, Void> {
 
-    private static final Logger logger = LoggerFactory.getLogger(CristinNviReportEventConsumer.class);
     private final CandidateRepository repository;
     private final S3Client s3Client;
 
@@ -47,18 +44,15 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     }
 
     private CristinNviReport toCristinNviReport(String value) {
-        logger.info("Value from s3: {}", value);
         return attempt(() -> dtoObjectMapper.readValue(value, CristinNviReport.class)).orElseThrow();
     }
 
     private String fetchS3Content(EventReference eventReference) {
-        logger.info("Event to fetch: {}", eventReference.toJsonString());
         return new S3Driver(s3Client, eventReference.extractBucketName())
                    .readEvent(eventReference.getUri());
     }
 
     private void createAndPersist(CristinNviReport cristinNviReport) {
-        logger.info("Nvi report: {}", cristinNviReport.toJsonString());
         repository.create(CristinMapper.toDbCandidate(cristinNviReport), CristinMapper.toApprovals(cristinNviReport));
     }
 }
