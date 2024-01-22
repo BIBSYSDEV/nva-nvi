@@ -153,8 +153,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
         var fullPath = UnixPath.of(randomString(), randomString());
         var fileUri = s3Driver.insertFile(fullPath, cristinNviReport.toJsonString());
         var eventReference = new EventReference(randomString(), randomString(), fileUri, Instant.now());
-        var body = new EventReferenceWithContent(cristinNviReport);
-        s3Driver.insertFile(fullPath, body.toJsonString());
+        s3Driver.insertFile(fullPath, cristinNviReport.toJsonString());
         var sqsEvent = new SQSEvent();
         var message = new SQSMessage();
         message.setBody(eventReference.toJsonString());

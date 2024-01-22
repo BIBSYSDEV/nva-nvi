@@ -40,16 +40,15 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
             .map(SQSMessage::getBody)
             .map(EventReference::fromJson)
             .map(this::fetchS3Content)
-            .map(this::toEventBody)
-            .map(EventReferenceWithContent::cristinNviReport)
+            .map(this::toCristinNviReport)
             .forEach(this::createAndPersist);
 
         return null;
     }
 
-    private EventReferenceWithContent toEventBody(String value) {
-        logger.info("Fetched string from s3: {}", value);
-        return attempt(() -> dtoObjectMapper.readValue(value, EventReferenceWithContent.class)).orElseThrow();
+    private CristinNviReport toCristinNviReport(String value) {
+        logger.info("Value from s3: {}", value);
+        return attempt(() -> dtoObjectMapper.readValue(value, CristinNviReport.class)).orElseThrow();
     }
 
     private String fetchS3Content(EventReference eventReference) {
