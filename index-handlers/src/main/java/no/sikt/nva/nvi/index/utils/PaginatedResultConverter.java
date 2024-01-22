@@ -78,7 +78,7 @@ public final class PaginatedResultConverter {
                                                           String title, String contributor, String assignee) {
         var queryParams = new HashMap<String, String>();
         putIfValueNotNull(queryParams, QUERY_PARAM_SEARCH_TERM, searchTerm);
-        putAffiliationsIfNotNull(queryParams, QUERY_PARAM_AFFILIATIONS, affiliations);
+        putAffiliationsIfNotNullOrEmpty(queryParams, QUERY_PARAM_AFFILIATIONS, affiliations);
         putIfTrue(queryParams, QUERY_PARAM_EXCLUDE_SUB_UNITS, excludeSubUnits);
         putIfValueNotEmpty(queryParams, QUERY_PARAM_FILTER, filter);
         putIfValueNotNull(queryParams, QUERY_PARAM_CATEGORY, category);
@@ -94,8 +94,8 @@ public final class PaginatedResultConverter {
         }
     }
 
-    private static void putAffiliationsIfNotNull(Map<String, String> map, String key, List<URI> affiliations) {
-        if (nonNull(affiliations)) {
+    private static void putAffiliationsIfNotNullOrEmpty(Map<String, String> map, String key, List<URI> affiliations) {
+        if (nonNull(affiliations) && !affiliations.isEmpty()) {
             map.put(key, affiliations.stream().map(URI::toString).collect(Collectors.joining(COMMA)));
         }
     }

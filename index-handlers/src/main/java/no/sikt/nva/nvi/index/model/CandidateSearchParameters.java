@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index.model;
 import static nva.commons.core.StringUtils.EMPTY_STRING;
 import java.net.URI;
 import java.util.List;
+import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.core.JacocoGenerated;
 
 public record CandidateSearchParameters(String searchTerm, List<URI> affiliations, boolean excludeSubUnits,
@@ -10,7 +11,7 @@ public record CandidateSearchParameters(String searchTerm, List<URI> affiliation
                                         String year, String category, String title, String contributor,
                                         String assignee, URI customer,
                                         int offset,
-                                        int size) {
+                                        int size) implements JsonSerializable {
     public static Builder builder() {
         return new Builder();
     }

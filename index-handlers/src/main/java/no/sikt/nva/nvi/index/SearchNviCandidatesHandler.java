@@ -31,10 +31,13 @@ import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.StringUtils;
 import org.apache.jena.rdf.model.RDFNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
+    private static final Logger logger = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
     public static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     public static final String QUERY_PARAM_EXCLUDE_SUB_UNITS = "excludeSubUnits";
     public static final String QUERY_PARAM_FILTER = "filter";
@@ -74,6 +77,7 @@ public class SearchNviCandidatesHandler
                                                                             Context context)
         throws UnauthorizedException {
         var candidateSearchParameters = getCandidateSearchParameters(requestInfo);
+        logger.info("Searching given following search parameters: {}", candidateSearchParameters.toJsonString());
         return attempt(() -> openSearchClient.search(candidateSearchParameters))
             .map(searchResponse -> toPaginatedResult(searchResponse, candidateSearchParameters))
             .orElseThrow();
