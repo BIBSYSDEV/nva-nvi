@@ -48,6 +48,7 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     }
 
     private EventReferenceWithContent toEventBody(String value) {
+        logger.info("Fetched string from s3: {}", value);
         return attempt(() -> dtoObjectMapper.readValue(value, EventReferenceWithContent.class)).orElseThrow();
     }
 
