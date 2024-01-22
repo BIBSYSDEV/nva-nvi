@@ -8,6 +8,8 @@ import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeri
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static nva.commons.apigateway.AccessRight.MANAGE_NVI;
+import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,6 +29,7 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.testutils.HandlerRequestBuilder;
+import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpStatus;
@@ -39,6 +42,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
 
     private static final Context CONTEXT = mock(Context.class);
+    public static final URI CUSTOMER_ID = randomUri();
     private final DynamoDbClient localDynamo = initializeTestDatabase();
     private ByteArrayOutputStream output;
     private FetchNviCandidateByPublicationIdHandler handler;
@@ -55,8 +59,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnNotFoundWhenCandidateDoesNotExist() throws IOException {
-        handler.handleRequest(createRequest(randomUri()),
-                              output, CONTEXT);
+        handler.handleRequest(requestWithAccessRight(randomUri(), MANAGE_NVI_CANDIDATES), output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
 
         assertEquals(HttpStatus.SC_NOT_FOUND, gatewayResponse.getStatusCode());
@@ -66,8 +69,9 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
     void shouldReturnNotFoundWhenCandidateExistsButNotApplicable() throws IOException {
         var institutionId = randomUri();
         var nonApplicableCandidate = setUpNonApplicableCandidate(institutionId);
-        handler.handleRequest(createRequest(nonApplicableCandidate.getPublicationDetails().publicationId()), output,
-                              CONTEXT);
+        var request = requestWithAccessRight(nonApplicableCandidate.getPublicationDetails().publicationId(),
+                                                         MANAGE_NVI_CANDIDATES);
+        handler.handleRequest(request, output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
 
         assertEquals(HttpStatus.SC_NOT_FOUND, gatewayResponse.getStatusCode());
@@ -86,12 +90,12 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldReturnValidCandidateWhenCandidateExists() throws IOException {
+    void shouldReturnNviCandidateWhenUserIsNviAdmin() throws IOException {
         var institutionId = randomUri();
         var candidate =
             Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
-        var request = createRequest(candidate.getPublicationDetails().publicationId());
+        var request = requestWithAccessRight(candidate.getPublicationDetails().publicationId(), MANAGE_NVI);
 
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -101,12 +105,29 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
         assertEquals(expectedResponse, actualResponse);
     }
 
-    private static InputStream createRequest(URI publicationId)
+    @Test
+    void shouldReturnValidCandidateWhenCandidateExists() throws IOException {
+        var institutionId = randomUri();
+        var candidate =
+            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+                .orElseThrow();
+        var request = requestWithAccessRight(candidate.getPublicationDetails().publicationId(), MANAGE_NVI_CANDIDATES);
+
+        handler.handleRequest(request, output, CONTEXT);
+        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+        var expectedResponse = candidate.toDto();
+        var actualResponse = response.getBodyObject(CandidateDto.class);
+
+        assertEquals(expectedResponse, actualResponse);
+    }
+
+    private static InputStream requestWithAccessRight(URI publicationId, AccessRight accessRight)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
                    .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
-                   .withCurrentCustomer(randomUri())
+                   .withCurrentCustomer(CUSTOMER_ID)
                    .withUserName(randomString())
+                   .withAccessRights(CUSTOMER_ID, accessRight)
                    .withPathParameters(Map.of(CANDIDATE_PUBLICATION_ID, publicationId.toString()))
                    .build();
     }

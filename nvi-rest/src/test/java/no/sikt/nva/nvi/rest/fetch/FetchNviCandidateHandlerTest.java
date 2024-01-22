@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeri
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static nva.commons.apigateway.AccessRight.MANAGE_NVI;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -108,6 +109,22 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
             Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         var request = createRequest(candidate.getIdentifier(), institutionId, MANAGE_NVI_CANDIDATES);
+
+        handler.handleRequest(request, output, CONTEXT);
+        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+        var expectedResponse = candidate.toDto();
+        var actualResponse = response.getBodyObject(CandidateDto.class);
+
+        assertEquals(expectedResponse, actualResponse);
+    }
+
+    @Test
+    void shouldReturnValidCandidateWhenUserIsNviAdmin() throws IOException {
+        var institutionId = randomUri();
+        var candidate =
+            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+                .orElseThrow();
+        var request = createRequest(candidate.getIdentifier(), institutionId, MANAGE_NVI);
 
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
