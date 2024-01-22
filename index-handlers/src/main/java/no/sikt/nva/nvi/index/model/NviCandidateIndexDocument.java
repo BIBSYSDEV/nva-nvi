@@ -12,13 +12,12 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.unit.nva.auth.uriretriever.UriRetriever;
-import nva.commons.core.JacocoGenerated;
 
-@JacocoGenerated
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 @JsonTypeName("NviCandidate")
 public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
+                                        URI id,
                                         UUID identifier,
                                         PublicationDetails publicationDetails,
                                         List<Approval> approvals,
@@ -37,18 +36,26 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         return new Builder();
     }
 
-    @JacocoGenerated
-    public static class Builder {
+    public static final class Builder {
 
         private URI context;
+        private URI id;
         private UUID identifier;
         private PublicationDetails publicationDetails;
         private List<Approval> approvals;
         private int numberOfApprovals;
         private BigDecimal points;
 
+        private Builder() {
+        }
+
         public Builder withContext(URI context) {
             this.context = context;
+            return this;
+        }
+
+        public Builder withId(URI id) {
+            this.id = id;
             return this;
         }
 
@@ -78,8 +85,8 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         }
 
         public NviCandidateIndexDocument build() {
-            return new NviCandidateIndexDocument(context, identifier, publicationDetails,
-                                                 approvals, numberOfApprovals, points);
+            return new NviCandidateIndexDocument(context, id, identifier, publicationDetails, approvals,
+                                                 numberOfApprovals, points);
         }
     }
 }

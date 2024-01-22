@@ -72,7 +72,8 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private NviCandidateIndexDocument createNviCandidateIndexDocument(JsonNode resource, Candidate candidate) {
         var approvals = createApprovals(resource, candidate);
-        return new NviCandidateIndexDocument.Builder()
+        return NviCandidateIndexDocument.builder()
+                   .withId(candidate.getId())
                    .withContext(Candidate.getContextUri())
                    .withIdentifier(candidate.getIdentifier())
                    .withApprovals(approvals)
