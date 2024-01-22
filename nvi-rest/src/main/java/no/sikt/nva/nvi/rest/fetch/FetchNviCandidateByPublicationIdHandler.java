@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.rest.fetch;
 
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -17,7 +16,6 @@ import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
-import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
 
 public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<Void, CandidateDto> {
@@ -41,7 +39,6 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
     @Override
     protected CandidateDto processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-        validateRequest(requestInfo);
         return attempt(() -> getPublicationId(requestInfo))
                    .map(identifier -> Candidate.fetchByPublicationId(() -> identifier, candidateRepository,
                                                                      periodRepository))
@@ -53,16 +50,6 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
     @Override
     protected Integer getSuccessStatusCode(Void input, CandidateDto output) {
         return HTTP_OK;
-    }
-
-    private static void validateRequest(RequestInfo requestInfo) throws UnauthorizedException {
-        if (isNotAuthenticated(requestInfo)) {
-            throw new UnauthorizedException();
-        }
-    }
-
-    private static boolean isNotAuthenticated(RequestInfo requestInfo) throws UnauthorizedException {
-        return isNull(requestInfo.getCurrentCustomer());
     }
 
     private URI getPublicationId(RequestInfo requestInfo) {
