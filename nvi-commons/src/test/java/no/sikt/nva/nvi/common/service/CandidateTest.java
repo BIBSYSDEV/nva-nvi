@@ -313,7 +313,8 @@ class CandidateTest extends LocalDynamoTest {
                                 .orElseThrow();
         var updateRequest = createUpsertCandidateRequest(tempCandidate.getPublicationDetails().publicationId(),
                                                          randomUri(), false,
-                                                         InstanceType.ACADEMIC_MONOGRAPH.getValue(), 4, randomBigDecimal(),
+                                                         InstanceType.ACADEMIC_MONOGRAPH.getValue(), 4,
+                                                         randomBigDecimal(),
                                                          randomLevelExcluding(DbLevel.NON_CANDIDATE)
                                                              .getVersionOneValue(), CURRENT_YEAR,
                                                          randomUri(), randomUri(),
@@ -425,7 +426,8 @@ class CandidateTest extends LocalDynamoTest {
                                                             randomUri(), true,
                                                             new PublicationDate(String.valueOf(CURRENT_YEAR),
                                                                                 null, null),
-                                                            getCreators(arguments.institutionIds()), arguments.type().getValue(),
+                                                            getCreators(arguments.institutionIds()),
+                                                            arguments.type().getValue(),
                                                             randomString(), randomUri(),
                                                             arguments.level().getVersionOneValue(),
                                                             getPointsOriginal(arguments.institutionIds()),

@@ -100,7 +100,8 @@ public final class TestUtils {
     }
 
     public static String randomInstanceTypeExcluding(String instanceType) {
-        var instanceTypes = Arrays.stream(InstanceType.values()).filter(type -> !type.getValue().equals(instanceType)).toList();
+        var instanceTypes = Arrays.stream(InstanceType.values())
+                                .filter(type -> !type.getValue().equals(instanceType)).toList();
         return instanceTypes.get(RANDOM.nextInt(instanceTypes.size())).getValue();
     }
 
