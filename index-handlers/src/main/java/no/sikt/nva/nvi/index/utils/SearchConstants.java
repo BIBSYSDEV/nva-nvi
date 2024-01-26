@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.index.utils;
 
-import static java.util.Objects.nonNull;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;

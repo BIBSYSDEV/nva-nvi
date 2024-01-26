@@ -22,6 +22,7 @@ public final class CristinMapper {
     public static final String AFFILIATION_DELIMITER = ".";
     public static final String CRISTIN = "cristin";
     public static final String ORGANIZATION = "organization";
+    public static final String GZ_EXTENSION = ".gz";
 
     private CristinMapper() {
 
@@ -95,12 +96,12 @@ public final class CristinMapper {
     private static URI constructPublicationBucketUri(String publicationIdentifier) {
         return UriWrapper.fromHost(PERSISTED_RESOURCES_BUCKET)
                    .addChild("resources")
-                   .addChild(publicationIdentifierKeyInS3Bucket(publicationIdentifier))
+                   .addChild(withGzExtension(publicationIdentifier))
                    .getUri();
     }
 
-    private static String publicationIdentifierKeyInS3Bucket(String publicationIdentifier) {
-        return publicationIdentifier  + ".gz";
+    private static String withGzExtension(String publicationIdentifier) {
+        return publicationIdentifier + GZ_EXTENSION;
     }
 
     private static URI constructPublicationId(String publicationIdentifier) {

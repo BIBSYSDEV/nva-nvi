@@ -144,11 +144,8 @@ public class SearchNviCandidatesHandler
     }
 
     private String extractQueryParamPublicationDateOrDefault(RequestInfo requestInfo, boolean isAdmin) {
-        var yearQueryParam =  requestInfo.getQueryParameters()
-            .getOrDefault(QUERY_PARAM_YEAR, null);
-        return isAdmin
-                   ? yearQueryParam
-                   : nonNull(yearQueryParam) ? yearQueryParam : String.valueOf(ZonedDateTime.now().getYear());
+        var yearQueryParam =  requestInfo.getQueryParameters().getOrDefault(QUERY_PARAM_YEAR, null);
+        return (isAdmin || nonNull(yearQueryParam)) ? yearQueryParam : String.valueOf(ZonedDateTime.now().getYear());
     }
 
     @Override
