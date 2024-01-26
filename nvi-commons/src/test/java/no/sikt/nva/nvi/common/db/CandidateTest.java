@@ -34,7 +34,7 @@ public class CandidateTest {
         return DbCandidate.builder()
                    .publicationId(randomUri())
                    .creatorCount(randomInteger())
-                   .instanceType(randomInstanceType())
+                   .instanceType(randomInstanceType().getValue())
                    .level(DbLevel.LEVEL_ONE)
                    .applicable(true)
                    .internationalCollaboration(true)

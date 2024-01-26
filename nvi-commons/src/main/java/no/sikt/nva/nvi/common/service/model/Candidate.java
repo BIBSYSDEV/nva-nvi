@@ -356,7 +356,7 @@ public final class Candidate {
     }
 
     private static boolean instanceTypeIsUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(request.instanceType(), existingCandidateDao.candidate().instanceType().getValue());
+        return !Objects.equals(request.instanceType(), existingCandidateDao.candidate().instanceType());
     }
 
     private static boolean levelIsUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
@@ -450,7 +450,7 @@ public final class Candidate {
                    .channelType(ChannelType.parse(request.channelType()))
                    .channelId(request.publicationChannelId())
                    .level(DbLevel.parse(request.level()))
-                   .instanceType(InstanceType.parse(request.instanceType()))
+                   .instanceType(request.instanceType())
                    .publicationDate(mapToPublicationDate(request.publicationDate()))
                    .internationalCollaboration(request.isInternationalCollaboration())
                    .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
@@ -471,7 +471,7 @@ public final class Candidate {
                                   .channelType(ChannelType.parse(request.channelType()))
                                   .channelId(request.publicationChannelId())
                                   .level(DbLevel.parse(request.level()))
-                                  .instanceType(InstanceType.parse(request.instanceType()))
+                                  .instanceType(request.instanceType())
                                   .publicationDate(mapToPublicationDate(request.publicationDate()))
                                   .internationalCollaboration(request.isInternationalCollaboration())
                                   .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
@@ -530,7 +530,7 @@ public final class Candidate {
     private PublicationDetails mapToPublicationDetails(CandidateDao candidateDao) {
         return new PublicationDetails(candidateDao.candidate().publicationId(),
                                       candidateDao.candidate().publicationBucketUri(),
-                                      candidateDao.candidate().instanceType().getValue(),
+                                      candidateDao.candidate().instanceType(),
                                       mapToPublicationDate(candidateDao.candidate().publicationDate()),
                                       mapToCreators(candidateDao.candidate().creators()),
                                       candidateDao.candidate().channelType(),
