@@ -85,7 +85,7 @@ public final class TestUtils {
                    .publicationId(randomUri())
                    .publicationBucketUri(randomUri())
                    .applicable(applicable)
-                   .instanceType(randomInstanceTypeExcluding(NON_CANDIDATE))
+                   .instanceType(randomInstanceTypeExcluding(NON_CANDIDATE.getValue()))
                    .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
                    .level(randomElement(DbLevel.values()))
                    .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
@@ -99,9 +99,9 @@ public final class TestUtils {
         return instanceTypes.get(RANDOM.nextInt(instanceTypes.size()));
     }
 
-    public static InstanceType randomInstanceTypeExcluding(InstanceType instanceType) {
-        var instanceTypes = Arrays.stream(InstanceType.values()).filter(type -> !type.equals(instanceType)).toList();
-        return instanceTypes.get(RANDOM.nextInt(instanceTypes.size()));
+    public static String randomInstanceTypeExcluding(String instanceType) {
+        var instanceTypes = Arrays.stream(InstanceType.values()).filter(type -> !type.getValue().equals(instanceType)).toList();
+        return instanceTypes.get(RANDOM.nextInt(instanceTypes.size())).getValue();
     }
 
     public static DbLevel randomLevelExcluding(DbLevel level) {
@@ -237,13 +237,13 @@ public final class TestUtils {
 
     public static UpsertCandidateRequest createUpsertCandidateRequestWithLevel(String level, URI... institutions) {
         return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(
-                                                NON_CANDIDATE),
+                                                NON_CANDIDATE.getValue()),
                                             1, randomBigDecimal(), level, CURRENT_YEAR, institutions);
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(int year) {
         return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(
-                                                NON_CANDIDATE),
+                                                NON_CANDIDATE.getValue()),
                                             1, randomBigDecimal(),
                                             randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
                                             year,
@@ -252,7 +252,7 @@ public final class TestUtils {
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI... institutions) {
         return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(
-                                                NON_CANDIDATE),
+                                                NON_CANDIDATE.getValue()),
                                             1, randomBigDecimal(),
                                             randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
                                             CURRENT_YEAR,
@@ -262,7 +262,7 @@ public final class TestUtils {
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
                                                                       URI publicationBucketUri,
                                                                       boolean isApplicable,
-                                                                      InstanceType instanceType,
+                                                                      String instanceType,
                                                                       int creatorCount,
                                                                       BigDecimal totalPoints,
                                                                       String level, int year,
@@ -288,7 +288,7 @@ public final class TestUtils {
                                                                       boolean isApplicable,
                                                                       final PublicationDate publicationDate,
                                                                       Map<URI, List<URI>> creators,
-                                                                      InstanceType instanceType,
+                                                                      String instanceType,
                                                                       String channelType, URI channelId,
                                                                       String level,
                                                                       Map<URI, BigDecimal> points,
@@ -342,7 +342,7 @@ public final class TestUtils {
 
             @Override
             public String instanceType() {
-                return instanceType.getValue();
+                return instanceType;
             }
 
             @Override
