@@ -174,7 +174,7 @@ public class OpenSearchClientTest {
     }
 
     @Test
-    void shoulThrowWhenUsingUndefinedFilterName() {
+    void shouldThrowWhenUsingUndefinedFilterName() {
         var searchParameters = defaultSearchParameters().withFilter(UNEXISTING_FILTER).build();
         assertThrows(IllegalStateException.class,
                      () -> openSearchClient.search(searchParameters));
@@ -485,8 +485,13 @@ public class OpenSearchClientTest {
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
         var approvals = randomApprovalList();
-        return new NviCandidateIndexDocument(randomUri(), UUID.randomUUID(), randomPublicationDetails(),
-                                             approvals, approvals.size(), randomBigDecimal());
+        return NviCandidateIndexDocument.builder()
+                   .withIdentifier(UUID.randomUUID())
+                   .withPublicationDetails(randomPublicationDetails())
+                   .withApprovals(approvals)
+                   .withNumberOfApprovals(approvals.size())
+                   .withPoints(randomBigDecimal())
+                   .build();
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomer(String customer,
@@ -494,10 +499,13 @@ public class OpenSearchClientTest {
                                                                                          String assignee,
                                                                                          String year,
                                                                                          String title) {
-        return new NviCandidateIndexDocument(randomUri(), UUID.randomUUID(),
-                                             randomPublicationDetailsWithCustomer(customer, contributor, year, title),
-                                             List.of(randomApprovalWithCustomerAndAssignee(customer, assignee)), 1,
-                                             randomBigDecimal());
+        return NviCandidateIndexDocument.builder()
+                   .withIdentifier(UUID.randomUUID())
+                   .withPublicationDetails(randomPublicationDetailsWithCustomer(customer, contributor, year, title))
+                   .withApprovals(List.of(randomApprovalWithCustomerAndAssignee(customer, assignee)))
+                   .withNumberOfApprovals(1)
+                   .withPoints(randomBigDecimal())
+                   .build();
     }
 
     private static PublicationDetails randomPublicationDetailsWithCustomer(String affiliation,
@@ -518,7 +526,7 @@ public class OpenSearchClientTest {
     }
 
     private static Approval randomApprovalWithCustomerAndAssignee(String affiliation, String assignee) {
-        return new Approval(affiliation, Map.of(), randomStatus(), randomBigDecimal(SCALE), assignee);
+        return new Approval(affiliation, affiliation, Map.of(), randomStatus(), randomBigDecimal(SCALE), assignee);
     }
 
     private static List<Approval> randomApprovalList() {
@@ -526,7 +534,7 @@ public class OpenSearchClientTest {
     }
 
     private static Approval randomApproval() {
-        return new Approval(randomString(), Map.of(), randomStatus(), randomBigDecimal(SCALE), null);
+        return new Approval(randomString(), randomString(), Map.of(), randomStatus(), randomBigDecimal(SCALE), null);
     }
 
     private static ApprovalStatus randomStatus() {

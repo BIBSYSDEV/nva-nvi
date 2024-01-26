@@ -8,8 +8,6 @@ import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeri
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -18,7 +16,6 @@ import com.google.common.net.HttpHeaders;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Map;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -30,15 +27,14 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpStatus;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.zalando.problem.Problem;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
 
     private static final Context CONTEXT = mock(Context.class);
+    public static final URI CUSTOMER_ID = randomUri();
     private final DynamoDbClient localDynamo = initializeTestDatabase();
     private ByteArrayOutputStream output;
     private FetchNviCandidateByPublicationIdHandler handler;
@@ -55,8 +51,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnNotFoundWhenCandidateDoesNotExist() throws IOException {
-        handler.handleRequest(createRequest(randomUri()),
-                              output, CONTEXT);
+        handler.handleRequest(requestWithAccessRight(randomUri()), output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
 
         assertEquals(HttpStatus.SC_NOT_FOUND, gatewayResponse.getStatusCode());
@@ -66,23 +61,11 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
     void shouldReturnNotFoundWhenCandidateExistsButNotApplicable() throws IOException {
         var institutionId = randomUri();
         var nonApplicableCandidate = setUpNonApplicableCandidate(institutionId);
-        handler.handleRequest(createRequest(nonApplicableCandidate.getPublicationDetails().publicationId()), output,
-                              CONTEXT);
+        var request = requestWithAccessRight(nonApplicableCandidate.getPublicationDetails().publicationId());
+        handler.handleRequest(request, output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
 
         assertEquals(HttpStatus.SC_NOT_FOUND, gatewayResponse.getStatusCode());
-    }
-
-    @Test
-    void shouldReturnUnauthorizedWhenUserOIsNonAuthorized() throws IOException {
-        var institutionId = randomUri();
-        var candidate = Candidate.upsert(createUpsertCandidateRequest(institutionId),
-                                         candidateRepository, periodRepository).orElseThrow();
-        var request = createUnauthorizedRequest(candidate.getPublicationDetails().publicationId());
-        handler.handleRequest(request, output, CONTEXT);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
-
-        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
     }
 
     @Test
@@ -91,7 +74,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
         var candidate =
             Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
-        var request = createRequest(candidate.getPublicationDetails().publicationId());
+        var request = requestWithAccessRight(candidate.getPublicationDetails().publicationId());
 
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -101,11 +84,11 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
         assertEquals(expectedResponse, actualResponse);
     }
 
-    private static InputStream createRequest(URI publicationId)
+    private static InputStream requestWithAccessRight(URI publicationId)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
                    .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
-                   .withCurrentCustomer(randomUri())
+                   .withCurrentCustomer(CUSTOMER_ID)
                    .withUserName(randomString())
                    .withPathParameters(Map.of(CANDIDATE_PUBLICATION_ID, publicationId.toString()))
                    .build();

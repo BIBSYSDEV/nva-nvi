@@ -268,7 +268,7 @@ public final class CandidateDao extends Dao {
     public record DbCandidate(URI publicationId,
                               URI publicationBucketUri,
                               boolean applicable,
-                              InstanceType instanceType,
+                              String instanceType,
                               ChannelType channelType,
                               URI channelId,
                               DbLevel level,
@@ -313,7 +313,7 @@ public final class CandidateDao extends Dao {
             private URI builderPublicationId;
             private URI builderPublicationBucketUri;
             private boolean builderApplicable;
-            private InstanceType builderInstanceType;
+            private String builderInstanceType;
             private ChannelType builderChannelType;
             private URI builderChannelId;
             private DbLevel builderLevel;
@@ -345,8 +345,17 @@ public final class CandidateDao extends Dao {
                 return this;
             }
 
-            public Builder instanceType(InstanceType instanceType) {
-                this.builderInstanceType = instanceType;
+            //TODO: Should be removed once we have migrated instanceType to String
+            public Builder instanceType(String instanceType) {
+                var enums = Arrays.stream(InstanceType.values()).toList();
+                var instanceTypeEnum = enums.stream()
+                                           .filter(value -> value.toString().equals(instanceType))
+                                           .findFirst();
+                if (instanceTypeEnum.isPresent()) {
+                    this.builderInstanceType = instanceTypeEnum.get().getValue();
+                } else {
+                    this.builderInstanceType = instanceType;
+                }
                 return this;
             }
 

@@ -2,8 +2,6 @@ package no.sikt.nva.nvi.rest.fetch;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
-import static no.sikt.nva.nvi.utils.RequestUtil.hasAccessRight;
-import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.URI;
@@ -14,6 +12,7 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
+import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
@@ -56,7 +55,18 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
     }
 
     private static void validateAccessRight(RequestInfo requestInfo) throws UnauthorizedException {
-        hasAccessRight(requestInfo, MANAGE_NVI_CANDIDATES);
+        if (isNviCurator(requestInfo) || isNviAdmin(requestInfo)) {
+            return;
+        }
+        throw new UnauthorizedException();
+    }
+
+    private static boolean isNviAdmin(RequestInfo requestInfo) {
+        return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI);
+    }
+
+    private static boolean isNviCurator(RequestInfo requestInfo) {
+        return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI_CANDIDATES);
     }
 
     private static Candidate validateTopLevelOrg(Candidate candidate, URI topLevelOrgCristinId)

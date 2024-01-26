@@ -162,6 +162,10 @@ public final class Candidate {
         return identifier;
     }
 
+    public URI getId() {
+        return new UriWrapper(HTTPS, API_DOMAIN).addChild(BASE_PATH, CANDIDATE_PATH, identifier.toString()).getUri();
+    }
+
     public boolean isApplicable() {
         return applicable;
     }
@@ -196,7 +200,7 @@ public final class Candidate {
 
     public CandidateDto toDto() {
         return CandidateDto.builder()
-                   .withId(constructId(identifier))
+                   .withId(getId())
                    .withContext(CONTEXT_URI)
                    .withIdentifier(identifier)
                    .withPublicationId(publicationDetails.publicationId())
@@ -352,7 +356,7 @@ public final class Candidate {
     }
 
     private static boolean instanceTypeIsUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(request.instanceType(), existingCandidateDao.candidate().instanceType().getValue());
+        return !Objects.equals(request.instanceType(), existingCandidateDao.candidate().instanceType());
     }
 
     private static boolean levelIsUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
@@ -403,9 +407,9 @@ public final class Candidate {
             return Collections.emptyMap();
         } else {
             return candidateDao.candidate()
-                .points()
-                .stream()
-                .collect(Collectors.toMap(DbInstitutionPoints::institutionId, DbInstitutionPoints::points));
+                       .points()
+                       .stream()
+                       .collect(Collectors.toMap(DbInstitutionPoints::institutionId, DbInstitutionPoints::points));
         }
     }
 
@@ -428,10 +432,6 @@ public final class Candidate {
                    .orElse(PERIOD_STATUS_NO_PERIOD);
     }
 
-    private static URI constructId(UUID identifier) {
-        return new UriWrapper(HTTPS, API_DOMAIN).addChild(BASE_PATH, CANDIDATE_PATH, identifier.toString()).getUri();
-    }
-
     private static List<DbApprovalStatus> mapToApprovals(Map<URI, BigDecimal> points) {
         return points.keySet().stream().map(Candidate::mapToApproval).toList();
     }
@@ -450,7 +450,7 @@ public final class Candidate {
                    .channelType(ChannelType.parse(request.channelType()))
                    .channelId(request.publicationChannelId())
                    .level(DbLevel.parse(request.level()))
-                   .instanceType(InstanceType.parse(request.instanceType()))
+                   .instanceType(request.instanceType())
                    .publicationDate(mapToPublicationDate(request.publicationDate()))
                    .internationalCollaboration(request.isInternationalCollaboration())
                    .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
@@ -471,7 +471,7 @@ public final class Candidate {
                                   .channelType(ChannelType.parse(request.channelType()))
                                   .channelId(request.publicationChannelId())
                                   .level(DbLevel.parse(request.level()))
-                                  .instanceType(InstanceType.parse(request.instanceType()))
+                                  .instanceType(request.instanceType())
                                   .publicationDate(mapToPublicationDate(request.publicationDate()))
                                   .internationalCollaboration(request.isInternationalCollaboration())
                                   .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
@@ -530,7 +530,7 @@ public final class Candidate {
     private PublicationDetails mapToPublicationDetails(CandidateDao candidateDao) {
         return new PublicationDetails(candidateDao.candidate().publicationId(),
                                       candidateDao.candidate().publicationBucketUri(),
-                                      candidateDao.candidate().instanceType().getValue(),
+                                      candidateDao.candidate().instanceType(),
                                       mapToPublicationDate(candidateDao.candidate().publicationDate()),
                                       mapToCreators(candidateDao.candidate().creators()),
                                       candidateDao.candidate().channelType(),

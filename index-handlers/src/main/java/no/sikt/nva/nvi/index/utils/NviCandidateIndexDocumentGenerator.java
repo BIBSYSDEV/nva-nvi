@@ -72,7 +72,8 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private NviCandidateIndexDocument createNviCandidateIndexDocument(JsonNode resource, Candidate candidate) {
         var approvals = createApprovals(resource, candidate);
-        return new NviCandidateIndexDocument.Builder()
+        return NviCandidateIndexDocument.builder()
+                   .withId(candidate.getId())
                    .withContext(Candidate.getContextUri())
                    .withIdentifier(candidate.getIdentifier())
                    .withApprovals(approvals)
@@ -109,6 +110,7 @@ public final class NviCandidateIndexDocumentGenerator {
     private no.sikt.nva.nvi.index.model.Approval toApproval(JsonNode resource, Approval approval, Candidate candidate) {
         return no.sikt.nva.nvi.index.model.Approval.builder()
                    .withId(approval.getInstitutionId().toString())
+                   .withInstitutionId(approval.getInstitutionId().toString())
                    .withLabels(extractLabels(resource, approval))
                    .withApprovalStatus(ApprovalStatus.fromValue(approval.getStatus().getValue()))
                    .withPoints(getInstitutionPoints(approval, candidate))
@@ -178,7 +180,7 @@ public final class NviCandidateIndexDocumentGenerator {
         var id = extractJsonNodeTextValue(affiliation, JSON_PTR_ID);
 
         if (isNull(id)) {
-            LOGGER.info("Skipping extraction of affiliation because of missing id: {}", affiliation);
+            LOGGER.info("Skipping extraction of affiliation because of missing institutionId: {}", affiliation);
             return null;
         }
 

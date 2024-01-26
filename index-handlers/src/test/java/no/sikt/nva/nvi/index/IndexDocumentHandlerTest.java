@@ -440,6 +440,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     private NviCandidateIndexDocument createExpectedNviIndexDocument(JsonNode expandedResource, Candidate candidate) {
         return NviCandidateIndexDocument.builder()
                    .withContext(Candidate.getContextUri())
+                   .withId(candidate.getId())
                    .withIdentifier(candidate.getIdentifier())
                    .withApprovals(expandApprovals(candidate))
                    .withPoints(candidate.getTotalPoints())

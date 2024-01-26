@@ -313,8 +313,13 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
-        return new NviCandidateIndexDocument(randomUri(), UUID.randomUUID(),
-                                             randomPublicationDetails(), List.of(), 0, TestUtils.randomBigDecimal());
+        return NviCandidateIndexDocument.builder()
+                   .withIdentifier(UUID.randomUUID())
+                   .withPublicationDetails(randomPublicationDetails())
+                   .withApprovals(List.of())
+                   .withNumberOfApprovals(0)
+                   .withPoints(TestUtils.randomBigDecimal())
+                   .build();
     }
 
     private static PublicationDetails randomPublicationDetails() {

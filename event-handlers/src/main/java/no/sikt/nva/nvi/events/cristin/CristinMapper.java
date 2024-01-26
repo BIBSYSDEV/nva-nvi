@@ -23,6 +23,8 @@ public final class CristinMapper {
     public static final String CRISTIN = "cristin";
     public static final String ORGANIZATION = "organization";
     public static final String GZ_EXTENSION = ".gz";
+    public static final String PUBLICATION = "publication";
+    public static final String RESOURCES = "resources";
 
     private CristinMapper() {
 
@@ -34,7 +36,6 @@ public final class CristinMapper {
                    .publicationBucketUri(constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
                    .publicationDate(constructPublicationDate(cristinNviReport))
                    .applicable(true)
-                   .instanceType(InstanceType.IMPORTED_CANDIDATE)
                    .level(DbLevel.NON_CANDIDATE)
                    .build();
     }
@@ -95,7 +96,7 @@ public final class CristinMapper {
 
     private static URI constructPublicationBucketUri(String publicationIdentifier) {
         return UriWrapper.fromHost(PERSISTED_RESOURCES_BUCKET)
-                   .addChild("resources")
+                   .addChild(RESOURCES)
                    .addChild(withGzExtension(publicationIdentifier))
                    .getUri();
     }
@@ -106,7 +107,7 @@ public final class CristinMapper {
 
     private static URI constructPublicationId(String publicationIdentifier) {
         return UriWrapper.fromHost(API_HOST)
-                   .addChild("publication")
+                   .addChild(PUBLICATION)
                    .addChild(publicationIdentifier)
                    .getUri();
     }

@@ -100,7 +100,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
     void shouldResetApprovalWhenChangingToPending(ApprovalStatus oldStatus) {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri(), randomUri(), true,
-                                                                  InstanceType.ACADEMIC_MONOGRAPH, 1,
+                                                                  InstanceType.ACADEMIC_MONOGRAPH.getValue(), 1,
                                                                   randomBigDecimal(),
                                                                   randomLevelExcluding(
                                                                       DbLevel.NON_CANDIDATE).getVersionOneValue(),
@@ -143,7 +143,8 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
         var candidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
         var updateRequest = createUpsertCandidateRequest(candidate.toDto().publicationId(),
-                                                         randomUri(), true, InstanceType.ACADEMIC_MONOGRAPH, 2,
+                                                         randomUri(), true,
+                                                         InstanceType.ACADEMIC_MONOGRAPH.getValue(), 2,
                                                          randomBigDecimal(),
                                                          randomLevelExcluding(DbLevel.NON_CANDIDATE)
                                                              .getVersionOneValue(), TestUtils.CURRENT_YEAR,
@@ -162,7 +163,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
         var createCandidateRequest = createUpsertCandidateRequest(keepInstitutionId, deleteInstitutionId, randomUri());
         Candidate.upsert(createCandidateRequest, candidateRepository, periodRepository);
         var updateRequest = createUpsertCandidateRequest(
-            createCandidateRequest.publicationId(), randomUri(), true, InstanceType.ACADEMIC_MONOGRAPH, 2,
+            createCandidateRequest.publicationId(), randomUri(), true, InstanceType.ACADEMIC_MONOGRAPH.getValue(), 2,
             randomBigDecimal(), randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
             TestUtils.CURRENT_YEAR,
             keepInstitutionId,
@@ -197,7 +198,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
         var candidateBO = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
                               .orElseThrow();
         var updateRequest = createUpsertCandidateRequest(candidateBO.toDto().publicationId(),
-                                                         randomUri(), true, InstanceType.NON_CANDIDATE, 2,
+                                                         randomUri(), true, InstanceType.NON_CANDIDATE.getValue(), 2,
                                                          randomBigDecimal(),
                                                          randomLevelExcluding(DbLevel.NON_CANDIDATE)
                                                              .getVersionOneValue(), TestUtils.CURRENT_YEAR,

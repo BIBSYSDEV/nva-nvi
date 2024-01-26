@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.CONTRIBUTORS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ID;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.KEYWORD;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NAME;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NUMBER_OF_APPROVALS;
@@ -104,7 +105,7 @@ public class CandidateQuery {
 
     private static Query statusQuery(String customer, ApprovalStatus status) {
         return nestedQuery(APPROVALS,
-                           termQuery(customer, jsonPathOf(APPROVALS, ID)),
+                           termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)),
                            termQuery(status.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)));
     }
 
@@ -129,7 +130,7 @@ public class CandidateQuery {
 
     private static Query assignmentsQuery(String username, String customer) {
         return nestedQuery(APPROVALS,
-                           termQuery(customer, jsonPathOf(APPROVALS, ID)),
+                           termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)),
                            termQuery(username, jsonPathOf(APPROVALS, ASSIGNEE)));
     }
 
@@ -184,7 +185,7 @@ public class CandidateQuery {
 
     private static Query statusQueryWithAssignee(String customer, ApprovalStatus status, boolean hasAssignee) {
         return nestedQuery(APPROVALS,
-                           termQuery(customer, jsonPathOf(APPROVALS, ID)),
+                           termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)),
                            termQuery(status.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)),
                            hasAssignee
                                ? existsQuery(jsonPathOf(APPROVALS, ASSIGNEE))

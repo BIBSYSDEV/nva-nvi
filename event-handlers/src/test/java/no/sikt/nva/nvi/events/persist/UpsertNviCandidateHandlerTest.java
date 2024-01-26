@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.persist;
 
-import static no.sikt.nva.nvi.common.db.model.InstanceType.IMPORTED_CANDIDATE;
 import static no.sikt.nva.nvi.common.db.model.InstanceType.NON_CANDIDATE;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
@@ -135,7 +134,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var institutionId = randomUri();
         var identifier = UUID.randomUUID();
         var creators = List.of(new Creator(randomUri(), List.of(institutionId)));
-        var instanceType = randomInstanceTypeExcluding(NON_CANDIDATE);
+        var instanceType = randomInstanceTypeExcluding(NON_CANDIDATE.getValue());
         var randomLevel = randomElement(DbLevel.values());
         var publicationDate = randomPublicationDate();
         var institutionPoints = Map.of(institutionId, randomBigDecimal());
@@ -174,7 +173,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var publicationId = generatePublicationId(identifier);
         var dto = Candidate.upsert(
-            createUpsertCandidateRequest(publicationId, randomUri(), true, InstanceType.ACADEMIC_ARTICLE, 1,
+            createUpsertCandidateRequest(publicationId, randomUri(), true, InstanceType.ACADEMIC_ARTICLE.getValue(), 1,
                                          randomBigDecimal(),
                                          randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
                                          TestUtils.CURRENT_YEAR,
@@ -211,7 +210,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withCandidateType(NviCandidate.builder()
                                           .withPublicationId(generatePublicationId(identifier))
                                           .withPublicationBucketUri(generateS3BucketUri(identifier))
-                                          .withInstanceType(randomInstanceTypeExcluding(NON_CANDIDATE).getValue())
+                                          .withInstanceType(randomInstanceTypeExcluding(NON_CANDIDATE.getValue()))
                                           .withLevel(randomElement(DbLevel.values()).getVersionOneValue())
                                           .withTotalPoints(randomBigDecimal())
                                           .withBasePoints(randomBigDecimal())
@@ -260,7 +259,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     private static CandidateEvaluatedMessage createEvalMessage(List<Creator> verifiedCreators,
-                                                               InstanceType instanceType, DbLevel level,
+                                                               String instanceType, DbLevel level,
                                                                PublicationDate publicationDate,
                                                                Map<URI, BigDecimal> institutionPoints,
                                                                URI publicationId, URI publicationBucketUri,
@@ -269,7 +268,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withCandidateType(NviCandidate.builder()
                                           .withPublicationId(publicationId)
                                           .withPublicationBucketUri(publicationBucketUri)
-                                          .withInstanceType(instanceType.getValue())
+                                          .withInstanceType(instanceType)
                                           .withChannelType(randomElement(ChannelType.values()).getValue())
                                           .withPublicationChannelId(randomUri())
                                           .withLevel(level.getVersionOneValue())
@@ -361,7 +360,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     private SQSEvent createEvent(URI keep, URI publicationId, URI publicationBucketUri) {
         var institutionId = randomUri();
         var creators = List.of(new Creator(randomUri(), List.of(institutionId, keep)));
-        var instanceType = randomInstanceTypeExcluding(NON_CANDIDATE);
+        var instanceType = randomInstanceTypeExcluding(NON_CANDIDATE.getValue());
         var randomLevel = randomElement(DbLevel.values());
         var publicationDate = randomPublicationDate();
         var institutionPoints = Map.of(institutionId, randomBigDecimal(), keep, randomBigDecimal());
@@ -370,7 +369,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                            publicationBucketUri, randomBigDecimal());
     }
 
-    private SQSEvent createEvent(List<Creator> verifiedCreators, InstanceType instanceType, DbLevel randomLevel,
+    private SQSEvent createEvent(List<Creator> verifiedCreators, String instanceType, DbLevel randomLevel,
                                  PublicationDate publicationDate, Map<URI, BigDecimal> institutionPoints,
                                  URI publicationId, URI publicationBucketUri, BigDecimal totalPoints) {
         return createEvent(
