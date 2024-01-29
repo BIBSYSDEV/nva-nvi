@@ -11,7 +11,6 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.model.InstanceType;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 
