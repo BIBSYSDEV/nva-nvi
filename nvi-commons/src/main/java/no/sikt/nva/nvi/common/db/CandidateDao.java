@@ -283,6 +283,20 @@ public final class CandidateDao extends Dao {
                               BigDecimal totalPoints
     ) {
 
+        @Deprecated
+        //TODO: Should be removed once we have migrated instanceType to String
+        public String instanceType() {
+            var enums = Arrays.stream(InstanceType.values()).toList();
+            var instanceTypeEnum = enums.stream()
+                                       .filter(value -> value.toString().equals(instanceType))
+                                       .findFirst();
+            if (instanceTypeEnum.isPresent()) {
+                return instanceTypeEnum.get().getValue();
+            } else {
+                return instanceType;
+            }
+        }
+
         public static Builder builder() {
             return new Builder();
         }
