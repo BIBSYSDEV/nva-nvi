@@ -16,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -280,8 +281,14 @@ public final class CandidateDao extends Dao {
                               List<DbCreator> creators,
                               BigDecimal basePoints,
                               List<DbInstitutionPoints> points,
-                              BigDecimal totalPoints
+                              BigDecimal totalPoints,
+                              Instant createdDate,
+                              Instant modifiedDate
     ) {
+
+        public static Builder builder() {
+            return new Builder();
+        }
 
         @Deprecated
         //TODO: Should be removed once we have migrated instanceType to String
@@ -295,10 +302,6 @@ public final class CandidateDao extends Dao {
             } else {
                 return instanceType;
             }
-        }
-
-        public static Builder builder() {
-            return new Builder();
         }
 
         @DynamoDbIgnore
@@ -319,7 +322,49 @@ public final class CandidateDao extends Dao {
                        .creators(creators.stream().map(DbCreator::copy).toList())
                        .basePoints(basePoints)
                        .points(points.stream().map(DbInstitutionPoints::copy).toList())
-                       .totalPoints(totalPoints);
+                       .totalPoints(totalPoints)
+                       .createdDate(createdDate)
+                       .modifiedDate(modifiedDate);
+        }
+
+        @Override
+        @DynamoDbIgnore
+        @JacocoGenerated
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            DbCandidate that = (DbCandidate) o;
+            return applicable == that.applicable
+                   && internationalCollaboration == that.internationalCollaboration
+                   && creatorCount == that.creatorCount
+                   && creatorShareCount == that.creatorShareCount
+                   && Objects.equals(publicationId, that.publicationId)
+                   && Objects.equals(publicationBucketUri, that.publicationBucketUri)
+                   && Objects.equals(instanceType, that.instanceType)
+                   && channelType == that.channelType
+                   && Objects.equals(channelId, that.channelId)
+                   && level == that.level
+                   && Objects.equals(publicationDate, that.publicationDate)
+                   && Objects.equals(collaborationFactor, that.collaborationFactor)
+                   && Objects.equals(creators, that.creators)
+                   && Objects.equals(basePoints, that.basePoints)
+                   && Objects.equals(points, that.points)
+                   && Objects.equals(totalPoints, that.totalPoints)
+                   && Objects.equals(createdDate, that.createdDate);
+        }
+
+        @Override
+        @DynamoDbIgnore
+        @JacocoGenerated
+        public int hashCode() {
+            return Objects.hash(publicationId, publicationBucketUri, applicable, instanceType, channelType, channelId,
+                                level,
+                                publicationDate, internationalCollaboration, collaborationFactor, creatorCount,
+                                creatorShareCount, creators, basePoints, points, totalPoints, createdDate);
         }
 
         public static final class Builder {
@@ -340,6 +385,8 @@ public final class CandidateDao extends Dao {
             private BigDecimal builderBasePoints;
             private List<DbInstitutionPoints> builderPoints;
             private BigDecimal builderTotalPoints;
+            private Instant builderCreatedDate;
+            private Instant builderModifiedDate;
 
             private Builder() {
             }
@@ -433,14 +480,24 @@ public final class CandidateDao extends Dao {
                 return this;
             }
 
+            public Builder createdDate(Instant createdDate) {
+                this.builderCreatedDate = createdDate;
+                return this;
+            }
+
+            public Builder modifiedDate(Instant modifiedDate) {
+                this.builderModifiedDate = modifiedDate;
+                return this;
+            }
+
             public DbCandidate build() {
                 return new DbCandidate(builderPublicationId, builderPublicationBucketUri, builderApplicable,
-                                       builderInstanceType, builderChannelType,
-                                       builderChannelId, builderLevel, builderPublicationDate,
-                                       builderInternationalCollaboration,
+                                       builderInstanceType, builderChannelType, builderChannelId, builderLevel,
+                                       builderPublicationDate, builderInternationalCollaboration,
                                        builderCollaborationFactor,
                                        builderCreatorCount, builderCreatorShareCount, builderCreators,
-                                       builderBasePoints, builderPoints, builderTotalPoints);
+                                       builderBasePoints,
+                                       builderPoints, builderTotalPoints, builderCreatedDate, builderModifiedDate);
             }
         }
     }

@@ -10,6 +10,7 @@ import static nva.commons.core.paths.UriWrapper.HTTPS;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -85,6 +86,8 @@ public final class Candidate {
     private final boolean internationalCollaboration;
     private final BigDecimal collaborationFactor;
     private final int creatorShareCount;
+    private final Instant createdDate;
+    private final Instant modifiedDate;
 
     private Candidate(CandidateRepository repository, CandidateDao candidateDao, List<ApprovalStatusDao> approvals,
                       List<NoteDao> notes, PeriodStatus periodStatus) {
@@ -101,6 +104,8 @@ public final class Candidate {
         this.internationalCollaboration = candidateDao.candidate().internationalCollaboration();
         this.collaborationFactor = candidateDao.candidate().collaborationFactor();
         this.creatorShareCount = candidateDao.candidate().creatorShareCount();
+        this.createdDate = candidateDao.candidate().createdDate();
+        this.modifiedDate = candidateDao.candidate().modifiedDate();
     }
 
     public static Candidate fetchByPublicationId(FetchByPublicationRequest request, CandidateRepository repository,
@@ -148,6 +153,14 @@ public final class Candidate {
 
     public static URI getContextUri() {
         return CONTEXT_URI;
+    }
+
+    public Instant getCreatedDate() {
+        return createdDate;
+    }
+
+    public Instant getModifiedDate() {
+        return modifiedDate;
     }
 
     public PublicationDetails getPublicationDetails() {
@@ -239,7 +252,8 @@ public final class Candidate {
     @JacocoGenerated
     public int hashCode() {
         return Objects.hash(identifier, applicable, approvals, notes, institutionPoints, totalPoints, periodStatus,
-                            publicationDetails);
+                            publicationDetails, basePoints, internationalCollaboration, collaborationFactor,
+                            creatorShareCount, createdDate);
     }
 
     @Override
@@ -253,13 +267,18 @@ public final class Candidate {
         }
         Candidate candidate = (Candidate) o;
         return applicable == candidate.applicable
+               && internationalCollaboration == candidate.internationalCollaboration
+               && creatorShareCount == candidate.creatorShareCount
                && Objects.equals(identifier, candidate.identifier)
                && Objects.equals(approvals, candidate.approvals)
                && Objects.equals(notes, candidate.notes)
                && Objects.equals(institutionPoints, candidate.institutionPoints)
                && Objects.equals(totalPoints, candidate.totalPoints)
                && Objects.equals(periodStatus, candidate.periodStatus)
-               && Objects.equals(publicationDetails, candidate.publicationDetails);
+               && Objects.equals(publicationDetails, candidate.publicationDetails)
+               && Objects.equals(basePoints, candidate.basePoints)
+               && Objects.equals(collaborationFactor, candidate.collaborationFactor)
+               && Objects.equals(createdDate, candidate.createdDate);
     }
 
     private static PeriodStatus calculatePeriodStatusIfApplicable(PeriodRepository periodRepository,
@@ -457,6 +476,8 @@ public final class Candidate {
                    .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
                    .points(mapToPoints(request.institutionPoints()))
                    .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
+                   .createdDate(Instant.now())
+                   .modifiedDate(Instant.now())
                    .build();
     }
 
@@ -478,6 +499,7 @@ public final class Candidate {
                                   .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
                                   .points(mapToPoints(request.institutionPoints()))
                                   .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
+                                  .modifiedDate(Instant.now())
                                   .build())
                    .version(randomUUID().toString())
                    .build();
