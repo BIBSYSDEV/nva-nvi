@@ -446,6 +446,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
                    .withPoints(candidate.getTotalPoints())
                    .withPublicationDetails(expandPublicationDetails(candidate, expandedResource))
                    .withNumberOfApprovals(candidate.getApprovals().size())
+                   .withModifiedDate(candidate.getModifiedDate())
                    .build();
     }
 
