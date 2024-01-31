@@ -1,5 +1,8 @@
 package no.sikt.nva.nvi.index;
 
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TYPE;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_LABEL;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_NORWEGIAN_LABEL;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.createExpandedResource;
@@ -61,6 +64,8 @@ import software.amazon.awssdk.services.sqs.model.SqsException;
 
 public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
+    private static final String JSON_PTR_CONTRIBUTOR = "/publicationDetails/contributors";
+    private static final String JSON_PTR_APPROVALS = "/approvals";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BODY = "body";
     private static final String ORGANIZATION_CONTEXT = "https://bibsysdev.github.io/src/organization-context.json";
@@ -163,12 +168,12 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var event = createEvent(candidate.getIdentifier());
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(event, CONTEXT);
-        var actualIndexDocument = dtoObjectMapper.readTree(s3Writer.getFile(createPath(candidate)));
-        assertNotNull(actualIndexDocument.at("/body/type"));
-        assertNotNull(actualIndexDocument.at("/body/publicationDetails/contributors").get(0).at("/type"));
-        assertNotNull(actualIndexDocument.at("/body/publicationDetails/contributors").get(0).at("/affiliations")
-                          .get(0).at("/type"));
-        assertNotNull(actualIndexDocument.at("/body/approvals").get(0).at("/type"));
+        var actualIndexDocument = dtoObjectMapper.readTree(s3Writer.getFile(createPath(candidate))).at(JSON_PTR_BODY);
+        assertNotNull(actualIndexDocument.at(JSON_PTR_TYPE));
+        assertNotNull(actualIndexDocument.at(JSON_PTR_CONTRIBUTOR).get(0).at(JSON_PTR_TYPE));
+        assertNotNull(
+            actualIndexDocument.at(JSON_PTR_CONTRIBUTOR).get(0).at(JSON_PTR_AFFILIATIONS).get(0).at(JSON_PTR_TYPE));
+        assertNotNull(actualIndexDocument.at(JSON_PTR_APPROVALS).get(0).at(JSON_PTR_TYPE));
     }
 
     @Test
