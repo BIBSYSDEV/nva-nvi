@@ -31,8 +31,7 @@ import nva.commons.core.JacocoGenerated;
 import nva.commons.core.StringUtils;
 import org.apache.jena.rdf.model.RDFNode;
 
-public class SearchNviCandidatesHandler
-    extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
+public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, PaginatedSearchResult<String>> {
 
     public static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     public static final String QUERY_PARAM_EXCLUDE_SUB_UNITS = "excludeSubUnits";
@@ -69,7 +68,7 @@ public class SearchNviCandidatesHandler
     }
 
     @Override
-    protected PaginatedSearchResult<NviCandidateIndexDocument> processInput(Void input, RequestInfo requestInfo,
+    protected PaginatedSearchResult<String> processInput(Void input, RequestInfo requestInfo,
                                                                             Context context)
         throws UnauthorizedException {
         var candidateSearchParameters = getCandidateSearchParameters(requestInfo);
@@ -135,7 +134,7 @@ public class SearchNviCandidatesHandler
     }
 
     @Override
-    protected Integer getSuccessStatusCode(Void input, PaginatedSearchResult<NviCandidateIndexDocument> output) {
+    protected Integer getSuccessStatusCode(Void input, PaginatedSearchResult<String> output) {
         return HttpURLConnection.HTTP_OK;
     }
 

@@ -1,9 +1,11 @@
 package no.sikt.nva.nvi.index.model;
 
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
@@ -38,6 +40,10 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    public String toJsonString() throws JsonProcessingException {
+        return dtoObjectMapper.writeValueAsString(this);
     }
 
     public static final class Builder {
