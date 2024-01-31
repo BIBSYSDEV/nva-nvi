@@ -1,11 +1,17 @@
 package no.sikt.nva.nvi.index.model;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    property = "type")
+@JsonTypeName("Organization")
 public record Affiliation(String id,
                           List<String> partOf) {
 

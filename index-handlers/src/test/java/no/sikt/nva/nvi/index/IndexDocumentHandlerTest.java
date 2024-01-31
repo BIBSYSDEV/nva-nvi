@@ -18,6 +18,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
@@ -152,6 +154,21 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate)));
         assertEquals(expectedConsumptionAttributes, actualIndexDocument.consumptionAttributes());
+    }
+
+    @Test
+    void shouldProduceIndexDocumentWithTypeInfo() throws JsonProcessingException {
+        var candidate = randomApplicableCandidate();
+        setUpExistingResourceInS3AndGenerateExpectedDocument(candidate);
+        var event = createEvent(candidate.getIdentifier());
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = dtoObjectMapper.readTree(s3Writer.getFile(createPath(candidate)));
+        assertNotNull(actualIndexDocument.at("/body/type"));
+        assertNotNull(actualIndexDocument.at("/body/publicationDetails/contributors").get(0).at("/type"));
+        assertNotNull(actualIndexDocument.at("/body/publicationDetails/contributors").get(0).at("/affiliations")
+                          .get(0).at("/type"));
+        assertNotNull(actualIndexDocument.at("/body/approvals").get(0).at("/type"));
     }
 
     @Test

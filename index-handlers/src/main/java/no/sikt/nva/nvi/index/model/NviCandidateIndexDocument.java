@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.model;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -15,6 +16,9 @@ import no.unit.nva.auth.uriretriever.UriRetriever;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    property = "type")
 @JsonTypeName("NviCandidate")
 public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         URI id,
