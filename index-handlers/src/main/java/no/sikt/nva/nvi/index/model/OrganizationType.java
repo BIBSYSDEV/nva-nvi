@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.index.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -14,8 +13,7 @@ import java.util.List;
 })
 public sealed interface OrganizationType permits Organization, NviOrganization {
 
-   String id();
+    String id();
 
-   List<String> partOf();
-
+    List<String> partOf();
 }
