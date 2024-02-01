@@ -182,14 +182,28 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private List<Affiliation> expandAffiliations(JsonNode contributor, Candidate candidate) {
-        var nviCreator = getNviCreatorIfPresent(contributor, candidate);
-        var isNviCreator = nviCreator.isPresent();
         return streamNode(contributor.at(JSON_PTR_AFFILIATIONS))
-                   .map(affiliationNode -> expandAffiliation(affiliationNode, isNviCreator,
-                                                             isNviCreator && isNviAffiliation(nviCreator.get(),
-                                                                                              affiliationNode)))
+                   .map(affiliationNode -> expandAffiliation(affiliationNode, contributor, candidate))
                    .filter(Objects::nonNull)
                    .toList();
+    }
+
+    private Affiliation expandAffiliation(JsonNode affiliation, JsonNode contributor, Candidate candidate) {
+        var id = extractJsonNodeTextValue(affiliation, JSON_PTR_ID);
+
+        if (isNull(id)) {
+            LOGGER.info("Skipping extraction of affiliation because of missing institutionId: {}", affiliation);
+            return null;
+        }
+
+        return isNviAffiliation(affiliation, contributor, candidate)
+                   ? generateAffiliationWithPartOf(id)
+                   : Affiliation.builder().withId(id).build();
+    }
+
+    private boolean isNviAffiliation(JsonNode affiliation, JsonNode contributor, Candidate candidate) {
+        var nviCreator = getNviCreatorIfPresent(contributor, candidate);
+        return nviCreator.isPresent() && isNviAffiliation(nviCreator.get(), affiliation);
     }
 
     private boolean isNviAffiliation(Creator creator, JsonNode affiliationNode) {
@@ -200,19 +214,7 @@ public final class NviCandidateIndexDocumentGenerator {
         return creator.affiliations().stream().anyMatch(affiliation -> affiliation.toString().equals(affiliationId));
     }
 
-    private Affiliation expandAffiliation(JsonNode affiliation, boolean expandPartOf, boolean isNviAffiliation) {
-        var id = extractJsonNodeTextValue(affiliation, JSON_PTR_ID);
-
-        if (isNull(id)) {
-            LOGGER.info("Skipping extraction of affiliation because of missing institutionId: {}", affiliation);
-            return null;
-        }
-
-        return expandPartOf ? generateAffiliationWithPartOf(id, isNviAffiliation)
-                   : Affiliation.builder().withId(id).build();
-    }
-
-    private Affiliation generateAffiliationWithPartOf(String id, boolean isNviAffiliation) {
+    private Affiliation generateAffiliationWithPartOf(String id) {
         return attempt(() -> getRawContentFromUriCached(id)).map(Optional::get)
                    .map(str -> createModel(dtoObjectMapper.readTree(str)))
                    .map(model -> model.listObjectsOfProperty(model.createProperty(PART_OF_PROPERTY)))
@@ -220,7 +222,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .map(result -> Affiliation.builder()
                                       .withId(id)
                                       .withPartOf(result)
-                                      .withIsNviAffiliation(isNviAffiliation)
+                                      .withIsNviAffiliation(true)
                                       .build())
                    .orElseThrow();
     }
