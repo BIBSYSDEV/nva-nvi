@@ -96,7 +96,7 @@ public final class IndexDocumentTestUtils {
     private static ContributorType toContributorWithExpandedAffiliation(JsonNode contributorNode, Candidate candidate) {
         var affiliations = extractAffiliations(contributorNode);
         var creator = getNviCreatorIfPresent(candidate, contributorNode);
-        return creator.map(value -> genereateNviContributor(contributorNode, value, affiliations))
+        return creator.map(value -> generateNviContributor(contributorNode, value, affiliations))
                    .orElseGet(() -> generateContributor(contributorNode, affiliations));
     }
 
@@ -110,8 +110,8 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static ContributorType genereateNviContributor(JsonNode contributorNode, Creator value,
-                                                           List<URI> affiliations) {
+    private static ContributorType generateNviContributor(JsonNode contributorNode, Creator value,
+                                                          List<URI> affiliations) {
         return NviContributor.builder()
                    .withId(ExpandedResourceGenerator.extractId(contributorNode))
                    .withName(ExpandedResourceGenerator.extractName(contributorNode))

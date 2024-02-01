@@ -31,7 +31,6 @@ public record Contributor(@JsonProperty("id") String id,
         private String orcid;
         private String role;
         private List<Affiliation> affiliations;
-        private boolean isNviContributor;
 
         private Builder() {
         }
@@ -58,11 +57,6 @@ public record Contributor(@JsonProperty("id") String id,
 
         public Builder withAffiliations(List<Affiliation> affiliations) {
             this.affiliations = affiliations;
-            return this;
-        }
-
-        public Builder withIsNviContributor(boolean isNviContributor) {
-            this.isNviContributor = isNviContributor;
             return this;
         }
 

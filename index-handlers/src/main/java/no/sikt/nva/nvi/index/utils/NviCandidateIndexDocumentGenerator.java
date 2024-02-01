@@ -43,6 +43,7 @@ import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.ContributorType;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.NviContributor;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -155,13 +156,6 @@ public final class NviCandidateIndexDocumentGenerator {
             contributor -> createContributor(contributor, candidate)).toList();
     }
 
-    private boolean isNviCreator(JsonNode contributor, Candidate candidate) {
-        return candidate.getPublicationDetails()
-                   .creators()
-                   .stream()
-                   .anyMatch(creator -> creator.id().toString().equals(extractId(contributor.at(JSON_PTR_IDENTITY))));
-    }
-
     private Optional<Creator> getNviCreatorIfPresent(JsonNode contributor, Candidate candidate) {
         return candidate.getPublicationDetails()
                    .creators()
@@ -172,12 +166,27 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private ContributorType createContributor(JsonNode contributor, Candidate candidate) {
         var identity = contributor.at(JSON_PTR_IDENTITY);
+        return getNviCreatorIfPresent(contributor, candidate)
+                   .map(value -> generateNviContributor(contributor, candidate, identity))
+                   .orElseGet(() -> generateContributor(contributor, candidate, identity));
+    }
+
+    private ContributorType generateContributor(JsonNode contributor, Candidate candidate, JsonNode identity) {
         return Contributor.builder()
                    .withId(extractId(identity))
                    .withName(extractJsonNodeTextValue(identity, JSON_PTR_NAME))
                    .withOrcid(extractJsonNodeTextValue(identity, JSON_PTR_ORCID))
                    .withRole(extractRoleType(contributor))
-                   .withIsNviContributor(isNviCreator(contributor, candidate))
+                   .withAffiliations(expandAffiliations(contributor, candidate))
+                   .build();
+    }
+
+    private ContributorType generateNviContributor(JsonNode contributor, Candidate candidate, JsonNode identity) {
+        return NviContributor.builder()
+                   .withId(extractId(identity))
+                   .withName(extractJsonNodeTextValue(identity, JSON_PTR_NAME))
+                   .withOrcid(extractJsonNodeTextValue(identity, JSON_PTR_ORCID))
+                   .withRole(extractRoleType(contributor))
                    .withAffiliations(expandAffiliations(contributor, candidate))
                    .build();
     }
