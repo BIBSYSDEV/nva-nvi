@@ -2,19 +2,24 @@ package no.sikt.nva.nvi.index.model;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
 import java.util.Objects;
+import nva.commons.core.JacocoGenerated;
 
 @JsonAutoDetect(fieldVisibility = Visibility.ANY)
 @JsonSerialize
 @JsonTypeInfo(
     use = Id.NAME,
     property = "type")
-@JsonTypeName("Contributor")
+@JsonSubTypes({
+    @JsonSubTypes.Type(value = NviContributor.class, name = "NviContributor")
+})
 public class Contributor {
 
     private final String id;
@@ -22,16 +27,18 @@ public class Contributor {
     private final String orcid;
     private final String role;
     private final List<Affiliation> affiliations;
-    private final boolean isNviContributor;
 
-    public Contributor(String id, String name, String orcid, String role, List<Affiliation> affiliations,
-                       boolean isNviContributor) {
+    @JsonCreator
+    public Contributor(@JsonProperty("id") String id,
+                       @JsonProperty("name") String name,
+                       @JsonProperty("orcid") String orcid,
+                       @JsonProperty("role") String role,
+                       @JsonProperty("affiliations") List<Affiliation> affiliations) {
         this.id = id;
         this.name = name;
         this.orcid = orcid;
         this.role = role;
         this.affiliations = affiliations;
-        this.isNviContributor = isNviContributor;
     }
 
     public static Builder builder() {
@@ -58,41 +65,27 @@ public class Contributor {
         return affiliations;
     }
 
-    public boolean isNviContributor() {
-        return isNviContributor;
-    }
-
     @Override
+    @JacocoGenerated
     public int hashCode() {
-        return Objects.hash(id, name, orcid, role, affiliations, isNviContributor);
+        return Objects.hash(id, name, orcid, role, affiliations);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
+    @JacocoGenerated
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if (obj == null || obj.getClass() != this.getClass()) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        var that = (Contributor) obj;
-        return Objects.equals(this.id, that.id) &&
-               Objects.equals(this.name, that.name) &&
-               Objects.equals(this.orcid, that.orcid) &&
-               Objects.equals(this.role, that.role) &&
-               Objects.equals(this.affiliations, that.affiliations) &&
-               this.isNviContributor == that.isNviContributor;
-    }
-
-    @Override
-    public String toString() {
-        return "Contributor[" +
-               "id=" + id + ", " +
-               "name=" + name + ", " +
-               "orcid=" + orcid + ", " +
-               "role=" + role + ", " +
-               "affiliations=" + affiliations + ", " +
-               "isNviContributor=" + isNviContributor + ']';
+        Contributor that = (Contributor) o;
+        return Objects.equals(id, that.id)
+               && Objects.equals(name, that.name)
+               && Objects.equals(orcid, that.orcid)
+               && Objects.equals(role, that.role)
+               && Objects.equals(affiliations, that.affiliations);
     }
 
     public static final class Builder {
@@ -138,7 +131,7 @@ public class Contributor {
         }
 
         public Contributor build() {
-            return new Contributor(id, name, orcid, role, affiliations, isNviContributor);
+            return new Contributor(id, name, orcid, role, affiliations);
         }
     }
 }

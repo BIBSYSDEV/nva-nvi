@@ -92,14 +92,6 @@ public final class IndexDocumentTestUtils {
                    .toList();
     }
 
-    private static boolean isNviCreator(JsonNode contributorNode, Candidate candidate) {
-        return candidate.getPublicationDetails()
-                   .creators()
-                   .stream()
-                   .anyMatch(
-                       creator -> creator.id().toString().equals(ExpandedResourceGenerator.extractId(contributorNode)));
-    }
-
     private static Contributor toContributorWithExpandedAffiliation(JsonNode contributorNode, Candidate candidate) {
         var affiliations = extractAffiliations(contributorNode);
         var creator = getNviCreatorIfPresent(candidate, contributorNode);
@@ -132,8 +124,7 @@ public final class IndexDocumentTestUtils {
         return candidate.getPublicationDetails()
                    .creators()
                    .stream()
-                   .filter(
-                       creator -> creator.id().toString().equals(ExpandedResourceGenerator.extractId(contributorNode)))
+                   .filter(creator -> creator.id().toString().equals(ExpandedResourceGenerator.extractId(contributorNode)))
                    .findFirst();
     }
 
