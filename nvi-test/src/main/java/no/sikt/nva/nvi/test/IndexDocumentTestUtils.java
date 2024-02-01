@@ -13,8 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
@@ -99,16 +101,25 @@ public final class IndexDocumentTestUtils {
 
     private static Contributor toContributorWithExpandedAffiliation(JsonNode contributorNode, Candidate candidate) {
         var affiliations = extractAffiliations(contributorNode);
-        var isNviCreator = isNviCreator(contributorNode, candidate);
+        var creator = getNviCreatorIfPresent(candidate, contributorNode);
         return Contributor.builder()
                    .withId(ExpandedResourceGenerator.extractId(contributorNode))
                    .withName(ExpandedResourceGenerator.extractName(contributorNode))
                    .withOrcid(ExpandedResourceGenerator.extractOrcid(contributorNode))
                    .withRole(ExpandedResourceGenerator.extractRole(contributorNode))
-                   .withAffiliations(isNviCreator ? expandAffiliationsWithPartOf(affiliations)
+                   .withAffiliations(creator.isPresent()
+                                         ? expandAffiliationsWithPartOf(creator.get(), affiliations)
                                          : expandAffiliations(affiliations))
-                   .withIsNviContributor(isNviCreator)
+                   .withIsNviContributor(creator.isPresent())
                    .build();
+    }
+
+    private static Optional<Creator> getNviCreatorIfPresent(Candidate candidate, JsonNode contributorNode) {
+        return candidate.getPublicationDetails()
+                   .creators()
+                   .stream()
+                   .filter(creator -> creator.id().toString().equals(ExpandedResourceGenerator.extractId(contributorNode)))
+                   .findFirst();
     }
 
     private static List<Affiliation> expandAffiliations(List<URI> uris) {
@@ -117,14 +128,23 @@ public final class IndexDocumentTestUtils {
                                             .build()).toList();
     }
 
-    private static List<Affiliation> expandAffiliationsWithPartOf(List<URI> uris) {
-        return uris.stream().map(IndexDocumentTestUtils::toAffiliationWithPartOf).toList();
+    private static List<Affiliation> expandAffiliationsWithPartOf(Creator creator, List<URI> uris) {
+        return uris.stream()
+                   .map(uri -> toAffiliationWithPartOf(uri, isNviAffiliation(creator, uri)))
+                   .toList();
     }
 
-    private static Affiliation toAffiliationWithPartOf(URI uri) {
+    private static boolean isNviAffiliation(Creator creator, URI uri) {
+        return creator.affiliations()
+                   .stream()
+                   .anyMatch(affiliation -> affiliation.equals(uri));
+    }
+
+    private static Affiliation toAffiliationWithPartOf(URI uri, boolean isNviAffiliation) {
         return Affiliation.builder()
                    .withId(uri.toString())
                    .withPartOf(List.of(HARD_CODED_PART_OF))
+                   .withIsNviAffiliation(isNviAffiliation)
                    .build();
     }
 }

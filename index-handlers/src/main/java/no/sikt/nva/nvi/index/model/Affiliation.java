@@ -13,7 +13,8 @@ import java.util.List;
     property = "type")
 @JsonTypeName("Organization")
 public record Affiliation(String id,
-                          List<String> partOf) {
+                          List<String> partOf,
+                          boolean isNviAffiliation) {
 
     public static Builder builder() {
         return new Builder();
@@ -23,6 +24,10 @@ public record Affiliation(String id,
 
         private String id;
         private List<String> partOf;
+        private boolean isNviAffiliation;
+
+        private Builder() {
+        }
 
         public Builder withId(String id) {
             this.id = id;
@@ -34,8 +39,13 @@ public record Affiliation(String id,
             return this;
         }
 
+        public Builder withIsNviAffiliation(boolean isNviAffiliation) {
+            this.isNviAffiliation = isNviAffiliation;
+            return this;
+        }
+
         public Affiliation build() {
-            return new Affiliation(id, partOf);
+            return new Affiliation(id, partOf, isNviAffiliation);
         }
     }
 }
