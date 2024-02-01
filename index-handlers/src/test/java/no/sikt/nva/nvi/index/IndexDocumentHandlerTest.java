@@ -169,8 +169,8 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = dtoObjectMapper.readTree(s3Writer.getFile(createPath(candidate))).at(JSON_PTR_BODY);
         assertEquals("NviCandidate", actualIndexDocument.at(JSON_PTR_TYPE).textValue());
-        assertEquals("Contributor", actualIndexDocument.at(JSON_PTR_CONTRIBUTOR).get(0).at(JSON_PTR_TYPE).textValue());
-        assertEquals("Organization",
+        assertEquals("NviContributor", actualIndexDocument.at(JSON_PTR_CONTRIBUTOR).get(0).at(JSON_PTR_TYPE).textValue());
+        assertEquals("NviOrganization",
                      actualIndexDocument.at(JSON_PTR_CONTRIBUTOR)
                          .get(0)
                          .at(JSON_PTR_AFFILIATIONS)
