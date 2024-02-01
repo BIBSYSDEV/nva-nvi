@@ -80,6 +80,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withPublicationDetails(extractPublicationDetails(resource, candidate))
                    .withNumberOfApprovals(approvals.size())
                    .withPoints(candidate.getTotalPoints())
+                   .withModifiedDate(candidate.getModifiedDate())
                    .build();
     }
 
