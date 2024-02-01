@@ -167,6 +167,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withName(extractJsonNodeTextValue(identity, JSON_PTR_NAME))
                    .withOrcid(extractJsonNodeTextValue(identity, JSON_PTR_ORCID))
                    .withRole(extractRoleType(contributor))
+                   .withIsNviContributor(isNviCreator)
                    .withAffiliations(expandAffiliations(contributor, isNviCreator))
                    .build();
     }
