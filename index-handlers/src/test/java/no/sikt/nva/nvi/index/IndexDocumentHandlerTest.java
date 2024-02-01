@@ -1,5 +1,8 @@
 package no.sikt.nva.nvi.index;
 
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TYPE;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_LABEL;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_NORWEGIAN_LABEL;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.createExpandedResource;
@@ -18,6 +21,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -27,6 +31,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
@@ -59,6 +64,8 @@ import software.amazon.awssdk.services.sqs.model.SqsException;
 
 public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
+    private static final String JSON_PTR_CONTRIBUTOR = "/publicationDetails/contributors";
+    private static final String JSON_PTR_APPROVALS = "/approvals";
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BODY = "body";
     private static final String ORGANIZATION_CONTEXT = "https://bibsysdev.github.io/src/organization-context.json";
@@ -152,6 +159,21 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate)));
         assertEquals(expectedConsumptionAttributes, actualIndexDocument.consumptionAttributes());
+    }
+
+    @Test
+    void shouldProduceIndexDocumentWithTypeInfo() throws JsonProcessingException {
+        var candidate = randomApplicableCandidate();
+        setUpExistingResourceInS3AndGenerateExpectedDocument(candidate);
+        var event = createEvent(candidate.getIdentifier());
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = dtoObjectMapper.readTree(s3Writer.getFile(createPath(candidate))).at(JSON_PTR_BODY);
+        assertNotNull(actualIndexDocument.at(JSON_PTR_TYPE));
+        assertNotNull(actualIndexDocument.at(JSON_PTR_CONTRIBUTOR).get(0).at(JSON_PTR_TYPE));
+        assertNotNull(
+            actualIndexDocument.at(JSON_PTR_CONTRIBUTOR).get(0).at(JSON_PTR_AFFILIATIONS).get(0).at(JSON_PTR_TYPE));
+        assertNotNull(actualIndexDocument.at(JSON_PTR_APPROVALS).get(0).at(JSON_PTR_TYPE));
     }
 
     @Test

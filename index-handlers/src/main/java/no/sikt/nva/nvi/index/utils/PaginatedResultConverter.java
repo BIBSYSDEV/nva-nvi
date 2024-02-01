@@ -18,6 +18,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
@@ -50,7 +51,7 @@ public final class PaginatedResultConverter {
 
     }
 
-    public static PaginatedSearchResult<NviCandidateIndexDocument> toPaginatedResult(
+    public static PaginatedSearchResult<String> toPaginatedResult(
         SearchResponse<NviCandidateIndexDocument> searchResponse, CandidateSearchParameters candidateSearchParameters)
         throws UnprocessableContentException {
         var paginatedSearchResult = PaginatedSearchResult.create(
@@ -120,9 +121,12 @@ public final class PaginatedResultConverter {
         return (int) searchResponse.hits().total().value();
     }
 
-    private static List<NviCandidateIndexDocument> extractsHits(
-        SearchResponse<NviCandidateIndexDocument> searchResponse) {
-        return searchResponse.hits().hits().stream().map(Hit::source).toList();
+    private static List<String> extractsHits(SearchResponse<NviCandidateIndexDocument> searchResponse) {
+        return searchResponse.hits().hits().stream()
+                   .map(Hit::source)
+                   .filter(Objects::nonNull)
+                   .map(hit -> attempt(hit::toJsonString).orElseThrow())
+                   .toList();
     }
 
     private static URI constructBaseUri() {

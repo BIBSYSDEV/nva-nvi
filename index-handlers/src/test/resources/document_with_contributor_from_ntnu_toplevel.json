@@ -1,5 +1,6 @@
 {
     "@context" : "https://bibsysdev.github.io/src/nvi-context.json",
+    "type": "NviCandidate",
     "identifier" : "27a0f52b-2d86-447d-a2cc-48ac4b8789dd",
     "publicationDetails" : {
       "id" : "https://api.dev.nva.aws.unit.no/publication/018a03b59fd9-88b45d41-03e8-4feb-a3e5-3ad865aea1ca",
@@ -9,9 +10,11 @@
         "year": "2023"
       },
       "contributors" : [ {
+        "type": "Contributor",
         "id" : "https://api.dev.nva.aws.unit.no/cristin/person/1306838",
         "name" : "Anette Olli Siiri",
         "affiliations" : [ {
+          "type": "Organization",
           "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0",
           "partOf": []
         } ],

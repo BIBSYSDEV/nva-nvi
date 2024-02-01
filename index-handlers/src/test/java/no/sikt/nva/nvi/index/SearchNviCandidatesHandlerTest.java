@@ -81,7 +81,7 @@ public class SearchNviCandidatesHandlerTest {
     private static final String QUERY_PARAM_SIZE = "size";
     private static final int DEFAULT_QUERY_SIZE = 10;
     private static final int DEFAULT_OFFSET_SIZE = 0;
-    private static final TypeReference<PaginatedSearchResult<NviCandidateIndexDocument>> TYPE_REF =
+    private static final TypeReference<PaginatedSearchResult<String>> TYPE_REF =
         new TypeReference<>() {
         };
     private static SearchClient<NviCandidateIndexDocument> openSearchClient;
@@ -202,8 +202,7 @@ public class SearchNviCandidatesHandlerTest {
         handler.handleRequest(emptyRequest(), output, context);
         var response =
             GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
-        var paginatedResult =
-            objectMapper.readValue(response.getBody(), TYPE_REF);
+        var paginatedResult = objectMapper.readValue(response.getBody(), TYPE_REF);
 
         assertThat(paginatedResult.getHits(), hasSize(10));
     }

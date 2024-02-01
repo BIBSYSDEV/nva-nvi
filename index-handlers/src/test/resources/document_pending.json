@@ -1,5 +1,6 @@
 {
   "@context": "https://bibsysdev.github.io/src/nvi-context.json",
+  "type": "NviCandidate",
   "identifier": "37e1863b-f72a-4b2b-bbe4-fc7de3e579e0",
   "numberOfApprovals": 1,
   "publicationDetails": {
@@ -11,9 +12,11 @@
     },
     "contributors": [
       {
+        "type": "Contributor",
         "id": "https://api.dev.nva.aws.unit.no/cristin/person/1136326",
         "name": "Kir Truhacev",
         "affiliations" : [ {
+          "type": "Organization",
           "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0",
           "partOf": ["https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0"]
         } ],
@@ -23,6 +26,7 @@
   },
   "approvals": [
     {
+      "type": "Approval",
       "institutionId": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
       "labels": {
         "nb": "Sikt – Kunnskapssektorens tjenesteleverandør",
