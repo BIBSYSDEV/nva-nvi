@@ -192,7 +192,7 @@ public final class NviCandidateIndexDocumentGenerator {
         var id = extractJsonNodeTextValue(affiliation, JSON_PTR_ID);
 
         if (isNull(id)) {
-            LOGGER.info("Skipping extraction of affiliation because of missing institutionId: {}", affiliation);
+            LOGGER.info("Skipping expansion of affiliation because of missing institutionId: {}", affiliation);
             return null;
         }
 
