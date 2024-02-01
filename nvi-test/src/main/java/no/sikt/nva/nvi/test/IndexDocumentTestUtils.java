@@ -21,6 +21,7 @@ import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
+import no.sikt.nva.nvi.index.model.NviContributor;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import nva.commons.core.paths.UnixPath;
@@ -102,15 +103,28 @@ public final class IndexDocumentTestUtils {
     private static Contributor toContributorWithExpandedAffiliation(JsonNode contributorNode, Candidate candidate) {
         var affiliations = extractAffiliations(contributorNode);
         var creator = getNviCreatorIfPresent(candidate, contributorNode);
+        return creator.map(value -> genereateNviContributor(contributorNode, value, affiliations))
+                   .orElseGet(() -> generateContributor(contributorNode, affiliations));
+    }
+
+    private static Contributor generateContributor(JsonNode contributorNode, List<URI> affiliations) {
         return Contributor.builder()
                    .withId(ExpandedResourceGenerator.extractId(contributorNode))
                    .withName(ExpandedResourceGenerator.extractName(contributorNode))
                    .withOrcid(ExpandedResourceGenerator.extractOrcid(contributorNode))
                    .withRole(ExpandedResourceGenerator.extractRole(contributorNode))
-                   .withAffiliations(creator.isPresent()
-                                         ? expandAffiliationsWithPartOf(creator.get(), affiliations)
-                                         : expandAffiliations(affiliations))
-                   .withIsNviContributor(creator.isPresent())
+                   .withAffiliations(expandAffiliations(affiliations))
+                   .build();
+    }
+
+    private static Contributor genereateNviContributor(JsonNode contributorNode, Creator value,
+                                                       List<URI> affiliations) {
+        return NviContributor.builder()
+                   .withId(ExpandedResourceGenerator.extractId(contributorNode))
+                   .withName(ExpandedResourceGenerator.extractName(contributorNode))
+                   .withOrcid(ExpandedResourceGenerator.extractOrcid(contributorNode))
+                   .withRole(ExpandedResourceGenerator.extractRole(contributorNode))
+                   .withAffiliations(expandAffiliationsWithPartOf(value, affiliations))
                    .build();
     }
 
@@ -118,7 +132,8 @@ public final class IndexDocumentTestUtils {
         return candidate.getPublicationDetails()
                    .creators()
                    .stream()
-                   .filter(creator -> creator.id().toString().equals(ExpandedResourceGenerator.extractId(contributorNode)))
+                   .filter(
+                       creator -> creator.id().toString().equals(ExpandedResourceGenerator.extractId(contributorNode)))
                    .findFirst();
     }
 
