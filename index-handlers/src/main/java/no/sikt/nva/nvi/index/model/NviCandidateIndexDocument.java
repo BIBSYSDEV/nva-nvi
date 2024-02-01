@@ -1,11 +1,7 @@
 package no.sikt.nva.nvi.index.model;
 
-import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
@@ -19,12 +15,9 @@ import no.unit.nva.auth.uriretriever.UriRetriever;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    property = "type")
-@JsonTypeName("NviCandidate")
 public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         URI id,
+                                        String type,
                                         UUID identifier,
                                         PublicationDetails publicationDetails,
                                         List<Approval> approvals,
@@ -33,6 +26,8 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         Instant modifiedDate) {
 
     private static final String CONTEXT = "@context";
+    private static final String NVI_CANDIDATE = "NviCandidate";
+    private static final String TYPE = NVI_CANDIDATE;
 
     public static NviCandidateIndexDocument from(JsonNode expandedResource, Candidate candidate,
                                                  UriRetriever uriRetriever) {
@@ -42,10 +37,6 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
 
     public static Builder builder() {
         return new Builder();
-    }
-
-    public String toJsonString() throws JsonProcessingException {
-        return dtoObjectMapper.writeValueAsString(this);
     }
 
     public static final class Builder {
@@ -103,7 +94,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         }
 
         public NviCandidateIndexDocument build() {
-            return new NviCandidateIndexDocument(context, id, identifier, publicationDetails, approvals,
+            return new NviCandidateIndexDocument(context, id, TYPE, identifier, publicationDetails, approvals,
                                                  numberOfApprovals, points, modifiedDate);
         }
     }

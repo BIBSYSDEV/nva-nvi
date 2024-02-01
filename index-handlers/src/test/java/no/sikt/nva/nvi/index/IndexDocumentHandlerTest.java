@@ -21,7 +21,6 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -169,11 +168,16 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = dtoObjectMapper.readTree(s3Writer.getFile(createPath(candidate))).at(JSON_PTR_BODY);
-        assertNotNull(actualIndexDocument.at(JSON_PTR_TYPE));
-        assertNotNull(actualIndexDocument.at(JSON_PTR_CONTRIBUTOR).get(0).at(JSON_PTR_TYPE));
-        assertNotNull(
-            actualIndexDocument.at(JSON_PTR_CONTRIBUTOR).get(0).at(JSON_PTR_AFFILIATIONS).get(0).at(JSON_PTR_TYPE));
-        assertNotNull(actualIndexDocument.at(JSON_PTR_APPROVALS).get(0).at(JSON_PTR_TYPE));
+        assertEquals("NviCandidate", actualIndexDocument.at(JSON_PTR_TYPE).textValue());
+        assertEquals("Contributor", actualIndexDocument.at(JSON_PTR_CONTRIBUTOR).get(0).at(JSON_PTR_TYPE).textValue());
+        assertEquals("Organization",
+                     actualIndexDocument.at(JSON_PTR_CONTRIBUTOR)
+                         .get(0)
+                         .at(JSON_PTR_AFFILIATIONS)
+                         .get(0)
+                         .at(JSON_PTR_TYPE)
+                         .textValue());
+        assertEquals("Approval", actualIndexDocument.at(JSON_PTR_APPROVALS).get(0).at(JSON_PTR_TYPE).textValue());
     }
 
     @Test
