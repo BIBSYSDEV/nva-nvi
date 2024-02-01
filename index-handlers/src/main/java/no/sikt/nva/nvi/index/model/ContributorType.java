@@ -21,5 +21,5 @@ public sealed interface ContributorType permits NviContributor, Contributor {
 
     String role();
 
-    List<Affiliation> affiliations();
+    List<OrganizationType> affiliations();
 }

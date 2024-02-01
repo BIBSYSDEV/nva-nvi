@@ -18,11 +18,13 @@ import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
-import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.ContributorType;
 import no.sikt.nva.nvi.index.model.NviContributor;
+import no.sikt.nva.nvi.index.model.NviOrganization;
+import no.sikt.nva.nvi.index.model.Organization;
+import no.sikt.nva.nvi.index.model.OrganizationType;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import nva.commons.core.paths.UnixPath;
@@ -125,17 +127,18 @@ public final class IndexDocumentTestUtils {
         return candidate.getPublicationDetails()
                    .creators()
                    .stream()
-                   .filter(creator -> creator.id().toString().equals(ExpandedResourceGenerator.extractId(contributorNode)))
+                   .filter(
+                       creator -> creator.id().toString().equals(ExpandedResourceGenerator.extractId(contributorNode)))
                    .findFirst();
     }
 
-    private static List<Affiliation> expandAffiliations(List<URI> uris) {
-        return uris.stream().map(uri -> Affiliation.builder()
-                                            .withId(uri.toString())
-                                            .build()).toList();
+    private static List<OrganizationType> expandAffiliations(List<URI> uris) {
+        return uris.stream()
+                   .map(IndexDocumentTestUtils::generateOrganization)
+                   .toList();
     }
 
-    private static List<Affiliation> expandAffiliationsWithPartOf(Creator creator, List<URI> uris) {
+    private static List<OrganizationType> expandAffiliationsWithPartOf(Creator creator, List<URI> uris) {
         return uris.stream()
                    .map(uri -> toAffiliationWithPartOf(uri, isNviAffiliation(creator, uri)))
                    .toList();
@@ -147,11 +150,22 @@ public final class IndexDocumentTestUtils {
                    .anyMatch(affiliation -> affiliation.equals(uri));
     }
 
-    private static Affiliation toAffiliationWithPartOf(URI uri, boolean isNviAffiliation) {
-        return Affiliation.builder()
+    private static OrganizationType toAffiliationWithPartOf(URI uri, boolean isNviAffiliation) {
+        return isNviAffiliation ? generateNviOrganization(uri)
+                   : generateOrganization(uri);
+    }
+
+    private static OrganizationType generateOrganization(URI uri) {
+        return Organization.builder()
                    .withId(uri.toString())
                    .withPartOf(List.of(HARD_CODED_PART_OF))
-                   .withIsNviAffiliation(isNviAffiliation)
+                   .build();
+    }
+
+    private static OrganizationType generateNviOrganization(URI uri) {
+        return NviOrganization.builder()
+                   .withId(uri.toString())
+                   .withPartOf(List.of(HARD_CODED_PART_OF))
                    .build();
     }
 }

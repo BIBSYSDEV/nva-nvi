@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.model;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -8,13 +9,10 @@ import java.util.List;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonTypeName("Organization")
-public record Affiliation(String id,
-                          List<String> partOf,
-                          boolean isNviAffiliation) {
+public record NviOrganization(@JsonProperty("id") String id,
+                              @JsonProperty("partOf") List<String> partOf) implements OrganizationType {
 
     public static Builder builder() {
         return new Builder();
@@ -24,7 +22,6 @@ public record Affiliation(String id,
 
         private String id;
         private List<String> partOf;
-        private boolean isNviAffiliation;
 
         private Builder() {
         }
@@ -39,13 +36,8 @@ public record Affiliation(String id,
             return this;
         }
 
-        public Builder withIsNviAffiliation(boolean isNviAffiliation) {
-            this.isNviAffiliation = isNviAffiliation;
-            return this;
-        }
-
-        public Affiliation build() {
-            return new Affiliation(id, partOf, isNviAffiliation);
+        public NviOrganization build() {
+            return new NviOrganization(id, partOf);
         }
     }
 }

@@ -33,17 +33,18 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
-import no.sikt.nva.nvi.common.model.Organization;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.service.model.Username;
-import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.ContributorType;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.NviContributor;
+import no.sikt.nva.nvi.index.model.NviOrganization;
+import no.sikt.nva.nvi.index.model.Organization;
+import no.sikt.nva.nvi.index.model.OrganizationType;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -65,8 +66,9 @@ public final class NviCandidateIndexDocumentGenerator {
         return createNviCandidateIndexDocument(expandedResource, candidate);
     }
 
-    private static Organization toOrganization(String response) {
-        return attempt(() -> dtoObjectMapper.readValue(response, Organization.class)).orElseThrow();
+    private static no.sikt.nva.nvi.common.model.Organization toOrganization(String response) {
+        return attempt(
+            () -> dtoObjectMapper.readValue(response, no.sikt.nva.nvi.common.model.Organization.class)).orElseThrow();
     }
 
     private static BigDecimal getInstitutionPoints(Approval approval, Candidate candidate) {
@@ -105,7 +107,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .labels();
     }
 
-    private Organization fetchOrganization(URI institutionId) {
+    private no.sikt.nva.nvi.common.model.Organization fetchOrganization(URI institutionId) {
         return getRawContentFromUriCached(institutionId.toString())
                    .map(NviCandidateIndexDocumentGenerator::toOrganization)
                    .orElseThrow(() -> logFailingAffiliationHttpRequest(institutionId.toString()));
@@ -126,19 +128,20 @@ public final class NviCandidateIndexDocumentGenerator {
         return Optional.of(approval).map(Approval::getAssignee).map(Username::value).orElse(null);
     }
 
-    private List<Organization> extractTopLevelOrganizations(JsonNode resource) {
+    private List<no.sikt.nva.nvi.common.model.Organization> extractTopLevelOrganizations(JsonNode resource) {
         var topLevelOrganizations = resource.at("/topLevelOrganizations");
         return topLevelOrganizations.isMissingNode()
                    ? Collections.emptyList()
                    : mapToOrganizations((ArrayNode) topLevelOrganizations);
     }
 
-    private List<Organization> mapToOrganizations(ArrayNode topLevelOrgs) {
+    private List<no.sikt.nva.nvi.common.model.Organization> mapToOrganizations(ArrayNode topLevelOrgs) {
         return streamNode(topLevelOrgs).map(this::createOrganization).toList();
     }
 
-    private Organization createOrganization(JsonNode jsonNode) {
-        return attempt(() -> dtoObjectMapper.readValue(jsonNode.toString(), Organization.class)).orElseThrow();
+    private no.sikt.nva.nvi.common.model.Organization createOrganization(JsonNode jsonNode) {
+        return attempt(() -> dtoObjectMapper.readValue(jsonNode.toString(),
+                                                       no.sikt.nva.nvi.common.model.Organization.class)).orElseThrow();
     }
 
     private PublicationDetails extractPublicationDetails(JsonNode resource, Candidate candidate) {
@@ -191,14 +194,14 @@ public final class NviCandidateIndexDocumentGenerator {
                    .build();
     }
 
-    private List<Affiliation> expandAffiliations(JsonNode contributor, Candidate candidate) {
+    private List<OrganizationType> expandAffiliations(JsonNode contributor, Candidate candidate) {
         return streamNode(contributor.at(JSON_PTR_AFFILIATIONS))
                    .map(affiliationNode -> expandAffiliation(affiliationNode, contributor, candidate))
                    .filter(Objects::nonNull)
                    .toList();
     }
 
-    private Affiliation expandAffiliation(JsonNode affiliation, JsonNode contributor, Candidate candidate) {
+    private OrganizationType expandAffiliation(JsonNode affiliation, JsonNode contributor, Candidate candidate) {
         var id = extractJsonNodeTextValue(affiliation, JSON_PTR_ID);
 
         if (isNull(id)) {
@@ -208,7 +211,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
         return isNviAffiliation(affiliation, contributor, candidate)
                    ? generateAffiliationWithPartOf(id)
-                   : Affiliation.builder().withId(id).build();
+                   : Organization.builder().withId(id).build();
     }
 
     private boolean isNviAffiliation(JsonNode affiliation, JsonNode contributor, Candidate candidate) {
@@ -224,15 +227,14 @@ public final class NviCandidateIndexDocumentGenerator {
         return creator.affiliations().stream().anyMatch(affiliation -> affiliation.toString().equals(affiliationId));
     }
 
-    private Affiliation generateAffiliationWithPartOf(String id) {
+    private NviOrganization generateAffiliationWithPartOf(String id) {
         return attempt(() -> getRawContentFromUriCached(id)).map(Optional::get)
                    .map(str -> createModel(dtoObjectMapper.readTree(str)))
                    .map(model -> model.listObjectsOfProperty(model.createProperty(PART_OF_PROPERTY)))
                    .map(nodeIterator -> nodeIterator.toList().stream().map(RDFNode::toString).toList())
-                   .map(result -> Affiliation.builder()
+                   .map(result -> NviOrganization.builder()
                                       .withId(id)
                                       .withPartOf(result)
-                                      .withIsNviAffiliation(true)
                                       .build())
                    .orElseThrow();
     }

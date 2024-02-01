@@ -11,7 +11,7 @@ public record NviContributor(@JsonProperty("id") String id,
                              @JsonProperty("name") String name,
                              @JsonProperty("orcid") String orcid,
                              @JsonProperty("role") String role,
-                             @JsonProperty("affiliations") List<Affiliation> affiliations) implements ContributorType {
+                             @JsonProperty("affiliations") List<OrganizationType> affiliations) implements ContributorType {
 
     public static Builder builder() {
         return new Builder();
@@ -23,7 +23,7 @@ public record NviContributor(@JsonProperty("id") String id,
         private String name;
         private String orcid;
         private String role;
-        private List<Affiliation> affiliations;
+        private List<OrganizationType> affiliations;
 
         private Builder() {
         }
@@ -48,7 +48,7 @@ public record NviContributor(@JsonProperty("id") String id,
             return this;
         }
 
-        public Builder withAffiliations(List<Affiliation> affiliations) {
+        public Builder withAffiliations(List<OrganizationType> affiliations) {
             this.affiliations = affiliations;
             return this;
         }

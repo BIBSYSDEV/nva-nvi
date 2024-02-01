@@ -44,7 +44,7 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
-import no.sikt.nva.nvi.index.model.Affiliation;
+import no.sikt.nva.nvi.index.model.Organization;
 import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
@@ -501,7 +501,7 @@ public class OpenSearchClientTest {
                                   ? PublicationDate.builder().withYear(year).build()
                                   : PublicationDate.builder().withYear(YEAR).build();
         var contributorBuilder = Contributor.builder().withRole("Creator")
-                                     .withAffiliations(List.of(Affiliation.builder().withId(affiliation).build()));
+                                     .withAffiliations(List.of(Organization.builder().withId(affiliation).build()));
         if (contributor != null) {
             contributorBuilder.withName(contributor);
         }
