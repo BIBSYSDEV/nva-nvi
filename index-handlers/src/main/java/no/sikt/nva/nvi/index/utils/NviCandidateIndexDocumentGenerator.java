@@ -41,6 +41,7 @@ import no.sikt.nva.nvi.common.service.model.Username;
 import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
+import no.sikt.nva.nvi.index.model.ContributorType;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
@@ -149,7 +150,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .build();
     }
 
-    private List<Contributor> expandContributors(JsonNode resource, Candidate candidate) {
+    private List<ContributorType> expandContributors(JsonNode resource, Candidate candidate) {
         return getJsonNodeStream(resource, JSON_PTR_CONTRIBUTOR).map(
             contributor -> createContributor(contributor, candidate)).toList();
     }
@@ -169,7 +170,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .findFirst();
     }
 
-    private Contributor createContributor(JsonNode contributor, Candidate candidate) {
+    private ContributorType createContributor(JsonNode contributor, Candidate candidate) {
         var identity = contributor.at(JSON_PTR_IDENTITY);
         return Contributor.builder()
                    .withId(extractId(identity))

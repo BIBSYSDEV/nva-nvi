@@ -21,6 +21,7 @@ import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
+import no.sikt.nva.nvi.index.model.ContributorType;
 import no.sikt.nva.nvi.index.model.NviContributor;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
@@ -86,13 +87,13 @@ public final class IndexDocumentTestUtils {
         return new PublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
     }
 
-    private static List<Contributor> mapToContributors(ArrayNode contributorNodes, Candidate candidate) {
+    private static List<ContributorType> mapToContributors(ArrayNode contributorNodes, Candidate candidate) {
         return JsonUtils.streamNode(contributorNodes)
                    .map(contributorNode -> toContributorWithExpandedAffiliation(contributorNode, candidate))
                    .toList();
     }
 
-    private static Contributor toContributorWithExpandedAffiliation(JsonNode contributorNode, Candidate candidate) {
+    private static ContributorType toContributorWithExpandedAffiliation(JsonNode contributorNode, Candidate candidate) {
         var affiliations = extractAffiliations(contributorNode);
         var creator = getNviCreatorIfPresent(candidate, contributorNode);
         return creator.map(value -> genereateNviContributor(contributorNode, value, affiliations))
@@ -109,8 +110,8 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static Contributor genereateNviContributor(JsonNode contributorNode, Creator value,
-                                                       List<URI> affiliations) {
+    private static ContributorType genereateNviContributor(JsonNode contributorNode, Creator value,
+                                                           List<URI> affiliations) {
         return NviContributor.builder()
                    .withId(ExpandedResourceGenerator.extractId(contributorNode))
                    .withName(ExpandedResourceGenerator.extractName(contributorNode))
