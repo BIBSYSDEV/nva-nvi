@@ -500,7 +500,7 @@ public class OpenSearchClientTest {
         var publicationDate = year != null
                                   ? PublicationDate.builder().withYear(year).build()
                                   : PublicationDate.builder().withYear(YEAR).build();
-        var contributorBuilder = new Contributor.Builder().withRole("Creator")
+        var contributorBuilder = Contributor.builder().withRole("Creator")
                                      .withAffiliations(List.of(new Affiliation(affiliation, List.of())));
         if (contributor != null) {
             contributorBuilder.withName(contributor);

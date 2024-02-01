@@ -162,7 +162,8 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private Contributor createContributor(JsonNode contributor, boolean isNviCreator) {
         var identity = contributor.at(JSON_PTR_IDENTITY);
-        return new Contributor.Builder().withId(extractId(identity))
+        return Contributor.builder()
+                   .withId(extractId(identity))
                    .withName(extractJsonNodeTextValue(identity, JSON_PTR_NAME))
                    .withOrcid(extractJsonNodeTextValue(identity, JSON_PTR_ORCID))
                    .withRole(extractRoleType(contributor))
