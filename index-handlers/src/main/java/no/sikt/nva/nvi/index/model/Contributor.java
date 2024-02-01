@@ -16,7 +16,8 @@ public record Contributor(String id,
                           String name,
                           String orcid,
                           String role,
-                          List<Affiliation> affiliations) {
+                          List<Affiliation> affiliations,
+                          boolean isNviContributor) {
 
     public static Builder builder() {
         return new Builder();
@@ -29,6 +30,10 @@ public record Contributor(String id,
         private String orcid;
         private String role;
         private List<Affiliation> affiliations;
+        private boolean isNviContributor;
+
+        private Builder() {
+        }
 
         public Builder withId(String id) {
             this.id = id;
@@ -55,8 +60,13 @@ public record Contributor(String id,
             return this;
         }
 
+        public Builder withIsNviContributor(boolean isNviContributor) {
+            this.isNviContributor = isNviContributor;
+            return this;
+        }
+
         public Contributor build() {
-            return new Contributor(id, name, orcid, role, affiliations);
+            return new Contributor(id, name, orcid, role, affiliations, isNviContributor);
         }
     }
 }

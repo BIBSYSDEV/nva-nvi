@@ -85,9 +85,7 @@ public final class IndexDocumentTestUtils {
 
     private static List<Contributor> mapToContributors(ArrayNode contributorNodes, Candidate candidate) {
         return JsonUtils.streamNode(contributorNodes)
-                   .map(contributorNode -> toContributorWithExpandedAffiliation(contributorNode,
-                                                                                isNviCreator(contributorNode,
-                                                                                             candidate)))
+                   .map(contributorNode -> toContributorWithExpandedAffiliation(contributorNode, candidate))
                    .toList();
     }
 
@@ -99,8 +97,9 @@ public final class IndexDocumentTestUtils {
                        creator -> creator.id().toString().equals(ExpandedResourceGenerator.extractId(contributorNode)));
     }
 
-    private static Contributor toContributorWithExpandedAffiliation(JsonNode contributorNode, boolean isNviCreator) {
+    private static Contributor toContributorWithExpandedAffiliation(JsonNode contributorNode, Candidate candidate) {
         var affiliations = extractAffiliations(contributorNode);
+        var isNviCreator = isNviCreator(contributorNode, candidate);
         return Contributor.builder()
                    .withId(ExpandedResourceGenerator.extractId(contributorNode))
                    .withName(ExpandedResourceGenerator.extractName(contributorNode))
@@ -108,6 +107,7 @@ public final class IndexDocumentTestUtils {
                    .withRole(ExpandedResourceGenerator.extractRole(contributorNode))
                    .withAffiliations(isNviCreator ? expandAffiliationsWithPartOf(affiliations)
                                          : expandAffiliations(affiliations))
+                   .withIsNviContributor(isNviCreator)
                    .build();
     }
 
