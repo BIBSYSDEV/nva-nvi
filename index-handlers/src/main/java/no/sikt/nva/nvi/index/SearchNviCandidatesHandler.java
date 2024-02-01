@@ -31,17 +31,13 @@ import nva.commons.core.JacocoGenerated;
 import nva.commons.core.StringUtils;
 import org.apache.jena.rdf.model.RDFNode;
 
-public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, PaginatedSearchResult<String>> {
+public class SearchNviCandidatesHandler
+    extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
     public static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     public static final String QUERY_PARAM_EXCLUDE_SUB_UNITS = "excludeSubUnits";
     public static final String QUERY_PARAM_FILTER = "filter";
     public static final String QUERY_PARAM_TITLE = "title";
-    private static final String DEFAULT_STRING = StringUtils.EMPTY_STRING;
-    private static final String QUERY_SIZE_PARAM = "size";
-    private static final String QUERY_OFFSET_PARAM = "offset";
-    private static final int DEFAULT_QUERY_SIZE = 10;
-    private static final int DEFAULT_OFFSET_SIZE = 0;
     public static final String QUERY_PARAM_SEARCH_TERM = "query";
     public static final String QUERY_PARAM_YEAR = "year";
     public static final String QUERY_PARAM_CATEGORY = "category";
@@ -50,6 +46,11 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, Paginate
     public static final String USER_IS_NOT_ALLOWED_TO_SEARCH_FOR_AFFILIATIONS_S
         = "User is not allowed to search for affiliations: %s";
     public static final String COMMA_AND_SPACE = ", ";
+    private static final String DEFAULT_STRING = StringUtils.EMPTY_STRING;
+    private static final String QUERY_SIZE_PARAM = "size";
+    private static final String QUERY_OFFSET_PARAM = "offset";
+    private static final int DEFAULT_QUERY_SIZE = 10;
+    private static final int DEFAULT_OFFSET_SIZE = 0;
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
     private final AuthorizedBackendUriRetriever uriRetriever;
 
@@ -68,7 +69,7 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, Paginate
     }
 
     @Override
-    protected PaginatedSearchResult<String> processInput(Void input, RequestInfo requestInfo,
+    protected PaginatedSearchResult<NviCandidateIndexDocument> processInput(Void input, RequestInfo requestInfo,
                                                                             Context context)
         throws UnauthorizedException {
         var candidateSearchParameters = getCandidateSearchParameters(requestInfo);
@@ -76,65 +77,12 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, Paginate
                                                 candidateSearchParameters.customer());
 
         return attempt(() -> openSearchClient.search(candidateSearchParameters))
-            .map(searchResponse -> toPaginatedResult(searchResponse, candidateSearchParameters))
-            .orElseThrow();
-    }
-
-    private CandidateSearchParameters getCandidateSearchParameters(RequestInfo requestInfo)
-        throws UnauthorizedException {
-        var offset = extractQueryParamOffsetOrDefault(requestInfo);
-        var size = extractQueryParamSizeOrDefault(requestInfo);
-        var filter = extractQueryParamFilterOrDefault(requestInfo);
-        var excludeSubUnits = extractQueryParamExcludeSubUnitsOrDefault(requestInfo);
-        var topLevelOrg = requestInfo.getTopLevelOrgCristinId().orElseThrow();
-        var affiliations = Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
-            .orElse(List.of(topLevelOrg));
-        var username = requestInfo.getUserName();
-        var searchTerm = extractQueryParamSearchTermOrDefault(requestInfo);
-        var year = extractQueryParamPublicationDateOrDefault(requestInfo);
-        var category = extractQueryParamCategoryOrDefault(requestInfo);
-        var title = extractQueryParamTitle(requestInfo);
-        var contributor = extractQueryParamContributor(requestInfo);
-        var assignee = extractQueryParamAssignee(requestInfo);
-
-        assertUserIsAllowedToSearchAffiliations(affiliations, topLevelOrg);
-
-        var candidateSearchParameters = new CandidateSearchParameters(searchTerm, affiliations, excludeSubUnits,
-                                                                      filter, username,
-                                                                      year, category, title, contributor,
-                                                                      assignee, topLevelOrg, offset, size);
-        return candidateSearchParameters;
-    }
-
-    private void assertUserIsAllowedToSearchAffiliations(List<URI> affiliations, URI topLevelOrg)
-        throws UnauthorizedException {
-        var allowed = attempt(() -> this.uriRetriever.getRawContent(topLevelOrg, APPLICATION_JSON)).map(
-                Optional::orElseThrow)
-            .map(str -> createModel(dtoObjectMapper.readTree(str)))
-            .map(model -> model.listObjectsOfProperty(model.createProperty(HAS_PART_PROPERTY)))
-            .map(node -> node.toList().stream().map(RDFNode::toString))
-            .map(s -> Stream.concat(s, Stream.of(topLevelOrg.toString())))
-            .orElseThrow()
-            .collect(Collectors.toSet());
-
-        var illegal = Sets.difference(new HashSet<>(affiliations.stream().map(URI::toString)
-                                                        .collect(Collectors.toSet())), allowed);
-
-        if (!illegal.isEmpty()) {
-            throw new UnauthorizedException(
-                String.format(USER_IS_NOT_ALLOWED_TO_SEARCH_FOR_AFFILIATIONS_S,
-                              String.join(COMMA_AND_SPACE, illegal))
-            );
-        }
-    }
-
-    private String extractQueryParamPublicationDateOrDefault(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameters()
-            .getOrDefault(QUERY_PARAM_YEAR, String.valueOf(ZonedDateTime.now().getYear()));
+                   .map(searchResponse -> toPaginatedResult(searchResponse, candidateSearchParameters))
+                   .orElseThrow();
     }
 
     @Override
-    protected Integer getSuccessStatusCode(Void input, PaginatedSearchResult<String> output) {
+    protected Integer getSuccessStatusCode(Void input, PaginatedSearchResult<NviCandidateIndexDocument> output) {
         return HttpURLConnection.HTTP_OK;
     }
 
@@ -144,14 +92,14 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, Paginate
 
     private static Integer extractQueryParamOffsetOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameterOpt(QUERY_OFFSET_PARAM)
-            .map(Integer::parseInt)
-            .orElse(DEFAULT_OFFSET_SIZE);
+                   .map(Integer::parseInt)
+                   .orElse(DEFAULT_OFFSET_SIZE);
     }
 
     private static List<URI> extractQueryParamAffiliations(RequestInfo requestInfo) {
         return requestInfo.getQueryParameterOpt(QUERY_PARAM_AFFILIATIONS)
-            .map(SearchNviCandidatesHandler::splitStringToUris)
-            .orElse(null);
+                   .map(SearchNviCandidatesHandler::splitStringToUris)
+                   .orElse(null);
     }
 
     private static List<URI> splitStringToUris(String s) {
@@ -160,12 +108,12 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, Paginate
 
     private static boolean extractQueryParamExcludeSubUnitsOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameterOpt(QUERY_PARAM_EXCLUDE_SUB_UNITS)
-            .map(Boolean::parseBoolean).orElse(false);
+                   .map(Boolean::parseBoolean).orElse(false);
     }
 
     private static String extractQueryParamFilterOrDefault(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters()
-            .getOrDefault(QUERY_PARAM_FILTER, DEFAULT_STRING);
+                   .getOrDefault(QUERY_PARAM_FILTER, DEFAULT_STRING);
     }
 
     private static String extractQueryParamSearchTermOrDefault(RequestInfo requestInfo) {
@@ -192,6 +140,59 @@ public class SearchNviCandidatesHandler extends ApiGatewayHandler<Void, Paginate
     private static AuthorizedBackendUriRetriever defaultUriRetriver() {
         return new AuthorizedBackendUriRetriever(new Environment().readEnv("BACKEND_CLIENT_AUTH_URL"),
                                                  new Environment().readEnv("BACKEND_CLIENT_SECRET_NAME"));
+    }
+
+    private CandidateSearchParameters getCandidateSearchParameters(RequestInfo requestInfo)
+        throws UnauthorizedException {
+        var offset = extractQueryParamOffsetOrDefault(requestInfo);
+        var size = extractQueryParamSizeOrDefault(requestInfo);
+        var filter = extractQueryParamFilterOrDefault(requestInfo);
+        var excludeSubUnits = extractQueryParamExcludeSubUnitsOrDefault(requestInfo);
+        var topLevelOrg = requestInfo.getTopLevelOrgCristinId().orElseThrow();
+        var affiliations = Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
+                               .orElse(List.of(topLevelOrg));
+        var username = requestInfo.getUserName();
+        var searchTerm = extractQueryParamSearchTermOrDefault(requestInfo);
+        var year = extractQueryParamPublicationDateOrDefault(requestInfo);
+        var category = extractQueryParamCategoryOrDefault(requestInfo);
+        var title = extractQueryParamTitle(requestInfo);
+        var contributor = extractQueryParamContributor(requestInfo);
+        var assignee = extractQueryParamAssignee(requestInfo);
+
+        assertUserIsAllowedToSearchAffiliations(affiliations, topLevelOrg);
+
+        var candidateSearchParameters = new CandidateSearchParameters(searchTerm, affiliations, excludeSubUnits,
+                                                                      filter, username,
+                                                                      year, category, title, contributor,
+                                                                      assignee, topLevelOrg, offset, size);
+        return candidateSearchParameters;
+    }
+
+    private void assertUserIsAllowedToSearchAffiliations(List<URI> affiliations, URI topLevelOrg)
+        throws UnauthorizedException {
+        var allowed = attempt(() -> this.uriRetriever.getRawContent(topLevelOrg, APPLICATION_JSON)).map(
+                Optional::orElseThrow)
+                          .map(str -> createModel(dtoObjectMapper.readTree(str)))
+                          .map(model -> model.listObjectsOfProperty(model.createProperty(HAS_PART_PROPERTY)))
+                          .map(node -> node.toList().stream().map(RDFNode::toString))
+                          .map(s -> Stream.concat(s, Stream.of(topLevelOrg.toString())))
+                          .orElseThrow()
+                          .collect(Collectors.toSet());
+
+        var illegal = Sets.difference(new HashSet<>(affiliations.stream().map(URI::toString)
+                                                        .collect(Collectors.toSet())), allowed);
+
+        if (!illegal.isEmpty()) {
+            throw new UnauthorizedException(
+                String.format(USER_IS_NOT_ALLOWED_TO_SEARCH_FOR_AFFILIATIONS_S,
+                              String.join(COMMA_AND_SPACE, illegal))
+            );
+        }
+    }
+
+    private String extractQueryParamPublicationDateOrDefault(RequestInfo requestInfo) {
+        return requestInfo.getQueryParameters()
+                   .getOrDefault(QUERY_PARAM_YEAR, String.valueOf(ZonedDateTime.now().getYear()));
     }
 }
 
