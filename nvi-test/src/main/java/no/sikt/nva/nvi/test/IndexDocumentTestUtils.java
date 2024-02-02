@@ -13,12 +13,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
-import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
+import no.sikt.nva.nvi.index.model.ContributorType;
+import no.sikt.nva.nvi.index.model.NviContributor;
+import no.sikt.nva.nvi.index.model.NviOrganization;
+import no.sikt.nva.nvi.index.model.Organization;
+import no.sikt.nva.nvi.index.model.OrganizationType;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import nva.commons.core.paths.UnixPath;
@@ -83,46 +89,81 @@ public final class IndexDocumentTestUtils {
         return new PublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
     }
 
-    private static List<Contributor> mapToContributors(ArrayNode contributorNodes, Candidate candidate) {
+    private static List<ContributorType> mapToContributors(ArrayNode contributorNodes, Candidate candidate) {
         return JsonUtils.streamNode(contributorNodes)
-                   .map(contributorNode -> toContributorWithExpandedAffiliation(contributorNode,
-                                                                                isNviCreator(contributorNode,
-                                                                                             candidate)))
+                   .map(contributorNode -> toContributorWithExpandedAffiliation(contributorNode, candidate))
                    .toList();
     }
 
-    private static boolean isNviCreator(JsonNode contributorNode, Candidate candidate) {
-        return candidate.getPublicationDetails()
-                   .creators()
-                   .stream()
-                   .anyMatch(
-                       creator -> creator.id().toString().equals(ExpandedResourceGenerator.extractId(contributorNode)));
+    private static ContributorType toContributorWithExpandedAffiliation(JsonNode contributorNode, Candidate candidate) {
+        var affiliations = extractAffiliations(contributorNode);
+        var creator = getNviCreatorIfPresent(candidate, contributorNode);
+        return creator.map(value -> generateNviContributor(contributorNode, value, affiliations))
+                   .orElseGet(() -> generateContributor(contributorNode, affiliations));
     }
 
-    private static Contributor toContributorWithExpandedAffiliation(JsonNode contributorNode, boolean isNviCreator) {
-        var affiliations = extractAffiliations(contributorNode);
+    private static Contributor generateContributor(JsonNode contributorNode, List<URI> affiliations) {
         return Contributor.builder()
                    .withId(ExpandedResourceGenerator.extractId(contributorNode))
                    .withName(ExpandedResourceGenerator.extractName(contributorNode))
                    .withOrcid(ExpandedResourceGenerator.extractOrcid(contributorNode))
                    .withRole(ExpandedResourceGenerator.extractRole(contributorNode))
-                   .withAffiliations(isNviCreator ? expandAffiliationsWithPartOf(affiliations)
-                                         : expandAffiliations(affiliations))
+                   .withAffiliations(expandAffiliations(affiliations))
                    .build();
     }
 
-    private static List<Affiliation> expandAffiliations(List<URI> uris) {
-        return uris.stream().map(uri -> Affiliation.builder()
-                                            .withId(uri.toString())
-                                            .build()).toList();
+    private static ContributorType generateNviContributor(JsonNode contributorNode, Creator value,
+                                                          List<URI> affiliations) {
+        return NviContributor.builder()
+                   .withId(ExpandedResourceGenerator.extractId(contributorNode))
+                   .withName(ExpandedResourceGenerator.extractName(contributorNode))
+                   .withOrcid(ExpandedResourceGenerator.extractOrcid(contributorNode))
+                   .withRole(ExpandedResourceGenerator.extractRole(contributorNode))
+                   .withAffiliations(expandAffiliationsWithPartOf(value, affiliations))
+                   .build();
     }
 
-    private static List<Affiliation> expandAffiliationsWithPartOf(List<URI> uris) {
-        return uris.stream().map(IndexDocumentTestUtils::toAffiliationWithPartOf).toList();
+    private static Optional<Creator> getNviCreatorIfPresent(Candidate candidate, JsonNode contributorNode) {
+        return candidate.getPublicationDetails()
+                   .creators()
+                   .stream()
+                   .filter(
+                       creator -> creator.id().toString().equals(ExpandedResourceGenerator.extractId(contributorNode)))
+                   .findFirst();
     }
 
-    private static Affiliation toAffiliationWithPartOf(URI uri) {
-        return Affiliation.builder()
+    private static List<OrganizationType> expandAffiliations(List<URI> uris) {
+        return uris.stream()
+                   .map(IndexDocumentTestUtils::generateOrganization)
+                   .toList();
+    }
+
+    private static List<OrganizationType> expandAffiliationsWithPartOf(Creator creator, List<URI> uris) {
+        return uris.stream()
+                   .map(uri -> toAffiliationWithPartOf(uri, isNviAffiliation(creator, uri)))
+                   .toList();
+    }
+
+    private static boolean isNviAffiliation(Creator creator, URI uri) {
+        return creator.affiliations()
+                   .stream()
+                   .anyMatch(affiliation -> affiliation.equals(uri));
+    }
+
+    private static OrganizationType toAffiliationWithPartOf(URI uri, boolean isNviAffiliation) {
+        return isNviAffiliation ? generateNviOrganization(uri)
+                   : generateOrganization(uri);
+    }
+
+    private static OrganizationType generateOrganization(URI uri) {
+        return Organization.builder()
+                   .withId(uri.toString())
+                   .withPartOf(List.of(HARD_CODED_PART_OF))
+                   .build();
+    }
+
+    private static OrganizationType generateNviOrganization(URI uri) {
+        return NviOrganization.builder()
                    .withId(uri.toString())
                    .withPartOf(List.of(HARD_CODED_PART_OF))
                    .build();

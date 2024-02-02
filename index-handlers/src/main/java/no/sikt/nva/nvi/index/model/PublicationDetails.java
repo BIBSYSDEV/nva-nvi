@@ -1,13 +1,17 @@
 package no.sikt.nva.nvi.index.model;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record PublicationDetails(String id, String type, String title, PublicationDate publicationDate,
-                                 List<Contributor> contributors) {
+public record PublicationDetails(@JsonProperty("id") String id,
+                                 @JsonProperty("type") String type,
+                                 @JsonProperty("title") String title,
+                                 @JsonProperty("publicationDate") PublicationDate publicationDate,
+                                 @JsonProperty("contributors") List<ContributorType> contributors) {
 
     public static Builder builder() {
         return new Builder();
@@ -19,7 +23,7 @@ public record PublicationDetails(String id, String type, String title, Publicati
         private String type;
         private String title;
         private PublicationDate publicationDate;
-        private List<Contributor> contributors;
+        private List<ContributorType> contributors;
 
         private Builder() {
         }
@@ -44,7 +48,7 @@ public record PublicationDetails(String id, String type, String title, Publicati
             return this;
         }
 
-        public Builder withContributors(List<Contributor> contributors) {
+        public Builder withContributors(List<ContributorType> contributors) {
             this.contributors = contributors;
             return this;
         }

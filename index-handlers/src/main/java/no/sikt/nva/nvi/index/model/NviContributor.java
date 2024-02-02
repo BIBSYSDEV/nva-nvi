@@ -1,24 +1,17 @@
 package no.sikt.nva.nvi.index.model;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
 
-@JsonAutoDetect(fieldVisibility = Visibility.ANY)
 @JsonSerialize
-@JsonTypeInfo(
-    use = Id.NAME,
-    property = "type")
-public record Contributor(@JsonProperty("id") String id,
-                          @JsonProperty("name") String name,
-                          @JsonProperty("orcid") String orcid,
-                          @JsonProperty("role") String role,
-                          @JsonProperty("affiliations") List<OrganizationType> affiliations)
-    implements ContributorType {
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+public record NviContributor(@JsonProperty("id") String id,
+                             @JsonProperty("name") String name,
+                             @JsonProperty("orcid") String orcid,
+                             @JsonProperty("role") String role,
+                             @JsonProperty("affiliations") List<OrganizationType> affiliations) implements ContributorType {
 
     public static Builder builder() {
         return new Builder();
@@ -60,8 +53,8 @@ public record Contributor(@JsonProperty("id") String id,
             return this;
         }
 
-        public Contributor build() {
-            return new Contributor(id, name, orcid, role, affiliations);
+        public NviContributor build() {
+            return new NviContributor(id, name, orcid, role, affiliations);
         }
     }
 }

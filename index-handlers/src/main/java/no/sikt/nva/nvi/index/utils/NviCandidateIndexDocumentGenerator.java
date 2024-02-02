@@ -33,14 +33,18 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
-import no.sikt.nva.nvi.common.model.Organization;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.service.model.Username;
-import no.sikt.nva.nvi.index.model.Affiliation;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
+import no.sikt.nva.nvi.index.model.ContributorType;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.NviContributor;
+import no.sikt.nva.nvi.index.model.NviOrganization;
+import no.sikt.nva.nvi.index.model.Organization;
+import no.sikt.nva.nvi.index.model.OrganizationType;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -62,8 +66,9 @@ public final class NviCandidateIndexDocumentGenerator {
         return createNviCandidateIndexDocument(expandedResource, candidate);
     }
 
-    private static Organization toOrganization(String response) {
-        return attempt(() -> dtoObjectMapper.readValue(response, Organization.class)).orElseThrow();
+    private static no.sikt.nva.nvi.common.model.Organization toOrganization(String response) {
+        return attempt(
+            () -> dtoObjectMapper.readValue(response, no.sikt.nva.nvi.common.model.Organization.class)).orElseThrow();
     }
 
     private static BigDecimal getInstitutionPoints(Approval approval, Candidate candidate) {
@@ -102,7 +107,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .labels();
     }
 
-    private Organization fetchOrganization(URI institutionId) {
+    private no.sikt.nva.nvi.common.model.Organization fetchOrganization(URI institutionId) {
         return getRawContentFromUriCached(institutionId.toString())
                    .map(NviCandidateIndexDocumentGenerator::toOrganization)
                    .orElseThrow(() -> logFailingAffiliationHttpRequest(institutionId.toString()));
@@ -123,19 +128,20 @@ public final class NviCandidateIndexDocumentGenerator {
         return Optional.of(approval).map(Approval::getAssignee).map(Username::value).orElse(null);
     }
 
-    private List<Organization> extractTopLevelOrganizations(JsonNode resource) {
+    private List<no.sikt.nva.nvi.common.model.Organization> extractTopLevelOrganizations(JsonNode resource) {
         var topLevelOrganizations = resource.at("/topLevelOrganizations");
         return topLevelOrganizations.isMissingNode()
                    ? Collections.emptyList()
                    : mapToOrganizations((ArrayNode) topLevelOrganizations);
     }
 
-    private List<Organization> mapToOrganizations(ArrayNode topLevelOrgs) {
+    private List<no.sikt.nva.nvi.common.model.Organization> mapToOrganizations(ArrayNode topLevelOrgs) {
         return streamNode(topLevelOrgs).map(this::createOrganization).toList();
     }
 
-    private Organization createOrganization(JsonNode jsonNode) {
-        return attempt(() -> dtoObjectMapper.readValue(jsonNode.toString(), Organization.class)).orElseThrow();
+    private no.sikt.nva.nvi.common.model.Organization createOrganization(JsonNode jsonNode) {
+        return attempt(() -> dtoObjectMapper.readValue(jsonNode.toString(),
+                                                       no.sikt.nva.nvi.common.model.Organization.class)).orElseThrow();
     }
 
     private PublicationDetails extractPublicationDetails(JsonNode resource, Candidate candidate) {
@@ -148,52 +154,88 @@ public final class NviCandidateIndexDocumentGenerator {
                    .build();
     }
 
-    private List<Contributor> expandContributors(JsonNode resource, Candidate candidate) {
+    private List<ContributorType> expandContributors(JsonNode resource, Candidate candidate) {
         return getJsonNodeStream(resource, JSON_PTR_CONTRIBUTOR).map(
-            contributor -> createContributor(contributor, isNviCreator(contributor, candidate))).toList();
+            contributor -> createContributor(contributor, candidate)).toList();
     }
 
-    private boolean isNviCreator(JsonNode contributor, Candidate candidate) {
+    private Optional<Creator> getNviCreatorIfPresent(JsonNode contributor, Candidate candidate) {
         return candidate.getPublicationDetails()
                    .creators()
                    .stream()
-                   .anyMatch(creator -> creator.id().toString().equals(extractId(contributor.at(JSON_PTR_IDENTITY))));
+                   .filter(creator -> creator.id().toString().equals(extractId(contributor.at(JSON_PTR_IDENTITY))))
+                   .findFirst();
     }
 
-    private Contributor createContributor(JsonNode contributor, boolean isNviCreator) {
+    private ContributorType createContributor(JsonNode contributor, Candidate candidate) {
         var identity = contributor.at(JSON_PTR_IDENTITY);
-        return new Contributor.Builder().withId(extractId(identity))
+        return getNviCreatorIfPresent(contributor, candidate)
+                   .map(value -> generateNviContributor(contributor, candidate, identity))
+                   .orElseGet(() -> generateContributor(contributor, candidate, identity));
+    }
+
+    private ContributorType generateContributor(JsonNode contributor, Candidate candidate, JsonNode identity) {
+        return Contributor.builder()
+                   .withId(extractId(identity))
                    .withName(extractJsonNodeTextValue(identity, JSON_PTR_NAME))
                    .withOrcid(extractJsonNodeTextValue(identity, JSON_PTR_ORCID))
                    .withRole(extractRoleType(contributor))
-                   .withAffiliations(expandAffiliations(contributor, isNviCreator))
+                   .withAffiliations(expandAffiliations(contributor, candidate))
                    .build();
     }
 
-    private List<Affiliation> expandAffiliations(JsonNode contributor, boolean expandPartOf) {
+    private ContributorType generateNviContributor(JsonNode contributor, Candidate candidate, JsonNode identity) {
+        return NviContributor.builder()
+                   .withId(extractId(identity))
+                   .withName(extractJsonNodeTextValue(identity, JSON_PTR_NAME))
+                   .withOrcid(extractJsonNodeTextValue(identity, JSON_PTR_ORCID))
+                   .withRole(extractRoleType(contributor))
+                   .withAffiliations(expandAffiliations(contributor, candidate))
+                   .build();
+    }
+
+    private List<OrganizationType> expandAffiliations(JsonNode contributor, Candidate candidate) {
         return streamNode(contributor.at(JSON_PTR_AFFILIATIONS))
-                   .map(affiliationNode -> expandAffiliation(affiliationNode, expandPartOf))
+                   .map(affiliationNode -> expandAffiliation(affiliationNode, contributor, candidate))
                    .filter(Objects::nonNull)
                    .toList();
     }
 
-    private Affiliation expandAffiliation(JsonNode affiliation, boolean expandPartOf) {
+    private OrganizationType expandAffiliation(JsonNode affiliation, JsonNode contributor, Candidate candidate) {
         var id = extractJsonNodeTextValue(affiliation, JSON_PTR_ID);
 
         if (isNull(id)) {
-            LOGGER.info("Skipping extraction of affiliation because of missing institutionId: {}", affiliation);
+            LOGGER.info("Skipping expansion of affiliation because of missing institutionId: {}", affiliation);
             return null;
         }
 
-        return expandPartOf ? generateAffiliationWithPartOf(id) : new Affiliation.Builder().withId(id).build();
+        return isNviAffiliation(affiliation, contributor, candidate)
+                   ? generateAffiliationWithPartOf(id)
+                   : Organization.builder().withId(id).build();
     }
 
-    private Affiliation generateAffiliationWithPartOf(String id) {
+    private boolean isNviAffiliation(JsonNode affiliation, JsonNode contributor, Candidate candidate) {
+        var nviCreator = getNviCreatorIfPresent(contributor, candidate);
+        return nviCreator.isPresent() && isNviAffiliation(nviCreator.get(), affiliation);
+    }
+
+    private boolean isNviAffiliation(Creator creator, JsonNode affiliationNode) {
+        var affiliationId = extractJsonNodeTextValue(affiliationNode, JSON_PTR_ID);
+        if (isNull(affiliationId)) {
+            return false;
+        }
+        return creator.affiliations().stream().anyMatch(affiliation -> affiliation.toString().equals(affiliationId));
+    }
+
+    private NviOrganization generateAffiliationWithPartOf(String id) {
         return attempt(() -> getRawContentFromUriCached(id)).map(Optional::get)
                    .map(str -> createModel(dtoObjectMapper.readTree(str)))
                    .map(model -> model.listObjectsOfProperty(model.createProperty(PART_OF_PROPERTY)))
                    .map(nodeIterator -> nodeIterator.toList().stream().map(RDFNode::toString).toList())
-                   .map(result -> new Affiliation.Builder().withId(id).withPartOf(result).build())
+                   .map(result -> NviOrganization.builder()
+                                      .withId(id)
+                                      .withPartOf(result)
+                                      .build())
                    .orElseThrow();
     }
 
