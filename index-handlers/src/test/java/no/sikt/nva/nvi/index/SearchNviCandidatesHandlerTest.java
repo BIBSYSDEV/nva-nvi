@@ -47,6 +47,7 @@ import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import no.unit.nva.testutils.HandlerRequestBuilder;
+import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
@@ -254,6 +255,19 @@ public class SearchNviCandidatesHandlerTest {
                    containsString(searchedAffiliation.toString()));
     }
 
+    @Test
+    void shouldReturnAllNviCandidatesWhenSearchingWithNviAdminAccessRight() throws IOException {
+        when(openSearchClient.search(any()))
+            .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
+        handler.handleRequest(emptyRequestAsNviAdmin(), output, context);
+        var response =
+            GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedResult =
+            objectMapper.readValue(response.getBody(), TYPE_REF);
+
+        assertThat(paginatedResult.getHits(), hasSize(1));
+    }
+
     private static void mockOpenSearchClient() throws IOException {
         when(openSearchClient.search(any()))
             .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
@@ -335,6 +349,16 @@ public class SearchNviCandidatesHandlerTest {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
                    .withTopLevelCristinOrgId(randomUri())
                    .withUserName(randomString())
+                   .build();
+    }
+
+    private InputStream emptyRequestAsNviAdmin() throws JsonProcessingException {
+        var topLevelCristinOrgId = randomUri();
+        return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
+                   .withTopLevelCristinOrgId(topLevelCristinOrgId)
+                   .withUserName(randomString())
+                   .withCurrentCustomer(topLevelCristinOrgId)
+                   .withAccessRights(topLevelCristinOrgId, AccessRight.MANAGE_NVI)
                    .build();
     }
 

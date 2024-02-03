@@ -21,6 +21,9 @@ public final class CristinMapper {
     public static final String AFFILIATION_DELIMITER = ".";
     public static final String CRISTIN = "cristin";
     public static final String ORGANIZATION = "organization";
+    public static final String GZ_EXTENSION = ".gz";
+    public static final String PUBLICATION = "publication";
+    public static final String RESOURCES = "resources";
 
     private CristinMapper() {
 
@@ -91,15 +94,19 @@ public final class CristinMapper {
     }
 
     private static URI constructPublicationBucketUri(String publicationIdentifier) {
-        return UriWrapper.fromUri(PERSISTED_RESOURCES_BUCKET)
-                   .addChild("resources")
-                   .addChild(publicationIdentifier)
+        return UriWrapper.fromHost(PERSISTED_RESOURCES_BUCKET)
+                   .addChild(RESOURCES)
+                   .addChild(withGzExtension(publicationIdentifier))
                    .getUri();
+    }
+
+    private static String withGzExtension(String publicationIdentifier) {
+        return publicationIdentifier + GZ_EXTENSION;
     }
 
     private static URI constructPublicationId(String publicationIdentifier) {
         return UriWrapper.fromHost(API_HOST)
-                   .addChild("publication")
+                   .addChild(PUBLICATION)
                    .addChild(publicationIdentifier)
                    .getUri();
     }

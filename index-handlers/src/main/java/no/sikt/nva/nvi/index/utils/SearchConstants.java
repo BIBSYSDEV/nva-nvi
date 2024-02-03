@@ -1,6 +1,9 @@
 package no.sikt.nva.nvi.index.utils;
 
+import java.net.URI;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import no.sikt.nva.nvi.index.aws.CandidateQuery;
 import no.sikt.nva.nvi.index.aws.CandidateQuery.QueryFilterType;
 import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
@@ -56,11 +59,11 @@ public final class SearchConstants {
             .orElseThrow(() -> new IllegalStateException("unknown filter " + params.filter()));
         return new CandidateQuery.Builder()
             .withSearchTerm(params.searchTerm())
-            .withInstitutions(params.affiliations())
+            .withInstitutions(Optional.ofNullable(params.affiliations()).orElse(List.of()))
             .withExcludeSubUnits(params.excludeSubUnits())
             .withFilter(filterType)
             .withUsername(params.username())
-            .withCustomer(params.customer().toString())
+            .withCustomer(Optional.ofNullable(params.customer()).map(URI::toString).orElse(null))
             .withYear(params.year())
             .withCategory(params.category())
             .withTitle(params.title())

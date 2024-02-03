@@ -93,7 +93,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
     }
 
     private URI expectedPublicationBucketUri(String value) {
-        return UriWrapper.fromUri(PERSISTED_RESOURCES_BUCKET).addChild("resources").addChild(value).getUri();
+        return UriWrapper.fromHost(PERSISTED_RESOURCES_BUCKET).addChild("resources").addChild(value + ".gz").getUri();
     }
 
     private URI expectedPublicationId(String value) {
@@ -153,8 +153,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
         var fullPath = UnixPath.of(randomString(), randomString());
         var fileUri = s3Driver.insertFile(fullPath, cristinNviReport.toJsonString());
         var eventReference = new EventReference(randomString(), randomString(), fileUri, Instant.now());
-        var body = new EventReferenceWithContent(cristinNviReport);
-        s3Driver.insertFile(fullPath, body.toJsonString());
+        s3Driver.insertFile(fullPath, cristinNviReport.toJsonString());
         var sqsEvent = new SQSEvent();
         var message = new SQSMessage();
         message.setBody(eventReference.toJsonString());

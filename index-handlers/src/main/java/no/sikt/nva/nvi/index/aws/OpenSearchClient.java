@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Clock;
+import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
 import no.sikt.nva.nvi.index.Aggregations;
@@ -143,7 +144,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         LOGGER.info("Generating search request with affiliations: {}, excludeSubUnits: {}, filter: {}, username: {}, "
                     + "customer: {}, offset: "
                     + "{}, size: {}", params.affiliations(), params.excludeSubUnits(), params.filter(),
-                    params.username(), params.username(), params.offset(),
+                    params.username(), params.customer(), params.offset(),
                     params.size());
     }
 
@@ -187,9 +188,13 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
                    .index(NVI_CANDIDATES_INDEX)
                    .query(query)
                    .aggregations(Aggregations.generateAggregations(candidateSearchParameters.username(),
-                                                                   candidateSearchParameters.customer().toString()))
+                                                                   getCustomer(candidateSearchParameters)))
                    .from(candidateSearchParameters.offset())
                    .size(candidateSearchParameters.size())
                    .build();
+    }
+
+    private static String getCustomer(CandidateSearchParameters candidateSearchParameters) {
+        return Optional.ofNullable(candidateSearchParameters.customer()).map(URI::toString).orElse(null);
     }
 }

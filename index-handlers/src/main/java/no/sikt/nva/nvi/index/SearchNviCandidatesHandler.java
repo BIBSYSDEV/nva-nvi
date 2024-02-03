@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.APPLICATION_JSON;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.HAS_PART_PROPERTY;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
@@ -23,6 +24,7 @@ import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
+import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
@@ -73,38 +75,50 @@ public class SearchNviCandidatesHandler
                                                                             Context context)
         throws UnauthorizedException {
         var candidateSearchParameters = getCandidateSearchParameters(requestInfo);
-        assertUserIsAllowedToSearchAffiliations(candidateSearchParameters.affiliations(),
-                                                candidateSearchParameters.customer());
-
         return attempt(() -> openSearchClient.search(candidateSearchParameters))
             .map(searchResponse -> toPaginatedResult(searchResponse, candidateSearchParameters))
             .orElseThrow();
     }
 
+    private static boolean userIsNviAdmin(RequestInfo requestInfo) {
+        return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI);
+    }
+
     private CandidateSearchParameters getCandidateSearchParameters(RequestInfo requestInfo)
         throws UnauthorizedException {
+        boolean isAdmin = userIsNviAdmin(requestInfo);
         var offset = extractQueryParamOffsetOrDefault(requestInfo);
         var size = extractQueryParamSizeOrDefault(requestInfo);
         var filter = extractQueryParamFilterOrDefault(requestInfo);
         var excludeSubUnits = extractQueryParamExcludeSubUnitsOrDefault(requestInfo);
-        var topLevelOrg = requestInfo.getTopLevelOrgCristinId().orElseThrow();
-        var affiliations = Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
-            .orElse(List.of(topLevelOrg));
+        var topLevelOrg = !isAdmin ? requestInfo.getTopLevelOrgCristinId().orElseThrow() : null;
+        var affiliations = getAffiliations(requestInfo, topLevelOrg);
         var username = requestInfo.getUserName();
         var searchTerm = extractQueryParamSearchTermOrDefault(requestInfo);
-        var year = extractQueryParamPublicationDateOrDefault(requestInfo);
+        var year = extractQueryParamPublicationDateOrDefault(requestInfo, isAdmin);
         var category = extractQueryParamCategoryOrDefault(requestInfo);
         var title = extractQueryParamTitle(requestInfo);
         var contributor = extractQueryParamContributor(requestInfo);
         var assignee = extractQueryParamAssignee(requestInfo);
 
-        assertUserIsAllowedToSearchAffiliations(affiliations, topLevelOrg);
+        if (!isAdmin) {
+            assertUserIsAllowedToSearchAffiliations(affiliations, topLevelOrg);
+        }
 
-        var candidateSearchParameters = new CandidateSearchParameters(searchTerm, affiliations, excludeSubUnits,
-                                                                      filter, username,
-                                                                      year, category, title, contributor,
-                                                                      assignee, topLevelOrg, offset, size);
-        return candidateSearchParameters;
+        return new CandidateSearchParameters(searchTerm, affiliations, excludeSubUnits,
+                                             filter, username,
+                                             year, category, title, contributor,
+                                             assignee, topLevelOrg, offset, size);
+    }
+
+    private static List<URI> getAffiliations(RequestInfo requestInfo, URI topLevelOrg) {
+        if (!userIsNviAdmin(requestInfo)) {
+            return Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
+                       .orElse(List.of(topLevelOrg));
+        } else {
+            return Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
+                       .orElse(List.of());
+        }
     }
 
     private void assertUserIsAllowedToSearchAffiliations(List<URI> affiliations, URI topLevelOrg)
@@ -129,9 +143,9 @@ public class SearchNviCandidatesHandler
         }
     }
 
-    private String extractQueryParamPublicationDateOrDefault(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameters()
-            .getOrDefault(QUERY_PARAM_YEAR, String.valueOf(ZonedDateTime.now().getYear()));
+    private String extractQueryParamPublicationDateOrDefault(RequestInfo requestInfo, boolean isAdmin) {
+        var yearQueryParam =  requestInfo.getQueryParameters().getOrDefault(QUERY_PARAM_YEAR, null);
+        return isAdmin || nonNull(yearQueryParam) ? yearQueryParam : String.valueOf(ZonedDateTime.now().getYear());
     }
 
     @Override
