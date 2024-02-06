@@ -11,6 +11,9 @@
     "notes": {
       "@id": "note",
       "@container": "@set"
+    },
+    "institutionId": {
+      "@type": "@id"
     }
   }
 }
