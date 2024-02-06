@@ -63,7 +63,7 @@ public record NviCandidate(URI publicationId,
 
     @Override
     public Map<URI, List<URI>> creators() {
-        return verifiedCreators().stream().collect(Collectors.toMap(Creator::id, Creator::nviInstitutions));
+        return verifiedCreators().stream().collect(Collectors.toMap(Creator::id, Creator::nviAffiliation));
     }
 
     @Override
@@ -86,7 +86,7 @@ public record NviCandidate(URI publicationId,
                                                       publicationDate.day());
     }
 
-    public record Creator(URI id, List<URI> nviInstitutions) {
+    public record Creator(URI id, List<URI> nviAffiliation) {
 
     }
 

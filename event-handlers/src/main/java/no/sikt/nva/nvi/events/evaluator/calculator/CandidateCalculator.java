@@ -19,16 +19,15 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.model.Organization;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.events.evaluator.model.CustomerResponse;
+import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
+import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator.NviOrganization;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
@@ -54,22 +53,22 @@ public class CandidateCalculator {
         this.organizationRetriever = new OrganizationRetriever(uriRetriever);
     }
 
-    public Map<URI, List<URI>> getVerifiedCreatorsWithNviInstitutionsIfExists(JsonNode publication) {
+    public List<VerifiedNviCreator> getVerifiedCreatorsWithNviInstitutionsIfExists(JsonNode publication) {
         var model = createModel(publication);
 
         if (!isNviCandidate(model)) {
-            return Collections.emptyMap();
+            return Collections.emptyList();
         }
 
         var verifiedCreatorsWithNviInstitutions = getVerifiedCreatorsWithNviInstitutions(publication);
 
         return verifiedCreatorsWithNviInstitutions.isEmpty()
-                   ? Collections.emptyMap()
+                   ? Collections.emptyList()
                    : verifiedCreatorsWithNviInstitutions;
     }
 
-    private static boolean doesNotHaveNviInstitutions(Entry<URI, List<URI>> entry) {
-        return !entry.getValue().isEmpty();
+    private static boolean isNotAffiliatedWithNviOrganization(VerifiedNviCreator creator) {
+        return creator.nviAffiliations().isEmpty();
     }
 
     private static URI createCustomerApiUri(String institutionId) {
@@ -115,29 +114,42 @@ public class CandidateCalculator {
         return CREATOR.equals(extractJsonNodeTextValue(contributorNode, JSON_PTR_ROLE_TYPE));
     }
 
-    private Map<URI, List<URI>> getVerifiedCreatorsWithNviInstitutions(JsonNode body) {
+    private static NviOrganization toNviOrganization(Organization organization) {
+        return NviOrganization.builder()
+                   .withId(organization.id())
+                   .withTopLevelOrganization(
+                       NviOrganization.builder().withId(organization.getTopLevelOrg().id()).build())
+                   .build();
+    }
+
+    private List<VerifiedNviCreator> getVerifiedCreatorsWithNviInstitutions(JsonNode body) {
         return getJsonNodeStream(body, JSON_PTR_CONTRIBUTOR)
                    .filter(CandidateCalculator::isVerified)
                    .filter(CandidateCalculator::isCreator)
-                   .collect(Collectors.toMap(
-                       CandidateCalculator::extractContributorId,
-                       this::getTopLevelNviInstitutions))
-                   .entrySet()
-                   .stream()
-                   .filter(CandidateCalculator::doesNotHaveNviInstitutions)
-                   .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+                   .map(this::toVerifiedNviCreator)
+                   .filter(CandidateCalculator::isNotAffiliatedWithNviOrganization)
+                   .toList();
     }
 
-    private List<URI> getTopLevelNviInstitutions(JsonNode creator) {
-        return streamNode(creator.at(JSON_PTR_AFFILIATIONS))
+    private VerifiedNviCreator toVerifiedNviCreator(JsonNode contributorNode) {
+        return VerifiedNviCreator.builder()
+                   .withId(extractContributorId(contributorNode))
+                   .withNviAffiliations(getNviAffiliationsIfExist(contributorNode))
+                   .build();
+    }
+
+    private List<NviOrganization> getNviAffiliationsIfExist(JsonNode contributorNode) {
+        return streamNode(contributorNode.at(JSON_PTR_AFFILIATIONS))
                    .map(JsonUtils::extractId)
                    .distinct()
                    .map(organizationRetriever::fetchOrganization)
-                   .map(Organization::getTopLevelOrg)
-                   .map(Organization::id)
-                   .distinct()
-                   .filter(this::isNviInstitution)
+                   .filter(this::topLevelOrgIsNviInstitution)
+                   .map(CandidateCalculator::toNviOrganization)
                    .toList();
+    }
+
+    private boolean topLevelOrgIsNviInstitution(Organization organization) {
+        return isNviInstitution(organization.getTopLevelOrg().id());
     }
 
     private boolean isNviInstitution(URI institutionId) {

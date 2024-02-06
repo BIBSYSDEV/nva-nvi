@@ -47,6 +47,8 @@ import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
 import no.sikt.nva.nvi.events.evaluator.model.Level;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
+import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
+import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator.NviOrganization;
 
 public final class PointCalculator {
 
@@ -59,24 +61,23 @@ public final class PointCalculator {
         this.organizationRetriever = organizationRetriever;
     }
 
-    public PointCalculation calculatePoints(JsonNode jsonNode,
-                                            Map<URI, List<URI>> nviCreatorsWithInstitutionIds) {
+    public PointCalculation calculatePoints(JsonNode jsonNode, List<VerifiedNviCreator> nviCreators) {
         var instanceType = extractInstanceType(jsonNode);
         //TODO: Remove when migrating to publication channels v2
         massiveHackToFixObjectsWithMultipleTypes(jsonNode);
         var publicationChannel = extractChannel(instanceType, jsonNode);
-        return calculatePoints(nviCreatorsWithInstitutionIds, instanceType, publicationChannel,
+        return calculatePoints(nviCreators, instanceType, publicationChannel,
                                isInternationalCollaboration(jsonNode), countCreatorShares(jsonNode));
     }
 
-    private static PointCalculation calculatePoints(Map<URI, List<URI>> nviCreatorsWithInstitutionIds,
+    private static PointCalculation calculatePoints(List<VerifiedNviCreator> nviCreators,
                                                     InstanceType instanceType, Channel channel,
                                                     boolean internationalCollaboration, int creatorShareCount) {
         var basePoints = getInstanceTypeAndLevelPoints(instanceType, channel);
         var collaborationFactor = getInternationalCollaborationFactor(internationalCollaboration);
         var institutionPoints = calculatePointsForAllInstitutions(basePoints, creatorShareCount,
                                                                   internationalCollaboration,
-                                                                  nviCreatorsWithInstitutionIds);
+                                                                  nviCreators);
         var totalPoints = sumInstitutionPoints(institutionPoints);
         return new PointCalculation(instanceType, channel.type(), channel.id(), channel.level(),
                                     internationalCollaboration, collaborationFactor,
@@ -93,9 +94,8 @@ public final class PointCalculator {
     private static Map<URI, BigDecimal> calculatePointsForAllInstitutions(BigDecimal instanceTypeAndLevelPoints,
                                                                           int creatorShareCount,
                                                                           boolean isInternationalCollaboration,
-                                                                          Map<URI, List<URI>>
-                                                                              nviCreatorsWithInstitutionIds) {
-        var institutionCreatorShareCount = countInstitutionCreatorShares(nviCreatorsWithInstitutionIds);
+                                                                          List<VerifiedNviCreator> nviCreators) {
+        var institutionCreatorShareCount = countInstitutionCreatorShares(nviCreators);
         return institutionCreatorShareCount.entrySet()
                    .stream()
                    .collect(Collectors.toMap(Entry::getKey,
@@ -151,18 +151,18 @@ public final class PointCalculator {
         return !COUNTRY_CODE_NORWAY.equals(countryCode);
     }
 
-    private static Map<URI, Long> countInstitutionCreatorShares(Map<URI, List<URI>> nviCreatorsWithInstitutions) {
-        return nviCreatorsWithInstitutions.entrySet()
-                   .stream()
-                   .flatMap(entry -> entry.getValue().stream())
+    private static Map<URI, Long> countInstitutionCreatorShares(List<VerifiedNviCreator> nviCreators) {
+        return nviCreators.stream()
+                   .flatMap(verifiedNviCreator -> verifiedNviCreator.nviAffiliations().stream())
+                   .map(NviOrganization::topLevelOrganization)
+                   .map(NviOrganization::id)
                    .distinct()
                    .collect(Collectors.toMap(institutionId -> institutionId,
-                                             institutionId -> countCreators(institutionId,
-                                                                            nviCreatorsWithInstitutions)));
+                                             institutionId -> countCreators(institutionId, nviCreators)));
     }
 
-    private static Long countCreators(URI institutionId, Map<URI, List<URI>> nviCreatorsWithInstitutions) {
-        return nviCreatorsWithInstitutions.entrySet()
+    private static Long countCreators(URI institutionId, List<VerifiedNviCreator> nviCreators) {
+        return nviCreators.entrySet()
                    .stream()
                    .filter(creator -> creator.getValue().contains(institutionId))
                    .count();
