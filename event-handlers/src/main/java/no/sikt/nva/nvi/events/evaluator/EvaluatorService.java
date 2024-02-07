@@ -78,12 +78,15 @@ public class EvaluatorService {
 
     private static List<NviCreator> mapToCreators(List<VerifiedNviCreator> nviCreators) {
         return nviCreators.stream()
-                   .map(creator -> new NviCreator(creator.id(),
-                                                  creator.nviAffiliations()
-                                                   .stream()
-                                                   .map(NviOrganization::id)
-                                                   .toList()))
+                   .map(EvaluatorService::toNviCreator)
                    .toList();
+    }
+
+    private static NviCreator toNviCreator(VerifiedNviCreator creator) {
+        return new NviCreator(creator.id(), creator.nviAffiliations()
+                                                .stream()
+                                                .map(NviOrganization::id)
+                                                .toList());
     }
 
     private static URI extractPublicationId(JsonNode publication) {
