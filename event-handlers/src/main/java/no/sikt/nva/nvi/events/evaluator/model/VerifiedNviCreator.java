@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.events.evaluator.model;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Objects;
 
 public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations) {
 
@@ -34,6 +35,11 @@ public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations) 
     }
 
     public record NviOrganization(URI id, NviOrganization topLevelOrganization) {
+
+        @Override
+        public NviOrganization topLevelOrganization(){
+            return Objects.isNull(topLevelOrganization) ? this : topLevelOrganization;
+        }
 
         public static NviOrganization.Builder builder() {
             return new NviOrganization.Builder();

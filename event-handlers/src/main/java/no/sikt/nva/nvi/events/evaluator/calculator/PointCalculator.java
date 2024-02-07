@@ -162,9 +162,9 @@ public final class PointCalculator {
     }
 
     private static Long countCreators(URI institutionId, List<VerifiedNviCreator> nviCreators) {
-        return nviCreators.entrySet()
-                   .stream()
-                   .filter(creator -> creator.getValue().contains(institutionId))
+        return nviCreators.stream()
+                   .flatMap(creator -> creator.nviAffiliations().stream())
+                   .filter(affiliation -> affiliation.topLevelOrganization().id().equals(institutionId))
                    .count();
     }
 

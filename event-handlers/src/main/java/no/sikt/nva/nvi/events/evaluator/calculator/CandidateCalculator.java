@@ -67,8 +67,8 @@ public class CandidateCalculator {
                    : verifiedCreatorsWithNviInstitutions;
     }
 
-    private static boolean isNotAffiliatedWithNviOrganization(VerifiedNviCreator creator) {
-        return creator.nviAffiliations().isEmpty();
+    private static boolean isAffiliatedWithNviOrganization(VerifiedNviCreator creator) {
+        return !creator.nviAffiliations().isEmpty();
     }
 
     private static URI createCustomerApiUri(String institutionId) {
@@ -127,7 +127,7 @@ public class CandidateCalculator {
                    .filter(CandidateCalculator::isVerified)
                    .filter(CandidateCalculator::isCreator)
                    .map(this::toVerifiedNviCreator)
-                   .filter(CandidateCalculator::isNotAffiliatedWithNviOrganization)
+                   .filter(CandidateCalculator::isAffiliatedWithNviOrganization)
                    .toList();
     }
 
