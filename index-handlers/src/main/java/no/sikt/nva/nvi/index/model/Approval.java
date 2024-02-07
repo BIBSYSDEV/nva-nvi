@@ -13,8 +13,7 @@ import java.util.Map;
     use = JsonTypeInfo.Id.NAME,
     property = "type")
 @JsonTypeName("Approval")
-public record Approval(@Deprecated String id,
-                       String institutionId,
+public record Approval(String institutionId,
                        Map<String, String> labels,
                        ApprovalStatus approvalStatus,
                        BigDecimal points,
@@ -26,8 +25,6 @@ public record Approval(@Deprecated String id,
 
     public static final class Builder {
 
-        @Deprecated
-        private String id;
         private String institutionId;
         private Map<String, String> labels;
         private ApprovalStatus approvalStatus;
@@ -35,12 +32,6 @@ public record Approval(@Deprecated String id,
         private String assignee;
 
         private Builder() {
-        }
-
-        @Deprecated
-        public Builder withId(String id) {
-            this.id = id;
-            return this;
         }
 
         public Builder withInstitutionId(String institutionId) {
@@ -69,7 +60,7 @@ public record Approval(@Deprecated String id,
         }
 
         public Approval build() {
-            return new Approval(id, institutionId, labels, approvalStatus, points, assignee);
+            return new Approval(institutionId, labels, approvalStatus, points, assignee);
         }
     }
 }
