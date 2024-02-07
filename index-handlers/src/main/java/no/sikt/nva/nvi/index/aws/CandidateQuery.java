@@ -34,6 +34,7 @@ import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ExistsQuery;
+import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchPhraseQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MultiMatchQuery;
@@ -110,10 +111,12 @@ public class CandidateQuery {
     }
 
     private static Query termQuery(String value, String field) {
-        return new TermQuery.Builder()
-            .value(new FieldValue.Builder().stringValue(value).build())
-            .field(field)
-            .build()._toQuery();
+        return nonNull(value)
+                   ?  new TermQuery.Builder()
+                          .value(new FieldValue.Builder().stringValue(value).build())
+                          .field(field)
+                          .build()._toQuery()
+                   : new MatchAllQuery.Builder().build()._toQuery();
     }
 
     private static String jsonPathOf(String... args) {

@@ -19,6 +19,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -438,6 +439,15 @@ public class OpenSearchClientTest {
             openSearchClient.search(searchParameters);
 
         assertThat(searchResponse.hits().hits(), hasSize(1));
+    }
+
+    @Test
+    void shouldNotThrowExceptionWhenSearchingWithFilterWithoutInstitution() {
+        var searchParameters = CandidateSearchParameters.builder()
+                                   .withUsername(randomString())
+                                   .withFilter("pending")
+                                   .build();
+        assertDoesNotThrow(() -> openSearchClient.search(searchParameters));
     }
 
     @Test
