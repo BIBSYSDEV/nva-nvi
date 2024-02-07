@@ -18,7 +18,7 @@ public record NviCandidate(URI publicationId,
                            URI publicationBucketUri,
                            String instanceType,
                            @JsonProperty("publicationDate") PublicationDate date,
-                           List<Creator> verifiedCreators,
+                           List<NviCreator> nviCreators,
                            String channelType,
                            URI publicationChannelId,
                            String level,
@@ -42,7 +42,7 @@ public record NviCandidate(URI publicationId,
                    .withInstanceType(details.type())
                    .withDate(toPublicationDate(details.publicationDate()))
                    .withVerifiedCreators(details.creators().stream()
-                                             .map(creator -> new Creator(creator.id(), creator.affiliations()))
+                                             .map(creator -> new NviCreator(creator.id(), creator.affiliations()))
                                              .toList())
                    .withChannelType(details.channelType().getValue())
                    .withPublicationChannelId(details.publicationChannelId())
@@ -63,7 +63,7 @@ public record NviCandidate(URI publicationId,
 
     @Override
     public Map<URI, List<URI>> creators() {
-        return verifiedCreators().stream().collect(Collectors.toMap(Creator::id, Creator::nviInstitutions));
+        return nviCreators().stream().collect(Collectors.toMap(NviCreator::id, NviCreator::nviAffiliation));
     }
 
     @Override
@@ -86,7 +86,7 @@ public record NviCandidate(URI publicationId,
                                                       publicationDate.day());
     }
 
-    public record Creator(URI id, List<URI> nviInstitutions) {
+    public record NviCreator(URI id, List<URI> nviAffiliation) {
 
     }
 
@@ -100,7 +100,7 @@ public record NviCandidate(URI publicationId,
         private URI publicationBucketUri;
         private String instanceType;
         private PublicationDate date;
-        private List<Creator> verifiedCreators;
+        private List<NviCreator> nviCreators;
         private String channelType;
         private URI publicationChannelId;
         private String level;
@@ -134,8 +134,8 @@ public record NviCandidate(URI publicationId,
             return this;
         }
 
-        public Builder withVerifiedCreators(List<Creator> verifiedCreators) {
-            this.verifiedCreators = verifiedCreators;
+        public Builder withVerifiedCreators(List<NviCreator> nviCreators) {
+            this.nviCreators = nviCreators;
             return this;
         }
 
@@ -185,7 +185,7 @@ public record NviCandidate(URI publicationId,
         }
 
         public NviCandidate build() {
-            return new NviCandidate(publicationId, publicationBucketUri, instanceType, date, verifiedCreators,
+            return new NviCandidate(publicationId, publicationBucketUri, instanceType, date, nviCreators,
                                     channelType, publicationChannelId, level, basePoints, isInternationalCollaboration,
                                     collaborationFactor, creatorShareCount, institutionPoints, totalPoints);
         }

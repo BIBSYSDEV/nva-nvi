@@ -47,7 +47,7 @@ import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
-import no.sikt.nva.nvi.events.model.NviCandidate.Creator;
+import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.test.FakeSqsClient;
@@ -562,7 +562,7 @@ class EvaluateNviCandidateHandlerTest {
                                                         PublicationChannel channelType, String level,
                                                         BigDecimal basePoints, BigDecimal totalPoints,
                                                         URI publicationBucketUri) {
-        var verifiedCreators = List.of(new Creator(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID)));
+        var verifiedCreators = List.of(new NviCreator(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_SUB_UNIT_ID)));
         return NviCandidate.builder()
                    .withPublicationId(HARDCODED_PUBLICATION_ID)
                    .withPublicationBucketUri(publicationBucketUri)
@@ -581,9 +581,9 @@ class EvaluateNviCandidateHandlerTest {
                    .build();
     }
 
-    private static int countCreatorShares(List<Creator> verifiedCreators) {
-        return (int) verifiedCreators.stream()
-                         .mapToLong(creator -> creator.nviInstitutions().size())
+    private static int countCreatorShares(List<NviCreator> nviCreators) {
+        return (int) nviCreators.stream()
+                         .mapToLong(nviCreator -> nviCreator.nviAffiliation().size())
                          .sum();
     }
 
