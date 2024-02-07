@@ -23,7 +23,7 @@ import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.CandidateType;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
-import no.sikt.nva.nvi.events.model.NviCandidate.Creator;
+import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 
 public class EvaluatorService {
@@ -76,10 +76,10 @@ public class EvaluatorService {
                    .build();
     }
 
-    private static List<Creator> mapToCreators(List<VerifiedNviCreator> nviCreators) {
+    private static List<NviCreator> mapToCreators(List<VerifiedNviCreator> nviCreators) {
         return nviCreators.stream()
-                   .map(creator -> new Creator(creator.id(),
-                                               creator.nviAffiliations()
+                   .map(creator -> new NviCreator(creator.id(),
+                                                  creator.nviAffiliations()
                                                    .stream()
                                                    .map(NviOrganization::id)
                                                    .toList()))
