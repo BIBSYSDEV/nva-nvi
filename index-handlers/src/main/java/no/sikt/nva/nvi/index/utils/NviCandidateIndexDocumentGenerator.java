@@ -115,7 +115,6 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private no.sikt.nva.nvi.index.model.Approval toApproval(JsonNode resource, Approval approval, Candidate candidate) {
         return no.sikt.nva.nvi.index.model.Approval.builder()
-                   .withId(approval.getInstitutionId().toString())
                    .withInstitutionId(approval.getInstitutionId().toString())
                    .withLabels(extractLabels(resource, approval))
                    .withApprovalStatus(ApprovalStatus.fromValue(approval.getStatus().getValue()))
