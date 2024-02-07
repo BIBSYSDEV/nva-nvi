@@ -193,11 +193,12 @@ public class DataEntryUpdateHandlerTest {
     }
 
     private static CandidateDao randomCandidateDao() {
-        return new CandidateDao(UUID.randomUUID(), randomCandidate(), UUID.randomUUID().toString());
+        return new CandidateDao(UUID.randomUUID(), randomCandidate(), UUID.randomUUID().toString(), randomString());
     }
 
     private static CandidateDao nonApplicableCandidateDao() {
-        return new CandidateDao(UUID.randomUUID(), randomCandidateBuilder(false).build(), UUID.randomUUID().toString());
+        return new CandidateDao(UUID.randomUUID(), randomCandidateBuilder(false).build(),
+                                UUID.randomUUID().toString(), randomString());
     }
 
     private static ApprovalStatusDao generatePendingApproval() {

@@ -487,6 +487,24 @@ class CandidateTest extends LocalDynamoTest {
         assertThat(persistedCandidate.instanceType(), is(equalTo(instanceType.getValue())));
     }
 
+    @Test
+    void shouldImportCandidate() {
+        var instanceType = InstanceType.ACADEMIC_CHAPTER;
+        var request = createUpsertCandidateRequest(randomUri(), randomUri(), true,
+                                                   instanceType.toString(),
+                                                   1, randomBigDecimal(),
+                                                   randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
+                                                   Integer.parseInt(randomYear()),
+                                                   randomUri());
+        var candidateIdentifier = Candidate.upsert(request, candidateRepository, periodRepository)
+                                      .orElseThrow()
+                                      .getIdentifier();
+        var persistedCandidate = candidateRepository.findCandidateById(candidateIdentifier)
+                                     .orElseThrow()
+                                     .candidate();
+        assertThat(persistedCandidate.instanceType(), is(equalTo(instanceType.getValue())));
+    }
+
     private static UpsertCandidateRequest createUpsertRequestWithDecimalScale(int scale, URI institutionId) {
         var creators = IntStream.of(1)
                            .mapToObj(i -> randomUri())
@@ -599,7 +617,7 @@ class CandidateTest extends LocalDynamoTest {
                                     .points(mapToDbInstitutionPoints(request.institutionPoints()))
                                     .totalPoints(setScaleAndRoundingMode(request.totalPoints()))
                                     .createdDate(candidate.getCreatedDate())
-                                    .build(), randomString()).candidate();
+                                    .build(), randomString(), randomString()).candidate();
     }
 
     private DbPublicationDate mapToDbPublicationDate(PublicationDate publicationDate) {

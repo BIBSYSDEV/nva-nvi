@@ -11,7 +11,7 @@ import nva.commons.core.JacocoGenerated;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record PeriodStatus(Instant startDate, Instant reportingDate, Status status) implements JsonSerializable {
+public record PeriodStatus(Instant startDate, Instant reportingDate, Status status, String year) implements JsonSerializable {
 
     public static Builder builder() {
         return new Builder();
@@ -40,6 +40,7 @@ public record PeriodStatus(Instant startDate, Instant reportingDate, Status stat
                    .withStartDate(period.startDate())
                    .withReportingDate(period.reportingDate())
                    .withStatus(Status.UNOPENED_PERIOD)
+                   .withYear(period.publishingYear())
                    .build();
     }
 
@@ -56,6 +57,7 @@ public record PeriodStatus(Instant startDate, Instant reportingDate, Status stat
                    .withStartDate(period.startDate())
                    .withReportingDate(period.reportingDate())
                    .withStatus(Status.OPEN_PERIOD)
+                   .withYear(period.publishingYear())
                    .build();
     }
 
@@ -64,6 +66,7 @@ public record PeriodStatus(Instant startDate, Instant reportingDate, Status stat
                    .withStartDate(period.startDate())
                    .withReportingDate(period.reportingDate())
                    .withStatus(Status.CLOSED_PERIOD)
+                   .withYear(period.publishingYear())
                    .build();
     }
 
@@ -89,6 +92,7 @@ public record PeriodStatus(Instant startDate, Instant reportingDate, Status stat
         private Instant reportingDate;
         private Instant startDate;
         private Status status;
+        private String year;
 
         private Builder() {
         }
@@ -108,8 +112,14 @@ public record PeriodStatus(Instant startDate, Instant reportingDate, Status stat
             return this;
         }
 
-        public PeriodStatus build() {
-            return new PeriodStatus(startDate, reportingDate, status);
+        public Builder withYear(String year) {
+            this.year = year;
+            return this;
         }
+
+        public PeriodStatus build() {
+            return new PeriodStatus(startDate, reportingDate, status, year);
+        }
+
     }
 }

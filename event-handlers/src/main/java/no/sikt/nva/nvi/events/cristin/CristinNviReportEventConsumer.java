@@ -53,6 +53,8 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     }
 
     private void createAndPersist(CristinNviReport cristinNviReport) {
-        repository.create(CristinMapper.toDbCandidate(cristinNviReport), CristinMapper.toApprovals(cristinNviReport));
+        repository.importCandidate(CristinMapper.toDbCandidate(cristinNviReport),
+                                   CristinMapper.toApprovals(cristinNviReport),
+                                   String.valueOf(cristinNviReport.yearReported()));
     }
 }

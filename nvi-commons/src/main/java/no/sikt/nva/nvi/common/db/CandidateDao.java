@@ -12,6 +12,7 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_HASH
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_RANGE_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
+import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
@@ -25,6 +26,7 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao.Builder;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
+import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
@@ -38,23 +40,28 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 public final class CandidateDao extends Dao {
 
     public static final String TYPE = "CANDIDATE";
+    public static final String YEAR_FIELD = "year";
     @JsonProperty(IDENTIFIER_FIELD)
     private final UUID identifier;
     @JsonProperty(DATA_FIELD)
     private final DbCandidate candidate;
     @JsonProperty(VERSION_FIELD)
     private final String version;
+    @JsonProperty(YEAR_FIELD)
+    private final String year;
 
     @JsonCreator
     public CandidateDao(
         @JsonProperty(IDENTIFIER_FIELD) UUID identifier,
         @JsonProperty(DATA_FIELD) DbCandidate candidate,
-        @JsonProperty(VERSION_FIELD) String version
+        @JsonProperty(VERSION_FIELD) String version,
+        @JsonProperty(YEAR_FIELD) String year
     ) {
         super();
         this.identifier = identifier;
         this.candidate = candidate;
         this.version = version;
+        this.year = year;
     }
 
     @DynamoDbIgnore
@@ -87,6 +94,10 @@ public final class CandidateDao extends Dao {
         return version;
     }
 
+    public String year() {
+        return year;
+    }
+
     @Override
     @JacocoGenerated
     @DynamoDbAttribute(TYPE_FIELD)
@@ -115,7 +126,7 @@ public final class CandidateDao extends Dao {
     @DynamoDbAttribute(SECONDARY_INDEX_YEAR_HASH_KEY)
     @JsonProperty(SECONDARY_INDEX_YEAR_HASH_KEY)
     public String searchByYearHashKey() {
-        return nonNull(candidate.publicationDate()) ? candidate.publicationDate().year() : null;
+        return year;
     }
 
     @JacocoGenerated
@@ -145,7 +156,7 @@ public final class CandidateDao extends Dao {
     @Override
     @JacocoGenerated
     public int hashCode() {
-        return Objects.hash(identifier, candidate, version);
+        return Objects.hash(identifier, candidate, version, year);
     }
 
     @Override
@@ -160,16 +171,14 @@ public final class CandidateDao extends Dao {
         var that = (CandidateDao) obj;
         return Objects.equals(this.identifier, that.identifier)
                && Objects.equals(this.candidate, that.candidate)
-               && Objects.equals(this.version, that.version);
+               && Objects.equals(this.version, that.version)
+               && Objects.equals(this.year, that.year);
     }
 
     @Override
     @JacocoGenerated
     public String toString() {
-        return "CandidateDao["
-               + "identifier=" + identifier + ", "
-               + "candidate=" + candidate + ", "
-               + "version=" + version + ']';
+        return attempt(() -> JsonUtils.dtoObjectMapper.writeValueAsString(this)).orElseThrow();
     }
 
     public enum DbLevel {
@@ -205,6 +214,7 @@ public final class CandidateDao extends Dao {
         private UUID builderIdentifier;
         private DbCandidate builderCandidate;
         private String builderVersion;
+        private String builderYear;
 
         private Builder() {
 
@@ -260,8 +270,13 @@ public final class CandidateDao extends Dao {
             return this;
         }
 
+        public Builder year(String year) {
+            this.builderYear = year;
+            return this;
+        }
+
         public CandidateDao build() {
-            return new CandidateDao(builderIdentifier, builderCandidate, builderVersion);
+            return new CandidateDao(builderIdentifier, builderCandidate, builderVersion, builderYear);
         }
     }
 

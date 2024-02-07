@@ -113,6 +113,20 @@ public class CandidateRepository extends DynamoRepository {
         return candidateTable.getItem(candidate);
     }
 
+    public CandidateDao importCandidate(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses, String year) {
+        var identifier = randomUUID();
+        var candidate = CandidateDao.builder()
+                                   .identifier(identifier)
+                                   .candidate(dbCandidate)
+                                   .year(year)
+                                   .build();
+        var uniqueness = new CandidateUniquenessEntryDao(dbCandidate.publicationId().toString());
+        var transactionBuilder = buildTransaction(approvalStatuses, candidate, identifier, uniqueness);
+
+        this.client.transactWriteItems(transactionBuilder.build());
+        return candidateTable.getItem(candidate);
+    }
+
     public void updateCandidate(UUID identifier, CandidateDao candidateDao, List<DbApprovalStatus> approvals) {
         var approvalMap = approvals.stream()
                               .map(approval -> mapToApprovalStatusDao(identifier, approval))
@@ -226,6 +240,7 @@ public class CandidateRepository extends DynamoRepository {
         return CandidateDao.builder()
                    .identifier(identifier)
                    .candidate(dbCandidate)
+                   .year(dbCandidate.publicationDate().year())
                    .build();
     }
 

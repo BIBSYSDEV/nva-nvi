@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithDynamodbRecords;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -119,7 +120,7 @@ public class DeletePersistedIndexDocumentHandlerTest {
     }
 
     private static CandidateDao randomCandidateDao() {
-        return new CandidateDao(UUID.randomUUID(), randomCandidate(), UUID.randomUUID().toString());
+        return new CandidateDao(UUID.randomUUID(), randomCandidate(), UUID.randomUUID().toString(), randomString());
     }
 
     private static DeleteObjectRequest getDeleteObjectRequest(UUID identifier) {
