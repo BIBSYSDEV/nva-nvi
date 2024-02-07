@@ -45,12 +45,12 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
-import no.sikt.nva.nvi.index.model.Organization;
 import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.Organization;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.unit.nva.auth.CachedJwtProvider;
@@ -515,6 +515,7 @@ public class OpenSearchClientTest {
                    .withApprovals(List.of(randomApprovalWithCustomerAndAssignee(customer, assignee)))
                    .withNumberOfApprovals(1)
                    .withPoints(randomBigDecimal())
+                   .withModifiedDate(Instant.now().toString())
                    .build();
     }
 
