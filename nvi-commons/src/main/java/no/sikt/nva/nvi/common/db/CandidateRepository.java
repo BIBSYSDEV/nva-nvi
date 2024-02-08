@@ -104,16 +104,10 @@ public class CandidateRepository extends DynamoRepository {
     }
 
     public CandidateDao create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
-        var identifier = randomUUID();
-        var candidate = constructCandidate(identifier, dbCandidate);
-        var uniqueness = new CandidateUniquenessEntryDao(dbCandidate.publicationId().toString());
-        var transactionBuilder = buildTransaction(approvalStatuses, candidate, identifier, uniqueness);
-
-        this.client.transactWriteItems(transactionBuilder.build());
-        return candidateTable.getItem(candidate);
+        return create(dbCandidate, approvalStatuses, dbCandidate.publicationDate().year());
     }
 
-    public CandidateDao importCandidate(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses, String year) {
+    public CandidateDao create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses, String year) {
         var identifier = randomUUID();
         var candidate = CandidateDao.builder()
                                    .identifier(identifier)
@@ -234,14 +228,6 @@ public class CandidateRepository extends DynamoRepository {
                                   .partitionValue(CandidateDao.createPartitionKey(identifier.toString()))
                                   .sortValue(ApprovalStatusDao.TYPE)
                                   .build());
-    }
-
-    private static CandidateDao constructCandidate(UUID identifier, DbCandidate dbCandidate) {
-        return CandidateDao.builder()
-                   .identifier(identifier)
-                   .candidate(dbCandidate)
-                   .year(dbCandidate.publicationDate().year())
-                   .build();
     }
 
     private static NoteDao newNoteDao(UUID candidateIdentifier, DbNote dbNote) {

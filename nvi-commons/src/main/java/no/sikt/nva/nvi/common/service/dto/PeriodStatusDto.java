@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import nva.commons.core.JacocoGenerated;
 
-public record PeriodStatusDto(Status status, String startDate, String reportingDate) {
+public record PeriodStatusDto(Status status, String startDate, String reportingDate, String year) {
 
     public static Builder builder() {
         return new Builder();
@@ -15,6 +15,7 @@ public record PeriodStatusDto(Status status, String startDate, String reportingD
         return builder().withStatus(Status.parse(periodStatus.status().getValue()))
                    .withStartDate(toStartDate(periodStatus))
                    .withReportingDate(toReportingDate(periodStatus))
+                   .withYear(periodStatus.year())
                    .build();
     }
 
@@ -61,6 +62,7 @@ public record PeriodStatusDto(Status status, String startDate, String reportingD
         private Status status;
         private String startDate;
         private String closedDate;
+        private String year;
 
         private Builder() {
         }
@@ -80,8 +82,13 @@ public record PeriodStatusDto(Status status, String startDate, String reportingD
             return this;
         }
 
+        public Builder withYear(String year) {
+            this.year = year;
+            return this;
+        }
+
         public PeriodStatusDto build() {
-            return new PeriodStatusDto(status, startDate, closedDate);
+            return new PeriodStatusDto(status, startDate, closedDate, year);
         }
 
     }

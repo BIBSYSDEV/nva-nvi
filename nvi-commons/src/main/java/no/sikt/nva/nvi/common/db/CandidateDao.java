@@ -25,7 +25,6 @@ import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao.Builder;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
@@ -40,28 +39,28 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 public final class CandidateDao extends Dao {
 
     public static final String TYPE = "CANDIDATE";
-    public static final String YEAR_FIELD = "year";
+    public static final String PERIOD_FIELD = "period";
     @JsonProperty(IDENTIFIER_FIELD)
     private final UUID identifier;
     @JsonProperty(DATA_FIELD)
     private final DbCandidate candidate;
     @JsonProperty(VERSION_FIELD)
     private final String version;
-    @JsonProperty(YEAR_FIELD)
-    private final String year;
+    @JsonProperty(PERIOD_FIELD)
+    private final String period;
 
     @JsonCreator
     public CandidateDao(
         @JsonProperty(IDENTIFIER_FIELD) UUID identifier,
         @JsonProperty(DATA_FIELD) DbCandidate candidate,
         @JsonProperty(VERSION_FIELD) String version,
-        @JsonProperty(YEAR_FIELD) String year
+        @JsonProperty(PERIOD_FIELD) String period
     ) {
         super();
         this.identifier = identifier;
         this.candidate = candidate;
         this.version = version;
-        this.year = year;
+        this.period = period;
     }
 
     @DynamoDbIgnore
@@ -95,7 +94,7 @@ public final class CandidateDao extends Dao {
     }
 
     public String year() {
-        return year;
+        return period;
     }
 
     @Override
@@ -126,7 +125,7 @@ public final class CandidateDao extends Dao {
     @DynamoDbAttribute(SECONDARY_INDEX_YEAR_HASH_KEY)
     @JsonProperty(SECONDARY_INDEX_YEAR_HASH_KEY)
     public String searchByYearHashKey() {
-        return year;
+        return period;
     }
 
     @JacocoGenerated
@@ -156,7 +155,7 @@ public final class CandidateDao extends Dao {
     @Override
     @JacocoGenerated
     public int hashCode() {
-        return Objects.hash(identifier, candidate, version, year);
+        return Objects.hash(identifier, candidate, version, period);
     }
 
     @Override
@@ -172,7 +171,7 @@ public final class CandidateDao extends Dao {
         return Objects.equals(this.identifier, that.identifier)
                && Objects.equals(this.candidate, that.candidate)
                && Objects.equals(this.version, that.version)
-               && Objects.equals(this.year, that.year);
+               && Objects.equals(this.period, that.period);
     }
 
     @Override
@@ -305,20 +304,6 @@ public final class CandidateDao extends Dao {
             return new Builder();
         }
 
-        @Deprecated
-        //TODO: Should be removed once we have migrated instanceType to String
-        public String instanceType() {
-            var enums = Arrays.stream(InstanceType.values()).toList();
-            var instanceTypeEnum = enums.stream()
-                                       .filter(value -> value.toString().equals(instanceType))
-                                       .findFirst();
-            if (instanceTypeEnum.isPresent()) {
-                return instanceTypeEnum.get().getValue();
-            } else {
-                return instanceType;
-            }
-        }
-
         @DynamoDbIgnore
         public Builder copy() {
             return builder()
@@ -423,15 +408,7 @@ public final class CandidateDao extends Dao {
 
             //TODO: Should be removed once we have migrated instanceType to String
             public Builder instanceType(String instanceType) {
-                var enums = Arrays.stream(InstanceType.values()).toList();
-                var instanceTypeEnum = enums.stream()
-                                           .filter(value -> value.toString().equals(instanceType))
-                                           .findFirst();
-                if (instanceTypeEnum.isPresent()) {
-                    this.builderInstanceType = instanceTypeEnum.get().getValue();
-                } else {
-                    this.builderInstanceType = instanceType;
-                }
+                this.builderInstanceType = instanceType;
                 return this;
             }
 

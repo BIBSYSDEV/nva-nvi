@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -42,15 +43,18 @@ public class PeriodStatusTest {
                                .withStartDate(startDate)
                                .withReportingDate(reportingDate)
                                .withStatus(status)
+                               .withYear(randomString())
                                .build();
         var expectedDto = PeriodStatusDto.builder()
                               .withStatus(PeriodStatusDto.Status.parse(status.getValue()))
                               .withStartDate(startDate.toString())
                               .withReportingDate(reportingDate.toString())
+                              .withYear(periodStatus.year())
                               .build();
         var actualDto = PeriodStatusDto.fromPeriodStatus(periodStatus);
         assertThat(actualDto, is(equalTo(expectedDto)));
         assertThat(actualDto.startDate(), is(equalTo(expectedDto.startDate())));
+        assertThat(actualDto.year(), is(equalTo(expectedDto.year())));
     }
 
     @ParameterizedTest()
