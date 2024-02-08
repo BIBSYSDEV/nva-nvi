@@ -29,6 +29,10 @@
     },
     "modifiedDate": {
       "@type": "xsd:dateTime"
+    },
+    "partOf": {
+      "@type": "@id",
+      "@container": "@set"
     }
   }
 }
