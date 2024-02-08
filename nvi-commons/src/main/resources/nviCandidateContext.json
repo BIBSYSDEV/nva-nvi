@@ -26,6 +26,9 @@
     "labels": {
       "@id": "label",
       "@container": "@language"
+    },
+    "modifiedDate": {
+      "@type": "xsd:dateTime"
     }
   }
 }
