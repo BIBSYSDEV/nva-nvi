@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
@@ -304,6 +305,26 @@ public final class CandidateDao extends Dao {
             }
         }
 
+        @Deprecated
+        //TODO: Remove after migration
+        public Instant modifiedDate() {
+            if (isNull(modifiedDate)) {
+                return Instant.now();
+            } else {
+                return modifiedDate;
+            }
+        }
+
+        @Deprecated
+        //TODO: Remove after migration
+        public Instant createdDate() {
+            if (isNull(createdDate)) {
+                return Instant.now();
+            } else {
+                return createdDate;
+            }
+        }
+
         @DynamoDbIgnore
         public Builder copy() {
             return builder()
@@ -480,13 +501,23 @@ public final class CandidateDao extends Dao {
                 return this;
             }
 
+            //TODO: Remove after migration
             public Builder createdDate(Instant createdDate) {
-                this.builderCreatedDate = createdDate;
+                if (isNull(createdDate)) {
+                    this.builderCreatedDate = Instant.now();
+                } else {
+                    this.builderCreatedDate = createdDate;
+                }
                 return this;
             }
 
+            //TODO: Remove after migration
             public Builder modifiedDate(Instant modifiedDate) {
-                this.builderModifiedDate = modifiedDate;
+                if (isNull(modifiedDate)) {
+                    this.builderModifiedDate = Instant.now();
+                } else {
+                    this.builderModifiedDate = modifiedDate;
+                }
                 return this;
             }
 
