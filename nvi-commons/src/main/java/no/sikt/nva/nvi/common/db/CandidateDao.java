@@ -305,24 +305,14 @@ public final class CandidateDao extends Dao {
             }
         }
 
-        @Deprecated
         //TODO: Remove after migration
         public Instant modifiedDate() {
-            if (isNull(modifiedDate)) {
-                return Instant.now();
-            } else {
-                return modifiedDate;
-            }
+            return migrateDate(modifiedDate);
         }
 
-        @Deprecated
         //TODO: Remove after migration
         public Instant createdDate() {
-            if (isNull(createdDate)) {
-                return Instant.now();
-            } else {
-                return createdDate;
-            }
+            return migrateDate(createdDate);
         }
 
         @DynamoDbIgnore
@@ -386,6 +376,15 @@ public final class CandidateDao extends Dao {
                                 level,
                                 publicationDate, internationalCollaboration, collaborationFactor, creatorCount,
                                 creatorShareCount, creators, basePoints, points, totalPoints, createdDate);
+        }
+
+        @Deprecated
+        private static Instant migrateDate(Instant instant) {
+            if (isNull(instant)) {
+                return Instant.now();
+            } else {
+                return instant;
+            }
         }
 
         public static final class Builder {
@@ -501,23 +500,13 @@ public final class CandidateDao extends Dao {
                 return this;
             }
 
-            //TODO: Remove after migration
             public Builder createdDate(Instant createdDate) {
-                if (isNull(createdDate)) {
-                    this.builderCreatedDate = Instant.now();
-                } else {
-                    this.builderCreatedDate = createdDate;
-                }
+                this.builderCreatedDate = migrateDate(createdDate);
                 return this;
             }
 
-            //TODO: Remove after migration
             public Builder modifiedDate(Instant modifiedDate) {
-                if (isNull(modifiedDate)) {
-                    this.builderModifiedDate = Instant.now();
-                } else {
-                    this.builderModifiedDate = modifiedDate;
-                }
+                this.builderModifiedDate = migrateDate(modifiedDate);
                 return this;
             }
 
