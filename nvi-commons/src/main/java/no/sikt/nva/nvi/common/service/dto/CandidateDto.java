@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.db.ReportStatus;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -17,7 +18,8 @@ public record CandidateDto(
     List<ApprovalDto> approvals,
     BigDecimal totalPoints,
     List<NoteDto> notes,
-    PeriodStatusDto periodStatus) {
+    PeriodStatusDto periodStatus,
+    String reportStatus) {
 
     public static Builder builder() {
         return new Builder();
@@ -33,6 +35,7 @@ public record CandidateDto(
         private BigDecimal totalPoints;
         private List<NoteDto> notes;
         private PeriodStatusDto periodStatus;
+        private String reportStatus;
 
         private Builder() {
         }
@@ -77,9 +80,14 @@ public record CandidateDto(
             return this;
         }
 
+        public Builder withReportStatus(String reportStatus) {
+            this.reportStatus = reportStatus;
+            return this;
+        }
+
         public CandidateDto build() {
             return new CandidateDto(id, context, identifier, publicationId, approvals, totalPoints, notes,
-                                    periodStatus);
+                                    periodStatus, reportStatus);
         }
     }
 }

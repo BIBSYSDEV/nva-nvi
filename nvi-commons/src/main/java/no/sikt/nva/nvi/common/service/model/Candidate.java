@@ -34,6 +34,7 @@ import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
+import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
@@ -88,6 +89,7 @@ public final class Candidate {
     private final int creatorShareCount;
     private final Instant createdDate;
     private final Instant modifiedDate;
+    private final ReportStatus reportStatus;
 
     private Candidate(CandidateRepository repository, CandidateDao candidateDao, List<ApprovalStatusDao> approvals,
                       List<NoteDao> notes, PeriodStatus periodStatus) {
@@ -106,6 +108,7 @@ public final class Candidate {
         this.creatorShareCount = candidateDao.candidate().creatorShareCount();
         this.createdDate = candidateDao.candidate().createdDate();
         this.modifiedDate = candidateDao.candidate().modifiedDate();
+        this.reportStatus = candidateDao.candidate().reportStatus();
     }
 
     public static Candidate fetchByPublicationId(FetchByPublicationRequest request, CandidateRepository repository,
@@ -221,6 +224,7 @@ public final class Candidate {
                    .withNotes(mapToNoteDtos())
                    .withPeriodStatus(mapToPeriodStatusDto())
                    .withTotalPoints(totalPoints)
+                   .withReportStatus(Optional.ofNullable(reportStatus).map(ReportStatus::getValue).orElse(null))
                    .build();
     }
 
@@ -253,7 +257,7 @@ public final class Candidate {
     public int hashCode() {
         return Objects.hash(identifier, applicable, approvals, notes, institutionPoints, totalPoints, periodStatus,
                             publicationDetails, basePoints, internationalCollaboration, collaborationFactor,
-                            creatorShareCount, createdDate);
+                            creatorShareCount, createdDate, reportStatus);
     }
 
     @Override
@@ -278,7 +282,8 @@ public final class Candidate {
                && Objects.equals(publicationDetails, candidate.publicationDetails)
                && Objects.equals(basePoints, candidate.basePoints)
                && Objects.equals(collaborationFactor, candidate.collaborationFactor)
-               && Objects.equals(createdDate, candidate.createdDate);
+               && Objects.equals(createdDate, candidate.createdDate)
+               && Objects.equals(reportStatus, candidate.reportStatus);
     }
 
     private static PeriodStatus calculatePeriodStatusIfApplicable(PeriodRepository periodRepository,

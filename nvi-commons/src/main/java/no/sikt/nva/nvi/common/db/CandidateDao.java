@@ -299,7 +299,8 @@ public final class CandidateDao extends Dao {
                               List<DbInstitutionPoints> points,
                               BigDecimal totalPoints,
                               Instant createdDate,
-                              Instant modifiedDate
+                              Instant modifiedDate,
+                              ReportStatus reportStatus
     ) {
 
         public static Builder builder() {
@@ -350,7 +351,8 @@ public final class CandidateDao extends Dao {
                        .points(points.stream().map(DbInstitutionPoints::copy).toList())
                        .totalPoints(totalPoints)
                        .createdDate(createdDate)
-                       .modifiedDate(modifiedDate);
+                       .modifiedDate(modifiedDate)
+                       .reportStatus(reportStatus);
         }
 
         @Override
@@ -422,6 +424,7 @@ public final class CandidateDao extends Dao {
             private BigDecimal builderTotalPoints;
             private Instant builderCreatedDate;
             private Instant builderModifiedDate;
+            private ReportStatus reportStatus;
 
             private Builder() {
             }
@@ -525,6 +528,11 @@ public final class CandidateDao extends Dao {
                 return this;
             }
 
+            public Builder reportStatus(ReportStatus reportStatus) {
+                this.reportStatus = reportStatus;
+                return this;
+            }
+
             public DbCandidate build() {
                 return new DbCandidate(builderPublicationId, builderPublicationBucketUri, builderApplicable,
                                        builderInstanceType, builderChannelType, builderChannelId, builderLevel,
@@ -532,7 +540,7 @@ public final class CandidateDao extends Dao {
                                        builderCollaborationFactor,
                                        builderCreatorCount, builderCreatorShareCount, builderCreators,
                                        builderBasePoints,
-                                       builderPoints, builderTotalPoints, builderCreatedDate, builderModifiedDate);
+                                       builderPoints, builderTotalPoints, builderCreatedDate, builderModifiedDate, reportStatus);
             }
         }
     }
