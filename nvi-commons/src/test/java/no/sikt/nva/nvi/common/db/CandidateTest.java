@@ -9,6 +9,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -41,6 +42,8 @@ public class CandidateTest {
                    .creators(randomVerifiedCreators())
                    .publicationDate(localDateNowAsPublicationDate())
                    .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
+                   .createdDate(Instant.now())
+                   .modifiedDate(Instant.now())
                    .build();
     }
 
