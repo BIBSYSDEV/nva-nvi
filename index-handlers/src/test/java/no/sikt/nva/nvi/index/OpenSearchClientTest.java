@@ -19,6 +19,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -44,12 +45,12 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
-import no.sikt.nva.nvi.index.model.Organization;
 import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.Organization;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.unit.nva.auth.CachedJwtProvider;
@@ -441,6 +442,15 @@ public class OpenSearchClientTest {
     }
 
     @Test
+    void shouldNotThrowExceptionWhenSearchingWithFilterWithoutInstitution() {
+        var searchParameters = CandidateSearchParameters.builder()
+                                   .withUsername(randomString())
+                                   .withFilter("pending")
+                                   .build();
+        assertDoesNotThrow(() -> openSearchClient.search(searchParameters));
+    }
+
+    @Test
     void shouldReturnAllSearchResultsWhenSearchingWithoutCustomerAndAffiliations()
         throws IOException, InterruptedException {
         addDocumentsToIndex(documentFromString("document_with_contributor_from_ntnu_subunit.json"),
@@ -505,6 +515,7 @@ public class OpenSearchClientTest {
                    .withApprovals(List.of(randomApprovalWithCustomerAndAssignee(customer, assignee)))
                    .withNumberOfApprovals(1)
                    .withPoints(randomBigDecimal())
+                   .withModifiedDate(Instant.now().toString())
                    .build();
     }
 
@@ -526,7 +537,7 @@ public class OpenSearchClientTest {
     }
 
     private static Approval randomApprovalWithCustomerAndAssignee(String affiliation, String assignee) {
-        return new Approval(affiliation, affiliation, Map.of(), randomStatus(), randomBigDecimal(SCALE), assignee);
+        return new Approval(affiliation, Map.of(), randomStatus(), randomBigDecimal(SCALE), assignee);
     }
 
     private static List<Approval> randomApprovalList() {
@@ -534,7 +545,7 @@ public class OpenSearchClientTest {
     }
 
     private static Approval randomApproval() {
-        return new Approval(randomString(), randomString(), Map.of(), randomStatus(), randomBigDecimal(SCALE), null);
+        return new Approval(randomString(), Map.of(), randomStatus(), randomBigDecimal(SCALE), null);
     }
 
     private static ApprovalStatus randomStatus() {

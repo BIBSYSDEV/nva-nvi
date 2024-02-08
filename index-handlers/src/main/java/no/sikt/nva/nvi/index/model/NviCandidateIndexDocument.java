@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -23,7 +22,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         List<Approval> approvals,
                                         int numberOfApprovals,
                                         BigDecimal points,
-                                        Instant modifiedDate) {
+                                        String modifiedDate) {
 
     private static final String CONTEXT = "@context";
     private static final String NVI_CANDIDATE = "NviCandidate";
@@ -48,7 +47,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         private List<Approval> approvals;
         private int numberOfApprovals;
         private BigDecimal points;
-        private Instant modifiedDate;
+        private String modifiedDate;
 
         private Builder() {
         }
@@ -88,7 +87,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             return this;
         }
 
-        public Builder withModifiedDate(Instant modifiedDate) {
+        public Builder withModifiedDate(String modifiedDate) {
             this.modifiedDate = modifiedDate;
             return this;
         }

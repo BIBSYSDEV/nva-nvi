@@ -12,17 +12,18 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
+import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
+import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator.NviOrganization;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.CandidateType;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
-import no.sikt.nva.nvi.events.model.NviCandidate.Creator;
+import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 
 public class EvaluatorService {
@@ -54,7 +55,7 @@ public class EvaluatorService {
     }
 
     private static NviCandidate constructNviCandidate(JsonNode jsonNode,
-                                                      Map<URI, List<URI>> verifiedCreatorsWithNviInstitutions,
+                                                      List<VerifiedNviCreator> nviCreators,
                                                       PointCalculation pointCalculation, URI publicationId,
                                                       URI publicationBucketUri) {
         return NviCandidate.builder()
@@ -70,17 +71,22 @@ public class EvaluatorService {
                    .withCollaborationFactor(pointCalculation.collaborationFactor())
                    .withCreatorShareCount(pointCalculation.creatorShareCount())
                    .withInstitutionPoints(pointCalculation.institutionPoints())
-                   .withVerifiedCreators(mapToCreators(verifiedCreatorsWithNviInstitutions))
+                   .withVerifiedCreators(mapToCreators(nviCreators))
                    .withTotalPoints(pointCalculation.totalPoints())
                    .build();
     }
 
-    private static List<Creator> mapToCreators(Map<URI, List<URI>> verifiedCreatorsWithNviInstitutions) {
-        return verifiedCreatorsWithNviInstitutions.entrySet()
-                   .stream()
-                   .map(entry -> new Creator(entry.getKey(),
-                                             entry.getValue()))
+    private static List<NviCreator> mapToCreators(List<VerifiedNviCreator> nviCreators) {
+        return nviCreators.stream()
+                   .map(EvaluatorService::toNviCreator)
                    .toList();
+    }
+
+    private static NviCreator toNviCreator(VerifiedNviCreator creator) {
+        return new NviCreator(creator.id(), creator.nviAffiliations()
+                                                .stream()
+                                                .map(NviOrganization::id)
+                                                .toList());
     }
 
     private static URI extractPublicationId(JsonNode publication) {
