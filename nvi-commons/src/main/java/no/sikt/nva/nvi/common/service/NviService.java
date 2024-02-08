@@ -91,6 +91,7 @@ public class NviService {
         return Stream.of(period.startDate(), period.reportingDate(), period.publishingYear()).anyMatch(Objects::isNull);
     }
 
+    @Deprecated
     private void checkForDuplicatesAndLog(List<Dao> databaseEntries) {
         databaseEntries.stream()
             .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
