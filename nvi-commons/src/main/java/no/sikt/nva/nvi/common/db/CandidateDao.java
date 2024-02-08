@@ -39,28 +39,28 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 public final class CandidateDao extends Dao {
 
     public static final String TYPE = "CANDIDATE";
-    public static final String PERIOD_FIELD = "period";
+    public static final String PERIOD_YEAR_FIELD = "periodYear";
     @JsonProperty(IDENTIFIER_FIELD)
     private final UUID identifier;
     @JsonProperty(DATA_FIELD)
     private final DbCandidate candidate;
     @JsonProperty(VERSION_FIELD)
     private final String version;
-    @JsonProperty(PERIOD_FIELD)
-    private final String period;
+    @JsonProperty(PERIOD_YEAR_FIELD)
+    private final String periodYear;
 
     @JsonCreator
     public CandidateDao(
         @JsonProperty(IDENTIFIER_FIELD) UUID identifier,
         @JsonProperty(DATA_FIELD) DbCandidate candidate,
         @JsonProperty(VERSION_FIELD) String version,
-        @JsonProperty(PERIOD_FIELD) String period
+        @JsonProperty(PERIOD_YEAR_FIELD) String periodYear
     ) {
         super();
         this.identifier = identifier;
         this.candidate = candidate;
         this.version = version;
-        this.period = period;
+        this.periodYear = periodYear;
     }
 
     @DynamoDbIgnore
@@ -93,10 +93,6 @@ public final class CandidateDao extends Dao {
         return version;
     }
 
-    public String year() {
-        return period;
-    }
-
     @Override
     @JacocoGenerated
     @DynamoDbAttribute(TYPE_FIELD)
@@ -125,7 +121,7 @@ public final class CandidateDao extends Dao {
     @DynamoDbAttribute(SECONDARY_INDEX_YEAR_HASH_KEY)
     @JsonProperty(SECONDARY_INDEX_YEAR_HASH_KEY)
     public String searchByYearHashKey() {
-        return period;
+        return periodYear;
     }
 
     @JacocoGenerated
@@ -155,7 +151,7 @@ public final class CandidateDao extends Dao {
     @Override
     @JacocoGenerated
     public int hashCode() {
-        return Objects.hash(identifier, candidate, version, period);
+        return Objects.hash(identifier, candidate, version, periodYear);
     }
 
     @Override
@@ -171,13 +167,17 @@ public final class CandidateDao extends Dao {
         return Objects.equals(this.identifier, that.identifier)
                && Objects.equals(this.candidate, that.candidate)
                && Objects.equals(this.version, that.version)
-               && Objects.equals(this.period, that.period);
+               && Objects.equals(this.periodYear, that.periodYear);
     }
 
     @Override
     @JacocoGenerated
     public String toString() {
         return attempt(() -> JsonUtils.dtoObjectMapper.writeValueAsString(this)).orElseThrow();
+    }
+
+    public String periodYear() {
+        return periodYear;
     }
 
     public enum DbLevel {
@@ -213,7 +213,7 @@ public final class CandidateDao extends Dao {
         private UUID builderIdentifier;
         private DbCandidate builderCandidate;
         private String builderVersion;
-        private String builderYear;
+        private String builderPeriodYear;
 
         private Builder() {
 
@@ -269,13 +269,13 @@ public final class CandidateDao extends Dao {
             return this;
         }
 
-        public Builder year(String year) {
-            this.builderYear = year;
+        public Builder periodYear(String periodYear) {
+            this.builderPeriodYear = periodYear;
             return this;
         }
 
         public CandidateDao build() {
-            return new CandidateDao(builderIdentifier, builderCandidate, builderVersion, builderYear);
+            return new CandidateDao(builderIdentifier, builderCandidate, builderVersion, builderPeriodYear);
         }
     }
 

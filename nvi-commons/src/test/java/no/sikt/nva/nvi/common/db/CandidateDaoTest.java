@@ -15,7 +15,7 @@ class CandidateDaoTest {
         var dao = CandidateDao.builder()
                       .candidate(randomCandidate())
                       .identifier(UUID.randomUUID())
-                      .year(randomString())
+                      .periodYear(randomString())
                       .version(randomString())
                       .build();
 
