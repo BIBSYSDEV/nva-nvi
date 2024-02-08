@@ -27,6 +27,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
@@ -104,8 +105,17 @@ public class CandidateRepository extends DynamoRepository {
     }
 
     public CandidateDao create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
+        return create(dbCandidate, approvalStatuses,
+                      Optional.ofNullable(dbCandidate.publicationDate()).map(DbPublicationDate::year).orElse(null));
+    }
+
+    public CandidateDao create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses, String year) {
         var identifier = randomUUID();
-        var candidate = constructCandidate(identifier, dbCandidate);
+        var candidate = CandidateDao.builder()
+                                   .identifier(identifier)
+                                   .candidate(dbCandidate)
+                                   .periodYear(year)
+                                   .build();
         var uniqueness = new CandidateUniquenessEntryDao(dbCandidate.publicationId().toString());
         var transactionBuilder = buildTransaction(approvalStatuses, candidate, identifier, uniqueness);
 
@@ -220,13 +230,6 @@ public class CandidateRepository extends DynamoRepository {
                                   .partitionValue(CandidateDao.createPartitionKey(identifier.toString()))
                                   .sortValue(ApprovalStatusDao.TYPE)
                                   .build());
-    }
-
-    private static CandidateDao constructCandidate(UUID identifier, DbCandidate dbCandidate) {
-        return CandidateDao.builder()
-                   .identifier(identifier)
-                   .candidate(dbCandidate)
-                   .build();
     }
 
     private static NoteDao newNoteDao(UUID candidateIdentifier, DbNote dbNote) {

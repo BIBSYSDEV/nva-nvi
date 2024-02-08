@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.randomUsername;
+import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -193,11 +194,12 @@ public class DataEntryUpdateHandlerTest {
     }
 
     private static CandidateDao randomCandidateDao() {
-        return new CandidateDao(UUID.randomUUID(), randomCandidate(), UUID.randomUUID().toString());
+        return new CandidateDao(UUID.randomUUID(), randomCandidate(), UUID.randomUUID().toString(), randomYear());
     }
 
     private static CandidateDao nonApplicableCandidateDao() {
-        return new CandidateDao(UUID.randomUUID(), randomCandidateBuilder(false).build(), UUID.randomUUID().toString());
+        return new CandidateDao(UUID.randomUUID(), randomCandidateBuilder(false).build(),
+                                UUID.randomUUID().toString(), randomString());
     }
 
     private static ApprovalStatusDao generatePendingApproval() {

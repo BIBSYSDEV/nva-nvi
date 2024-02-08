@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
@@ -61,11 +62,20 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
     @Test
     void shouldCreateNviCandidateFromNviReport() throws IOException {
         var cristinNviReport = randomCristinNviReport();
+        periodRepository.save(periodForYear(cristinNviReport.yearReported()));
         handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
         var publicationId = toPublicationId(cristinNviReport);
         var nviCandidate = Candidate.fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository);
 
         assertThatNviCandidateHasExpectedValues(nviCandidate, cristinNviReport);
+    }
+
+    private static DbNviPeriod periodForYear(int cristinNviReport) {
+        return DbNviPeriod.builder()
+                   .publishingYear(String.valueOf(cristinNviReport))
+                   .startDate(Instant.now().plusSeconds(10000))
+                   .reportingDate(Instant.now().plusSeconds(10000000))
+                   .build();
     }
 
     private static URI toPublicationId(CristinNviReport cristinNviReport) {
@@ -85,6 +95,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
         assertThat(candidate.getPublicationDetails().publicationBucketUri(),
                    is(equalTo(expectedPublicationBucketUri(cristinNviReport.publicationIdentifier()))));
         assertThat(candidate.isApplicable(), is(true));
+        assertThat(candidate.getPeriodStatus().year(), is(equalTo(String.valueOf(cristinNviReport.yearReported()))));
         candidate.getApprovals()
             .values()
             .stream()

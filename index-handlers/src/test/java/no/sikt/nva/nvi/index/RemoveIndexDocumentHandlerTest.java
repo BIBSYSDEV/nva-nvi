@@ -4,6 +4,7 @@ import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithDynamoEventMissingIdentifier;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -63,7 +64,7 @@ class RemoveIndexDocumentHandlerTest {
     }
 
     private static CandidateDao randomCandidateDao() {
-        return new CandidateDao(UUID.randomUUID(), randomCandidate(), UUID.randomUUID().toString());
+        return new CandidateDao(UUID.randomUUID(), randomCandidate(), UUID.randomUUID().toString(), randomString());
     }
 
     private void mockOpenSearchFailure(CandidateDao candidateToFail) {

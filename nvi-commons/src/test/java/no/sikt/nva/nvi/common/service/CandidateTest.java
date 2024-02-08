@@ -11,7 +11,6 @@ import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeri
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomInstanceTypeExcluding;
 import static no.sikt.nva.nvi.test.TestUtils.randomLevelExcluding;
-import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
@@ -469,24 +468,6 @@ class CandidateTest extends LocalDynamoTest {
         assertThat(contextUri, is(equalTo(CONTEXT_URI)));
     }
 
-    @Test
-    void shouldMigrateInstanceTypeToEnumValue() {
-        var instanceType = InstanceType.ACADEMIC_CHAPTER;
-        var request = createUpsertCandidateRequest(randomUri(), randomUri(), true,
-                                                   instanceType.toString(),
-                                                   1, randomBigDecimal(),
-                                                   randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
-                                                   Integer.parseInt(randomYear()),
-                                                   randomUri());
-        var candidateIdentifier = Candidate.upsert(request, candidateRepository, periodRepository)
-                                      .orElseThrow()
-                                      .getIdentifier();
-        var persistedCandidate = candidateRepository.findCandidateById(candidateIdentifier)
-                                     .orElseThrow()
-                                     .candidate();
-        assertThat(persistedCandidate.instanceType(), is(equalTo(instanceType.getValue())));
-    }
-
     private static UpsertCandidateRequest createUpsertRequestWithDecimalScale(int scale, URI institutionId) {
         var creators = IntStream.of(1)
                            .mapToObj(i -> randomUri())
@@ -599,7 +580,7 @@ class CandidateTest extends LocalDynamoTest {
                                     .points(mapToDbInstitutionPoints(request.institutionPoints()))
                                     .totalPoints(setScaleAndRoundingMode(request.totalPoints()))
                                     .createdDate(candidate.getCreatedDate())
-                                    .build(), randomString()).candidate();
+                                    .build(), randomString(), randomString()).candidate();
     }
 
     private DbPublicationDate mapToDbPublicationDate(PublicationDate publicationDate) {

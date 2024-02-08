@@ -289,6 +289,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withStatus(Status.OPEN_PERIOD)
                    .withStartDate(period.startDate().toString())
                    .withReportingDate(period.reportingDate().toString())
+                   .withYear(period.publishingYear())
                    .build();
     }
 
