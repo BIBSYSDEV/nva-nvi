@@ -27,6 +27,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
@@ -104,7 +105,8 @@ public class CandidateRepository extends DynamoRepository {
     }
 
     public CandidateDao create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
-        return create(dbCandidate, approvalStatuses, dbCandidate.publicationDate().year());
+        return create(dbCandidate, approvalStatuses,
+                      Optional.ofNullable(dbCandidate.publicationDate()).map(DbPublicationDate::year).orElse(null));
     }
 
     public CandidateDao create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses, String year) {

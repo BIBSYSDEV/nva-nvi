@@ -91,6 +91,8 @@ public final class TestUtils {
                    .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
                    .internationalCollaboration(randomBoolean())
                    .creatorCount(randomInteger())
+                   .createdDate(Instant.now())
+                   .modifiedDate(Instant.now())
                    .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))));
     }
 
