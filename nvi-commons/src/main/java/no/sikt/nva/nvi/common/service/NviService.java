@@ -6,6 +6,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -14,6 +16,8 @@ import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import nva.commons.core.JacocoGenerated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public class NviService {
@@ -24,6 +28,7 @@ public class NviService {
     public static final String START_DATE_ERROR_MESSAGE = "Period start date can not be after reporting date!";
     public static final String START_DATE_BACK_IN_TIME_ERROR_MESSAGE = "Period start date can not be back in time!";
     public static final String PERIOD_IS_MISSING_VALUES_ERROR = "Period is missing mandatory values!";
+    private static final Logger LOGGER = LoggerFactory.getLogger(NviService.class);
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
 
@@ -64,6 +69,7 @@ public class NviService {
 
     public ListingResult<Dao> migrateAndUpdateVersion(int pageSize, Map<String, String> startMarker) {
         var scanResult = candidateRepository.scanEntries(pageSize, startMarker);
+        checkForDuplicatesAndLog(scanResult.getDatabaseEntries());
         candidateRepository.writeEntries(scanResult.getDatabaseEntries());
         return scanResult;
     }
@@ -83,6 +89,16 @@ public class NviService {
 
     private static boolean hasNullValues(DbNviPeriod period) {
         return Stream.of(period.startDate(), period.reportingDate(), period.publishingYear()).anyMatch(Objects::isNull);
+    }
+
+    private void checkForDuplicatesAndLog(List<Dao> databaseEntries) {
+        databaseEntries.stream()
+            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+            .forEach((dao, count) -> {
+                if (count > 1) {
+                    LOGGER.info("Duplicate dao in scanResult: " + dao.toString() + ", Count: " + count);
+                }
+            });
     }
 
     private DbNviPeriod injectCreatedBy(DbNviPeriod period) {
