@@ -382,7 +382,8 @@ public final class CandidateDao extends Dao {
                    && Objects.equals(basePoints, that.basePoints)
                    && Objects.equals(points, that.points)
                    && Objects.equals(totalPoints, that.totalPoints)
-                   && Objects.equals(createdDate, that.createdDate);
+                   && Objects.equals(createdDate, that.createdDate)
+                   && Objects.equals(reportStatus, that.reportStatus);
         }
 
         @Override
@@ -392,7 +393,7 @@ public final class CandidateDao extends Dao {
             return Objects.hash(publicationId, publicationBucketUri, applicable, instanceType, channelType, channelId,
                                 level,
                                 publicationDate, internationalCollaboration, collaborationFactor, creatorCount,
-                                creatorShareCount, creators, basePoints, points, totalPoints, createdDate);
+                                creatorShareCount, creators, basePoints, points, totalPoints, createdDate, reportStatus);
         }
 
         @Deprecated
@@ -424,7 +425,7 @@ public final class CandidateDao extends Dao {
             private BigDecimal builderTotalPoints;
             private Instant builderCreatedDate;
             private Instant builderModifiedDate;
-            private ReportStatus reportStatus;
+            private ReportStatus builderReportStatus;
 
             private Builder() {
             }
@@ -529,7 +530,7 @@ public final class CandidateDao extends Dao {
             }
 
             public Builder reportStatus(ReportStatus reportStatus) {
-                this.reportStatus = reportStatus;
+                this.builderReportStatus = reportStatus;
                 return this;
             }
 
@@ -540,7 +541,8 @@ public final class CandidateDao extends Dao {
                                        builderCollaborationFactor,
                                        builderCreatorCount, builderCreatorShareCount, builderCreators,
                                        builderBasePoints,
-                                       builderPoints, builderTotalPoints, builderCreatedDate, builderModifiedDate, reportStatus);
+                                       builderPoints, builderTotalPoints, builderCreatedDate, builderModifiedDate,
+                                       builderReportStatus);
             }
         }
     }

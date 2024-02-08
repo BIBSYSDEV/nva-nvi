@@ -6,7 +6,6 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.ReportStatus;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
