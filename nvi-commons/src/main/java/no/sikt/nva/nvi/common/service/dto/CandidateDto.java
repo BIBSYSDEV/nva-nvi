@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.common.service.dto;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
@@ -9,6 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 @JsonTypeName(CandidateDto.NVI_CANDIDATE)
+@JsonTypeInfo(use = Id.NAME, property = "type")
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 public record CandidateDto(

@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.common.service.dto;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.net.URI;
@@ -8,6 +10,7 @@ import java.util.Optional;
 import nva.commons.core.JacocoGenerated;
 
 @JsonTypeName(PeriodStatusDto.NVI_PERIOD)
+@JsonTypeInfo(use = Id.NAME, property = "type")
 public record PeriodStatusDto(URI id, Status status, String startDate, String reportingDate, String year) {
 
     public static final String NVI_PERIOD = "NviReportingPeriod";
