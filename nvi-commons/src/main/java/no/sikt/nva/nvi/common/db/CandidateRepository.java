@@ -273,6 +273,7 @@ public class CandidateRepository extends DynamoRepository {
 
     private List<WriteRequest> createWriteRequestsForBatchJob(List<Dao> refreshedEntries) {
         return refreshedEntries.stream()
+                   .distinct()
                    .map(Dao::toDynamoFormat)
                    .map(this::mutateVersion)
                    .map(this::toWriteRequest)
