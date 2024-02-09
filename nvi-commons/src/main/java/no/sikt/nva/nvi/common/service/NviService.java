@@ -29,6 +29,7 @@ public class NviService {
     public static final String START_DATE_BACK_IN_TIME_ERROR_MESSAGE = "Period start date can not be back in time!";
     public static final String PERIOD_IS_MISSING_VALUES_ERROR = "Period is missing mandatory values!";
     private static final Logger LOGGER = LoggerFactory.getLogger(NviService.class);
+    public static final int ONE = 1;
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
 
@@ -96,7 +97,7 @@ public class NviService {
         databaseEntries.stream()
             .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
             .forEach((dao, count) -> {
-                if (count > 1) {
+                if (count > ONE) {
                     LOGGER.info("Duplicate dao in scanResult: " + dao.toString() + ", Count: " + count);
                 }
             });
