@@ -98,7 +98,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var actualCandidate = response.getBodyObject(CandidateDto.class);
 
-        assertEquals(actualCandidate.reportStatus(), ReportStatus.REPORTED.getValue());
+        assertEquals(ReportStatus.REPORTED.getValue(), actualCandidate.reportStatus());
     }
 
     private static InputStream requestWithAccessRight(URI publicationId)
@@ -106,15 +106,6 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
         return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
                    .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
                    .withCurrentCustomer(CUSTOMER_ID)
-                   .withUserName(randomString())
-                   .withPathParameters(Map.of(CANDIDATE_PUBLICATION_ID, publicationId.toString()))
-                   .build();
-    }
-
-    private static InputStream createUnauthorizedRequest(URI publicationId)
-        throws JsonProcessingException {
-        return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
-                   .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
                    .withUserName(randomString())
                    .withPathParameters(Map.of(CANDIDATE_PUBLICATION_ID, publicationId.toString()))
                    .build();
