@@ -86,7 +86,7 @@ class FetchNviPeriodHandlerTest extends LocalDynamoTest {
 
     private InputStream createRequestForPeriod(String period) throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
-                   .withPathParameters(MapUtils.of("period", period))
+                   .withPathParameters(MapUtils.of("periodIdentifier", period))
                    .build();
     }
 }
