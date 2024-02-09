@@ -5,6 +5,8 @@ import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -17,9 +19,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -84,20 +88,24 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
         assertEquals(expectedResponse, actualResponse);
     }
 
+    @Test
+    void shouldReturnCandidateWithReportStatus() throws IOException {
+        var candidate = candidateRepository.create(randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
+                                                   List.of(randomApproval()));
+        var request = requestWithAccessRight(candidate.candidate().publicationId());
+
+        handler.handleRequest(request, output, CONTEXT);
+        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+        var actualCandidate = response.getBodyObject(CandidateDto.class);
+
+        assertEquals(ReportStatus.REPORTED.getValue(), actualCandidate.reportStatus());
+    }
+
     private static InputStream requestWithAccessRight(URI publicationId)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
                    .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
                    .withCurrentCustomer(CUSTOMER_ID)
-                   .withUserName(randomString())
-                   .withPathParameters(Map.of(CANDIDATE_PUBLICATION_ID, publicationId.toString()))
-                   .build();
-    }
-
-    private static InputStream createUnauthorizedRequest(URI publicationId)
-        throws JsonProcessingException {
-        return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
-                   .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
                    .withUserName(randomString())
                    .withPathParameters(Map.of(CANDIDATE_PUBLICATION_ID, publicationId.toString()))
                    .build();
