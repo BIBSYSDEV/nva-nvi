@@ -1,12 +1,17 @@
 package no.sikt.nva.nvi.common.db;
 
+import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
+import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 public class DynamoDbRetryWrapper {
@@ -37,18 +42,35 @@ public class DynamoDbRetryWrapper {
 
             requestCount++;
 
-            var response = client.batchWriteItem(batchWriteRequest);
+            try {
+                var response = client.batchWriteItem(batchWriteRequest);
+                if (hasUnprocessedItems(response)) {
+                    sleep(calculateBackoffTime(requestCount));
 
-            if (hasUnprocessedItems(response)) {
-                sleep(calculateBackoffTime(requestCount));
-
-                batchWriteRequest = buildBatchWriteRequest(getUnprocessedItems(response));
-            } else {
-                retryNeeded = false;
+                    batchWriteRequest = buildBatchWriteRequest(getUnprocessedItems(response));
+                } else {
+                    retryNeeded = false;
+                }
+            } catch (DynamoDbException exception) {
+                LOGGER.error("Failed to write batch items. Exception: {}. Failed batch items: {}",
+                             getStackTrace(exception), formatFailedBatchItems(batchWriteRequest));
+                throw exception;
             }
+
         }
 
         return initialRequest.requestItems().size();
+    }
+
+    private static String formatFailedBatchItems(BatchWriteItemRequest batchWriteRequest) {
+        return batchWriteRequest.requestItems()
+                   .values()
+                   .stream()
+                   .flatMap(Collection::stream)
+                   .map(WriteRequest::putRequest)
+                   .map(PutRequest::item)
+                   .map(Object::toString)
+                   .collect(Collectors.joining(", "));
     }
 
     private static boolean hasUnprocessedItems(BatchWriteItemResponse response) {

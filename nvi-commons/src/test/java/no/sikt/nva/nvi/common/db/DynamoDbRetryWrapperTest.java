@@ -1,24 +1,31 @@
 package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
@@ -57,7 +64,7 @@ class DynamoDbRetryWrapperTest {
             .thenAnswer(a -> buildFailingResponse())
             .thenAnswer(a -> buildSuccessfulResponse());
 
-        var writeRequest = buildMockWriteItemRewuast();
+        var writeRequest = buildMockWriteItemRequest();
         var result = dynamoDbRetryClient.batchWriteItem(writeRequest);
 
         verify(dynamodb, times(2)).batchWriteItem(any(BatchWriteItemRequest.class));
@@ -68,7 +75,7 @@ class DynamoDbRetryWrapperTest {
     void successfulDbWriteShouldReturnNumberOfRequests() {
         when(dynamodb.batchWriteItem(any(BatchWriteItemRequest.class))).thenAnswer(a -> buildSuccessfulResponse());
 
-        var writeRequest = buildMockWriteItemRewuast();
+        var writeRequest = buildMockWriteItemRequest();
 
         var result = dynamoDbRetryClient.batchWriteItem(writeRequest);
 
@@ -91,7 +98,7 @@ class DynamoDbRetryWrapperTest {
         when(dynamodb.batchWriteItem(any(BatchWriteItemRequest.class))).thenAnswer(
             a -> buildFailingResponse());
 
-        var writeRequest = buildMockWriteItemRewuast();
+        var writeRequest = buildMockWriteItemRequest();
 
         var thread = new Thread(() -> dynamoDbRetryClient.batchWriteItem(writeRequest));
         thread.start();
@@ -102,7 +109,36 @@ class DynamoDbRetryWrapperTest {
         assertThat(appender.getMessages(), containsString("java.lang.InterruptedException: sleep interrupted"));
     }
 
-    private static BatchWriteItemRequest buildMockWriteItemRewuast() {
+    @Test
+    void shouldLogFailedBatchItemsWhenOpenSearchErrorOccurs() {
+        final var appender = LogUtils.getTestingAppender(DynamoDbRetryWrapper.class);
+        var mockedDatabaseClient = mock(DynamoDbClient.class);
+        var dynamoDbRetryWrapper = DynamoDbRetryWrapper.builder().dynamoDbClient(mockedDatabaseClient).build();
+        var dao = new CandidateDao(UUID.randomUUID(), randomCandidate(), randomString(), randomString());
+        var batchItemRequest = generateBatchItemRequest(dao);
+        when(mockedDatabaseClient.batchWriteItem(eq(batchItemRequest))).thenThrow(DynamoDbException.class);
+        assertThrows(DynamoDbException.class, () -> dynamoDbRetryWrapper.batchWriteItem(batchItemRequest));
+        assertTrue(appender.getMessages().contains(dao.identifier().toString()));
+    }
+
+    private static BatchWriteItemRequest generateBatchItemRequest(CandidateDao dao) {
+        return BatchWriteItemRequest.builder().requestItems(Map.of(randomString(),
+                                                                   List.of(generateWriteRequest(dao)))).build();
+    }
+
+    private static WriteRequest generateWriteRequest(CandidateDao dao) {
+        return WriteRequest.builder()
+                   .putRequest(generatePutRequest(dao.toDynamoFormat()))
+                   .build();
+    }
+
+    private static PutRequest generatePutRequest(Map<String, AttributeValue> item) {
+        return PutRequest.builder()
+                   .item(item)
+                   .build();
+    }
+
+    private static BatchWriteItemRequest buildMockWriteItemRequest() {
         return BatchWriteItemRequest.builder().requestItems(mockWriteRequestItems()).build();
     }
 
