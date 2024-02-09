@@ -44,7 +44,7 @@ public final class ExceptionMapper {
             logger.warn("Attempted operation which was not allowed", exception);
             return new MethodNotAllowedException(exception.getMessage());
         }
-        logger.error("BadGatewayException", exception.getMessage());
+        logger.error("BadGatewayException {}", exception.getMessage());
         return new BadGatewayException("Something went wrong! Contact application administrator.");
     }
 
