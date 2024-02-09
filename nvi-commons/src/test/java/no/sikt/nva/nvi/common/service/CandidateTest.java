@@ -476,7 +476,7 @@ class CandidateTest extends LocalDynamoTest {
         var dao = candidateRepository.create(randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
                                                    List.of(randomApproval()));
         var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
-        assertThat(candidate.toDto().reportStatus(), is(equalTo(ReportStatus.REPORTED.getValue())));
+        assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));
     }
 
     private static UpsertCandidateRequest createUpsertRequestWithDecimalScale(int scale, URI institutionId) {
@@ -491,8 +491,7 @@ class CandidateTest extends LocalDynamoTest {
                                             creators,
                                             randomInstanceTypeExcluding(NON_CANDIDATE.getValue()),
                                             randomElement(ChannelType.values()).getValue(), randomUri(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE)
-                                                .getVersionOneValue(), points,
+                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(), points,
                                             randomInteger(), randomBoolean(),
                                             randomBigDecimal(scale), randomBigDecimal(scale),
                                             randomBigDecimal(scale));

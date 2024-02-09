@@ -1,12 +1,14 @@
 package no.sikt.nva.nvi.common.service.dto;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 
+@JsonTypeName(ApprovalDto.APPROVAL)
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 public record ApprovalDto(URI institutionId,
@@ -16,6 +18,8 @@ public record ApprovalDto(URI institutionId,
                           String finalizedBy,
                           Instant finalizedDate,
                           String reason) {
+
+    public static final String APPROVAL = "Approval";
 
     public static Builder builder() {
         return new Builder();
