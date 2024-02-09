@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 public class FetchNviPeriodHandler extends ApiGatewayHandler<Void, NviPeriodDto> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FetchNviPeriodHandler.class);
-    public static final String PERIOD = "period";
+    public static final String PERIOD_IDENTIFIER = "periodIdentifier";
     public static final String BAD_GATEWAY_EXCEPTION_MESSAGE = "Something went wrong! Contact application administrator.";
     private final NviService nviService;
 
@@ -38,7 +38,7 @@ public class FetchNviPeriodHandler extends ApiGatewayHandler<Void, NviPeriodDto>
     protected NviPeriodDto processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
 
-        return attempt(() -> requestInfo.getPathParameter(PERIOD))
+        return attempt(() -> requestInfo.getPathParameter(PERIOD_IDENTIFIER))
                    .map(nviService::getPeriod)
                    .map(NviPeriodDto::fromNviPeriod)
                    .orElseThrow(this::mapException);

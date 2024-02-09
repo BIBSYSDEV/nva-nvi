@@ -1217,7 +1217,7 @@ Resources:
         ApiEvent:
           Type: Api
           Properties:
-            Path: /period/{year}
+            Path: /period/{periodIdentifier}
             Method: get
             RestApiId: !Ref ScientificIndexApi
 

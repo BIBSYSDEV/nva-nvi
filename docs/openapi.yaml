@@ -173,12 +173,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
 
-  /period/{year}:
+  /period/{periodIdentifier}:
     get:
       description: 'Get Nvi Period'
       parameters:
         - in: path
-          name: periodYear
+          name: periodIdentifier
           description: The identifier of the candidate
           required: true
           schema:
