@@ -15,6 +15,7 @@ import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.ListingResult;
+import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ public class NviService {
     public static final String PERIOD_IS_MISSING_VALUES_ERROR = "Period is missing mandatory values!";
     private static final Logger LOGGER = LoggerFactory.getLogger(NviService.class);
     public static final int ONE = 1;
+    public static final String PERIOD_DOES_NOT_EXIST_MESSAGE = "Period for year %s does not exist!";
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
 
@@ -60,8 +62,9 @@ public class NviService {
     }
 
     public DbNviPeriod getPeriod(String publishingYear) {
-        //TODO: Handle not-found. optional?
-        return periodRepository.findByPublishingYear(publishingYear).orElseThrow();
+        return periodRepository.findByPublishingYear(publishingYear)
+                   .orElseThrow(() -> PeriodNotFoundException.withMessage(
+                       String.format(PERIOD_DOES_NOT_EXIST_MESSAGE, publishingYear)));
     }
 
     public List<DbNviPeriod> getPeriods() {

@@ -98,7 +98,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var actualCandidate = response.getBodyObject(CandidateDto.class);
 
-        assertEquals(ReportStatus.REPORTED.getValue(), actualCandidate.reportStatus());
+        assertEquals(ReportStatus.REPORTED.getValue(), actualCandidate.status());
     }
 
     private static InputStream requestWithAccessRight(URI publicationId)

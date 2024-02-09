@@ -1,7 +1,9 @@
 package no.sikt.nva.nvi.common.service;
 
 import static no.sikt.nva.nvi.test.TestUtils.createPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -12,8 +14,11 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
+import nva.commons.core.Environment;
+import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,12 +39,21 @@ public class NviServicePeriodTest extends LocalDynamoTest {
         var period = createPeriod("2050");
         var nviService = new NviService(localDynamo);
         nviService.createPeriod(period);
-        assertThat(nviService.getPeriod(period.publishingYear()), is(equalTo(period)));
+
+        var expectedId = UriWrapper.fromHost(new Environment().readEnv("API_HOST"))
+                             .addChild("scientific-index")
+                             .addChild("period")
+                             .addChild(period.publishingYear())
+                             .getUri();
+
+        var expectedPeriod = period.copy().id(expectedId).build();
+
+        assertThat(nviService.getPeriod(period.publishingYear()), is(equalTo(expectedPeriod)));
     }
 
     @Test
     void shouldThrowIllegalArgumentWhenPeriodMissedMandatoryValues() {
-        var period = new DbNviPeriod(String.valueOf(ZonedDateTime.now().plusYears(1).getYear()), null,
+        var period = new DbNviPeriod(randomUri(), String.valueOf(ZonedDateTime.now().plusYears(1).getYear()), null,
                                      ZonedDateTime.now().plusMonths(10).toInstant(), new Username(randomString()),
                                      null);
         var nviService = new NviService(localDynamo);
@@ -136,6 +150,11 @@ public class NviServicePeriodTest extends LocalDynamoTest {
         nviService.createPeriod(createPeriod(String.valueOf(ZonedDateTime.now().plusYears(1).getYear())));
         var periods = nviService.getPeriods();
         assertThat(periods, hasSize(2));
+    }
+
+    @Test
+    void shouldThrowPeriodNotFoundExceptionWhenPeriodDoesNotExist() {
+        assertThrows(PeriodNotFoundException.class, () -> new NviService(localDynamo).getPeriod(randomYear()));
     }
 
     private static Username randomUsername() {

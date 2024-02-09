@@ -172,6 +172,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
+
+  /period/{periodYear}:
+    get:
+      description: 'Get Nvi Period'
+      parameters:
+        - in: path
+          name: periodYear
+          description: The identifier of the candidate
+          required: true
+          schema:
+            type: string
+      x-amazon-apigateway-request-validator: validate_body
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviPeriodHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        '200':
+          description: "Period fetched successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NviPeriod"
+        '404':
+          description: "Period not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '502':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
   /candidate:
     get:
       description: 'Search for scientific index candidates'
@@ -266,7 +304,7 @@ paths:
       parameters:
         - in: path
           name: candidateIdentifier
-          description: The identifer of the candidate
+          description: The identifier of the candidate
           required: true
           schema:
             type: string
@@ -307,7 +345,7 @@ paths:
       parameters:
         - in: path
           name: candidatePublicationId+
-          description: The pubication identifer the candidate, this must be URI UTF-8 encoded
+          description: The publication identifier the candidate, this must be URI UTF-8 encoded
           required: true
           schema:
             type: string

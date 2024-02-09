@@ -4,15 +4,18 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 import java.util.Optional;
 import nva.commons.core.JacocoGenerated;
+import java.net.URI;
 
-public record PeriodStatusDto(Status status, String startDate, String reportingDate, String year) {
+public record PeriodStatusDto(URI id, Status status, String startDate, String reportingDate, String year) {
 
     public static Builder builder() {
         return new Builder();
     }
 
     public static PeriodStatusDto fromPeriodStatus(no.sikt.nva.nvi.common.db.PeriodStatus periodStatus) {
-        return builder().withStatus(Status.parse(periodStatus.status().getValue()))
+        return builder()
+                   .withId(periodStatus.id())
+                   .withStatus(Status.parse(periodStatus.status().getValue()))
                    .withStartDate(toStartDate(periodStatus))
                    .withReportingDate(toReportingDate(periodStatus))
                    .withYear(periodStatus.year())
@@ -63,6 +66,7 @@ public record PeriodStatusDto(Status status, String startDate, String reportingD
         private String startDate;
         private String closedDate;
         private String year;
+        private URI id;
 
         private Builder() {
         }
@@ -87,8 +91,13 @@ public record PeriodStatusDto(Status status, String startDate, String reportingD
             return this;
         }
 
+        public Builder withId(URI id) {
+            this.id = id;
+            return this;
+        }
+
         public PeriodStatusDto build() {
-            return new PeriodStatusDto(status, startDate, closedDate, year);
+            return new PeriodStatusDto(id, status, startDate, closedDate, year);
         }
 
     }

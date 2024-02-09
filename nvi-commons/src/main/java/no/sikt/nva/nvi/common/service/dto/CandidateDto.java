@@ -17,8 +17,8 @@ public record CandidateDto(
     List<ApprovalDto> approvals,
     BigDecimal totalPoints,
     List<NoteDto> notes,
-    PeriodStatusDto periodStatus,
-    String reportStatus) {
+    PeriodStatusDto period,
+    String status) {
 
     public static Builder builder() {
         return new Builder();

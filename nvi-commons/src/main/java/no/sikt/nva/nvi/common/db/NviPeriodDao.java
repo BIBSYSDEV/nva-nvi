@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.Builder;
 import no.sikt.nva.nvi.common.db.model.Username;
+import java.net.URI;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
@@ -125,7 +126,8 @@ public final class NviPeriodDao extends Dao {
     }
 
     @DynamoDbImmutable(builder = DbNviPeriod.Builder.class)
-    public record DbNviPeriod(String publishingYear,
+    public record DbNviPeriod(URI id,
+                              String publishingYear,
                               Instant startDate,
                               Instant reportingDate,
                               Username createdBy,
@@ -137,7 +139,9 @@ public final class NviPeriodDao extends Dao {
 
         @DynamoDbIgnore
         public Builder copy() {
-            return builder().publishingYear(publishingYear)
+            return builder()
+                       .id(id)
+                       .publishingYear(publishingYear)
                        .startDate(startDate)
                        .reportingDate(reportingDate)
                        .createdBy(createdBy)
@@ -146,6 +150,7 @@ public final class NviPeriodDao extends Dao {
 
         public static final class Builder {
 
+            private URI builderId;
             private String builderPublishingYear;
             private Instant builderStartDate;
             private Instant builderReportingDate;
@@ -153,6 +158,11 @@ public final class NviPeriodDao extends Dao {
             private Username builderModifiedBy;
 
             private Builder() {
+            }
+
+            public Builder id(URI id) {
+                this.builderId = id;
+                return this;
             }
 
             public Builder publishingYear(String publishingYear) {
@@ -181,9 +191,11 @@ public final class NviPeriodDao extends Dao {
             }
 
             public DbNviPeriod build() {
-                return new DbNviPeriod(builderPublishingYear, builderStartDate, builderReportingDate, builderCreatedBy,
+                return new DbNviPeriod(builderId, builderPublishingYear, builderStartDate, builderReportingDate,
+                                       builderCreatedBy,
                                        builderModifiedBy);
             }
+
         }
     }
 }

@@ -286,6 +286,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     private static PeriodStatusDto toPeriodStatus(DbNviPeriod period) {
         return PeriodStatusDto.builder()
+                   .withId(period.id())
                    .withStatus(Status.OPEN_PERIOD)
                    .withStartDate(period.startDate().toString())
                    .withReportingDate(period.reportingDate().toString())

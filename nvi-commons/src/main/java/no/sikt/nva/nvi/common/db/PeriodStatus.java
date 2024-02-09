@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.db;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.net.URI;
 import java.time.Instant;
 import java.util.Objects;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
@@ -11,7 +12,7 @@ import nva.commons.core.JacocoGenerated;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record PeriodStatus(Instant startDate, Instant reportingDate, Status status, String year) implements JsonSerializable {
+public record PeriodStatus(URI id, Instant startDate, Instant reportingDate, Status status, String year) implements JsonSerializable {
 
     public static Builder builder() {
         return new Builder();
@@ -37,6 +38,7 @@ public record PeriodStatus(Instant startDate, Instant reportingDate, Status stat
 
     private static PeriodStatus toUnopenedPeriod(DbNviPeriod period) {
         return PeriodStatus.builder()
+                   .withId(period.id())
                    .withStartDate(period.startDate())
                    .withReportingDate(period.reportingDate())
                    .withStatus(Status.UNOPENED_PERIOD)
@@ -54,6 +56,7 @@ public record PeriodStatus(Instant startDate, Instant reportingDate, Status stat
 
     private static PeriodStatus toOpenPeriodStatus(DbNviPeriod period) {
         return PeriodStatus.builder()
+                   .withId(period.id())
                    .withStartDate(period.startDate())
                    .withReportingDate(period.reportingDate())
                    .withStatus(Status.OPEN_PERIOD)
@@ -63,6 +66,7 @@ public record PeriodStatus(Instant startDate, Instant reportingDate, Status stat
 
     private static PeriodStatus toClosedPeriodStatus(DbNviPeriod period) {
         return PeriodStatus.builder()
+                   .withId(period.id())
                    .withStartDate(period.startDate())
                    .withReportingDate(period.reportingDate())
                    .withStatus(Status.CLOSED_PERIOD)
@@ -93,6 +97,7 @@ public record PeriodStatus(Instant startDate, Instant reportingDate, Status stat
         private Instant startDate;
         private Status status;
         private String year;
+        private URI id;
 
         private Builder() {
         }
@@ -117,8 +122,13 @@ public record PeriodStatus(Instant startDate, Instant reportingDate, Status stat
             return this;
         }
 
+        public Builder withId(URI id) {
+            this.id = id;
+            return this;
+        }
+
         public PeriodStatus build() {
-            return new PeriodStatus(startDate, reportingDate, status, year);
+            return new PeriodStatus(id, startDate, reportingDate, status, year);
         }
 
     }

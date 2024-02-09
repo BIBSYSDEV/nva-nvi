@@ -50,7 +50,7 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnBadRequestWhenInvalidReportingDate() throws IOException {
-        var period = new NviPeriodDto("2023", null,"invalidValue");
+        var period = new NviPeriodDto(randomUri(), "2023", null,"invalidValue");
         handler.handleRequest(createRequest(period), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -82,7 +82,8 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
     }
 
     private NviPeriodDto randomPeriod(String year) {
-        return new NviPeriodDto(year,
+        return new NviPeriodDto(randomUri(),
+                                year,
                                 ZonedDateTime.now().plusMonths(1).toInstant().toString(),
                                 ZonedDateTime.now().plusMonths(10).toInstant().toString());
     }

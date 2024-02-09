@@ -209,6 +209,7 @@ public final class TestUtils {
         var nviPeriodRepository = mock(PeriodRepository.class);
         var period = DbNviPeriod.builder()
                          .publishingYear(String.valueOf(year))
+                         .id(randomUri())
                          .startDate(Instant.now())
                          .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant()).build();
         when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
