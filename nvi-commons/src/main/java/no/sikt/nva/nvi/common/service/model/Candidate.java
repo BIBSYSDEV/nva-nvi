@@ -89,7 +89,7 @@ public final class Candidate {
     private final int creatorShareCount;
     private final Instant createdDate;
     private final Instant modifiedDate;
-    private final ReportStatus reportStatus;
+    private final ReportStatus status;
 
     private Candidate(CandidateRepository repository, CandidateDao candidateDao, List<ApprovalStatusDao> approvals,
                       List<NoteDao> notes, PeriodStatus period) {
@@ -108,7 +108,7 @@ public final class Candidate {
         this.creatorShareCount = candidateDao.candidate().creatorShareCount();
         this.createdDate = candidateDao.candidate().createdDate();
         this.modifiedDate = candidateDao.candidate().modifiedDate();
-        this.reportStatus = candidateDao.candidate().reportStatus();
+        this.status = candidateDao.candidate().reportStatus();
     }
 
     public static Candidate fetchByPublicationId(FetchByPublicationRequest request, CandidateRepository repository,
@@ -224,7 +224,7 @@ public final class Candidate {
                    .withNotes(mapToNoteDtos())
                    .withPeriodStatus(mapToPeriodStatusDto())
                    .withTotalPoints(totalPoints)
-                   .withReportStatus(Optional.ofNullable(reportStatus).map(ReportStatus::getValue).orElse(null))
+                   .withReportStatus(Optional.ofNullable(status).map(ReportStatus::getValue).orElse(null))
                    .build();
     }
 
@@ -257,7 +257,7 @@ public final class Candidate {
     public int hashCode() {
         return Objects.hash(identifier, applicable, approvals, notes, institutionPoints, totalPoints, period,
                             publicationDetails, basePoints, internationalCollaboration, collaborationFactor,
-                            creatorShareCount, createdDate, reportStatus);
+                            creatorShareCount, createdDate, status);
     }
 
     @Override
@@ -283,7 +283,7 @@ public final class Candidate {
                && Objects.equals(basePoints, candidate.basePoints)
                && Objects.equals(collaborationFactor, candidate.collaborationFactor)
                && Objects.equals(createdDate, candidate.createdDate)
-               && Objects.equals(reportStatus, candidate.reportStatus);
+               && Objects.equals(status, candidate.status);
     }
 
     private static PeriodStatus calculatePeriodStatusIfApplicable(PeriodRepository periodRepository,

@@ -478,6 +478,7 @@ class CandidateTest extends LocalDynamoTest {
                                                    List.of(randomApproval()));
         var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
         assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));
+        assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));
     }
 
     @Test
@@ -502,8 +503,7 @@ class CandidateTest extends LocalDynamoTest {
                                             creators,
                                             randomInstanceTypeExcluding(NON_CANDIDATE.getValue()),
                                             randomElement(ChannelType.values()).getValue(), randomUri(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE)
-                                                .getVersionOneValue(), points,
+                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(), points,
                                             randomInteger(), randomBoolean(),
                                             randomBigDecimal(scale), randomBigDecimal(scale),
                                             randomBigDecimal(scale));
