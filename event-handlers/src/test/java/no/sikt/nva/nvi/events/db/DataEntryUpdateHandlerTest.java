@@ -173,7 +173,7 @@ public class DataEntryUpdateHandlerTest {
 
     private static NviPeriodDao randomPeriodDao() {
         return new NviPeriodDao(UUID.randomUUID().toString(),
-                                new DbNviPeriod(randomString(), randomInstant(), randomInstant(),
+                                new DbNviPeriod(randomUri(), randomString(), randomInstant(), randomInstant(),
                                                 randomUsername(), randomUsername()),
                                 UUID.randomUUID().toString());
     }

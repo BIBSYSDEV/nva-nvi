@@ -81,7 +81,7 @@ public final class Candidate {
     private final Map<UUID, Note> notes;
     private final Map<URI, BigDecimal> institutionPoints;
     private final BigDecimal totalPoints;
-    private final PeriodStatus periodStatus;
+    private final PeriodStatus period;
     private final PublicationDetails publicationDetails;
     private final BigDecimal basePoints;
     private final boolean internationalCollaboration;
@@ -92,7 +92,7 @@ public final class Candidate {
     private final ReportStatus status;
 
     private Candidate(CandidateRepository repository, CandidateDao candidateDao, List<ApprovalStatusDao> approvals,
-                      List<NoteDao> notes, PeriodStatus periodStatus) {
+                      List<NoteDao> notes, PeriodStatus period) {
         this.repository = repository;
         this.identifier = candidateDao.identifier();
         this.applicable = candidateDao.candidate().applicable();
@@ -100,7 +100,7 @@ public final class Candidate {
         this.notes = mapToNotesMap(repository, notes);
         this.institutionPoints = mapToPointsMap(candidateDao);
         this.totalPoints = candidateDao.candidate().totalPoints();
-        this.periodStatus = periodStatus;
+        this.period = period;
         this.publicationDetails = mapToPublicationDetails(candidateDao);
         this.basePoints = candidateDao.candidate().basePoints();
         this.internationalCollaboration = candidateDao.candidate().internationalCollaboration();
@@ -170,8 +170,8 @@ public final class Candidate {
         return publicationDetails;
     }
 
-    public PeriodStatus getPeriodStatus() {
-        return periodStatus;
+    public PeriodStatus getPeriod() {
+        return period;
     }
 
     public UUID getIdentifier() {
@@ -222,7 +222,7 @@ public final class Candidate {
                    .withPublicationId(publicationDetails.publicationId())
                    .withApprovals(mapToApprovalDtos())
                    .withNotes(mapToNoteDtos())
-                   .withPeriodStatus(mapToPeriodStatusDto())
+                   .withPeriod(mapToPeriodStatusDto())
                    .withTotalPoints(totalPoints)
                    .withReportStatus(Optional.ofNullable(status).map(ReportStatus::getValue).orElse(null))
                    .build();
@@ -255,7 +255,7 @@ public final class Candidate {
     @Override
     @JacocoGenerated
     public int hashCode() {
-        return Objects.hash(identifier, applicable, approvals, notes, institutionPoints, totalPoints, periodStatus,
+        return Objects.hash(identifier, applicable, approvals, notes, institutionPoints, totalPoints, period,
                             publicationDetails, basePoints, internationalCollaboration, collaborationFactor,
                             creatorShareCount, createdDate, status);
     }
@@ -278,7 +278,7 @@ public final class Candidate {
                && Objects.equals(notes, candidate.notes)
                && Objects.equals(institutionPoints, candidate.institutionPoints)
                && Objects.equals(totalPoints, candidate.totalPoints)
-               && Objects.equals(periodStatus, candidate.periodStatus)
+               && Objects.equals(period, candidate.period)
                && Objects.equals(publicationDetails, candidate.publicationDetails)
                && Objects.equals(basePoints, candidate.basePoints)
                && Objects.equals(collaborationFactor, candidate.collaborationFactor)
@@ -567,16 +567,16 @@ public final class Candidate {
     }
 
     private void validateCandidateState() {
-        if (Status.CLOSED_PERIOD.equals(periodStatus.status())) {
+        if (Status.CLOSED_PERIOD.equals(period.status())) {
             throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
         }
-        if (Status.NO_PERIOD.equals(periodStatus.status()) || Status.UNOPENED_PERIOD.equals(periodStatus.status())) {
+        if (Status.NO_PERIOD.equals(period.status()) || Status.UNOPENED_PERIOD.equals(period.status())) {
             throw new IllegalStateException(PERIOD_NOT_OPENED_MESSAGE);
         }
     }
 
     private PeriodStatusDto mapToPeriodStatusDto() {
-        return PeriodStatusDto.fromPeriodStatus(periodStatus);
+        return PeriodStatusDto.fromPeriodStatus(period);
     }
 
     private List<NoteDto> mapToNoteDtos() {

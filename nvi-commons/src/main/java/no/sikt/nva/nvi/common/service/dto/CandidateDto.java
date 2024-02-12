@@ -1,14 +1,19 @@
 package no.sikt.nva.nvi.common.service.dto;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
+import no.unit.nva.commons.json.JsonSerializable;
 
 @JsonTypeName(CandidateDto.NVI_CANDIDATE)
+@JsonTypeInfo(use = Id.NAME, property = "type")
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 public record CandidateDto(
@@ -19,8 +24,15 @@ public record CandidateDto(
     List<ApprovalDto> approvals,
     BigDecimal totalPoints,
     List<NoteDto> notes,
-    PeriodStatusDto periodStatus,
-    String status) {
+    PeriodStatusDto period,
+    String status) implements JsonSerializable {
+
+    //TODO: To remove when frontend has been updated to use "period" property
+    @Deprecated
+    @JsonGetter("periodStatus")
+    public PeriodStatusDto getPeriodStatus() {
+        return this.period;
+    }
 
     public static final String NVI_CANDIDATE = "NviCandidate";
 
@@ -78,7 +90,7 @@ public record CandidateDto(
             return this;
         }
 
-        public Builder withPeriodStatus(PeriodStatusDto periodStatus) {
+        public Builder withPeriod(PeriodStatusDto periodStatus) {
             this.periodStatus = periodStatus;
             return this;
         }

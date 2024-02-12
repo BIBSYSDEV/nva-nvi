@@ -92,7 +92,8 @@ public class UpdateNviPeriodHandlerTest extends LocalDynamoTest {
     }
 
     private NviPeriodDto randomPeriod() {
-        return new NviPeriodDto(String.valueOf(ZonedDateTime.now().getYear()),
+        return new NviPeriodDto(randomUri(),
+                                String.valueOf(ZonedDateTime.now().getYear()),
                                 ZonedDateTime.now().plusMonths(1).toInstant().toString(),
                                 ZonedDateTime.now().plusMonths(10).toInstant().toString());
     }

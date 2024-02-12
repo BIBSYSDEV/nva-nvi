@@ -13,6 +13,7 @@ import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.ListingResult;
+import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -24,6 +25,7 @@ public class NviService {
     public static final String START_DATE_ERROR_MESSAGE = "Period start date can not be after reporting date!";
     public static final String START_DATE_BACK_IN_TIME_ERROR_MESSAGE = "Period start date can not be back in time!";
     public static final String PERIOD_IS_MISSING_VALUES_ERROR = "Period is missing mandatory values!";
+    public static final String PERIOD_DOES_NOT_EXIST_MESSAGE = "Period for year %s does not exist!";
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
 
@@ -54,8 +56,9 @@ public class NviService {
     }
 
     public DbNviPeriod getPeriod(String publishingYear) {
-        //TODO: Handle not-found. optional?
-        return periodRepository.findByPublishingYear(publishingYear).orElseThrow();
+        return periodRepository.findByPublishingYear(publishingYear)
+                   .orElseThrow(() -> PeriodNotFoundException.withMessage(
+                       String.format(PERIOD_DOES_NOT_EXIST_MESSAGE, publishingYear)));
     }
 
     public List<DbNviPeriod> getPeriods() {

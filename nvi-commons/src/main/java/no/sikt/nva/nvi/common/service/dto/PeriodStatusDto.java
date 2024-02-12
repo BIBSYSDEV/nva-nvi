@@ -1,13 +1,17 @@
 package no.sikt.nva.nvi.common.service.dto;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Optional;
 import nva.commons.core.JacocoGenerated;
 
 @JsonTypeName(PeriodStatusDto.NVI_PERIOD)
-public record PeriodStatusDto(Status status, String startDate, String reportingDate, String year) {
+@JsonTypeInfo(use = Id.NAME, property = "type")
+public record PeriodStatusDto(URI id, Status status, String startDate, String reportingDate, String year) {
 
     public static final String NVI_PERIOD = "NviReportingPeriod";
 
@@ -16,7 +20,9 @@ public record PeriodStatusDto(Status status, String startDate, String reportingD
     }
 
     public static PeriodStatusDto fromPeriodStatus(no.sikt.nva.nvi.common.db.PeriodStatus periodStatus) {
-        return builder().withStatus(Status.parse(periodStatus.status().getValue()))
+        return builder()
+                   .withId(periodStatus.id())
+                   .withStatus(Status.parse(periodStatus.status().getValue()))
                    .withStartDate(toStartDate(periodStatus))
                    .withReportingDate(toReportingDate(periodStatus))
                    .withYear(periodStatus.year())
@@ -67,6 +73,7 @@ public record PeriodStatusDto(Status status, String startDate, String reportingD
         private String startDate;
         private String closedDate;
         private String year;
+        private URI id;
 
         private Builder() {
         }
@@ -91,8 +98,13 @@ public record PeriodStatusDto(Status status, String startDate, String reportingD
             return this;
         }
 
+        public Builder withId(URI id) {
+            this.id = id;
+            return this;
+        }
+
         public PeriodStatusDto build() {
-            return new PeriodStatusDto(status, startDate, closedDate, year);
+            return new PeriodStatusDto(id, status, startDate, closedDate, year);
         }
 
     }

@@ -26,6 +26,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -274,7 +275,7 @@ class CandidateTest extends LocalDynamoTest {
             assertThat(dto.id(), is(equalTo(constructId(candidateBO.getIdentifier()))));
             assertThat(dto.identifier(), is(equalTo(candidateBO.getIdentifier())));
             var periodStatus = getDefaultPeriodStatus();
-            assertThat(dto.periodStatus().status(), is(equalTo(periodStatus.status())));
+            assertThat(dto.period().status(), is(equalTo(periodStatus.status())));
             assertThat(approvalMap.get(institutionToApprove).status(), is(equalTo(ApprovalStatus.APPROVED)));
             var rejectedAP = approvalMap.get(institutionToReject);
             assertThat(rejectedAP.status(), is(equalTo(ApprovalStatus.REJECTED)));
@@ -340,7 +341,7 @@ class CandidateTest extends LocalDynamoTest {
         var candidateBO = Candidate.upsert(updateRequest, candidateRepository, periodRepository).orElseThrow();
         var fetchedCandidate = Candidate.fetch(candidateBO::getIdentifier, candidateRepository,
                                                periodRepository);
-        assertThat(fetchedCandidate.getPeriodStatus().status(), is(equalTo(Status.NO_PERIOD)));
+        assertThat(fetchedCandidate.getPeriod().status(), is(equalTo(Status.NO_PERIOD)));
     }
 
     @Test
@@ -477,6 +478,17 @@ class CandidateTest extends LocalDynamoTest {
                                                    List.of(randomApproval()));
         var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
         assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));
+        assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));
+    }
+
+    @Test
+    void shouldReturnCandidateWithPeriodStatusContainingPeriodId() {
+        var dao = candidateRepository.create(randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
+                                             List.of(randomApproval()));
+        var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+        var id = PeriodStatusDto.fromPeriodStatus(candidate.getPeriod()).id();
+
+        assertThat(id, is(not(nullValue())));
     }
 
     private static UpsertCandidateRequest createUpsertRequestWithDecimalScale(int scale, URI institutionId) {
