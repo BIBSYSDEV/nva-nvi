@@ -491,6 +491,17 @@ class CandidateTest extends LocalDynamoTest {
         assertThat(id, is(not(nullValue())));
     }
 
+    @Test
+    void shouldReturnCandidateWithPeriodStatusContainingPeriodIdWhenFetchingByPublicationId() {
+        var dao = candidateRepository.create(randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
+                                             List.of(randomApproval()));
+        var candidate = Candidate.fetchByPublicationId(() -> dao.candidate().publicationId(), candidateRepository,
+                                                       periodRepository);
+        var id = PeriodStatusDto.fromPeriodStatus(candidate.getPeriod()).id();
+
+        assertThat(id, is(not(nullValue())));
+    }
+
     private static UpsertCandidateRequest createUpsertRequestWithDecimalScale(int scale, URI institutionId) {
         var creators = IntStream.of(1)
                            .mapToObj(i -> randomUri())

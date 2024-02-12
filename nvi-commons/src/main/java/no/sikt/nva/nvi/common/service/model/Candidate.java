@@ -127,7 +127,7 @@ public final class Candidate {
                                .orElseThrow(CandidateNotFoundException::new);
         var approvalDaoList = repository.fetchApprovals(candidateDao.identifier());
         var noteDaoList = repository.getNotes(candidateDao.identifier());
-        var periodStatus = calculatePeriodStatusIfApplicable(periodRepository, candidateDao);
+        var periodStatus = findPeriodStatus(periodRepository, candidateDao.periodYear());
         return new Candidate(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
     }
 
@@ -284,14 +284,6 @@ public final class Candidate {
                && Objects.equals(collaborationFactor, candidate.collaborationFactor)
                && Objects.equals(createdDate, candidate.createdDate)
                && Objects.equals(status, candidate.status);
-    }
-
-    private static PeriodStatus calculatePeriodStatusIfApplicable(PeriodRepository periodRepository,
-                                                                  CandidateDao candidateDao) {
-        return candidateDao.candidate().applicable() ? findPeriodStatus(periodRepository, candidateDao.candidate()
-                                                                                              .publicationDate()
-                                                                                              .year())
-                   : PERIOD_STATUS_NO_PERIOD;
     }
 
     private static boolean isNotExistingCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
