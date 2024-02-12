@@ -222,7 +222,7 @@ public final class Candidate {
                    .withPublicationId(publicationDetails.publicationId())
                    .withApprovals(mapToApprovalDtos())
                    .withNotes(mapToNoteDtos())
-                   .withPeriodStatus(mapToPeriodStatusDto())
+                   .withPeriod(mapToPeriodStatusDto())
                    .withTotalPoints(totalPoints)
                    .withReportStatus(Optional.ofNullable(status).map(ReportStatus::getValue).orElse(null))
                    .build();

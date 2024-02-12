@@ -331,7 +331,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withId(id)
                    .withNotes(List.of())
                    .withApprovals(institutionPoints.entrySet().stream().map(this::mapToApprovalStatus).toList())
-                   .withPeriodStatus(toPeriodStatus(period))
+                   .withPeriod(toPeriodStatus(period))
                    .withTotalPoints(adjustScaleAndRoundingMode(totalPoints))
                    .build();
     }
