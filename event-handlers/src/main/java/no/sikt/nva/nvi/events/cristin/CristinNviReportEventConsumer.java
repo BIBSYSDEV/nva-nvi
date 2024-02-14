@@ -7,6 +7,9 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import java.util.List;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.unit.nva.events.models.EventReference;
 import no.unit.nva.s3.S3Driver;
@@ -53,8 +56,18 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     }
 
     private void createAndPersist(CristinNviReport cristinNviReport) {
-        repository.create(CristinMapper.toDbCandidate(cristinNviReport),
-                          CristinMapper.toApprovals(cristinNviReport),
+        repository.create(createDbCandidate(cristinNviReport),
+                          createApprovals(cristinNviReport),
                           String.valueOf(cristinNviReport.yearReported()));
+    }
+
+    private static DbCandidate createDbCandidate(CristinNviReport cristinNviReport) {
+        return attempt(() -> CristinMapper.toDbCandidate(cristinNviReport))
+                   .orElseThrow(CristinConversionException::fromFailure);
+    }
+
+    private static List<DbApprovalStatus> createApprovals(CristinNviReport cristinNviReport) {
+        return attempt(() -> CristinMapper.toApprovals(cristinNviReport))
+                   .orElseThrow(CristinConversionException::fromFailure);
     }
 }

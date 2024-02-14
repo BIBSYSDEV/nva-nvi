@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.cristin;
 
+import static java.util.Objects.nonNull;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -56,25 +57,40 @@ public final class CristinMapper {
     }
 
     private static DbApprovalStatus toApproval(CristinLocale cristinLocale) {
+        var assignee = constructUsername(cristinLocale);
         return DbApprovalStatus.builder()
                    .status(DbStatus.APPROVED)
                    .institutionId(constructInstitutionId(cristinLocale))
-                   .finalizedDate(constructFinalizedDate(cristinLocale.getDateControlled()))
-                   .finalizedBy(constructUsername(cristinLocale))
-                   .assignee(constructUsername(cristinLocale))
+                   .finalizedDate(constructFinalizedDate(cristinLocale))
+                   .finalizedBy(assignee)
+                   .assignee(assignee)
                    .build();
     }
 
     private static Username constructUsername(CristinLocale cristinLocale) {
-        return Username.fromString(
-            String.format("%s@%s",
-                          cristinLocale.getControlledByUser().getIdentifier(),
-                          constructInstitutionIdentifier(cristinLocale))
-        );
+        var userIdentifier = extractAssigneIdentifier(cristinLocale);
+        return nonNull(userIdentifier)
+                   ? Username.fromString(constructUsername(cristinLocale, userIdentifier))
+                   : null;
     }
 
-    private static Instant constructFinalizedDate(LocalDate dateControlled) {
-        return dateControlled.atStartOfDay().toInstant(zoneOffset());
+    private static String constructUsername(CristinLocale cristinLocale, String userIdentifier) {
+        return String.format("%s@%s", userIdentifier, constructInstitutionIdentifier(cristinLocale));
+    }
+
+    private static String extractAssigneIdentifier(CristinLocale cristinLocale) {
+        return Optional.ofNullable(cristinLocale)
+                   .map(CristinLocale::getControlledByUser)
+                   .map(CristinUser::getIdentifier)
+                   .orElse(null);
+    }
+
+    private static Instant constructFinalizedDate(CristinLocale cristinLocale) {
+        return Optional.ofNullable(cristinLocale)
+                   .map(CristinLocale::getDateControlled)
+                   .map(LocalDate::atStartOfDay)
+                   .map(localDateTime -> localDateTime.toInstant(zoneOffset()))
+                   .orElse(null);
     }
 
     private static ZoneOffset zoneOffset() {

@@ -5,12 +5,12 @@ import static no.sikt.nva.nvi.events.cristin.CristinMapper.AFFILIATION_DELIMITER
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.PERSISTED_RESOURCES_BUCKET;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
-import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
@@ -27,14 +27,12 @@ import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
-import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.events.models.EventReference;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
-import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -69,6 +67,12 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
         var nviCandidate = Candidate.fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository);
 
         assertThatNviCandidateHasExpectedValues(nviCandidate, cristinNviReport);
+    }
+
+    @Test
+    void shouldThrowCristinConversionExceptionWhenCristinMapperThrowsException() {
+        var cristinNviReport = emptyNviReport();
+        assertThrows(CristinConversionException.class, () -> handler.handleRequest(createEvent(cristinNviReport), CONTEXT));
     }
 
     private static DbNviPeriod periodForYear(String cristinNviReport) {
@@ -144,6 +148,10 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
                    .withCristinLocales(List.of(randomCristinLocale()))
                    .withScientificResources(List.of(scientificResource()))
                    .build();
+    }
+
+    private CristinNviReport emptyNviReport() {
+        return CristinNviReport.builder().build();
     }
 
     private ScientificResource scientificResource() {
