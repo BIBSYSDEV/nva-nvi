@@ -8,7 +8,7 @@ import nva.commons.core.JacocoGenerated;
 public class ScientificResource {
 
     @JsonProperty("h_dbh_forskres_forfatter")
-    private List<ScientificPerson> scientificPeople;
+    private List<ScientificPerson> creators;
     @JsonProperty("kvalitetsnivakode")
     private String qualityCode;
     @JsonProperty("arstall")
@@ -24,8 +24,8 @@ public class ScientificResource {
     }
 
     @JacocoGenerated
-    public List<ScientificPerson> getScientificPeople() {
-        return scientificPeople;
+    public List<ScientificPerson> getCreators() {
+        return creators;
     }
 
     public String getQualityCode() {
@@ -38,15 +38,15 @@ public class ScientificResource {
 
     public static final class Builder {
 
-        private List<ScientificPerson> scientificPeople;
+        private List<ScientificPerson> creators;
         private String qualityCode;
         private String reportedYear;
 
         private Builder() {
         }
 
-        public Builder withScientificPeople(List<ScientificPerson> scientificPeople) {
-            this.scientificPeople = scientificPeople;
+        public Builder withScientificPeople(List<ScientificPerson> creators) {
+            this.creators = creators;
             return this;
         }
 
@@ -62,7 +62,7 @@ public class ScientificResource {
 
         public ScientificResource build() {
             ScientificResource scientificResource = new ScientificResource();
-            scientificResource.scientificPeople = this.scientificPeople;
+            scientificResource.creators = this.creators;
             scientificResource.qualityCode = this.qualityCode;
             scientificResource.reportedYear = this.reportedYear;
             return scientificResource;

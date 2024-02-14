@@ -6,10 +6,15 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.Username;
@@ -27,19 +32,57 @@ public final class CristinMapper {
     public static final String GZ_EXTENSION = ".gz";
     public static final String PUBLICATION = "publication";
     public static final String RESOURCES = "resources";
+    public static final String PERSON = "person";
 
     private CristinMapper() {
 
     }
 
     public static DbCandidate toDbCandidate(CristinNviReport cristinNviReport) {
+        var now = Instant.now();
         return DbCandidate.builder()
                    .publicationId(constructPublicationId(cristinNviReport.publicationIdentifier()))
                    .publicationBucketUri(constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
                    .publicationDate(constructPublicationDate(cristinNviReport.publicationDate()))
                    .applicable(true)
+                   .createdDate(now)
+                   .modifiedDate(now)
+                   .creators(extractCreators(cristinNviReport))
                    .level(extractLevel(cristinNviReport))
                    .build();
+    }
+
+    public static List<DbCreator> extractCreators(CristinNviReport cristinNviReport) {
+        return cristinNviReport.scientificResources().get(0).getCreators().stream()
+                           .collect(groupByCristinIdentifierAndMapToInstitutionIdentifier())
+                           .entrySet().stream()
+                           .map(CristinMapper::toDbCreator)
+                           .toList();
+    }
+
+    private static DbCreator toDbCreator(Entry<URI, List<URI>> entry) {
+        return DbCreator.builder().creatorId(entry.getKey()).affiliations(entry.getValue()).build();
+    }
+
+    private static Collector<ScientificPerson, ?, Map<URI, List<URI>>> groupByCristinIdentifierAndMapToInstitutionIdentifier() {
+        return Collectors.groupingBy(CristinMapper::constructPersonCristinId,
+            Collectors.mapping(CristinMapper::constructCristinOrganizationId, Collectors.toList()));
+    }
+
+    private static URI constructPersonCristinId(ScientificPerson scientificPerson) {
+        return UriWrapper.fromHost(API_HOST)
+                   .addChild(CRISTIN)
+                   .addChild(PERSON)
+                   .addChild(scientificPerson.getCristinPersonIdentifier())
+                   .getUri();
+    }
+
+    private static URI constructCristinOrganizationId(ScientificPerson scientificPerson) {
+        return UriWrapper.fromHost(API_HOST)
+                   .addChild(CRISTIN)
+                   .addChild(ORGANIZATION)
+                   .addChild(scientificPerson.getOrganization())
+                   .getUri();
     }
 
     private static DbLevel extractLevel(CristinNviReport cristinNviReport) {

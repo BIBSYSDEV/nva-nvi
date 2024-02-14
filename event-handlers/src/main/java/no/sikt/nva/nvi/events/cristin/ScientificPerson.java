@@ -6,6 +6,7 @@ import nva.commons.core.JacocoGenerated;
 
 public class ScientificPerson {
 
+    public static final String AFFILIATION_DELIMITER = ".";
     @JsonProperty("personlopenr")
     private String cristinPersonIdentifier;
     @JsonProperty("institusjonsnr")
@@ -23,8 +24,38 @@ public class ScientificPerson {
 
     }
 
+    public String getOrganization() {
+        return institutionIdentifier
+               + AFFILIATION_DELIMITER
+               + departmentIdentifier
+               + AFFILIATION_DELIMITER
+               + subDepartmentIdentifier
+               + AFFILIATION_DELIMITER
+               + groupIdentifier;
+    }
+
     public static Builder builder() {
         return new Builder();
+    }
+
+    public String getCristinPersonIdentifier() {
+        return cristinPersonIdentifier;
+    }
+
+    public String getInstitutionIdentifier() {
+        return institutionIdentifier;
+    }
+
+    public String getDepartmentIdentifier() {
+        return departmentIdentifier;
+    }
+
+    public String getSubDepartmentIdentifier() {
+        return subDepartmentIdentifier;
+    }
+
+    public String getGroupIdentifier() {
+        return groupIdentifier;
     }
 
     public static final class Builder {

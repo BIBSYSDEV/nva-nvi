@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.events.cristin.CristinMapper.PERSISTED_RESOURCES_B
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -26,6 +27,7 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.events.models.EventReference;
@@ -102,11 +104,27 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
         assertThat(candidate.isApplicable(), is(true));
         assertThat(candidate.getPeriod().year(), is(equalTo(String.valueOf(cristinNviReport.yearReported()))));
         assertThat(candidate.getPublicationDetails().level(), is(equalTo("1")));
+        assertThat(candidate.getPublicationDetails().creators(), contains(constructExpectedCreator(cristinNviReport)));
         candidate.getApprovals()
             .values()
             .stream()
             .map(Approval::getStatus)
             .forEach(status -> assertThat(status, is(equalTo(ApprovalStatus.APPROVED))));
+    }
+
+    private Creator constructExpectedCreator(CristinNviReport cristinNviReport) {
+        var creatorIdentifier =
+            cristinNviReport.scientificResources().get(0).getCreators().get(0).getCristinPersonIdentifier();
+        var creatorId = UriWrapper.fromHost(API_HOST)
+                .addChild("cristin")
+                .addChild("person")
+                .addChild(creatorIdentifier)
+                .getUri();
+        var affiliations = cristinNviReport.scientificResources().get(0).getCreators().stream()
+                               .map(ScientificPerson::getOrganization)
+                               .map(this::toOrganizationId)
+                               .distinct().toList();
+        return new Creator(creatorId, affiliations);
     }
 
     private URI expectedPublicationBucketUri(String value) {
@@ -155,19 +173,21 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
     }
 
     private ScientificResource scientificResource() {
+        var cristinIdentifier = randomString();
         return ScientificResource.build()
                    .withQualityCode("1")
                    .withReportedYear(randomYear())
-                   .withScientificPeople(List.of(scientificPerson()))
+                   .withScientificPeople(List.of(scientificPersonWithCristinIdentifier(cristinIdentifier),
+                                                 scientificPersonWithCristinIdentifier(cristinIdentifier)))
                    .build();
     }
 
-    private ScientificPerson scientificPerson() {
+    private ScientificPerson scientificPersonWithCristinIdentifier(String cristinIdentifier) {
         return ScientificPerson.builder()
-                   .withCristinPersonIdentifier(randomString())
+                   .withCristinPersonIdentifier(cristinIdentifier)
                    .withInstitutionIdentifier(randomString())
                    .withDepartmentIdentifier(randomString())
-                   .withSubDepartmentIdentifier(randomYear())
+                   .withSubDepartmentIdentifier(randomString())
                    .withGroupIdentifier(randomString())
                    .withGroupIdentifier(randomString())
                    .build();
