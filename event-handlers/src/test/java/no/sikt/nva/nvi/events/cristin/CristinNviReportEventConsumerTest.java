@@ -5,7 +5,7 @@ import static no.sikt.nva.nvi.events.cristin.CristinMapper.AFFILIATION_DELIMITER
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.PERSISTED_RESOURCES_BUCKET;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
-import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
+import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
@@ -28,12 +27,14 @@ import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
+import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.events.models.EventReference;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
+import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -70,9 +71,9 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
         assertThatNviCandidateHasExpectedValues(nviCandidate, cristinNviReport);
     }
 
-    private static DbNviPeriod periodForYear(int cristinNviReport) {
+    private static DbNviPeriod periodForYear(String cristinNviReport) {
         return DbNviPeriod.builder()
-                   .publishingYear(String.valueOf(cristinNviReport))
+                   .publishingYear(cristinNviReport)
                    .startDate(Instant.now().plusSeconds(10000))
                    .reportingDate(Instant.now().plusSeconds(10000000))
                    .build();
@@ -89,13 +90,14 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
         assertThat(candidate.getApprovals().keySet().stream().toList(),
                    containsInAnyOrder(generateExpectedApprovalsIds(cristinNviReport).toArray()));
         assertThat(candidate.getPublicationDetails().publicationDate(),
-                   is(equalTo(toPublicationDate(cristinNviReport.publicationDate()))));
+                   is(equalTo(cristinNviReport.publicationDate())));
         assertThat(candidate.getPublicationDetails().publicationId(),
                    is(equalTo(expectedPublicationId(cristinNviReport.publicationIdentifier()))));
         assertThat(candidate.getPublicationDetails().publicationBucketUri(),
                    is(equalTo(expectedPublicationBucketUri(cristinNviReport.publicationIdentifier()))));
         assertThat(candidate.isApplicable(), is(true));
         assertThat(candidate.getPeriod().year(), is(equalTo(String.valueOf(cristinNviReport.yearReported()))));
+        assertThat(candidate.getPublicationDetails().level(), is(equalTo("1")));
         candidate.getApprovals()
             .values()
             .stream()
@@ -111,14 +113,8 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
         return UriWrapper.fromHost(API_HOST).addChild("publication").addChild(value).getUri();
     }
 
-    private PublicationDate toPublicationDate(Instant instant) {
-        var zonedDateTime = instant.atZone(ZoneOffset.UTC.getRules().getOffset(Instant.now()));
-        return new PublicationDate(String.valueOf(zonedDateTime.getYear()), String.valueOf(zonedDateTime.getMonth()),
-                                   String.valueOf(zonedDateTime.getDayOfMonth()));
-    }
-
     private List<URI> generateExpectedApprovalsIds(CristinNviReport cristinNviReport) {
-        return cristinNviReport.nviReport()
+        return cristinNviReport.cristinLocales()
                    .stream()
                    .map(this::toOrganizationIdentifier)
                    .map(this::toOrganizationId)
@@ -143,10 +139,36 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
         return CristinNviReport.builder()
                    .withCristinIdentifier(randomString())
                    .withPublicationIdentifier(randomUUID().toString())
-                   .withYearReported(Integer.parseInt(randomYear()))
-                   .withPublicationDate(randomInstant())
-                   .withNviReport(List.of(randomCristinLocale()))
+                   .withYearReported(randomYear())
+                   .withPublicationDate(randomPublicationDate())
+                   .withCristinLocales(List.of(randomCristinLocale()))
+                   .withScientificResources(List.of(scientificResource()))
                    .build();
+    }
+
+    private ScientificResource scientificResource() {
+        return ScientificResource.build()
+                   .withQualityCode("1")
+                   .withReportedYear(randomYear())
+                   .withScientificPeople(List.of(scientificPerson()))
+                   .build();
+    }
+
+    private ScientificPerson scientificPerson() {
+        return ScientificPerson.builder()
+                   .withCristinPersonIdentifier(randomString())
+                   .withInstitutionIdentifier(randomString())
+                   .withDepartmentIdentifier(randomString())
+                   .withSubDepartmentIdentifier(randomYear())
+                   .withGroupIdentifier(randomString())
+                   .withGroupIdentifier(randomString())
+                   .build();
+    }
+
+    private static PublicationDate randomPublicationDate() {
+        return new PublicationDate(randomString(),
+                                   randomString(),
+                                   randomString());
     }
 
     private CristinLocale randomCristinLocale() {
@@ -157,6 +179,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
                    .withDepartmentIdentifier(randomString())
                    .withOwnerCode(randomString())
                    .withGroupIdentifier(randomString())
+                   .withControlledByUser(CristinUser.builder().withIdentifier(randomString()).build())
                    .build();
     }
 

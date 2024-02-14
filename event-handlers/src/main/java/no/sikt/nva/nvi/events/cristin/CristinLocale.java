@@ -20,6 +20,8 @@ public final class CristinLocale implements JsonSerializable {
     public static final String CONTROLLED_BY_FIELD = "brukernavn_kontrollert";
     public static final String DATE_CONTROLLED_FIELD = "dato_kontrollert";
     public static final String CONTROL_STATUS_FIELD = "status_kontrollert";
+    public static final String CONTROLLED_BY_USER_FIELD = "person_kontrollert";
+
     @JsonProperty(OWNER_CODE_FIELD)
     private String ownerCode;
 
@@ -43,6 +45,13 @@ public final class CristinLocale implements JsonSerializable {
 
     @JsonProperty(CONTROL_STATUS_FIELD)
     private String controlStatus;
+
+    public CristinUser getControlledByUser() {
+        return controlledByUser;
+    }
+
+    @JsonProperty(CONTROLLED_BY_USER_FIELD)
+    private CristinUser controlledByUser;
 
     private CristinLocale() {
 
@@ -95,6 +104,7 @@ public final class CristinLocale implements JsonSerializable {
         private String controlledBy;
         private LocalDate dateControlled;
         private String controlStatus;
+        private CristinUser controlledByUser;
 
         private Builder() {
         }
@@ -129,6 +139,11 @@ public final class CristinLocale implements JsonSerializable {
             return this;
         }
 
+        public Builder withControlledByUser(CristinUser controlledByUser) {
+            this.controlledByUser = controlledByUser;
+            return this;
+        }
+
         public Builder withDateControlled(LocalDate dateControlled) {
             this.dateControlled = dateControlled;
             return this;
@@ -149,6 +164,7 @@ public final class CristinLocale implements JsonSerializable {
             cristinLocale.groupIdentifier = this.groupIdentifier;
             cristinLocale.ownerCode = this.ownerCode;
             cristinLocale.controlStatus = this.controlStatus;
+            cristinLocale.controlledByUser = this.controlledByUser;
             return cristinLocale;
         }
     }
