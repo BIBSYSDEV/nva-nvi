@@ -4,13 +4,21 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.ReportStatus;
+import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 
@@ -24,37 +32,111 @@ public final class CristinMapper {
     public static final String GZ_EXTENSION = ".gz";
     public static final String PUBLICATION = "publication";
     public static final String RESOURCES = "resources";
+    public static final String PERSON = "person";
 
     private CristinMapper() {
 
     }
 
     public static DbCandidate toDbCandidate(CristinNviReport cristinNviReport) {
+        var now = Instant.now();
         return DbCandidate.builder()
                    .publicationId(constructPublicationId(cristinNviReport.publicationIdentifier()))
                    .publicationBucketUri(constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
-                   .publicationDate(constructPublicationDate(cristinNviReport))
+                   .publicationDate(constructPublicationDate(cristinNviReport.publicationDate()))
+                   .instanceType(cristinNviReport.instanceType())
+                   .creators(extractCreators(cristinNviReport))
+                   .level(extractLevel(cristinNviReport))
+                   .reportStatus(ReportStatus.REPORTED)
                    .applicable(true)
-                   .level(DbLevel.NON_CANDIDATE)
+                   .createdDate(now)
+                   .modifiedDate(now)
                    .build();
     }
 
+    public static List<DbCreator> extractCreators(CristinNviReport cristinNviReport) {
+        return cristinNviReport.scientificResources().get(0).getCreators().stream()
+                           .collect(groupByCristinIdentifierAndMapToAffiliationId())
+                           .entrySet().stream()
+                           .map(CristinMapper::toDbCreator)
+                           .toList();
+    }
+
+    private static DbCreator toDbCreator(Entry<URI, List<URI>> entry) {
+        return DbCreator.builder().creatorId(entry.getKey()).affiliations(entry.getValue()).build();
+    }
+
+    private static Collector<ScientificPerson, ?, Map<URI, List<URI>>> groupByCristinIdentifierAndMapToAffiliationId() {
+        return Collectors.groupingBy(CristinMapper::constructPersonCristinId,
+            Collectors.mapping(CristinMapper::constructCristinOrganizationId, Collectors.toList()));
+    }
+
+    private static URI constructPersonCristinId(ScientificPerson scientificPerson) {
+        return UriWrapper.fromHost(API_HOST)
+                   .addChild(CRISTIN)
+                   .addChild(PERSON)
+                   .addChild(scientificPerson.getCristinPersonIdentifier())
+                   .getUri();
+    }
+
+    private static URI constructCristinOrganizationId(ScientificPerson scientificPerson) {
+        return UriWrapper.fromHost(API_HOST)
+                   .addChild(CRISTIN)
+                   .addChild(ORGANIZATION)
+                   .addChild(scientificPerson.getOrganization())
+                   .getUri();
+    }
+
+    private static DbLevel extractLevel(CristinNviReport cristinNviReport) {
+        return Optional.ofNullable(cristinNviReport.scientificResources())
+                   .map(list -> list.get(0))
+                   .map(ScientificResource::getQualityCode)
+                   .map(DbLevel::parse)
+                   .orElse(null);
+    }
+
     public static List<DbApprovalStatus> toApprovals(CristinNviReport cristinNviReport) {
-        return cristinNviReport.nviReport().stream()
+        return cristinNviReport.cristinLocales().stream()
                    .map(CristinMapper::toApproval)
                    .toList();
     }
 
     private static DbApprovalStatus toApproval(CristinLocale cristinLocale) {
+        var assignee = constructUsername(cristinLocale).orElse(null);
         return DbApprovalStatus.builder()
                    .status(DbStatus.APPROVED)
                    .institutionId(constructInstitutionId(cristinLocale))
-                   .finalizedDate(constructFinalizedDate(cristinLocale.getDateControlled()))
+                   .finalizedDate(constructFinalizedDate(cristinLocale))
+                   .finalizedBy(assignee)
+                   .assignee(assignee)
                    .build();
     }
 
-    private static Instant constructFinalizedDate(LocalDate dateControlled) {
-        return dateControlled.atStartOfDay().toInstant(zoneOffset());
+    private static Optional<Username> constructUsername(CristinLocale cristinLocale) {
+        var userIdentifier = extractAssigneIdentifier(cristinLocale);
+        return
+            Optional.ofNullable(userIdentifier).map( userIde -> Username.fromString(constructUsername(cristinLocale,
+             userIde                                                                                         )));
+
+    }
+
+    private static String constructUsername(CristinLocale cristinLocale, String userIdentifier) {
+        return String.format("%s@%s", userIdentifier, constructInstitutionIdentifier(cristinLocale));
+    }
+
+    private static String extractAssigneIdentifier(CristinLocale cristinLocale) {
+        return Optional.ofNullable(cristinLocale)
+                   .map(CristinLocale::getControlledByUser)
+                   .map(CristinUser::getIdentifier)
+                   .orElse(null);
+    }
+
+    private static Instant constructFinalizedDate(CristinLocale cristinLocale) {
+        return Optional.ofNullable(cristinLocale)
+                   .map(CristinLocale::getDateControlled)
+                   .map(LocalDate::atStartOfDay)
+                   .map(localDateTime -> localDateTime.toInstant(zoneOffset()))
+                   .orElse(null);
     }
 
     private static ZoneOffset zoneOffset() {
@@ -80,17 +162,12 @@ public final class CristinMapper {
     }
 
 
-    private static DbPublicationDate constructPublicationDate(CristinNviReport cristinNviReport) {
-        var zonedDateTime = getZonedDateTime(cristinNviReport);
+    private static DbPublicationDate constructPublicationDate(PublicationDate publicationDate) {
         return DbPublicationDate.builder()
-                   .day(String.valueOf(zonedDateTime.getDayOfMonth()))
-                   .month(String.valueOf(zonedDateTime.getMonth()))
-                   .year(String.valueOf(zonedDateTime.getYear()))
+                   .day(publicationDate.day())
+                   .month(publicationDate.month())
+                   .year(publicationDate.year())
                    .build();
-    }
-
-    private static ZonedDateTime getZonedDateTime(CristinNviReport cristinNviReport) {
-        return cristinNviReport.publicationDate().atZone(zoneOffset());
     }
 
     private static URI constructPublicationBucketUri(String publicationIdentifier) {
