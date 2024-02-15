@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.cristin;
 
-import static java.util.Objects.nonNull;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -57,7 +56,7 @@ public final class CristinMapper {
 
     public static List<DbCreator> extractCreators(CristinNviReport cristinNviReport) {
         return cristinNviReport.scientificResources().get(0).getCreators().stream()
-                           .collect(groupByCristinIdentifierAndMapToInstitutionIdentifier())
+                           .collect(groupByCristinIdentifierAndMapToAffiliationId())
                            .entrySet().stream()
                            .map(CristinMapper::toDbCreator)
                            .toList();
@@ -67,7 +66,7 @@ public final class CristinMapper {
         return DbCreator.builder().creatorId(entry.getKey()).affiliations(entry.getValue()).build();
     }
 
-    private static Collector<ScientificPerson, ?, Map<URI, List<URI>>> groupByCristinIdentifierAndMapToInstitutionIdentifier() {
+    private static Collector<ScientificPerson, ?, Map<URI, List<URI>>> groupByCristinIdentifierAndMapToAffiliationId() {
         return Collectors.groupingBy(CristinMapper::constructPersonCristinId,
             Collectors.mapping(CristinMapper::constructCristinOrganizationId, Collectors.toList()));
     }

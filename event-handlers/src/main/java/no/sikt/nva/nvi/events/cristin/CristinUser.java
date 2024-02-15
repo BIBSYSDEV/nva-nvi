@@ -36,7 +36,7 @@ public class CristinUser {
         }
 
         public CristinUser build() {
-            CristinUser cristinUser = new CristinUser();
+            var cristinUser = new CristinUser();
             cristinUser.identifier = this.identifier;
             return cristinUser;
         }
