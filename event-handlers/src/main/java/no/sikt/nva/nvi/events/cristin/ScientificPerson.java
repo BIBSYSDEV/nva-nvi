@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import nva.commons.core.JacocoGenerated;
 
-public class ScientificPerson {
+public final class ScientificPerson {
 
     public static final String AFFILIATION_DELIMITER = ".";
     @JsonProperty("personlopenr")
@@ -24,6 +24,10 @@ public class ScientificPerson {
 
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public String getOrganization() {
         return institutionIdentifier
                + AFFILIATION_DELIMITER
@@ -32,10 +36,6 @@ public class ScientificPerson {
                + subDepartmentIdentifier
                + AFFILIATION_DELIMITER
                + groupIdentifier;
-    }
-
-    public static Builder builder() {
-        return new Builder();
     }
 
     public String getCristinPersonIdentifier() {

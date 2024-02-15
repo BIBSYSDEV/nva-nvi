@@ -45,11 +45,6 @@ public final class CristinLocale implements JsonSerializable {
 
     @JsonProperty(CONTROL_STATUS_FIELD)
     private String controlStatus;
-
-    public CristinUser getControlledByUser() {
-        return controlledByUser;
-    }
-
     @JsonProperty(CONTROLLED_BY_USER_FIELD)
     private CristinUser controlledByUser;
 
@@ -59,6 +54,10 @@ public final class CristinLocale implements JsonSerializable {
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    public CristinUser getControlledByUser() {
+        return controlledByUser;
     }
 
     public String getOwnerCode() {

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import nva.commons.core.JacocoGenerated;
 
-public class ScientificResource {
+public final class ScientificResource {
 
     @JsonProperty("h_dbh_forskres_forfatter")
     private List<ScientificPerson> creators;
