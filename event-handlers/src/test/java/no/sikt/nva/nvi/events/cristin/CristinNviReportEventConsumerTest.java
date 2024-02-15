@@ -105,6 +105,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
         assertThat(candidate.getPeriod().year(), is(equalTo(String.valueOf(cristinNviReport.yearReported()))));
         assertThat(candidate.getPublicationDetails().level(), is(equalTo("1")));
         assertThat(candidate.getPublicationDetails().creators(), contains(constructExpectedCreator(cristinNviReport)));
+        assertThat(candidate.getPublicationDetails().type(), is(equalTo(cristinNviReport.instanceType())));
         candidate.getApprovals()
             .values()
             .stream()
@@ -165,6 +166,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
                    .withPublicationDate(randomPublicationDate())
                    .withCristinLocales(List.of(randomCristinLocale()))
                    .withScientificResources(List.of(scientificResource()))
+                   .withInstanceType(randomString())
                    .build();
     }
 

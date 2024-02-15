@@ -17,6 +17,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import nva.commons.core.Environment;
@@ -44,11 +45,13 @@ public final class CristinMapper {
                    .publicationId(constructPublicationId(cristinNviReport.publicationIdentifier()))
                    .publicationBucketUri(constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
                    .publicationDate(constructPublicationDate(cristinNviReport.publicationDate()))
+                   .instanceType(cristinNviReport.instanceType())
+                   .creators(extractCreators(cristinNviReport))
+                   .level(extractLevel(cristinNviReport))
+                   .reportStatus(ReportStatus.REPORTED)
                    .applicable(true)
                    .createdDate(now)
                    .modifiedDate(now)
-                   .creators(extractCreators(cristinNviReport))
-                   .level(extractLevel(cristinNviReport))
                    .build();
     }
 

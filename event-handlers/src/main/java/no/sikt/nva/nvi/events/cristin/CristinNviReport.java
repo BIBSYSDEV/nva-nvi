@@ -13,7 +13,8 @@ public record CristinNviReport(String publicationIdentifier,
                                List<ScientificResource> scientificResources,
                                List<CristinLocale> cristinLocales,
                                String yearReported,
-                               PublicationDate publicationDate) implements JsonSerializable {
+                               PublicationDate publicationDate,
+                               String instanceType) implements JsonSerializable {
 
     public static Builder builder() {
         return new Builder();
@@ -27,6 +28,7 @@ public record CristinNviReport(String publicationIdentifier,
         private String yearReported;
         private PublicationDate publicationDate;
         private List<ScientificResource> scientificResources;
+        private String instanceType;
 
         private Builder() {
         }
@@ -61,9 +63,14 @@ public record CristinNviReport(String publicationIdentifier,
             return this;
         }
 
+        public Builder withInstanceType(String instanceType) {
+            this.instanceType = instanceType;
+            return this;
+        }
+
         public CristinNviReport build() {
             return new CristinNviReport(publicationIdentifier, cristinIdentifier, scientificResources, cristinLocales,
-                                        yearReported, publicationDate);
+                                        yearReported, publicationDate, instanceType);
         }
 
     }
