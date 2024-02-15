@@ -9,6 +9,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.unit.nva.events.models.EventReference;
@@ -18,6 +19,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, Void> {
 
+    public static final String NVI_ERRORS = "NVI_ERRORS";
     private final CandidateRepository repository;
     private final S3Client s3Client;
 
@@ -35,15 +37,48 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     @Override
     public Void handleRequest(SQSEvent sqsEvent, Context context) {
 
-        sqsEvent.getRecords()
-            .stream()
-            .map(SQSMessage::getBody)
-            .map(EventReference::fromJson)
-            .map(this::fetchS3Content)
-            .map(this::toCristinNviReport)
-            .forEach(this::createAndPersist);
+        sqsEvent.getRecords().stream().map(SQSMessage::getBody).forEach(this::processMessageBody);
 
         return null;
+    }
+
+    private static DbCandidate createDbCandidate(CristinNviReport cristinNviReport) {
+        return attempt(() -> CristinMapper.toDbCandidate(cristinNviReport)).orElseThrow(
+            CristinConversionException::fromFailure);
+    }
+
+    private static List<DbApprovalStatus> createApprovals(CristinNviReport cristinNviReport) {
+        return attempt(() -> CristinMapper.toApprovals(cristinNviReport)).orElseThrow(
+            CristinConversionException::fromFailure);
+    }
+
+    /**
+     * Method is needed to wrap exception thrown by processBody() to Optional. This allows to persist report for single
+     * entry.
+     *
+     * @param value The string value og event body
+     */
+
+    private void processMessageBody(String value) {
+        attempt(() -> processBody(value)).toOptional();
+    }
+
+    private CandidateDao processBody(String value) {
+        var eventReference = EventReference.fromJson(value);
+        var cristinNviReport = createNviReport(eventReference);
+        try {
+            return createAndPersist(cristinNviReport);
+        } catch (Exception e) {
+            ErrorReport.withMessage(e.getMessage())
+                .bucket(eventReference.extractBucketName())
+                .key(cristinNviReport.publicationIdentifier())
+                .persist(s3Client);
+            throw CristinEventConsumerException.withMessage(e.getMessage());
+        }
+    }
+
+    private CristinNviReport createNviReport(EventReference eventReference) {
+        return attempt(() -> fetchS3Content(eventReference)).map(this::toCristinNviReport).orElseThrow();
     }
 
     private CristinNviReport toCristinNviReport(String value) {
@@ -51,23 +86,11 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     }
 
     private String fetchS3Content(EventReference eventReference) {
-        return new S3Driver(s3Client, eventReference.extractBucketName())
-                   .readEvent(eventReference.getUri());
+        return new S3Driver(s3Client, eventReference.extractBucketName()).readEvent(eventReference.getUri());
     }
 
-    private void createAndPersist(CristinNviReport cristinNviReport) {
-        repository.create(createDbCandidate(cristinNviReport),
-                          createApprovals(cristinNviReport),
-                          String.valueOf(cristinNviReport.yearReported()));
-    }
-
-    private static DbCandidate createDbCandidate(CristinNviReport cristinNviReport) {
-        return attempt(() -> CristinMapper.toDbCandidate(cristinNviReport))
-                   .orElseThrow(CristinConversionException::fromFailure);
-    }
-
-    private static List<DbApprovalStatus> createApprovals(CristinNviReport cristinNviReport) {
-        return attempt(() -> CristinMapper.toApprovals(cristinNviReport))
-                   .orElseThrow(CristinConversionException::fromFailure);
+    private CandidateDao createAndPersist(CristinNviReport cristinNviReport) {
+        return repository.create(createDbCandidate(cristinNviReport), createApprovals(cristinNviReport),
+                                 String.valueOf(cristinNviReport.yearReported()));
     }
 }

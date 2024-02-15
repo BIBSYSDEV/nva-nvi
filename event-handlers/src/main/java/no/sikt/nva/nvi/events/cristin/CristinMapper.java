@@ -103,7 +103,7 @@ public final class CristinMapper {
     }
 
     private static DbApprovalStatus toApproval(CristinLocale cristinLocale) {
-        var assignee = constructUsername(cristinLocale);
+        var assignee = constructUsername(cristinLocale).orElse(null);
         return DbApprovalStatus.builder()
                    .status(DbStatus.APPROVED)
                    .institutionId(constructInstitutionId(cristinLocale))
@@ -113,11 +113,12 @@ public final class CristinMapper {
                    .build();
     }
 
-    private static Username constructUsername(CristinLocale cristinLocale) {
+    private static Optional<Username> constructUsername(CristinLocale cristinLocale) {
         var userIdentifier = extractAssigneIdentifier(cristinLocale);
-        return nonNull(userIdentifier)
-                   ? Username.fromString(constructUsername(cristinLocale, userIdentifier))
-                   : null;
+        return
+            Optional.ofNullable(userIdentifier).map( userIde -> Username.fromString(constructUsername(cristinLocale,
+             userIde                                                                                         )));
+
     }
 
     private static String constructUsername(CristinLocale cristinLocale, String userIdentifier) {

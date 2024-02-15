@@ -4,14 +4,15 @@ import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.AFFILIATION_DELIMITER;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.PERSISTED_RESOURCES_BUCKET;
+import static no.sikt.nva.nvi.events.cristin.CristinNviReportEventConsumer.NVI_ERRORS;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
@@ -35,6 +36,7 @@ import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
+import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -72,9 +74,16 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldThrowCristinConversionExceptionWhenCristinMapperThrowsException() {
-        var cristinNviReport = emptyNviReport();
-        assertThrows(CristinConversionException.class, () -> handler.handleRequest(createEvent(cristinNviReport), CONTEXT));
+    void shouldStoreErrorReportWhenFailInCristinMapper() throws IOException {
+        var cristinNviReport = nviReportWithIdentifier();
+        handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
+        var s3ReportPath = UriWrapper.fromHost(BUCKET_NAME)
+                               .addChild(NVI_ERRORS)
+                               .addChild(cristinNviReport.publicationIdentifier())
+                               .toS3bucketPath();
+        var expectedReport = s3Driver.getFile(s3ReportPath);
+
+        assertThat(expectedReport, containsString("Could not create nvi candidate"));
     }
 
     private static DbNviPeriod periodForYear(String cristinNviReport) {
@@ -170,8 +179,10 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private CristinNviReport emptyNviReport() {
-        return CristinNviReport.builder().build();
+    private CristinNviReport nviReportWithIdentifier() {
+        return CristinNviReport.builder()
+                   .withPublicationIdentifier(randomString())
+                   .build();
     }
 
     private ScientificResource scientificResource() {
@@ -221,6 +232,14 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
         var sqsEvent = new SQSEvent();
         var message = new SQSMessage();
         message.setBody(eventReference.toJsonString());
+        sqsEvent.setRecords(List.of(message));
+        return sqsEvent;
+    }
+
+    private SQSEvent createEventWithBody(String body) {
+        var sqsEvent = new SQSEvent();
+        var message = new SQSMessage();
+        message.setBody(body);
         sqsEvent.setRecords(List.of(message));
         return sqsEvent;
     }
