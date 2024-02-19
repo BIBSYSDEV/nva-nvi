@@ -80,6 +80,7 @@ public final class NviCandidateIndexDocumentGenerator {
         return NviCandidateIndexDocument.builder()
                    .withId(candidate.getId())
                    .withContext(Candidate.getContextUri())
+                   .withIsApplicable(candidate.isApplicable())
                    .withIdentifier(candidate.getIdentifier())
                    .withApprovals(approvals)
                    .withPublicationDetails(extractPublicationDetails(resource, candidate))

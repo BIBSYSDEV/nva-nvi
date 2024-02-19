@@ -16,6 +16,7 @@ import no.unit.nva.auth.uriretriever.UriRetriever;
 @JsonSerialize
 public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         URI id,
+                                        boolean isApplicable,
                                         String type,
                                         UUID identifier,
                                         PublicationDetails publicationDetails,
@@ -42,6 +43,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
 
         private URI context;
         private URI id;
+        private boolean isApplicable;
         private UUID identifier;
         private PublicationDetails publicationDetails;
         private List<Approval> approvals;
@@ -51,7 +53,6 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
 
         private Builder() {
         }
-
         public Builder withContext(URI context) {
             this.context = context;
             return this;
@@ -59,6 +60,11 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
 
         public Builder withId(URI id) {
             this.id = id;
+            return this;
+        }
+
+        public Builder withIsApplicable(boolean isApplicable) {
+            this.isApplicable = isApplicable;
             return this;
         }
 
@@ -93,8 +99,8 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         }
 
         public NviCandidateIndexDocument build() {
-            return new NviCandidateIndexDocument(context, id, TYPE, identifier, publicationDetails, approvals,
-                                                 numberOfApprovals, points, modifiedDate);
+            return new NviCandidateIndexDocument(context, id, isApplicable, TYPE, identifier, publicationDetails,
+                                                 approvals, numberOfApprovals, points, modifiedDate);
         }
     }
 }

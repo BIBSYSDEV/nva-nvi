@@ -178,7 +178,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
         DynamodbStreamRecord record) {
         var candidate = fetchCandidate(record);
-        return candidate.isApplicable() ? generateIndexDocumentWithConsumptionAttributes(candidate) : null;
+        return generateIndexDocumentWithConsumptionAttributes(candidate);
     }
 
     private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
