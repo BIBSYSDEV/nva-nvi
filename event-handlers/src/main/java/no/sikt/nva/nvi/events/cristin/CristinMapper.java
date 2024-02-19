@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.cristin;
 
+import static java.util.Objects.nonNull;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -92,7 +93,7 @@ public final class CristinMapper {
                    .map(list -> list.get(0))
                    .map(ScientificResource::getQualityCode)
                    .map(DbLevel::parse)
-                   .orElse(null);
+                   .orElseThrow();
     }
 
     public static List<DbApprovalStatus> toApprovals(CristinNviReport cristinNviReport) {
@@ -102,7 +103,7 @@ public final class CristinMapper {
     }
 
     private static DbApprovalStatus toApproval(CristinLocale cristinLocale) {
-        var assignee = constructUsername(cristinLocale).orElse(null);
+        var assignee = constructUsername(cristinLocale);
         return DbApprovalStatus.builder()
                    .status(DbStatus.APPROVED)
                    .institutionId(constructInstitutionId(cristinLocale))
@@ -112,19 +113,17 @@ public final class CristinMapper {
                    .build();
     }
 
-    private static Optional<Username> constructUsername(CristinLocale cristinLocale) {
-        var userIdentifier = extractAssigneIdentifier(cristinLocale);
-        return
-            Optional.ofNullable(userIdentifier).map( userIde -> Username.fromString(constructUsername(cristinLocale,
-             userIde                                                                                         )));
-
+    private static Username constructUsername(CristinLocale cristinLocale) {
+        var userIdentifier = extractAssigneeIdentifier(cristinLocale);
+        return nonNull(userIdentifier)
+                   ? Username.fromString(constructUsername(cristinLocale, userIdentifier))
+                   : null;
     }
 
     private static String constructUsername(CristinLocale cristinLocale, String userIdentifier) {
         return String.format("%s@%s", userIdentifier, constructInstitutionIdentifier(cristinLocale));
     }
-
-    private static String extractAssigneIdentifier(CristinLocale cristinLocale) {
+    private static String extractAssigneeIdentifier(CristinLocale cristinLocale) {
         return Optional.ofNullable(cristinLocale)
                    .map(CristinLocale::getControlledByUser)
                    .map(CristinUser::getIdentifier)
