@@ -8,6 +8,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -29,12 +30,16 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.CandidateUniquenessEntryDao;
 import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.ReportStatus;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.NviService;
@@ -106,6 +111,32 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         var allEntitiesUpdated = daos.stream().noneMatch(this::isSameVersionAsRepositoryCopy);
 
         assertTrue(allEntitiesUpdated, "All candidates should have been updated with new version");
+    }
+
+    @Test
+    void shouldNotUpdateInitialDbCandidate() {
+        createPeriod();
+        var dao =
+            Optional.ofNullable(candidateRepository.create(randomDbCandidate(), List.of(), Year.now().toString()))
+                .map(CandidateDao::identifier)
+                       .map(candidateRepository::findDaoById)
+                       .orElseThrow();
+
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+
+        consumeEvents();
+        var updated = candidateRepository.findDaoById(dao.identifier());
+
+        assertEquals(dao.candidate(), updated.candidate());
+    }
+
+    private static DbCandidate randomDbCandidate() {
+        return DbCandidate.builder()
+                   .publicationId(randomUri())
+                   .reportStatus(ReportStatus.REPORTED)
+                   .level(DbLevel.LEVEL_ONE)
+                   .channelType(ChannelType.JOURNAL)
+                   .build();
     }
 
     @Test
