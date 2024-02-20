@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.db;
 
-import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum ReportStatus {
 
@@ -11,7 +10,6 @@ public enum ReportStatus {
         this.value = value;
     }
 
-    @JsonValue
     public String getValue() {
         return value;
     }
