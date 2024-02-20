@@ -158,7 +158,7 @@ Resources:
       TopicArn: !Ref NviDataEntryUpdateCandidateApplicableUpdateTopic
       RawMessageDelivery: true
 
-  NviDataEntryUpdateCandidateNotApplicableUpdateSubscription:
+  NviDataEntryUpdateCandidateNotApplicableRemoveFromIndexSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: sqs
@@ -166,7 +166,7 @@ Resources:
       TopicArn: !Ref NviDataEntryUpdateCandidateNotApplicableUpdateTopic
       RawMessageDelivery: true
 
-  NviDataEntryUpdateCandidateRemoveSubscription:
+  NviDataEntryUpdateCandidateRemoveFromIndexSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: sqs
@@ -174,11 +174,11 @@ Resources:
       TopicArn: !Ref NviDataEntryUpdateCandidateRemoveTopic
       RawMessageDelivery: true
 
-  NviDataEntryUpdateCandidateNotApplicableUpdateDeleteDocumentSubscription:
+  NviDataEntryUpdateCandidateNotApplicableUpdateSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: sqs
-      Endpoint: !GetAtt DeletePersistedIndexDocumentQueue.Arn
+      Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
       TopicArn: !Ref NviDataEntryUpdateCandidateNotApplicableUpdateTopic
       RawMessageDelivery: true
 
