@@ -132,6 +132,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
 
     private static DbCandidate randomDbCandidate() {
         return DbCandidate.builder()
+                   .publicationId(randomUri())
                    .reportStatus(ReportStatus.REPORTED)
                    .level(DbLevel.LEVEL_ONE)
                    .channelType(ChannelType.JOURNAL)
