@@ -145,7 +145,7 @@ public final class Candidate {
     public static Optional<Candidate> updateNonCandidate(UpdateNonCandidateRequest request,
                                                          CandidateRepository repository) {
         if (isExistingCandidate(request.publicationId(), repository)) {
-            return Optional.of(deleteCandidate(request, repository));
+            return Optional.of(setAsNotApplicable(request, repository));
         }
         return Optional.empty();
     }
@@ -290,7 +290,7 @@ public final class Candidate {
         return !isExistingCandidate(request.publicationId(), repository);
     }
 
-    private static Candidate deleteCandidate(UpdateNonCandidateRequest request, CandidateRepository repository) {
+    private static Candidate setAsNotApplicable(UpdateNonCandidateRequest request, CandidateRepository repository) {
         var existingCandidateDao = repository.findByPublicationId(request.publicationId())
                                        .orElseThrow(CandidateNotFoundException::new);
         var nonApplicableCandidate = updateCandidateToNonApplicable(existingCandidateDao);
@@ -305,60 +305,15 @@ public final class Candidate {
         validateCandidate(request);
         var existingCandidateDao = repository.findByPublicationId(request.publicationId())
                                        .orElseThrow(CandidateNotFoundException::new);
-        if (isNotApplicable(request)) {
-            return updateToNotApplicable(request, repository, periodRepository, existingCandidateDao);
-        }
-        if (shouldResetCandidate(request, existingCandidateDao) || hasBeganApplicable(existingCandidateDao, request)) {
+        if (shouldResetCandidate(request, existingCandidateDao) || isNotApplicable(existingCandidateDao)) {
             return resetCandidate(request, repository, periodRepository, existingCandidateDao);
         } else {
             return updateCandidateKeepingApprovalsAndNotes(request, repository, periodRepository, existingCandidateDao);
         }
     }
 
-    private static boolean hasBeganApplicable(CandidateDao existingCandidateDao, UpsertCandidateRequest request) {
-        return request.isApplicable() && !existingCandidateDao.candidate().applicable();
-    }
-
-    private static Candidate updateToNotApplicable(UpsertCandidateRequest request, CandidateRepository repository,
-                                                   PeriodRepository periodRepository,
-                                                   CandidateDao existingCandidateDao) {
-        var newApprovals = mapToApprovals(request.institutionPoints());
-        var newCandidateDao = updateCandidateDaoToNotApplicable(existingCandidateDao, request);
-        repository.updateCandidate(existingCandidateDao.identifier(), newCandidateDao, newApprovals);
-        var notes = repository.getNotes(existingCandidateDao.identifier());
-        var periodStatus = findPeriodStatus(periodRepository,
-                                            existingCandidateDao.candidate().publicationDate().year());
-        var approvals = mapToApprovalsDaos(newCandidateDao.identifier(), newApprovals);
-        return new Candidate(repository, newCandidateDao, approvals, notes, periodStatus);
-    }
-
-    private static CandidateDao updateCandidateDaoToNotApplicable(CandidateDao candidateDao,
-                                                                  UpsertCandidateRequest request) {
-        return candidateDao.copy()
-                   .candidate(candidateDao.candidate()
-                                  .copy()
-                                  .applicable(request.isApplicable())
-                                  .creators(mapToCreators(request.creators()))
-                                  .creatorShareCount(request.creatorShareCount())
-                                  .channelType(ChannelType.parse(request.channelType()))
-                                  .channelId(request.publicationChannelId())
-                                  .level(DbLevel.parse(request.level()))
-                                  .instanceType(request.instanceType())
-                                  .publicationDate(mapToPublicationDate(request.publicationDate()))
-                                  .internationalCollaboration(request.isInternationalCollaboration())
-                                  .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
-                                  .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
-                                  .points(mapToPoints(request.institutionPoints()))
-                                  .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
-                                  .modifiedDate(Instant.now())
-                                  .build())
-                   .version(randomUUID().toString())
-                   .periodYear(null)
-                   .build();
-    }
-
-    private static boolean isNotApplicable(UpsertCandidateRequest candidateRequest) {
-        return !candidateRequest.isApplicable();
+    private static boolean isNotApplicable(CandidateDao candidateDao) {
+        return !candidateDao.candidate().applicable();
     }
 
     private static Candidate resetCandidate(UpsertCandidateRequest request, CandidateRepository repository,
@@ -544,7 +499,6 @@ public final class Candidate {
                                   .modifiedDate(Instant.now())
                                   .build())
                    .version(randomUUID().toString())
-                   .periodYear(candidateDao.candidate().publicationDate().year())
                    .build();
     }
 
@@ -585,6 +539,7 @@ public final class Candidate {
     private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao) {
         return candidateDao.copy()
                    .candidate(candidateDao.candidate().copy().applicable(false).build())
+                   .periodYear(null)
                    .build();
     }
 
