@@ -544,6 +544,7 @@ public final class Candidate {
                                   .modifiedDate(Instant.now())
                                   .build())
                    .version(randomUUID().toString())
+                   .periodYear(candidateDao.candidate().publicationDate().year())
                    .build();
     }
 
