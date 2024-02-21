@@ -305,14 +305,18 @@ public final class Candidate {
         validateCandidate(request);
         var existingCandidateDao = repository.findByPublicationId(request.publicationId())
                                        .orElseThrow(CandidateNotFoundException::new);
-        if (shouldResetCandidate(request, existingCandidateDao)) {
-            return resetCandidate(request, repository, periodRepository, existingCandidateDao);
-        }
-        if (isNotApplicable(existingCandidateDao)) {
+        if (isNotApplicable(request)) {
             return updateToNotApplicable(request, repository, periodRepository, existingCandidateDao);
+        }
+        if (shouldResetCandidate(request, existingCandidateDao) || hasBeganApplicable(existingCandidateDao, request)) {
+            return resetCandidate(request, repository, periodRepository, existingCandidateDao);
         } else {
             return updateCandidateKeepingApprovalsAndNotes(request, repository, periodRepository, existingCandidateDao);
         }
+    }
+
+    private static boolean hasBeganApplicable(CandidateDao existingCandidateDao, UpsertCandidateRequest request) {
+        return request.isApplicable() && !existingCandidateDao.candidate().applicable();
     }
 
     private static Candidate updateToNotApplicable(UpsertCandidateRequest request, CandidateRepository repository,
@@ -353,8 +357,8 @@ public final class Candidate {
                    .build();
     }
 
-    private static boolean isNotApplicable(CandidateDao existingCandidateDao) {
-        return !existingCandidateDao.candidate().applicable();
+    private static boolean isNotApplicable(UpsertCandidateRequest candidateRequest) {
+        return !candidateRequest.isApplicable();
     }
 
     private static Candidate resetCandidate(UpsertCandidateRequest request, CandidateRepository repository,
