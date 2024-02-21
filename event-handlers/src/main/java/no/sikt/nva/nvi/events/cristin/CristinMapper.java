@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbNviCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.ReportStatus;
@@ -46,7 +46,7 @@ public final class CristinMapper {
                    .publicationBucketUri(constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
                    .publicationDate(constructPublicationDate(cristinNviReport.publicationDate()))
                    .instanceType(cristinNviReport.instanceType())
-                   .creators(extractCreators(cristinNviReport))
+                   .nviCreators(extractCreators(cristinNviReport))
                    .level(extractLevel(cristinNviReport))
                    .reportStatus(ReportStatus.REPORTED)
                    .applicable(true)
@@ -55,7 +55,7 @@ public final class CristinMapper {
                    .build();
     }
 
-    public static List<DbCreator> extractCreators(CristinNviReport cristinNviReport) {
+    public static List<DbNviCreator> extractCreators(CristinNviReport cristinNviReport) {
         return cristinNviReport.scientificResources().get(0).getCreators().stream()
                            .collect(groupByCristinIdentifierAndMapToAffiliationId())
                            .entrySet().stream()
@@ -63,8 +63,8 @@ public final class CristinMapper {
                            .toList();
     }
 
-    private static DbCreator toDbCreator(Entry<URI, List<URI>> entry) {
-        return DbCreator.builder().creatorId(entry.getKey()).affiliations(entry.getValue()).build();
+    private static DbNviCreator toDbCreator(Entry<URI, List<URI>> entry) {
+        return DbNviCreator.builder().creatorId(entry.getKey()).nviAffiliations(entry.getValue()).build();
     }
 
     private static Collector<ScientificPerson, ?, Map<URI, List<URI>>> groupByCristinIdentifierAndMapToAffiliationId() {

@@ -50,7 +50,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbNviCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
@@ -608,7 +608,7 @@ class CandidateTest extends LocalDynamoTest {
                                     .basePoints(setScaleAndRoundingMode(request.basePoints()))
                                     .internationalCollaboration(request.isInternationalCollaboration())
                                     .collaborationFactor(setScaleAndRoundingMode(request.collaborationFactor()))
-                                    .creators(mapToDbCreators(request.creators()))
+                                    .nviCreators(mapToDbCreators(request.creators()))
                                     .creatorShareCount(request.creatorShareCount())
                                     .points(mapToDbInstitutionPoints(request.institutionPoints()))
                                     .totalPoints(setScaleAndRoundingMode(request.totalPoints()))
@@ -627,8 +627,8 @@ class CandidateTest extends LocalDynamoTest {
                    .toList();
     }
 
-    private List<DbCreator> mapToDbCreators(Map<URI, List<URI>> creators) {
-        return creators.entrySet().stream().map(entry -> new DbCreator(entry.getKey(), entry.getValue())).toList();
+    private List<DbNviCreator> mapToDbCreators(Map<URI, List<URI>> creators) {
+        return creators.entrySet().stream().map(entry -> new DbNviCreator(entry.getKey(), entry.getValue())).toList();
     }
 
     private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(UpsertCandidateRequest request) {

@@ -294,7 +294,7 @@ public final class CandidateDao extends Dao {
                               BigDecimal collaborationFactor,
                               int creatorCount,
                               int creatorShareCount,
-                              List<DbCreator> creators,
+                              List<DbNviCreator> nviCreators,
                               BigDecimal basePoints,
                               List<DbInstitutionPoints> points,
                               BigDecimal totalPoints,
@@ -346,7 +346,7 @@ public final class CandidateDao extends Dao {
                        .collaborationFactor(collaborationFactor)
                        .creatorCount(creatorCount)
                        .creatorShareCount(creatorShareCount)
-                       .creators(creators.stream().map(DbCreator::copy).toList())
+                       .nviCreators(nviCreators.stream().map(DbNviCreator::copy).toList())
                        .basePoints(basePoints)
                        .points(points.stream().map(DbInstitutionPoints::copy).toList())
                        .totalPoints(totalPoints)
@@ -378,7 +378,7 @@ public final class CandidateDao extends Dao {
                    && level == that.level
                    && Objects.equals(publicationDate, that.publicationDate)
                    && Objects.equals(collaborationFactor, that.collaborationFactor)
-                   && Objects.equals(creators, that.creators)
+                   && Objects.equals(nviCreators, that.nviCreators)
                    && Objects.equals(basePoints, that.basePoints)
                    && Objects.equals(points, that.points)
                    && Objects.equals(totalPoints, that.totalPoints)
@@ -393,7 +393,7 @@ public final class CandidateDao extends Dao {
             return Objects.hash(publicationId, publicationBucketUri, applicable, instanceType, channelType, channelId,
                                 level,
                                 publicationDate, internationalCollaboration, collaborationFactor, creatorCount,
-                                creatorShareCount, creators, basePoints, points, totalPoints, createdDate, reportStatus);
+                                creatorShareCount, nviCreators, basePoints, points, totalPoints, createdDate, reportStatus);
         }
 
         @Deprecated
@@ -419,7 +419,7 @@ public final class CandidateDao extends Dao {
             private BigDecimal builderCollaborationFactor;
             private int builderCreatorCount;
             private int builderCreatorShareCount;
-            private List<DbCreator> builderCreators;
+            private List<DbNviCreator> builderNviCreators;
             private BigDecimal builderBasePoints;
             private List<DbInstitutionPoints> builderPoints;
             private BigDecimal builderTotalPoints;
@@ -499,8 +499,8 @@ public final class CandidateDao extends Dao {
                 return this;
             }
 
-            public Builder creators(List<DbCreator> creators) {
-                this.builderCreators = creators;
+            public Builder nviCreators(List<DbNviCreator> nviCreators) {
+                this.builderNviCreators = nviCreators;
                 return this;
             }
 
@@ -539,7 +539,7 @@ public final class CandidateDao extends Dao {
                                        builderInstanceType, builderChannelType, builderChannelId, builderLevel,
                                        builderPublicationDate, builderInternationalCollaboration,
                                        builderCollaborationFactor,
-                                       builderCreatorCount, builderCreatorShareCount, builderCreators,
+                                       builderCreatorCount, builderCreatorShareCount, builderNviCreators,
                                        builderBasePoints,
                                        builderPoints, builderTotalPoints, builderCreatedDate, builderModifiedDate,
                                        builderReportStatus);
@@ -589,18 +589,18 @@ public final class CandidateDao extends Dao {
         }
     }
 
-    @DynamoDbImmutable(builder = DbCreator.Builder.class)
-    public record DbCreator(URI creatorId, List<URI> affiliations) {
+    @DynamoDbImmutable(builder = DbNviCreator.Builder.class)
+    public record DbNviCreator(URI creatorId, List<URI> nviAffiliations) {
 
         public static Builder builder() {
             return new Builder();
         }
 
         @DynamoDbIgnore
-        public DbCreator copy() {
+        public DbNviCreator copy() {
             return builder()
                        .creatorId(creatorId)
-                       .affiliations(new ArrayList<>(affiliations))
+                       .nviAffiliations(new ArrayList<>(nviAffiliations))
                        .build();
         }
 
@@ -617,13 +617,13 @@ public final class CandidateDao extends Dao {
                 return this;
             }
 
-            public Builder affiliations(List<URI> affiliations) {
-                this.builderAffiliations = affiliations;
+            public Builder nviAffiliations(List<URI> nviAffiliations) {
+                this.builderAffiliations = nviAffiliations;
                 return this;
             }
 
-            public DbCreator build() {
-                return new DbCreator(builderCreatorId, builderAffiliations);
+            public DbNviCreator build() {
+                return new DbNviCreator(builderCreatorId, builderAffiliations);
             }
         }
     }

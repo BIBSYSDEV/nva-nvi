@@ -25,7 +25,7 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbNviCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
@@ -368,7 +368,7 @@ public final class Candidate {
     }
 
     private static boolean creatorsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(mapToCreators(request.creators()), existingCandidateDao.candidate().creators());
+        return !Objects.equals(mapToCreators(request.creators()), existingCandidateDao.candidate().nviCreators());
     }
 
     private static boolean instanceTypeIsUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
@@ -461,7 +461,7 @@ public final class Candidate {
                    .publicationId(request.publicationId())
                    .publicationBucketUri(request.publicationBucketUri())
                    .applicable(request.isApplicable())
-                   .creators(mapToCreators(request.creators()))
+                   .nviCreators(mapToCreators(request.creators()))
                    .creatorShareCount(request.creatorShareCount())
                    .channelType(ChannelType.parse(request.channelType()))
                    .channelId(request.publicationChannelId())
@@ -484,7 +484,7 @@ public final class Candidate {
                    .candidate(candidateDao.candidate()
                                   .copy()
                                   .applicable(request.isApplicable())
-                                  .creators(mapToCreators(request.creators()))
+                                  .nviCreators(mapToCreators(request.creators()))
                                   .creatorShareCount(request.creatorShareCount())
                                   .channelType(ChannelType.parse(request.channelType()))
                                   .channelId(request.publicationChannelId())
@@ -520,16 +520,16 @@ public final class Candidate {
         return new PublicationDate(date.year(), date.month(), date.day());
     }
 
-    private static List<DbCreator> mapToCreators(Map<URI, List<URI>> creators) {
-        return creators.entrySet().stream().map(e -> new DbCreator(e.getKey(), e.getValue())).toList();
+    private static List<DbNviCreator> mapToCreators(Map<URI, List<URI>> creators) {
+        return creators.entrySet().stream().map(e -> new DbNviCreator(e.getKey(), e.getValue())).toList();
     }
 
-    private static List<Creator> mapToCreators(List<DbCreator> creators) {
+    private static List<Creator> mapToCreators(List<DbNviCreator> creators) {
         return nonNull(creators) ? creators.stream().map(Candidate::mapToCreator).toList() : List.of();
     }
 
-    private static Creator mapToCreator(DbCreator dbCreator) {
-        return new Creator(dbCreator.creatorId(), dbCreator.affiliations());
+    private static Creator mapToCreator(DbNviCreator nviCreator) {
+        return new Creator(nviCreator.creatorId(), nviCreator.nviAffiliations());
     }
 
     private static boolean isExistingCandidate(URI publicationId, CandidateRepository repository) {
@@ -551,7 +551,7 @@ public final class Candidate {
                                       candidateDao.candidate().publicationBucketUri(),
                                       candidateDao.candidate().instanceType(),
                                       mapToPublicationDate(candidateDao.candidate().publicationDate()),
-                                      mapToCreators(candidateDao.candidate().creators()),
+                                      mapToCreators(candidateDao.candidate().nviCreators()),
                                       candidateDao.candidate().channelType(),
                                       candidateDao.candidate().channelId(),
                                       candidateDao.candidate().level()

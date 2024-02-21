@@ -32,7 +32,7 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbNviCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
@@ -93,7 +93,7 @@ public final class TestUtils {
                    .creatorCount(randomInteger())
                    .createdDate(Instant.now())
                    .modifiedDate(Instant.now())
-                   .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))));
+                   .nviCreators(List.of(new DbNviCreator(randomUri(), List.of(randomUri()))));
     }
 
     public static InstanceType randomInstanceType() {

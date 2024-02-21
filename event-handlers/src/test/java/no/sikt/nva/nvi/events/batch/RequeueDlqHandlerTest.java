@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbNviCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
@@ -274,7 +274,7 @@ public class RequeueDlqHandlerTest {
                                           .points(BigDecimal.valueOf(1))
                                           .build()))
                                   .instanceType(InstanceType.ACADEMIC_ARTICLE.getValue())
-                                  .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))))
+                                  .nviCreators(List.of(new DbNviCreator(randomUri(), List.of(randomUri()))))
                                   .level(DbLevel.LEVEL_ONE)
                                   .channelType(ChannelType.JOURNAL)
                                   .totalPoints(BigDecimal.valueOf(1))

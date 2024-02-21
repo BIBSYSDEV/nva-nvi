@@ -13,7 +13,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbNviCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
@@ -39,7 +39,7 @@ public class CandidateTest {
                    .level(DbLevel.LEVEL_ONE)
                    .applicable(true)
                    .internationalCollaboration(true)
-                   .creators(randomVerifiedCreators())
+                   .nviCreators(randomVerifiedCreators())
                    .publicationDate(localDateNowAsPublicationDate())
                    .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
                    .createdDate(Instant.now())
@@ -53,12 +53,12 @@ public class CandidateTest {
                                      String.valueOf(now.getDayOfMonth()));
     }
 
-    private List<DbCreator> randomVerifiedCreators() {
+    private List<DbNviCreator> randomVerifiedCreators() {
         return IntStream.range(1, 20).boxed().map(i -> randomVerifiedCreator()).toList();
     }
 
-    private DbCreator randomVerifiedCreator() {
-        return new DbCreator(randomUri(), randomAffiliations());
+    private DbNviCreator randomVerifiedCreator() {
+        return new DbNviCreator(randomUri(), randomAffiliations());
     }
 
     private List<URI> randomAffiliations() {
