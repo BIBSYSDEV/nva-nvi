@@ -138,7 +138,9 @@ public final class CandidateDao extends Dao {
     public Builder copy() {
         return builder()
                    .identifier(identifier)
-                   .candidate(candidate);
+                   .candidate(candidate)
+                   .periodYear(periodYear)
+                   .version(version);
     }
 
     public UUID identifier() {

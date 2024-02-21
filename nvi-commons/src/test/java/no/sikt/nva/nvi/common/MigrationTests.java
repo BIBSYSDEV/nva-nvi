@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.test.TestUtils.createPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -14,6 +15,7 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.Map.Entry;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.NviService;
@@ -69,7 +71,8 @@ public class MigrationTests extends LocalDynamoTest {
     }
 
     private static DbCandidate getCandidateWithoutCreatedDateOrModifiedDate(URI publicationId) {
-        return DbCandidate.builder().publicationId(publicationId).build();
+        return DbCandidate.builder().publicationId(publicationId)
+                   .publicationDate(DbPublicationDate.builder().year(randomYear()).build()).build();
     }
 
     private static URI getInstitutionId(Candidate candidate) {
