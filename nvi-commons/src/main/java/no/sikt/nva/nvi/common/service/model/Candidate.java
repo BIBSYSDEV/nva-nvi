@@ -145,7 +145,7 @@ public final class Candidate {
     public static Optional<Candidate> updateNonCandidate(UpdateNonCandidateRequest request,
                                                          CandidateRepository repository) {
         if (isExistingCandidate(request.publicationId(), repository)) {
-            return Optional.of(setAsNotApplicable(request, repository));
+            return Optional.of(updateToNotApplicable(request, repository));
         }
         return Optional.empty();
     }
@@ -290,7 +290,7 @@ public final class Candidate {
         return !isExistingCandidate(request.publicationId(), repository);
     }
 
-    private static Candidate setAsNotApplicable(UpdateNonCandidateRequest request, CandidateRepository repository) {
+    private static Candidate updateToNotApplicable(UpdateNonCandidateRequest request, CandidateRepository repository) {
         var existingCandidateDao = repository.findByPublicationId(request.publicationId())
                                        .orElseThrow(CandidateNotFoundException::new);
         var nonApplicableCandidate = updateCandidateToNonApplicable(existingCandidateDao);
