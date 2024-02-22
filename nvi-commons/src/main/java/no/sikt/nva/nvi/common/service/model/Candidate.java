@@ -3,6 +3,9 @@ package no.sikt.nva.nvi.common.service.model;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.common.db.ReportStatus.REPORTED;
+import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.APPROVED;
+import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
@@ -57,7 +60,6 @@ import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
 public final class Candidate {
-
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
@@ -66,7 +68,6 @@ public final class Candidate {
                                               .getUri();
     private static final String CANDIDATE_PATH = "candidate";
     private static final String CONTEXT = stringFromResources(Path.of("nviCandidateContext.json"));
-
     private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
     private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
                                                             + " forbidden!";
@@ -89,7 +90,7 @@ public final class Candidate {
     private final int creatorShareCount;
     private final Instant createdDate;
     private final Instant modifiedDate;
-    private final ReportStatus status;
+    private final ReportStatus reportStatus;
 
     private Candidate(CandidateRepository repository, CandidateDao candidateDao, List<ApprovalStatusDao> approvals,
                       List<NoteDao> notes, PeriodStatus period) {
@@ -108,7 +109,7 @@ public final class Candidate {
         this.creatorShareCount = candidateDao.candidate().creatorShareCount();
         this.createdDate = candidateDao.candidate().createdDate();
         this.modifiedDate = candidateDao.candidate().modifiedDate();
-        this.status = candidateDao.candidate().reportStatus();
+        this.reportStatus = candidateDao.candidate().reportStatus();
     }
 
     public static Candidate fetchByPublicationId(FetchByPublicationRequest request, CandidateRepository repository,
@@ -214,6 +215,20 @@ public final class Candidate {
         return totalPoints;
     }
 
+    public boolean isReported() {
+        return REPORTED.equals(reportStatus);
+    }
+
+    public ApprovalStatus getGlobalApprovalStatus() {
+        if (areAllApprovalStatusesEqualTo(APPROVED)) {
+            return APPROVED;
+        } else if (areAllApprovalStatusesEqualTo(REJECTED)) {
+            return REJECTED;
+        } else {
+            return ApprovalStatus.PENDING;
+        }
+    }
+
     public CandidateDto toDto() {
         return CandidateDto.builder()
                    .withId(getId())
@@ -224,7 +239,7 @@ public final class Candidate {
                    .withNotes(mapToNoteDtos())
                    .withPeriod(mapToPeriodStatusDto())
                    .withTotalPoints(totalPoints)
-                   .withReportStatus(Optional.ofNullable(status).map(ReportStatus::getValue).orElse(null))
+                   .withReportStatus(Optional.ofNullable(reportStatus).map(ReportStatus::getValue).orElse(null))
                    .build();
     }
 
@@ -257,7 +272,7 @@ public final class Candidate {
     public int hashCode() {
         return Objects.hash(identifier, applicable, approvals, notes, institutionPoints, totalPoints, period,
                             publicationDetails, basePoints, internationalCollaboration, collaborationFactor,
-                            creatorShareCount, createdDate, status);
+                            creatorShareCount, createdDate, reportStatus);
     }
 
     @Override
@@ -283,7 +298,7 @@ public final class Candidate {
                && Objects.equals(basePoints, candidate.basePoints)
                && Objects.equals(collaborationFactor, candidate.collaborationFactor)
                && Objects.equals(createdDate, candidate.createdDate)
-               && Objects.equals(status, candidate.status);
+               && Objects.equals(reportStatus, candidate.reportStatus);
     }
 
     private static boolean isNotExistingCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
@@ -545,6 +560,10 @@ public final class Candidate {
 
     private static String mapToUsernameString(Username assignee) {
         return assignee != null ? assignee.value() : null;
+    }
+
+    private boolean areAllApprovalStatusesEqualTo(ApprovalStatus approvalStatus) {
+        return approvals.values().stream().map(Approval::getStatus).allMatch(approvalStatus::equals);
     }
 
     private PublicationDetails mapToPublicationDetails(CandidateDao candidateDao) {

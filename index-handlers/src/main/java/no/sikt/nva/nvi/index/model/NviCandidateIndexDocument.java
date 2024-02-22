@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -23,6 +24,10 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         List<Approval> approvals,
                                         int numberOfApprovals,
                                         BigDecimal points,
+                                        BigDecimal publicationTypeChannelLevelPoints,
+                                        ApprovalStatus globalApprovalStatus,
+                                        int creatorShareCount,
+                                        String reportedPeriod,
                                         String modifiedDate) {
 
     private static final String CONTEXT = "@context";
@@ -49,10 +54,15 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         private List<Approval> approvals;
         private int numberOfApprovals;
         private BigDecimal points;
+        private BigDecimal publicationTypeChannelLevelPoints;
+        private ApprovalStatus globalApprovalStatus;
+        private int creatorShareCount;
+        private String reportedPeriod;
         private String modifiedDate;
 
         private Builder() {
         }
+
         public Builder withContext(URI context) {
             this.context = context;
             return this;
@@ -93,6 +103,26 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             return this;
         }
 
+        public Builder withPublicationTypeChannelLevelPoints(BigDecimal publicationTypeChannelLevelPoints) {
+            this.publicationTypeChannelLevelPoints = publicationTypeChannelLevelPoints;
+            return this;
+        }
+
+        public Builder withGlobalApprovalStatus(ApprovalStatus globalApprovalStatus) {
+            this.globalApprovalStatus = globalApprovalStatus;
+            return this;
+        }
+
+        public Builder withCreatorShareCount(int creatorShareCount) {
+            this.creatorShareCount = creatorShareCount;
+            return this;
+        }
+
+        public Builder withReportedPeriod(String reportedPeriod) {
+            this.reportedPeriod = reportedPeriod;
+            return this;
+        }
+
         public Builder withModifiedDate(String modifiedDate) {
             this.modifiedDate = modifiedDate;
             return this;
@@ -100,7 +130,9 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
 
         public NviCandidateIndexDocument build() {
             return new NviCandidateIndexDocument(context, id, isApplicable, TYPE, identifier, publicationDetails,
-                                                 approvals, numberOfApprovals, points, modifiedDate);
+                                                 approvals, numberOfApprovals, points,
+                                                 publicationTypeChannelLevelPoints, globalApprovalStatus,
+                                                 creatorShareCount, reportedPeriod, modifiedDate);
         }
     }
 }
