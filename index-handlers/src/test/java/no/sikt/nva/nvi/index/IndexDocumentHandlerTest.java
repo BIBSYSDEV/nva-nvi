@@ -14,6 +14,8 @@ import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandPublicationDetai
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -41,6 +43,7 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.ConsumptionAttributes;
@@ -101,6 +104,22 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     @Test
     void shouldBuildIndexDocumentAndPersistInS3WhenReceivingSqsEvent() {
         var candidate = randomApplicableCandidate();
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
+            candidate).indexDocument();
+        var event = createEvent(candidate.getIdentifier());
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @Test
+    void shouldBuildIndexDocumentWithReportedPeriodWhenCandidateIsReported() {
+        //Using repository to create reported candidate because setting Candidate as reported is not implemented yet
+        //TODO: Use Candidate.setReported when implemented
+        var dao = candidateRepository.create(randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
+                                             List.of(randomApproval()));
+        var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
             candidate).indexDocument();
         var event = createEvent(candidate.getIdentifier());
@@ -457,6 +476,10 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
                    .withPoints(candidate.getTotalPoints())
                    .withPublicationDetails(expandPublicationDetails(candidate, expandedResource))
                    .withNumberOfApprovals(candidate.getApprovals().size())
+                   .withCreatorShareCount(candidate.getCreatorShareCount())
+                   .withReportedPeriod(candidate.isReported() ? candidate.getPeriod().year() : null)
+                   .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
+                   .withPublicationTypeChannelLevelPoints(candidate.getBasePoints())
                    .withModifiedDate(candidate.getModifiedDate().toString())
                    .build();
     }

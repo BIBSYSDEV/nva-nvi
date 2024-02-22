@@ -80,6 +80,7 @@ import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -240,6 +241,30 @@ class CandidateTest extends LocalDynamoTest {
 
         var optionalCandidate = Candidate.updateNonCandidate(updateRequest, candidateRepository);
         assertThat(optionalCandidate, is(equalTo(Optional.empty())));
+    }
+
+    @ParameterizedTest(name = "Should return global approval status {0} when all approvals have status {0}")
+    @EnumSource(value = ApprovalStatus.class, names = {"APPROVED", "REJECTED"})
+    void shouldReturnGlobalApprovalStatus(ApprovalStatus approvalStatus) {
+        var institution1 = randomUri();
+        var institution2 = randomUri();
+        var createRequest = createUpsertCandidateRequest(institution1, institution2);
+        var candidate = Candidate.upsert(createRequest, candidateRepository, periodRepository).orElseThrow();
+        candidate.updateApproval(createUpdateStatusRequest(approvalStatus, institution1, randomString()));
+        candidate.updateApproval(createUpdateStatusRequest(approvalStatus, institution2, randomString()));
+        assertEquals(approvalStatus, candidate.getGlobalApprovalStatus());
+    }
+
+    @Test()
+    @DisplayName("Should return global approval status pending when all approvals neither approved or rejected")
+    void shouldReturnGlobalApprovalStatusPendingWhenAllApprovalDoNotHaveSameStatus() {
+        var institution1 = randomUri();
+        var institution2 = randomUri();
+        var createRequest = createUpsertCandidateRequest(institution1, institution2);
+        var candidate = Candidate.upsert(createRequest, candidateRepository, periodRepository).orElseThrow();
+        candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.APPROVED, institution1, randomString()));
+        candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.REJECTED, institution2, randomString()));
+        assertEquals(ApprovalStatus.PENDING, candidate.getGlobalApprovalStatus());
     }
 
     @Test
@@ -468,10 +493,18 @@ class CandidateTest extends LocalDynamoTest {
     @Test
     void shouldReturnCandidateWithReportStatus() {
         var dao = candidateRepository.create(randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
-                                                   List.of(randomApproval()));
+                                             List.of(randomApproval()));
         var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
         assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));
         assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));
+    }
+
+    @Test
+    void shouldReturnTrueIfReportStatusIsReported() {
+        var dao = candidateRepository.create(randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
+                                             List.of(randomApproval()));
+        var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+        assertTrue(candidate.isReported());
     }
 
     @Test
