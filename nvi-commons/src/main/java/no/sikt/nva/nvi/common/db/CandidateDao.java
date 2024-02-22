@@ -331,6 +331,11 @@ public final class CandidateDao extends Dao {
             return migrateDate(createdDate);
         }
 
+        //TODO: Remove after migration
+        public List<DbNviCreator> creators() {
+            return nviCreators;
+        }
+
         @DynamoDbIgnore
         public Builder copy() {
             return builder()
@@ -393,7 +398,8 @@ public final class CandidateDao extends Dao {
             return Objects.hash(publicationId, publicationBucketUri, applicable, instanceType, channelType, channelId,
                                 level,
                                 publicationDate, internationalCollaboration, collaborationFactor, creatorCount,
-                                creatorShareCount, nviCreators, basePoints, points, totalPoints, createdDate, reportStatus);
+                                creatorShareCount, nviCreators, basePoints, points, totalPoints, createdDate,
+                                reportStatus);
         }
 
         @Deprecated
@@ -591,6 +597,11 @@ public final class CandidateDao extends Dao {
 
     @DynamoDbImmutable(builder = DbNviCreator.Builder.class)
     public record DbNviCreator(URI creatorId, List<URI> nviAffiliations) {
+
+        //TODO: Remove after migration
+        public List<URI> affiliations() {
+            return nviAffiliations;
+        }
 
         public static Builder builder() {
             return new Builder();
