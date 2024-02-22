@@ -64,7 +64,10 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     public NviCandidateIndexDocument generateDocument(JsonNode expandedResource, Candidate candidate) {
-        return getIndexDocumentBuilder(expandedResource, candidate);
+        var approvals = createApprovals(expandedResource, candidate);
+        return candidate.isReported()
+                   ? getIndexDocumentWithReportedPeriod(expandedResource, candidate, approvals)
+                   : getIndexDocumentBuilder(expandedResource, candidate, approvals).build();
     }
 
     private static no.sikt.nva.nvi.common.model.Organization toOrganization(String response) {
@@ -74,13 +77,6 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static BigDecimal getInstitutionPoints(Approval approval, Candidate candidate) {
         return candidate.getInstitutionPoints().get(approval.getInstitutionId());
-    }
-
-    private NviCandidateIndexDocument getIndexDocumentBuilder(JsonNode resource, Candidate candidate) {
-        var approvals = createApprovals(resource, candidate);
-        return candidate.isReported()
-                   ? getIndexDocumentWithReportedPeriod(resource, candidate, approvals)
-                   : getIndexDocumentBuilder(resource, candidate, approvals).build();
     }
 
     private NviCandidateIndexDocument getIndexDocumentWithReportedPeriod(JsonNode resource, Candidate candidate,
