@@ -21,6 +21,7 @@ import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
 public final class CristinMapper {
@@ -39,6 +40,7 @@ public final class CristinMapper {
 
     }
 
+    //TODO: Extract creators from dbh_forskres_kontroll, remove Jacoco annotation when implemented
     public static DbCandidate toDbCandidate(CristinNviReport cristinNviReport) {
         var now = Instant.now();
         return DbCandidate.builder()
@@ -46,7 +48,7 @@ public final class CristinMapper {
                    .publicationBucketUri(constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
                    .publicationDate(constructPublicationDate(cristinNviReport.publicationDate()))
                    .instanceType(cristinNviReport.instanceType())
-                   .creators(extractCreators(cristinNviReport))
+//                   .creators(extractCreators(cristinNviReport))
                    .level(extractLevel(cristinNviReport))
                    .reportStatus(ReportStatus.REPORTED)
                    .applicable(true)
@@ -55,6 +57,7 @@ public final class CristinMapper {
                    .build();
     }
 
+    @JacocoGenerated
     public static List<DbCreator> extractCreators(CristinNviReport cristinNviReport) {
         return cristinNviReport.scientificResources().get(0).getCreators().stream()
                            .collect(groupByCristinIdentifierAndMapToAffiliationId())
@@ -63,15 +66,18 @@ public final class CristinMapper {
                            .toList();
     }
 
+    @JacocoGenerated
     private static DbCreator toDbCreator(Entry<URI, List<URI>> entry) {
         return DbCreator.builder().creatorId(entry.getKey()).affiliations(entry.getValue()).build();
     }
 
+    @JacocoGenerated
     private static Collector<ScientificPerson, ?, Map<URI, List<URI>>> groupByCristinIdentifierAndMapToAffiliationId() {
         return Collectors.groupingBy(CristinMapper::constructPersonCristinId,
             Collectors.mapping(CristinMapper::constructCristinOrganizationId, Collectors.toList()));
     }
 
+    @JacocoGenerated
     private static URI constructPersonCristinId(ScientificPerson scientificPerson) {
         return UriWrapper.fromHost(API_HOST)
                    .addChild(CRISTIN)
@@ -80,6 +86,7 @@ public final class CristinMapper {
                    .getUri();
     }
 
+    @JacocoGenerated
     private static URI constructCristinOrganizationId(ScientificPerson scientificPerson) {
         return UriWrapper.fromHost(API_HOST)
                    .addChild(CRISTIN)
