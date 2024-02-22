@@ -60,7 +60,7 @@ public class MigrationTests extends LocalDynamoTest {
     }
 
     @Test
-    void shouldSetCreatedDateAndModifiedDateIfMissingWhenMigrating(){
+    void shouldSetCreatedDateAndModifiedDateIfMissingWhenMigrating() {
         var publicationId = randomUri();
         var candidateToBeMigrated = getCandidateWithoutCreatedDateOrModifiedDate(publicationId);
         candidateRepository.create(candidateToBeMigrated, Collections.emptyList());

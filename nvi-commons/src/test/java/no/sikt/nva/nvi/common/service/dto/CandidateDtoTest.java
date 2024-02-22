@@ -12,7 +12,9 @@ class CandidateDtoTest {
     @Deprecated
     @Test
     void shouldDeserializeCandidateDtoContainingPeriodAndPeriodStatusProperties() throws JsonProcessingException {
-        var candidate = CandidateDto.builder().withPeriod(PeriodStatusDto.builder().withId(randomUri()).build()).build();
+        var candidate = CandidateDto.builder()
+                            .withPeriod(PeriodStatusDto.builder().withId(randomUri()).build())
+                            .build();
 
         var node = JsonUtils.dtoObjectMapper.readTree(candidate.toJsonString());
 

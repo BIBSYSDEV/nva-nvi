@@ -248,7 +248,7 @@ class CandidateTest extends LocalDynamoTest {
 
     @ParameterizedTest
     @EnumSource(value = ApprovalStatus.class, names = {"APPROVED", "REJECTED"})
-    void shouldReturnGlobalApprovalStatus(ApprovalStatus approvalStatus){
+    void shouldReturnGlobalApprovalStatus(ApprovalStatus approvalStatus) {
         var institution1 = randomUri();
         var institution2 = randomUri();
         var createRequest = createUpsertCandidateRequest(institution1, institution2);
@@ -259,7 +259,7 @@ class CandidateTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldReturnGlobalApprovalPendingWhenAllApprovalDoNotHaveSameStatus(){
+    void shouldReturnGlobalApprovalPendingWhenAllApprovalDoNotHaveSameStatus() {
         var institution1 = randomUri();
         var institution2 = randomUri();
         var createRequest = createUpsertCandidateRequest(institution1, institution2);
@@ -495,10 +495,18 @@ class CandidateTest extends LocalDynamoTest {
     @Test
     void shouldReturnCandidateWithReportStatus() {
         var dao = candidateRepository.create(randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
-                                                   List.of(randomApproval()));
+                                             List.of(randomApproval()));
         var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
         assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));
         assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));
+    }
+
+    @Test
+    void shouldReturnTrueIfReportStatusIsReported() {
+        var dao = candidateRepository.create(randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
+                                             List.of(randomApproval()));
+        var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+        assertThat(candidate.isReported(), is(true));
     }
 
     @Test
