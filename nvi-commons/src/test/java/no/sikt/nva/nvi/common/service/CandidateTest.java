@@ -503,7 +503,7 @@ class CandidateTest extends LocalDynamoTest {
         var dao = candidateRepository.create(randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
                                              List.of(randomApproval()));
         var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
-        assertThat(candidate.isReported(), is(true));
+        assertTrue(candidate.isReported());
     }
 
     @Test
