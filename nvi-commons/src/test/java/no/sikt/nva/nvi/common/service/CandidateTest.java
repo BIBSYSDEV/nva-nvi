@@ -243,7 +243,7 @@ class CandidateTest extends LocalDynamoTest {
         assertThat(optionalCandidate, is(equalTo(Optional.empty())));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "Should return global approval status {0} when all approvals have status {0}")
     @EnumSource(value = ApprovalStatus.class, names = {"APPROVED", "REJECTED"})
     void shouldReturnGlobalApprovalStatus(ApprovalStatus approvalStatus) {
         var institution1 = randomUri();
@@ -255,8 +255,9 @@ class CandidateTest extends LocalDynamoTest {
         assertEquals(approvalStatus, candidate.getGlobalApprovalStatus());
     }
 
-    @Test
-    void shouldReturnGlobalApprovalPendingWhenAllApprovalDoNotHaveSameStatus() {
+    @Test()
+    @DisplayName("Should return global approval status pending when all approvals neither approved or rejected")
+    void shouldReturnGlobalApprovalStatusPendingWhenAllApprovalDoNotHaveSameStatus() {
         var institution1 = randomUri();
         var institution2 = randomUri();
         var createRequest = createUpsertCandidateRequest(institution1, institution2);
