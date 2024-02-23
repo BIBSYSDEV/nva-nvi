@@ -99,6 +99,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withPublicationTypeChannelLevelPoints(candidate.getBasePoints())
                    .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
                    .withCreatorShareCount(candidate.getCreatorShareCount())
+                   .withInternationalCollaborationFactor(candidate.getCollaborationFactor())
                    .withModifiedDate(candidate.getModifiedDate().toString());
     }
 

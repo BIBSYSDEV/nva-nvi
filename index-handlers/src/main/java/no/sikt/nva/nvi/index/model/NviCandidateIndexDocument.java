@@ -27,6 +27,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         BigDecimal publicationTypeChannelLevelPoints,
                                         ApprovalStatus globalApprovalStatus,
                                         int creatorShareCount,
+                                        BigDecimal internationalCollaborationFactor,
                                         String reportedPeriod,
                                         String modifiedDate) {
 
@@ -57,6 +58,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         private BigDecimal publicationTypeChannelLevelPoints;
         private ApprovalStatus globalApprovalStatus;
         private int creatorShareCount;
+        private BigDecimal internationalCollaborationFactor;
         private String reportedPeriod;
         private String modifiedDate;
 
@@ -118,6 +120,11 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             return this;
         }
 
+        public Builder withInternationalCollaborationFactor(BigDecimal internationalCollaborationFactor) {
+            this.internationalCollaborationFactor = internationalCollaborationFactor;
+            return this;
+        }
+
         public Builder withReportedPeriod(String reportedPeriod) {
             this.reportedPeriod = reportedPeriod;
             return this;
@@ -132,7 +139,8 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             return new NviCandidateIndexDocument(context, id, isApplicable, TYPE, identifier, publicationDetails,
                                                  approvals, numberOfApprovals, points,
                                                  publicationTypeChannelLevelPoints, globalApprovalStatus,
-                                                 creatorShareCount, reportedPeriod, modifiedDate);
+                                                 creatorShareCount, internationalCollaborationFactor, reportedPeriod,
+                                                 modifiedDate);
         }
     }
 }
