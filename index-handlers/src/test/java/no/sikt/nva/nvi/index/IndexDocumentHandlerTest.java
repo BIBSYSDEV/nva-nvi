@@ -49,6 +49,7 @@ import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.ConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.ReportingPeriod;
 import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -482,6 +483,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
                    .withPublicationTypeChannelLevelPoints(candidate.getBasePoints())
                    .withInternationalCollaborationFactor(candidate.getCollaborationFactor())
                    .withModifiedDate(candidate.getModifiedDate().toString())
+                   .withReportingPeriod(new ReportingPeriod(candidate.getPeriod().year()))
                    .build();
     }
 

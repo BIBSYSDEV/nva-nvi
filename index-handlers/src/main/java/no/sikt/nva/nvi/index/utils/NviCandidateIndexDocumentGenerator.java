@@ -48,6 +48,7 @@ import no.sikt.nva.nvi.index.model.Organization;
 import no.sikt.nva.nvi.index.model.OrganizationType;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
+import no.sikt.nva.nvi.index.model.ReportingPeriod;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import org.apache.jena.rdf.model.RDFNode;
 import org.slf4j.Logger;
@@ -92,6 +93,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withContext(Candidate.getContextUri())
                    .withIsApplicable(candidate.isApplicable())
                    .withIdentifier(candidate.getIdentifier())
+                   .withReportingPeriod(new ReportingPeriod(candidate.getPeriod().year()))
                    .withApprovals(approvals)
                    .withPublicationDetails(extractPublicationDetails(resource, candidate))
                    .withNumberOfApprovals(approvals.size())
