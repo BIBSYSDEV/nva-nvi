@@ -41,7 +41,6 @@ import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.ContributorType;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument.Builder;
 import no.sikt.nva.nvi.index.model.NviContributor;
 import no.sikt.nva.nvi.index.model.NviOrganization;
 import no.sikt.nva.nvi.index.model.Organization;
@@ -66,9 +65,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
     public NviCandidateIndexDocument generateDocument(JsonNode expandedResource, Candidate candidate) {
         var approvals = createApprovals(expandedResource, candidate);
-        return candidate.isReported()
-                   ? getIndexDocumentWithReportedPeriod(expandedResource, candidate, approvals)
-                   : getIndexDocumentBuilder(expandedResource, candidate, approvals).build();
+        return buildCandidate(expandedResource, candidate, approvals);
     }
 
     private static no.sikt.nva.nvi.common.model.Organization toOrganization(String response) {
@@ -80,20 +77,15 @@ public final class NviCandidateIndexDocumentGenerator {
         return candidate.getInstitutionPoints().get(approval.getInstitutionId());
     }
 
-    private NviCandidateIndexDocument getIndexDocumentWithReportedPeriod(JsonNode resource, Candidate candidate,
-                                                                         List<no.sikt.nva.nvi.index.model.Approval> approvals) {
-        return getIndexDocumentBuilder(resource, candidate, approvals)
-                   .withReportedPeriod(candidate.getPeriod().year()).build();
-    }
-
-    private Builder getIndexDocumentBuilder(JsonNode resource, Candidate candidate,
-                                            List<no.sikt.nva.nvi.index.model.Approval> approvals) {
+    private NviCandidateIndexDocument buildCandidate(JsonNode resource, Candidate candidate,
+                                                     List<no.sikt.nva.nvi.index.model.Approval> approvals) {
         return NviCandidateIndexDocument.builder()
                    .withId(candidate.getId())
                    .withContext(Candidate.getContextUri())
                    .withIsApplicable(candidate.isApplicable())
                    .withIdentifier(candidate.getIdentifier())
                    .withReportingPeriod(new ReportingPeriod(candidate.getPeriod().year()))
+                   .withReported(candidate.isReported())
                    .withApprovals(approvals)
                    .withPublicationDetails(extractPublicationDetails(resource, candidate))
                    .withNumberOfApprovals(approvals.size())
@@ -102,7 +94,8 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
                    .withCreatorShareCount(candidate.getCreatorShareCount())
                    .withInternationalCollaborationFactor(candidate.getCollaborationFactor())
-                   .withModifiedDate(candidate.getModifiedDate().toString());
+                   .withModifiedDate(candidate.getModifiedDate().toString())
+                   .build();
     }
 
     private Stream<Approval> streamValues(Map<URI, Approval> approvals) {

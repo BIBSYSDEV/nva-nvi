@@ -29,7 +29,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         int creatorShareCount,
                                         BigDecimal internationalCollaborationFactor,
                                         ReportingPeriod reportingPeriod,
-                                        String reportedPeriod,
+                                        boolean reported,
                                         String modifiedDate) {
 
     private static final String CONTEXT = "@context";
@@ -61,7 +61,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         private int creatorShareCount;
         private BigDecimal internationalCollaborationFactor;
         private ReportingPeriod reportingPeriod;
-        private String reportedPeriod;
+        private boolean reported;
         private String modifiedDate;
 
         private Builder() {
@@ -132,8 +132,8 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             return this;
         }
 
-        public Builder withReportedPeriod(String reportedPeriod) {
-            this.reportedPeriod = reportedPeriod;
+        public Builder withReported(boolean reported) {
+            this.reported = reported;
             return this;
         }
 
@@ -147,7 +147,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                                  approvals, numberOfApprovals, points,
                                                  publicationTypeChannelLevelPoints, globalApprovalStatus,
                                                  creatorShareCount, internationalCollaborationFactor, reportingPeriod,
-                                                 reportedPeriod, modifiedDate);
+                                                 reported, modifiedDate);
         }
     }
 }
