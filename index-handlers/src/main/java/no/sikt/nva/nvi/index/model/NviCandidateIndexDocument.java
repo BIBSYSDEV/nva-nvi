@@ -28,6 +28,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         ApprovalStatus globalApprovalStatus,
                                         int creatorShareCount,
                                         BigDecimal internationalCollaborationFactor,
+                                        ReportingPeriod reportingPeriod,
                                         String reportedPeriod,
                                         String modifiedDate) {
 
@@ -59,6 +60,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         private ApprovalStatus globalApprovalStatus;
         private int creatorShareCount;
         private BigDecimal internationalCollaborationFactor;
+        private ReportingPeriod reportingPeriod;
         private String reportedPeriod;
         private String modifiedDate;
 
@@ -125,6 +127,11 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             return this;
         }
 
+        public Builder withReportingPeriod(ReportingPeriod reportingPeriod) {
+            this.reportingPeriod = reportingPeriod;
+            return this;
+        }
+
         public Builder withReportedPeriod(String reportedPeriod) {
             this.reportedPeriod = reportedPeriod;
             return this;
@@ -139,8 +146,8 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             return new NviCandidateIndexDocument(context, id, isApplicable, TYPE, identifier, publicationDetails,
                                                  approvals, numberOfApprovals, points,
                                                  publicationTypeChannelLevelPoints, globalApprovalStatus,
-                                                 creatorShareCount, internationalCollaborationFactor, reportedPeriod,
-                                                 modifiedDate);
+                                                 creatorShareCount, internationalCollaborationFactor, reportingPeriod,
+                                                 reportedPeriod, modifiedDate);
         }
     }
 }

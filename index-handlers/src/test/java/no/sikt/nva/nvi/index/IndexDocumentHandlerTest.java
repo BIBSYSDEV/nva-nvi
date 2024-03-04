@@ -49,8 +49,10 @@ import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.ConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.ReportingPeriod;
 import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
@@ -64,6 +66,7 @@ import software.amazon.awssdk.services.sqs.model.SqsException;
 
 public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
+    public static final int SOME_REPORTING_YEAR = 2023;
     private static final String JSON_PTR_CONTRIBUTOR = "/publicationDetails/contributors";
     private static final String JSON_PTR_APPROVALS = "/approvals";
     private static final Environment ENVIRONMENT = new Environment();
@@ -91,7 +94,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         s3Writer = new S3Driver(s3Client, BUCKET_NAME);
         var localDynamoDbClient = initializeTestDatabase();
         candidateRepository = new CandidateRepository(localDynamoDbClient);
-        periodRepository = new PeriodRepository(localDynamoDbClient);
+        periodRepository = TestUtils.periodRepositoryReturningOpenedPeriod(SOME_REPORTING_YEAR);
         uriRetriever = mock(UriRetriever.class);
         sqsClient = new FakeSqsClient();
         handler = new IndexDocumentHandler(new S3StorageReader(s3Client, BUCKET_NAME),
@@ -482,11 +485,13 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
                    .withPublicationTypeChannelLevelPoints(candidate.getBasePoints())
                    .withInternationalCollaborationFactor(candidate.getCollaborationFactor())
                    .withModifiedDate(candidate.getModifiedDate().toString())
+                   .withReportingPeriod(new ReportingPeriod(candidate.getPeriod().year()))
                    .build();
     }
 
     private Candidate randomApplicableCandidate() {
-        return Candidate.upsert(createUpsertCandidateRequest(2023), candidateRepository, periodRepository)
+        return Candidate.upsert(createUpsertCandidateRequest(SOME_REPORTING_YEAR), candidateRepository,
+                                periodRepository)
                    .orElseThrow();
     }
 }
