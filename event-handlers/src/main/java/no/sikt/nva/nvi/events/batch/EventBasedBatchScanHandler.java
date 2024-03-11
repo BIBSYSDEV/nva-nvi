@@ -41,7 +41,7 @@ public class EventBasedBatchScanHandler extends EventHandler<ScanDatabaseRequest
                                               Context context) {
         logger.info("Query starting point: {}", input.startMarker());
 
-        var batchResult = nviService.migrateAndUpdateVersion(input.pageSize(), input.startMarker());
+        var batchResult = nviService.migrateAndUpdateVersion(input.pageSize(), input.startMarker(), input.types());
         logger.info("Batch result: {}", batchResult);
         if (batchResult.shouldContinueScan()) {
             sendEventToInvokeNewRefreshRowVersionExecution(input, context, batchResult);

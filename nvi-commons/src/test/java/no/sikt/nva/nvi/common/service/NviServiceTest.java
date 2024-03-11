@@ -50,7 +50,7 @@ public class NviServiceTest extends LocalDynamoTest {
     void shouldReturnTrueWhenThereAreMoreItemsToScan() {
         IntStream.range(0, 3).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
 
-        var result = nviService.migrateAndUpdateVersion(1, null);
+        var result = nviService.migrateAndUpdateVersion(1, null, null);
         assertThat(result.shouldContinueScan(), is(equalTo(true)));
     }
 
@@ -59,7 +59,7 @@ public class NviServiceTest extends LocalDynamoTest {
         IntStream.range(0, 2).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
         var candidates = getCandidatesInOrder();
         var originalRows = getCandidates(candidates);
-        nviService.migrateAndUpdateVersion(1000, getStartMarker(originalRows.get(FIRST_ROW)));
+        nviService.migrateAndUpdateVersion(1000, getStartMarker(originalRows.get(FIRST_ROW)), null);
         var modifiedRows = getCandidates(candidates);
 
         assertThat(modifiedRows.get(FIRST_ROW).version(), is(equalTo(originalRows.get(FIRST_ROW).version())));
@@ -71,7 +71,7 @@ public class NviServiceTest extends LocalDynamoTest {
         var originalCandidate = randomCandidate();
         var candidate = candidateRepository.create(originalCandidate, List.of());
         var original = candidateRepository.findCandidateById(candidate.identifier()).orElseThrow();
-        var result = nviService.migrateAndUpdateVersion(10, null);
+        var result = nviService.migrateAndUpdateVersion(10, null, null);
         var modified = candidateRepository.findCandidateById(candidate.identifier()).orElseThrow();
         assertThat(modified.version(), is(not(equalTo(original.version()))));
         assertThat(result.getStartMarker().size(), is(equalTo(0)));

@@ -12,6 +12,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import nva.commons.core.JacocoGenerated;
@@ -65,8 +66,8 @@ public class NviService {
         return periodRepository.getPeriods();
     }
 
-    public ListingResult<Dao> migrateAndUpdateVersion(int pageSize, Map<String, String> startMarker) {
-        var scanResult = candidateRepository.scanEntries(pageSize, startMarker);
+    public ListingResult<Dao> migrateAndUpdateVersion(int pageSize, Map<String, String> startMarker, List<KeyField> types) {
+        var scanResult = candidateRepository.scanEntries(pageSize, startMarker, types);
         candidateRepository.writeEntries(scanResult.getDatabaseEntries());
         return scanResult;
     }

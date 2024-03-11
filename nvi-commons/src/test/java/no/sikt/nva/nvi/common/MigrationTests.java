@@ -45,7 +45,7 @@ public class MigrationTests extends LocalDynamoTest {
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
         nviService = new NviService(periodRepository, candidateRepository);
         var candidate = setupCandidateWithApprovalAndNotes();
-        nviService.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null);
+        nviService.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, null);
         var migratedCandidate = Candidate.fetch(candidate::getIdentifier, candidateRepository,
                                                 periodRepository);
         assertEquals(candidate, migratedCandidate);
@@ -54,7 +54,7 @@ public class MigrationTests extends LocalDynamoTest {
     @Test
     void shouldWriteBackPeriodAsIsWhenMigrating() {
         var period = nviService.createPeriod(createPeriod(String.valueOf(CURRENT_YEAR)));
-        nviService.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null);
+        nviService.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, null);
         var migratedPeriod = nviService.getPeriod(period.publishingYear());
         assertEquals(period, migratedPeriod);
     }
@@ -64,7 +64,7 @@ public class MigrationTests extends LocalDynamoTest {
         var publicationId = randomUri();
         var candidateToBeMigrated = getCandidateWithoutCreatedDateOrModifiedDate(publicationId);
         candidateRepository.create(candidateToBeMigrated, Collections.emptyList());
-        nviService.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null);
+        nviService.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, null);
         var migratedCandidate = candidateRepository.findByPublicationId(publicationId).orElseThrow();
         assertNotNull(migratedCandidate.candidate().createdDate());
         assertNotNull(migratedCandidate.candidate().modifiedDate());

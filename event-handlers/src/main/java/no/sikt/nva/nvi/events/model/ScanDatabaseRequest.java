@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.events.model;
 
+import static java.util.Collections.emptyList;
+import static java.util.Objects.nonNull;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.streamToString;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -9,6 +11,7 @@ import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.unit.nva.commons.json.JsonSerializable;
 import no.unit.nva.commons.json.JsonUtils;
 import org.slf4j.Logger;
@@ -48,8 +51,13 @@ public record ScanDatabaseRequest(@JsonProperty(PAGE_SIZE_FIELD) int pageSize,
                    : DEFAULT_PAGE_SIZE;
     }
 
+    @Override
+    public List<KeyField> types() {
+        return nonNull(types) ? types : emptyList();
+    }
+
     public ScanDatabaseRequest newScanDatabaseRequest(Map<String, String> newStartMarker) {
-        return new ScanDatabaseRequest(this.pageSize(), newStartMarker, null, topic);
+        return new ScanDatabaseRequest(this.pageSize(), newStartMarker, this.types(), topic);
     }
 
     public PutEventsRequestEntry createNewEventEntry(

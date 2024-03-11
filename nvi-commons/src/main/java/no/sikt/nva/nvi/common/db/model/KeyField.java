@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.events.model;
+package no.sikt.nva.nvi.common.db.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
