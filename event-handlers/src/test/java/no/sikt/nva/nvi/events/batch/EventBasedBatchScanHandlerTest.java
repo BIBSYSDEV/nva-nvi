@@ -44,6 +44,7 @@ import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.events.model.KeyField;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
@@ -62,11 +63,11 @@ import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
 class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
 
-    public static final int ONE_ENTRY_PER_EVENT = 1;
-    public static final Map<String, String> START_FROM_BEGINNING = null;
-    public static final String OUTPUT_EVENT_TOPIC = "OUTPUT_EVENT_TOPIC";
-    public static final String TOPIC = new Environment().readEnv(OUTPUT_EVENT_TOPIC);
-    public static final int PAGE_SIZE = 4;
+    private static final int ONE_ENTRY_PER_EVENT = 1;
+    private static final Map<String, String> START_FROM_BEGINNING = null;
+    private static final String OUTPUT_EVENT_TOPIC = "OUTPUT_EVENT_TOPIC";
+    private static final String TOPIC = new Environment().readEnv(OUTPUT_EVENT_TOPIC);
+    private static final int PAGE_SIZE = 4;
     private EventBasedBatchScanHandler handler;
     private ByteArrayOutputStream output;
     private Context context;
@@ -93,7 +94,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         createRandomCandidates(100).forEach(item -> {
         });
 
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(ONE_ENTRY_PER_EVENT, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(ONE_ENTRY_PER_EVENT, START_FROM_BEGINNING, null, TOPIC));
 
         consumeEvents();
         assertThat(eventBridgeClient.getRequestEntries(), is(empty()));
@@ -104,7 +105,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         createPeriod();
         var daos = generatedRepositoryCandidates();
 
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
 
         consumeEvents();
 
@@ -114,15 +115,32 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldUpdateDataEntriesWithGivenTypeWhenRequestContainsType() {
+        createPeriod();
+        var candidateDaos = generatedRepositoryCandidates();
+        var approvalStatusDaos = generateCandidatesWithApprovalStatuses();
+
+        var scanDatabaseRequest = new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING,
+                                                          List.of(KeyField.CANDIDATE), TOPIC);
+        pushInitialEntryInEventBridge(scanDatabaseRequest);
+        consumeEvents();
+
+        assertTrue(candidateDaos.stream().noneMatch(this::isSameVersionAsRepositoryCopy),
+                   "All candidates should have been updated with new version");
+        assertTrue(approvalStatusDaos.stream().allMatch(this::isSameVersionAsRepositoryCopy),
+                   "No approvals should have been updated with new version");
+    }
+
+    @Test
     void shouldNotUpdateInitialDbCandidate() {
         createPeriod();
         var dao =
             Optional.ofNullable(candidateRepository.create(randomDbCandidate(), List.of(), Year.now().toString()))
                 .map(CandidateDao::identifier)
-                       .map(candidateRepository::findDaoById)
-                       .orElseThrow();
+                .map(candidateRepository::findDaoById)
+                .orElseThrow();
 
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
 
         consumeEvents();
         var updated = candidateRepository.findDaoById(dao.identifier());
@@ -130,21 +148,12 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         assertEquals(dao.candidate(), updated.candidate());
     }
 
-    private static DbCandidate randomDbCandidate() {
-        return DbCandidate.builder()
-                   .publicationId(randomUri())
-                   .reportStatus(ReportStatus.REPORTED)
-                   .level(DbLevel.LEVEL_ONE)
-                   .channelType(ChannelType.JOURNAL)
-                   .build();
-    }
-
     @Test
     void shouldIterateAllNotes() {
         createPeriod();
         var daos = generateRepositoryCandidatesWithNotes();
 
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
 
         consumeEvents();
 
@@ -158,7 +167,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         createPeriod();
         var daos = generateCandidatesWithApprovalStatuses();
 
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
 
         consumeEvents();
 
@@ -175,7 +184,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
 
         var items = periodRepository.getPeriodsDao().toList();
 
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
 
         consumeEvents();
 
@@ -192,7 +201,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
 
         var items = candidateRepository.getUniquenessEntries().toList();
 
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
 
         consumeEvents();
 
@@ -206,7 +215,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         createPeriod();
         var candidates = createRandomCandidates(10).toList();
 
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
 
         consumeEvents();
 
@@ -217,12 +226,21 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
 
     @Test
     void emptyResultShouldNotFail() throws IOException {
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
 
         consumeEvents();
         var result = JsonUtils.dtoObjectMapper.readValue(output.toByteArray(), ListingResult.class);
 
         assertThat(result.getTotalItemCount(), is(0));
+    }
+
+    private static DbCandidate randomDbCandidate() {
+        return DbCandidate.builder()
+                   .publicationId(randomUri())
+                   .reportStatus(ReportStatus.REPORTED)
+                   .level(DbLevel.LEVEL_ONE)
+                   .channelType(ChannelType.JOURNAL)
+                   .build();
     }
 
     private void createPeriod() {
