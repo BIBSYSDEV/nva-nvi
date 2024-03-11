@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 public class BatchScanStartHandlerTest {
 
     private static final String TOPIC = "OUTPUT_EVENT_TOPIC";
-    private static final String DEFAULT_PAGE_SIZE = "700";
+    private static final int DEFAULT_PAGE_SIZE = 700;
     private static final int NOT_SET_PAGE_SIZE = 0;
     private final FakeContext context = new FakeContext() {
         @Override
