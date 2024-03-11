@@ -40,11 +40,11 @@ import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
@@ -54,6 +54,8 @@ import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
@@ -114,21 +116,29 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         assertTrue(allEntitiesUpdated, "All candidates should have been updated with new version");
     }
 
-    @Test
-    void shouldUpdateDataEntriesWithGivenTypeWhenRequestContainsType() {
-        createPeriod();
+    @ParameterizedTest
+    @ValueSource(strings = {CandidateDao.TYPE, ApprovalStatusDao.TYPE, NoteDao.TYPE, NviPeriodDao.TYPE})
+    void shouldUpdateDataEntriesWithGivenTypeWhenRequestContainsType(String type) {
         var candidateDaos = generatedRepositoryCandidates();
         var approvalStatusDaos = generateCandidatesWithApprovalStatuses();
+        var noteDaos = generateRepositoryCandidatesWithNotes();
+        createPeriod();
+        var periodDaos = periodRepository.getPeriodsDao().toList();
 
         var scanDatabaseRequest = new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING,
-                                                          List.of(KeyField.CANDIDATE), TOPIC);
+                                                          List.of(KeyField.parse(type)), TOPIC);
         pushInitialEntryInEventBridge(scanDatabaseRequest);
         consumeEvents();
 
-        assertTrue(candidateDaos.stream().noneMatch(this::isSameVersionAsRepositoryCopy),
-                   "All candidates should have been updated with new version");
-        assertTrue(approvalStatusDaos.stream().allMatch(this::isSameVersionAsRepositoryCopy),
-                   "No approvals should have been updated with new version");
+        switch (type) {
+            case CandidateDao.TYPE ->
+                assertAllCandidatesUpdated(candidateDaos, approvalStatusDaos, noteDaos, periodDaos);
+            case ApprovalStatusDao.TYPE ->
+                assertAllAprovalsUpdated(candidateDaos, approvalStatusDaos, noteDaos, periodDaos);
+            case NoteDao.TYPE -> assertAllNotesUpdated(candidateDaos, approvalStatusDaos, noteDaos, periodDaos);
+            case NviPeriodDao.TYPE -> assertAllPeriodsUpdated(candidateDaos, approvalStatusDaos, noteDaos, periodDaos);
+            default -> throw new IllegalArgumentException("Unknown type: " + type);
+        }
     }
 
     @Test
@@ -241,6 +251,55 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
                    .level(DbLevel.LEVEL_ONE)
                    .channelType(ChannelType.JOURNAL)
                    .build();
+    }
+
+    private void assertAllPeriodsUpdated(List<CandidateDao> candidateDaos, List<ApprovalStatusDao> approvalStatusDaos,
+                                         List<NoteDao> noteDaos, List<NviPeriodDao> periodDaos) {
+        assertTrue(candidateDaos.stream().allMatch(this::isSameVersionAsRepositoryCopy),
+                   "No candidates should have been updated with new version");
+        assertTrue(approvalStatusDaos.stream().allMatch(this::isSameVersionAsRepositoryCopy),
+                   "No approvals should have been updated with new version");
+        assertTrue(noteDaos.stream().allMatch(this::isSameVersionAsRepositoryCopy),
+                   "No notes should have been updated with new version");
+        assertTrue(periodDaos.stream().noneMatch(this::isSameVersionAsRepositoryCopy),
+                   "All periods should have been updated with new version");
+    }
+
+    private void assertAllNotesUpdated(List<CandidateDao> candidateDaos, List<ApprovalStatusDao> approvalStatusDaos,
+                                       List<NoteDao> noteDaos, List<NviPeriodDao> periodDaos) {
+        assertTrue(candidateDaos.stream().allMatch(this::isSameVersionAsRepositoryCopy),
+                   "No candidates should have been updated with new version");
+        assertTrue(approvalStatusDaos.stream().allMatch(this::isSameVersionAsRepositoryCopy),
+                   "No approvals should have been updated");
+        assertTrue(noteDaos.stream().noneMatch(this::isSameVersionAsRepositoryCopy),
+                   "All notes should have been updated with new version");
+        assertTrue(periodDaos.stream().allMatch(this::isSameVersionAsRepositoryCopy),
+                   "No periods should have been updated");
+    }
+
+    private void assertAllAprovalsUpdated(List<CandidateDao> candidateDaos, List<ApprovalStatusDao> approvalStatusDaos,
+                                          List<NoteDao> noteDaos, List<NviPeriodDao> periodDaos) {
+        assertTrue(candidateDaos.stream().allMatch(this::isSameVersionAsRepositoryCopy),
+                   "No candidates should have been updated with new version");
+        assertTrue(approvalStatusDaos.stream().noneMatch(this::isSameVersionAsRepositoryCopy),
+                   "All approvals should have been updated with new version");
+        assertTrue(noteDaos.stream().allMatch(this::isSameVersionAsRepositoryCopy),
+                   "No notes should have been updated with new version");
+        assertTrue(periodDaos.stream().allMatch(this::isSameVersionAsRepositoryCopy),
+                   "No periods should have been updated");
+    }
+
+    private void assertAllCandidatesUpdated(List<CandidateDao> candidateDaos,
+                                            List<ApprovalStatusDao> approvalStatusDaos, List<NoteDao> noteDaos,
+                                            List<NviPeriodDao> periodDaos) {
+        assertTrue(candidateDaos.stream().noneMatch(this::isSameVersionAsRepositoryCopy),
+                   "All candidates should have been updated with new version");
+        assertTrue(approvalStatusDaos.stream().allMatch(this::isSameVersionAsRepositoryCopy),
+                   "No approvals should have been updated with new version");
+        assertTrue(noteDaos.stream().allMatch(this::isSameVersionAsRepositoryCopy),
+                   "No notes should have been updated with new version");
+        assertTrue(periodDaos.stream().allMatch(this::isSameVersionAsRepositoryCopy),
+                   "No periods should have been updated");
     }
 
     private void createPeriod() {
