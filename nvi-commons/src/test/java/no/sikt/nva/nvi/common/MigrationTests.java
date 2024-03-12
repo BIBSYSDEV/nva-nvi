@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createNoteRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createPeriod;
@@ -12,7 +13,6 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.net.URI;
-import java.util.Collections;
 import java.util.Map.Entry;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
@@ -45,7 +45,7 @@ public class MigrationTests extends LocalDynamoTest {
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
         nviService = new NviService(periodRepository, candidateRepository);
         var candidate = setupCandidateWithApprovalAndNotes();
-        nviService.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, null);
+        nviService.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
         var migratedCandidate = Candidate.fetch(candidate::getIdentifier, candidateRepository,
                                                 periodRepository);
         assertEquals(candidate, migratedCandidate);
@@ -54,7 +54,7 @@ public class MigrationTests extends LocalDynamoTest {
     @Test
     void shouldWriteBackPeriodAsIsWhenMigrating() {
         var period = nviService.createPeriod(createPeriod(String.valueOf(CURRENT_YEAR)));
-        nviService.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, null);
+        nviService.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
         var migratedPeriod = nviService.getPeriod(period.publishingYear());
         assertEquals(period, migratedPeriod);
     }
@@ -63,8 +63,8 @@ public class MigrationTests extends LocalDynamoTest {
     void shouldSetCreatedDateAndModifiedDateIfMissingWhenMigrating() {
         var publicationId = randomUri();
         var candidateToBeMigrated = getCandidateWithoutCreatedDateOrModifiedDate(publicationId);
-        candidateRepository.create(candidateToBeMigrated, Collections.emptyList());
-        nviService.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, null);
+        candidateRepository.create(candidateToBeMigrated, emptyList());
+        nviService.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
         var migratedCandidate = candidateRepository.findByPublicationId(publicationId).orElseThrow();
         assertNotNull(migratedCandidate.candidate().createdDate());
         assertNotNull(migratedCandidate.candidate().modifiedDate());
