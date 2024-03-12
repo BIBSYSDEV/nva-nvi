@@ -111,11 +111,6 @@ public record ScanDatabaseRequest(@JsonProperty(PAGE_SIZE_FIELD) int pageSize,
             return this;
         }
 
-        public Builder withTypes(List<KeyField> types) {
-            this.types = types;
-            return this;
-        }
-
         public ScanDatabaseRequest build() {
             return new ScanDatabaseRequest(pageSize, startMarker, types, topic);
         }
