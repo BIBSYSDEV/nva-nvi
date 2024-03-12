@@ -25,9 +25,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.DatabaseConstants;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
+import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -51,8 +53,6 @@ public class CandidateRepository extends DynamoRepository {
     public static final int DEFAULT_PAGE_SIZE = 700;
     private static final int BATCH_SIZE = 25;
     private static final long INITIAL_RETRY_WAIT_TIME_MS = 1000;
-    private static final String PRIMARY_KEY_HASH_KEY = "PrimaryKeyHashKey";
-    private static final String CANDIDATE_UNIQUENESS_ENTRY = "CandidateUniquenessEntry";
     protected final DynamoDbTable<CandidateDao> candidateTable;
     protected final DynamoDbTable<CandidateUniquenessEntryDao> uniquenessTable;
     protected final DynamoDbTable<ApprovalStatusDao> approvalStatusTable;
@@ -78,8 +78,8 @@ public class CandidateRepository extends DynamoRepository {
                                        .build();
     }
 
-    public ListingResult<Dao> scanEntries(int pageSize, Map<String, String> startMarker) {
-        var scan = defaultClient.scan(createScanRequest(pageSize, startMarker));
+    public ListingResult<Dao> scanEntries(int pageSize, Map<String, String> startMarker, List<KeyField> types) {
+        var scan = defaultClient.scan(createScanRequest(pageSize, startMarker, types));
         var items = extractDatabaseEntries(scan);
         return new ListingResult<>(thereAreMorePagesToScan(scan),
                                    toStringMap(scan.lastEvaluatedKey()),
@@ -110,10 +110,10 @@ public class CandidateRepository extends DynamoRepository {
     public CandidateDao create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses, String year) {
         var identifier = randomUUID();
         var candidate = CandidateDao.builder()
-                                   .identifier(identifier)
-                                   .candidate(dbCandidate)
-                                   .periodYear(year)
-                                   .build();
+                            .identifier(identifier)
+                            .candidate(dbCandidate)
+                            .periodYear(year)
+                            .build();
         var uniqueness = new CandidateUniquenessEntryDao(dbCandidate.publicationId().toString());
         var transactionBuilder = buildTransaction(approvalStatuses, candidate, identifier, uniqueness);
 
@@ -322,13 +322,13 @@ public class CandidateRepository extends DynamoRepository {
         return PutRequest.builder().item(dao).build();
     }
 
-    private ScanRequest createScanRequest(int pageSize, Map<String, String> startMarker) {
+    private ScanRequest createScanRequest(int pageSize, Map<String, String> startMarker, List<KeyField> types) {
         var start = nonNull(startMarker) ? toAttributeMap(startMarker) : null;
         return ScanRequest.builder()
                    .tableName(NVI_TABLE_NAME)
-                   .filterExpression("not contains (#PK, :TYPE) ")
-                   .expressionAttributeNames(Map.of("#PK", PRIMARY_KEY_HASH_KEY))
-                   .expressionAttributeValues(Map.of(":TYPE", AttributeValue.fromS(CANDIDATE_UNIQUENESS_ENTRY)))
+                   .expressionAttributeNames(Map.of("#PK", DatabaseConstants.SORT_KEY))
+                   .filterExpression(Dao.scanFilterExpressionForDataEntries(types))
+                   .expressionAttributeValues(Dao.scanFilterExpressionAttributeValues(types))
                    .exclusiveStartKey(start)
                    .limit(pageSize)
                    .build();

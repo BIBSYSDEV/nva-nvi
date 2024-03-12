@@ -34,12 +34,14 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.CandidateUniquenessEntryDao;
+import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.NviService;
@@ -53,6 +55,8 @@ import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
@@ -62,11 +66,11 @@ import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
 class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
 
-    public static final int ONE_ENTRY_PER_EVENT = 1;
-    public static final Map<String, String> START_FROM_BEGINNING = null;
-    public static final String OUTPUT_EVENT_TOPIC = "OUTPUT_EVENT_TOPIC";
-    public static final String TOPIC = new Environment().readEnv(OUTPUT_EVENT_TOPIC);
-    public static final int PAGE_SIZE = 4;
+    private static final int ONE_ENTRY_PER_EVENT = 1;
+    private static final Map<String, String> START_FROM_BEGINNING = null;
+    private static final String OUTPUT_EVENT_TOPIC = "OUTPUT_EVENT_TOPIC";
+    private static final String TOPIC = new Environment().readEnv(OUTPUT_EVENT_TOPIC);
+    private static final int PAGE_SIZE = 4;
     private EventBasedBatchScanHandler handler;
     private ByteArrayOutputStream output;
     private Context context;
@@ -93,7 +97,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         createRandomCandidates(100).forEach(item -> {
         });
 
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(ONE_ENTRY_PER_EVENT, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(ONE_ENTRY_PER_EVENT, START_FROM_BEGINNING, null, TOPIC));
 
         consumeEvents();
         assertThat(eventBridgeClient.getRequestEntries(), is(empty()));
@@ -104,13 +108,28 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         createPeriod();
         var daos = generatedRepositoryCandidates();
 
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
 
         consumeEvents();
 
-        var allEntitiesUpdated = daos.stream().noneMatch(this::isSameVersionAsRepositoryCopy);
+        assertTrue(hasUpdatedVersions(daos), "All candidates should have been updated with new version");
+    }
 
-        assertTrue(allEntitiesUpdated, "All candidates should have been updated with new version");
+    @ParameterizedTest
+    @ValueSource(strings = {CandidateDao.TYPE, ApprovalStatusDao.TYPE, NoteDao.TYPE, NviPeriodDao.TYPE})
+    void shouldUpdateDataEntriesWithGivenTypeWhenRequestContainsType(String type) {
+        createPeriod();
+        var candidateDaos = generatedRepositoryCandidates();
+        var approvalStatusDaos = generateCandidatesWithApprovalStatuses();
+        var noteDaos = generateRepositoryCandidatesWithNotes();
+        var periodDaos = periodRepository.getPeriodsDao().toList();
+
+        var scanDatabaseRequest = new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING,
+                                                          List.of(KeyField.parse(type)), TOPIC);
+        pushInitialEntryInEventBridge(scanDatabaseRequest);
+        consumeEvents();
+
+        assertExpectedDaosAreUpdated(type, candidateDaos, approvalStatusDaos, noteDaos, periodDaos);
     }
 
     @Test
@@ -119,10 +138,10 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         var dao =
             Optional.ofNullable(candidateRepository.create(randomDbCandidate(), List.of(), Year.now().toString()))
                 .map(CandidateDao::identifier)
-                       .map(candidateRepository::findDaoById)
-                       .orElseThrow();
+                .map(candidateRepository::findDaoById)
+                .orElseThrow();
 
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
 
         consumeEvents();
         var updated = candidateRepository.findDaoById(dao.identifier());
@@ -130,27 +149,16 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         assertEquals(dao.candidate(), updated.candidate());
     }
 
-    private static DbCandidate randomDbCandidate() {
-        return DbCandidate.builder()
-                   .publicationId(randomUri())
-                   .reportStatus(ReportStatus.REPORTED)
-                   .level(DbLevel.LEVEL_ONE)
-                   .channelType(ChannelType.JOURNAL)
-                   .build();
-    }
-
     @Test
     void shouldIterateAllNotes() {
         createPeriod();
         var daos = generateRepositoryCandidatesWithNotes();
 
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
 
         consumeEvents();
 
-        var allEntitiesUpdated = daos.stream().noneMatch(this::isSameVersionAsRepositoryCopy);
-
-        assertTrue(allEntitiesUpdated, "All notes should have been updated with new version");
+        assertTrue(hasUpdatedVersions(daos), "All notes should have been updated with new version");
     }
 
     @Test
@@ -158,13 +166,11 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         createPeriod();
         var daos = generateCandidatesWithApprovalStatuses();
 
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
 
         consumeEvents();
 
-        var allEntitiesUpdated = daos.stream().noneMatch(this::isSameVersionAsRepositoryCopy);
-
-        assertTrue(allEntitiesUpdated, "All approvals should have been updated with new version");
+        assertTrue(hasUpdatedVersions(daos), "All approvals should have been updated with new version");
     }
 
     @Test
@@ -175,13 +181,11 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
 
         var items = periodRepository.getPeriodsDao().toList();
 
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
 
         consumeEvents();
 
-        var allEntitiesUpdated = items.stream().noneMatch(this::isSameVersionAsRepositoryCopy);
-
-        assertTrue(allEntitiesUpdated, "All period entries should have been updated with new version");
+        assertTrue(hasUpdatedVersions(items), "All period entries should have been updated with new version");
     }
 
     @Test
@@ -192,7 +196,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
 
         var items = candidateRepository.getUniquenessEntries().toList();
 
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
 
         consumeEvents();
 
@@ -206,7 +210,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         createPeriod();
         var candidates = createRandomCandidates(10).toList();
 
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
 
         consumeEvents();
 
@@ -217,12 +221,76 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
 
     @Test
     void emptyResultShouldNotFail() throws IOException {
-        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, TOPIC));
+        pushInitialEntryInEventBridge(new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
 
         consumeEvents();
         var result = JsonUtils.dtoObjectMapper.readValue(output.toByteArray(), ListingResult.class);
 
         assertThat(result.getTotalItemCount(), is(0));
+    }
+
+    private static DbCandidate randomDbCandidate() {
+        return DbCandidate.builder()
+                   .publicationId(randomUri())
+                   .reportStatus(ReportStatus.REPORTED)
+                   .level(DbLevel.LEVEL_ONE)
+                   .channelType(ChannelType.JOURNAL)
+                   .build();
+    }
+
+    private void assertExpectedDaosAreUpdated(String type, List<CandidateDao> candidateDaos,
+                                              List<ApprovalStatusDao> approvalStatusDaos,
+                                              List<NoteDao> noteDaos, List<NviPeriodDao> periodDaos) {
+        switch (type) {
+            case CandidateDao.TYPE ->
+                assertOnlyCandidatesUpdated(candidateDaos, approvalStatusDaos, noteDaos, periodDaos);
+            case ApprovalStatusDao.TYPE ->
+                assertOnlyAprovalsUpdated(candidateDaos, approvalStatusDaos, noteDaos, periodDaos);
+            case NoteDao.TYPE -> assertOnlyNotesUpdated(candidateDaos, approvalStatusDaos, noteDaos, periodDaos);
+            case NviPeriodDao.TYPE -> assertOnlyPeriodsUpdated(candidateDaos, approvalStatusDaos, noteDaos, periodDaos);
+            default -> throw new IllegalArgumentException("Unknown type: " + type);
+        }
+    }
+
+    private void assertOnlyPeriodsUpdated(List<CandidateDao> candidateDaos, List<ApprovalStatusDao> approvalStatusDaos,
+                                          List<NoteDao> noteDaos, List<NviPeriodDao> periodDaos) {
+        assertTrue(hasSameVerions(candidateDaos));
+        assertTrue(hasSameVerions(approvalStatusDaos));
+        assertTrue(hasSameVerions(noteDaos));
+        assertTrue(hasUpdatedVersions(periodDaos));
+    }
+
+    private void assertOnlyNotesUpdated(List<CandidateDao> candidateDaos, List<ApprovalStatusDao> approvalStatusDaos,
+                                        List<NoteDao> noteDaos, List<NviPeriodDao> periodDaos) {
+        assertTrue(hasSameVerions(candidateDaos));
+        assertTrue(hasSameVerions(approvalStatusDaos));
+        assertTrue(hasUpdatedVersions(noteDaos));
+        assertTrue(hasSameVerions(periodDaos));
+    }
+
+    private void assertOnlyAprovalsUpdated(List<CandidateDao> candidateDaos, List<ApprovalStatusDao> approvalStatusDaos,
+                                           List<NoteDao> noteDaos, List<NviPeriodDao> periodDaos) {
+        assertTrue(hasSameVerions(candidateDaos));
+        assertTrue(hasUpdatedVersions(approvalStatusDaos));
+        assertTrue(hasSameVerions(noteDaos));
+        assertTrue(hasSameVerions(periodDaos));
+    }
+
+    private void assertOnlyCandidatesUpdated(List<CandidateDao> candidateDaos,
+                                             List<ApprovalStatusDao> approvalStatusDaos, List<NoteDao> noteDaos,
+                                             List<NviPeriodDao> periodDaos) {
+        assertTrue(hasUpdatedVersions(candidateDaos));
+        assertTrue(hasSameVerions(approvalStatusDaos));
+        assertTrue(hasSameVerions(noteDaos));
+        assertTrue(hasSameVerions(periodDaos));
+    }
+
+    private boolean hasUpdatedVersions(List<? extends Dao> daos) {
+        return daos.stream().noneMatch(this::isSameVersionAsRepositoryCopy);
+    }
+
+    private boolean hasSameVerions(List<? extends Dao> daos) {
+        return daos.stream().allMatch(this::isSameVersionAsRepositoryCopy);
     }
 
     private void createPeriod() {
@@ -265,31 +333,27 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
                                .toDto());
     }
 
-    private boolean isSameVersionAsRepositoryCopy(CandidateDao dao) {
-        return Objects.equals(dao.version(), candidateRepository.findDaoById(dao.identifier()).version());
+    private boolean isSameVersionAsRepositoryCopy(Dao dao) {
+        var persistedDao = getPersistedDao(dao);
+        return Objects.equals(dao.version(), persistedDao.version());
     }
 
-    private boolean isSameVersionAsRepositoryCopy(CandidateUniquenessEntryDao item) {
-        return Objects.equals(item.version(), candidateRepository.getUniquenessEntry(item).version());
-    }
-
-    private boolean isSameVersionAsRepositoryCopy(ApprovalStatusDao dao) {
-        return Objects.equals(dao.version(),
-                              candidateRepository.findApprovalDaoByIdAndInstitutionId(dao.identifier(),
-                                                                                      dao.approvalStatus()
-                                                                                          .institutionId())
-                                  .version());
-    }
-
-    private boolean isSameVersionAsRepositoryCopy(NviPeriodDao item) {
-        return Objects.equals(item.version(),
-                              periodRepository.findDaoByPublishingYear(item.nviPeriod().publishingYear())
-                                  .version());
-    }
-
-    private boolean isSameVersionAsRepositoryCopy(NoteDao dao) {
-        return Objects.equals(dao.version(),
-                              candidateRepository.getNoteDaoById(dao.identifier(), dao.note().noteId()).version());
+    private Dao getPersistedDao(Dao dao) {
+        if (dao instanceof CandidateDao candidateDao) {
+            return candidateRepository.findDaoById(candidateDao.identifier());
+        } else if (dao instanceof ApprovalStatusDao approvalStatusDao) {
+            return candidateRepository.findApprovalDaoByIdAndInstitutionId(approvalStatusDao.identifier(),
+                                                                           approvalStatusDao.approvalStatus()
+                                                                               .institutionId());
+        } else if (dao instanceof NoteDao noteDao) {
+            return candidateRepository.getNoteDaoById(noteDao.identifier(), noteDao.note().noteId());
+        } else if (dao instanceof NviPeriodDao nviPeriodDao) {
+            return periodRepository.findDaoByPublishingYear(nviPeriodDao.nviPeriod().publishingYear());
+        } else if (dao instanceof CandidateUniquenessEntryDao candidateUniquenessEntryDao) {
+            return candidateRepository.getUniquenessEntry(candidateUniquenessEntryDao);
+        } else {
+            throw new IllegalArgumentException("Unknown type: " + dao);
+        }
     }
 
     private ScanDatabaseRequest consumeLatestEmittedEvent() {

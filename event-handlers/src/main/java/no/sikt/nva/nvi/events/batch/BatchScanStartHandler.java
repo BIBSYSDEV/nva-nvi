@@ -31,7 +31,7 @@ public class BatchScanStartHandler implements RequestStreamHandler {
     @Override
     public void handleRequest(InputStream input, OutputStream output, Context context) {
 
-        new ScanDatabaseRequest.Builder()
+        ScanDatabaseRequest.builder()
             .fromInputStream(input)
             .withTopic(TOPIC)
             .build()
