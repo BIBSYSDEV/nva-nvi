@@ -349,13 +349,11 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
             return candidateRepository.getNoteDaoById(noteDao.identifier(), noteDao.note().noteId());
         } else if (dao instanceof NviPeriodDao nviPeriodDao) {
             return periodRepository.findDaoByPublishingYear(nviPeriodDao.nviPeriod().publishingYear());
+        } else if (dao instanceof CandidateUniquenessEntryDao candidateUniquenessEntryDao) {
+            return candidateRepository.getUniquenessEntry(candidateUniquenessEntryDao);
         } else {
             throw new IllegalArgumentException("Unknown type: " + dao);
         }
-    }
-
-    private boolean isSameVersionAsRepositoryCopy(CandidateUniquenessEntryDao item) {
-        return Objects.equals(item.version(), candidateRepository.getUniquenessEntry(item).version());
     }
 
     private ScanDatabaseRequest consumeLatestEmittedEvent() {
