@@ -53,8 +53,6 @@ public class CandidateRepository extends DynamoRepository {
     public static final int DEFAULT_PAGE_SIZE = 700;
     private static final int BATCH_SIZE = 25;
     private static final long INITIAL_RETRY_WAIT_TIME_MS = 1000;
-    private static final String PRIMARY_KEY_HASH_KEY = "PrimaryKeyHashKey";
-    private static final String CANDIDATE_UNIQUENESS_ENTRY = "CandidateUniquenessEntry";
     protected final DynamoDbTable<CandidateDao> candidateTable;
     protected final DynamoDbTable<CandidateUniquenessEntryDao> uniquenessTable;
     protected final DynamoDbTable<ApprovalStatusDao> approvalStatusTable;

@@ -358,25 +358,6 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         return Objects.equals(item.version(), candidateRepository.getUniquenessEntry(item).version());
     }
 
-    private boolean isSameVersionAsRepositoryCopy(ApprovalStatusDao dao) {
-        return Objects.equals(dao.version(),
-                              candidateRepository.findApprovalDaoByIdAndInstitutionId(dao.identifier(),
-                                                                                      dao.approvalStatus()
-                                                                                          .institutionId())
-                                  .version());
-    }
-
-    private boolean isSameVersionAsRepositoryCopy(NviPeriodDao item) {
-        return Objects.equals(item.version(),
-                              periodRepository.findDaoByPublishingYear(item.nviPeriod().publishingYear())
-                                  .version());
-    }
-
-    private boolean isSameVersionAsRepositoryCopy(NoteDao dao) {
-        return Objects.equals(dao.version(),
-                              candidateRepository.getNoteDaoById(dao.identifier(), dao.note().noteId()).version());
-    }
-
     private ScanDatabaseRequest consumeLatestEmittedEvent() {
         var allRequests = eventBridgeClient.getRequestEntries();
         var latest = allRequests.remove(allRequests.size() - 1);
