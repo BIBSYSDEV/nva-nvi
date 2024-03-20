@@ -377,7 +377,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
                    .map(item -> Candidate.upsert(createUpsertCandidateRequest(randomUri()), candidateRepository,
                                                  periodRepository))
                    .map(Optional::orElseThrow)
-                   .map(a -> a.createNote(new CreateNoteRequest(randomString(), randomString())));
+                   .map(a -> a.createNote(new CreateNoteRequest(randomString(), randomString(), randomUri())));
     }
 
     private InputStream eventToInputStream(ScanDatabaseRequest scanDatabaseRequest) {

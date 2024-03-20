@@ -72,7 +72,7 @@ public class CandidateNotesTest extends LocalDynamoTest {
     void shouldDeleteNoteWhenValidDeleteNoteRequest() {
         var candidate = createCandidate();
         var username = randomString();
-        var candidateWithNote = candidate.createNote(new CreateNoteRequest(randomString(), username));
+        var candidateWithNote = candidate.createNote(new CreateNoteRequest(randomString(), username, randomUri()));
         var noteToDelete = candidateWithNote.toDto().notes().get(0);
         var updatedCandidate = candidate.deleteNote(new DeleteNoteRequest(noteToDelete.identifier(), username));
 
@@ -82,7 +82,7 @@ public class CandidateNotesTest extends LocalDynamoTest {
     @Test
     void shouldThrowUnauthorizedOperationExceptionWhenRequesterIsNotAnOwner() {
         var candidate = createCandidate();
-        var candidateWithNote = candidate.createNote(new CreateNoteRequest(randomString(), randomString()));
+        var candidateWithNote = candidate.createNote(new CreateNoteRequest(randomString(), randomString(), randomUri()));
         var noteToDelete = candidateWithNote.toDto().notes().get(0);
 
         assertThrows(UnauthorizedOperationException.class,

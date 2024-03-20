@@ -166,20 +166,25 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         return createRequest(identifier, body, userName, randomUri());
     }
 
-    private InputStream createRequest(UUID identifier, NviNoteRequest body, String userName, URI customerId1)
+    private InputStream createRequest(UUID identifier, NviNoteRequest body, String userName, URI institutionId)
         throws JsonProcessingException {
-        return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper).withBody(body)
-                   .withCurrentCustomer(customerId1)
+        var customerId = randomUri();
+        return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper)
+                   .withBody(body)
+                   .withCurrentCustomer(customerId)
+                   .withTopLevelCristinOrgId(institutionId)
                    .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
-                   .withAccessRights(customerId1, AccessRight.MANAGE_NVI_CANDIDATES)
+                   .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
                    .withUserName(userName)
                    .build();
     }
 
     private InputStream createRequest(UUID identifier, String body, String userName) throws JsonProcessingException {
         var customerId = randomUri();
-        return new HandlerRequestBuilder<String>(JsonUtils.dtoObjectMapper).withBody(body)
+        return new HandlerRequestBuilder<String>(JsonUtils.dtoObjectMapper)
+                   .withBody(body)
                    .withCurrentCustomer(customerId)
+                   .withTopLevelCristinOrgId(randomUri())
                    .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
                    .withUserName(userName)

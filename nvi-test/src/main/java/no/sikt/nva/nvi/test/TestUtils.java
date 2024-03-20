@@ -382,7 +382,7 @@ public final class TestUtils {
     }
 
     public static CreateNoteRequest createNoteRequest(String text, String username) {
-        return new CreateNoteRequest(text, username);
+        return new CreateNoteRequest(text, username, randomUri());
     }
 
     private static DbCandidate randomCandidateWithYear(String year) {
