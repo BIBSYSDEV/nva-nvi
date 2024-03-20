@@ -64,6 +64,10 @@ public class Approval {
         return reason;
     }
 
+    public boolean isAssigned() {
+        return nonNull(assignee) && nonNull(assignee.value());
+    }
+
     public Approval update(UpdateApprovalRequest input) {
         if (input instanceof UpdateAssigneeRequest request) {
             var newDao = repository.updateApprovalStatusDao(identifier, updateAssignee(request));
@@ -138,10 +142,6 @@ public class Approval {
         return new DbApprovalStatus(institutionId, DbStatus.REJECTED,
                                     assigneeOrUsername(username),
                                     username, Instant.now(), request.reason());
-    }
-
-    private boolean isAssigned() {
-        return nonNull(assignee) && nonNull(assignee.value());
     }
 
     private no.sikt.nva.nvi.common.db.model.Username assigneeOrUsername(

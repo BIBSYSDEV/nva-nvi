@@ -42,6 +42,7 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
+import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
@@ -60,6 +61,7 @@ import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
 public final class Candidate {
+
     private static final Environment ENVIRONMENT = new Environment();
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
@@ -251,8 +253,9 @@ public final class Candidate {
 
     public Candidate createNote(CreateNoteRequest input) {
         validateCandidateState();
-        var noteBO = Note.fromRequest(input, identifier, repository);
-        notes.put(noteBO.getNoteId(), noteBO);
+        var note = Note.fromRequest(input, identifier, repository);
+        notes.put(note.getNoteId(), note);
+        setUserAsAssigneeIfApprovalIsUnassigned(input.username(), input.institutionId());
         return this;
     }
 
@@ -560,6 +563,16 @@ public final class Candidate {
 
     private static String mapToUsernameString(Username assignee) {
         return assignee != null ? assignee.value() : null;
+    }
+
+    private void setUserAsAssigneeIfApprovalIsUnassigned(String username, URI institutionId) {
+        approvals.computeIfPresent(institutionId, (uri, approval) -> updateAssigneeIfUnassigned(username, approval));
+    }
+
+    private Approval updateAssigneeIfUnassigned(String username, Approval approval) {
+        return approval.isAssigned()
+                   ? approval
+                   : approval.update(new UpdateAssigneeRequest(approval.getInstitutionId(), username));
     }
 
     private boolean areAllApprovalStatusesEqualTo(ApprovalStatus approvalStatus) {

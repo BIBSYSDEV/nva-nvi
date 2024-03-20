@@ -9,12 +9,12 @@ import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.exceptions.NotApplicableException;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
-import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.utils.RequestUtil;
-import no.sikt.nva.nvi.common.exceptions.NotApplicableException;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -46,9 +46,11 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         validate(input);
         var username = RequestUtil.getUsername(requestInfo);
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
+        var institutionId = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         return attempt(() -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
                    .map(this::checkIfApplicable)
-                   .map(candidate -> candidate.createNote(new CreateNoteRequest(input.text(), username.value())))
+                   .map(candidate -> candidate.createNote(new CreateNoteRequest(input.text(), username.value(),
+                                                                                institutionId)))
                    .map(Candidate::toDto)
                    .orElseThrow(ExceptionMapper::map);
     }
