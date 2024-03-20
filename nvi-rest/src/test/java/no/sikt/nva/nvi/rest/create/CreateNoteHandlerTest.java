@@ -8,6 +8,9 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -15,11 +18,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.time.Year;
 import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
+import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -105,8 +111,8 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         var candidateBO = Candidate.upsert(createUpsertCandidateRequest(randomUri()),
                                            candidateRepository, periodRepository).orElseThrow();
         var nonCandidate = Candidate.updateNonCandidate(
-                createUpsertNonCandidateRequest(candidateBO.getPublicationDetails().publicationId()),
-                candidateRepository).orElseThrow();
+            createUpsertNonCandidateRequest(candidateBO.getPublicationDetails().publicationId()),
+            candidateRepository).orElseThrow();
         var request = createRequest(nonCandidate.getIdentifier(), randomNote(), randomString());
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -114,13 +120,58 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_BAD_METHOD)));
     }
 
+    @Test
+    void shouldSetUserAsAssigneeWhenUsersInstitutionApprovalIsUnassigned() throws IOException {
+        var institutionId = randomUri();
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository,
+                                         periodRepository).orElseThrow();
+        assertNull(candidate.getApprovals().get(institutionId).getAssignee());
+        var userName = randomString();
+        var request = createRequest(candidate.getIdentifier(), randomNote(), userName, institutionId);
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class).getBodyObject(CandidateDto.class);
+        var actualAssignee = getActualAssignee(response, institutionId);
+        assertEquals(userName, actualAssignee);
+    }
+
+    @Test
+    void shouldNotSetUserAsAssigneeWhenUsersInstitutionApprovalHasAssignee() throws IOException {
+        var institutionId = randomUri();
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository,
+                                         periodRepository).orElseThrow();
+        var existingApprovalAssignee = randomString();
+        candidate.updateApproval(new UpdateAssigneeRequest(institutionId, existingApprovalAssignee));
+        assertNotNull(candidate.getApprovals().get(institutionId).getAssignee());
+        var request = createRequest(candidate.getIdentifier(), randomNote(), randomString(), institutionId);
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class).getBodyObject(CandidateDto.class);
+        var actualAssignee = getActualAssignee(response, institutionId);
+        assertEquals(existingApprovalAssignee, actualAssignee);
+    }
+
+    private static String getActualAssignee(CandidateDto response, URI institutionId) {
+        return response.approvals().stream()
+                   .filter(approval -> isInstitutionId(institutionId, approval))
+                   .findFirst()
+                   .orElseThrow()
+                   .assignee();
+    }
+
+    private static boolean isInstitutionId(URI institutionId, ApprovalDto approval) {
+        return approval.institutionId().equals(institutionId);
+    }
+
     private InputStream createRequest(UUID identifier, NviNoteRequest body, String userName)
         throws JsonProcessingException {
-        var customerId = randomUri();
+        return createRequest(identifier, body, userName, randomUri());
+    }
+
+    private InputStream createRequest(UUID identifier, NviNoteRequest body, String userName, URI customerId1)
+        throws JsonProcessingException {
         return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper).withBody(body)
-                   .withCurrentCustomer(customerId)
+                   .withCurrentCustomer(customerId1)
                    .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
-                   .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
+                   .withAccessRights(customerId1, AccessRight.MANAGE_NVI_CANDIDATES)
                    .withUserName(userName)
                    .build();
     }
