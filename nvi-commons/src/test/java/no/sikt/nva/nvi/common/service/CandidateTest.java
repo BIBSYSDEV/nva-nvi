@@ -259,9 +259,7 @@ class CandidateTest extends LocalDynamoTest {
     @Test()
     @DisplayName("Should return global approval status pending when any approval is pending")
     void shouldReturnGlobalApprovalStatusPendingWhenAnyApprovalIsPending() {
-        var institution1 = randomUri();
-        var institution2 = randomUri();
-        var createRequest = createUpsertCandidateRequest(institution1, institution2);
+        var createRequest = createUpsertCandidateRequest(randomUri());
         var candidate = Candidate.upsert(createRequest, candidateRepository, periodRepository).orElseThrow();
         assertEquals(GlobalApprovalStatus.PENDING, candidate.getGlobalApprovalStatus());
     }
