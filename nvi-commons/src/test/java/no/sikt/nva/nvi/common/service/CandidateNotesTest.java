@@ -10,13 +10,16 @@ import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import java.net.URI;
 import java.time.ZonedDateTime;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
-import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -72,7 +75,7 @@ public class CandidateNotesTest extends LocalDynamoTest {
     void shouldDeleteNoteWhenValidDeleteNoteRequest() {
         var candidate = createCandidate();
         var username = randomString();
-        var candidateWithNote = candidate.createNote(new CreateNoteRequest(randomString(), username));
+        var candidateWithNote = candidate.createNote(new CreateNoteRequest(randomString(), username, randomUri()));
         var noteToDelete = candidateWithNote.toDto().notes().get(0);
         var updatedCandidate = candidate.deleteNote(new DeleteNoteRequest(noteToDelete.identifier(), username));
 
@@ -82,15 +85,43 @@ public class CandidateNotesTest extends LocalDynamoTest {
     @Test
     void shouldThrowUnauthorizedOperationExceptionWhenRequesterIsNotAnOwner() {
         var candidate = createCandidate();
-        var candidateWithNote = candidate.createNote(new CreateNoteRequest(randomString(), randomString()));
+        var candidateWithNote = candidate.createNote(
+            new CreateNoteRequest(randomString(), randomString(), randomUri()));
         var noteToDelete = candidateWithNote.toDto().notes().get(0);
 
         assertThrows(UnauthorizedOperationException.class,
                      () -> candidate.deleteNote(new DeleteNoteRequest(noteToDelete.identifier(), randomString())));
     }
 
-    private Candidate createCandidate() {
-        return Candidate.upsert(createUpsertCandidateRequest(randomUri()), candidateRepository,
+    @Test
+    void shouldSetUserCreatingNoteAsAssigneeIfApprovalIsUnassigned() {
+        var institutionId = randomUri();
+        var candidate = createCandidate(institutionId);
+        var username = randomString();
+        var noteRequest = new CreateNoteRequest(randomString(), username, institutionId);
+        var candidateWithNote = candidate.createNote(noteRequest);
+        var actualAssignee = candidateWithNote.getApprovals().get(institutionId).getAssignee();
+        assertEquals(username, actualAssignee.value());
+    }
+
+    @Test
+    void shouldNotSetUserCreatingNoteAsAssigneeIfApprovalHasAssignee() {
+        var institutionId = randomUri();
+        var candidate = createCandidate(institutionId);
+        var existingAssignee = randomString();
+        candidate.updateApproval(new UpdateAssigneeRequest(institutionId, existingAssignee));
+        var noteRequest = new CreateNoteRequest(randomString(), randomString(), institutionId);
+        var candidateWithNote = candidate.createNote(noteRequest);
+        var actualAssignee = candidateWithNote.getApprovals().get(institutionId).getAssignee();
+        assertEquals(existingAssignee, actualAssignee.value());
+    }
+
+    private Candidate createCandidate(URI institutionId) {
+        return Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository,
                                 periodRepository).orElseThrow();
+    }
+
+    private Candidate createCandidate() {
+        return createCandidate(randomUri());
     }
 }
