@@ -221,13 +221,15 @@ public final class Candidate {
         return REPORTED.equals(reportStatus);
     }
 
-    public ApprovalStatus getGlobalApprovalStatus() {
-        if (areAllApprovalStatusesEqualTo(APPROVED)) {
-            return APPROVED;
+    public GlobalApprovalStatus getGlobalApprovalStatus() {
+        if (areAnyApprovalsPending()) {
+            return GlobalApprovalStatus.PENDING;
+        } else if (areAllApprovalStatusesEqualTo(APPROVED)) {
+            return GlobalApprovalStatus.APPROVED;
         } else if (areAllApprovalStatusesEqualTo(REJECTED)) {
-            return REJECTED;
+            return GlobalApprovalStatus.REJECTED;
         } else {
-            return ApprovalStatus.PENDING;
+            return GlobalApprovalStatus.DISPUTE;
         }
     }
 
@@ -577,6 +579,10 @@ public final class Candidate {
 
     private boolean areAllApprovalStatusesEqualTo(ApprovalStatus approvalStatus) {
         return approvals.values().stream().map(Approval::getStatus).allMatch(approvalStatus::equals);
+    }
+
+    private boolean areAnyApprovalsPending() {
+        return approvals.values().stream().anyMatch(approval -> ApprovalStatus.PENDING.equals(approval.getStatus()));
     }
 
     private PublicationDetails mapToPublicationDetails(CandidateDao candidateDao) {
