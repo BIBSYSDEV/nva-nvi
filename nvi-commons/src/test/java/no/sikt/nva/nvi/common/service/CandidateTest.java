@@ -265,14 +265,17 @@ class CandidateTest extends LocalDynamoTest {
     }
 
     @Test()
-    @DisplayName("Should return global approval status dispute when all approvals are processed but conflicts exist")
-    void shouldReturnGlobalApprovalStatusDisputeWhenAllApprovalsAreProcessedButConflictsExist() {
+    @DisplayName("Should return global approval status dispute when a candidate has at least one Rejected and one "
+                 + "Approved approval")
+    void shouldReturnGlobalApprovalStatusDisputeWhenConflictsExist() {
         var institution1 = randomUri();
         var institution2 = randomUri();
-        var createRequest = createUpsertCandidateRequest(institution1, institution2);
+        var institution3 = randomUri();
+        var createRequest = createUpsertCandidateRequest(institution1, institution2, institution3);
         var candidate = Candidate.upsert(createRequest, candidateRepository, periodRepository).orElseThrow();
         candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.APPROVED, institution1, randomString()));
         candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.REJECTED, institution2, randomString()));
+        assertEquals(ApprovalStatus.PENDING, candidate.getApprovals().get(institution3).getStatus());
         assertEquals(GlobalApprovalStatus.DISPUTE, candidate.getGlobalApprovalStatus());
     }
 
