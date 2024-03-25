@@ -68,6 +68,7 @@ import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -252,19 +253,30 @@ class CandidateTest extends LocalDynamoTest {
         var candidate = Candidate.upsert(createRequest, candidateRepository, periodRepository).orElseThrow();
         candidate.updateApproval(createUpdateStatusRequest(approvalStatus, institution1, randomString()));
         candidate.updateApproval(createUpdateStatusRequest(approvalStatus, institution2, randomString()));
-        assertEquals(approvalStatus, candidate.getGlobalApprovalStatus());
+        assertEquals(approvalStatus.getValue(), candidate.getGlobalApprovalStatus().getValue());
     }
 
     @Test()
-    @DisplayName("Should return global approval status pending when all approvals neither approved or rejected")
-    void shouldReturnGlobalApprovalStatusPendingWhenAllApprovalDoNotHaveSameStatus() {
+    @DisplayName("Should return global approval status pending when any approval is pending")
+    void shouldReturnGlobalApprovalStatusPendingWhenAnyApprovalIsPending() {
+        var createRequest = createUpsertCandidateRequest(randomUri());
+        var candidate = Candidate.upsert(createRequest, candidateRepository, periodRepository).orElseThrow();
+        assertEquals(GlobalApprovalStatus.PENDING, candidate.getGlobalApprovalStatus());
+    }
+
+    @Test()
+    @DisplayName("Should return global approval status dispute when a candidate has at least one Rejected and one "
+                 + "Approved approval")
+    void shouldReturnGlobalApprovalStatusDisputeWhenConflictsExist() {
         var institution1 = randomUri();
         var institution2 = randomUri();
-        var createRequest = createUpsertCandidateRequest(institution1, institution2);
+        var institution3 = randomUri();
+        var createRequest = createUpsertCandidateRequest(institution1, institution2, institution3);
         var candidate = Candidate.upsert(createRequest, candidateRepository, periodRepository).orElseThrow();
         candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.APPROVED, institution1, randomString()));
         candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.REJECTED, institution2, randomString()));
-        assertEquals(ApprovalStatus.PENDING, candidate.getGlobalApprovalStatus());
+        assertEquals(ApprovalStatus.PENDING, candidate.getApprovals().get(institution3).getStatus());
+        assertEquals(GlobalApprovalStatus.DISPUTE, candidate.getGlobalApprovalStatus());
     }
 
     @Test

@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
@@ -221,13 +222,15 @@ public final class Candidate {
         return REPORTED.equals(reportStatus);
     }
 
-    public ApprovalStatus getGlobalApprovalStatus() {
-        if (areAllApprovalStatusesEqualTo(APPROVED)) {
-            return APPROVED;
-        } else if (areAllApprovalStatusesEqualTo(REJECTED)) {
-            return REJECTED;
+    public GlobalApprovalStatus getGlobalApprovalStatus() {
+        if (isDispute()) {
+            return GlobalApprovalStatus.DISPUTE;
+        } else if (areAnyApprovalsPending()) {
+            return GlobalApprovalStatus.PENDING;
+        } else if (areAllApprovalsApproved()) {
+            return GlobalApprovalStatus.APPROVED;
         } else {
-            return ApprovalStatus.PENDING;
+            return GlobalApprovalStatus.REJECTED;
         }
     }
 
@@ -575,8 +578,22 @@ public final class Candidate {
                    : approval.update(new UpdateAssigneeRequest(approval.getInstitutionId(), username));
     }
 
-    private boolean areAllApprovalStatusesEqualTo(ApprovalStatus approvalStatus) {
-        return approvals.values().stream().map(Approval::getStatus).allMatch(approvalStatus::equals);
+    private boolean isDispute() {
+        var approvalStatuses = streamApprovals().map(Approval::getStatus).toList();
+        return approvalStatuses.stream().anyMatch(APPROVED::equals)
+               && approvalStatuses.stream().anyMatch(REJECTED::equals);
+    }
+
+    private boolean areAllApprovalsApproved() {
+        return streamApprovals().map(Approval::getStatus).allMatch(APPROVED::equals);
+    }
+
+    private boolean areAnyApprovalsPending() {
+        return streamApprovals().anyMatch(approval -> ApprovalStatus.PENDING.equals(approval.getStatus()));
+    }
+
+    private Stream<Approval> streamApprovals() {
+        return approvals.values().stream();
     }
 
     private PublicationDetails mapToPublicationDetails(CandidateDao candidateDao) {
@@ -609,7 +626,7 @@ public final class Candidate {
     }
 
     private List<ApprovalDto> mapToApprovalDtos() {
-        return approvals.values().stream().map(this::mapToApprovalDto).toList();
+        return streamApprovals().map(this::mapToApprovalDto).toList();
     }
 
     private ApprovalDto mapToApprovalDto(Approval approval) {
