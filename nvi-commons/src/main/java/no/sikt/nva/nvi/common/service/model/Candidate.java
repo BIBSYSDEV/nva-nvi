@@ -585,7 +585,7 @@ public final class Candidate {
     }
 
     private boolean areAllApprovalsApproved() {
-        return streamApprovals().map(Approval::getStatus).allMatch(ApprovalStatus.APPROVED::equals);
+        return streamApprovals().map(Approval::getStatus).allMatch(APPROVED::equals);
     }
 
     private boolean areAnyApprovalsPending() {
