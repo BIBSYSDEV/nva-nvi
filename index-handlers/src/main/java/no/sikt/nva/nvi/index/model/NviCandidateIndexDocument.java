@@ -8,8 +8,8 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 
@@ -25,7 +25,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         int numberOfApprovals,
                                         BigDecimal points,
                                         BigDecimal publicationTypeChannelLevelPoints,
-                                        ApprovalStatus globalApprovalStatus,
+                                        GlobalApprovalStatus globalApprovalStatus,
                                         int creatorShareCount,
                                         BigDecimal internationalCollaborationFactor,
                                         ReportingPeriod reportingPeriod,
@@ -57,7 +57,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         private int numberOfApprovals;
         private BigDecimal points;
         private BigDecimal publicationTypeChannelLevelPoints;
-        private ApprovalStatus globalApprovalStatus;
+        private GlobalApprovalStatus globalApprovalStatus;
         private int creatorShareCount;
         private BigDecimal internationalCollaborationFactor;
         private ReportingPeriod reportingPeriod;
@@ -112,7 +112,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             return this;
         }
 
-        public Builder withGlobalApprovalStatus(ApprovalStatus globalApprovalStatus) {
+        public Builder withGlobalApprovalStatus(GlobalApprovalStatus globalApprovalStatus) {
             this.globalApprovalStatus = globalApprovalStatus;
             return this;
         }
