@@ -20,7 +20,7 @@ public final class ScientificPerson {
     @JsonProperty("forfattervekt")
     private String authorPointsForAffiliation;
     @JsonProperty("vektingstall")
-    private String publicationPoints;
+    private String publicationTypeLevelPoints;
     @JsonProperty("faktortall_samarbeid")
     private String collaborationFactor;
 
@@ -42,8 +42,8 @@ public final class ScientificPerson {
         return authorPointsForAffiliation;
     }
 
-    public String getPublicationPoints() {
-        return publicationPoints;
+    public String getPublicationTypeLevelPoints() {
+        return publicationTypeLevelPoints;
     }
 
     public String getOrganization() {
@@ -138,7 +138,7 @@ public final class ScientificPerson {
             scientificPerson.departmentIdentifier = this.departmentIdentifier;
             scientificPerson.cristinPersonIdentifier = this.cristinPersonIdentifier;
             scientificPerson.authorPointsForAffiliation = this.authorPoints;
-            scientificPerson.publicationPoints = this.publicationPoints;
+            scientificPerson.publicationTypeLevelPoints = this.publicationPoints;
             scientificPerson.collaborationFactor = this.cooperationPoints;
             return scientificPerson;
         }
