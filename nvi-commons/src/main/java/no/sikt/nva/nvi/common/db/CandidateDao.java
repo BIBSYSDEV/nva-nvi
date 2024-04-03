@@ -180,8 +180,9 @@ public final class CandidateDao extends Dao {
         return attempt(() -> JsonUtils.dtoObjectMapper.writeValueAsString(this)).orElseThrow();
     }
 
+    @DynamoDbAttribute(PERIOD_YEAR_FIELD)
     public String periodYear() {
-        return periodYear;
+        return isNull(periodYear) ? candidate.publicationDate().year() : periodYear;
     }
 
     public enum DbLevel {
@@ -395,7 +396,8 @@ public final class CandidateDao extends Dao {
             return Objects.hash(publicationId, publicationBucketUri, applicable, instanceType, channelType, channelId,
                                 level,
                                 publicationDate, internationalCollaboration, collaborationFactor, creatorCount,
-                                creatorShareCount, creators, basePoints, points, totalPoints, createdDate, reportStatus);
+                                creatorShareCount, creators, basePoints, points, totalPoints, createdDate,
+                                reportStatus);
         }
 
         @Deprecated
