@@ -375,6 +375,29 @@ class CandidateTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldSetPeriodYearWhenResettingCandidate() {
+        var nonApplicableCandidate = nonApplicableCandidate();
+
+        var updatedApplicableCandidate = Candidate.upsert(
+            createUpsertCandidateRequest(nonApplicableCandidate.getPublicationDetails().publicationId()),
+            candidateRepository,
+            periodRepository).orElseThrow();
+
+        assertThat(updatedApplicableCandidate.getPeriod().year(),
+                   is(equalTo(updatedApplicableCandidate.getPeriod().year())));
+    }
+
+    private Candidate nonApplicableCandidate() {
+        var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
+        var tempCandidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
+                                .orElseThrow();
+        var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationDetails().publicationId());
+        var candidateBO = Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
+        return Candidate.fetch(candidateBO::getIdentifier, candidateRepository,
+                               periodRepository);
+    }
+
+    @Test
     void shouldNotOverrideAssigneeWhenAssigneeAlreadyIsSet() {
         var institutionId = randomUri();
         var assignee = randomString();
