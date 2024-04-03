@@ -83,9 +83,9 @@ public final class ScientificPerson {
         private String departmentIdentifier;
         private String subDepartmentIdentifier;
         private String groupIdentifier;
-        private String authorPoints;
+        private String authorPointsForAffiliation;
         private String publicationTypeLevelPoints;
-        private String cooperationPoints;
+        private String collaborationFactor;
 
         private Builder() {
         }
@@ -115,8 +115,8 @@ public final class ScientificPerson {
             return this;
         }
 
-        public Builder withAuthorPoints(String authorPoints) {
-            this.authorPoints = authorPoints;
+        public Builder withAuthorPointsForAffiliation(String authorPoints) {
+            this.authorPointsForAffiliation = authorPoints;
             return this;
         }
 
@@ -125,8 +125,8 @@ public final class ScientificPerson {
             return this;
         }
 
-        public Builder withCooperationPoints(String cooperationPoints) {
-            this.cooperationPoints = cooperationPoints;
+        public Builder withCollaborationFactor(String collaborationFactor) {
+            this.collaborationFactor = collaborationFactor;
             return this;
         }
 
@@ -137,9 +137,9 @@ public final class ScientificPerson {
             scientificPerson.subDepartmentIdentifier = this.subDepartmentIdentifier;
             scientificPerson.departmentIdentifier = this.departmentIdentifier;
             scientificPerson.cristinPersonIdentifier = this.cristinPersonIdentifier;
-            scientificPerson.authorPointsForAffiliation = this.authorPoints;
+            scientificPerson.authorPointsForAffiliation = this.authorPointsForAffiliation;
             scientificPerson.publicationTypeLevelPoints = this.publicationTypeLevelPoints;
-            scientificPerson.collaborationFactor = this.cooperationPoints;
+            scientificPerson.collaborationFactor = this.collaborationFactor;
             return scientificPerson;
         }
     }
