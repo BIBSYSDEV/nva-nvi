@@ -520,6 +520,7 @@ public final class Candidate {
                                   .modifiedDate(Instant.now())
                                   .build())
                    .version(randomUUID().toString())
+                   .periodYear(request.publicationDate().year())
                    .build();
     }
 
