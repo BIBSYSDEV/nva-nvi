@@ -182,7 +182,16 @@ public final class CandidateDao extends Dao {
 
     @DynamoDbAttribute(PERIOD_YEAR_FIELD)
     public String periodYear() {
-        return isNull(periodYear) ? candidate.publicationDate().year() : periodYear;
+        return migratePeriodYear();
+    }
+
+    @Deprecated
+    private String migratePeriodYear() {
+        return isApplicableAndMissingPeriodYear() ? candidate.publicationDate().year() : periodYear;
+    }
+
+    private boolean isApplicableAndMissingPeriodYear() {
+        return isNull(periodYear) && candidate.applicable();
     }
 
     public enum DbLevel {
