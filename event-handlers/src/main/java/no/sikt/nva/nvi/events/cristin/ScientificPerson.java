@@ -17,6 +17,12 @@ public final class ScientificPerson {
     private String subDepartmentIdentifier;
     @JsonProperty("gruppenr")
     private String groupIdentifier;
+    @JsonProperty("forfattervekt")
+    private String authorPointsForAffiliation;
+    @JsonProperty("vektingstall")
+    private String publicationTypeLevelPoints;
+    @JsonProperty("faktortall_samarbeid")
+    private String collaborationFactor;
 
     @JacocoGenerated
     @JsonCreator
@@ -26,6 +32,18 @@ public final class ScientificPerson {
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    public String getCollaborationFactor() {
+        return collaborationFactor;
+    }
+
+    public String getAuthorPointsForAffiliation() {
+        return authorPointsForAffiliation;
+    }
+
+    public String getPublicationTypeLevelPoints() {
+        return publicationTypeLevelPoints;
     }
 
     public String getOrganization() {
@@ -65,6 +83,9 @@ public final class ScientificPerson {
         private String departmentIdentifier;
         private String subDepartmentIdentifier;
         private String groupIdentifier;
+        private String authorPointsForAffiliation;
+        private String publicationTypeLevelPoints;
+        private String collaborationFactor;
 
         private Builder() {
         }
@@ -94,6 +115,21 @@ public final class ScientificPerson {
             return this;
         }
 
+        public Builder withAuthorPointsForAffiliation(String authorPoints) {
+            this.authorPointsForAffiliation = authorPoints;
+            return this;
+        }
+
+        public Builder withPublicationTypeLevelPoints(String publicationPoints) {
+            this.publicationTypeLevelPoints = publicationPoints;
+            return this;
+        }
+
+        public Builder withCollaborationFactor(String collaborationFactor) {
+            this.collaborationFactor = collaborationFactor;
+            return this;
+        }
+
         public ScientificPerson build() {
             ScientificPerson scientificPerson = new ScientificPerson();
             scientificPerson.groupIdentifier = this.groupIdentifier;
@@ -101,6 +137,9 @@ public final class ScientificPerson {
             scientificPerson.subDepartmentIdentifier = this.subDepartmentIdentifier;
             scientificPerson.departmentIdentifier = this.departmentIdentifier;
             scientificPerson.cristinPersonIdentifier = this.cristinPersonIdentifier;
+            scientificPerson.authorPointsForAffiliation = this.authorPointsForAffiliation;
+            scientificPerson.publicationTypeLevelPoints = this.publicationTypeLevelPoints;
+            scientificPerson.collaborationFactor = this.collaborationFactor;
             return scientificPerson;
         }
     }
