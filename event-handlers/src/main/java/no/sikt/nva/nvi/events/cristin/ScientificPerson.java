@@ -18,11 +18,11 @@ public final class ScientificPerson {
     @JsonProperty("gruppenr")
     private String groupIdentifier;
     @JsonProperty("forfattervekt")
-    private String authorPoints;
+    private String authorPointsForAffiliation;
     @JsonProperty("vektingstall")
     private String publicationPoints;
     @JsonProperty("faktortall_samarbeid")
-    private String cooperationPoints;
+    private String collaborationFactor;
 
     @JacocoGenerated
     @JsonCreator
@@ -34,12 +34,12 @@ public final class ScientificPerson {
         return new Builder();
     }
 
-    public String getCooperationPoints() {
-        return cooperationPoints;
+    public String getCollaborationFactor() {
+        return collaborationFactor;
     }
 
-    public String getAuthorPoints() {
-        return authorPoints;
+    public String getAuthorPointsForAffiliation() {
+        return authorPointsForAffiliation;
     }
 
     public String getPublicationPoints() {
@@ -137,9 +137,9 @@ public final class ScientificPerson {
             scientificPerson.subDepartmentIdentifier = this.subDepartmentIdentifier;
             scientificPerson.departmentIdentifier = this.departmentIdentifier;
             scientificPerson.cristinPersonIdentifier = this.cristinPersonIdentifier;
-            scientificPerson.authorPoints = this.authorPoints;
+            scientificPerson.authorPointsForAffiliation = this.authorPoints;
             scientificPerson.publicationPoints = this.publicationPoints;
-            scientificPerson.cooperationPoints = this.cooperationPoints;
+            scientificPerson.collaborationFactor = this.cooperationPoints;
             return scientificPerson;
         }
     }
