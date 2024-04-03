@@ -8,7 +8,6 @@ import static no.sikt.nva.nvi.events.cristin.CristinNviReportEventConsumer.NVI_E
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -36,7 +35,6 @@ import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
-import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -177,6 +175,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
                    .withCristinLocales(List.of(randomCristinLocale()))
                    .withScientificResources(List.of(scientificResource()))
                    .withInstanceType(randomString())
+                   .withReference(randomString())
                    .build();
     }
 
@@ -204,6 +203,9 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
                    .withSubDepartmentIdentifier(randomString())
                    .withGroupIdentifier(randomString())
                    .withGroupIdentifier(randomString())
+                   .withAuthorPoints(randomString())
+                   .withCooperationPoints(randomString())
+                   .withPublicationPoints(randomString())
                    .build();
     }
 

@@ -17,6 +17,12 @@ public final class ScientificPerson {
     private String subDepartmentIdentifier;
     @JsonProperty("gruppenr")
     private String groupIdentifier;
+    @JsonProperty("forfattervekt")
+    private String authorPoints;
+    @JsonProperty("vektingstall")
+    private String publicationPoints;
+    @JsonProperty("faktortall_samarbeid")
+    private String cooperationPoints;
 
     @JacocoGenerated
     @JsonCreator
@@ -26,6 +32,18 @@ public final class ScientificPerson {
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    public String getCooperationPoints() {
+        return cooperationPoints;
+    }
+
+    public String getAuthorPoints() {
+        return authorPoints;
+    }
+
+    public String getPublicationPoints() {
+        return publicationPoints;
     }
 
     public String getOrganization() {
@@ -65,6 +83,9 @@ public final class ScientificPerson {
         private String departmentIdentifier;
         private String subDepartmentIdentifier;
         private String groupIdentifier;
+        private String authorPoints;
+        private String publicationPoints;
+        private String cooperationPoints;
 
         private Builder() {
         }
@@ -94,6 +115,21 @@ public final class ScientificPerson {
             return this;
         }
 
+        public Builder withAuthorPoints(String authorPoints) {
+            this.authorPoints = authorPoints;
+            return this;
+        }
+
+        public Builder withPublicationPoints(String publicationPoints) {
+            this.publicationPoints = publicationPoints;
+            return this;
+        }
+
+        public Builder withCooperationPoints(String cooperationPoints) {
+            this.cooperationPoints = cooperationPoints;
+            return this;
+        }
+
         public ScientificPerson build() {
             ScientificPerson scientificPerson = new ScientificPerson();
             scientificPerson.groupIdentifier = this.groupIdentifier;
@@ -101,6 +137,9 @@ public final class ScientificPerson {
             scientificPerson.subDepartmentIdentifier = this.subDepartmentIdentifier;
             scientificPerson.departmentIdentifier = this.departmentIdentifier;
             scientificPerson.cristinPersonIdentifier = this.cristinPersonIdentifier;
+            scientificPerson.authorPoints = this.authorPoints;
+            scientificPerson.publicationPoints = this.publicationPoints;
+            scientificPerson.cooperationPoints = this.cooperationPoints;
             return scientificPerson;
         }
     }
