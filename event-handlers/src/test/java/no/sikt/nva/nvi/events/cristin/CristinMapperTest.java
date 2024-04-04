@@ -6,6 +6,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
@@ -37,7 +38,7 @@ class CristinMapperTest {
         var expectedInstitutionId = constructExpectedInstitutionId(cristinLocale);
         var expectedPointsForInstitution = BigDecimal.ZERO
                                                .add(new BigDecimal(POINTS_PER_CONTRIBUTOR))
-                                               .add(new BigDecimal(POINTS_PER_CONTRIBUTOR)).setScale(1);
+                                               .add(new BigDecimal(POINTS_PER_CONTRIBUTOR)).setScale(4, RoundingMode.HALF_UP);
 
         assertEquals(dbCandidate.points().get(0).points(), expectedPointsForInstitution);
         assertEquals(institutionId, expectedInstitutionId);

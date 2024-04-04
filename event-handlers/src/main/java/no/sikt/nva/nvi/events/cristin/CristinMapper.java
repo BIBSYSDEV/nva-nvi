@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.events.cristin;
 
 import static java.util.Objects.nonNull;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -76,9 +77,8 @@ public final class CristinMapper {
 
     private static List<DbInstitutionPoints> calculatePoints(CristinNviReport cristinNviReport) {
         var institutions = cristinNviReport.cristinLocales();
-        Map<URI, BigDecimal> collect = getCreators(cristinNviReport).stream()
-                                           .collect(collectToMapOfPoints(institutions));
-        return collect
+        return getCreators(cristinNviReport).stream()
+                   .collect(collectToMapOfPoints(institutions))
                    .entrySet()
                    .stream()
                    .map(CristinMapper::toDbInstitutionPoints)
@@ -96,11 +96,12 @@ public final class CristinMapper {
     private static Collector<ScientificPerson, ?, Map<URI, BigDecimal>> collectToMapOfPoints(
         List<CristinLocale> institutions) {
         return Collectors.groupingBy(scientificPerson -> getTopLevelOrganization(scientificPerson, institutions),
-                                     Collectors.reducing(BigDecimal.ZERO, CristinMapper::toBigDecimal,
+                                     Collectors.reducing(BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP),
+                                                         CristinMapper::extractAuthorPointsForAffiliation,
                                                          BigDecimal::add));
     }
 
-    private static BigDecimal toBigDecimal(ScientificPerson scientificPerson) {
+    private static BigDecimal extractAuthorPointsForAffiliation(ScientificPerson scientificPerson) {
         return new BigDecimal(scientificPerson.getAuthorPointsForAffiliation());
     }
 
