@@ -78,11 +78,16 @@ public final class CristinMapper {
     private static List<DbInstitutionPoints> calculatePoints(CristinNviReport cristinNviReport) {
         var institutions = cristinNviReport.cristinLocales();
         return getCreators(cristinNviReport).stream()
+                   .filter(CristinMapper::hasInstitutionPoints)
                    .collect(collectToMapOfPoints(institutions))
                    .entrySet()
                    .stream()
                    .map(CristinMapper::toDbInstitutionPoints)
                    .collect(Collectors.toList());
+    }
+
+    private static boolean hasInstitutionPoints(ScientificPerson scientificPerson) {
+        return nonNull(scientificPerson.getAuthorPointsForAffiliation());
     }
 
     private static DbInstitutionPoints toDbInstitutionPoints(Entry<URI, BigDecimal> entry) {

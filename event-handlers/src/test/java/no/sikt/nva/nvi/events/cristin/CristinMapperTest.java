@@ -6,6 +6,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.util.List;
@@ -15,7 +16,9 @@ import org.junit.jupiter.api.Test;
 
 class CristinMapperTest {
 
-    public static final double POINTS_PER_CONTRIBUTOR = 2.0;
+    private static final BigDecimal POINTS_PER_CONTRIBUTOR = new BigDecimal("2.1398");
+    private static final int CALCULATION_PRECISION = 10;
+    private static final int SCALE = 4;
 
     @Test
     void shouldThrowNullPointerExceptionWhenQualityCodeIsMissing() {
@@ -27,7 +30,8 @@ class CristinMapperTest {
     @Test
     void shouldUseCristinLocaleInstitutionWhenSummarizingPoints() {
         var institutionIdentifier = randomString();
-        var creators = List.of(scientificPersonAtInstitutionWithPoints(institutionIdentifier, POINTS_PER_CONTRIBUTOR),
+        var creators = List.of(scientificPersonAtInstitutionWithPoints(institutionIdentifier,
+                                                                       POINTS_PER_CONTRIBUTOR),
                                scientificPersonAtInstitutionWithPoints(institutionIdentifier, POINTS_PER_CONTRIBUTOR));
         var scientificResource = scientificResourceWithCreators(creators);
         var cristinLocale = cristinLocaleWithInstitutionIdentifier(institutionIdentifier);
@@ -36,9 +40,9 @@ class CristinMapperTest {
 
         var institutionId = dbCandidate.points().get(0).institutionId();
         var expectedInstitutionId = constructExpectedInstitutionId(cristinLocale);
-        var expectedPointsForInstitution = BigDecimal.ZERO
-                                               .add(new BigDecimal(POINTS_PER_CONTRIBUTOR))
-                                               .add(new BigDecimal(POINTS_PER_CONTRIBUTOR)).setScale(4, RoundingMode.HALF_UP);
+        var expectedPointsForInstitution = POINTS_PER_CONTRIBUTOR
+                                               .add(POINTS_PER_CONTRIBUTOR, new MathContext(CALCULATION_PRECISION, RoundingMode.HALF_UP))
+                                               .setScale(SCALE, RoundingMode.HALF_UP);
 
         assertEquals(dbCandidate.points().get(0).points(), expectedPointsForInstitution);
         assertEquals(institutionId, expectedInstitutionId);
@@ -74,14 +78,14 @@ class CristinMapperTest {
     }
 
     private static ScientificPerson scientificPersonAtInstitutionWithPoints(String institutionIdentifier,
-                                                                            double points) {
+                                                                            BigDecimal points) {
         return ScientificPerson.builder()
                    .withInstitutionIdentifier(institutionIdentifier)
                    .withDepartmentIdentifier(randomString())
                    .withSubDepartmentIdentifier(randomString())
                    .withGroupIdentifier(randomString())
                    .withPublicationTypeLevelPoints("1.0")
-                   .withAuthorPointsForAffiliation(String.valueOf(points))
+                   .withAuthorPointsForAffiliation(points.toString())
                    .build();
     }
 
