@@ -35,6 +35,7 @@ import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -99,7 +100,6 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
                    .getUri();
     }
 
-    //TODO: Test that creators are present in dbh_forskres_kontroll
     private void assertThatNviCandidateHasExpectedValues(Candidate candidate, CristinNviReport cristinNviReport) {
         assertThat(candidate.getApprovals().keySet().stream().toList(),
                    containsInAnyOrder(generateExpectedApprovalsIds(cristinNviReport).toArray()));
@@ -112,7 +112,8 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
         assertThat(candidate.isApplicable(), is(true));
         assertThat(candidate.getPeriod().year(), is(equalTo(String.valueOf(cristinNviReport.yearReported()))));
         assertThat(candidate.getPublicationDetails().level(), is(equalTo("1")));
-//        assertThat(candidate.getPublicationDetails().creators(), contains(constructExpectedCreator(cristinNviReport)));
+        assertThat(candidate.getPublicationDetails().creators(),
+                   Matchers.contains(constructExpectedCreator(cristinNviReport)));
         assertThat(candidate.getPublicationDetails().type(), is(equalTo(cristinNviReport.instanceType())));
         candidate.getApprovals()
             .values()

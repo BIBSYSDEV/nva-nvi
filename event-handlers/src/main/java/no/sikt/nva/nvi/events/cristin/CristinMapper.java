@@ -53,7 +53,7 @@ public final class CristinMapper {
                    .publicationBucketUri(constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
                    .publicationDate(constructPublicationDate(cristinNviReport.publicationDate()))
                    .instanceType(cristinNviReport.instanceType())
-                   //                   .creators(extractCreators(cristinNviReport))
+                   .creators(extractCreators(cristinNviReport))
                    .level(extractLevel(cristinNviReport))
                    .reportStatus(ReportStatus.REPORTED)
                    .applicable(true)
@@ -97,6 +97,7 @@ public final class CristinMapper {
     @JacocoGenerated
     public static List<DbCreator> extractCreators(CristinNviReport cristinNviReport) {
         return getCreators(cristinNviReport).stream()
+                   .filter(CristinMapper::hasInstitutionPoints)
                    .collect(groupByCristinIdentifierAndMapToAffiliationId())
                    .entrySet()
                    .stream()
