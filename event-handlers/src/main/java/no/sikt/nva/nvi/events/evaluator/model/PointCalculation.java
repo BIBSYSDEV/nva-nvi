@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.events.evaluator.model;
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 
 public record PointCalculation(InstanceType instanceType,
@@ -12,7 +13,7 @@ public record PointCalculation(InstanceType instanceType,
                                BigDecimal collaborationFactor,
                                BigDecimal basePoints,
                                int creatorShareCount,
-                               Map<URI, BigDecimal> institutionPoints,
+                               List<InstitutionPoints> institutionPoints,
                                BigDecimal totalPoints) {
 
 }
