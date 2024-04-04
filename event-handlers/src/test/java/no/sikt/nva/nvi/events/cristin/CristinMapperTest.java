@@ -63,7 +63,7 @@ class CristinMapperTest {
         var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
         var dbCandidate = CristinMapper.toDbCandidate(report);
 
-        var expectedBasePoints = new BigDecimal(BASE_POINTS_CRISTIN_ENTRY).setScale(1, RoundingMode.HALF_UP);
+        var expectedBasePoints = new BigDecimal(BASE_POINTS_CRISTIN_ENTRY).setScale(SCALE, RoundingMode.HALF_UP);
         assertEquals(dbCandidate.basePoints(), expectedBasePoints);
     }
 
@@ -77,7 +77,7 @@ class CristinMapperTest {
         var dbCandidate = CristinMapper.toDbCandidate(report);
 
         var expectedCollaborationFactor = new BigDecimal(INTERNATIONAL_COLLABORATION_FACTOR_CRISTIN_ENTRY)
-                                              .setScale(1, RoundingMode.HALF_UP);
+                                              .setScale(SCALE, RoundingMode.HALF_UP);
 
         assertEquals(dbCandidate.collaborationFactor(), expectedCollaborationFactor);
         assertTrue(dbCandidate.internationalCollaboration());
@@ -93,7 +93,7 @@ class CristinMapperTest {
         var dbCandidate = CristinMapper.toDbCandidate(report);
 
         var expectedCollaborationFactor = new BigDecimal(NO_INTERNATIONAL_COLLABORATION_FACTOR_CRISTIN_ENTRY)
-                                              .setScale(1, RoundingMode.HALF_UP);
+                                              .setScale(SCALE, RoundingMode.HALF_UP);
 
         assertEquals(dbCandidate.collaborationFactor(), expectedCollaborationFactor);
         assertFalse(dbCandidate.internationalCollaboration());
