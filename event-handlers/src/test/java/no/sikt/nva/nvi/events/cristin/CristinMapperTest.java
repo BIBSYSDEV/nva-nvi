@@ -7,9 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.math.RoundingMode;
 import java.net.URI;
-import java.math.BigDecimal;
 import java.util.List;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import nva.commons.core.paths.UriWrapper;
@@ -17,17 +18,40 @@ import org.junit.jupiter.api.Test;
 
 class CristinMapperTest {
 
-    public static final double POINTS_PER_CONTRIBUTOR = 2.0;
     private static final String INSTITUTION_IDENTIFIER = randomString();
     public static final String BASE_POINTS_CRISTIN_ENTRY = "1.0";
     public static final String INTERNATIONAL_COLLABORATION_FACTOR_CRISTIN_ENTRY = "1.3";
     public static final String NO_INTERNATIONAL_COLLABORATION_FACTOR_CRISTIN_ENTRY = "1.0";
+    private static final BigDecimal POINTS_PER_CONTRIBUTOR = new BigDecimal("2.1398");
+    private static final int CALCULATION_PRECISION = 10;
+    private static final int SCALE = 4;
 
     @Test
     void shouldThrowNullPointerExceptionWhenQualityCodeIsMissing() {
         var empty = emptyScientificResource();
-        var build = CristinNviReport.builder().withScientificResources(List.of(empty)).build();
-        assertThrows(NullPointerException.class, () -> CristinMapper.toDbCandidate(build));
+        var report = CristinNviReport.builder().withScientificResources(List.of(empty)).build();
+        assertThrows(NullPointerException.class, () -> CristinMapper.toDbCandidate(report));
+    }
+
+    @Test
+    void shouldUseCristinLocaleInstitutionWhenSummarizingPoints() {
+        var institutionIdentifier = randomString();
+        var creators = List.of(scientificPersonAtInstitutionWithPoints(institutionIdentifier,
+                                                                       POINTS_PER_CONTRIBUTOR),
+                               scientificPersonAtInstitutionWithPoints(institutionIdentifier, POINTS_PER_CONTRIBUTOR));
+        var scientificResource = scientificResourceWithCreators(creators);
+        var cristinLocale = cristinLocaleWithInstitutionIdentifier(institutionIdentifier);
+        var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
+        var dbCandidate = CristinMapper.toDbCandidate(report);
+
+        var institutionId = dbCandidate.points().get(0).institutionId();
+        var expectedInstitutionId = constructExpectedInstitutionId(cristinLocale);
+        var expectedPointsForInstitution = POINTS_PER_CONTRIBUTOR
+                                               .add(POINTS_PER_CONTRIBUTOR, new MathContext(CALCULATION_PRECISION, RoundingMode.HALF_UP))
+                                               .setScale(SCALE, RoundingMode.HALF_UP);
+
+        assertEquals(dbCandidate.points().get(0).points(), expectedPointsForInstitution);
+        assertEquals(institutionId, expectedInstitutionId);
     }
 
     @Test
@@ -105,27 +129,27 @@ class CristinMapperTest {
     }
 
     private static ScientificPerson scientificPersonAtInstitutionWithPoints(String institutionIdentifier,
-                                                                            double points) {
+                                                                            BigDecimal points) {
         return ScientificPerson.builder()
                    .withInstitutionIdentifier(institutionIdentifier)
                    .withDepartmentIdentifier(randomString())
                    .withSubDepartmentIdentifier(randomString())
                    .withGroupIdentifier(randomString())
                    .withPublicationTypeLevelPoints(BASE_POINTS_CRISTIN_ENTRY)
-                   .withAuthorPointsForAffiliation(String.valueOf(points))
+                   .withAuthorPointsForAffiliation(points.toString())
                    .withCollaborationFactor(INTERNATIONAL_COLLABORATION_FACTOR_CRISTIN_ENTRY)
                    .build();
     }
 
     private static ScientificPerson scientificPersonWithNoInternationalCollaboration(String institutionIdentifier,
-                                                                            double points) {
+                                                                                     BigDecimal points) {
         return ScientificPerson.builder()
                    .withInstitutionIdentifier(institutionIdentifier)
                    .withDepartmentIdentifier(randomString())
                    .withSubDepartmentIdentifier(randomString())
                    .withGroupIdentifier(randomString())
                    .withPublicationTypeLevelPoints(BASE_POINTS_CRISTIN_ENTRY)
-                   .withAuthorPointsForAffiliation(String.valueOf(points))
+                   .withAuthorPointsForAffiliation(points.toString())
                    .withCollaborationFactor(NO_INTERNATIONAL_COLLABORATION_FACTOR_CRISTIN_ENTRY)
                    .build();
     }

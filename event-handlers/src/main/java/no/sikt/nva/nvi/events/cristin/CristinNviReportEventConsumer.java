@@ -90,7 +90,9 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     }
 
     private CandidateDao createAndPersist(CristinNviReport cristinNviReport) {
-        return repository.create(createDbCandidate(cristinNviReport), createApprovals(cristinNviReport),
+        var approvals = createApprovals(cristinNviReport);
+        var candidate = createDbCandidate(cristinNviReport);
+        return repository.create(candidate, approvals,
                                  String.valueOf(cristinNviReport.yearReported()));
     }
 }
