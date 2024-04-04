@@ -180,8 +180,18 @@ public final class CandidateDao extends Dao {
         return attempt(() -> JsonUtils.dtoObjectMapper.writeValueAsString(this)).orElseThrow();
     }
 
+    @DynamoDbAttribute(PERIOD_YEAR_FIELD)
     public String periodYear() {
-        return periodYear;
+        return migratePeriodYear();
+    }
+
+    @Deprecated
+    private String migratePeriodYear() {
+        return isApplicableAndMissingPeriodYear() ? candidate.publicationDate().year() : periodYear;
+    }
+
+    private boolean isApplicableAndMissingPeriodYear() {
+        return isNull(periodYear) && candidate.applicable();
     }
 
     public enum DbLevel {
@@ -395,7 +405,8 @@ public final class CandidateDao extends Dao {
             return Objects.hash(publicationId, publicationBucketUri, applicable, instanceType, channelType, channelId,
                                 level,
                                 publicationDate, internationalCollaboration, collaborationFactor, creatorCount,
-                                creatorShareCount, creators, basePoints, points, totalPoints, createdDate, reportStatus);
+                                creatorShareCount, creators, basePoints, points, totalPoints, createdDate,
+                                reportStatus);
         }
 
         @Deprecated

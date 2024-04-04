@@ -7,11 +7,14 @@ import static no.sikt.nva.nvi.test.TestUtils.createPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import java.net.URI;
 import java.util.Map.Entry;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
@@ -68,6 +71,25 @@ public class MigrationTests extends LocalDynamoTest {
         var migratedCandidate = candidateRepository.findByPublicationId(publicationId).orElseThrow();
         assertNotNull(migratedCandidate.candidate().createdDate());
         assertNotNull(migratedCandidate.candidate().modifiedDate());
+    }
+
+    @Test
+    void shouldSetPeriodYearIfMissingWhenMigrating() {
+        var dbCandidate = randomCandidate();
+        var existingDao = candidateRepository.create(dbCandidate, emptyList(), null);
+        nviService.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
+        var migratedCandidate = candidateRepository.findCandidateById(existingDao.identifier()).orElseThrow();
+        assertNotNull(migratedCandidate.periodYear());
+        assertEquals(dbCandidate.publicationDate().year(), migratedCandidate.periodYear());
+    }
+
+    @Test
+    void shouldNotMigratePeriodYearCandidateIsNotApplicable() {
+        var dbCandidate = randomCandidateBuilder(false).build();
+        var existingDao = candidateRepository.create(dbCandidate, emptyList(), null);
+        nviService.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
+        var migratedCandidate = candidateRepository.findCandidateById(existingDao.identifier()).orElseThrow();
+        assertNull(migratedCandidate.periodYear());
     }
 
     private static DbCandidate getCandidateWithoutCreatedDateOrModifiedDate(URI publicationId) {
