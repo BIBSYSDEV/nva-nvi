@@ -228,17 +228,25 @@ class PointCalculatorTest {
     void shouldCalculatePointsForCreatorAffiliations() {
         var parameters = new PointParameters("AcademicArticle", "Journal", "1", false, 2, asBigDecimal("1"), null,
                                              asBigDecimal("1"));
-        var creator1 = randomUri();
-        var creator2 = randomUri();
-        var someSubUnitId = randomUri();
-        var institutionId = randomUri();
+        var creator1 = URI.create("https://www.example.com/" + "creator1");
+        var creator2 = URI.create("https://www.example.com/" + "creator2");
+        var someSubUnitId = URI.create("https://www.example.com/" + "someSubUnitId");
+        var institutionId = URI.create("https://www.example.com/" + "someTopLevelId");
         mockOrganizationResponseForAffiliation(institutionId, someSubUnitId, uriRetriever);
         var affiliations = List.of(someSubUnitId);
         var expandedResource = createExpandedResourceWithManyCreators(parameters, creator1, creator2, affiliations,
                                                                       affiliations);
         var pointCalculation = pointCalculator.calculatePoints(expandedResource,
-                                                               List.of(createCreator(creator1, affiliations),
-                                                                       createCreator(creator2, affiliations)));
+                                                               List.of(creatorWithAffiliations(creator1,
+                                                                                               List.of(
+                                                                                                   createNviOrganization(
+                                                                                                       someSubUnitId,
+                                                                                                       institutionId))),
+                                                                       creatorWithAffiliations(creator2,
+                                                                                               List.of(
+                                                                                                   createNviOrganization(
+                                                                                                       someSubUnitId,
+                                                                                                       institutionId)))));
         var expectedPointsForAffiliation = parameters.institution1Points()
                                                .divide(asBigDecimal("2"), RoundingMode.HALF_UP)
                                                .setScale(4, RoundingMode.HALF_UP);
@@ -266,7 +274,7 @@ class PointCalculatorTest {
     }
 
     private static BigDecimal getActualPoints(PointCalculation pointCalculation, URI institutionId) {
-        return getInstitutionPoints(pointCalculation, institutionId).getPoints();
+        return getInstitutionPoints(pointCalculation, institutionId).institutionPoints();
     }
 
     private static InstitutionPoints getInstitutionPoints(PointCalculation pointCalculation, URI institutionId) {
@@ -278,15 +286,26 @@ class PointCalculatorTest {
     }
 
     private static VerifiedNviCreator createCreator(URI creatorId, List<URI> institutionsIds) {
+        return creatorWithAffiliations(creatorId,
+                                       institutionsIds.stream().map(PointCalculatorTest::creatorOrganization).toList());
+    }
+
+    private static VerifiedNviCreator creatorWithAffiliations(URI creatorId, List<NviOrganization> affiliations) {
         return VerifiedNviCreator.builder()
                    .withId(creatorId)
-                   .withNviAffiliations(
-                       institutionsIds.stream().map(PointCalculatorTest::creatorOrganization).toList())
+                   .withNviAffiliations(affiliations)
                    .build();
     }
 
     private static NviOrganization creatorOrganization(URI id) {
         return NviOrganization.builder().withId(id).build();
+    }
+
+    private static NviOrganization createNviOrganization(URI someSubUnitId, URI institutionId) {
+        return NviOrganization.builder()
+                   .withId(someSubUnitId)
+                   .withTopLevelOrganization(new NviOrganization(institutionId, null))
+                   .build();
     }
 
     private static JsonNode setUpResourceWithOneCreatorWithUnverifiedAffiliations(URI nviCreatorId,
