@@ -82,7 +82,7 @@ public class EvaluatorService {
 
     private static Map<URI, BigDecimal> mapToInstitutionPoints(List<InstitutionPoints> institutionPoints) {
         return institutionPoints.stream().collect(Collectors.toMap(InstitutionPoints::institutionId,
-                                                                   InstitutionPoints::getPoints));
+                                                                   InstitutionPoints::institutionPoints));
     }
 
     private static List<NviCreator> mapToCreators(List<VerifiedNviCreator> nviCreators) {
