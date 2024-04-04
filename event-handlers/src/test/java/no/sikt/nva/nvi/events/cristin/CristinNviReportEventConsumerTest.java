@@ -167,13 +167,14 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
     }
 
     private CristinNviReport randomCristinNviReport() {
+        var institutionIdentifier = randomString();
         return CristinNviReport.builder()
                    .withCristinIdentifier(randomString())
                    .withPublicationIdentifier(randomUUID().toString())
                    .withYearReported(randomYear())
                    .withPublicationDate(randomPublicationDate())
-                   .withCristinLocales(List.of(randomCristinLocale()))
-                   .withScientificResources(List.of(scientificResource()))
+                   .withCristinLocales(List.of(randomCristinLocale(institutionIdentifier)))
+                   .withScientificResources(List.of(scientificResource(institutionIdentifier)))
                    .withInstanceType(randomString())
                    .withReference(randomString())
                    .build();
@@ -185,25 +186,26 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private ScientificResource scientificResource() {
+    private ScientificResource scientificResource(String institutionIdentifier) {
         var cristinIdentifier = randomString();
         return ScientificResource.build()
                    .withQualityCode("1")
                    .withReportedYear(randomYear())
-                   .withScientificPeople(List.of(scientificPersonWithCristinIdentifier(cristinIdentifier),
-                                                 scientificPersonWithCristinIdentifier(cristinIdentifier)))
+                   .withScientificPeople(List.of(scientificPersonWithCristinIdentifier(cristinIdentifier, institutionIdentifier),
+                                                 scientificPersonWithCristinIdentifier(cristinIdentifier, institutionIdentifier)))
                    .build();
     }
 
-    private ScientificPerson scientificPersonWithCristinIdentifier(String cristinIdentifier) {
+    private ScientificPerson scientificPersonWithCristinIdentifier(String personIdentifier,
+                                                                   String institutionIdentifier) {
         return ScientificPerson.builder()
-                   .withCristinPersonIdentifier(cristinIdentifier)
-                   .withInstitutionIdentifier(randomString())
+                   .withCristinPersonIdentifier(personIdentifier)
+                   .withInstitutionIdentifier(institutionIdentifier)
                    .withDepartmentIdentifier(randomString())
                    .withSubDepartmentIdentifier(randomString())
                    .withGroupIdentifier(randomString())
                    .withGroupIdentifier(randomString())
-                   .withAuthorPointsForAffiliation(randomString())
+                   .withAuthorPointsForAffiliation("1.0")
                    .withCollaborationFactor(randomString())
                    .withPublicationTypeLevelPoints(randomString())
                    .build();
@@ -215,11 +217,11 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
                                    randomString());
     }
 
-    private CristinLocale randomCristinLocale() {
+    private CristinLocale randomCristinLocale(String institutionIdentifier) {
         return CristinLocale.builder()
                    .withDateControlled(DATE_CONTROLLED)
                    .withControlStatus(STATUS_CONTROLLED)
-                   .withInstitutionIdentifier(randomString())
+                   .withInstitutionIdentifier(institutionIdentifier)
                    .withDepartmentIdentifier(randomString())
                    .withOwnerCode(randomString())
                    .withGroupIdentifier(randomString())

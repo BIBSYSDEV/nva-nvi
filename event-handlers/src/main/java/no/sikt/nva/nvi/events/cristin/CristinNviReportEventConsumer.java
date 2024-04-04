@@ -42,7 +42,7 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
         return null;
     }
 
-    private static DbCandidate createDbCandidate(CristinNviReport cristinNviReport) {
+    private static DbCandidate createDbCandidate(CristinNviReport cristinNviReport, List<DbApprovalStatus> approvals) {
         return attempt(() -> CristinMapper.toDbCandidate(cristinNviReport)).orElseThrow(
             CristinConversionException::fromFailure);
     }
@@ -90,7 +90,9 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     }
 
     private CandidateDao createAndPersist(CristinNviReport cristinNviReport) {
-        return repository.create(createDbCandidate(cristinNviReport), createApprovals(cristinNviReport),
+        var approvals = createApprovals(cristinNviReport);
+        var candidate = createDbCandidate(cristinNviReport, approvals);
+        return repository.create(candidate, approvals,
                                  String.valueOf(cristinNviReport.yearReported()));
     }
 }

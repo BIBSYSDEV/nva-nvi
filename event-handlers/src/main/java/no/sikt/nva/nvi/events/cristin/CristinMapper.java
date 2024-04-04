@@ -5,6 +5,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -15,6 +16,7 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.ReportStatus;
@@ -48,22 +50,67 @@ public final class CristinMapper {
                    .publicationBucketUri(constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
                    .publicationDate(constructPublicationDate(cristinNviReport.publicationDate()))
                    .instanceType(cristinNviReport.instanceType())
-//                   .creators(extractCreators(cristinNviReport))
+                   //                   .creators(extractCreators(cristinNviReport))
                    .level(extractLevel(cristinNviReport))
                    .reportStatus(ReportStatus.REPORTED)
                    .applicable(true)
                    .createdDate(now)
                    .modifiedDate(now)
+                   .points(calculatePoints(cristinNviReport))
                    .build();
     }
 
     @JacocoGenerated
     public static List<DbCreator> extractCreators(CristinNviReport cristinNviReport) {
-        return cristinNviReport.scientificResources().get(0).getCreators().stream()
-                           .collect(groupByCristinIdentifierAndMapToAffiliationId())
-                           .entrySet().stream()
-                           .map(CristinMapper::toDbCreator)
-                           .toList();
+        return getCreators(cristinNviReport).stream()
+                   .collect(groupByCristinIdentifierAndMapToAffiliationId())
+                   .entrySet()
+                   .stream()
+                   .map(CristinMapper::toDbCreator)
+                   .toList();
+    }
+
+    public static List<DbApprovalStatus> toApprovals(CristinNviReport cristinNviReport) {
+        return cristinNviReport.cristinLocales().stream().map(CristinMapper::toApproval).toList();
+    }
+
+    private static List<DbInstitutionPoints> calculatePoints(CristinNviReport cristinNviReport) {
+        var institutions = cristinNviReport.cristinLocales();
+        Map<URI, BigDecimal> collect = getCreators(cristinNviReport).stream()
+                                           .collect(collectToMapOfPoints(institutions));
+        return collect
+                   .entrySet()
+                   .stream()
+                   .map(CristinMapper::toDbInstitutionPoints)
+                   .collect(Collectors.toList());
+    }
+
+    private static DbInstitutionPoints toDbInstitutionPoints(Entry<URI, BigDecimal> entry) {
+        return new DbInstitutionPoints(entry.getKey(), entry.getValue());
+    }
+
+    private static List<ScientificPerson> getCreators(CristinNviReport cristinNviReport) {
+        return cristinNviReport.scientificResources().get(0).getCreators();
+    }
+
+    private static Collector<ScientificPerson, ?, Map<URI, BigDecimal>> collectToMapOfPoints(
+        List<CristinLocale> institutions) {
+        return Collectors.groupingBy(scientificPerson -> getTopLevelOrganization(scientificPerson, institutions),
+                                     Collectors.reducing(BigDecimal.ZERO, CristinMapper::toBigDecimal,
+                                                         BigDecimal::add));
+    }
+
+    private static BigDecimal toBigDecimal(ScientificPerson scientificPerson) {
+        return new BigDecimal(scientificPerson.getAuthorPointsForAffiliation());
+    }
+
+    private static URI getTopLevelOrganization(ScientificPerson scientificPerson, List<CristinLocale> institutions) {
+        return institutions.stream()
+                   .filter(cristinLocale -> cristinLocale.getInstitutionIdentifier()
+                                                .equals(scientificPerson.getInstitutionIdentifier()))
+                   .map(CristinMapper::constructInstitutionId)
+                   .collect(Collectors.toList())
+                   .get(0);
     }
 
     @JacocoGenerated
@@ -74,7 +121,8 @@ public final class CristinMapper {
     @JacocoGenerated
     private static Collector<ScientificPerson, ?, Map<URI, List<URI>>> groupByCristinIdentifierAndMapToAffiliationId() {
         return Collectors.groupingBy(CristinMapper::constructPersonCristinId,
-            Collectors.mapping(CristinMapper::constructCristinOrganizationId, Collectors.toList()));
+                                     Collectors.mapping(CristinMapper::constructCristinOrganizationId,
+                                                        Collectors.toList()));
     }
 
     @JacocoGenerated
@@ -103,12 +151,6 @@ public final class CristinMapper {
                    .orElseThrow();
     }
 
-    public static List<DbApprovalStatus> toApprovals(CristinNviReport cristinNviReport) {
-        return cristinNviReport.cristinLocales().stream()
-                   .map(CristinMapper::toApproval)
-                   .toList();
-    }
-
     private static DbApprovalStatus toApproval(CristinLocale cristinLocale) {
         var assignee = constructUsername(cristinLocale);
         return DbApprovalStatus.builder()
@@ -122,14 +164,13 @@ public final class CristinMapper {
 
     private static Username constructUsername(CristinLocale cristinLocale) {
         var userIdentifier = extractAssigneeIdentifier(cristinLocale);
-        return nonNull(userIdentifier)
-                   ? Username.fromString(constructUsername(cristinLocale, userIdentifier))
-                   : null;
+        return nonNull(userIdentifier) ? Username.fromString(constructUsername(cristinLocale, userIdentifier)) : null;
     }
 
     private static String constructUsername(CristinLocale cristinLocale, String userIdentifier) {
         return String.format("%s@%s", userIdentifier, constructInstitutionIdentifier(cristinLocale));
     }
+
     private static String extractAssigneeIdentifier(CristinLocale cristinLocale) {
         return Optional.ofNullable(cristinLocale)
                    .map(CristinLocale::getControlledByUser)
@@ -167,7 +208,6 @@ public final class CristinMapper {
                + cristinLocale.getGroupIdentifier();
     }
 
-
     private static DbPublicationDate constructPublicationDate(PublicationDate publicationDate) {
         return DbPublicationDate.builder()
                    .day(publicationDate.day())
@@ -188,9 +228,6 @@ public final class CristinMapper {
     }
 
     private static URI constructPublicationId(String publicationIdentifier) {
-        return UriWrapper.fromHost(API_HOST)
-                   .addChild(PUBLICATION)
-                   .addChild(publicationIdentifier)
-                   .getUri();
+        return UriWrapper.fromHost(API_HOST).addChild(PUBLICATION).addChild(publicationIdentifier).getUri();
     }
 }
