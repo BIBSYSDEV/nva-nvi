@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.events.cristin;
 
 import static java.util.Objects.nonNull;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -8,6 +10,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -35,6 +38,7 @@ public final class CristinMapper {
     public static final String PUBLICATION = "publication";
     public static final String RESOURCES = "resources";
     public static final String PERSON = "person";
+    private static final String INTERNATIONAL_COLLABORATION_FACTOR = "1.3";
 
     private CristinMapper() {
 
@@ -54,7 +58,38 @@ public final class CristinMapper {
                    .applicable(true)
                    .createdDate(now)
                    .modifiedDate(now)
+                   .basePoints(extractBasePoints(cristinNviReport))
+                   .collaborationFactor(extractCollaborationFactor(cristinNviReport))
+                   .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
                    .build();
+    }
+
+    private static boolean isInternationalCollaboration(CristinNviReport cristinNviReport) {
+        return cristinNviReport.scientificResources().get(0).getCreators().stream()
+                   .map(ScientificPerson::getCollaborationFactor)
+                   .filter(Objects::nonNull)
+                   .findFirst()
+                   .map(INTERNATIONAL_COLLABORATION_FACTOR::equals)
+                   .orElse(false);
+    }
+
+    private static BigDecimal extractCollaborationFactor(CristinNviReport cristinNviReport) {
+        return cristinNviReport.scientificResources().get(0).getCreators().stream()
+                   .map(ScientificPerson::getCollaborationFactor)
+                   .filter(Objects::nonNull)
+                   .map(BigDecimal::new)
+                   .map(bigDecimal -> bigDecimal.setScale(1, RoundingMode.HALF_UP))
+                   .findFirst()
+                   .orElse(null);
+    }
+
+    private static BigDecimal extractBasePoints(CristinNviReport cristinNviReport) {
+        return cristinNviReport.scientificResources().get(0).getCreators().stream()
+                   .map(ScientificPerson::getPublicationTypeLevelPoints)
+                   .filter(Objects::nonNull)
+                   .map(BigDecimal::new)
+                   .map(bigDecimal -> bigDecimal.setScale(1, RoundingMode.HALF_UP))
+                   .findFirst().orElseThrow();
     }
 
     @JacocoGenerated

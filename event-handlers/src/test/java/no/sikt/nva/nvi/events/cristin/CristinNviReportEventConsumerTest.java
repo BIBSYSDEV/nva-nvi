@@ -203,9 +203,9 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
                    .withSubDepartmentIdentifier(randomString())
                    .withGroupIdentifier(randomString())
                    .withGroupIdentifier(randomString())
-                   .withAuthorPointsForAffiliation(randomString())
-                   .withCollaborationFactor(randomString())
-                   .withPublicationTypeLevelPoints(randomString())
+                   .withAuthorPointsForAffiliation("1.6")
+                   .withCollaborationFactor("1.0")
+                   .withPublicationTypeLevelPoints("1.5")
                    .build();
     }
 
