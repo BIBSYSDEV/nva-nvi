@@ -40,7 +40,6 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
-import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
 import no.sikt.nva.nvi.events.evaluator.model.Level;
 import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
@@ -129,7 +128,7 @@ class EvaluateNviCandidateHandlerTest {
         var calculator = new CandidateCalculator(authorizedBackendUriRetriever, uriRetriever);
         var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
         var organizationRetriever = new OrganizationRetriever(uriRetriever);
-        var pointCalculator = new PointCalculator(organizationRetriever);
+        var pointCalculator = new PointService(organizationRetriever);
         var evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator);
         queueClient = new FakeSqsClient();
         handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
