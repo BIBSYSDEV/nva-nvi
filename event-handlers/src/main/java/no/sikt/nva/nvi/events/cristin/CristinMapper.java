@@ -76,24 +76,33 @@ public final class CristinMapper {
     //TODO: Extract creators from dbh_forskres_kontroll, remove Jacoco annotation when implemented
     public static DbCandidate toDbCandidate(CristinNviReport cristinNviReport) {
         var now = Instant.now();
+        var points = calculatePoints(cristinNviReport);
         return DbCandidate.builder()
                    .publicationId(constructPublicationId(cristinNviReport.publicationIdentifier()))
                    .publicationBucketUri(constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
                    .publicationDate(constructPublicationDate(cristinNviReport.publicationDate()))
                    .instanceType(cristinNviReport.instanceType())
-                   .creators(extractCreators(cristinNviReport))
                    .level(extractLevel(cristinNviReport))
                    .reportStatus(ReportStatus.REPORTED)
                    .applicable(true)
                    .createdDate(now)
                    .modifiedDate(now)
-                   .points(calculatePoints(cristinNviReport))
+                   .points(points)
+                   .totalPoints(sumPoints(points))
                    .basePoints(extractBasePoints(cristinNviReport))
                    .collaborationFactor(extractCollaborationFactor(cristinNviReport))
                    .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
+                   .creators(extractCreators(cristinNviReport))
+//                   .creatorCount()
+//                   .creatorShareCount()
                    .channelId(extractChannelId(cristinNviReport))
                    .channelType(extractChannelType(cristinNviReport))
                    .build();
+    }
+
+    private static BigDecimal sumPoints(List<DbInstitutionPoints> points) {
+        return points.stream().map(DbInstitutionPoints::points)
+                   .reduce(BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP), BigDecimal::add);
     }
 
     public static String extractNode(JsonNode node, String jsonPointer) {

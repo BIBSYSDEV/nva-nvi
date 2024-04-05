@@ -104,6 +104,25 @@ class CristinMapperTest {
     }
 
     @Test
+    void shouldSummarizePointsWhenCalculationTotalPoints() {
+        var firstInstitution = randomString();
+        var secondInstitution = randomString();
+        var creators = List.of(scientificPersonWithNoInternationalCollaboration(firstInstitution, POINTS_PER_CONTRIBUTOR),
+                               scientificPersonWithNoInternationalCollaboration(secondInstitution, POINTS_PER_CONTRIBUTOR));
+        var scientificResource = scientificResourceWithCreators(creators);
+        var firstLocale = cristinLocaleWithInstitutionIdentifier(firstInstitution);
+        var secondLocale = cristinLocaleWithInstitutionIdentifier(secondInstitution);
+        var report = cristinReportFromCristinLocalesAndScientificResource(List.of(firstLocale, secondLocale),
+                                                                          scientificResource);
+        var dbCandidate = CristinMapper.toDbCandidate(report);
+
+        var expectedTotalPoints = POINTS_PER_CONTRIBUTOR
+                                               .add(POINTS_PER_CONTRIBUTOR, new MathContext(CALCULATION_PRECISION, RoundingMode.HALF_UP))
+                                               .setScale(SCALE, RoundingMode.HALF_UP);
+        assertEquals(dbCandidate.totalPoints(), expectedTotalPoints);
+    }
+
+    @Test
     void shouldExtractChannelIdFromAcademicArticle() {
         var academicArticleReference = """
                             {
@@ -388,6 +407,18 @@ class CristinMapperTest {
                    .withReference("{}")
                    .withInstanceType(randomString())
                    .withScientificResources(List.of(scientificResource));
+    }
+
+    private static CristinNviReport cristinReportFromCristinLocalesAndScientificResource(List<CristinLocale> cristinLocales,
+                                                                                         ScientificResource scientificResource) {
+        return CristinNviReport.builder()
+                   .withPublicationIdentifier(randomString())
+                   .withYearReported(randomString())
+                   .withInstanceType(randomString())
+                   .withPublicationDate(new PublicationDate(randomString(), randomString(), randomString()))
+                   .withCristinLocales(cristinLocales)
+                   .withScientificResources(List.of(scientificResource))
+                   .build();
     }
 
     private static CristinLocale cristinLocaleWithInstitutionIdentifier(String institutionIdentifier) {
