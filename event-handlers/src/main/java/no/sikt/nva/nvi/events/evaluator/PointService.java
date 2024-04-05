@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.events.evaluator.calculator;
+package no.sikt.nva.nvi.events.evaluator;
 
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
@@ -28,6 +28,7 @@ import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.model.Organization;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
+import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.Channel;
 import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;

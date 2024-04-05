@@ -40,7 +40,6 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
-import no.sikt.nva.nvi.events.evaluator.calculator.PointService;
 import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
 import no.sikt.nva.nvi.events.evaluator.model.Level;
 import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;

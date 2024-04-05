@@ -36,13 +36,13 @@ public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations) 
 
     public record NviOrganization(URI id, NviOrganization topLevelOrganization) {
 
-        @Override
-        public NviOrganization topLevelOrganization(){
-            return Objects.isNull(topLevelOrganization) ? this : topLevelOrganization;
-        }
-
         public static NviOrganization.Builder builder() {
             return new NviOrganization.Builder();
+        }
+
+        @Override
+        public NviOrganization topLevelOrganization() {
+            return Objects.isNull(topLevelOrganization) ? this : topLevelOrganization;
         }
 
         public static final class Builder {
@@ -63,10 +63,10 @@ public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations) 
                 this.topLevelOrganization = topLevelOrganization;
                 return this;
             }
+
             public NviOrganization build() {
                 return new NviOrganization(id, topLevelOrganization);
             }
         }
-
     }
 }

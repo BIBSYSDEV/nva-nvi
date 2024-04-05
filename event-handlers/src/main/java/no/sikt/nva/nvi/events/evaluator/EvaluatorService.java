@@ -18,7 +18,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
-import no.sikt.nva.nvi.events.evaluator.calculator.PointService;
 import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;

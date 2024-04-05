@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
+import no.sikt.nva.nvi.events.evaluator.PointService;
 import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints;
 import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints.AffiliationPoints;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
@@ -77,7 +78,7 @@ class PointServiceTest {
 
         var pointCalculation = pointService.calculatePoints(expandedResource,
                                                             List.of(
-                                                                   createCreator(creatorId, List.of(institutionId))));
+                                                                createCreator(creatorId, List.of(institutionId))));
 
         assertThat(getActualPoints(pointCalculation, institutionId), is(equalTo(parameters.institution1Points())));
         assertThat(pointCalculation.totalPoints(), is(equalTo(parameters.totalPoints())));
@@ -101,7 +102,7 @@ class PointServiceTest {
 
         var pointCalculation = pointService.calculatePoints(expandedResource,
                                                             List.of(createCreator(creator1, creator1Institutions),
-                                                                       createCreator(creator2, creator2Institutions)));
+                                                                    createCreator(creator2, creator2Institutions)));
 
         assertThat(getActualPoints(pointCalculation, nviInstitution1), is(equalTo(parameters.institution1Points())));
         assertThat(getActualPoints(pointCalculation, nviInstitution2), is(equalTo(parameters.institution2Points())));
@@ -126,7 +127,7 @@ class PointServiceTest {
 
         var pointCalculation = pointService.calculatePoints(expandedResource,
                                                             List.of(createCreator(creator1, creator1Institutions),
-                                                                       createCreator(creator2, creator2Institutions)));
+                                                                    createCreator(creator2, creator2Institutions)));
 
         assertThat(getActualPoints(pointCalculation, nviInstitution1), is(equalTo(parameters.institution1Points())));
         assertThat(getActualPoints(pointCalculation, nviInstitution2), is(equalTo(parameters.institution2Points())));
@@ -236,17 +237,13 @@ class PointServiceTest {
         var affiliations = List.of(someSubUnitId);
         var expandedResource = createExpandedResourceWithManyCreators(parameters, creator1, creator2, affiliations,
                                                                       affiliations);
+        var nviCreators = List.of(creatorWithAffiliations(creator1,
+                                                          List.of(createNviOrganization(someSubUnitId, institutionId))),
+                                  creatorWithAffiliations(creator2,
+                                                          List.of(
+                                                              createNviOrganization(someSubUnitId, institutionId))));
         var pointCalculation = pointService.calculatePoints(expandedResource,
-                                                            List.of(creatorWithAffiliations(creator1,
-                                                                                               List.of(
-                                                                                                   createNviOrganization(
-                                                                                                       someSubUnitId,
-                                                                                                       institutionId))),
-                                                                       creatorWithAffiliations(creator2,
-                                                                                               List.of(
-                                                                                                   createNviOrganization(
-                                                                                                       someSubUnitId,
-                                                                                                       institutionId)))));
+                                                            nviCreators);
         var expectedPointsForAffiliation = parameters.institution1Points()
                                                .divide(asBigDecimal("2"), RoundingMode.HALF_UP)
                                                .setScale(4, RoundingMode.HALF_UP);
