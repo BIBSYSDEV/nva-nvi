@@ -45,7 +45,29 @@ public final class CristinMapper {
     public static final String PUBLICATION = "publication";
     public static final String RESOURCES = "resources";
     public static final String PERSON = "person";
+    public static final String PARENT_PUBLICATION_SERIES_LEVEL_JSON_POINTER = "/publicationContext/entityDescription"
+                                                                              + "/reference/publicationContext/series"
+                                                                              + "/level";
+    public static final String PARENT_PUBLICATION_SERIES_SCIENTIFIC_VALUE_JSON_POINTER =
+        "/publicationContext/entityDescription/reference"
+        + "/publicationContext/series/scientificValue";
+    public static final String PARENT_PUBLICATION_SERIES_ID_JSON_POINTER = "/publicationContext/entityDescription"
+                                                                           + "/reference/publicationContext/series/id";
+    public static final String PARENT_PUBLICATION_PUBLISHER_ID_JSON_POINTER = "/publicationContext/entityDescription"
+                                                                              + "/reference/publicationContext"
+                                                                              + "/publisher/id";
+    public static final String PARENT_PUBLICATION_SERIES_TYPE_JSON_POINTER = "/publicationContext/entityDescription"
+                                                                             + "/reference/publicationContext/series"
+                                                                             + "/type";
+    public static final String PARENT_PUBLICATION_PUBLISHER_TYPE_JSON_POINTER = "/publicationContext"
+                                                                                + "/entityDescription/reference"
+                                                                                + "/publicationContext/publisher/type";
     private static final String INTERNATIONAL_COLLABORATION_FACTOR = "1.3";
+    public static final String SERIES_ID_JSON_POINTER = "/publicationContext/series/id";
+    public static final String PUBLISHER_ID_JSON_POINTER = "/publicationContext/publisher/id";
+    public static final String SERIES_TYPE_JSON_POINTER = "/publicationContext/series/type";
+    public static final String PUBLISHER_TYPE_JSON_POINTER = "/publicationContext/publisher/type";
+    public static final String PUBLICATION_CONTEXT_ID_JSON_POINTER = "/publicationContext/id";
 
     private CristinMapper() {
 
@@ -120,7 +142,7 @@ public final class CristinMapper {
         if (nonNull(instance)) {
             var channelId = switch (instance) {
                 case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
-                    getJsonNodeAt(referenceNode, "/publicationContext/id");
+                    getJsonNodeAt(referenceNode, PUBLICATION_CONTEXT_ID_JSON_POINTER);
                 case ACADEMIC_MONOGRAPH -> extractChannelIdForAcademicMonograph(referenceNode);
                 case ACADEMIC_CHAPTER -> extractChannelIdForAcademicChapter(referenceNode);
             };
@@ -134,40 +156,32 @@ public final class CristinMapper {
     }
 
     private static String extractChannelIdForAcademicChapter(JsonNode referenceNode) {
-        if (nonNull(extractNode(referenceNode,
-                                "/publicationContext/entityDescription/reference" + "/publicationContext/series/level"))
-            || nonNull(extractNode(referenceNode, "/publicationContext/entityDescription/reference"
-                                                  + "/publicationContext/series/scientificValue"))) {
-            return getJsonNodeAt(referenceNode,
-                                 "/publicationContext/entityDescription/reference/publicationContext/series/id");
+        if (nonNull(extractNode(referenceNode, PARENT_PUBLICATION_SERIES_LEVEL_JSON_POINTER)) || nonNull(
+            extractNode(referenceNode, PARENT_PUBLICATION_SERIES_SCIENTIFIC_VALUE_JSON_POINTER))) {
+            return getJsonNodeAt(referenceNode, PARENT_PUBLICATION_SERIES_ID_JSON_POINTER);
         } else {
-            return getJsonNodeAt(referenceNode,
-                                 "/publicationContext/entityDescription/reference/publicationContext/publisher/id");
+            return getJsonNodeAt(referenceNode, PARENT_PUBLICATION_PUBLISHER_ID_JSON_POINTER);
         }
     }
 
     private static String extractChannelTypeForAcademicChapter(JsonNode referenceNode) {
-        if (nonNull(extractNode(referenceNode,
-                                "/publicationContext/entityDescription/reference" + "/publicationContext/series/type"))
-            || nonNull(extractNode(referenceNode, "/publicationContext/entityDescription/reference"
-                                                  + "/publicationContext/series/scientificValue"))) {
-            return getJsonNodeAt(referenceNode,
-                                 "/publicationContext/entityDescription/reference/publicationContext" + "/series/type");
+        if (nonNull(extractNode(referenceNode, PARENT_PUBLICATION_SERIES_TYPE_JSON_POINTER)) || nonNull(
+            extractNode(referenceNode, PARENT_PUBLICATION_SERIES_SCIENTIFIC_VALUE_JSON_POINTER))) {
+            return getJsonNodeAt(referenceNode, PARENT_PUBLICATION_SERIES_TYPE_JSON_POINTER);
         } else {
-            return getJsonNodeAt(referenceNode,
-                                 "/publicationContext/entityDescription/reference/publicationContext/publisher/type");
+            return getJsonNodeAt(referenceNode, PARENT_PUBLICATION_PUBLISHER_TYPE_JSON_POINTER);
         }
     }
 
     private static String extractChannelIdForAcademicMonograph(JsonNode referenceNode) {
-        return nonNull(extractNode(referenceNode, "/publicationContext/series/id")) ? referenceNode.at(
-            "/publicationContext/series/id").asText() : referenceNode.at("/publicationContext/publisher/id").asText();
+        return nonNull(extractNode(referenceNode, SERIES_ID_JSON_POINTER)) ? referenceNode.at(
+            SERIES_ID_JSON_POINTER).asText() : referenceNode.at(PUBLISHER_ID_JSON_POINTER).asText();
     }
 
     private static String extractChannelTypeForAcademicMonograph(JsonNode referenceNode) {
-        return nonNull(extractNode(referenceNode, "/publicationContext/series/type")) ? referenceNode.at(
-            "/publicationContext/series/type").asText()
-                   : referenceNode.at("/publicationContext/publisher/type").asText();
+        return nonNull(extractNode(referenceNode, SERIES_TYPE_JSON_POINTER))
+                   ? referenceNode.at(SERIES_TYPE_JSON_POINTER).asText()
+                   : referenceNode.at(PUBLISHER_TYPE_JSON_POINTER).asText();
     }
 
     private static boolean isInternationalCollaboration(CristinNviReport cristinNviReport) {
