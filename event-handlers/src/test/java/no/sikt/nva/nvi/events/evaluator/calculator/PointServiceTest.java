@@ -631,7 +631,7 @@ class PointServiceTest {
             createContributorNode(randomUri(), false,
                                   toMapWithCountryCode(randomInstitutions,
                                                        countryCodeForNonNviCreators),
-                                  parameters.creatorShareCount() == 3 ? SOME_OTHER_ROLE : ROLE_CREATOR, 0)
+                                  parameters.creatorShareCount() <= 3 ? SOME_OTHER_ROLE : ROLE_CREATOR, 0)
         );
         return createExpandedResource(randomUri(), contributorNodes, getInstanceTypeReference(parameters));
     }
