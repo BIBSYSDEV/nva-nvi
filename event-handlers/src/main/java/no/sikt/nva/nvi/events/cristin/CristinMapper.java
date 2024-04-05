@@ -1,6 +1,10 @@
 package no.sikt.nva.nvi.events.cristin;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
+import static nva.commons.core.attempt.Try.attempt;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
@@ -24,6 +28,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
+import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
@@ -63,7 +68,44 @@ public final class CristinMapper {
                    .basePoints(extractBasePoints(cristinNviReport))
                    .collaborationFactor(extractCollaborationFactor(cristinNviReport))
                    .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
+                   .channelId(extractChannelId(cristinNviReport))
                    .build();
+    }
+
+    private static URI extractChannelId(CristinNviReport cristinNviReport) {
+        var instance = toInstanceType(cristinNviReport.instanceType());
+        var referenceNode =
+            attempt(() -> dtoObjectMapper.readTree(cristinNviReport.reference().toString())).orElse(failure -> null);
+        if (nonNull(instance)) {
+            var channelId = switch (instance) {
+                case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW -> referenceNode.at("/publicationContext/id").asText();
+                case ACADEMIC_MONOGRAPH -> extractChannelIdForAcademicMonograph(referenceNode);
+                case ACADEMIC_CHAPTER -> extractChannelIdForAcademicChapter(referenceNode);
+            };
+            return UriWrapper.fromUri(channelId).getUri();
+        }
+        return null;
+    }
+
+    private static InstanceType toInstanceType(String instanceType) {
+        return attempt(() -> InstanceType.parse(instanceType)).orElse(failure -> null);
+    }
+
+    private static String extractChannelIdForAcademicChapter(JsonNode referenceNode) {
+        if (nonNull(extractJsonNodeTextValue(referenceNode, "/publicationContext/entityDescription/reference"
+                                                            + "/publicationContext/series/level"))
+            || nonNull(extractJsonNodeTextValue(referenceNode, "/publicationContext/entityDescription/reference"
+                                                               + "/publicationContext/series/scientificValue"))) {
+            return referenceNode.at("/publicationContext/entityDescription/reference/publicationContext/series/id").asText();
+        } else {
+            return referenceNode.at("/publicationContext/entityDescription/reference/publicationContext/publisher/id").asText();
+        }
+    }
+
+    private static String extractChannelIdForAcademicMonograph(JsonNode referenceNode) {
+        return nonNull(extractJsonNodeTextValue(referenceNode, "/publicationContext/series/id"))
+                   ? referenceNode.at("/publicationContext/series/id").asText()
+                   : referenceNode.at("/publicationContext/publisher/id").asText();
     }
 
     private static boolean isInternationalCollaboration(CristinNviReport cristinNviReport) {
