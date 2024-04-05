@@ -29,6 +29,7 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.JacocoGenerated;
+import org.slf4j.Logger;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
@@ -42,6 +43,7 @@ public final class CandidateDao extends Dao {
 
     public static final String TYPE = "CANDIDATE";
     public static final String PERIOD_YEAR_FIELD = "periodYear";
+    private static final Logger logger = org.slf4j.LoggerFactory.getLogger(CandidateDao.class);
     @JsonProperty(IDENTIFIER_FIELD)
     private final UUID identifier;
     @JsonProperty(DATA_FIELD)
@@ -182,12 +184,24 @@ public final class CandidateDao extends Dao {
 
     @DynamoDbAttribute(PERIOD_YEAR_FIELD)
     public String periodYear() {
-        return migratePeriodYear();
+        var applicableAndMissingPeriodYear = isApplicableAndMissingPeriodYear();
+        logger.info("Candidate identifier: {}. Applicable and missing period year: {}",
+                    identifier, applicableAndMissingPeriodYear);
+        if (applicableAndMissingPeriodYear) {
+            return migratePeriodYear();
+        } else {
+            logger.info("Returning periodYear for candidate with identifier: {}. periodYear: {}",
+                        identifier, periodYear);
+            return periodYear;
+        }
     }
 
     @Deprecated
     private String migratePeriodYear() {
-        return isApplicableAndMissingPeriodYear() ? candidate.publicationDate().year() : periodYear;
+        var periodYear = candidate.publicationDate().year();
+        logger.info("Migrating period year for candidate with identifier: {}. New periodYear: {}", identifier,
+                    periodYear);
+        return periodYear;
     }
 
     private boolean isApplicableAndMissingPeriodYear() {

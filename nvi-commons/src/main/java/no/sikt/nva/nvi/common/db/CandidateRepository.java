@@ -31,6 +31,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.model.ListingResult;
+import org.slf4j.Logger;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
@@ -51,6 +52,7 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 public class CandidateRepository extends DynamoRepository {
 
     public static final int DEFAULT_PAGE_SIZE = 700;
+    private static final Logger logger = org.slf4j.LoggerFactory.getLogger(CandidateRepository.class);
     private static final int BATCH_SIZE = 25;
     private static final long INITIAL_RETRY_WAIT_TIME_MS = 1000;
     protected final DynamoDbTable<CandidateDao> candidateTable;
@@ -273,6 +275,7 @@ public class CandidateRepository extends DynamoRepository {
         return refreshedEntries.stream()
                    .map(Dao::toDynamoFormat)
                    .map(this::mutateVersion)
+                   .peek(entry -> logger.info("Writing dynamoDb entry: {}", entry))
                    .map(this::toWriteRequest)
                    .collect(Collectors.toList());
     }
