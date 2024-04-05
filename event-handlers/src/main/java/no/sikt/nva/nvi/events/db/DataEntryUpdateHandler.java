@@ -30,7 +30,7 @@ import software.amazon.awssdk.services.dynamodb.model.OperationType;
 public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DataEntryUpdateHandler.class);
-    private static final String PUBLISHED_MESSAGE = "Published message with institutionId: {} to topic {}";
+    private static final String PUBLISHED_MESSAGE = "Published message with id: {} to topic {}";
     private static final String FAILED_TO_PUBLISH_MESSAGE = "Failed to publish message for record {}";
     private static final String FAILED_TO_PARSE_EVENT_MESSAGE = "Failed to map body to DynamodbStreamRecord: {}";
     private static final String SKIPPING_EVENT_MESSAGE = "Skipping event with operation type {} for dao type {}";
