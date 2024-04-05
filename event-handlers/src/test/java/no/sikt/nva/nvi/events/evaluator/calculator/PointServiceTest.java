@@ -2,6 +2,8 @@ package no.sikt.nva.nvi.events.evaluator.calculator;
 
 import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.mockOrganizationResponseForAffiliation;
+import static no.sikt.nva.nvi.events.evaluator.calculator.PointCalculationConstants.RESULT_SCALE;
+import static no.sikt.nva.nvi.events.evaluator.calculator.PointCalculationConstants.ROUNDING_MODE;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.unit.nva.events.EventsConfig.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -227,30 +229,37 @@ class PointServiceTest {
 
     @Test
     void shouldCalculatePointsForCreatorAffiliations() {
-        var parameters = new PointParameters("AcademicArticle", "Journal", "1", false, 2, asBigDecimal("1"), null,
+        var creatorShareCount = 2;
+        var parameters = new PointParameters("AcademicArticle", "Journal", "1", false, creatorShareCount,
+                                             asBigDecimal("1"), null,
                                              asBigDecimal("1"));
-        var creator1 = URI.create("https://www.example.com/" + "creator1");
-        var creator2 = URI.create("https://www.example.com/" + "creator2");
-        var someSubUnitId = URI.create("https://www.example.com/" + "someSubUnitId");
-        var institutionId = URI.create("https://www.example.com/" + "someTopLevelId");
+        var creator1 = randomUri();
+        var creator2 = randomUri();
+        var someSubUnitId = randomUri();
+        var institutionId = randomUri();
         mockOrganizationResponseForAffiliation(institutionId, someSubUnitId, uriRetriever);
         var affiliations = List.of(someSubUnitId);
         var expandedResource = createExpandedResourceWithManyCreators(parameters, creator1, creator2, affiliations,
                                                                       affiliations);
-        var nviCreators = List.of(creatorWithAffiliations(creator1,
-                                                          List.of(createNviOrganization(someSubUnitId, institutionId))),
-                                  creatorWithAffiliations(creator2,
-                                                          List.of(
-                                                              createNviOrganization(someSubUnitId, institutionId))));
+        var nviCreators = setupNviCreators(creator1, someSubUnitId, institutionId, creator2);
         var pointCalculation = pointService.calculatePoints(expandedResource,
                                                             nviCreators);
         var expectedPointsForAffiliation = parameters.institution1Points()
-                                               .divide(asBigDecimal("2"), RoundingMode.HALF_UP)
-                                               .setScale(4, RoundingMode.HALF_UP);
+                                               .divide(BigDecimal.valueOf(creatorShareCount), ROUNDING_MODE)
+                                               .setScale(RESULT_SCALE, ROUNDING_MODE);
         assertThat(getActualAffiliationPoints(pointCalculation, institutionId, someSubUnitId, creator1),
                    is(equalTo(expectedPointsForAffiliation)));
         assertThat(getActualAffiliationPoints(pointCalculation, institutionId, someSubUnitId, creator2),
                    is(equalTo(expectedPointsForAffiliation)));
+    }
+
+    private static List<VerifiedNviCreator> setupNviCreators(URI creator1, URI someSubUnitId, URI institutionId,
+                                                             URI creator2) {
+        return List.of(creatorWithAffiliations(creator1,
+                                               List.of(createNviOrganization(someSubUnitId, institutionId))),
+                       creatorWithAffiliations(creator2,
+                                               List.of(
+                                                   createNviOrganization(someSubUnitId, institutionId))));
     }
 
     private static BigDecimal getActualAffiliationPoints(PointCalculation pointCalculation, URI institutionId,

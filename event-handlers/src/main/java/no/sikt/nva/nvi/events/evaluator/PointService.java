@@ -47,13 +47,11 @@ public final class PointService {
     public PointCalculation calculatePoints(JsonNode publication,
                                             List<VerifiedNviCreator> nviCreators) {
         var instanceType = extractInstanceType(publication);
-        var publicationChannel = extractChannel(instanceType, publication);
-        var internationalCollaborationFactor = isInternationalCollaboration(publication);
+        var channel = extractChannel(instanceType, publication);
+        var isInternationalCollaboration = isInternationalCollaboration(publication);
         var creatorShareCount = countCreatorShares(publication);
-        var pointCalculator = new PointCalculator(publicationChannel, instanceType, nviCreators,
-                                                  internationalCollaborationFactor,
-                                                  creatorShareCount);
-        return pointCalculator.calculatePoints();
+        return new PointCalculator(channel, instanceType, nviCreators, isInternationalCollaboration, creatorShareCount)
+                   .calculatePoints();
     }
 
     private static boolean isInternationalCollaboration(JsonNode jsonNode) {
