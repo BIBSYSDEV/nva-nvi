@@ -104,7 +104,6 @@ public final class CristinMapper {
         return attempt(() -> node.at(jsonPointer).asText()).orElse(failure -> null);
     }
 
-    @JacocoGenerated
     public static List<DbCreator> extractCreators(CristinNviReport cristinNviReport) {
         return getCreators(cristinNviReport).stream()
                    .filter(CristinMapper::hasInstitutionPoints)
