@@ -228,25 +228,6 @@ class EvaluateNviCandidateHandlerTest {
     }
 
     @Test
-    @Deprecated
-    void shouldHandleSeriesWithMultipleTypes() throws IOException {
-        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var path = "evaluator/candidate_academicMonograph_series_multiple_types.json";
-        var content = IoUtils.inputStreamFromResources(path);
-        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createEvent(new PersistedResourceMessage(fileUri));
-        handler.handleRequest(event, context);
-        var messageBody = getMessageBody();
-        var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_MONOGRAPH.getValue(),
-                                                                   expectedPoints,
-                                                                   fileUri, SERIES,
-                                                                   BigDecimal.valueOf(5), expectedPoints,
-                                                                   Level.LEVEL_ONE_V2);
-        assertEquals(expectedEvaluatedMessage, messageBody);
-    }
-
-    @Test
     void shouldCreateNewCandidateEventWithCorrectDataOnValidAcademicLiteratureReview() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var content = IoUtils.inputStreamFromResources(ACADEMIC_LITERATURE_REVIEW_JSON_PATH);
