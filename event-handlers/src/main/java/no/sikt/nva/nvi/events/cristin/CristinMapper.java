@@ -26,6 +26,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.ReportStatus;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
@@ -69,71 +70,16 @@ public final class CristinMapper {
                    .collaborationFactor(extractCollaborationFactor(cristinNviReport))
                    .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
                    .channelId(extractChannelId(cristinNviReport))
+                   .channelType(extractChannelType(cristinNviReport))
                    .build();
     }
 
-    private static URI extractChannelId(CristinNviReport cristinNviReport) {
-        var instance = toInstanceType(cristinNviReport.instanceType());
-        var referenceNode =
-            attempt(() -> dtoObjectMapper.readTree(cristinNviReport.reference().toString())).orElse(failure -> null);
-        if (nonNull(instance)) {
-            var channelId = switch (instance) {
-                case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW -> referenceNode.at("/publicationContext/id").asText();
-                case ACADEMIC_MONOGRAPH -> extractChannelIdForAcademicMonograph(referenceNode);
-                case ACADEMIC_CHAPTER -> extractChannelIdForAcademicChapter(referenceNode);
-            };
-            return UriWrapper.fromUri(channelId).getUri();
-        }
-        return null;
+    public static String extractNode(JsonNode node, String jsonPointer) {
+        return attempt(() -> extractJsonNodeTextValue(node, jsonPointer)).orElse(failure -> null);
     }
 
-    private static InstanceType toInstanceType(String instanceType) {
-        return attempt(() -> InstanceType.parse(instanceType)).orElse(failure -> null);
-    }
-
-    private static String extractChannelIdForAcademicChapter(JsonNode referenceNode) {
-        if (nonNull(extractJsonNodeTextValue(referenceNode, "/publicationContext/entityDescription/reference"
-                                                            + "/publicationContext/series/level"))
-            || nonNull(extractJsonNodeTextValue(referenceNode, "/publicationContext/entityDescription/reference"
-                                                               + "/publicationContext/series/scientificValue"))) {
-            return referenceNode.at("/publicationContext/entityDescription/reference/publicationContext/series/id").asText();
-        } else {
-            return referenceNode.at("/publicationContext/entityDescription/reference/publicationContext/publisher/id").asText();
-        }
-    }
-
-    private static String extractChannelIdForAcademicMonograph(JsonNode referenceNode) {
-        return nonNull(extractJsonNodeTextValue(referenceNode, "/publicationContext/series/id"))
-                   ? referenceNode.at("/publicationContext/series/id").asText()
-                   : referenceNode.at("/publicationContext/publisher/id").asText();
-    }
-
-    private static boolean isInternationalCollaboration(CristinNviReport cristinNviReport) {
-        return cristinNviReport.scientificResources().get(0).getCreators().stream()
-                   .map(ScientificPerson::getCollaborationFactor)
-                   .filter(Objects::nonNull)
-                   .findFirst()
-                   .map(INTERNATIONAL_COLLABORATION_FACTOR::equals)
-                   .orElse(false);
-    }
-
-    private static BigDecimal extractCollaborationFactor(CristinNviReport cristinNviReport) {
-        return cristinNviReport.scientificResources().get(0).getCreators().stream()
-                   .map(ScientificPerson::getCollaborationFactor)
-                   .filter(Objects::nonNull)
-                   .map(BigDecimal::new)
-                   .map(bigDecimal -> bigDecimal.setScale(4, RoundingMode.HALF_UP))
-                   .findFirst()
-                   .orElse(null);
-    }
-
-    private static BigDecimal extractBasePoints(CristinNviReport cristinNviReport) {
-        return cristinNviReport.scientificResources().get(0).getCreators().stream()
-                   .map(ScientificPerson::getPublicationTypeLevelPoints)
-                   .filter(Objects::nonNull)
-                   .map(BigDecimal::new)
-                   .map(bigDecimal -> bigDecimal.setScale(4, RoundingMode.HALF_UP))
-                   .findFirst().orElseThrow();
+    public static String getJsonNodeAt(JsonNode node, String jsonPointer) {
+        return attempt(() -> node.at(jsonPointer).asText()).orElse(failure -> null);
     }
 
     @JacocoGenerated
@@ -149,6 +95,117 @@ public final class CristinMapper {
 
     public static List<DbApprovalStatus> toApprovals(CristinNviReport cristinNviReport) {
         return cristinNviReport.cristinLocales().stream().map(CristinMapper::toApproval).toList();
+    }
+
+    private static ChannelType extractChannelType(CristinNviReport cristinNviReport) {
+        var instance = toInstanceType(cristinNviReport.instanceType());
+        var referenceNode = attempt(() -> dtoObjectMapper.readTree(cristinNviReport.reference().toString())).orElse(
+            failure -> null);
+        if (nonNull(instance)) {
+            var channelType = switch (instance) {
+                case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
+                    referenceNode.at("/publicationContext/type").asText();
+                case ACADEMIC_MONOGRAPH -> extractChannelTypeForAcademicMonograph(referenceNode);
+                case ACADEMIC_CHAPTER -> extractChannelTypeForAcademicChapter(referenceNode);
+            };
+            return ChannelType.parse(channelType);
+        }
+        return null;
+    }
+
+    private static URI extractChannelId(CristinNviReport cristinNviReport) {
+        var instance = toInstanceType(cristinNviReport.instanceType());
+        var referenceNode = attempt(() -> dtoObjectMapper.readTree(cristinNviReport.reference().toString())).orElse(
+            failure -> null);
+        if (nonNull(instance)) {
+            var channelId = switch (instance) {
+                case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
+                    getJsonNodeAt(referenceNode, "/publicationContext/id");
+                case ACADEMIC_MONOGRAPH -> extractChannelIdForAcademicMonograph(referenceNode);
+                case ACADEMIC_CHAPTER -> extractChannelIdForAcademicChapter(referenceNode);
+            };
+            return attempt(() -> UriWrapper.fromUri(channelId).getUri()).orElse(failure -> null);
+        }
+        return null;
+    }
+
+    private static InstanceType toInstanceType(String instanceType) {
+        return attempt(() -> InstanceType.parse(instanceType)).orElse(failure -> null);
+    }
+
+    private static String extractChannelIdForAcademicChapter(JsonNode referenceNode) {
+        if (nonNull(extractNode(referenceNode,
+                                "/publicationContext/entityDescription/reference" + "/publicationContext/series/level"))
+            || nonNull(extractNode(referenceNode, "/publicationContext/entityDescription/reference"
+                                                  + "/publicationContext/series/scientificValue"))) {
+            return getJsonNodeAt(referenceNode,
+                                 "/publicationContext/entityDescription/reference/publicationContext/series/id");
+        } else {
+            return getJsonNodeAt(referenceNode,
+                                 "/publicationContext/entityDescription/reference/publicationContext/publisher/id");
+        }
+    }
+
+    private static String extractChannelTypeForAcademicChapter(JsonNode referenceNode) {
+        if (nonNull(extractNode(referenceNode,
+                                "/publicationContext/entityDescription/reference" + "/publicationContext/series/type"))
+            || nonNull(extractNode(referenceNode, "/publicationContext/entityDescription/reference"
+                                                  + "/publicationContext/series/scientificValue"))) {
+            return getJsonNodeAt(referenceNode,
+                                 "/publicationContext/entityDescription/reference/publicationContext" + "/series/type");
+        } else {
+            return getJsonNodeAt(referenceNode,
+                                 "/publicationContext/entityDescription/reference/publicationContext/publisher/type");
+        }
+    }
+
+    private static String extractChannelIdForAcademicMonograph(JsonNode referenceNode) {
+        return nonNull(extractNode(referenceNode, "/publicationContext/series/id")) ? referenceNode.at(
+            "/publicationContext/series/id").asText() : referenceNode.at("/publicationContext/publisher/id").asText();
+    }
+
+    private static String extractChannelTypeForAcademicMonograph(JsonNode referenceNode) {
+        return nonNull(extractNode(referenceNode, "/publicationContext/series/type")) ? referenceNode.at(
+            "/publicationContext/series/type").asText()
+                   : referenceNode.at("/publicationContext/publisher/type").asText();
+    }
+
+    private static boolean isInternationalCollaboration(CristinNviReport cristinNviReport) {
+        return cristinNviReport.scientificResources()
+                   .get(0)
+                   .getCreators()
+                   .stream()
+                   .map(ScientificPerson::getCollaborationFactor)
+                   .filter(Objects::nonNull)
+                   .findFirst()
+                   .map(INTERNATIONAL_COLLABORATION_FACTOR::equals)
+                   .orElse(false);
+    }
+
+    private static BigDecimal extractCollaborationFactor(CristinNviReport cristinNviReport) {
+        return cristinNviReport.scientificResources()
+                   .get(0)
+                   .getCreators()
+                   .stream()
+                   .map(ScientificPerson::getCollaborationFactor)
+                   .filter(Objects::nonNull)
+                   .map(BigDecimal::new)
+                   .map(bigDecimal -> bigDecimal.setScale(4, RoundingMode.HALF_UP))
+                   .findFirst()
+                   .orElse(null);
+    }
+
+    private static BigDecimal extractBasePoints(CristinNviReport cristinNviReport) {
+        return cristinNviReport.scientificResources()
+                   .get(0)
+                   .getCreators()
+                   .stream()
+                   .map(ScientificPerson::getPublicationTypeLevelPoints)
+                   .filter(Objects::nonNull)
+                   .map(BigDecimal::new)
+                   .map(bigDecimal -> bigDecimal.setScale(4, RoundingMode.HALF_UP))
+                   .findFirst()
+                   .orElseThrow();
     }
 
     private static List<DbInstitutionPoints> calculatePoints(CristinNviReport cristinNviReport) {

@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.math.BigDecimal;
@@ -12,6 +13,7 @@ import java.math.MathContext;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.util.List;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.events.cristin.CristinNviReport.Builder;
 import nva.commons.core.paths.UriWrapper;
@@ -122,7 +124,10 @@ class CristinMapperTest {
         var expectedChannelId = URI.create(
             "https://api.dev.nva.aws.unit.no/publication-channels-v2/journal/6A227640-F250-4909-9F6B-16782393FC15"
             + "/2015");
+        var expectedChannelType = ChannelType.JOURNAL;
+
         assertEquals(expectedChannelId, dbCandidate.channelId());
+        assertEquals(expectedChannelType, dbCandidate.channelType());
     }
 
     @Test
@@ -144,8 +149,12 @@ class CristinMapperTest {
         var dbCandidate = CristinMapper.toDbCandidate(nviReport);
 
         var expectedChannelId = URI.create(
-            "https://api.test.nva.aws.unit.no/publication-channels-v2/journal/2D37D55B-90DF-413F-8585-85A970411E34/2020");
+            "https://api.test.nva.aws.unit.no/publication-channels-v2/journal/2D37D55B-90DF-413F-8585-85A970411E34"
+            + "/2020");
+        var expectedChannelType = ChannelType.JOURNAL;
+
         assertEquals(expectedChannelId, dbCandidate.channelId());
+        assertEquals(expectedChannelType, dbCandidate.channelType());
     }
 
     @Test
@@ -176,8 +185,12 @@ class CristinMapperTest {
         var dbCandidate = CristinMapper.toDbCandidate(nviReport);
 
         var expectedChannelId = URI.create(
-            "https://api.test.nva.aws.unit.no/publication-channels-v2/series/69CFBB82-5064-402D-843F-B27B246FB7DE/2013");
+            "https://api.test.nva.aws.unit.no/publication-channels-v2/series/69CFBB82-5064-402D-843F-B27B246FB7DE"
+            + "/2013");
+        var expectedChannelType = ChannelType.SERIES;
+
         assertEquals(expectedChannelId, dbCandidate.channelId());
+        assertEquals(expectedChannelType, dbCandidate.channelType());
     }
 
     @Test
@@ -202,8 +215,61 @@ class CristinMapperTest {
         var dbCandidate = CristinMapper.toDbCandidate(nviReport);
 
         var expectedChannelId = URI.create(
-            "https://api.test.nva.aws.unit.no/publication-channels-v2/publisher/7BB46297-D894-4A65-B113-6462C58DE20A/2013");
+            "https://api.test.nva.aws.unit.no/publication-channels-v2/publisher/7BB46297-D894-4A65-B113-6462C58DE20A"
+            + "/2013");
+        var expectedChannelType = ChannelType.PUBLISHER;
+
         assertEquals(expectedChannelId, dbCandidate.channelId());
+        assertEquals(expectedChannelType, dbCandidate.channelType());
+    }
+
+    @Test
+    void shouldExtractChannelIdFromAcademicChapterWhenSeriesIsPresent() {
+        var academicArticleReference = """
+                                                             {
+              "type": "Reference",
+              "publicationContext": {
+                "type": "Anthology",
+                "id": "https://api.test.nva.aws.unit.no/publication/018dc266ebf7-09159249-b610-46c3-828d-6e0da6043333",
+                "entityDescription": {
+                  "type": "EntityDescription",
+                  "reference": {
+                    "type": "Reference",
+                    "publicationContext": {
+                      "type": "Book",
+                      "series": {
+                        "type": "Series",
+                        "id": "https://api.test.nva.aws.unit.no/publication-channels-v2/series/69CFBB82-5064-402D-843F-B27B246FB7DE/2013",
+                        "scientificValue": "LevelOne"
+                      },
+                      "publisher": {
+                        "type": "Publisher",
+                        "id": "https://api.test.nva.aws.unit.no/publication-channels-v2/publisher/7BB46297-D894-4A65-B113-6462C58DE20A/2013",
+                        "valid": true
+                      }
+                    },
+                    "publicationInstance": {
+                      "type": "AcademicMonograph"
+                    }
+                  }
+                }
+              },
+              "publicationInstance": {
+                "type": "AcademicChapter"
+              }
+            }
+                                                                        """;
+
+        var nviReport = nviReportWithInstanceTypeAndReference("AcademicChapter", academicArticleReference);
+        var dbCandidate = CristinMapper.toDbCandidate(nviReport);
+
+        var expectedChannelId = URI.create(
+            "https://api.test.nva.aws.unit.no/publication-channels-v2/series/69CFBB82-5064-402D-843F-B27B246FB7DE"
+            + "/2013");
+        var expectedChannelType = ChannelType.SERIES;
+
+        assertEquals(expectedChannelId, dbCandidate.channelId());
+        assertEquals(expectedChannelType, dbCandidate.channelType());
     }
 
     @Test
@@ -243,8 +309,58 @@ class CristinMapperTest {
         var dbCandidate = CristinMapper.toDbCandidate(nviReport);
 
         var expectedChannelId = URI.create(
-            "https://api.test.nva.aws.unit.no/publication-channels-v2/publisher/7BB46297-D894-4A65-B113-6462C58DE20A/2013");
+            "https://api.test.nva.aws.unit.no/publication-channels-v2/publisher/7BB46297-D894-4A65-B113-6462C58DE20A"
+            + "/2013");
+        var expectedChannelType = ChannelType.PUBLISHER;
+
         assertEquals(expectedChannelId, dbCandidate.channelId());
+        assertEquals(expectedChannelType, dbCandidate.channelType());
+    }
+
+    @Test
+    void shouldNotExtractChannelIdAndChannelTypeWhenUnsupportedInstanceTypeInReference() {
+        var academicArticleReference = """
+                                      {
+                        
+              "type": "Reference",
+              "publicationContext": {
+                "type": "Anthology",
+                "id": "https://api.test.nva.aws.unit.no/publication/018dc266ebf7-09159249-b610-46c3-828d-6e0da6043333"
+              }
+              "publicationInstance": {
+                "type": "UnsupportedType"
+              }
+            }
+                                                """;
+
+        var nviReport = nviReportWithInstanceTypeAndReference("AcademicChapter", academicArticleReference);
+        var dbCandidate = CristinMapper.toDbCandidate(nviReport);
+
+        assertNull(dbCandidate.channelId());
+        assertNull(dbCandidate.channelType());
+    }
+
+    @Test
+    void shouldNotExtractChannelIdAndChannelTypeWhenUnsupportedInstanceType() {
+        var academicArticleReference = """
+                                      {
+                        
+              "type": "Reference",
+              "publicationContext": {
+                "type": "Anthology",
+                "id": "https://api.test.nva.aws.unit.no/publication/018dc266ebf7-09159249-b610-46c3-828d-6e0da6043333"
+              }
+              "publicationInstance": {
+                "type": "UnsupportedType"
+              }
+            }
+                                                """;
+
+        var nviReport = nviReportWithInstanceTypeAndReference("UnsupportedType", academicArticleReference);
+        var dbCandidate = CristinMapper.toDbCandidate(nviReport);
+
+        assertNull(dbCandidate.channelId());
+        assertNull(dbCandidate.channelType());
     }
 
     private static CristinNviReport nviReportWithInstanceTypeAndReference(String instanceType, String reference) {
@@ -253,10 +369,8 @@ class CristinMapperTest {
                                scientificPersonAtInstitutionWithPoints(institutionIdentifier, POINTS_PER_CONTRIBUTOR));
         var scientificResource = scientificResourceWithCreators(creators);
         var cristinLocale = cristinLocaleWithInstitutionIdentifier(institutionIdentifier);
-        return cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource)
-                         .withInstanceType(instanceType)
-                         .withReference(reference)
-                         .build();
+        return cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource).withInstanceType(
+            instanceType).withReference(reference).build();
     }
 
     private static ScientificResource scientificResourceWithCreators(List<ScientificPerson> creators) {
