@@ -197,14 +197,14 @@ public final class CandidateDao extends Dao {
     }
 
     @Deprecated
-    private String migratePeriodYear() {
+    private static String migratePeriodYear() {
         var periodYear = candidate.publicationDate().year();
         logger.info("Migrating period year for candidate with identifier: {}. New periodYear: {}", identifier,
                     periodYear);
         return periodYear;
     }
 
-    private boolean isApplicableAndMissingPeriodYear() {
+    private static boolean isApplicableAndMissingPeriodYear() {
         return isNull(periodYear) && candidate.applicable();
     }
 
@@ -298,7 +298,16 @@ public final class CandidateDao extends Dao {
         }
 
         public Builder periodYear(String periodYear) {
-            this.builderPeriodYear = periodYear;
+            var applicableAndMissingPeriodYear = isApplicableAndMissingPeriodYear();
+            logger.info("Candidate identifier: {}. Applicable and missing period year: {}",
+                        builderIdentifier, applicableAndMissingPeriodYear);
+            if (applicableAndMissingPeriodYear) {
+                this.builderPeriodYear = migratePeriodYear();
+            } else {
+                logger.info("Returning periodYear for candidate with identifier: {}. periodYear: {}",
+                            builderIdentifier, periodYear);
+                this.builderPeriodYear = periodYear;
+            }
             return this;
         }
 
