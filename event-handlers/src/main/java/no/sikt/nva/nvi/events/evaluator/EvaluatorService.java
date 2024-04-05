@@ -18,7 +18,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
-import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
+import no.sikt.nva.nvi.events.evaluator.calculator.PointService;
 import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
@@ -34,13 +34,13 @@ public class EvaluatorService {
 
     private final StorageReader<URI> storageReader;
     private final CandidateCalculator candidateCalculator;
-    private final PointCalculator pointCalculator;
+    private final PointService pointService;
 
     public EvaluatorService(StorageReader<URI> storageReader, CandidateCalculator candidateCalculator,
-                            PointCalculator pointCalculator) {
+                            PointService pointService) {
         this.storageReader = storageReader;
         this.candidateCalculator = candidateCalculator;
-        this.pointCalculator = pointCalculator;
+        this.pointService = pointService;
     }
 
     public CandidateEvaluatedMessage evaluateCandidacy(URI publicationBucketUri) {
@@ -49,7 +49,7 @@ public class EvaluatorService {
         var verifiedCreatorsWithNviInstitutions = candidateCalculator.getVerifiedCreatorsWithNviInstitutionsIfExists(
             publication);
         if (!verifiedCreatorsWithNviInstitutions.isEmpty()) {
-            var pointCalculation = pointCalculator.calculatePoints(publication, verifiedCreatorsWithNviInstitutions);
+            var pointCalculation = pointService.calculatePoints(publication, verifiedCreatorsWithNviInstitutions);
             var nviCandidate = constructNviCandidate(publication, verifiedCreatorsWithNviInstitutions, pointCalculation,
                                                      publicationId, publicationBucketUri);
             return constructMessage(nviCandidate);
