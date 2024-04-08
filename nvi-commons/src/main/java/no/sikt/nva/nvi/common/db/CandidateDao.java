@@ -123,7 +123,7 @@ public final class CandidateDao extends Dao {
     @DynamoDbAttribute(SECONDARY_INDEX_YEAR_HASH_KEY)
     @JsonProperty(SECONDARY_INDEX_YEAR_HASH_KEY)
     public String searchByYearHashKey() {
-        return periodYear;
+        return migratePeriodYear();
     }
 
     @JacocoGenerated
@@ -152,6 +152,11 @@ public final class CandidateDao extends Dao {
         return candidate;
     }
 
+    @DynamoDbAttribute(PERIOD_YEAR_FIELD)
+    public String getPeriodYear() {
+        return migratePeriodYear();
+    }
+
     @Override
     @JacocoGenerated
     public int hashCode() {
@@ -178,11 +183,6 @@ public final class CandidateDao extends Dao {
     @JacocoGenerated
     public String toString() {
         return attempt(() -> JsonUtils.dtoObjectMapper.writeValueAsString(this)).orElseThrow();
-    }
-
-    @DynamoDbAttribute(PERIOD_YEAR_FIELD)
-    public String periodYear() {
-        return migratePeriodYear();
     }
 
     @Deprecated

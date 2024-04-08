@@ -121,7 +121,7 @@ public final class Candidate {
                                .orElseThrow(CandidateNotFoundException::new);
         var approvalDaoList = repository.fetchApprovals(candidateDao.identifier());
         var noteDaoList = repository.getNotes(candidateDao.identifier());
-        var periodStatus = findPeriodStatus(periodRepository, candidateDao.periodYear());
+        var periodStatus = findPeriodStatus(periodRepository, candidateDao.getPeriodYear());
         return new Candidate(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
     }
 
@@ -131,7 +131,7 @@ public final class Candidate {
                                .orElseThrow(CandidateNotFoundException::new);
         var approvalDaoList = repository.fetchApprovals(candidateDao.identifier());
         var noteDaoList = repository.getNotes(candidateDao.identifier());
-        var periodStatus = findPeriodStatus(periodRepository, candidateDao.periodYear());
+        var periodStatus = findPeriodStatus(periodRepository, candidateDao.getPeriodYear());
         return new Candidate(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
     }
 

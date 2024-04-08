@@ -79,8 +79,8 @@ public class MigrationTests extends LocalDynamoTest {
         var existingDao = candidateRepository.create(dbCandidate, emptyList(), null);
         nviService.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
         var migratedCandidate = candidateRepository.findCandidateById(existingDao.identifier()).orElseThrow();
-        assertNotNull(migratedCandidate.periodYear());
-        assertEquals(dbCandidate.publicationDate().year(), migratedCandidate.periodYear());
+        assertNotNull(migratedCandidate.getPeriodYear());
+        assertEquals(dbCandidate.publicationDate().year(), migratedCandidate.getPeriodYear());
     }
 
     @Test
@@ -89,7 +89,7 @@ public class MigrationTests extends LocalDynamoTest {
         var existingDao = candidateRepository.create(dbCandidate, emptyList(), null);
         nviService.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
         var migratedCandidate = candidateRepository.findCandidateById(existingDao.identifier()).orElseThrow();
-        assertNull(migratedCandidate.periodYear());
+        assertNull(migratedCandidate.getPeriodYear());
     }
 
     private static DbCandidate getCandidateWithoutCreatedDateOrModifiedDate(URI publicationId) {
