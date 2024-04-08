@@ -62,7 +62,8 @@ import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
-import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
+import no.sikt.nva.nvi.events.model.NviCandidate.NviCreatorWithAffiliationPoints;
+import no.sikt.nva.nvi.events.model.NviCandidate.NviCreatorWithAffiliationPoints.AffiliationPoints;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
@@ -133,11 +134,13 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     void shouldSaveNewNviCandidateWithPendingInstitutionApprovalsIfCandidateDoesNotExist() {
         var institutionId = randomUri();
         var identifier = UUID.randomUUID();
-        var creators = List.of(new NviCreator(randomUri(), List.of(institutionId)));
+        var points = randomBigDecimal();
+        var creators = List.of(
+            new NviCreatorWithAffiliationPoints(randomUri(), List.of(new AffiliationPoints(institutionId, points))));
         var instanceType = randomInstanceTypeExcluding(NON_CANDIDATE.getValue());
         var randomLevel = randomElement(DbLevel.values());
         var publicationDate = randomPublicationDate();
-        var institutionPoints = Map.of(institutionId, randomBigDecimal());
+        var institutionPoints = Map.of(institutionId, points);
         var publicationId = generatePublicationId(identifier);
         var publicationBucketUri = generateS3BucketUri(identifier);
         var totalPoints = randomBigDecimal();
@@ -254,16 +257,18 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         return sqsEvent;
     }
 
-    private static NviCreator randomCreator() {
-        return new NviCreator(randomUri(), List.of(randomUri()));
+    private static NviCreatorWithAffiliationPoints randomCreator() {
+        return new NviCreatorWithAffiliationPoints(randomUri(),
+                                                   List.of(new AffiliationPoints(randomUri(), randomBigDecimal())));
     }
 
-    private static CandidateEvaluatedMessage createEvalMessage(List<NviCreator> nviCreators,
-                                                               String instanceType, DbLevel level,
-                                                               PublicationDate publicationDate,
-                                                               Map<URI, BigDecimal> institutionPoints,
-                                                               URI publicationId, URI publicationBucketUri,
-                                                               BigDecimal totalPoints) {
+    private static CandidateEvaluatedMessage createEvalMessage(
+        List<NviCreatorWithAffiliationPoints> nviCreatorWithAffiliationPoints,
+        String instanceType, DbLevel level,
+        PublicationDate publicationDate,
+        Map<URI, BigDecimal> institutionPoints,
+        URI publicationId, URI publicationBucketUri,
+        BigDecimal totalPoints) {
         return CandidateEvaluatedMessage.builder()
                    .withCandidateType(NviCandidate.builder()
                                           .withPublicationId(publicationId)
@@ -273,7 +278,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                           .withPublicationChannelId(randomUri())
                                           .withLevel(level.getValue())
                                           .withDate(publicationDate)
-                                          .withVerifiedCreators(nviCreators)
+                                          .withVerifiedCreators(nviCreatorWithAffiliationPoints)
                                           .withIsInternationalCollaboration(randomBoolean())
                                           .withCollaborationFactor(randomBigDecimal())
                                           .withCreatorShareCount(randomInteger())
@@ -294,6 +299,19 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
+    private static List<AffiliationPoints> createAffiliationPoints(URI affiliationId, URI someOtherInstitutionId) {
+        return Stream.of(someOtherInstitutionId, affiliationId)
+                   .map(institutionId -> new AffiliationPoints(institutionId, randomBigDecimal()))
+                   .toList();
+    }
+
+    private static List<NviCreatorWithAffiliationPoints> getNviCreatorWithAffiliationPoints(
+        URI institutionId, URI creatorId, Map<URI, BigDecimal> institutionPoints) {
+        return List.of(
+            new NviCreatorWithAffiliationPoints(
+                creatorId, List.of(new AffiliationPoints(institutionId, institutionPoints.get(institutionId)))));
+    }
+
     private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(UpsertCandidateRequest request,
                                                                                URI institutionId) {
         var creatorId = request.creators().keySet().stream().toList().get(0);
@@ -305,9 +323,8 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withDate(
                        new PublicationDate(null, "3",
                                            Year.now().toString()))
-                   .withVerifiedCreators(
-                       List.of(new NviCreator(creatorId,
-                                              List.of(institutionId))))
+                   .withVerifiedCreators(getNviCreatorWithAffiliationPoints(institutionId, creatorId,
+                                                                            request.institutionPoints()))
                    .withInstitutionPoints(request.institutionPoints())
                    .withTotalPoints(randomBigDecimal())
                    .build();
@@ -359,23 +376,27 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         return sqsEvent;
     }
 
-    private SQSEvent createEvent(URI keep, URI publicationId, URI publicationBucketUri) {
-        var institutionId = randomUri();
-        var creators = List.of(new NviCreator(randomUri(), List.of(institutionId, keep)));
+    private SQSEvent createEvent(URI affiliationId, URI publicationId, URI publicationBucketUri) {
+        var someOtherInstitutionId = randomUri();
+        var creators = List.of(new NviCreatorWithAffiliationPoints(randomUri(),
+                                                                   createAffiliationPoints(affiliationId,
+                                                                                           someOtherInstitutionId)));
         var instanceType = randomInstanceTypeExcluding(NON_CANDIDATE.getValue());
         var randomLevel = randomElement(DbLevel.values());
         var publicationDate = randomPublicationDate();
-        var institutionPoints = Map.of(institutionId, randomBigDecimal(), keep, randomBigDecimal());
+        var institutionPoints = Map.of(someOtherInstitutionId, randomBigDecimal(), affiliationId, randomBigDecimal());
 
         return createEvent(creators, instanceType, randomLevel, publicationDate, institutionPoints, publicationId,
                            publicationBucketUri, randomBigDecimal());
     }
 
-    private SQSEvent createEvent(List<NviCreator> nviCreators, String instanceType, DbLevel randomLevel,
+    private SQSEvent createEvent(List<NviCreatorWithAffiliationPoints> nviCreatorWithAffiliationPoints,
+                                 String instanceType, DbLevel randomLevel,
                                  PublicationDate publicationDate, Map<URI, BigDecimal> institutionPoints,
                                  URI publicationId, URI publicationBucketUri, BigDecimal totalPoints) {
         return createEvent(
-            createEvalMessage(nviCreators, instanceType, randomLevel, publicationDate, institutionPoints,
+            createEvalMessage(nviCreatorWithAffiliationPoints, instanceType, randomLevel, publicationDate,
+                              institutionPoints,
                               publicationId, publicationBucketUri, totalPoints));
     }
 }

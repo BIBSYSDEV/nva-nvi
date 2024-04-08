@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.events.evaluator.PointService;
 import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints;
-import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints.AffiliationPoints;
+import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints.InstitutionAffiliationPoints;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator.NviOrganization;
@@ -265,18 +265,19 @@ class PointServiceTest {
     private static BigDecimal getActualAffiliationPoints(PointCalculation pointCalculation, URI institutionId,
                                                          URI someSubUnitId,
                                                          URI creator1) {
-        return getInstitutionPoints(pointCalculation, institutionId).affiliationPoints()
+        return getInstitutionPoints(pointCalculation, institutionId).institutionAffiliationPoints()
                    .stream()
                    .filter(affiliationPoints -> isForCreatorAndAffiliation(someSubUnitId, creator1, affiliationPoints))
                    .findFirst()
-                   .map(InstitutionPoints.AffiliationPoints::points)
+                   .map(InstitutionAffiliationPoints::points)
                    .orElseThrow();
     }
 
     private static boolean isForCreatorAndAffiliation(URI someSubUnitId, URI creator1,
-                                                      AffiliationPoints affiliationPoints) {
-        return affiliationPoints.affiliationId().equals(someSubUnitId) && affiliationPoints.nviCreator()
-                                                                              .equals(creator1);
+                                                      InstitutionAffiliationPoints institutionAffiliationPoints) {
+        return institutionAffiliationPoints.affiliationId().equals(someSubUnitId)
+               && institutionAffiliationPoints.nviCreator()
+                      .equals(creator1);
     }
 
     private static BigDecimal getActualPoints(PointCalculation pointCalculation, URI institutionId) {
