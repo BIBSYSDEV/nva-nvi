@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.events.evaluator.model.Channel;
 import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
 import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints;
-import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints.AffiliationPoints;
+import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints.InstitutionAffiliationPoints;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator.NviOrganization;
@@ -74,12 +74,12 @@ public class PointCalculator {
                    .reduce(ZERO, BigDecimal::add);
     }
 
-    private static Stream<AffiliationPoints> calculatePointsForAffiliation(Long institutionCreatorShareCount,
-                                                                           Entry<URI, List<URI>> nviCreator,
-                                                                           BigDecimal institutionPoints) {
+    private static Stream<InstitutionAffiliationPoints> calculatePointsForAffiliation(Long institutionCreatorShareCount,
+                                                                                      Entry<URI, List<URI>> nviCreator,
+                                                                                      BigDecimal institutionPoints) {
         return nviCreator.getValue().stream()
-                   .map(affiliationId -> new AffiliationPoints(affiliationId, nviCreator.getKey(),
-                                                               dividePointsOnCreatorShareCount(
+                   .map(affiliationId -> new InstitutionAffiliationPoints(affiliationId, nviCreator.getKey(),
+                                                                          dividePointsOnCreatorShareCount(
                                                                    institutionCreatorShareCount,
                                                                    institutionPoints)));
     }
@@ -133,8 +133,8 @@ public class PointCalculator {
                                                                 institutionPoints));
     }
 
-    private List<AffiliationPoints> calculateAffiliationPoints(URI institutionId, Long institutionCreatorShareCount,
-                                                               BigDecimal institutionPoints) {
+    private List<InstitutionAffiliationPoints> calculateAffiliationPoints(URI institutionId, Long institutionCreatorShareCount,
+                                                                          BigDecimal institutionPoints) {
         return nviCreators.stream()
                    .filter(creator -> isAffiliated(institutionId, creator))
                    .collect(Collectors.toMap(VerifiedNviCreator::id, creator -> mapToAffiliations(institutionId,

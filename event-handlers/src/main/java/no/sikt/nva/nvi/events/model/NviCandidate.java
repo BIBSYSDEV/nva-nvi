@@ -12,6 +12,7 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints.InstitutionAffiliationPoints;
 import no.sikt.nva.nvi.events.model.NviCandidate.NviCreatorWithAffiliationPoints.AffiliationPoints;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -106,6 +107,10 @@ public record NviCandidate(URI publicationId,
 
         public record AffiliationPoints(URI affiliationId, BigDecimal points) {
 
+            public static AffiliationPoints from(InstitutionAffiliationPoints institutionAffiliationPoints) {
+                return new AffiliationPoints(institutionAffiliationPoints.affiliationId(),
+                                             institutionAffiliationPoints.points());
+            }
         }
     }
 

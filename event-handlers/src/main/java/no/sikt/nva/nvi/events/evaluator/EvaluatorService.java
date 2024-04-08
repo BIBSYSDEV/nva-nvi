@@ -20,13 +20,14 @@ import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints;
-import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints.AffiliationPoints;
+import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints.InstitutionAffiliationPoints;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.CandidateType;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.NviCreatorWithAffiliationPoints;
+import no.sikt.nva.nvi.events.model.NviCandidate.NviCreatorWithAffiliationPoints.AffiliationPoints;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 
 public class EvaluatorService {
@@ -86,8 +87,8 @@ public class EvaluatorService {
     private static List<NviCreatorWithAffiliationPoints> mapToNviCreatorWithAffiliationPoints(
         PointCalculation pointCalculation) {
         return pointCalculation.institutionPoints().stream()
-                   .flatMap(institutionPoints -> institutionPoints.affiliationPoints().stream())
-                   .collect(Collectors.groupingBy(AffiliationPoints::nviCreator))
+                   .flatMap(institutionPoints -> institutionPoints.institutionAffiliationPoints().stream())
+                   .collect(Collectors.groupingBy(InstitutionAffiliationPoints::nviCreator))
                    .entrySet()
                    .stream()
                    .map(entry -> new NviCreatorWithAffiliationPoints(entry.getKey(), mapToAffiliationPoints(entry)))
@@ -95,11 +96,9 @@ public class EvaluatorService {
     }
 
     private static List<NviCreatorWithAffiliationPoints.AffiliationPoints> mapToAffiliationPoints(
-        Entry<URI, List<AffiliationPoints>> entry) {
+        Entry<URI, List<InstitutionAffiliationPoints>> entry) {
         return entry.getValue().stream()
-                   .map(affiliationPoints -> new NviCreatorWithAffiliationPoints.AffiliationPoints(
-                       affiliationPoints.affiliationId(),
-                       affiliationPoints.points()))
+                   .map(AffiliationPoints::from)
                    .toList();
     }
 
