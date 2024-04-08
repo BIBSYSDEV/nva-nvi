@@ -46,7 +46,7 @@ import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
-import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
+import no.sikt.nva.nvi.events.model.NviCandidate.NviCreatorWithAffiliationPoints;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.test.FakeSqsClient;
@@ -542,7 +542,11 @@ class EvaluateNviCandidateHandlerTest {
                                                         PublicationChannel channelType, String level,
                                                         BigDecimal basePoints, BigDecimal totalPoints,
                                                         URI publicationBucketUri) {
-        var verifiedCreators = List.of(new NviCreator(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_SUB_UNIT_ID)));
+        var verifiedCreators = List.of(
+            new NviCreatorWithAffiliationPoints(HARDCODED_CREATOR_ID, List.of(
+                new NviCreatorWithAffiliationPoints.AffiliationPoints(CRISTIN_NVI_ORG_SUB_UNIT_ID,
+                                                                      institutionPoints.get(
+                                                                          CRISTIN_NVI_ORG_TOP_LEVEL_ID)))));
         return NviCandidate.builder()
                    .withPublicationId(HARDCODED_PUBLICATION_ID)
                    .withPublicationBucketUri(publicationBucketUri)
@@ -561,9 +565,9 @@ class EvaluateNviCandidateHandlerTest {
                    .build();
     }
 
-    private static int countCreatorShares(List<NviCreator> nviCreators) {
+    private static int countCreatorShares(List<NviCreatorWithAffiliationPoints> nviCreators) {
         return (int) nviCreators.stream()
-                         .mapToLong(nviCreator -> nviCreator.nviAffiliation().size())
+                         .mapToLong(creator -> creator.affiliationPoints().size())
                          .sum();
     }
 
