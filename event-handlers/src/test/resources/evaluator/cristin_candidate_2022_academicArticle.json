@@ -209,7 +209,7 @@
           "website": {
             "id": "https://www.frontiersin.org/journals/sports-and-active-living"
           },
-          "level": "1",
+          "scientificValue": "LevelOne",
           "openAccess": "DOAJ",
           "name": "Frontiers in Sports and Active Living",
           "active": true,

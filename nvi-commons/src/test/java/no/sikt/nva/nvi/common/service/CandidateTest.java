@@ -287,7 +287,7 @@ class CandidateTest extends LocalDynamoTest {
         var createRequest = createUpsertCandidateRequest(randomUri(), randomUri(), true,
                                                          InstanceType.ACADEMIC_MONOGRAPH.getValue(), 4, totalPoints,
                                                          randomLevelExcluding(DbLevel.NON_CANDIDATE)
-                                                             .getVersionOneValue(), CURRENT_YEAR,
+                                                             .getValue(), CURRENT_YEAR,
                                                          institutionToApprove, randomUri(), institutionToReject);
         var candidateBO = Candidate.upsert(createRequest, candidateRepository, periodRepository).orElseThrow();
         candidateBO.createNote(createNoteRequest(randomString(), randomString()))
@@ -339,7 +339,7 @@ class CandidateTest extends LocalDynamoTest {
                                                          creators,
                                                          instanceType,
                                                          randomElement(ChannelType.values()).getValue(), randomUri(),
-                                                         DbLevel.LEVEL_TWO.getVersionOneValue(), points,
+                                                         DbLevel.LEVEL_TWO.getValue(), points,
                                                          randomInteger(10),
                                                          randomBoolean(),
                                                          randomBigDecimal(), randomBigDecimal(), totalPoints);
@@ -482,7 +482,7 @@ class CandidateTest extends LocalDynamoTest {
                                                                       null), getCreators(institutionIdsOriginal),
                                                                   originalType,
                                                                   randomString(), randomUri(),
-                                                                  originalLevel.getVersionOneValue(),
+                                                                  originalLevel.getValue(),
                                                                   getPointsOriginal(institutionIdsOriginal),
                                                                   randomInteger(), false,
                                                                   randomBigDecimal(), null, randomBigDecimal());
@@ -501,7 +501,7 @@ class CandidateTest extends LocalDynamoTest {
                                                             getCreators(arguments.institutionIds()),
                                                             arguments.type().getValue(),
                                                             randomString(), randomUri(),
-                                                            arguments.level().getVersionOneValue(),
+                                                            arguments.level().getValue(),
                                                             getPointsOriginal(arguments.institutionIds()),
                                                             randomInteger(), false,
                                                             TestUtils.randomBigDecimal(), null, randomBigDecimal());
@@ -575,7 +575,7 @@ class CandidateTest extends LocalDynamoTest {
                                             creators,
                                             randomInstanceTypeExcluding(NON_CANDIDATE.getValue()),
                                             randomElement(ChannelType.values()).getValue(), randomUri(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(), points,
+                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(), points,
                                             randomInteger(), randomBoolean(),
                                             randomBigDecimal(scale), randomBigDecimal(scale),
                                             randomBigDecimal(scale));
@@ -630,7 +630,7 @@ class CandidateTest extends LocalDynamoTest {
                                             insertRequest.publicationBucketUri(), true,
                                             insertRequest.instanceType(),
                                             insertRequest.creators().size(), randomBigDecimal(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
+                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
                                             CURRENT_YEAR,
                                             institutionId);
     }
@@ -650,7 +650,7 @@ class CandidateTest extends LocalDynamoTest {
                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null), creators,
                                             insertRequest.instanceType(),
                                             randomElement(ChannelType.values()).getValue(), randomUri(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(), points,
+                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(), points,
                                             randomInteger(), randomBoolean(),
                                             randomBigDecimal(scale), randomBigDecimal(scale), randomBigDecimal(scale));
     }

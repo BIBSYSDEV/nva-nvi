@@ -605,8 +605,7 @@ public final class Candidate {
                                       mapToCreators(candidateDao.candidate().creators()),
                                       candidateDao.candidate().channelType(),
                                       candidateDao.candidate().channelId(),
-                                      candidateDao.candidate().level()
-                                          .getValues().stream().findFirst().orElse(null));
+                                      candidateDao.candidate().level().getValue());
     }
 
     private void validateCandidateState() {

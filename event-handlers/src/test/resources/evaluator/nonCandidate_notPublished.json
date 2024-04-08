@@ -227,7 +227,7 @@
         "publicationContext" : {
           "id" : "https://api.dev.nva.aws.unit.no/publication-channels/3MlvBvMDC5FzqteH",
           "type" : "Journal",
-          "level" : "1"
+          "scientificValue" : "LevelOne"
         },
         "publicationInstance" : {
           "type" : "AcademicArticle"

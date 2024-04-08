@@ -254,7 +254,7 @@
           "active" : true,
           "identifier" : "490845",
           "language" : "http://lexvo.org/id/iso639-3/eng",
-          "level" : "1",
+          "scientificValue" : "LevelOne",
           "name" : "Antennae: The Journal of Nature in Visual Culture",
           "npiDomain" : "Kunsthistorie",
           "onlineIssn" : "1756-9575",

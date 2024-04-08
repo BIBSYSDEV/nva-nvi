@@ -249,7 +249,7 @@ public final class TestUtils {
         return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(
                                                 NON_CANDIDATE.getValue()),
                                             1, randomBigDecimal(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
+                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
                                             year,
                                             randomUri());
     }
@@ -258,7 +258,7 @@ public final class TestUtils {
         return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(
                                                 NON_CANDIDATE.getValue()),
                                             1, randomBigDecimal(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
+                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
                                             CURRENT_YEAR,
                                             institutions);
     }
