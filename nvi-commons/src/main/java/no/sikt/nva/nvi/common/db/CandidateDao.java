@@ -43,7 +43,6 @@ public final class CandidateDao extends Dao {
 
     public static final String TYPE = "CANDIDATE";
     public static final String PERIOD_YEAR_FIELD = "periodYear";
-    private static final Logger logger = org.slf4j.LoggerFactory.getLogger(CandidateDao.class);
     @JsonProperty(IDENTIFIER_FIELD)
     private final UUID identifier;
     @JsonProperty(DATA_FIELD)
@@ -154,6 +153,11 @@ public final class CandidateDao extends Dao {
         return candidate;
     }
 
+    @DynamoDbAttribute(PERIOD_YEAR_FIELD)
+    public String getPeriodYear() {
+        return migratePeriodYear();
+    }
+
     @Override
     @JacocoGenerated
     public int hashCode() {
@@ -182,19 +186,9 @@ public final class CandidateDao extends Dao {
         return attempt(() -> JsonUtils.dtoObjectMapper.writeValueAsString(this)).orElseThrow();
     }
 
-    @DynamoDbAttribute(PERIOD_YEAR_FIELD)
-    public String getPeriodYear() {
-        return migratePeriodYear();
-    }
-
     @Deprecated
     private String migratePeriodYear() {
-        var applicableAndMissingPeriodYear = isApplicableAndMissingPeriodYear();
-        var year = candidate.publicationDate().year();
-        logger.info("Migrating periodYear for candidate with identifier: {}", identifier);
-        logger.info("Applicable: {}, Missing periodYear: {}", candidate.applicable(), isNull(periodYear));
-        logger.info("Publication year: {}", year);
-        return applicableAndMissingPeriodYear ? year : periodYear;
+        return isApplicableAndMissingPeriodYear() ? candidate.publicationDate().year() : periodYear;
     }
 
     private boolean isApplicableAndMissingPeriodYear() {
@@ -291,24 +285,12 @@ public final class CandidateDao extends Dao {
         }
 
         public Builder periodYear(String periodYear) {
-            logger.info("Builder. Migrating periodYear for candidate with identifier: {}", builderIdentifier);
-            logger.info("Builder. Applicable: {}, Missing periodYear: {}", builderCandidate.applicable(),
-                        isNull(periodYear));
-            logger.info("Builder. Publication year: {}", builderCandidate.publicationDate().year());
-            this.builderPeriodYear = builderCandidate.applicable && isNull(periodYear)
-                                         ? migratePeriodYear()
-                                         : periodYear;
+            this.builderPeriodYear = periodYear;
             return this;
         }
 
         public CandidateDao build() {
             return new CandidateDao(builderIdentifier, builderCandidate, builderVersion, builderPeriodYear);
-        }
-
-        @Deprecated
-        @DynamoDbIgnore
-        private String migratePeriodYear() {
-            return builderCandidate.publicationDate().year();
         }
     }
 
