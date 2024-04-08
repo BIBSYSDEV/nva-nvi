@@ -21,12 +21,12 @@ import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
-import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator.NviOrganization;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.CandidateType;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
+import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator.AffiliationPoints;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 
 public class EvaluatorService {
@@ -91,9 +91,10 @@ public class EvaluatorService {
     }
 
     private static NviCreator toNviCreator(VerifiedNviCreator creator) {
+        //TODO: implement AffiliationPoints.points
         return new NviCreator(creator.id(), creator.nviAffiliations()
                                                 .stream()
-                                                .map(NviOrganization::id)
+                                                .map(affiliation -> new AffiliationPoints(affiliation.id(), null))
                                                 .toList());
     }
 

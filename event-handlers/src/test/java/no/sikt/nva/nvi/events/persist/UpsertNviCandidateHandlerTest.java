@@ -63,6 +63,7 @@ import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
+import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator.AffiliationPoints;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
@@ -133,11 +134,12 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     void shouldSaveNewNviCandidateWithPendingInstitutionApprovalsIfCandidateDoesNotExist() {
         var institutionId = randomUri();
         var identifier = UUID.randomUUID();
-        var creators = List.of(new NviCreator(randomUri(), List.of(institutionId)));
+        var points = randomBigDecimal();
+        var creators = List.of(new NviCreator(randomUri(), List.of(new AffiliationPoints(institutionId, points))));
         var instanceType = randomInstanceTypeExcluding(NON_CANDIDATE.getValue());
         var randomLevel = randomElement(DbLevel.values());
         var publicationDate = randomPublicationDate();
-        var institutionPoints = Map.of(institutionId, randomBigDecimal());
+        var institutionPoints = Map.of(institutionId, points);
         var publicationId = generatePublicationId(identifier);
         var publicationBucketUri = generateS3BucketUri(identifier);
         var totalPoints = randomBigDecimal();
@@ -255,7 +257,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     private static NviCreator randomCreator() {
-        return new NviCreator(randomUri(), List.of(randomUri()));
+        return new NviCreator(randomUri(), List.of(new AffiliationPoints(randomUri(), randomBigDecimal())));
     }
 
     private static CandidateEvaluatedMessage createEvalMessage(List<NviCreator> nviCreators,
@@ -294,6 +296,12 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
+    private static List<AffiliationPoints> createAffiliationPoints(URI affiliationId, URI someOtherInstitutionId) {
+        return Stream.of(someOtherInstitutionId, affiliationId)
+                   .map(institutionId -> new AffiliationPoints(institutionId, randomBigDecimal()))
+                   .toList();
+    }
+
     private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(UpsertCandidateRequest request,
                                                                                URI institutionId) {
         var creatorId = request.creators().keySet().stream().toList().get(0);
@@ -307,7 +315,9 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                            Year.now().toString()))
                    .withVerifiedCreators(
                        List.of(new NviCreator(creatorId,
-                                              List.of(institutionId))))
+                                              List.of(new AffiliationPoints(institutionId,
+                                                                            request.institutionPoints()
+                                                                                .get(institutionId))))))
                    .withInstitutionPoints(request.institutionPoints())
                    .withTotalPoints(randomBigDecimal())
                    .build();
@@ -359,13 +369,14 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         return sqsEvent;
     }
 
-    private SQSEvent createEvent(URI keep, URI publicationId, URI publicationBucketUri) {
-        var institutionId = randomUri();
-        var creators = List.of(new NviCreator(randomUri(), List.of(institutionId, keep)));
+    private SQSEvent createEvent(URI affiliationId, URI publicationId, URI publicationBucketUri) {
+        var someOtherInstitutionId = randomUri();
+        var creators = List.of(new NviCreator(randomUri(),
+                                              createAffiliationPoints(affiliationId, someOtherInstitutionId)));
         var instanceType = randomInstanceTypeExcluding(NON_CANDIDATE.getValue());
         var randomLevel = randomElement(DbLevel.values());
         var publicationDate = randomPublicationDate();
-        var institutionPoints = Map.of(institutionId, randomBigDecimal(), keep, randomBigDecimal());
+        var institutionPoints = Map.of(someOtherInstitutionId, randomBigDecimal(), affiliationId, randomBigDecimal());
 
         return createEvent(creators, instanceType, randomLevel, publicationDate, institutionPoints, publicationId,
                            publicationBucketUri, randomBigDecimal());

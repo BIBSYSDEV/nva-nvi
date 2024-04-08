@@ -10,7 +10,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator.AffiliationPoints;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
@@ -42,7 +44,7 @@ public record NviCandidate(URI publicationId,
                    .withInstanceType(details.type())
                    .withDate(toPublicationDate(details.publicationDate()))
                    .withVerifiedCreators(details.creators().stream()
-                                             .map(creator -> new NviCreator(creator.id(), creator.affiliations()))
+                                             .map(NviCandidate::mapToNviCreator)
                                              .toList())
                    .withChannelType(details.channelType().getValue())
                    .withPublicationChannelId(details.publicationChannelId())
@@ -63,12 +65,26 @@ public record NviCandidate(URI publicationId,
 
     @Override
     public Map<URI, List<URI>> creators() {
-        return nviCreators().stream().collect(Collectors.toMap(NviCreator::id, NviCreator::nviAffiliation));
+        return nviCreators().stream()
+                   .collect(Collectors.toMap(NviCreator::id,
+                                             creator -> creator.affiliationPoints().stream()
+                                                            .map(AffiliationPoints::affiliationId)
+                                                            .toList()));
     }
 
     @Override
     public PublicationDetails.PublicationDate publicationDate() {
         return mapToPublicationDate(date);
+    }
+
+    private static NviCreator mapToNviCreator(Creator creator) {
+        return new NviCreator(creator.id(), mapToAffiliationPoints(creator.affiliations()));
+    }
+
+    private static List<AffiliationPoints> mapToAffiliationPoints(List<URI> affiliations) {
+        //TODO: Implement when Candidate contains AffiliationPoints
+        return affiliations.stream().map(affiliation -> new AffiliationPoints(affiliation, null))
+                   .toList();
     }
 
     private static NviCandidate.PublicationDate toPublicationDate(
@@ -86,8 +102,11 @@ public record NviCandidate(URI publicationId,
                                                       publicationDate.day());
     }
 
-    public record NviCreator(URI id, List<URI> nviAffiliation) {
+    public record NviCreator(URI id, List<AffiliationPoints> affiliationPoints) {
 
+        public record AffiliationPoints(URI affiliationId, BigDecimal points) {
+
+        }
     }
 
     public record PublicationDate(String day, String month, String year) {

@@ -542,7 +542,10 @@ class EvaluateNviCandidateHandlerTest {
                                                         PublicationChannel channelType, String level,
                                                         BigDecimal basePoints, BigDecimal totalPoints,
                                                         URI publicationBucketUri) {
-        var verifiedCreators = List.of(new NviCreator(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_SUB_UNIT_ID)));
+        var verifiedCreators = List.of(
+            new NviCreator(HARDCODED_CREATOR_ID, List.of(new NviCreator.AffiliationPoints(CRISTIN_NVI_ORG_SUB_UNIT_ID,
+                                                                                          institutionPoints.get(
+                                                                                              CRISTIN_NVI_ORG_TOP_LEVEL_ID)))));
         return NviCandidate.builder()
                    .withPublicationId(HARDCODED_PUBLICATION_ID)
                    .withPublicationBucketUri(publicationBucketUri)
@@ -563,7 +566,7 @@ class EvaluateNviCandidateHandlerTest {
 
     private static int countCreatorShares(List<NviCreator> nviCreators) {
         return (int) nviCreators.stream()
-                         .mapToLong(nviCreator -> nviCreator.nviAffiliation().size())
+                         .mapToLong(nviCreator -> nviCreator.affiliationPoints().size())
                          .sum();
     }
 
