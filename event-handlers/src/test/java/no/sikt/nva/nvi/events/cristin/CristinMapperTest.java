@@ -107,8 +107,9 @@ class CristinMapperTest {
     void shouldSummarizePointsWhenCalculationTotalPoints() {
         var firstInstitution = randomString();
         var secondInstitution = randomString();
-        var creators = List.of(scientificPersonWithNoInternationalCollaboration(firstInstitution, POINTS_PER_CONTRIBUTOR),
-                               scientificPersonWithNoInternationalCollaboration(secondInstitution, POINTS_PER_CONTRIBUTOR));
+        var creators = List.of(
+            scientificPersonWithNoInternationalCollaboration(firstInstitution, POINTS_PER_CONTRIBUTOR),
+            scientificPersonWithNoInternationalCollaboration(secondInstitution, POINTS_PER_CONTRIBUTOR));
         var scientificResource = scientificResourceWithCreators(creators);
         var firstLocale = cristinLocaleWithInstitutionIdentifier(firstInstitution);
         var secondLocale = cristinLocaleWithInstitutionIdentifier(secondInstitution);
@@ -116,9 +117,10 @@ class CristinMapperTest {
                                                                           scientificResource);
         var dbCandidate = CristinMapper.toDbCandidate(report);
 
-        var expectedTotalPoints = POINTS_PER_CONTRIBUTOR
-                                               .add(POINTS_PER_CONTRIBUTOR, new MathContext(CALCULATION_PRECISION, RoundingMode.HALF_UP))
-                                               .setScale(SCALE, RoundingMode.HALF_UP);
+        var expectedTotalPoints = POINTS_PER_CONTRIBUTOR.add(POINTS_PER_CONTRIBUTOR,
+                                                             new MathContext(CALCULATION_PRECISION,
+                                                                             RoundingMode.HALF_UP))
+                                      .setScale(SCALE, RoundingMode.HALF_UP);
         assertEquals(dbCandidate.totalPoints(), expectedTotalPoints);
     }
 
@@ -135,7 +137,7 @@ class CristinMapperTest {
                 "type" : "AcademicArticle"
               }
             }
-                        """;
+            """;
 
         var nviReport = nviReportWithInstanceTypeAndReference("AcademicArticle", academicArticleReference);
         var dbCandidate = CristinMapper.toDbCandidate(nviReport);
@@ -277,7 +279,7 @@ class CristinMapperTest {
                 "type": "AcademicChapter"
               }
             }
-                                                                        """;
+            """;
 
         var nviReport = nviReportWithInstanceTypeAndReference("AcademicChapter", academicArticleReference);
         var dbCandidate = CristinMapper.toDbCandidate(nviReport);
@@ -295,7 +297,6 @@ class CristinMapperTest {
     void shouldExtractChannelIdFromAcademicChapter() {
         var academicArticleReference = """
                                       {
-                        
               "type": "Reference",
               "publicationContext": {
                 "type": "Anthology",
@@ -340,7 +341,7 @@ class CristinMapperTest {
     void shouldNotExtractChannelIdAndChannelTypeWhenUnsupportedInstanceTypeInReference() {
         var academicArticleReference = """
                                       {
-                        
+            
               "type": "Reference",
               "publicationContext": {
                 "type": "Anthology",
@@ -350,7 +351,7 @@ class CristinMapperTest {
                 "type": "UnsupportedType"
               }
             }
-                                                """;
+            """;
 
         var nviReport = nviReportWithInstanceTypeAndReference("AcademicChapter", academicArticleReference);
         var dbCandidate = CristinMapper.toDbCandidate(nviReport);
@@ -363,7 +364,6 @@ class CristinMapperTest {
     void shouldNotExtractChannelIdAndChannelTypeWhenUnsupportedInstanceType() {
         var academicArticleReference = """
                                       {
-                        
               "type": "Reference",
               "publicationContext": {
                 "type": "Anthology",
@@ -373,7 +373,7 @@ class CristinMapperTest {
                 "type": "UnsupportedType"
               }
             }
-                                                """;
+            """;
 
         var nviReport = nviReportWithInstanceTypeAndReference("UnsupportedType", academicArticleReference);
         var dbCandidate = CristinMapper.toDbCandidate(nviReport);
@@ -409,8 +409,8 @@ class CristinMapperTest {
                    .withScientificResources(List.of(scientificResource));
     }
 
-    private static CristinNviReport cristinReportFromCristinLocalesAndScientificResource(List<CristinLocale> cristinLocales,
-                                                                                         ScientificResource scientificResource) {
+    private static CristinNviReport cristinReportFromCristinLocalesAndScientificResource(
+        List<CristinLocale> cristinLocales, ScientificResource scientificResource) {
         return CristinNviReport.builder()
                    .withPublicationIdentifier(randomString())
                    .withYearReported(randomString())

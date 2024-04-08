@@ -68,6 +68,7 @@ public final class CristinMapper {
     public static final String SERIES_TYPE_JSON_POINTER = "/publicationContext/series/type";
     public static final String PUBLISHER_TYPE_JSON_POINTER = "/publicationContext/publisher/type";
     public static final String PUBLICATION_CONTEXT_ID_JSON_POINTER = "/publicationContext/id";
+    public static final String PUBLICATION_CONTEXT_TYPE_JSON_POINTER = "/publicationContext/type";
 
     private CristinMapper() {
 
@@ -134,7 +135,7 @@ public final class CristinMapper {
         if (nonNull(instance)) {
             var channelType = switch (instance) {
                 case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
-                    referenceNode.at("/publicationContext/type").asText();
+                    extractNode(referenceNode, PUBLICATION_CONTEXT_TYPE_JSON_POINTER);
                 case ACADEMIC_MONOGRAPH -> extractChannelTypeForAcademicMonograph(referenceNode);
                 case ACADEMIC_CHAPTER -> extractChannelTypeForAcademicChapter(referenceNode);
             };
@@ -182,14 +183,15 @@ public final class CristinMapper {
     }
 
     private static String extractChannelIdForAcademicMonograph(JsonNode referenceNode) {
-        return nonNull(extractNode(referenceNode, SERIES_ID_JSON_POINTER)) ? referenceNode.at(
-            SERIES_ID_JSON_POINTER).asText() : referenceNode.at(PUBLISHER_ID_JSON_POINTER).asText();
+        return nonNull(extractNode(referenceNode, SERIES_ID_JSON_POINTER))
+                   ? extractNode(referenceNode, SERIES_ID_JSON_POINTER)
+                   : extractNode(referenceNode,PUBLISHER_ID_JSON_POINTER);
     }
 
     private static String extractChannelTypeForAcademicMonograph(JsonNode referenceNode) {
         return nonNull(extractNode(referenceNode, SERIES_TYPE_JSON_POINTER))
-                   ? referenceNode.at(SERIES_TYPE_JSON_POINTER).asText()
-                   : referenceNode.at(PUBLISHER_TYPE_JSON_POINTER).asText();
+                   ? extractNode(referenceNode,SERIES_TYPE_JSON_POINTER)
+                   : extractNode(referenceNode, PUBLISHER_TYPE_JSON_POINTER);
     }
 
     private static boolean isInternationalCollaboration(CristinNviReport cristinNviReport) {
