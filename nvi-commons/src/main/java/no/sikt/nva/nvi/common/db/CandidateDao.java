@@ -211,6 +211,7 @@ public final class CandidateDao extends Dao {
         }
 
         @Deprecated
+        @JacocoGenerated//This is tested in CristinMapperTest
         //TODO: Remove after cristin migration
         public static DbLevel fromDeprecatedValue(String value) {
             return switch (value) {
