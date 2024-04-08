@@ -205,7 +205,7 @@ public final class CandidateDao extends Dao {
 
         public static DbLevel parse(String string) {
             return Arrays.stream(DbLevel.values())
-                       .filter(level -> equalsIgnoreCase(level.value, string))
+                       .filter(level -> equalsIgnoreCase(level.getValue(), string))
                        .findFirst()
                        .orElse(NON_CANDIDATE);
         }
