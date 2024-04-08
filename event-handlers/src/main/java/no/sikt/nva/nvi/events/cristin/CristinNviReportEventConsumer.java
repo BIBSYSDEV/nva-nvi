@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.cristin;
 
+import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
@@ -20,6 +21,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, Void> {
 
     public static final String NVI_ERRORS = "NVI_ERRORS";
+    public static final String MISSING_REPORTED_YEAR_MESSAGE = "Reported year is missing!";
     private final CandidateRepository repository;
     private final S3Client s3Client;
 
@@ -92,7 +94,12 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     private CandidateDao createAndPersist(CristinNviReport cristinNviReport) {
         var approvals = createApprovals(cristinNviReport);
         var candidate = createDbCandidate(cristinNviReport);
-        return repository.create(candidate, approvals,
-                                 String.valueOf(cristinNviReport.yearReported()));
+        var yearReported = cristinNviReport.yearReported();
+
+        if (isNull(yearReported)) {
+            throw new IllegalArgumentException(MISSING_REPORTED_YEAR_MESSAGE);
+        } else {
+            return repository.create(candidate, approvals, yearReported);
+        }
     }
 }

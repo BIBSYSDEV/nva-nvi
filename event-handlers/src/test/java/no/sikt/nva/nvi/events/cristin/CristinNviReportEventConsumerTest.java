@@ -29,6 +29,7 @@ import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
+import no.sikt.nva.nvi.events.cristin.CristinNviReport.Builder;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.events.models.EventReference;
 import no.unit.nva.s3.S3Driver;
@@ -63,7 +64,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
 
     @Test
     void shouldCreateNviCandidateFromNviReport() throws IOException {
-        var cristinNviReport = randomCristinNviReport();
+        var cristinNviReport = randomCristinNviReport().build();
         periodRepository.save(periodForYear(cristinNviReport.yearReported()));
         handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
         var publicationId = toPublicationId(cristinNviReport);
@@ -83,6 +84,19 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
         var expectedReport = s3Driver.getFile(s3ReportPath);
 
         assertThat(expectedReport, containsString("Could not create nvi candidate"));
+    }
+
+    @Test
+    void shouldStoreErrorReportWhenYearReportedIsMissing() throws IOException {
+        var cristinNviReport = randomCristinNviReport().withYearReported(null).build();
+        handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
+        var s3ReportPath = UriWrapper.fromHost(BUCKET_NAME)
+                               .addChild(NVI_ERRORS)
+                               .addChild(cristinNviReport.publicationIdentifier())
+                               .toS3bucketPath();
+        var expectedReport = s3Driver.getFile(s3ReportPath);
+
+        assertThat(expectedReport, containsString("Reported year is missing!"));
     }
 
     private static DbNviPeriod periodForYear(String cristinNviReport) {
@@ -167,7 +181,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
                + locale.getGroupIdentifier();
     }
 
-    private CristinNviReport randomCristinNviReport() {
+    private Builder randomCristinNviReport() {
         var institutionIdentifier = randomString();
         return CristinNviReport.builder()
                    .withCristinIdentifier(randomString())
@@ -177,8 +191,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
                    .withCristinLocales(List.of(randomCristinLocale(institutionIdentifier)))
                    .withScientificResources(List.of(scientificResource(institutionIdentifier)))
                    .withInstanceType(randomString())
-                   .withReference(randomString())
-                   .build();
+                   .withReference(randomString());
     }
 
     private CristinNviReport nviReportWithIdentifier() {
