@@ -125,7 +125,7 @@ public final class CandidateDao extends Dao {
     @DynamoDbAttribute(SECONDARY_INDEX_YEAR_HASH_KEY)
     @JsonProperty(SECONDARY_INDEX_YEAR_HASH_KEY)
     public String searchByYearHashKey() {
-        return periodYear;
+        return migratePeriodYear();
     }
 
     @JacocoGenerated
