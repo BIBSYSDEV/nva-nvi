@@ -183,7 +183,7 @@ public final class CandidateDao extends Dao {
     }
 
     @DynamoDbAttribute(PERIOD_YEAR_FIELD)
-    public String periodYear() {
+    public String getPeriodYear() {
         return migratePeriodYear();
     }
 
