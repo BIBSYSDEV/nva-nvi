@@ -26,7 +26,6 @@ import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao.Builder;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
@@ -319,28 +318,16 @@ public final class CandidateDao extends Dao {
             return new Builder();
         }
 
-        @Deprecated
-        //TODO: Should be removed once we have migrated instanceType to String
         public String instanceType() {
-            var enums = Arrays.stream(InstanceType.values()).toList();
-            var instanceTypeEnum = enums.stream()
-                                       .filter(value -> value.toString().equals(instanceType))
-                                       .findFirst();
-            if (instanceTypeEnum.isPresent()) {
-                return instanceTypeEnum.get().getValue();
-            } else {
-                return instanceType;
-            }
+            return instanceType;
         }
 
-        //TODO: Remove after migration
         public Instant modifiedDate() {
-            return migrateDate(modifiedDate);
+            return modifiedDate;
         }
 
-        //TODO: Remove after migration
         public Instant createdDate() {
-            return migrateDate(createdDate);
+            return createdDate;
         }
 
         @DynamoDbIgnore
@@ -409,15 +396,6 @@ public final class CandidateDao extends Dao {
                                 reportStatus);
         }
 
-        @Deprecated
-        private static Instant migrateDate(Instant instant) {
-            if (isNull(instant)) {
-                return Instant.now();
-            } else {
-                return instant;
-            }
-        }
-
         public static final class Builder {
 
             private URI builderPublicationId;
@@ -458,17 +436,8 @@ public final class CandidateDao extends Dao {
                 return this;
             }
 
-            //TODO: Should be removed once we have migrated instanceType to String
             public Builder instanceType(String instanceType) {
-                var enums = Arrays.stream(InstanceType.values()).toList();
-                var instanceTypeEnum = enums.stream()
-                                           .filter(value -> value.toString().equals(instanceType))
-                                           .findFirst();
-                if (instanceTypeEnum.isPresent()) {
-                    this.builderInstanceType = instanceTypeEnum.get().getValue();
-                } else {
-                    this.builderInstanceType = instanceType;
-                }
+                this.builderInstanceType = instanceType;
                 return this;
             }
 
@@ -533,12 +502,12 @@ public final class CandidateDao extends Dao {
             }
 
             public Builder createdDate(Instant createdDate) {
-                this.builderCreatedDate = migrateDate(createdDate);
+                this.builderCreatedDate = createdDate;
                 return this;
             }
 
             public Builder modifiedDate(Instant modifiedDate) {
-                this.builderModifiedDate = migrateDate(modifiedDate);
+                this.builderModifiedDate = modifiedDate;
                 return this;
             }
 
