@@ -29,6 +29,7 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.JacocoGenerated;
+import org.slf4j.Logger;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
@@ -42,6 +43,7 @@ public final class CandidateDao extends Dao {
 
     public static final String TYPE = "CANDIDATE";
     public static final String PERIOD_YEAR_FIELD = "periodYear";
+    private static final Logger logger = org.slf4j.LoggerFactory.getLogger(CandidateDao.class);
     @JsonProperty(IDENTIFIER_FIELD)
     private final UUID identifier;
     @JsonProperty(DATA_FIELD)
@@ -187,7 +189,12 @@ public final class CandidateDao extends Dao {
 
     @Deprecated
     private String migratePeriodYear() {
-        return isApplicableAndMissingPeriodYear() ? candidate.publicationDate().year() : periodYear;
+        var applicableAndMissingPeriodYear = isApplicableAndMissingPeriodYear();
+        var year = candidate.publicationDate().year();
+        logger.info("Migrating periodYear for candidate with identifier: {}", identifier);
+        logger.info("Applicable: {}, Missing periodYear: {}", candidate.applicable(), isNull(periodYear));
+        logger.info("Publication year: {}", year);
+        return applicableAndMissingPeriodYear ? year : periodYear;
     }
 
     private boolean isApplicableAndMissingPeriodYear() {
@@ -284,6 +291,10 @@ public final class CandidateDao extends Dao {
         }
 
         public Builder periodYear(String periodYear) {
+            logger.info("Builder. Migrating periodYear for candidate with identifier: {}", builderIdentifier);
+            logger.info("Builder. Applicable: {}, Missing periodYear: {}", builderCandidate.applicable(),
+                        isNull(periodYear));
+            logger.info("Builder. Publication year: {}", builderCandidate.publicationDate().year());
             this.builderPeriodYear = builderCandidate.applicable && isNull(periodYear)
                                          ? migratePeriodYear()
                                          : periodYear;

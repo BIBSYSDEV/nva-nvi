@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.Year;
 import java.time.ZonedDateTime;
 import java.util.Collection;
@@ -32,6 +33,7 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.CandidateUniquenessEntryDao;
 import no.sikt.nva.nvi.common.db.Dao;
@@ -235,6 +237,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
                    .reportStatus(ReportStatus.REPORTED)
                    .level(DbLevel.LEVEL_ONE)
                    .channelType(ChannelType.JOURNAL)
+                   .publicationDate(new DbPublicationDate(String.valueOf(LocalDate.now().getYear()), null, null))
                    .build();
     }
 
