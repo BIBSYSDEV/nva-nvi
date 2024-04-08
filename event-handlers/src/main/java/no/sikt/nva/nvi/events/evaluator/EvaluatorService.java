@@ -14,19 +14,19 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints;
+import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints.AffiliationPoints;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
-import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.CandidateType;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
-import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
-import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator.AffiliationPoints;
+import no.sikt.nva.nvi.events.model.NviCandidate.NviCreatorWithAffiliationPoints;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 
 public class EvaluatorService {
@@ -49,8 +49,8 @@ public class EvaluatorService {
             publication);
         if (!verifiedCreatorsWithNviInstitutions.isEmpty()) {
             var pointCalculation = pointService.calculatePoints(publication, verifiedCreatorsWithNviInstitutions);
-            var nviCandidate = constructNviCandidate(publication, verifiedCreatorsWithNviInstitutions, pointCalculation,
-                                                     publicationId, publicationBucketUri);
+            var nviCandidate = constructNviCandidate(publication, pointCalculation, publicationId,
+                                                     publicationBucketUri);
             return constructMessage(nviCandidate);
         } else {
             return constructMessage(new NonNviCandidate(publicationId));
@@ -58,7 +58,6 @@ public class EvaluatorService {
     }
 
     private static NviCandidate constructNviCandidate(JsonNode jsonNode,
-                                                      List<VerifiedNviCreator> nviCreators,
                                                       PointCalculation pointCalculation, URI publicationId,
                                                       URI publicationBucketUri) {
         return NviCandidate.builder()
@@ -74,7 +73,7 @@ public class EvaluatorService {
                    .withCollaborationFactor(pointCalculation.collaborationFactor())
                    .withCreatorShareCount(pointCalculation.creatorShareCount())
                    .withInstitutionPoints(mapToInstitutionPoints(pointCalculation.institutionPoints()))
-                   .withVerifiedCreators(mapToCreators(nviCreators))
+                   .withVerifiedCreators(mapToNviCreatorWithAffiliationPoints(pointCalculation))
                    .withTotalPoints(pointCalculation.totalPoints())
                    .build();
     }
@@ -84,18 +83,24 @@ public class EvaluatorService {
                                                                    InstitutionPoints::institutionPoints));
     }
 
-    private static List<NviCreator> mapToCreators(List<VerifiedNviCreator> nviCreators) {
-        return nviCreators.stream()
-                   .map(EvaluatorService::toNviCreator)
+    private static List<NviCreatorWithAffiliationPoints> mapToNviCreatorWithAffiliationPoints(
+        PointCalculation pointCalculation) {
+        return pointCalculation.institutionPoints().stream()
+                   .flatMap(institutionPoints -> institutionPoints.affiliationPoints().stream())
+                   .collect(Collectors.groupingBy(AffiliationPoints::nviCreator))
+                   .entrySet()
+                   .stream()
+                   .map(entry -> new NviCreatorWithAffiliationPoints(entry.getKey(), mapToAffiliationPoints(entry)))
                    .toList();
     }
 
-    private static NviCreator toNviCreator(VerifiedNviCreator creator) {
-        //TODO: implement AffiliationPoints.points
-        return new NviCreator(creator.id(), creator.nviAffiliations()
-                                                .stream()
-                                                .map(affiliation -> new AffiliationPoints(affiliation.id(), null))
-                                                .toList());
+    private static List<NviCreatorWithAffiliationPoints.AffiliationPoints> mapToAffiliationPoints(
+        Entry<URI, List<AffiliationPoints>> entry) {
+        return entry.getValue().stream()
+                   .map(affiliationPoints -> new NviCreatorWithAffiliationPoints.AffiliationPoints(
+                       affiliationPoints.affiliationId(),
+                       affiliationPoints.points()))
+                   .toList();
     }
 
     private static URI extractPublicationId(JsonNode publication) {

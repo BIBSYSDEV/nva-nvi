@@ -12,7 +12,7 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
-import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator.AffiliationPoints;
+import no.sikt.nva.nvi.events.model.NviCandidate.NviCreatorWithAffiliationPoints.AffiliationPoints;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
@@ -20,7 +20,7 @@ public record NviCandidate(URI publicationId,
                            URI publicationBucketUri,
                            String instanceType,
                            @JsonProperty("publicationDate") PublicationDate date,
-                           List<NviCreator> nviCreators,
+                           List<NviCreatorWithAffiliationPoints> nviCreatorWithAffiliationPoints,
                            String channelType,
                            URI publicationChannelId,
                            String level,
@@ -65,8 +65,8 @@ public record NviCandidate(URI publicationId,
 
     @Override
     public Map<URI, List<URI>> creators() {
-        return nviCreators().stream()
-                   .collect(Collectors.toMap(NviCreator::id,
+        return nviCreatorWithAffiliationPoints().stream()
+                   .collect(Collectors.toMap(NviCreatorWithAffiliationPoints::id,
                                              creator -> creator.affiliationPoints().stream()
                                                             .map(AffiliationPoints::affiliationId)
                                                             .toList()));
@@ -77,8 +77,8 @@ public record NviCandidate(URI publicationId,
         return mapToPublicationDate(date);
     }
 
-    private static NviCreator mapToNviCreator(Creator creator) {
-        return new NviCreator(creator.id(), mapToAffiliationPoints(creator.affiliations()));
+    private static NviCreatorWithAffiliationPoints mapToNviCreator(Creator creator) {
+        return new NviCreatorWithAffiliationPoints(creator.id(), mapToAffiliationPoints(creator.affiliations()));
     }
 
     private static List<AffiliationPoints> mapToAffiliationPoints(List<URI> affiliations) {
@@ -102,7 +102,7 @@ public record NviCandidate(URI publicationId,
                                                       publicationDate.day());
     }
 
-    public record NviCreator(URI id, List<AffiliationPoints> affiliationPoints) {
+    public record NviCreatorWithAffiliationPoints(URI id, List<AffiliationPoints> affiliationPoints) {
 
         public record AffiliationPoints(URI affiliationId, BigDecimal points) {
 
@@ -119,7 +119,7 @@ public record NviCandidate(URI publicationId,
         private URI publicationBucketUri;
         private String instanceType;
         private PublicationDate date;
-        private List<NviCreator> nviCreators;
+        private List<NviCreatorWithAffiliationPoints> nviCreatorWithAffiliationPoints;
         private String channelType;
         private URI publicationChannelId;
         private String level;
@@ -153,8 +153,8 @@ public record NviCandidate(URI publicationId,
             return this;
         }
 
-        public Builder withVerifiedCreators(List<NviCreator> nviCreators) {
-            this.nviCreators = nviCreators;
+        public Builder withVerifiedCreators(List<NviCreatorWithAffiliationPoints> nviCreatorWithAffiliationPoints) {
+            this.nviCreatorWithAffiliationPoints = nviCreatorWithAffiliationPoints;
             return this;
         }
 
@@ -204,7 +204,8 @@ public record NviCandidate(URI publicationId,
         }
 
         public NviCandidate build() {
-            return new NviCandidate(publicationId, publicationBucketUri, instanceType, date, nviCreators,
+            return new NviCandidate(publicationId, publicationBucketUri, instanceType, date,
+                                    nviCreatorWithAffiliationPoints,
                                     channelType, publicationChannelId, level, basePoints, isInternationalCollaboration,
                                     collaborationFactor, creatorShareCount, institutionPoints, totalPoints);
         }
