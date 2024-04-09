@@ -34,6 +34,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -83,19 +84,24 @@ public final class TestUtils {
     }
 
     public static DbCandidate.Builder randomCandidateBuilder(boolean applicable) {
+        var institutionId = randomUri();
+        var creatorId = randomUri();
+        var institutionPoints = randomBigDecimal();
         return DbCandidate.builder()
                    .publicationId(randomUri())
                    .publicationBucketUri(randomUri())
                    .applicable(applicable)
                    .instanceType(randomInstanceTypeExcluding(NON_CANDIDATE.getValue()))
-                   .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
+                   .points(List.of(new DbInstitutionPoints(institutionId, institutionPoints,
+                                                           List.of(new DbCreatorAffiliationPoints(
+                                                               creatorId, institutionId, institutionPoints)))))
                    .level(randomElement(DbLevel.values()))
                    .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
                    .internationalCollaboration(randomBoolean())
                    .creatorCount(randomInteger())
                    .createdDate(Instant.now())
                    .modifiedDate(Instant.now())
-                   .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))));
+                   .creators(List.of(new DbCreator(creatorId, List.of(institutionId))));
     }
 
     public static InstanceType randomInstanceType() {

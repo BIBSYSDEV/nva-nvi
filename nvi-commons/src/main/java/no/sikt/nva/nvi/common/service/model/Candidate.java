@@ -532,7 +532,9 @@ public final class Candidate {
         return points.stream()
                    .map(institutionPoints ->
                             new DbInstitutionPoints(institutionPoints.institutionId(),
-                                                    adjustScaleAndRoundingMode(institutionPoints.institutionPoints())))
+                                                    adjustScaleAndRoundingMode(institutionPoints.institutionPoints()),
+                                                    //TODO: Implement affiliation points
+                                                    Collections.emptyList()))
                    .toList();
     }
 

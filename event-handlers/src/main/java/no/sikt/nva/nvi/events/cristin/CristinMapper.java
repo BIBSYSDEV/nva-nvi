@@ -62,13 +62,13 @@ public final class CristinMapper {
     public static final String PARENT_PUBLICATION_PUBLISHER_TYPE_JSON_POINTER = "/publicationContext"
                                                                                 + "/entityDescription/reference"
                                                                                 + "/publicationContext/publisher/type";
-    private static final String INTERNATIONAL_COLLABORATION_FACTOR = "1.3";
     public static final String SERIES_ID_JSON_POINTER = "/publicationContext/series/id";
     public static final String PUBLISHER_ID_JSON_POINTER = "/publicationContext/publisher/id";
     public static final String SERIES_TYPE_JSON_POINTER = "/publicationContext/series/type";
     public static final String PUBLISHER_TYPE_JSON_POINTER = "/publicationContext/publisher/type";
     public static final String PUBLICATION_CONTEXT_ID_JSON_POINTER = "/publicationContext/id";
     public static final String PUBLICATION_CONTEXT_TYPE_JSON_POINTER = "/publicationContext/type";
+    private static final String INTERNATIONAL_COLLABORATION_FACTOR = "1.3";
 
     private CristinMapper() {
 
@@ -94,16 +94,11 @@ public final class CristinMapper {
                    .collaborationFactor(extractCollaborationFactor(cristinNviReport))
                    .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
                    .creators(extractCreators(cristinNviReport))
-//                   .creatorCount()
-//                   .creatorShareCount()
+                   //                   .creatorCount()
+                   //                   .creatorShareCount()
                    .channelId(extractChannelId(cristinNviReport))
                    .channelType(extractChannelType(cristinNviReport))
                    .build();
-    }
-
-    private static BigDecimal sumPoints(List<DbInstitutionPoints> points) {
-        return points.stream().map(DbInstitutionPoints::points)
-                   .reduce(BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP), BigDecimal::add);
     }
 
     public static String extractNode(JsonNode node, String jsonPointer) {
@@ -126,6 +121,11 @@ public final class CristinMapper {
 
     public static List<DbApprovalStatus> toApprovals(CristinNviReport cristinNviReport) {
         return cristinNviReport.cristinLocales().stream().map(CristinMapper::toApproval).toList();
+    }
+
+    private static BigDecimal sumPoints(List<DbInstitutionPoints> points) {
+        return points.stream().map(DbInstitutionPoints::points)
+                   .reduce(BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP), BigDecimal::add);
     }
 
     private static ChannelType extractChannelType(CristinNviReport cristinNviReport) {
@@ -185,12 +185,12 @@ public final class CristinMapper {
     private static String extractChannelIdForAcademicMonograph(JsonNode referenceNode) {
         return nonNull(extractNode(referenceNode, SERIES_ID_JSON_POINTER))
                    ? extractNode(referenceNode, SERIES_ID_JSON_POINTER)
-                   : extractNode(referenceNode,PUBLISHER_ID_JSON_POINTER);
+                   : extractNode(referenceNode, PUBLISHER_ID_JSON_POINTER);
     }
 
     private static String extractChannelTypeForAcademicMonograph(JsonNode referenceNode) {
         return nonNull(extractNode(referenceNode, SERIES_TYPE_JSON_POINTER))
-                   ? extractNode(referenceNode,SERIES_TYPE_JSON_POINTER)
+                   ? extractNode(referenceNode, SERIES_TYPE_JSON_POINTER)
                    : extractNode(referenceNode, PUBLISHER_TYPE_JSON_POINTER);
     }
 
@@ -248,7 +248,8 @@ public final class CristinMapper {
     }
 
     private static DbInstitutionPoints toDbInstitutionPoints(Entry<URI, BigDecimal> entry) {
-        return new DbInstitutionPoints(entry.getKey(), entry.getValue());
+        //TODO: Implement creatorAffiliationPoints
+        return new DbInstitutionPoints(entry.getKey(), entry.getValue(), List.of());
     }
 
     private static List<ScientificPerson> getCreators(CristinNviReport cristinNviReport) {

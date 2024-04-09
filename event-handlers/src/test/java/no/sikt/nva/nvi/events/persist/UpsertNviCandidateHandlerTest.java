@@ -249,7 +249,14 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         return institutionPoints
                    .stream()
                    .map(institution -> new DbInstitutionPoints(institution.institutionId(),
-                                                               institution.institutionPoints()))
+                                                               institution.institutionPoints(),
+                                                               institution.creatorAffiliationPoints().stream()
+                                                                   .map(
+                                                                       creatorAffiliationPoints -> new DbInstitutionPoints.DbCreatorAffiliationPoints(
+                                                                           creatorAffiliationPoints.nviCreator(),
+                                                                           creatorAffiliationPoints.affiliationId(),
+                                                                           creatorAffiliationPoints.points()))
+                                                                   .toList()))
                    .toList();
     }
 

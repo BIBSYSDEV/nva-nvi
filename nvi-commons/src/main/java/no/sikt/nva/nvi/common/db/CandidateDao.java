@@ -615,7 +615,8 @@ public final class CandidateDao extends Dao {
     }
 
     @DynamoDbImmutable(builder = DbInstitutionPoints.Builder.class)
-    public record DbInstitutionPoints(URI institutionId, BigDecimal points) {
+    public record DbInstitutionPoints(URI institutionId, BigDecimal points,
+                                      List<DbCreatorAffiliationPoints> creatorAffiliationPoints) {
 
         public static Builder builder() {
             return new Builder();
@@ -626,13 +627,52 @@ public final class CandidateDao extends Dao {
             return builder()
                        .institutionId(institutionId)
                        .points(points)
+                       .creatorAffiliationPoints(creatorAffiliationPoints)
                        .build();
+        }
+
+        @DynamoDbImmutable(builder = DbCreatorAffiliationPoints.Builder.class)
+        public record DbCreatorAffiliationPoints(URI creatorId, URI affiliationId, BigDecimal points) {
+
+            public static Builder builder() {
+                return new Builder();
+            }
+
+            public static final class Builder {
+
+                private URI builderCreatorId;
+                private URI builderAffiliationId;
+                private BigDecimal builderPoints;
+
+                private Builder() {
+                }
+
+                public Builder creatorId(URI creatorId) {
+                    this.builderCreatorId = creatorId;
+                    return this;
+                }
+
+                public Builder affiliationId(URI affiliationId) {
+                    this.builderAffiliationId = affiliationId;
+                    return this;
+                }
+
+                public Builder points(BigDecimal points) {
+                    this.builderPoints = points;
+                    return this;
+                }
+
+                public DbCreatorAffiliationPoints build() {
+                    return new DbCreatorAffiliationPoints(builderCreatorId, builderAffiliationId, builderPoints);
+                }
+            }
         }
 
         public static final class Builder {
 
             private URI builderInstitutionId;
             private BigDecimal builderPoints;
+            private List<DbCreatorAffiliationPoints> builderCreatorAffiliationPoints;
 
             private Builder() {
             }
@@ -647,8 +687,13 @@ public final class CandidateDao extends Dao {
                 return this;
             }
 
+            public Builder creatorAffiliationPoints(List<DbCreatorAffiliationPoints> creatorAffiliationPoints) {
+                this.builderCreatorAffiliationPoints = creatorAffiliationPoints;
+                return this;
+            }
+
             public DbInstitutionPoints build() {
-                return new DbInstitutionPoints(builderInstitutionId, builderPoints);
+                return new DbInstitutionPoints(builderInstitutionId, builderPoints, builderCreatorAffiliationPoints);
             }
         }
     }
