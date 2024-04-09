@@ -37,6 +37,8 @@ import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
 import no.sikt.nva.nvi.events.evaluator.model.Level;
@@ -44,7 +46,7 @@ import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
-import no.sikt.nva.nvi.events.model.NviCandidate.NviCreatorWithAffiliationPoints;
+import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.test.FakeSqsClient;
@@ -165,7 +167,8 @@ class EvaluateNviCandidateHandlerTest {
         var messageBody = getMessageBody();
         var institutionPoints = ((NviCandidate) messageBody.candidate()).institutionPoints();
         assertEquals(1, institutionPoints.size());
-        assertTrue(institutionPoints.containsKey(CRISTIN_NVI_ORG_TOP_LEVEL_ID));
+        assertTrue(institutionPoints.stream().map(
+            InstitutionPoints::institutionId).anyMatch(uri -> uri.equals(CRISTIN_NVI_ORG_TOP_LEVEL_ID)));
     }
 
     @Test
@@ -243,7 +246,7 @@ class EvaluateNviCandidateHandlerTest {
         var messageBody = getMessageBody();
         var institutionPoints = ((NviCandidate) messageBody.candidate()).institutionPoints();
         assertThat(institutionPoints, notNullValue());
-        assertThat(institutionPoints.get(CRISTIN_NVI_ORG_TOP_LEVEL_ID),
+        assertThat(getInstitutionPoints(institutionPoints, CRISTIN_NVI_ORG_TOP_LEVEL_ID),
                    is(equalTo(BigDecimal.valueOf(1).setScale(4, RoundingMode.HALF_UP))));
     }
 
@@ -257,7 +260,7 @@ class EvaluateNviCandidateHandlerTest {
         var messageBody = getMessageBody();
         var institutionPoints = ((NviCandidate) messageBody.candidate()).institutionPoints();
         assertThat(institutionPoints, notNullValue());
-        assertThat(institutionPoints.get(CRISTIN_NVI_ORG_TOP_LEVEL_ID), notNullValue());
+        assertThat(getInstitutionPoints(institutionPoints, CRISTIN_NVI_ORG_TOP_LEVEL_ID), notNullValue());
     }
 
     @Test
@@ -425,6 +428,14 @@ class EvaluateNviCandidateHandlerTest {
 
     }
 
+    private static BigDecimal getInstitutionPoints(List<InstitutionPoints> institutionPoints, URI institutionId) {
+        return institutionPoints.stream()
+                   .filter(institutionPoint -> institutionPoint.institutionId().equals(institutionId))
+                   .map(InstitutionPoints::institutionPoints)
+                   .findFirst()
+                   .orElseThrow();
+    }
+
     private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(String instanceType,
                                                                          BigDecimal points, URI bucketUri,
                                                                          PublicationChannel publicationChannel,
@@ -443,11 +454,7 @@ class EvaluateNviCandidateHandlerTest {
                                                         PublicationChannel channelType, String level,
                                                         BigDecimal basePoints, BigDecimal totalPoints,
                                                         URI publicationBucketUri) {
-        var verifiedCreators = List.of(
-            new NviCreatorWithAffiliationPoints(HARDCODED_CREATOR_ID, List.of(
-                new NviCreatorWithAffiliationPoints.AffiliationPoints(CRISTIN_NVI_ORG_SUB_UNIT_ID,
-                                                                      institutionPoints.get(
-                                                                          CRISTIN_NVI_ORG_TOP_LEVEL_ID)))));
+        var verifiedCreators = List.of(new NviCreator(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_SUB_UNIT_ID)));
         return NviCandidate.builder()
                    .withPublicationId(HARDCODED_PUBLICATION_ID)
                    .withPublicationBucketUri(publicationBucketUri)
@@ -461,14 +468,21 @@ class EvaluateNviCandidateHandlerTest {
                    .withCreatorShareCount(countCreatorShares(verifiedCreators))
                    .withBasePoints(basePoints)
                    .withVerifiedCreators(verifiedCreators)
-                   .withInstitutionPoints(institutionPoints)
+                   .withInstitutionPoints(institutionPoints.entrySet().stream()
+                                              .map(entry -> new InstitutionPoints(entry.getKey(), entry.getValue(),
+                                                                                  List.of(
+                                                                                      new CreatorAffiliationPoints(
+                                                                                          HARDCODED_CREATOR_ID,
+                                                                                          CRISTIN_NVI_ORG_SUB_UNIT_ID,
+                                                                                          entry.getValue()))))
+                                              .toList())
                    .withTotalPoints(totalPoints)
                    .build();
     }
 
-    private static int countCreatorShares(List<NviCreatorWithAffiliationPoints> nviCreators) {
+    private static int countCreatorShares(List<NviCreator> nviCreators) {
         return (int) nviCreators.stream()
-                         .mapToLong(creator -> creator.affiliationPoints().size())
+                         .mapToLong(creator -> creator.nviAffiliations().size())
                          .sum();
     }
 

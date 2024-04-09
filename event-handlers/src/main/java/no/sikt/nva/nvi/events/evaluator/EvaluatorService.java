@@ -10,24 +10,22 @@ import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
-import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.StorageReader;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints;
-import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints.InstitutionAffiliationPoints;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
+import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
+import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator.NviOrganization;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.CandidateType;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
-import no.sikt.nva.nvi.events.model.NviCandidate.NviCreatorWithAffiliationPoints;
-import no.sikt.nva.nvi.events.model.NviCandidate.NviCreatorWithAffiliationPoints.AffiliationPoints;
+import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 
 public class EvaluatorService {
@@ -50,7 +48,9 @@ public class EvaluatorService {
             publication);
         if (!verifiedCreatorsWithNviInstitutions.isEmpty()) {
             var pointCalculation = pointService.calculatePoints(publication, verifiedCreatorsWithNviInstitutions);
-            var nviCandidate = constructNviCandidate(publication, pointCalculation, publicationId,
+            var nviCandidate = constructNviCandidate(publication,
+                                                     verifiedCreatorsWithNviInstitutions, pointCalculation,
+                                                     publicationId,
                                                      publicationBucketUri);
             return constructMessage(nviCandidate);
         } else {
@@ -59,6 +59,7 @@ public class EvaluatorService {
     }
 
     private static NviCandidate constructNviCandidate(JsonNode jsonNode,
+                                                      List<VerifiedNviCreator> verifiedCreatorsWithNviInstitutions,
                                                       PointCalculation pointCalculation, URI publicationId,
                                                       URI publicationBucketUri) {
         return NviCandidate.builder()
@@ -74,32 +75,34 @@ public class EvaluatorService {
                    .withCollaborationFactor(pointCalculation.collaborationFactor())
                    .withCreatorShareCount(pointCalculation.creatorShareCount())
                    .withInstitutionPoints(mapToInstitutionPoints(pointCalculation.institutionPoints()))
-                   .withVerifiedCreators(mapToNviCreatorWithAffiliationPoints(pointCalculation))
+                   .withVerifiedCreators(mapToNviCreators(verifiedCreatorsWithNviInstitutions))
                    .withTotalPoints(pointCalculation.totalPoints())
                    .build();
     }
 
-    private static Map<URI, BigDecimal> mapToInstitutionPoints(List<InstitutionPoints> institutionPoints) {
-        return institutionPoints.stream().collect(Collectors.toMap(InstitutionPoints::institutionId,
-                                                                   InstitutionPoints::institutionPoints));
+    private static List<NviCreator> mapToNviCreators(List<VerifiedNviCreator> verifiedCreatorsWithNviInstitutions) {
+        return verifiedCreatorsWithNviInstitutions.stream()
+                   .map(verifiedNviCreator -> new NviCreator(
+                       verifiedNviCreator.id(),
+                       verifiedNviCreator.nviAffiliations().stream()
+                           .map(NviOrganization::id)
+                           .collect(Collectors.toList())))
+                   .collect(Collectors.toList());
     }
 
-    private static List<NviCreatorWithAffiliationPoints> mapToNviCreatorWithAffiliationPoints(
-        PointCalculation pointCalculation) {
-        return pointCalculation.institutionPoints().stream()
-                   .flatMap(institutionPoints -> institutionPoints.institutionAffiliationPoints().stream())
-                   .collect(Collectors.groupingBy(InstitutionAffiliationPoints::nviCreator))
-                   .entrySet()
-                   .stream()
-                   .map(entry -> new NviCreatorWithAffiliationPoints(entry.getKey(), mapToAffiliationPoints(entry)))
-                   .toList();
-    }
-
-    private static List<NviCreatorWithAffiliationPoints.AffiliationPoints> mapToAffiliationPoints(
-        Entry<URI, List<InstitutionAffiliationPoints>> entry) {
-        return entry.getValue().stream()
-                   .map(AffiliationPoints::from)
-                   .toList();
+    private static List<no.sikt.nva.nvi.common.service.model.InstitutionPoints> mapToInstitutionPoints(
+        List<InstitutionPoints> institutionPoints) {
+        return institutionPoints.stream()
+                   .map(institutionPoints1 -> new no.sikt.nva.nvi.common.service.model.InstitutionPoints(
+                       institutionPoints1.institutionId(),
+                       institutionPoints1.institutionPoints(),
+                       institutionPoints1.creatorAffiliationPoints().stream()
+                           .map(
+                               affiliationPoints -> new CreatorAffiliationPoints(
+                                   affiliationPoints.nviCreator(), affiliationPoints.affiliationId(),
+                                   affiliationPoints.points()))
+                           .collect(Collectors.toList())))
+                   .collect(Collectors.toList());
     }
 
     private static URI extractPublicationId(JsonNode publication) {

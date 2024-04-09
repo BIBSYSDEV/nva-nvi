@@ -21,9 +21,11 @@ import java.math.RoundingMode;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NviCandidate;
@@ -96,8 +98,10 @@ public class EvaluateNviCandidateWithCristinDataTest {
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
         var institutionPoints = candidate.institutionPoints();
-        assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8165))));
-        assertThat(institutionPoints.get(ST_OLAVS_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5774))));
+        assertThat(getInstitutionPoints(institutionPoints, NTNU_TOP_LEVEL_ORG_ID),
+                   is(equalTo(scaledBigDecimal(0.8165))));
+        assertThat(getInstitutionPoints(institutionPoints, ST_OLAVS_TOP_LEVEL_ORG_ID),
+                   is(equalTo(scaledBigDecimal(0.5774))));
     }
 
     @Test
@@ -112,7 +116,8 @@ public class EvaluateNviCandidateWithCristinDataTest {
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
         var institutionPoints = candidate.institutionPoints();
-        assertThat(institutionPoints.get(UIO_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(3.7528))));
+        assertThat(getInstitutionPoints(institutionPoints, UIO_TOP_LEVEL_ORG_ID),
+                   is(equalTo(scaledBigDecimal(3.7528))));
     }
 
     @Test
@@ -127,7 +132,8 @@ public class EvaluateNviCandidateWithCristinDataTest {
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
         var institutionPoints = candidate.institutionPoints();
-        assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(1.5922))));
+        assertThat(getInstitutionPoints(institutionPoints, NTNU_TOP_LEVEL_ORG_ID),
+                   is(equalTo(scaledBigDecimal(1.5922))));
     }
 
     @Test
@@ -140,8 +146,18 @@ public class EvaluateNviCandidateWithCristinDataTest {
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
         var institutionPoints = candidate.institutionPoints();
-        assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8660))));
-        assertThat(institutionPoints.get(SINTEF_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5000))));
+        assertThat(getInstitutionPoints(institutionPoints, NTNU_TOP_LEVEL_ORG_ID),
+                   is(equalTo(scaledBigDecimal(0.8660))));
+        assertThat(getInstitutionPoints(institutionPoints, SINTEF_TOP_LEVEL_ORG_ID),
+                   is(equalTo(scaledBigDecimal(0.5000))));
+    }
+
+    private static BigDecimal getInstitutionPoints(List<InstitutionPoints> institutionPoints, URI institutionId) {
+        return institutionPoints.stream()
+                   .filter(institutionPoint -> institutionPoint.institutionId().equals(institutionId))
+                   .map(InstitutionPoints::institutionPoints)
+                   .findFirst()
+                   .orElseThrow();
     }
 
     private static BigDecimal scaledBigDecimal(double val) {

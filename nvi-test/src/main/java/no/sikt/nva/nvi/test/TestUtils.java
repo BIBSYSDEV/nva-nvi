@@ -46,6 +46,8 @@ import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
@@ -276,7 +278,14 @@ public final class TestUtils {
                            .collect(Collectors.toMap(Function.identity(), e -> List.of(institutions)));
 
         var points = Arrays.stream(institutions)
-                         .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal()));
+                         .map(institution -> {
+                             var institutionPoints = randomBigDecimal();
+                             return new InstitutionPoints(institution, institutionPoints,
+                                                          creators.keySet().stream()
+                                                              .map(creator -> new CreatorAffiliationPoints(
+                                                                  creator, institution, institutionPoints))
+                                                              .toList());
+                         }).toList();
 
         return createUpsertCandidateRequest(publicationId, publicationBucketUri, isApplicable,
                                             new PublicationDate(String.valueOf(year), null, null), creators,
@@ -295,7 +304,7 @@ public final class TestUtils {
                                                                       String instanceType,
                                                                       String channelType, URI channelId,
                                                                       String level,
-                                                                      Map<URI, BigDecimal> points,
+                                                                      List<InstitutionPoints> points,
                                                                       final Integer creatorShareCount,
                                                                       final boolean isInternationalCollaboration,
                                                                       final BigDecimal collaborationFactor,
@@ -370,7 +379,7 @@ public final class TestUtils {
             }
 
             @Override
-            public Map<URI, BigDecimal> institutionPoints() {
+            public List<InstitutionPoints> institutionPoints() {
                 return points;
             }
 

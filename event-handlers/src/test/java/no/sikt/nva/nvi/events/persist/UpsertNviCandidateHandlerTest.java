@@ -31,7 +31,6 @@ import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
-import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Year;
 import java.util.ArrayList;
@@ -59,12 +58,13 @@ import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
-import no.sikt.nva.nvi.events.model.NviCandidate.NviCreatorWithAffiliationPoints;
-import no.sikt.nva.nvi.events.model.NviCandidate.NviCreatorWithAffiliationPoints.AffiliationPoints;
+import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
@@ -193,6 +193,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     private static NviCandidate.Builder randomEvaluatedNviCandidate() {
         var identifier = UUID.randomUUID();
+        var creator = randomCreator();
         return NviCandidate.builder()
                    .withPublicationId(generatePublicationId(identifier))
                    .withPublicationBucketUri(generateS3BucketUri(identifier))
@@ -205,9 +206,12 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withPublicationChannelId(randomUri())
                    .withChannelType(randomElement(ChannelType.values()).getValue())
                    .withIsInternationalCollaboration(randomBoolean())
-                   .withInstitutionPoints(Map.of(randomUri(), randomBigDecimal(4)))
+                   .withInstitutionPoints(List.of(new InstitutionPoints(randomUri(), randomBigDecimal(4),
+                                                                        List.of(new CreatorAffiliationPoints(
+                                                                            creator.id(), randomUri(),
+                                                                            randomBigDecimal())))))
                    .withDate(randomPublicationDate())
-                   .withVerifiedCreators(List.of(randomCreator()));
+                   .withVerifiedCreators(List.of(creator));
     }
 
     private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
@@ -231,9 +235,8 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         return sqsEvent;
     }
 
-    private static NviCreatorWithAffiliationPoints randomCreator() {
-        return new NviCreatorWithAffiliationPoints(randomUri(),
-                                                   List.of(new AffiliationPoints(randomUri(), randomBigDecimal())));
+    private static NviCreator randomCreator() {
+        return new NviCreator(randomUri(), List.of(randomUri()));
     }
 
     private static CandidateEvaluatedMessage createEvalMessage(NviCandidate nviCandidate) {
@@ -242,23 +245,11 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private static List<AffiliationPoints> createAffiliationPoints(URI affiliationId, URI someOtherInstitutionId) {
-        return Stream.of(someOtherInstitutionId, affiliationId)
-                   .map(institutionId -> new AffiliationPoints(institutionId, randomBigDecimal()))
-                   .toList();
-    }
-
-    private static List<NviCreatorWithAffiliationPoints> getNviCreatorWithAffiliationPoints(
-        URI institutionId, URI creatorId, Map<URI, BigDecimal> institutionPoints) {
-        return List.of(
-            new NviCreatorWithAffiliationPoints(
-                creatorId, List.of(new AffiliationPoints(institutionId, institutionPoints.get(institutionId)))));
-    }
-
-    private static List<DbInstitutionPoints> mapToInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
-        return institutionPoints.entrySet()
+    private static List<DbInstitutionPoints> mapToInstitutionPoints(List<InstitutionPoints> institutionPoints) {
+        return institutionPoints
                    .stream()
-                   .map(entry -> new DbInstitutionPoints(entry.getKey(), entry.getValue()))
+                   .map(institution -> new DbInstitutionPoints(institution.institutionId(),
+                                                               institution.institutionPoints()))
                    .toList();
     }
 
@@ -270,12 +261,11 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     private List<DbApprovalStatus> getExpectedApprovals(NviCandidate evaluatedNviCandidate) {
-        return evaluatedNviCandidate.institutionPoints().keySet()
-                   .stream()
-                   .map(bigDecimal -> DbApprovalStatus.builder()
-                                          .institutionId(bigDecimal)
-                                          .status(DbStatus.PENDING)
-                                          .build())
+        return evaluatedNviCandidate.institutionPoints().stream()
+                   .map(institution -> DbApprovalStatus.builder()
+                                           .institutionId(institution.institutionId())
+                                           .status(DbStatus.PENDING)
+                                           .build())
                    .toList();
     }
 
@@ -290,8 +280,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withDate(
                        new PublicationDate(null, "3",
                                            Year.now().toString()))
-                   .withVerifiedCreators(getNviCreatorWithAffiliationPoints(institutionId, creatorId,
-                                                                            request.institutionPoints()))
+                   .withVerifiedCreators(List.of(new NviCreator(creatorId, List.of(institutionId))))
                    .withInstitutionPoints(request.institutionPoints())
                    .withTotalPoints(randomBigDecimal())
                    .build();
@@ -350,33 +339,28 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     private SQSEvent createEvent(URI affiliationId, URI publicationId, URI publicationBucketUri) {
         var someOtherInstitutionId = randomUri();
-        var creators = List.of(new NviCreatorWithAffiliationPoints(randomUri(),
-                                                                   createAffiliationPoints(affiliationId,
-                                                                                           someOtherInstitutionId)));
-        var instanceType = randomInstanceTypeExcluding(NON_CANDIDATE.getValue());
-        var randomLevel = randomElement(DbLevel.values());
-        var publicationDate = randomPublicationDate();
-        var institutionPoints = Map.of(someOtherInstitutionId, randomBigDecimal(), affiliationId, randomBigDecimal());
-
-        BigDecimal totalPoints = randomBigDecimal();
-        BigDecimal basePoints = randomBigDecimal();
-        Integer creatorShareCount = randomInteger();
-        BigDecimal collaborationFactor = randomBigDecimal();
-        boolean isInternationalCollaboration = randomBoolean();
+        var creator = new NviCreator(randomUri(), List.of(affiliationId, someOtherInstitutionId));
+        var institutionPoints =
+            List.of(new InstitutionPoints(affiliationId, randomBigDecimal(), List.of(
+                        new CreatorAffiliationPoints(creator.id(), affiliationId, randomBigDecimal()))),
+                    new InstitutionPoints(someOtherInstitutionId, randomBigDecimal(),
+                                          List.of(new CreatorAffiliationPoints(creator.id(), someOtherInstitutionId,
+                                                                               randomBigDecimal()))));
         return createEvent(createEvalMessage(NviCandidate.builder()
                                                  .withPublicationId(publicationId)
                                                  .withPublicationBucketUri(publicationBucketUri)
-                                                 .withInstanceType(instanceType)
+                                                 .withInstanceType(
+                                                     randomInstanceTypeExcluding(NON_CANDIDATE.getValue()))
                                                  .withChannelType(randomElement(ChannelType.values()).getValue())
                                                  .withPublicationChannelId(randomUri())
-                                                 .withLevel(randomLevel.getValue())
-                                                 .withDate(publicationDate)
-                                                 .withVerifiedCreators(creators)
-                                                 .withIsInternationalCollaboration(isInternationalCollaboration)
-                                                 .withCollaborationFactor(collaborationFactor)
-                                                 .withCreatorShareCount(creatorShareCount)
-                                                 .withBasePoints(basePoints)
-                                                 .withTotalPoints(totalPoints)
+                                                 .withLevel(randomElement(DbLevel.values()).getValue())
+                                                 .withDate(randomPublicationDate())
+                                                 .withVerifiedCreators(List.of(creator))
+                                                 .withIsInternationalCollaboration(randomBoolean())
+                                                 .withCollaborationFactor(randomBigDecimal())
+                                                 .withCreatorShareCount(randomInteger())
+                                                 .withBasePoints(randomBigDecimal())
+                                                 .withTotalPoints(randomBigDecimal())
                                                  .withInstitutionPoints(institutionPoints)
                                                  .build()));
     }

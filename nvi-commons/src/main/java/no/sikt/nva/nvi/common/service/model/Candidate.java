@@ -381,7 +381,11 @@ public final class Candidate {
     }
 
     private static BigDecimal extractRequestPoints(UpsertCandidateRequest request, URI institutionId) {
-        return request.institutionPoints().get(institutionId);
+        return request.institutionPoints().stream()
+                   .filter(institutionPoints -> institutionPoints.institutionId().equals(institutionId))
+                   .map(InstitutionPoints::institutionPoints)
+                   .findFirst()
+                   .orElseThrow();
     }
 
     private static boolean isNotequalIgnoringScaleAndRoundingMode(BigDecimal existingPoints, BigDecimal requestPoints) {
@@ -469,8 +473,8 @@ public final class Candidate {
                    .orElse(PERIOD_STATUS_NO_PERIOD);
     }
 
-    private static List<DbApprovalStatus> mapToApprovals(Map<URI, BigDecimal> points) {
-        return points.keySet().stream().map(Candidate::mapToApproval).toList();
+    private static List<DbApprovalStatus> mapToApprovals(List<InstitutionPoints> institutionPoints) {
+        return institutionPoints.stream().map(InstitutionPoints::institutionId).map(Candidate::mapToApproval).toList();
     }
 
     private static DbApprovalStatus mapToApproval(URI institutionId) {
@@ -524,9 +528,11 @@ public final class Candidate {
                    .build();
     }
 
-    private static List<DbInstitutionPoints> mapToPoints(Map<URI, BigDecimal> points) {
-        return points.entrySet().stream()
-                   .map(entry -> new DbInstitutionPoints(entry.getKey(), adjustScaleAndRoundingMode(entry.getValue())))
+    private static List<DbInstitutionPoints> mapToPoints(List<InstitutionPoints> points) {
+        return points.stream()
+                   .map(institutionPoints ->
+                            new DbInstitutionPoints(institutionPoints.institutionId(),
+                                                    adjustScaleAndRoundingMode(institutionPoints.institutionPoints())))
                    .toList();
     }
 

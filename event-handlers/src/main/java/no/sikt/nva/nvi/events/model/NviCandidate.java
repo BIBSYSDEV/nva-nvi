@@ -5,15 +5,15 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
-import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints.InstitutionAffiliationPoints;
-import no.sikt.nva.nvi.events.model.NviCandidate.NviCreatorWithAffiliationPoints.AffiliationPoints;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
@@ -21,7 +21,7 @@ public record NviCandidate(URI publicationId,
                            URI publicationBucketUri,
                            String instanceType,
                            @JsonProperty("publicationDate") PublicationDate date,
-                           List<NviCreatorWithAffiliationPoints> nviCreatorWithAffiliationPoints,
+                           List<NviCreator> nviCreators,
                            String channelType,
                            URI publicationChannelId,
                            String level,
@@ -29,7 +29,7 @@ public record NviCandidate(URI publicationId,
                            boolean isInternationalCollaboration,
                            BigDecimal collaborationFactor,
                            int creatorShareCount,
-                           Map<URI, BigDecimal> institutionPoints,
+                           List<InstitutionPoints> institutionPoints,
                            BigDecimal totalPoints) implements CandidateType, UpsertCandidateRequest {
 
     public static Builder builder() {
@@ -54,7 +54,7 @@ public record NviCandidate(URI publicationId,
                    .withIsInternationalCollaboration(candidate.isInternationalCollaboration())
                    .withCollaborationFactor(candidate.getCollaborationFactor())
                    .withCreatorShareCount(candidate.getCreatorShareCount())
-                   .withInstitutionPoints(candidate.getInstitutionPoints())
+                   .withInstitutionPoints(mapToInstitutionPoints(candidate.getInstitutionPoints()))
                    .withTotalPoints(candidate.getTotalPoints())
                    .build();
     }
@@ -66,11 +66,8 @@ public record NviCandidate(URI publicationId,
 
     @Override
     public Map<URI, List<URI>> creators() {
-        return nviCreatorWithAffiliationPoints().stream()
-                   .collect(Collectors.toMap(NviCreatorWithAffiliationPoints::id,
-                                             creator -> creator.affiliationPoints().stream()
-                                                            .map(AffiliationPoints::affiliationId)
-                                                            .toList()));
+        return nviCreators().stream().collect(Collectors.toMap(NviCreator::id,
+                                                               NviCreator::nviAffiliations));
     }
 
     @Override
@@ -78,14 +75,18 @@ public record NviCandidate(URI publicationId,
         return mapToPublicationDate(date);
     }
 
-    private static NviCreatorWithAffiliationPoints mapToNviCreator(Creator creator) {
-        return new NviCreatorWithAffiliationPoints(creator.id(), mapToAffiliationPoints(creator.affiliations()));
+    private static List<InstitutionPoints> mapToInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
+        return institutionPoints.entrySet().stream()
+                   .map(entry -> new InstitutionPoints(entry.getKey(),
+                                                       entry.getValue(),
+                                                       //TODO: Implement when Candidate contains
+                                                       // InstitutionAffiliationPoints
+                                                       Collections.emptyList()))
+                   .toList();
     }
 
-    private static List<AffiliationPoints> mapToAffiliationPoints(List<URI> affiliations) {
-        //TODO: Implement when Candidate contains AffiliationPoints
-        return affiliations.stream().map(affiliation -> new AffiliationPoints(affiliation, null))
-                   .toList();
+    private static NviCreator mapToNviCreator(Creator creator) {
+        return new NviCreator(creator.id(), creator.affiliations());
     }
 
     private static NviCandidate.PublicationDate toPublicationDate(
@@ -103,15 +104,8 @@ public record NviCandidate(URI publicationId,
                                                       publicationDate.day());
     }
 
-    public record NviCreatorWithAffiliationPoints(URI id, List<AffiliationPoints> affiliationPoints) {
+    public record NviCreator(URI id, List<URI> nviAffiliations) {
 
-        public record AffiliationPoints(URI affiliationId, BigDecimal points) {
-
-            public static AffiliationPoints from(InstitutionAffiliationPoints institutionAffiliationPoints) {
-                return new AffiliationPoints(institutionAffiliationPoints.affiliationId(),
-                                             institutionAffiliationPoints.points());
-            }
-        }
     }
 
     public record PublicationDate(String day, String month, String year) {
@@ -124,7 +118,7 @@ public record NviCandidate(URI publicationId,
         private URI publicationBucketUri;
         private String instanceType;
         private PublicationDate date;
-        private List<NviCreatorWithAffiliationPoints> nviCreatorWithAffiliationPoints;
+        private List<NviCreator> nviCreatorWithAffiliationPoints;
         private String channelType;
         private URI publicationChannelId;
         private String level;
@@ -132,7 +126,7 @@ public record NviCandidate(URI publicationId,
         private boolean isInternationalCollaboration;
         private BigDecimal collaborationFactor;
         private int creatorShareCount;
-        private Map<URI, BigDecimal> institutionPoints;
+        private List<InstitutionPoints> institutionPoints;
         private BigDecimal totalPoints;
 
         private Builder() {
@@ -158,7 +152,7 @@ public record NviCandidate(URI publicationId,
             return this;
         }
 
-        public Builder withVerifiedCreators(List<NviCreatorWithAffiliationPoints> nviCreatorWithAffiliationPoints) {
+        public Builder withVerifiedCreators(List<NviCreator> nviCreatorWithAffiliationPoints) {
             this.nviCreatorWithAffiliationPoints = nviCreatorWithAffiliationPoints;
             return this;
         }
@@ -198,7 +192,7 @@ public record NviCandidate(URI publicationId,
             return this;
         }
 
-        public Builder withInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
+        public Builder withInstitutionPoints(List<InstitutionPoints> institutionPoints) {
             this.institutionPoints = institutionPoints;
             return this;
         }
