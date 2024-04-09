@@ -103,7 +103,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
                                                                   InstanceType.ACADEMIC_MONOGRAPH.getValue(), 1,
                                                                   randomBigDecimal(),
                                                                   randomLevelExcluding(
-                                                                      DbLevel.NON_CANDIDATE).getVersionOneValue(),
+                                                                      DbLevel.NON_CANDIDATE).getValue(),
                                                                   TestUtils.CURRENT_YEAR,
                                                                   institutionId);
         var candidateBO = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
@@ -147,7 +147,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
                                                          InstanceType.ACADEMIC_MONOGRAPH.getValue(), 2,
                                                          randomBigDecimal(),
                                                          randomLevelExcluding(DbLevel.NON_CANDIDATE)
-                                                             .getVersionOneValue(), TestUtils.CURRENT_YEAR,
+                                                             .getValue(), TestUtils.CURRENT_YEAR,
                                                          randomUri(),
                                                          randomUri(), randomUri());
         var updatedCandidate = Candidate.upsert(updateRequest, candidateRepository, periodRepository)
@@ -164,7 +164,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
         Candidate.upsert(createCandidateRequest, candidateRepository, periodRepository);
         var updateRequest = createUpsertCandidateRequest(
             createCandidateRequest.publicationId(), randomUri(), true, InstanceType.ACADEMIC_MONOGRAPH.getValue(), 2,
-            randomBigDecimal(), randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
+            randomBigDecimal(), randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
             TestUtils.CURRENT_YEAR,
             keepInstitutionId,
             randomUri());
@@ -201,7 +201,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
                                                          randomUri(), true, InstanceType.NON_CANDIDATE.getValue(), 2,
                                                          randomBigDecimal(),
                                                          randomLevelExcluding(DbLevel.NON_CANDIDATE)
-                                                             .getVersionOneValue(), TestUtils.CURRENT_YEAR,
+                                                             .getValue(), TestUtils.CURRENT_YEAR,
                                                          randomUri());
         assertThrows(InvalidNviCandidateException.class,
                      () -> Candidate.upsert(updateRequest, candidateRepository, periodRepository));

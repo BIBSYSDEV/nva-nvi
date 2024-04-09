@@ -223,7 +223,7 @@
                   "website": {
                     "id": "https://www.fib-international.org/publications/fib-proceedings.html"
                   },
-                  "level": "1",
+                  "scientificValue": "LevelOne",
                   "name": "Proceedings of the fib Symposium",
                   "active": true,
                   "npiDomain": "Konstruksjonsfag",

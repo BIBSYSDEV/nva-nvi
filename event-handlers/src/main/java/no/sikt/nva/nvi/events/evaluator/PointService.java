@@ -4,7 +4,6 @@ import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_PUBLISHER;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES_SCIENTIFIC_VALUE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_COUNTRY_CODE;
@@ -14,7 +13,6 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CON
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLISHER;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ROLE_TYPE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_LEVEL;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_SCIENTIFIC_VALUE;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
@@ -136,8 +134,7 @@ public final class PointService {
     }
 
     private static String extractAcademicChapterChannel(JsonNode jsonNode) {
-        if (nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_CHAPTER_SERIES_LEVEL))
-            || nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_CHAPTER_SERIES_SCIENTIFIC_VALUE))) {
+        if (nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_CHAPTER_SERIES_SCIENTIFIC_VALUE))) {
             return jsonNode.at(JSON_PTR_CHAPTER_SERIES).toString();
         } else {
             return jsonNode.at(JSON_PTR_CHAPTER_PUBLISHER).toString();
@@ -145,8 +142,7 @@ public final class PointService {
     }
 
     private static String extractAcademicMonographChannel(JsonNode jsonNode) {
-        if (nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_LEVEL))
-            || nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_SCIENTIFIC_VALUE))) {
+        if (nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_SCIENTIFIC_VALUE))) {
             return jsonNode.at(JSON_PTR_SERIES).toString();
         } else {
             return jsonNode.at(JSON_PTR_PUBLISHER).toString();
