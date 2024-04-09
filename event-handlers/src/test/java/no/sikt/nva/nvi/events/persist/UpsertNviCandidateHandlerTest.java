@@ -127,7 +127,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldSaveNewNviCandidateWithPendingInstitutionApprovalsIfCandidateDoesNotExist() {
+    void shouldSaveNewNviCandidateWithPendingInstitutionApprovalsWhenCandidateDoesNotExist() {
         var evaluatedNviCandidate = randomEvaluatedNviCandidate().build();
         var sqsEvent = createEvent(createEvalMessage(evaluatedNviCandidate));
         handler.handleRequest(sqsEvent, CONTEXT);
@@ -248,15 +248,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     private static List<DbInstitutionPoints> mapToInstitutionPoints(List<InstitutionPoints> institutionPoints) {
         return institutionPoints
                    .stream()
-                   .map(institution -> new DbInstitutionPoints(institution.institutionId(),
-                                                               institution.institutionPoints(),
-                                                               institution.creatorAffiliationPoints().stream()
-                                                                   .map(
-                                                                       creatorAffiliationPoints -> new DbInstitutionPoints.DbCreatorAffiliationPoints(
-                                                                           creatorAffiliationPoints.nviCreator(),
-                                                                           creatorAffiliationPoints.affiliationId(),
-                                                                           creatorAffiliationPoints.points()))
-                                                                   .toList()))
+                   .map(DbInstitutionPoints::from)
                    .toList();
     }
 

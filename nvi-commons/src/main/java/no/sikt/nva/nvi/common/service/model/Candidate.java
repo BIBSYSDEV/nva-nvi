@@ -31,6 +31,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -530,11 +531,7 @@ public final class Candidate {
 
     private static List<DbInstitutionPoints> mapToPoints(List<InstitutionPoints> points) {
         return points.stream()
-                   .map(institutionPoints ->
-                            new DbInstitutionPoints(institutionPoints.institutionId(),
-                                                    adjustScaleAndRoundingMode(institutionPoints.institutionPoints()),
-                                                    //TODO: Implement affiliation points
-                                                    Collections.emptyList()))
+                   .map(DbInstitutionPoints::from)
                    .toList();
     }
 

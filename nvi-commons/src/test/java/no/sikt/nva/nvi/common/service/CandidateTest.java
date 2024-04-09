@@ -51,6 +51,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -567,20 +568,6 @@ class CandidateTest extends LocalDynamoTest {
                                                                           institutionPoints)));
     }
 
-    private List<InstitutionPoints> createPoints(Map<URI, List<URI>> creators) {
-        return creators.entrySet()
-                   .stream()
-                   .map(entry -> entry.getValue()
-                                     .stream()
-                                     .map(affiliation -> {
-                                         var institutionPoints = randomBigDecimal();
-                                         return createInstitutionPoints(affiliation, institutionPoints, entry.getKey());
-                                     })
-                                     .toList())
-                   .flatMap(List::stream)
-                   .toList();
-    }
-
     private static BigDecimal getInstitutionPoints(List<InstitutionPoints> points, URI institutionId) {
         return points.stream()
                    .filter(institutionPoints -> institutionPoints.institutionId().equals(institutionId))
@@ -629,6 +616,20 @@ class CandidateTest extends LocalDynamoTest {
 
     private static BigDecimal setScaleAndRoundingMode(BigDecimal bigDecimal) {
         return bigDecimal.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
+    }
+
+    private List<InstitutionPoints> createPoints(Map<URI, List<URI>> creators) {
+        return creators.entrySet()
+                   .stream()
+                   .map(entry -> entry.getValue()
+                                     .stream()
+                                     .map(affiliation -> {
+                                         var institutionPoints = randomBigDecimal();
+                                         return createInstitutionPoints(affiliation, institutionPoints, entry.getKey());
+                                     })
+                                     .toList())
+                   .flatMap(List::stream)
+                   .toList();
     }
 
     private Candidate nonApplicableCandidate() {
@@ -702,7 +703,14 @@ class CandidateTest extends LocalDynamoTest {
     private List<DbInstitutionPoints> mapToDbInstitutionPoints(List<InstitutionPoints> points) {
         return points.stream()
                    .map(entry -> new DbInstitutionPoints(entry.institutionId(),
-                                                         setScaleAndRoundingMode(entry.institutionPoints())))
+                                                         setScaleAndRoundingMode(entry.institutionPoints()),
+                                                         entry.creatorAffiliationPoints().stream().map(
+                                                                 creatorAffiliationPoints -> new DbCreatorAffiliationPoints(
+                                                                     creatorAffiliationPoints.nviCreator(),
+                                                                     creatorAffiliationPoints.affiliationId(),
+                                                                     setScaleAndRoundingMode(
+                                                                         creatorAffiliationPoints.points())))
+                                                             .toList()))
                    .toList();
     }
 

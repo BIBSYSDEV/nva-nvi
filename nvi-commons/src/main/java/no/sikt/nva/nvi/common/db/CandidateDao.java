@@ -13,6 +13,7 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_HASH
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_RANGE_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
+import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.apache.commons.lang3.StringUtils.equalsIgnoreCase;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -27,6 +28,8 @@ import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao.Builder;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
@@ -623,6 +626,15 @@ public final class CandidateDao extends Dao {
         }
 
         @DynamoDbIgnore
+        public static DbInstitutionPoints from(InstitutionPoints institutionPoints) {
+            return new DbInstitutionPoints(institutionPoints.institutionId(),
+                                           adjustScaleAndRoundingMode(institutionPoints.institutionPoints()),
+                                           institutionPoints.creatorAffiliationPoints().stream()
+                                               .map(DbCreatorAffiliationPoints::from)
+                                               .toList());
+        }
+
+        @DynamoDbIgnore
         public DbInstitutionPoints copy() {
             return builder()
                        .institutionId(institutionId)
@@ -636,6 +648,13 @@ public final class CandidateDao extends Dao {
 
             public static Builder builder() {
                 return new Builder();
+            }
+
+            @DynamoDbIgnore
+            public static DbCreatorAffiliationPoints from(CreatorAffiliationPoints creatorAffiliationPoints) {
+                return new DbCreatorAffiliationPoints(creatorAffiliationPoints.nviCreator(),
+                                                      creatorAffiliationPoints.affiliationId(),
+                                                      adjustScaleAndRoundingMode(creatorAffiliationPoints.points()));
             }
 
             public static final class Builder {
