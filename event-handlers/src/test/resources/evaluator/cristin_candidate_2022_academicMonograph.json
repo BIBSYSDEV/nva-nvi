@@ -215,7 +215,7 @@
           ],
           "series": {
             "identifier": "438178",
-            "level": "1",
+            "scientificValue": "LevelOne",
             "name": "Astérisque",
             "active": true,
             "npiDomain": "Matematikk",

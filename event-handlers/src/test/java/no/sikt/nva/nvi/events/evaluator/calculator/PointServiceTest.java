@@ -51,8 +51,8 @@ class PointServiceTest {
     private static final String ENTITY_DESCRIPTION = "entityDescription";
     private static final String PUBLICATION_CONTEXT = "publicationContext";
     private static final String ID = "id";
-    private static final String LEVEL = "level";
-    private static final JsonNode HARDCODED_JOURNAL_REFERENCE = createJournalReference("AcademicArticle", "1");
+    private static final String LEVEL = "scientificValue";
+    private static final JsonNode HARDCODED_JOURNAL_REFERENCE = createJournalReference("AcademicArticle", "LevelOne");
     private static final String AFFILIATIONS = "affiliations";
     private static final String IDENTITY = "identity";
     private static final String VERIFICATION_STATUS = "verificationStatus";
@@ -230,7 +230,7 @@ class PointServiceTest {
     @Test
     void shouldCalculatePointsForCreatorAffiliations() {
         var creatorShareCount = 2;
-        var parameters = new PointParameters("AcademicArticle", "Journal", "1", false, creatorShareCount,
+        var parameters = new PointParameters("AcademicArticle", "Journal", "LevelOne", false, creatorShareCount,
                                              asBigDecimal("1"), null,
                                              asBigDecimal("1"));
         var creator1 = randomUri();
@@ -427,57 +427,59 @@ class PointServiceTest {
     private static Stream<PointParameters> twoCreatorsAffiliatedWithTwoDifferentInstitutionsPointProvider() {
         return Stream.of(
             //example from cristin calculations, publicationYear 2022
-            new PointParameters("AcademicArticle", "Journal", "1", false, 2, asBigDecimal("0.7071"),
+            new PointParameters("AcademicArticle", "Journal", "LevelOne", false, 2, asBigDecimal("0.7071"),
                                 asBigDecimal("0.7071"), asBigDecimal("1.4142"))
         );
     }
 
     private static Stream<PointParameters> twoCreatorsAffiliatedWithOneInstitutionPointProvider() {
         return Stream.of(
-            new PointParameters("AcademicMonograph", "Series", "1", false, 3, asBigDecimal("4.0825"),
+            new PointParameters("AcademicMonograph", "Series", "LevelOne", false, 3, asBigDecimal("4.0825"),
                                 asBigDecimal("2.8868"), asBigDecimal("6.9693")),
-            new PointParameters("AcademicMonograph", "Series", "2", true, 4, asBigDecimal("7.3539"),
+            new PointParameters("AcademicMonograph", "Series", "LevelTwo", true, 4, asBigDecimal("7.3539"),
                                 asBigDecimal("5.2000"), asBigDecimal("12.5539")),
-            new PointParameters("AcademicMonograph", "Series", "2", false, 4, asBigDecimal("5.6569"),
+            new PointParameters("AcademicMonograph", "Series", "LevelTwo", false, 4, asBigDecimal("5.6569"),
                                 asBigDecimal("4.0000"), asBigDecimal("9.6569")),
-            new PointParameters("AcademicChapter", "Series", "1", true, 5, asBigDecimal("0.8222"),
+            new PointParameters("AcademicChapter", "Series", "LevelOne", true, 5, asBigDecimal("0.8222"),
                                 asBigDecimal("0.5814"), asBigDecimal("1.4036")),
-            new PointParameters("AcademicChapter", "Series", "2", false, 5, asBigDecimal("1.8974"),
+            new PointParameters("AcademicChapter", "Series", "LevelTwo", false, 5, asBigDecimal("1.8974"),
                                 asBigDecimal("1.3416"), asBigDecimal("3.2390")),
-            new PointParameters("AcademicArticle", "Journal", "1", false, 7, asBigDecimal("0.5345"),
+            new PointParameters("AcademicArticle", "Journal", "LevelOne", false, 7, asBigDecimal("0.5345"),
                                 asBigDecimal("0.3780"), asBigDecimal("0.9125")),
-            new PointParameters("AcademicArticle", "Journal", "2", false, 7, asBigDecimal("1.6036"),
+            new PointParameters("AcademicArticle", "Journal", "LevelTwo", false, 7, asBigDecimal("1.6036"),
                                 asBigDecimal("1.1339"), asBigDecimal("2.7375")),
-            new PointParameters("AcademicLiteratureReview", "Journal", "1", true, 8, asBigDecimal("0.6500"),
+            new PointParameters("AcademicLiteratureReview", "Journal", "LevelOne", true, 8, asBigDecimal("0.6500"),
                                 asBigDecimal("0.4596"), asBigDecimal("1.1096")),
-            new PointParameters("AcademicLiteratureReview", "Journal", "2", true, 8, asBigDecimal("1.9500"),
+            new PointParameters("AcademicLiteratureReview", "Journal", "LevelTwo", true, 8, asBigDecimal("1.9500"),
                                 asBigDecimal("1.3789"), asBigDecimal("3.3289"))
         );
     }
 
     private static Stream<PointParameters> singleCreatorSingleInstitutionPointProvider() {
         return Stream.of(
-            new PointParameters("AcademicMonograph", "Series", "1", false, 1, asBigDecimal("5"), null,
+            new PointParameters("AcademicMonograph", "Series", "LevelOne", false, 1, asBigDecimal("5"), null,
                                 asBigDecimal("5")),
-            new PointParameters("AcademicMonograph", "Series", "2", false, 1, asBigDecimal("8"), null,
+            new PointParameters("AcademicMonograph", "Series", "LevelTwo", false, 1, asBigDecimal("8"), null,
                                 asBigDecimal("8")),
-            new PointParameters("AcademicMonograph", "Publisher", "1", false, 1, asBigDecimal("5"), null,
+            new PointParameters("AcademicMonograph", "Publisher", "LevelOne", false, 1, asBigDecimal("5"), null,
                                 asBigDecimal("5")),
-            new PointParameters("AcademicMonograph", "Publisher", "2", false, 1, asBigDecimal("8"), null,
+            new PointParameters("AcademicMonograph", "Publisher", "LevelTwo", false, 1, asBigDecimal("8"), null,
                                 asBigDecimal("8")),
-            new PointParameters("AcademicChapter", "Series", "1", false, 1, asBigDecimal("1"), null, asBigDecimal("1")),
-            new PointParameters("AcademicChapter", "Series", "2", false, 1, asBigDecimal("3"), null, asBigDecimal("3")),
-            new PointParameters("AcademicChapter", "Publisher", "1", false, 1, asBigDecimal("0.7"), null,
-                                asBigDecimal("0.7")),
-            new PointParameters("AcademicChapter", "Publisher", "2", false, 1, asBigDecimal("1"), null,
+            new PointParameters("AcademicChapter", "Series", "LevelOne", false, 1, asBigDecimal("1"), null,
                                 asBigDecimal("1")),
-            new PointParameters("AcademicArticle", "Journal", "1", false, 1, asBigDecimal("1"), null,
-                                asBigDecimal("1")),
-            new PointParameters("AcademicArticle", "Journal", "2", false, 1, asBigDecimal("3"), null,
+            new PointParameters("AcademicChapter", "Series", "LevelTwo", false, 1, asBigDecimal("3"), null,
                                 asBigDecimal("3")),
-            new PointParameters("AcademicLiteratureReview", "Journal", "1", false, 1, asBigDecimal("1"), null,
+            new PointParameters("AcademicChapter", "Publisher", "LevelOne", false, 1, asBigDecimal("0.7"), null,
+                                asBigDecimal("0.7")),
+            new PointParameters("AcademicChapter", "Publisher", "LevelTwo", false, 1, asBigDecimal("1"), null,
                                 asBigDecimal("1")),
-            new PointParameters("AcademicLiteratureReview", "Journal", "2", false, 1, asBigDecimal("3"), null,
+            new PointParameters("AcademicArticle", "Journal", "LevelOne", false, 1, asBigDecimal("1"), null,
+                                asBigDecimal("1")),
+            new PointParameters("AcademicArticle", "Journal", "LevelTwo", false, 1, asBigDecimal("3"), null,
+                                asBigDecimal("3")),
+            new PointParameters("AcademicLiteratureReview", "Journal", "LevelOne", false, 1, asBigDecimal("1"), null,
+                                asBigDecimal("1")),
+            new PointParameters("AcademicLiteratureReview", "Journal", "LevelTwo", false, 1, asBigDecimal("3"), null,
                                 asBigDecimal("3"))
         );
     }

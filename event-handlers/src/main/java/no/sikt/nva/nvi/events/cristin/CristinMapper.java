@@ -310,7 +310,7 @@ public final class CristinMapper {
         return Optional.ofNullable(cristinNviReport.scientificResources())
                    .map(list -> list.get(0))
                    .map(ScientificResource::getQualityCode)
-                   .map(DbLevel::parse)
+                   .map(DbLevel::fromDeprecatedValue)
                    .orElseThrow();
     }
 

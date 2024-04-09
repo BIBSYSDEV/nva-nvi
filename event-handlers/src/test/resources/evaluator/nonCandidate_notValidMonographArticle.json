@@ -235,12 +235,12 @@
           "publisher" : {
             "id" : "https://api.dev.nva.aws.unit.no/publication-channels/2f81a74e-49e0-4033-b466-138f06520f4d",
             "type" : "Publisher",
-            "level" : "1"
+            "scientificValue" : "LevelOne"
           },
           "series" : {
             "id" : "https://api.dev.nva.aws.unit.no/publication-channels/c2999233-b9a4-4b73-8ed6-d88f9704fba1",
             "type" : "Series",
-            "level" : "0"
+            "scientificValue" : "LevelZero"
           }
         },
         "publicationInstance" : {

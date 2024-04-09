@@ -169,7 +169,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var dto = Candidate.upsert(
             createUpsertCandidateRequest(publicationId, randomUri(), true, InstanceType.ACADEMIC_ARTICLE.getValue(), 1,
                                          randomBigDecimal(),
-                                         randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
+                                         randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
                                          TestUtils.CURRENT_YEAR,
                                          delete, keep),
             candidateRepository, periodRepository).orElseThrow();

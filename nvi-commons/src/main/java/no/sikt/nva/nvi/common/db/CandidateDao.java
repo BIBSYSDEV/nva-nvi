@@ -14,6 +14,7 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_RANG
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
 import static nva.commons.core.attempt.Try.attempt;
+import static org.apache.commons.lang3.StringUtils.equalsIgnoreCase;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
@@ -194,30 +195,34 @@ public final class CandidateDao extends Dao {
     }
 
     public enum DbLevel {
-        LEVEL_ONE(List.of("1", "LevelOne")), LEVEL_TWO(List.of("2", "LevelTwo")), NON_CANDIDATE(
-            List.of("NonCandidateLevel"));
+        LEVEL_ONE("LevelOne"), LEVEL_TWO("LevelTwo"), NON_CANDIDATE("NonCandidateLevel");
+        private final String value;
 
-        private final List<String> values;
+        DbLevel(String value) {
 
-        DbLevel(List<String> values) {
-
-            this.values = values;
+            this.value = value;
         }
 
         public static DbLevel parse(String string) {
             return Arrays.stream(DbLevel.values())
-                       .filter(level -> level.getValues().contains(string))
+                       .filter(level -> equalsIgnoreCase(level.getValue(), string))
                        .findFirst()
                        .orElse(NON_CANDIDATE);
         }
 
         @Deprecated
-        public String getVersionOneValue() {
-            return values.get(0);
+        @JacocoGenerated//This is tested in CristinMapperTest
+        //TODO: Remove after cristin migration
+        public static DbLevel fromDeprecatedValue(String value) {
+            return switch (value) {
+                case "1" -> LEVEL_ONE;
+                case "2" -> LEVEL_TWO;
+                default -> NON_CANDIDATE;
+            };
         }
 
-        public List<String> getValues() {
-            return values;
+        public String getValue() {
+            return value;
         }
     }
 
