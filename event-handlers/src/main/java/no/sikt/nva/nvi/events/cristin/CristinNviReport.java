@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.events.cristin;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
@@ -15,7 +16,7 @@ public record CristinNviReport(String publicationIdentifier,
                                String yearReported,
                                PublicationDate publicationDate,
                                String instanceType,
-                               Object reference) implements JsonSerializable {
+                               JsonNode reference) implements JsonSerializable {
 
     public static Builder builder() {
         return new Builder();
@@ -30,7 +31,7 @@ public record CristinNviReport(String publicationIdentifier,
         private PublicationDate publicationDate;
         private List<ScientificResource> scientificResources;
         private String instanceType;
-        private Object reference;
+        private JsonNode reference;
 
         private Builder() {
         }
@@ -70,7 +71,7 @@ public record CristinNviReport(String publicationIdentifier,
             return this;
         }
 
-        public Builder withReference(Object reference) {
+        public Builder withReference(JsonNode reference) {
             this.reference = reference;
             return this;
         }

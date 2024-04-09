@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.events.cristin;
 
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
-import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
@@ -69,6 +68,7 @@ public final class CristinMapper {
     public static final String PUBLISHER_TYPE_JSON_POINTER = "/publicationContext/publisher/type";
     public static final String PUBLICATION_CONTEXT_ID_JSON_POINTER = "/publicationContext/id";
     public static final String PUBLICATION_CONTEXT_TYPE_JSON_POINTER = "/publicationContext/type";
+    public static final String REFERENCE_JSON_POINTER = "/reference";
 
     private CristinMapper() {
 
@@ -106,12 +106,11 @@ public final class CristinMapper {
                    .reduce(BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP), BigDecimal::add);
     }
 
-    public static String extractNode(JsonNode node, String jsonPointer) {
-        return attempt(() -> extractJsonNodeTextValue(node, jsonPointer)).orElse(failure -> null);
-    }
-
     public static String getJsonNodeAt(JsonNode node, String jsonPointer) {
-        return attempt(() -> node.at(jsonPointer).asText()).orElse(failure -> null);
+        return Optional.of(node.at(jsonPointer))
+                   .map(JsonNode::asText)
+                   .filter(value -> !value.isEmpty())
+                   .orElse(null);
     }
 
     public static List<DbCreator> extractCreators(CristinNviReport cristinNviReport) {
@@ -130,12 +129,11 @@ public final class CristinMapper {
 
     private static ChannelType extractChannelType(CristinNviReport cristinNviReport) {
         var instance = toInstanceType(cristinNviReport.instanceType());
-        var referenceNode = attempt(() -> dtoObjectMapper.readTree(cristinNviReport.reference().toString())).orElse(
-            failure -> null);
+        var referenceNode = cristinNviReport.reference();
         if (nonNull(instance)) {
             var channelType = switch (instance) {
                 case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
-                    extractNode(referenceNode, PUBLICATION_CONTEXT_TYPE_JSON_POINTER);
+                    extractJsonNodeTextValue(referenceNode, PUBLICATION_CONTEXT_TYPE_JSON_POINTER);
                 case ACADEMIC_MONOGRAPH -> extractChannelTypeForAcademicMonograph(referenceNode);
                 case ACADEMIC_CHAPTER -> extractChannelTypeForAcademicChapter(referenceNode);
             };
@@ -146,8 +144,7 @@ public final class CristinMapper {
 
     private static URI extractChannelId(CristinNviReport cristinNviReport) {
         var instance = toInstanceType(cristinNviReport.instanceType());
-        var referenceNode = attempt(() -> dtoObjectMapper.readTree(cristinNviReport.reference().toString())).orElse(
-            failure -> null);
+        var referenceNode = cristinNviReport.reference();
         if (nonNull(instance)) {
             var channelId = switch (instance) {
                 case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
@@ -165,8 +162,8 @@ public final class CristinMapper {
     }
 
     private static String extractChannelIdForAcademicChapter(JsonNode referenceNode) {
-        if (nonNull(extractNode(referenceNode, PARENT_PUBLICATION_SERIES_LEVEL_JSON_POINTER)) || nonNull(
-            extractNode(referenceNode, PARENT_PUBLICATION_SERIES_SCIENTIFIC_VALUE_JSON_POINTER))) {
+        if (nonNull(extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_SERIES_LEVEL_JSON_POINTER)) || nonNull(
+            extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_SERIES_SCIENTIFIC_VALUE_JSON_POINTER))) {
             return getJsonNodeAt(referenceNode, PARENT_PUBLICATION_SERIES_ID_JSON_POINTER);
         } else {
             return getJsonNodeAt(referenceNode, PARENT_PUBLICATION_PUBLISHER_ID_JSON_POINTER);
@@ -174,8 +171,8 @@ public final class CristinMapper {
     }
 
     private static String extractChannelTypeForAcademicChapter(JsonNode referenceNode) {
-        if (nonNull(extractNode(referenceNode, PARENT_PUBLICATION_SERIES_TYPE_JSON_POINTER)) || nonNull(
-            extractNode(referenceNode, PARENT_PUBLICATION_SERIES_SCIENTIFIC_VALUE_JSON_POINTER))) {
+        if (nonNull(extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_SERIES_TYPE_JSON_POINTER)) || nonNull(
+            extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_SERIES_SCIENTIFIC_VALUE_JSON_POINTER))) {
             return getJsonNodeAt(referenceNode, PARENT_PUBLICATION_SERIES_TYPE_JSON_POINTER);
         } else {
             return getJsonNodeAt(referenceNode, PARENT_PUBLICATION_PUBLISHER_TYPE_JSON_POINTER);
@@ -183,15 +180,15 @@ public final class CristinMapper {
     }
 
     private static String extractChannelIdForAcademicMonograph(JsonNode referenceNode) {
-        return nonNull(extractNode(referenceNode, SERIES_ID_JSON_POINTER))
-                   ? extractNode(referenceNode, SERIES_ID_JSON_POINTER)
-                   : extractNode(referenceNode,PUBLISHER_ID_JSON_POINTER);
+        return nonNull(extractJsonNodeTextValue(referenceNode, SERIES_ID_JSON_POINTER))
+                   ? extractJsonNodeTextValue(referenceNode, SERIES_ID_JSON_POINTER)
+                   : extractJsonNodeTextValue(referenceNode,PUBLISHER_ID_JSON_POINTER);
     }
 
     private static String extractChannelTypeForAcademicMonograph(JsonNode referenceNode) {
-        return nonNull(extractNode(referenceNode, SERIES_TYPE_JSON_POINTER))
-                   ? extractNode(referenceNode,SERIES_TYPE_JSON_POINTER)
-                   : extractNode(referenceNode, PUBLISHER_TYPE_JSON_POINTER);
+        return nonNull(extractJsonNodeTextValue(referenceNode, SERIES_TYPE_JSON_POINTER))
+                   ? extractJsonNodeTextValue(referenceNode,SERIES_TYPE_JSON_POINTER)
+                   : extractJsonNodeTextValue(referenceNode, PUBLISHER_TYPE_JSON_POINTER);
     }
 
     private static boolean isInternationalCollaboration(CristinNviReport cristinNviReport) {

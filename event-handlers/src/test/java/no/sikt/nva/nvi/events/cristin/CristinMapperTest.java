@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.events.cristin;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.AFFILIATION_DELIMITER;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -16,6 +17,7 @@ import java.util.List;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.events.cristin.CristinNviReport.Builder;
+import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.Test;
 
@@ -346,7 +348,7 @@ class CristinMapperTest {
               "publicationContext": {
                 "type": "Anthology",
                 "id": "https://api.test.nva.aws.unit.no/publication/018dc266ebf7-09159249-b610-46c3-828d-6e0da6043333"
-              }
+              },
               "publicationInstance": {
                 "type": "UnsupportedType"
               }
@@ -368,7 +370,7 @@ class CristinMapperTest {
               "publicationContext": {
                 "type": "Anthology",
                 "id": "https://api.test.nva.aws.unit.no/publication/018dc266ebf7-09159249-b610-46c3-828d-6e0da6043333"
-              }
+              },
               "publicationInstance": {
                 "type": "UnsupportedType"
               }
@@ -389,7 +391,7 @@ class CristinMapperTest {
         var scientificResource = scientificResourceWithCreators(creators);
         var cristinLocale = cristinLocaleWithInstitutionIdentifier(institutionIdentifier);
         return cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource).withInstanceType(
-            instanceType).withReference(reference).build();
+            instanceType).withReference(attempt(() -> JsonUtils.dtoObjectMapper.readTree(reference)).orElseThrow()).build();
     }
 
     private static ScientificResource scientificResourceWithCreators(List<ScientificPerson> creators) {
@@ -404,7 +406,7 @@ class CristinMapperTest {
                    .withInstanceType(randomString())
                    .withPublicationDate(new PublicationDate(randomString(), randomString(), randomString()))
                    .withCristinLocales(List.of(cristinLocales))
-                   .withReference("{}")
+                   .withReference(attempt(() -> JsonUtils.dtoObjectMapper.readTree("{}")).orElseThrow())
                    .withInstanceType(randomString())
                    .withScientificResources(List.of(scientificResource));
     }

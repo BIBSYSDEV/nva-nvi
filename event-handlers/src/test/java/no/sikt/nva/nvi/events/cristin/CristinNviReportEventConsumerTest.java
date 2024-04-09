@@ -191,7 +191,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
                    .withCristinLocales(List.of(randomCristinLocale(institutionIdentifier)))
                    .withScientificResources(List.of(scientificResource(institutionIdentifier)))
                    .withInstanceType(randomString())
-                   .withReference(randomString());
+                   .withReference(null);
     }
 
     private CristinNviReport nviReportWithIdentifier() {
