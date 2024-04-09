@@ -68,7 +68,6 @@ public final class CristinMapper {
     public static final String PUBLISHER_TYPE_JSON_POINTER = "/publicationContext/publisher/type";
     public static final String PUBLICATION_CONTEXT_ID_JSON_POINTER = "/publicationContext/id";
     public static final String PUBLICATION_CONTEXT_TYPE_JSON_POINTER = "/publicationContext/type";
-    public static final String REFERENCE_JSON_POINTER = "/reference";
 
     private CristinMapper() {
 
@@ -106,13 +105,6 @@ public final class CristinMapper {
                    .reduce(BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP), BigDecimal::add);
     }
 
-    public static String getJsonNodeAt(JsonNode node, String jsonPointer) {
-        return Optional.of(node.at(jsonPointer))
-                   .map(JsonNode::asText)
-                   .filter(value -> !value.isEmpty())
-                   .orElse(null);
-    }
-
     public static List<DbCreator> extractCreators(CristinNviReport cristinNviReport) {
         return getCreators(cristinNviReport).stream()
                    .filter(CristinMapper::hasInstitutionPoints)
@@ -148,7 +140,7 @@ public final class CristinMapper {
         if (nonNull(instance)) {
             var channelId = switch (instance) {
                 case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
-                    getJsonNodeAt(referenceNode, PUBLICATION_CONTEXT_ID_JSON_POINTER);
+                    extractJsonNodeTextValue(referenceNode, PUBLICATION_CONTEXT_ID_JSON_POINTER);
                 case ACADEMIC_MONOGRAPH -> extractChannelIdForAcademicMonograph(referenceNode);
                 case ACADEMIC_CHAPTER -> extractChannelIdForAcademicChapter(referenceNode);
             };
@@ -164,18 +156,18 @@ public final class CristinMapper {
     private static String extractChannelIdForAcademicChapter(JsonNode referenceNode) {
         if (nonNull(extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_SERIES_LEVEL_JSON_POINTER)) || nonNull(
             extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_SERIES_SCIENTIFIC_VALUE_JSON_POINTER))) {
-            return getJsonNodeAt(referenceNode, PARENT_PUBLICATION_SERIES_ID_JSON_POINTER);
+            return extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_SERIES_ID_JSON_POINTER);
         } else {
-            return getJsonNodeAt(referenceNode, PARENT_PUBLICATION_PUBLISHER_ID_JSON_POINTER);
+            return extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_PUBLISHER_ID_JSON_POINTER);
         }
     }
 
     private static String extractChannelTypeForAcademicChapter(JsonNode referenceNode) {
         if (nonNull(extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_SERIES_TYPE_JSON_POINTER)) || nonNull(
             extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_SERIES_SCIENTIFIC_VALUE_JSON_POINTER))) {
-            return getJsonNodeAt(referenceNode, PARENT_PUBLICATION_SERIES_TYPE_JSON_POINTER);
+            return extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_SERIES_TYPE_JSON_POINTER);
         } else {
-            return getJsonNodeAt(referenceNode, PARENT_PUBLICATION_PUBLISHER_TYPE_JSON_POINTER);
+            return extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_PUBLISHER_TYPE_JSON_POINTER);
         }
     }
 
