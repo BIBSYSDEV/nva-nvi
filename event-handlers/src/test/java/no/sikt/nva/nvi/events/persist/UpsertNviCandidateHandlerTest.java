@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.events.persist;
 
 import static no.sikt.nva.nvi.common.db.model.InstanceType.NON_CANDIDATE;
-import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
@@ -38,7 +37,6 @@ import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -46,22 +44,19 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
+import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
-import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto.Status;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
@@ -84,10 +79,6 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     public static final Context CONTEXT = mock(Context.class);
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
-    private static final Environment ENVIRONMENT = new Environment();
-    private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
-    private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
-    private static final String CANDIDATE_PATH = "candidate";
     private static final String DLQ_QUEUE_URL = "test_dlq_url";
     private UpsertNviCandidateHandler handler;
     private CandidateRepository candidateRepository;
@@ -142,11 +133,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         handler.handleRequest(sqsEvent, CONTEXT);
         var actualPersistedCandidateDao = candidateRepository.findByPublicationId(evaluatedNviCandidate.publicationId())
                                               .orElseThrow();
-        var actualApprovals =
-            candidateRepository.fetchApprovals(actualPersistedCandidateDao.identifier())
-                .stream()
-                .map(ApprovalStatusDao::approvalStatus)
-                .toList();
+        var actualApprovals = fetchApprovals(actualPersistedCandidateDao);
         assertEquals(getExpectedApprovals(evaluatedNviCandidate), actualApprovals);
         assertEquals(getExpectedCandidate(evaluatedNviCandidate), actualPersistedCandidateDao.candidate());
     }
@@ -177,7 +164,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
             candidateRepository, periodRepository).orElseThrow();
         var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));
         handler.handleRequest(sqsEvent, CONTEXT);
-        var approvals = getAprovalMaps(dto);
+        var approvals = getApprovalMaps(dto);
         assertTrue(approvals.containsKey(keep));
         assertFalse(approvals.containsKey(delete));
         assertThat(approvals.size(), is(2));
@@ -255,16 +242,6 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private static PeriodStatusDto toPeriodStatus(DbNviPeriod period) {
-        return PeriodStatusDto.builder()
-                   .withId(period.id())
-                   .withStatus(Status.OPEN_PERIOD)
-                   .withStartDate(period.startDate().toString())
-                   .withReportingDate(period.reportingDate().toString())
-                   .withYear(period.publishingYear())
-                   .build();
-    }
-
     private static List<AffiliationPoints> createAffiliationPoints(URI affiliationId, URI someOtherInstitutionId) {
         return Stream.of(someOtherInstitutionId, affiliationId)
                    .map(institutionId -> new AffiliationPoints(institutionId, randomBigDecimal()))
@@ -282,6 +259,13 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         return institutionPoints.entrySet()
                    .stream()
                    .map(entry -> new DbInstitutionPoints(entry.getKey(), entry.getValue()))
+                   .toList();
+    }
+
+    private List<DbApprovalStatus> fetchApprovals(CandidateDao actualPersistedCandidateDao) {
+        return candidateRepository.fetchApprovals(actualPersistedCandidateDao.identifier())
+                   .stream()
+                   .map(ApprovalStatusDao::approvalStatus)
                    .toList();
     }
 
@@ -313,7 +297,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private Map<URI, DbApprovalStatus> getAprovalMaps(Candidate dto) {
+    private Map<URI, DbApprovalStatus> getApprovalMaps(Candidate dto) {
         return candidateRepository.fetchApprovals(dto.getIdentifier())
                    .stream()
                    .map(ApprovalStatusDao::approvalStatus)
@@ -347,14 +331,6 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                      .affiliations(new ArrayList<>(entry.getValue()))
                                      .build())
                    .toList();
-    }
-
-    private ApprovalDto mapToApprovalStatus(Entry<URI, BigDecimal> pointsMap) {
-        return ApprovalDto.builder()
-                   .withInstitutionId(pointsMap.getKey())
-                   .withStatus(ApprovalStatus.PENDING)
-                   .withPoints(adjustScaleAndRoundingMode(pointsMap.getValue()))
-                   .build();
     }
 
     private CandidateEvaluatedMessage nonCandidateMessageForExistingCandidate(CandidateDto candidate) {
