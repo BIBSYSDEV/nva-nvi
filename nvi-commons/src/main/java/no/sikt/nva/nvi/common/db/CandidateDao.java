@@ -386,7 +386,6 @@ public final class CandidateDao extends Dao {
                    && Objects.equals(basePoints, that.basePoints)
                    && Objects.equals(points, that.points)
                    && Objects.equals(totalPoints, that.totalPoints)
-                   && Objects.equals(createdDate, that.createdDate)
                    && Objects.equals(reportStatus, that.reportStatus);
         }
 

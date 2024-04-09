@@ -35,6 +35,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Year;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -46,6 +47,7 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
@@ -145,8 +147,8 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                 .stream()
                 .map(ApprovalStatusDao::approvalStatus)
                 .toList();
-        assertEquals(actualApprovals, getExpectedApprovals(evaluatedNviCandidate));
-        assertEquals(actualPersistedCandidateDao.candidate(), getExpectedCandidate(evaluatedNviCandidate));
+        assertEquals(getExpectedApprovals(evaluatedNviCandidate), actualApprovals);
+        assertEquals(getExpectedCandidate(evaluatedNviCandidate), actualPersistedCandidateDao.candidate());
     }
 
     @Test
@@ -208,15 +210,15 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withPublicationId(generatePublicationId(identifier))
                    .withPublicationBucketUri(generateS3BucketUri(identifier))
                    .withInstanceType(randomInstanceTypeExcluding(NON_CANDIDATE.getValue()))
-                   .withLevel(randomElement(DbLevel.values()).getVersionOneValue())
-                   .withTotalPoints(randomBigDecimal())
-                   .withBasePoints(randomBigDecimal())
+                   .withLevel(randomElement(DbLevel.values()).getValue())
+                   .withTotalPoints(randomBigDecimal(4))
+                   .withBasePoints(randomBigDecimal(4))
                    .withCreatorShareCount(randomInteger())
-                   .withCollaborationFactor(randomBigDecimal())
+                   .withCollaborationFactor(randomBigDecimal(4))
                    .withPublicationChannelId(randomUri())
                    .withChannelType(randomElement(ChannelType.values()).getValue())
                    .withIsInternationalCollaboration(randomBoolean())
-                   .withInstitutionPoints(Map.of(randomUri(), randomBigDecimal()))
+                   .withInstitutionPoints(Map.of(randomUri(), randomBigDecimal(4)))
                    .withDate(randomPublicationDate())
                    .withVerifiedCreators(List.of(randomCreator()));
     }
@@ -329,6 +331,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .publicationDate(new DbPublicationDate(date.year(), date.month(), date.day()))
                    .channelType(ChannelType.parse(evaluatedNviCandidate.channelType()))
                    .channelId(evaluatedNviCandidate.publicationChannelId())
+                   .creators(getExpectedCreators(evaluatedNviCandidate))
                    .basePoints(evaluatedNviCandidate.basePoints())
                    .internationalCollaboration(evaluatedNviCandidate.isInternationalCollaboration())
                    .collaborationFactor(evaluatedNviCandidate.collaborationFactor())
@@ -336,6 +339,14 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .points(mapToInstitutionPoints(evaluatedNviCandidate.institutionPoints()))
                    .totalPoints(evaluatedNviCandidate.totalPoints())
                    .build();
+    }
+
+    private List<DbCreator> getExpectedCreators(NviCandidate evaluatedNviCandidate) {
+        return evaluatedNviCandidate.creators().entrySet().stream()
+                   .map(entry -> DbCreator.builder().creatorId(entry.getKey())
+                                     .affiliations(new ArrayList<>(entry.getValue()))
+                                     .build())
+                   .toList();
     }
 
     private ApprovalDto mapToApprovalStatus(Entry<URI, BigDecimal> pointsMap) {
@@ -382,7 +393,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                  .withInstanceType(instanceType)
                                                  .withChannelType(randomElement(ChannelType.values()).getValue())
                                                  .withPublicationChannelId(randomUri())
-                                                 .withLevel(randomLevel.getVersionOneValue())
+                                                 .withLevel(randomLevel.getValue())
                                                  .withDate(publicationDate)
                                                  .withVerifiedCreators(creators)
                                                  .withIsInternationalCollaboration(isInternationalCollaboration)
