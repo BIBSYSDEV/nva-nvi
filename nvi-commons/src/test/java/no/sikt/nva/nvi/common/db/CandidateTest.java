@@ -36,13 +36,15 @@ public class CandidateTest {
         return creators.stream()
                    .flatMap(creator -> creator.affiliations()
                                            .stream()
-                                           .map(affiliation -> new DbInstitutionPoints(
-                                               affiliation, randomBigDecimal(),
-                                               List.of(
-                                                   new DbCreatorAffiliationPoints(creator.creatorId(),
-                                                                                  affiliation,
-                                                                                  randomBigDecimal())))))
+                                           .map(affiliation -> mapToInstitutionPoints(creator, affiliation)))
                    .toList();
+    }
+
+    private static DbInstitutionPoints mapToInstitutionPoints(DbCreator creator, URI affiliation) {
+        return new DbInstitutionPoints(affiliation, randomBigDecimal(),
+                                       List.of(new DbCreatorAffiliationPoints(creator.creatorId(),
+                                                                              affiliation,
+                                                                              randomBigDecimal())));
     }
 
     private DbCandidate randomCandidate() {
