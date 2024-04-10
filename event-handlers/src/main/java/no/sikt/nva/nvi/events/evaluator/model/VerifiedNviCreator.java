@@ -3,11 +3,18 @@ package no.sikt.nva.nvi.events.evaluator.model;
 import java.net.URI;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations) {
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    public List<URI> nviAffiliationsIds() {
+        return nviAffiliations.stream()
+                   .map(NviOrganization::id)
+                   .collect(Collectors.toList());
     }
 
     public static final class Builder {

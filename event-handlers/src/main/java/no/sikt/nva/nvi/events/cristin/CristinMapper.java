@@ -94,8 +94,8 @@ public final class CristinMapper {
                    .collaborationFactor(extractCollaborationFactor(cristinNviReport))
                    .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
                    .creators(extractCreators(cristinNviReport))
-                   //                   .creatorCount()
-                   //                   .creatorShareCount()
+//                   .creatorCount()
+//                   .creatorShareCount()
                    .channelId(extractChannelId(cristinNviReport))
                    .channelType(extractChannelType(cristinNviReport))
                    .build();
@@ -273,7 +273,7 @@ public final class CristinMapper {
                    .filter(cristinLocale -> cristinLocale.getInstitutionIdentifier()
                                                 .equals(scientificPerson.getInstitutionIdentifier()))
                    .map(CristinMapper::constructInstitutionId)
-                   .collect(Collectors.toList())
+                   .toList()
                    .get(0);
     }
 

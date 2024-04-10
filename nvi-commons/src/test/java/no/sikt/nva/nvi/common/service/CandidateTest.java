@@ -38,7 +38,6 @@ import java.math.RoundingMode;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -471,43 +470,20 @@ class CandidateTest extends LocalDynamoTest {
         var originalType = InstanceType.ACADEMIC_MONOGRAPH.getValue();
         var institutionId = randomUri();
         var creatorId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(URI.create("publicationId"), randomUri(), true,
-                                                                  new PublicationDate(String.valueOf(CURRENT_YEAR),
-                                                                                      null, null),
-                                                                  Map.of(creatorId, List.of(institutionId)),
-                                                                  originalType,
-                                                                  randomString(), randomUri(),
-                                                                  originalLevel.getValue(),
-                                                                  List.of(createInstitutionPoints(institutionId,
-                                                                                                  randomBigDecimal(),
-                                                                                                  creatorId)),
-                                                                  randomInteger(), false,
-                                                                  randomBigDecimal(), null, randomBigDecimal());
+        var upsertCandidateRequest = getUpsertCandidateRequest(creatorId, institutionId, originalType, originalLevel);
 
         var candidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
-
         candidate.updateApproval(
-            new UpdateStatusRequest(Arrays.stream(arguments.institutionIds()).findFirst().orElseThrow(),
-                                    ApprovalStatus.APPROVED, randomString(), randomString()));
+            new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
 
         var creators = Map.of(creatorId, List.of(arguments.institutionIds));
-        var newUpsertRequest = createUpsertCandidateRequest(candidate.getPublicationDetails().publicationId(),
-                                                            randomUri(), true,
-                                                            new PublicationDate(String.valueOf(CURRENT_YEAR),
-                                                                                null, null),
-                                                            creators,
-                                                            arguments.type().getValue(),
-                                                            randomString(), randomUri(),
-                                                            arguments.level().getValue(),
-                                                            createPoints(creators),
-                                                            randomInteger(), false,
-                                                            TestUtils.randomBigDecimal(), null, randomBigDecimal());
+        var newUpsertRequest = getUpsertCandidateRequest(arguments, creators,
+                                                         candidate.getPublicationDetails().publicationId());
 
         var updatedCandidate = Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository)
                                    .orElseThrow();
         var updatedApproval = updatedCandidate.toDto().approvals().get(0);
-
         assertThat(updatedApproval.status(), is(equalTo(ApprovalStatus.PENDING)));
     }
 
@@ -559,6 +535,22 @@ class CandidateTest extends LocalDynamoTest {
         var id = PeriodStatusDto.fromPeriodStatus(candidate.getPeriod()).id();
 
         assertThat(id, is(not(nullValue())));
+    }
+
+    private static UpsertCandidateRequest getUpsertCandidateRequest(URI creatorId, URI institutionId,
+                                                                    String type,
+                                                                    DbLevel level) {
+        return createUpsertCandidateRequest(URI.create("publicationId"), randomUri(), true,
+                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
+                                            Map.of(creatorId, List.of(institutionId)),
+                                            type,
+                                            randomString(), randomUri(),
+                                            level.getValue(),
+                                            List.of(createInstitutionPoints(institutionId,
+                                                                            randomBigDecimal(),
+                                                                            creatorId)),
+                                            randomInteger(), false,
+                                            randomBigDecimal(), null, randomBigDecimal());
     }
 
     private static InstitutionPoints createInstitutionPoints(URI institutionId, BigDecimal institutionPoints,
@@ -616,6 +608,20 @@ class CandidateTest extends LocalDynamoTest {
 
     private static BigDecimal setScaleAndRoundingMode(BigDecimal bigDecimal) {
         return bigDecimal.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
+    }
+
+    private UpsertCandidateRequest getUpsertCandidateRequest(CandidateResetCauseArgument arguments,
+                                                             Map<URI, List<URI>> creators, URI publicationId) {
+        return createUpsertCandidateRequest(publicationId,
+                                            randomUri(), true,
+                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
+                                            creators,
+                                            arguments.type().getValue(),
+                                            randomString(), randomUri(),
+                                            arguments.level().getValue(),
+                                            createPoints(creators),
+                                            randomInteger(), false,
+                                            TestUtils.randomBigDecimal(), null, randomBigDecimal());
     }
 
     private List<InstitutionPoints> createPoints(Map<URI, List<URI>> creators) {

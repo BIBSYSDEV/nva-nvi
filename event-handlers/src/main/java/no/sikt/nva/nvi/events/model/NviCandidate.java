@@ -14,6 +14,7 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
@@ -106,6 +107,9 @@ public record NviCandidate(URI publicationId,
 
     public record NviCreator(URI id, List<URI> nviAffiliations) {
 
+        public static NviCreator from(VerifiedNviCreator nviCreator) {
+            return new NviCreator(nviCreator.id(), nviCreator.nviAffiliationsIds());
+        }
     }
 
     public record PublicationDate(String day, String month, String year) {

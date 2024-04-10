@@ -64,6 +64,7 @@ import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
+import no.sikt.nva.nvi.events.model.NviCandidate.Builder;
 import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -193,10 +194,16 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     private static NviCandidate.Builder randomEvaluatedNviCandidate() {
         var identifier = UUID.randomUUID();
+        var publicationId = generatePublicationId(identifier);
+        var publicationBucketUri = generateS3BucketUri(identifier);
         var creator = randomCreator();
+        return getBuilder(publicationId, publicationBucketUri, creator);
+    }
+
+    private static Builder getBuilder(URI publicationId, URI publicationBucketUri, NviCreator creator) {
         return NviCandidate.builder()
-                   .withPublicationId(generatePublicationId(identifier))
-                   .withPublicationBucketUri(generateS3BucketUri(identifier))
+                   .withPublicationId(publicationId)
+                   .withPublicationBucketUri(publicationBucketUri)
                    .withInstanceType(randomInstanceTypeExcluding(NON_CANDIDATE.getValue()))
                    .withLevel(randomElement(DbLevel.values()).getValue())
                    .withTotalPoints(randomBigDecimal(4))
@@ -271,17 +278,13 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(UpsertCandidateRequest request,
                                                                                URI institutionId) {
         var creatorId = request.creators().keySet().stream().toList().get(0);
-        return NviCandidate.builder()
-                   .withPublicationId(request.publicationId())
-                   .withPublicationBucketUri(request.publicationBucketUri())
+        var creator = new NviCreator(creatorId, List.of(institutionId));
+        return getBuilder(request.publicationId(), request.publicationBucketUri(), creator)
                    .withInstanceType(request.instanceType())
                    .withLevel(request.level())
-                   .withDate(
-                       new PublicationDate(null, "3",
-                                           Year.now().toString()))
+                   .withDate(new PublicationDate(null, "3", Year.now().toString()))
                    .withVerifiedCreators(List.of(new NviCreator(creatorId, List.of(institutionId))))
                    .withInstitutionPoints(request.institutionPoints())
-                   .withTotalPoints(randomBigDecimal())
                    .build();
     }
 
@@ -345,22 +348,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                     new InstitutionPoints(someOtherInstitutionId, randomBigDecimal(),
                                           List.of(new CreatorAffiliationPoints(creator.id(), someOtherInstitutionId,
                                                                                randomBigDecimal()))));
-        return createEvent(createEvalMessage(NviCandidate.builder()
-                                                 .withPublicationId(publicationId)
-                                                 .withPublicationBucketUri(publicationBucketUri)
-                                                 .withInstanceType(
-                                                     randomInstanceTypeExcluding(NON_CANDIDATE.getValue()))
-                                                 .withChannelType(randomElement(ChannelType.values()).getValue())
-                                                 .withPublicationChannelId(randomUri())
-                                                 .withLevel(randomElement(DbLevel.values()).getValue())
-                                                 .withDate(randomPublicationDate())
-                                                 .withVerifiedCreators(List.of(creator))
-                                                 .withIsInternationalCollaboration(randomBoolean())
-                                                 .withCollaborationFactor(randomBigDecimal())
-                                                 .withCreatorShareCount(randomInteger())
-                                                 .withBasePoints(randomBigDecimal())
-                                                 .withTotalPoints(randomBigDecimal())
-                                                 .withInstitutionPoints(institutionPoints)
-                                                 .build()));
+        return createEvent(createEvalMessage(
+            getBuilder(publicationId, publicationBucketUri, creator).withInstitutionPoints(institutionPoints).build()));
     }
 }
