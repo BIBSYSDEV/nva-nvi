@@ -83,7 +83,7 @@ public final class Candidate {
     private final boolean applicable;
     private final Map<URI, Approval> approvals;
     private final Map<UUID, Note> notes;
-    private final Map<URI, BigDecimal> institutionPoints;
+    private final List<InstitutionPoints> institutionPoints;
     private final BigDecimal totalPoints;
     private final PeriodStatus period;
     private final PublicationDetails publicationDetails;
@@ -102,7 +102,7 @@ public final class Candidate {
         this.applicable = candidateDao.candidate().applicable();
         this.approvals = mapToApprovalsMap(repository, approvals);
         this.notes = mapToNotesMap(repository, notes);
-        this.institutionPoints = mapToPointsMap(candidateDao);
+        this.institutionPoints = mapToInstitutionPoints(candidateDao);
         this.totalPoints = candidateDao.candidate().totalPoints();
         this.period = period;
         this.publicationDetails = mapToPublicationDetails(candidateDao);
@@ -190,8 +190,21 @@ public final class Candidate {
         return applicable;
     }
 
-    public Map<URI, BigDecimal> getInstitutionPoints() {
+    public Map<URI, BigDecimal> getInstitutionPointsMap() {
+        return institutionPoints.stream().collect(Collectors.toMap(InstitutionPoints::institutionId,
+                                                                   InstitutionPoints::institutionPoints));
+    }
+
+    public List<InstitutionPoints> getInstitutionPoints() {
         return institutionPoints;
+    }
+
+    public BigDecimal getPointsForInstitution(URI institutionId) {
+        return institutionPoints.stream()
+                   .filter(institutionPoints -> institutionPoints.institutionId().equals(institutionId))
+                   .map(InstitutionPoints::institutionPoints)
+                   .findFirst()
+                   .orElseThrow();
     }
 
     public Map<URI, Approval> getApprovals() {
@@ -435,14 +448,11 @@ public final class Candidate {
         }
     }
 
-    private static Map<URI, BigDecimal> mapToPointsMap(CandidateDao candidateDao) {
+    private static List<InstitutionPoints> mapToInstitutionPoints(CandidateDao candidateDao) {
         if (isNull(candidateDao.candidate().points()) || candidateDao.candidate().points().isEmpty()) {
-            return Collections.emptyMap();
+            return Collections.emptyList();
         } else {
-            return candidateDao.candidate()
-                       .points()
-                       .stream()
-                       .collect(Collectors.toMap(DbInstitutionPoints::institutionId, DbInstitutionPoints::points));
+            return candidateDao.candidate().points().stream().map(InstitutionPoints::from).toList();
         }
     }
 
@@ -632,7 +642,7 @@ public final class Candidate {
                    .withAssignee(mapToUsernameString(approval.getAssignee()))
                    .withFinalizedBy(mapToUsernameString(approval.getFinalizedBy()))
                    .withFinalizedDate(approval.getFinalizedDate())
-                   .withPoints(institutionPoints.get(approval.getInstitutionId()))
+                   .withPoints(getPointsForInstitution(approval.getInstitutionId()))
                    .withReason(approval.getReason())
                    .build();
     }

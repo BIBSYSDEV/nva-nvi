@@ -350,7 +350,7 @@ class CandidateTest extends LocalDynamoTest {
         assertEquals(candidate.isApplicable(), isApplicable);
         assertEquals(candidate.getPublicationDetails().publicationId(), publicationId);
         assertEquals(candidate.getTotalPoints(), setScaleAndRoundingMode(totalPoints));
-        assertEquals(candidate.getInstitutionPoints().get(institutionId),
+        assertEquals(candidate.getInstitutionPointsMap().get(institutionId),
                      setScaleAndRoundingMode(getInstitutionPoints(points, institutionId)));
         assertEquals(candidate.getPublicationDetails().publicationDate(), publicationDate);
         assertCorrectCreatorData(creators, candidate);

@@ -141,8 +141,12 @@ public final class TestUtils {
                                                                      CandidateRepository repository) {
         return IntStream.range(0, number)
                    .mapToObj(i -> randomCandidateWithYear(year))
-                   .map(candidate -> repository.create(candidate, List.of()))
+                   .map(candidate -> createCandidateDao(repository, candidate))
                    .toList();
+    }
+
+    public static CandidateDao createCandidateDao(CandidateRepository repository, DbCandidate candidate) {
+        return repository.create(candidate, List.of());
     }
 
     public static DbNviPeriod.Builder randomNviPeriodBuilder() {
@@ -400,7 +404,7 @@ public final class TestUtils {
         return new CreateNoteRequest(text, username, randomUri());
     }
 
-    private static DbCandidate randomCandidateWithYear(String year) {
+    public static DbCandidate randomCandidateWithYear(String year) {
         return randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
     }
 

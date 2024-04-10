@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -55,7 +54,7 @@ public record NviCandidate(URI publicationId,
                    .withIsInternationalCollaboration(candidate.isInternationalCollaboration())
                    .withCollaborationFactor(candidate.getCollaborationFactor())
                    .withCreatorShareCount(candidate.getCreatorShareCount())
-                   .withInstitutionPoints(mapToInstitutionPoints(candidate.getInstitutionPoints()))
+                   .withInstitutionPoints(candidate.getInstitutionPoints())
                    .withTotalPoints(candidate.getTotalPoints())
                    .build();
     }
@@ -74,16 +73,6 @@ public record NviCandidate(URI publicationId,
     @Override
     public PublicationDetails.PublicationDate publicationDate() {
         return mapToPublicationDate(date);
-    }
-
-    private static List<InstitutionPoints> mapToInstitutionPoints(Map<URI, BigDecimal> institutionPoints) {
-        return institutionPoints.entrySet().stream()
-                   .map(entry -> new InstitutionPoints(entry.getKey(),
-                                                       entry.getValue(),
-                                                       //TODO: Implement when Candidate contains
-                                                       // InstitutionAffiliationPoints
-                                                       Collections.emptyList()))
-                   .toList();
     }
 
     private static NviCreator mapToNviCreator(Creator creator) {
