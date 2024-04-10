@@ -83,8 +83,7 @@ public final class TestUtils {
         return UriWrapper.fromHost(API_HOST).addChild(PUBLICATION_API_PATH).addChild(identifier.toString()).getUri();
     }
 
-    public static DbCandidate.Builder randomCandidateBuilder(boolean applicable) {
-        var institutionId = randomUri();
+    public static DbCandidate.Builder randomCandidateBuilder(boolean applicable, URI institutionId) {
         var creatorId = randomUri();
         var institutionPoints = randomBigDecimal();
         return DbCandidate.builder()
@@ -102,6 +101,10 @@ public final class TestUtils {
                    .createdDate(Instant.now())
                    .modifiedDate(Instant.now())
                    .creators(List.of(new DbCreator(creatorId, List.of(institutionId))));
+    }
+
+    public static DbCandidate.Builder randomCandidateBuilder(boolean applicable) {
+        return randomCandidateBuilder(applicable, randomUri());
     }
 
     public static InstanceType randomInstanceType() {
@@ -128,13 +131,17 @@ public final class TestUtils {
         return randomCandidateBuilder(true).build();
     }
 
-    public static DbApprovalStatus randomApproval() {
-        return new DbApprovalStatus(randomUri(),
+    public static DbApprovalStatus randomApproval(URI institutionId) {
+        return new DbApprovalStatus(institutionId,
                                     randomElement(DbStatus.values()),
                                     randomUsername(),
                                     randomUsername(),
                                     randomInstant(),
                                     randomString());
+    }
+
+    public static DbApprovalStatus randomApproval() {
+        return randomApproval(randomUri());
     }
 
     public static List<CandidateDao> createNumberOfCandidatesForYear(String year, int number,

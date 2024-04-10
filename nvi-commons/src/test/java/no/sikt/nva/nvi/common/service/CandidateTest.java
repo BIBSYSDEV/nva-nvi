@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeri
 import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.randomInstanceTypeExcluding;
 import static no.sikt.nva.nvi.test.TestUtils.randomLevelExcluding;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
@@ -500,8 +501,8 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnCandidateWithReportStatus() {
-        var dao = candidateRepository.create(randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
-                                             List.of(randomApproval()));
+        var institutionId = randomUri();
+        var dao = setupReportedCandidateWithInstitution(institutionId);
         var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
         assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));
         assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));
@@ -591,6 +592,14 @@ class CandidateTest extends LocalDynamoTest {
 
     private static BigDecimal setScaleAndRoundingMode(BigDecimal bigDecimal) {
         return bigDecimal.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
+    }
+
+    private CandidateDao setupReportedCandidateWithInstitution(URI institutionId) {
+        return candidateRepository.create(randomCandidateBuilder(true, institutionId).build()
+                                              .copy()
+                                              .reportStatus(ReportStatus.REPORTED)
+                                              .build(),
+                                          List.of(randomApproval(institutionId)));
     }
 
     private List<InstitutionPoints> createPoints(Map<URI, List<URI>> creators) {
