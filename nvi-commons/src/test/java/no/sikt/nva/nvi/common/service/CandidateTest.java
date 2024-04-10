@@ -318,8 +318,8 @@ class CandidateTest extends LocalDynamoTest {
             var rejectedAP = approvalMap.get(institutionToReject);
             assertThat(rejectedAP.status(), is(equalTo(ApprovalStatus.REJECTED)));
             assertThat(rejectedAP.reason(), is(notNullValue()));
-            assertThat(rejectedAP.points(), is(setScaleAndRoundingMode(getInstitutionPoints(
-                createRequest.institutionPoints(), rejectedAP.institutionId()))));
+            assertThat(rejectedAP.points(),
+                       is(setScaleAndRoundingMode(createRequest.getPointsForInstitution(rejectedAP.institutionId()))));
         });
     }
 
@@ -331,7 +331,7 @@ class CandidateTest extends LocalDynamoTest {
         var institutionId = randomUri();
         var creatorId = randomUri();
         var creators = Map.of(creatorId, List.of(institutionId));
-        var institutionPoints = randomBigDecimal();
+        var institutionPoints = setScaleAndRoundingMode(randomBigDecimal());
         var points = List.of(createInstitutionPoints(institutionId, institutionPoints, creatorId));
         var totalPoints = randomBigDecimal();
         var publicationDate = new PublicationDate(String.valueOf(CURRENT_YEAR), null, null);
@@ -351,8 +351,9 @@ class CandidateTest extends LocalDynamoTest {
         assertEquals(candidate.isApplicable(), isApplicable);
         assertEquals(candidate.getPublicationDetails().publicationId(), publicationId);
         assertEquals(candidate.getTotalPoints(), setScaleAndRoundingMode(totalPoints));
-        assertEquals(candidate.getInstitutionPointsMap().get(institutionId),
-                     setScaleAndRoundingMode(getInstitutionPoints(points, institutionId)));
+        assertEquals(setScaleAndRoundingMode(candidate.getPointsForInstitution(institutionId)), institutionPoints);
+        assertEquals(candidate.getInstitutionPointsMap().get(institutionId), institutionPoints);
+        assertEquals(candidate.getInstitutionPoints(), points);
         assertEquals(candidate.getPublicationDetails().publicationDate(), publicationDate);
         assertCorrectCreatorData(creators, candidate);
         assertEquals(candidate.getPublicationDetails().type(), instanceType);
@@ -541,14 +542,6 @@ class CandidateTest extends LocalDynamoTest {
         return new InstitutionPoints(institutionId, institutionPoints,
                                      List.of(new CreatorAffiliationPoints(creatorId, institutionId,
                                                                           institutionPoints)));
-    }
-
-    private static BigDecimal getInstitutionPoints(List<InstitutionPoints> points, URI institutionId) {
-        return points.stream()
-                   .filter(institutionPoints -> institutionPoints.institutionId().equals(institutionId))
-                   .findFirst()
-                   .map(InstitutionPoints::institutionPoints)
-                   .orElseThrow();
     }
 
     private static UpsertCandidateRequest createUpsertRequestWithDecimalScale(int scale, URI institutionId) {
