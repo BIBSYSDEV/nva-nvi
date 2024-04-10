@@ -80,8 +80,8 @@ public class PointCalculator {
         return nviCreator.getValue().stream()
                    .map(affiliationId -> new CreatorAffiliationPoints(affiliationId, nviCreator.getKey(),
                                                                       dividePointsOnCreatorShareCount(
-                                                                   institutionCreatorShareCount,
-                                                                   institutionPoints)));
+                                                                          institutionCreatorShareCount,
+                                                                          institutionPoints)));
     }
 
     private static BigDecimal dividePointsOnCreatorShareCount(Long institutionCreatorShareCount,
@@ -133,7 +133,8 @@ public class PointCalculator {
                                                                 institutionPoints));
     }
 
-    private List<CreatorAffiliationPoints> calculateAffiliationPoints(URI institutionId, Long institutionCreatorShareCount,
+    private List<CreatorAffiliationPoints> calculateAffiliationPoints(URI institutionId,
+                                                                      Long institutionCreatorShareCount,
                                                                       BigDecimal institutionPoints) {
         return nviCreators.stream()
                    .filter(creator -> isAffiliated(institutionId, creator))

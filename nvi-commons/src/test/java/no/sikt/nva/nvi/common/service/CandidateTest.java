@@ -610,20 +610,6 @@ class CandidateTest extends LocalDynamoTest {
         return bigDecimal.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
     }
 
-    private UpsertCandidateRequest getUpsertCandidateRequest(CandidateResetCauseArgument arguments,
-                                                             Map<URI, List<URI>> creators, URI publicationId) {
-        return createUpsertCandidateRequest(publicationId,
-                                            randomUri(), true,
-                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
-                                            creators,
-                                            arguments.type().getValue(),
-                                            randomString(), randomUri(),
-                                            arguments.level().getValue(),
-                                            createPoints(creators),
-                                            randomInteger(), false,
-                                            TestUtils.randomBigDecimal(), null, randomBigDecimal());
-    }
-
     private List<InstitutionPoints> createPoints(Map<URI, List<URI>> creators) {
         return creators.entrySet()
                    .stream()
@@ -648,17 +634,22 @@ class CandidateTest extends LocalDynamoTest {
                                periodRepository);
     }
 
+    private UpsertCandidateRequest getUpsertCandidateRequest(CandidateResetCauseArgument arguments,
+                                                             Map<URI, List<URI>> creators, URI publicationId) {
+        return createUpsertCandidateRequest(publicationId,
+                                            randomUri(), true,
+                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
+                                            creators,
+                                            arguments.type().getValue(),
+                                            randomString(), randomUri(),
+                                            arguments.level().getValue(),
+                                            createPoints(creators),
+                                            randomInteger(), false,
+                                            TestUtils.randomBigDecimal(), null, randomBigDecimal());
+    }
+
     private UpsertCandidateRequest getUpdateRequestForExistingCandidate() {
-        var institutionId = randomUri();
-        var insertRequest = createUpsertCandidateRequest(institutionId);
-        Candidate.upsert(insertRequest, candidateRepository, periodRepository);
-        return createUpsertCandidateRequest(insertRequest.publicationId(),
-                                            insertRequest.publicationBucketUri(), true,
-                                            insertRequest.instanceType(),
-                                            insertRequest.creators().size(), randomBigDecimal(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
-                                            CURRENT_YEAR,
-                                            institutionId);
+        return getUpdateRequestForExistingCandidate(EXPECTED_SCALE);
     }
 
     private UpsertCandidateRequest getUpdateRequestForExistingCandidate(int scale) {
@@ -708,15 +699,7 @@ class CandidateTest extends LocalDynamoTest {
 
     private List<DbInstitutionPoints> mapToDbInstitutionPoints(List<InstitutionPoints> points) {
         return points.stream()
-                   .map(entry -> new DbInstitutionPoints(entry.institutionId(),
-                                                         setScaleAndRoundingMode(entry.institutionPoints()),
-                                                         entry.creatorAffiliationPoints().stream().map(
-                                                                 creatorAffiliationPoints -> new DbCreatorAffiliationPoints(
-                                                                     creatorAffiliationPoints.nviCreator(),
-                                                                     creatorAffiliationPoints.affiliationId(),
-                                                                     setScaleAndRoundingMode(
-                                                                         creatorAffiliationPoints.points())))
-                                                             .toList()))
+                   .map(DbInstitutionPoints::from)
                    .toList();
     }
 

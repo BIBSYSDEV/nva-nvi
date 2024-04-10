@@ -13,7 +13,8 @@ public record InstitutionPoints(URI institutionId,
                                                                           getCreatorAffiliationPoints());
     }
 
-    private List<no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints> getCreatorAffiliationPoints() {
+    private List<no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints>
+    getCreatorAffiliationPoints() {
         return creatorAffiliationPoints.stream()
                    .map(CreatorAffiliationPoints::toCreatorAffiliationPoints)
                    .toList();
@@ -21,7 +22,8 @@ public record InstitutionPoints(URI institutionId,
 
     public record CreatorAffiliationPoints(URI affiliationId, URI nviCreator, BigDecimal points) {
 
-        public no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints toCreatorAffiliationPoints() {
+        public no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints
+        toCreatorAffiliationPoints() {
             return new no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints(
                 nviCreator, affiliationId, points);
         }
