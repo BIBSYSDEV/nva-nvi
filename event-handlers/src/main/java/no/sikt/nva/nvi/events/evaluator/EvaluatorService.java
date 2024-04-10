@@ -47,7 +47,8 @@ public class EvaluatorService {
         if (!verifiedCreatorsWithNviInstitutions.isEmpty()) {
             var pointCalculation = pointService.calculatePoints(publication, verifiedCreatorsWithNviInstitutions);
             var nviCandidate = constructNviCandidate(publication,
-                                                     verifiedCreatorsWithNviInstitutions, pointCalculation,
+                                                     verifiedCreatorsWithNviInstitutions,
+                                                     pointCalculation,
                                                      publicationId,
                                                      publicationBucketUri);
             return constructMessage(nviCandidate);
