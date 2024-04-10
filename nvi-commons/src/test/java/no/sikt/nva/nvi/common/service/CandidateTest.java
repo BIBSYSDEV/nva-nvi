@@ -50,7 +50,6 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -537,22 +536,6 @@ class CandidateTest extends LocalDynamoTest {
         assertThat(id, is(not(nullValue())));
     }
 
-    private static UpsertCandidateRequest getUpsertCandidateRequest(URI creatorId, URI institutionId,
-                                                                    String type,
-                                                                    DbLevel level) {
-        return createUpsertCandidateRequest(URI.create("publicationId"), randomUri(), true,
-                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
-                                            Map.of(creatorId, List.of(institutionId)),
-                                            type,
-                                            randomString(), randomUri(),
-                                            level.getValue(),
-                                            List.of(createInstitutionPoints(institutionId,
-                                                                            randomBigDecimal(),
-                                                                            creatorId)),
-                                            randomInteger(), false,
-                                            randomBigDecimal(), null, randomBigDecimal());
-    }
-
     private static InstitutionPoints createInstitutionPoints(URI institutionId, BigDecimal institutionPoints,
                                                              URI creatorId) {
         return new InstitutionPoints(institutionId, institutionPoints,
@@ -646,6 +629,22 @@ class CandidateTest extends LocalDynamoTest {
                                             createPoints(creators),
                                             randomInteger(), false,
                                             TestUtils.randomBigDecimal(), null, randomBigDecimal());
+    }
+
+    private UpsertCandidateRequest getUpsertCandidateRequest(URI creatorId, URI institutionId,
+                                                             String type,
+                                                             DbLevel level) {
+        return createUpsertCandidateRequest(URI.create("publicationId"), randomUri(), true,
+                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
+                                            Map.of(creatorId, List.of(institutionId)),
+                                            type,
+                                            randomString(), randomUri(),
+                                            level.getValue(),
+                                            List.of(createInstitutionPoints(institutionId,
+                                                                            randomBigDecimal(),
+                                                                            creatorId)),
+                                            randomInteger(), false,
+                                            randomBigDecimal(), null, randomBigDecimal());
     }
 
     private UpsertCandidateRequest getUpdateRequestForExistingCandidate() {
