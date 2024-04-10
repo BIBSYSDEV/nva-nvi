@@ -40,6 +40,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
@@ -413,6 +414,15 @@ public final class TestUtils {
 
     public static DbCandidate randomCandidateWithYear(String year) {
         return randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
+    }
+
+    public static CandidateDao setupReportedCandidate(CandidateRepository repository) {
+        var institutionId = randomUri();
+        return repository.create(randomCandidateBuilder(true, institutionId).build()
+                                     .copy()
+                                     .reportStatus(ReportStatus.REPORTED)
+                                     .build(),
+                                 List.of(randomApproval(institutionId)));
     }
 
     private static DbPublicationDate publicationDate(String year) {
