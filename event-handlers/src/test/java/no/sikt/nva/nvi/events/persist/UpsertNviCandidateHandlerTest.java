@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.events.persist;
 
 import static no.sikt.nva.nvi.common.db.model.InstanceType.NON_CANDIDATE;
-import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
@@ -16,11 +15,11 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
-import static nva.commons.core.paths.UriWrapper.HTTPS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.StringContains.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,43 +31,45 @@ import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
-import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Year;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
+import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
-import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto.Status;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
-import no.sikt.nva.nvi.events.model.NviCandidate.NviCreatorWithAffiliationPoints;
-import no.sikt.nva.nvi.events.model.NviCandidate.NviCreatorWithAffiliationPoints.AffiliationPoints;
+import no.sikt.nva.nvi.events.model.NviCandidate.Builder;
+import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import nva.commons.core.Environment;
-import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,10 +80,6 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     public static final Context CONTEXT = mock(Context.class);
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
-    private static final Environment ENVIRONMENT = new Environment();
-    private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
-    private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
-    private static final String CANDIDATE_PATH = "candidate";
     private static final String DLQ_QUEUE_URL = "test_dlq_url";
     private UpsertNviCandidateHandler handler;
     private CandidateRepository candidateRepository;
@@ -131,31 +128,15 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldSaveNewNviCandidateWithPendingInstitutionApprovalsIfCandidateDoesNotExist() {
-        var institutionId = randomUri();
-        var identifier = UUID.randomUUID();
-        var points = randomBigDecimal();
-        var creators = List.of(
-            new NviCreatorWithAffiliationPoints(randomUri(), List.of(new AffiliationPoints(institutionId, points))));
-        var instanceType = randomInstanceTypeExcluding(NON_CANDIDATE.getValue());
-        var randomLevel = randomElement(DbLevel.values());
-        var publicationDate = randomPublicationDate();
-        var institutionPoints = Map.of(institutionId, points);
-        var publicationId = generatePublicationId(identifier);
-        var publicationBucketUri = generateS3BucketUri(identifier);
-        var totalPoints = randomBigDecimal();
-
-        var sqsEvent = createEvent(creators, instanceType, randomLevel, publicationDate, institutionPoints,
-                                   publicationId, publicationBucketUri, totalPoints);
+    void shouldSaveNewNviCandidateWithPendingInstitutionApprovalsWhenCandidateDoesNotExist() {
+        var evaluatedNviCandidate = randomEvaluatedNviCandidate().build();
+        var sqsEvent = createEvent(createEvalMessage(evaluatedNviCandidate));
         handler.handleRequest(sqsEvent, CONTEXT);
-
-        var fetchedCandidate = Candidate.fetchByPublicationId(() -> publicationId, candidateRepository,
-                                                              periodRepository)
-                                   .toDto();
-        var expectedResponse = createResponse(fetchedCandidate.identifier(), publicationId, institutionPoints,
-                                              totalPoints);
-
-        assertThat(fetchedCandidate, is(equalTo(expectedResponse)));
+        var actualPersistedCandidateDao = candidateRepository.findByPublicationId(evaluatedNviCandidate.publicationId())
+                                              .orElseThrow();
+        var actualApprovals = fetchApprovals(actualPersistedCandidateDao);
+        assertEquals(getExpectedApprovals(evaluatedNviCandidate), actualApprovals);
+        assertEquals(getExpectedCandidate(evaluatedNviCandidate), actualPersistedCandidateDao.candidate());
     }
 
     @Test
@@ -184,7 +165,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
             candidateRepository, periodRepository).orElseThrow();
         var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));
         handler.handleRequest(sqsEvent, CONTEXT);
-        Map<URI, DbApprovalStatus> approvals = getAprovalMaps(dto);
+        var approvals = getApprovalMaps(dto);
         assertTrue(approvals.containsKey(keep));
         assertFalse(approvals.containsKey(delete));
         assertThat(approvals.size(), is(2));
@@ -208,38 +189,42 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     private static CandidateEvaluatedMessage randomCandidateEvaluatedMessage() {
+        return createEvalMessage(randomEvaluatedNviCandidate().build());
+    }
+
+    private static NviCandidate.Builder randomEvaluatedNviCandidate() {
         var identifier = UUID.randomUUID();
-        return CandidateEvaluatedMessage.builder()
-                   .withCandidateType(NviCandidate.builder()
-                                          .withPublicationId(generatePublicationId(identifier))
-                                          .withPublicationBucketUri(generateS3BucketUri(identifier))
-                                          .withInstanceType(randomInstanceTypeExcluding(NON_CANDIDATE.getValue()))
-                                          .withLevel(randomElement(DbLevel.values()).getValue())
-                                          .withTotalPoints(randomBigDecimal())
-                                          .withBasePoints(randomBigDecimal())
-                                          .withCreatorShareCount(randomInteger())
-                                          .withCollaborationFactor(randomBigDecimal())
-                                          .withPublicationChannelId(randomUri())
-                                          .withChannelType(randomElement(ChannelType.values()).getValue())
-                                          .withIsInternationalCollaboration(randomBoolean())
-                                          .withInstitutionPoints(Map.of(randomUri(), randomBigDecimal()))
-                                          .withDate(randomPublicationDate())
-                                          .withVerifiedCreators(List.of(randomCreator()))
-                                          .build())
-                   .build();
+        var publicationId = generatePublicationId(identifier);
+        var publicationBucketUri = generateS3BucketUri(identifier);
+        var creator = randomCreator();
+        return getBuilder(publicationId, publicationBucketUri, creator);
+    }
+
+    private static Builder getBuilder(URI publicationId, URI publicationBucketUri, NviCreator creator) {
+        return NviCandidate.builder()
+                   .withPublicationId(publicationId)
+                   .withPublicationBucketUri(publicationBucketUri)
+                   .withInstanceType(randomInstanceTypeExcluding(NON_CANDIDATE.getValue()))
+                   .withLevel(randomElement(DbLevel.values()).getValue())
+                   .withTotalPoints(randomBigDecimal(4))
+                   .withBasePoints(randomBigDecimal(4))
+                   .withCreatorShareCount(randomInteger())
+                   .withCollaborationFactor(randomBigDecimal(4))
+                   .withPublicationChannelId(randomUri())
+                   .withChannelType(randomElement(ChannelType.values()).getValue())
+                   .withIsInternationalCollaboration(randomBoolean())
+                   .withInstitutionPoints(List.of(new InstitutionPoints(randomUri(), randomBigDecimal(4),
+                                                                        List.of(new CreatorAffiliationPoints(
+                                                                            creator.id(), randomUri(),
+                                                                            randomBigDecimal())))))
+                   .withDate(randomPublicationDate())
+                   .withVerifiedCreators(List.of(creator));
     }
 
     private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
-        return Stream.of(CandidateEvaluatedMessage.builder()
-                             .withCandidateType(NviCandidate.builder()
-                                                    .withPublicationId(null)
-                                                    .withInstanceType(randomString())
-                                                    .withLevel(randomElement(
-                                                        DbLevel.values()).getValue())
-                                                    .withDate(randomPublicationDate())
-                                                    .withVerifiedCreators(List.of(randomCreator()))
-                                                    .build())
-                             .build());
+        return Stream.of(createEvalMessage(NviCandidate.builder()
+                                               .withPublicationId(null)
+                                               .build()));
     }
 
     private static PublicationDate randomPublicationDate() {
@@ -257,108 +242,86 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         return sqsEvent;
     }
 
-    private static NviCreatorWithAffiliationPoints randomCreator() {
-        return new NviCreatorWithAffiliationPoints(randomUri(),
-                                                   List.of(new AffiliationPoints(randomUri(), randomBigDecimal())));
+    private static NviCreator randomCreator() {
+        return new NviCreator(randomUri(), List.of(randomUri()));
     }
 
-    private static CandidateEvaluatedMessage createEvalMessage(
-        List<NviCreatorWithAffiliationPoints> nviCreatorWithAffiliationPoints,
-        String instanceType, DbLevel level,
-        PublicationDate publicationDate,
-        Map<URI, BigDecimal> institutionPoints,
-        URI publicationId, URI publicationBucketUri,
-        BigDecimal totalPoints) {
+    private static CandidateEvaluatedMessage createEvalMessage(NviCandidate nviCandidate) {
         return CandidateEvaluatedMessage.builder()
-                   .withCandidateType(NviCandidate.builder()
-                                          .withPublicationId(publicationId)
-                                          .withPublicationBucketUri(publicationBucketUri)
-                                          .withInstanceType(instanceType)
-                                          .withChannelType(randomElement(ChannelType.values()).getValue())
-                                          .withPublicationChannelId(randomUri())
-                                          .withLevel(level.getValue())
-                                          .withDate(publicationDate)
-                                          .withVerifiedCreators(nviCreatorWithAffiliationPoints)
-                                          .withIsInternationalCollaboration(randomBoolean())
-                                          .withCollaborationFactor(randomBigDecimal())
-                                          .withCreatorShareCount(randomInteger())
-                                          .withBasePoints(randomBigDecimal())
-                                          .withTotalPoints(totalPoints)
-                                          .withInstitutionPoints(institutionPoints)
-                                          .build())
+                   .withCandidateType(nviCandidate)
                    .build();
     }
 
-    private static PeriodStatusDto toPeriodStatus(DbNviPeriod period) {
-        return PeriodStatusDto.builder()
-                   .withId(period.id())
-                   .withStatus(Status.OPEN_PERIOD)
-                   .withStartDate(period.startDate().toString())
-                   .withReportingDate(period.reportingDate().toString())
-                   .withYear(period.publishingYear())
-                   .build();
-    }
-
-    private static List<AffiliationPoints> createAffiliationPoints(URI affiliationId, URI someOtherInstitutionId) {
-        return Stream.of(someOtherInstitutionId, affiliationId)
-                   .map(institutionId -> new AffiliationPoints(institutionId, randomBigDecimal()))
+    private static List<DbInstitutionPoints> mapToInstitutionPoints(List<InstitutionPoints> institutionPoints) {
+        return institutionPoints
+                   .stream()
+                   .map(DbInstitutionPoints::from)
                    .toList();
     }
 
-    private static List<NviCreatorWithAffiliationPoints> getNviCreatorWithAffiliationPoints(
-        URI institutionId, URI creatorId, Map<URI, BigDecimal> institutionPoints) {
-        return List.of(
-            new NviCreatorWithAffiliationPoints(
-                creatorId, List.of(new AffiliationPoints(institutionId, institutionPoints.get(institutionId)))));
+    private List<DbApprovalStatus> fetchApprovals(CandidateDao actualPersistedCandidateDao) {
+        return candidateRepository.fetchApprovals(actualPersistedCandidateDao.identifier())
+                   .stream()
+                   .map(ApprovalStatusDao::approvalStatus)
+                   .toList();
+    }
+
+    private List<DbApprovalStatus> getExpectedApprovals(NviCandidate evaluatedNviCandidate) {
+        return evaluatedNviCandidate.institutionPoints().stream()
+                   .map(institution -> DbApprovalStatus.builder()
+                                           .institutionId(institution.institutionId())
+                                           .status(DbStatus.PENDING)
+                                           .build())
+                   .toList();
     }
 
     private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(UpsertCandidateRequest request,
                                                                                URI institutionId) {
         var creatorId = request.creators().keySet().stream().toList().get(0);
-        return NviCandidate.builder()
-                   .withPublicationId(request.publicationId())
-                   .withPublicationBucketUri(request.publicationBucketUri())
+        var creator = new NviCreator(creatorId, List.of(institutionId));
+        return getBuilder(request.publicationId(), request.publicationBucketUri(), creator)
                    .withInstanceType(request.instanceType())
                    .withLevel(request.level())
-                   .withDate(
-                       new PublicationDate(null, "3",
-                                           Year.now().toString()))
-                   .withVerifiedCreators(getNviCreatorWithAffiliationPoints(institutionId, creatorId,
-                                                                            request.institutionPoints()))
+                   .withDate(new PublicationDate(null, "3", Year.now().toString()))
+                   .withVerifiedCreators(List.of(new NviCreator(creatorId, List.of(institutionId))))
                    .withInstitutionPoints(request.institutionPoints())
-                   .withTotalPoints(randomBigDecimal())
                    .build();
     }
 
-    private Map<URI, DbApprovalStatus> getAprovalMaps(Candidate dto) {
+    private Map<URI, DbApprovalStatus> getApprovalMaps(Candidate dto) {
         return candidateRepository.fetchApprovals(dto.getIdentifier())
                    .stream()
                    .map(ApprovalStatusDao::approvalStatus)
                    .collect(Collectors.toMap(DbApprovalStatus::institutionId, Function.identity()));
     }
 
-    private CandidateDto createResponse(UUID identifier, URI publicationId, Map<URI, BigDecimal> institutionPoints,
-                                        BigDecimal totalPoints) {
-        var id = new UriWrapper(HTTPS, API_DOMAIN).addChild(BASE_PATH, CANDIDATE_PATH, identifier.toString()).getUri();
-        var period = periodRepository.findByPublishingYear(Year.now().toString()).orElseThrow();
-        return CandidateDto.builder()
-                   .withContext(Candidate.getContextUri())
-                   .withIdentifier(identifier)
-                   .withPublicationId(publicationId)
-                   .withId(id)
-                   .withNotes(List.of())
-                   .withApprovals(institutionPoints.entrySet().stream().map(this::mapToApprovalStatus).toList())
-                   .withPeriod(toPeriodStatus(period))
-                   .withTotalPoints(adjustScaleAndRoundingMode(totalPoints))
+    private DbCandidate getExpectedCandidate(NviCandidate evaluatedNviCandidate) {
+        var date = evaluatedNviCandidate.date();
+        return DbCandidate.builder()
+                   .applicable(true)
+                   .publicationId(evaluatedNviCandidate.publicationId())
+                   .publicationBucketUri(evaluatedNviCandidate.publicationBucketUri())
+                   .instanceType(evaluatedNviCandidate.instanceType())
+                   .level(DbLevel.parse(evaluatedNviCandidate.level()))
+                   .publicationDate(new DbPublicationDate(date.year(), date.month(), date.day()))
+                   .channelType(ChannelType.parse(evaluatedNviCandidate.channelType()))
+                   .channelId(evaluatedNviCandidate.publicationChannelId())
+                   .creators(getExpectedCreators(evaluatedNviCandidate))
+                   .basePoints(evaluatedNviCandidate.basePoints())
+                   .internationalCollaboration(evaluatedNviCandidate.isInternationalCollaboration())
+                   .collaborationFactor(evaluatedNviCandidate.collaborationFactor())
+                   .creatorShareCount(evaluatedNviCandidate.creatorShareCount())
+                   .points(mapToInstitutionPoints(evaluatedNviCandidate.institutionPoints()))
+                   .totalPoints(evaluatedNviCandidate.totalPoints())
                    .build();
     }
 
-    private ApprovalDto mapToApprovalStatus(Entry<URI, BigDecimal> pointsMap) {
-        return ApprovalDto.builder()
-                   .withInstitutionId(pointsMap.getKey())
-                   .withStatus(ApprovalStatus.PENDING)
-                   .withPoints(adjustScaleAndRoundingMode(pointsMap.getValue()))
-                   .build();
+    private List<DbCreator> getExpectedCreators(NviCandidate evaluatedNviCandidate) {
+        return evaluatedNviCandidate.creators().entrySet().stream()
+                   .map(entry -> DbCreator.builder().creatorId(entry.getKey())
+                                     .affiliations(new ArrayList<>(entry.getValue()))
+                                     .build())
+                   .toList();
     }
 
     private CandidateEvaluatedMessage nonCandidateMessageForExistingCandidate(CandidateDto candidate) {
@@ -378,25 +341,14 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     private SQSEvent createEvent(URI affiliationId, URI publicationId, URI publicationBucketUri) {
         var someOtherInstitutionId = randomUri();
-        var creators = List.of(new NviCreatorWithAffiliationPoints(randomUri(),
-                                                                   createAffiliationPoints(affiliationId,
-                                                                                           someOtherInstitutionId)));
-        var instanceType = randomInstanceTypeExcluding(NON_CANDIDATE.getValue());
-        var randomLevel = randomElement(DbLevel.values());
-        var publicationDate = randomPublicationDate();
-        var institutionPoints = Map.of(someOtherInstitutionId, randomBigDecimal(), affiliationId, randomBigDecimal());
-
-        return createEvent(creators, instanceType, randomLevel, publicationDate, institutionPoints, publicationId,
-                           publicationBucketUri, randomBigDecimal());
-    }
-
-    private SQSEvent createEvent(List<NviCreatorWithAffiliationPoints> nviCreatorWithAffiliationPoints,
-                                 String instanceType, DbLevel randomLevel,
-                                 PublicationDate publicationDate, Map<URI, BigDecimal> institutionPoints,
-                                 URI publicationId, URI publicationBucketUri, BigDecimal totalPoints) {
-        return createEvent(
-            createEvalMessage(nviCreatorWithAffiliationPoints, instanceType, randomLevel, publicationDate,
-                              institutionPoints,
-                              publicationId, publicationBucketUri, totalPoints));
+        var creator = new NviCreator(randomUri(), List.of(affiliationId, someOtherInstitutionId));
+        var institutionPoints =
+            List.of(new InstitutionPoints(affiliationId, randomBigDecimal(), List.of(
+                        new CreatorAffiliationPoints(creator.id(), affiliationId, randomBigDecimal()))),
+                    new InstitutionPoints(someOtherInstitutionId, randomBigDecimal(),
+                                          List.of(new CreatorAffiliationPoints(creator.id(), someOtherInstitutionId,
+                                                                               randomBigDecimal()))));
+        return createEvent(createEvalMessage(
+            getBuilder(publicationId, publicationBucketUri, creator).withInstitutionPoints(institutionPoints).build()));
     }
 }

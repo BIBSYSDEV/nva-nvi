@@ -13,9 +13,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.unit.nva.commons.json.JsonUtils;
@@ -31,7 +32,24 @@ public class CandidateTest {
         assertThat(reconstructedCandidate, is(equalTo(candidate)));
     }
 
+    private static List<DbInstitutionPoints> getExpectedInstitutionPoints(List<DbCreator> creators) {
+        return creators.stream()
+                   .flatMap(creator -> creator.affiliations()
+                                           .stream()
+                                           .map(affiliation -> mapToInstitutionPoints(creator, affiliation)))
+                   .toList();
+    }
+
+    private static DbInstitutionPoints mapToInstitutionPoints(DbCreator creator, URI affiliation) {
+        return new DbInstitutionPoints(affiliation, randomBigDecimal(),
+                                       List.of(new DbCreatorAffiliationPoints(creator.creatorId(),
+                                                                              affiliation,
+                                                                              randomBigDecimal())));
+    }
+
     private DbCandidate randomCandidate() {
+        var creators = randomVerifiedCreators();
+        var institutionPoints = getExpectedInstitutionPoints(creators);
         return DbCandidate.builder()
                    .publicationId(randomUri())
                    .creatorCount(randomInteger())
@@ -39,9 +57,9 @@ public class CandidateTest {
                    .level(DbLevel.LEVEL_ONE)
                    .applicable(true)
                    .internationalCollaboration(true)
-                   .creators(randomVerifiedCreators())
+                   .creators(creators)
                    .publicationDate(localDateNowAsPublicationDate())
-                   .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
+                   .points(institutionPoints)
                    .createdDate(Instant.now())
                    .modifiedDate(Instant.now())
                    .build();

@@ -95,9 +95,10 @@ public class EvaluateNviCandidateWithCristinDataTest {
         var event = setUpSqsEvent("evaluator/cristin_candidate_2022_academicArticle.json");
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
-        var institutionPoints = candidate.institutionPoints();
-        assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8165))));
-        assertThat(institutionPoints.get(ST_OLAVS_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5774))));
+        assertThat(candidate.getPointsForInstitution(NTNU_TOP_LEVEL_ORG_ID),
+                   is(equalTo(scaledBigDecimal(0.8165))));
+        assertThat(candidate.getPointsForInstitution(ST_OLAVS_TOP_LEVEL_ORG_ID),
+                   is(equalTo(scaledBigDecimal(0.5774))));
     }
 
     @Test
@@ -111,8 +112,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
         var event = setUpSqsEvent("evaluator/cristin_candidate_2022_academicMonograph.json");
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
-        var institutionPoints = candidate.institutionPoints();
-        assertThat(institutionPoints.get(UIO_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(3.7528))));
+        assertThat(candidate.getPointsForInstitution(UIO_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(3.7528))));
     }
 
     @Test
@@ -126,8 +126,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
         var event = setUpSqsEvent("evaluator/cristin_candidate_2022_academicLiteratureReview.json");
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
-        var institutionPoints = candidate.institutionPoints();
-        assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(1.5922))));
+        assertThat(candidate.getPointsForInstitution(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(1.5922))));
     }
 
     @Test
@@ -139,9 +138,8 @@ public class EvaluateNviCandidateWithCristinDataTest {
         var event = setUpSqsEvent("evaluator/cristin_candidate_2022_academicChapter.json");
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
-        var institutionPoints = candidate.institutionPoints();
-        assertThat(institutionPoints.get(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8660))));
-        assertThat(institutionPoints.get(SINTEF_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5000))));
+        assertThat(candidate.getPointsForInstitution(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8660))));
+        assertThat(candidate.getPointsForInstitution(SINTEF_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5000))));
     }
 
     private static BigDecimal scaledBigDecimal(double val) {

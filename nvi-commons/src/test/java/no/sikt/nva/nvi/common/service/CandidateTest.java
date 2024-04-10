@@ -38,10 +38,8 @@ import java.math.RoundingMode;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -69,6 +67,8 @@ import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -317,8 +317,8 @@ class CandidateTest extends LocalDynamoTest {
             var rejectedAP = approvalMap.get(institutionToReject);
             assertThat(rejectedAP.status(), is(equalTo(ApprovalStatus.REJECTED)));
             assertThat(rejectedAP.reason(), is(notNullValue()));
-            assertThat(rejectedAP.points(),
-                       is(setScaleAndRoundingMode(createRequest.institutionPoints().get(rejectedAP.institutionId()))));
+            assertThat(rejectedAP.points(), is(setScaleAndRoundingMode(getInstitutionPoints(
+                createRequest.institutionPoints(), rejectedAP.institutionId()))));
         });
     }
 
@@ -327,9 +327,11 @@ class CandidateTest extends LocalDynamoTest {
         var publicationId = randomUri();
         var publicationBucketUri = randomUri();
         var isApplicable = true;
-        var institution = randomUri();
-        var creators = Map.of(randomUri(), List.of(institution));
-        var points = Map.of(institution, randomBigDecimal());
+        var institutionId = randomUri();
+        var creatorId = randomUri();
+        var creators = Map.of(creatorId, List.of(institutionId));
+        var institutionPoints = randomBigDecimal();
+        var points = List.of(createInstitutionPoints(institutionId, institutionPoints, creatorId));
         var totalPoints = randomBigDecimal();
         var publicationDate = new PublicationDate(String.valueOf(CURRENT_YEAR), null, null);
         var instanceType = randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE.getValue());
@@ -348,7 +350,8 @@ class CandidateTest extends LocalDynamoTest {
         assertEquals(candidate.isApplicable(), isApplicable);
         assertEquals(candidate.getPublicationDetails().publicationId(), publicationId);
         assertEquals(candidate.getTotalPoints(), setScaleAndRoundingMode(totalPoints));
-        assertEquals(candidate.getInstitutionPoints(), setScaleAndRoundingMode(points));
+        assertEquals(candidate.getInstitutionPoints().get(institutionId),
+                     setScaleAndRoundingMode(getInstitutionPoints(points, institutionId)));
         assertEquals(candidate.getPublicationDetails().publicationDate(), publicationDate);
         assertCorrectCreatorData(creators, candidate);
         assertEquals(candidate.getPublicationDetails().type(), instanceType);
@@ -385,16 +388,6 @@ class CandidateTest extends LocalDynamoTest {
 
         assertThat(updatedApplicableCandidate.getPeriod().year(),
                    is(equalTo(updatedApplicableCandidate.getPeriod().year())));
-    }
-
-    private Candidate nonApplicableCandidate() {
-        var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
-        var tempCandidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
-                                .orElseThrow();
-        var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationDetails().publicationId());
-        var candidateBO = Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
-        return Candidate.fetch(candidateBO::getIdentifier, candidateRepository,
-                               periodRepository);
     }
 
     @Test
@@ -472,44 +465,24 @@ class CandidateTest extends LocalDynamoTest {
     @MethodSource("candidateResetCauseProvider")
     @DisplayName("Should reset approvals when updating fields effecting approvals")
     void shouldResetApprovalsWhenUpdatingFieldsEffectingApprovals(CandidateResetCauseArgument arguments) {
-        URI[] institutionIdsOriginal = new URI[]{URI.create("uri")};
-        DbLevel originalLevel = DbLevel.LEVEL_TWO;
+        var originalLevel = DbLevel.LEVEL_TWO;
         var originalType = InstanceType.ACADEMIC_MONOGRAPH.getValue();
-
-        var upsertCandidateRequest = createUpsertCandidateRequest(URI.create("publicationId"), randomUri(), true,
-                                                                  new PublicationDate(
-                                                                      String.valueOf(CURRENT_YEAR), null,
-                                                                      null), getCreators(institutionIdsOriginal),
-                                                                  originalType,
-                                                                  randomString(), randomUri(),
-                                                                  originalLevel.getValue(),
-                                                                  getPointsOriginal(institutionIdsOriginal),
-                                                                  randomInteger(), false,
-                                                                  randomBigDecimal(), null, randomBigDecimal());
+        var institutionId = randomUri();
+        var creatorId = randomUri();
+        var upsertCandidateRequest = getUpsertCandidateRequest(creatorId, institutionId, originalType, originalLevel);
 
         var candidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
-
         candidate.updateApproval(
-            new UpdateStatusRequest(Arrays.stream(arguments.institutionIds()).findFirst().orElseThrow(),
-                                    ApprovalStatus.APPROVED, randomString(), randomString()));
+            new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
 
-        var newUpsertRequest = createUpsertCandidateRequest(candidate.getPublicationDetails().publicationId(),
-                                                            randomUri(), true,
-                                                            new PublicationDate(String.valueOf(CURRENT_YEAR),
-                                                                                null, null),
-                                                            getCreators(arguments.institutionIds()),
-                                                            arguments.type().getValue(),
-                                                            randomString(), randomUri(),
-                                                            arguments.level().getValue(),
-                                                            getPointsOriginal(arguments.institutionIds()),
-                                                            randomInteger(), false,
-                                                            TestUtils.randomBigDecimal(), null, randomBigDecimal());
+        var creators = Map.of(creatorId, List.of(arguments.institutionIds));
+        var newUpsertRequest = getUpsertCandidateRequest(arguments, creators,
+                                                         candidate.getPublicationDetails().publicationId());
 
         var updatedCandidate = Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository)
                                    .orElseThrow();
         var updatedApproval = updatedCandidate.toDto().approvals().get(0);
-
         assertThat(updatedApproval.status(), is(equalTo(ApprovalStatus.PENDING)));
     }
 
@@ -563,12 +536,25 @@ class CandidateTest extends LocalDynamoTest {
         assertThat(id, is(not(nullValue())));
     }
 
-    private static UpsertCandidateRequest createUpsertRequestWithDecimalScale(int scale, URI institutionId) {
-        var creators = IntStream.of(1)
-                           .mapToObj(i -> randomUri())
-                           .collect(Collectors.toMap(Function.identity(), e -> List.of(institutionId)));
+    private static InstitutionPoints createInstitutionPoints(URI institutionId, BigDecimal institutionPoints,
+                                                             URI creatorId) {
+        return new InstitutionPoints(institutionId, institutionPoints,
+                                     List.of(new CreatorAffiliationPoints(creatorId, institutionId,
+                                                                          institutionPoints)));
+    }
 
-        var points = Map.of(institutionId, randomBigDecimal(scale));
+    private static BigDecimal getInstitutionPoints(List<InstitutionPoints> points, URI institutionId) {
+        return points.stream()
+                   .filter(institutionPoints -> institutionPoints.institutionId().equals(institutionId))
+                   .findFirst()
+                   .map(InstitutionPoints::institutionPoints)
+                   .orElseThrow();
+    }
+
+    private static UpsertCandidateRequest createUpsertRequestWithDecimalScale(int scale, URI institutionId) {
+        var creatorId = randomUri();
+        var creators = Map.of(creatorId, List.of(institutionId));
+        var points = List.of(createInstitutionPoints(institutionId, randomBigDecimal(scale), creatorId));
 
         return createUpsertCandidateRequest(randomUri(), randomUri(), true,
                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
@@ -595,15 +581,6 @@ class CandidateTest extends LocalDynamoTest {
         });
     }
 
-    private static Map<URI, BigDecimal> getPointsOriginal(URI[] institutionIdsOriginal) {
-        return Arrays.stream(institutionIdsOriginal)
-                   .collect(Collectors.toMap(Function.identity(), e -> new BigDecimal(1)));
-    }
-
-    private static Map<URI, List<URI>> getCreators(URI[] institutionIdsOriginal) {
-        return Map.of(URI.create("uri"), List.of(institutionIdsOriginal));
-    }
-
     private static PeriodStatusDto getDefaultPeriodStatus() {
         return PeriodStatusDto.fromPeriodStatus(PeriodStatus.builder().withStatus(Status.OPEN_PERIOD).build());
     }
@@ -616,23 +593,62 @@ class CandidateTest extends LocalDynamoTest {
         return bigDecimal.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
     }
 
-    private Map<URI, BigDecimal> setScaleAndRoundingMode(Map<URI, BigDecimal> points) {
-        return points.entrySet()
+    private List<InstitutionPoints> createPoints(Map<URI, List<URI>> creators) {
+        return creators.entrySet()
                    .stream()
-                   .collect(Collectors.toMap(Entry::getKey, e -> setScaleAndRoundingMode(e.getValue())));
+                   .map(entry -> entry.getValue()
+                                     .stream()
+                                     .map(affiliation -> {
+                                         var institutionPoints = randomBigDecimal();
+                                         return createInstitutionPoints(affiliation, institutionPoints, entry.getKey());
+                                     })
+                                     .toList())
+                   .flatMap(List::stream)
+                   .toList();
+    }
+
+    private Candidate nonApplicableCandidate() {
+        var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
+        var tempCandidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
+                                .orElseThrow();
+        var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationDetails().publicationId());
+        var candidateBO = Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
+        return Candidate.fetch(candidateBO::getIdentifier, candidateRepository,
+                               periodRepository);
+    }
+
+    private UpsertCandidateRequest getUpsertCandidateRequest(CandidateResetCauseArgument arguments,
+                                                             Map<URI, List<URI>> creators, URI publicationId) {
+        return createUpsertCandidateRequest(publicationId,
+                                            randomUri(), true,
+                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
+                                            creators,
+                                            arguments.type().getValue(),
+                                            randomString(), randomUri(),
+                                            arguments.level().getValue(),
+                                            createPoints(creators),
+                                            randomInteger(), false,
+                                            TestUtils.randomBigDecimal(), null, randomBigDecimal());
+    }
+
+    private UpsertCandidateRequest getUpsertCandidateRequest(URI creatorId, URI institutionId,
+                                                             String type,
+                                                             DbLevel level) {
+        return createUpsertCandidateRequest(URI.create("publicationId"), randomUri(), true,
+                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
+                                            Map.of(creatorId, List.of(institutionId)),
+                                            type,
+                                            randomString(), randomUri(),
+                                            level.getValue(),
+                                            List.of(createInstitutionPoints(institutionId,
+                                                                            randomBigDecimal(),
+                                                                            creatorId)),
+                                            randomInteger(), false,
+                                            randomBigDecimal(), null, randomBigDecimal());
     }
 
     private UpsertCandidateRequest getUpdateRequestForExistingCandidate() {
-        var institutionId = randomUri();
-        var insertRequest = createUpsertCandidateRequest(institutionId);
-        Candidate.upsert(insertRequest, candidateRepository, periodRepository);
-        return createUpsertCandidateRequest(insertRequest.publicationId(),
-                                            insertRequest.publicationBucketUri(), true,
-                                            insertRequest.instanceType(),
-                                            insertRequest.creators().size(), randomBigDecimal(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
-                                            CURRENT_YEAR,
-                                            institutionId);
+        return getUpdateRequestForExistingCandidate(EXPECTED_SCALE);
     }
 
     private UpsertCandidateRequest getUpdateRequestForExistingCandidate(int scale) {
@@ -643,8 +659,7 @@ class CandidateTest extends LocalDynamoTest {
                            .mapToObj(i -> randomUri())
                            .collect(Collectors.toMap(Function.identity(), e -> List.of(new URI[]{institutionId})));
 
-        var points = Arrays.stream(new URI[]{institutionId})
-                         .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal(scale)));
+        var points = createPoints(creators);
 
         return createUpsertCandidateRequest(insertRequest.publicationId(), insertRequest.publicationBucketUri(), true,
                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null), creators,
@@ -681,10 +696,9 @@ class CandidateTest extends LocalDynamoTest {
         return new DbPublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
     }
 
-    private List<DbInstitutionPoints> mapToDbInstitutionPoints(Map<URI, BigDecimal> points) {
-        return points.entrySet()
-                   .stream()
-                   .map(entry -> new DbInstitutionPoints(entry.getKey(), setScaleAndRoundingMode(entry.getValue())))
+    private List<DbInstitutionPoints> mapToDbInstitutionPoints(List<InstitutionPoints> points) {
+        return points.stream()
+                   .map(DbInstitutionPoints::from)
                    .toList();
     }
 
@@ -760,7 +774,7 @@ class CandidateTest extends LocalDynamoTest {
             }
 
             @Override
-            public Map<URI, BigDecimal> institutionPoints() {
+            public List<InstitutionPoints> institutionPoints() {
                 return request.institutionPoints();
             }
 

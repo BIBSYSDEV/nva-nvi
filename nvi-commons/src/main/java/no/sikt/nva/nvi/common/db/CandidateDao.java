@@ -13,6 +13,7 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_HASH
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_RANGE_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
+import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.apache.commons.lang3.StringUtils.equalsIgnoreCase;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -27,6 +28,8 @@ import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao.Builder;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
@@ -386,7 +389,6 @@ public final class CandidateDao extends Dao {
                    && Objects.equals(basePoints, that.basePoints)
                    && Objects.equals(points, that.points)
                    && Objects.equals(totalPoints, that.totalPoints)
-                   && Objects.equals(createdDate, that.createdDate)
                    && Objects.equals(reportStatus, that.reportStatus);
         }
 
@@ -616,10 +618,20 @@ public final class CandidateDao extends Dao {
     }
 
     @DynamoDbImmutable(builder = DbInstitutionPoints.Builder.class)
-    public record DbInstitutionPoints(URI institutionId, BigDecimal points) {
+    public record DbInstitutionPoints(URI institutionId, BigDecimal points,
+                                      List<DbCreatorAffiliationPoints> creatorAffiliationPoints) {
 
         public static Builder builder() {
             return new Builder();
+        }
+
+        @DynamoDbIgnore
+        public static DbInstitutionPoints from(InstitutionPoints institutionPoints) {
+            return new DbInstitutionPoints(institutionPoints.institutionId(),
+                                           adjustScaleAndRoundingMode(institutionPoints.institutionPoints()),
+                                           institutionPoints.creatorAffiliationPoints().stream()
+                                               .map(DbCreatorAffiliationPoints::from)
+                                               .toList());
         }
 
         @DynamoDbIgnore
@@ -627,13 +639,59 @@ public final class CandidateDao extends Dao {
             return builder()
                        .institutionId(institutionId)
                        .points(points)
+                       .creatorAffiliationPoints(creatorAffiliationPoints)
                        .build();
+        }
+
+        @DynamoDbImmutable(builder = DbCreatorAffiliationPoints.Builder.class)
+        public record DbCreatorAffiliationPoints(URI creatorId, URI affiliationId, BigDecimal points) {
+
+            public static Builder builder() {
+                return new Builder();
+            }
+
+            @DynamoDbIgnore
+            public static DbCreatorAffiliationPoints from(CreatorAffiliationPoints creatorAffiliationPoints) {
+                return new DbCreatorAffiliationPoints(creatorAffiliationPoints.nviCreator(),
+                                                      creatorAffiliationPoints.affiliationId(),
+                                                      adjustScaleAndRoundingMode(creatorAffiliationPoints.points()));
+            }
+
+            public static final class Builder {
+
+                private URI builderCreatorId;
+                private URI builderAffiliationId;
+                private BigDecimal builderPoints;
+
+                private Builder() {
+                }
+
+                public Builder creatorId(URI creatorId) {
+                    this.builderCreatorId = creatorId;
+                    return this;
+                }
+
+                public Builder affiliationId(URI affiliationId) {
+                    this.builderAffiliationId = affiliationId;
+                    return this;
+                }
+
+                public Builder points(BigDecimal points) {
+                    this.builderPoints = points;
+                    return this;
+                }
+
+                public DbCreatorAffiliationPoints build() {
+                    return new DbCreatorAffiliationPoints(builderCreatorId, builderAffiliationId, builderPoints);
+                }
+            }
         }
 
         public static final class Builder {
 
             private URI builderInstitutionId;
             private BigDecimal builderPoints;
+            private List<DbCreatorAffiliationPoints> builderCreatorAffiliationPoints;
 
             private Builder() {
             }
@@ -648,8 +706,13 @@ public final class CandidateDao extends Dao {
                 return this;
             }
 
+            public Builder creatorAffiliationPoints(List<DbCreatorAffiliationPoints> creatorAffiliationPoints) {
+                this.builderCreatorAffiliationPoints = creatorAffiliationPoints;
+                return this;
+            }
+
             public DbInstitutionPoints build() {
-                return new DbInstitutionPoints(builderInstitutionId, builderPoints);
+                return new DbInstitutionPoints(builderInstitutionId, builderPoints, builderCreatorAffiliationPoints);
             }
         }
     }

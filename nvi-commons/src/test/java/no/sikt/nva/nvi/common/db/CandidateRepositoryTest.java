@@ -13,6 +13,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -124,7 +125,7 @@ class CandidateRepositoryTest extends LocalDynamoTest {
             }
 
             @Override
-            public Map<URI, BigDecimal> institutionPoints() {
+            public List<InstitutionPoints> institutionPoints() {
                 return request.institutionPoints();
             }
 
