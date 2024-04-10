@@ -21,6 +21,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -245,7 +246,11 @@ public class RequeueDlqHandlerTest {
     }
 
     private static CandidateDao createCandidateDao() {
+        var institutionId = randomUri();
+        var institutionPoints = BigDecimal.valueOf(1);
+        var creatorId = randomUri();
         return CandidateDao.builder()
+                   .identifier(UUID.randomUUID())
                    .candidate(DbCandidate.builder()
                                   .publicationDate(
                                       DbPublicationDate.builder()
@@ -256,9 +261,15 @@ public class RequeueDlqHandlerTest {
                                       DbInstitutionPoints.builder()
                                           .institutionId(randomUri())
                                           .points(BigDecimal.valueOf(1))
+                                          .institutionId(institutionId)
+                                          .points(institutionPoints)
+                                          .creatorAffiliationPoints(List.of(new DbCreatorAffiliationPoints(creatorId,
+                                                                                                           institutionId,
+                                                                                                           institutionPoints)))
                                           .build()))
                                   .instanceType(InstanceType.ACADEMIC_ARTICLE.getValue())
                                   .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))))
+                                  .creators(List.of(new DbCreator(creatorId, List.of(institutionId))))
                                   .level(DbLevel.LEVEL_ONE)
                                   .channelType(ChannelType.JOURNAL)
                                   .totalPoints(BigDecimal.valueOf(1))
