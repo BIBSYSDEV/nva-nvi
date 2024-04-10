@@ -61,13 +61,13 @@ public final class CristinMapper {
     public static final String PARENT_PUBLICATION_PUBLISHER_TYPE_JSON_POINTER = "/publicationContext"
                                                                                 + "/entityDescription/reference"
                                                                                 + "/publicationContext/publisher/type";
-    private static final String INTERNATIONAL_COLLABORATION_FACTOR = "1.3";
     public static final String SERIES_ID_JSON_POINTER = "/publicationContext/series/id";
     public static final String PUBLISHER_ID_JSON_POINTER = "/publicationContext/publisher/id";
     public static final String SERIES_TYPE_JSON_POINTER = "/publicationContext/series/type";
     public static final String PUBLISHER_TYPE_JSON_POINTER = "/publicationContext/publisher/type";
     public static final String PUBLICATION_CONTEXT_ID_JSON_POINTER = "/publicationContext/id";
     public static final String PUBLICATION_CONTEXT_TYPE_JSON_POINTER = "/publicationContext/type";
+    private static final String INTERNATIONAL_COLLABORATION_FACTOR = "1.3";
 
     private CristinMapper() {
 
@@ -100,11 +100,6 @@ public final class CristinMapper {
                    .build();
     }
 
-    private static BigDecimal sumPoints(List<DbInstitutionPoints> points) {
-        return points.stream().map(DbInstitutionPoints::points)
-                   .reduce(BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP), BigDecimal::add);
-    }
-
     public static List<DbCreator> extractCreators(CristinNviReport cristinNviReport) {
         return getCreators(cristinNviReport).stream()
                    .filter(CristinMapper::hasInstitutionPoints)
@@ -117,6 +112,11 @@ public final class CristinMapper {
 
     public static List<DbApprovalStatus> toApprovals(CristinNviReport cristinNviReport) {
         return cristinNviReport.cristinLocales().stream().map(CristinMapper::toApproval).toList();
+    }
+
+    private static BigDecimal sumPoints(List<DbInstitutionPoints> points) {
+        return points.stream().map(DbInstitutionPoints::points)
+                   .reduce(BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP), BigDecimal::add);
     }
 
     private static ChannelType extractChannelType(CristinNviReport cristinNviReport) {
@@ -237,7 +237,8 @@ public final class CristinMapper {
     }
 
     private static DbInstitutionPoints toDbInstitutionPoints(Entry<URI, BigDecimal> entry) {
-        return new DbInstitutionPoints(entry.getKey(), entry.getValue());
+        //TODO: Implement creatorAffiliationPoints
+        return new DbInstitutionPoints(entry.getKey(), entry.getValue(), List.of());
     }
 
     private static List<ScientificPerson> getCreators(CristinNviReport cristinNviReport) {
@@ -261,7 +262,7 @@ public final class CristinMapper {
                    .filter(cristinLocale -> cristinLocale.getInstitutionIdentifier()
                                                 .equals(scientificPerson.getInstitutionIdentifier()))
                    .map(CristinMapper::constructInstitutionId)
-                   .collect(Collectors.toList())
+                   .toList()
                    .get(0);
     }
 
@@ -299,7 +300,7 @@ public final class CristinMapper {
         return Optional.ofNullable(cristinNviReport.scientificResources())
                    .map(list -> list.get(0))
                    .map(ScientificResource::getQualityCode)
-                   .map(DbLevel::parse)
+                   .map(DbLevel::fromDeprecatedValue)
                    .orElseThrow();
     }
 

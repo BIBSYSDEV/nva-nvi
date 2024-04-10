@@ -217,7 +217,7 @@
           "website": {
             "id": "http://www.journals.uchicago.edu/CID/home.html"
           },
-          "level": "2",
+          "scientificValue": "LevelTwo",
           "name": "Clinical Infectious Diseases",
           "active": true,
           "npiDomain": "Infeksjoner",

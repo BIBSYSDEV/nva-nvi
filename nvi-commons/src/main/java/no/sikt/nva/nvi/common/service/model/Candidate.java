@@ -376,12 +376,8 @@ public final class Candidate {
                    .stream()
                    .anyMatch(institutionPoints -> isNotequalIgnoringScaleAndRoundingMode(
                        institutionPoints.points(),
-                       extractRequestPoints(request, institutionPoints.institutionId())
+                       request.getPointsForInstitution(institutionPoints.institutionId())
                    ));
-    }
-
-    private static BigDecimal extractRequestPoints(UpsertCandidateRequest request, URI institutionId) {
-        return request.institutionPoints().get(institutionId);
     }
 
     private static boolean isNotequalIgnoringScaleAndRoundingMode(BigDecimal existingPoints, BigDecimal requestPoints) {
@@ -469,8 +465,8 @@ public final class Candidate {
                    .orElse(PERIOD_STATUS_NO_PERIOD);
     }
 
-    private static List<DbApprovalStatus> mapToApprovals(Map<URI, BigDecimal> points) {
-        return points.keySet().stream().map(Candidate::mapToApproval).toList();
+    private static List<DbApprovalStatus> mapToApprovals(List<InstitutionPoints> institutionPoints) {
+        return institutionPoints.stream().map(InstitutionPoints::institutionId).map(Candidate::mapToApproval).toList();
     }
 
     private static DbApprovalStatus mapToApproval(URI institutionId) {
@@ -524,9 +520,9 @@ public final class Candidate {
                    .build();
     }
 
-    private static List<DbInstitutionPoints> mapToPoints(Map<URI, BigDecimal> points) {
-        return points.entrySet().stream()
-                   .map(entry -> new DbInstitutionPoints(entry.getKey(), adjustScaleAndRoundingMode(entry.getValue())))
+    private static List<DbInstitutionPoints> mapToPoints(List<InstitutionPoints> points) {
+        return points.stream()
+                   .map(DbInstitutionPoints::from)
                    .toList();
     }
 
@@ -605,8 +601,7 @@ public final class Candidate {
                                       mapToCreators(candidateDao.candidate().creators()),
                                       candidateDao.candidate().channelType(),
                                       candidateDao.candidate().channelId(),
-                                      candidateDao.candidate().level()
-                                          .getValues().stream().findFirst().orElse(null));
+                                      candidateDao.candidate().level().getValue());
     }
 
     private void validateCandidateState() {

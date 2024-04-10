@@ -18,8 +18,8 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -32,13 +32,13 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
 import no.sikt.nva.nvi.events.evaluator.model.Level;
@@ -64,9 +64,6 @@ import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 class EvaluateNviCandidateHandlerTest {
 
@@ -105,10 +102,6 @@ class EvaluateNviCandidateHandlerTest {
     private AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
     private UriRetriever uriRetriever;
     private FakeSqsClient queueClient;
-
-    public static Stream<Arguments> levelValues() {
-        return Stream.of(Arguments.of("1", "LevelOne"), Arguments.of("2", "LevelTwo"));
-    }
 
     @BeforeEach
     void setUp() {
@@ -172,9 +165,9 @@ class EvaluateNviCandidateHandlerTest {
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();
-        var institutionPoints = ((NviCandidate) messageBody.candidate()).institutionPoints();
-        assertEquals(1, institutionPoints.size());
-        assertTrue(institutionPoints.containsKey(CRISTIN_NVI_ORG_TOP_LEVEL_ID));
+        var candidate = (NviCandidate) messageBody.candidate();
+        assertEquals(1, candidate.institutionPoints().size());
+        assertNotNull(candidate.getPointsForInstitution(CRISTIN_NVI_ORG_TOP_LEVEL_ID));
     }
 
     @Test
@@ -189,7 +182,7 @@ class EvaluateNviCandidateHandlerTest {
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_ARTICLE.getValue(),
                                                                    expectedPoints,
                                                                    fileUri, JOURNAL,
-                                                                   ONE, expectedPoints, Level.LEVEL_ONE_V2);
+                                                                   ONE, expectedPoints);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -205,7 +198,7 @@ class EvaluateNviCandidateHandlerTest {
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(InstanceType.ACADEMIC_CHAPTER.getValue(),
                                                                    expectedPoints,
                                                                    fileUri, SERIES,
-                                                                   ONE, expectedPoints, Level.LEVEL_ONE_V2);
+                                                                   ONE, expectedPoints);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -221,8 +214,8 @@ class EvaluateNviCandidateHandlerTest {
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_MONOGRAPH.getValue(),
                                                                    expectedPoints,
                                                                    fileUri, SERIES,
-                                                                   BigDecimal.valueOf(5), expectedPoints,
-                                                                   Level.LEVEL_ONE_V2);
+                                                                   BigDecimal.valueOf(5), expectedPoints
+        );
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -238,7 +231,7 @@ class EvaluateNviCandidateHandlerTest {
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_LITERATURE_REVIEW.getValue(),
                                                                    expectedPoints,
                                                                    fileUri, JOURNAL,
-                                                                   ONE, expectedPoints, Level.LEVEL_ONE_V2);
+                                                                   ONE, expectedPoints);
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
@@ -250,9 +243,9 @@ class EvaluateNviCandidateHandlerTest {
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();
-        var institutionPoints = ((NviCandidate) messageBody.candidate()).institutionPoints();
-        assertThat(institutionPoints, notNullValue());
-        assertThat(institutionPoints.get(CRISTIN_NVI_ORG_TOP_LEVEL_ID),
+        var candidate = (NviCandidate) messageBody.candidate();
+        assertThat(candidate.institutionPoints(), notNullValue());
+        assertThat(candidate.getPointsForInstitution(CRISTIN_NVI_ORG_TOP_LEVEL_ID),
                    is(equalTo(BigDecimal.valueOf(1).setScale(4, RoundingMode.HALF_UP))));
     }
 
@@ -264,9 +257,9 @@ class EvaluateNviCandidateHandlerTest {
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();
-        var institutionPoints = ((NviCandidate) messageBody.candidate()).institutionPoints();
-        assertThat(institutionPoints, notNullValue());
-        assertThat(institutionPoints.get(CRISTIN_NVI_ORG_TOP_LEVEL_ID), notNullValue());
+        var candidate = (NviCandidate) messageBody.candidate();
+        assertThat(candidate.institutionPoints(), notNullValue());
+        assertThat(candidate.getPointsForInstitution(CRISTIN_NVI_ORG_TOP_LEVEL_ID), notNullValue());
     }
 
     @Test
@@ -297,23 +290,6 @@ class EvaluateNviCandidateHandlerTest {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var content = IoUtils.inputStreamFromResources(ACADEMIC_LITERATURE_REVIEW_JSON_PATH);
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_LITERATURE_REVIEW_JSON_PATH), content);
-        var event = createEvent(new PersistedResourceMessage(fileUri));
-        handler.handleRequest(event, context);
-        var candidate = (NviCandidate) getMessageBody().candidate();
-        assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
-    }
-
-    @ParameterizedTest
-    @MethodSource("levelValues")
-    void shouldCreateCandidateWhenLevelValueHasVersionTwoValues(String versionOneValue, String versionTwoValue)
-        throws IOException {
-        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var candidateWithNewLevel = IoUtils.stringFromResources(Path.of(ACADEMIC_ARTICLE_PATH))
-                                        .replace("\"level\": " + "\"" + versionOneValue + "\"",
-                                                 "\"scientificValue\": " + "\"" + versionTwoValue + "\"");
-        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
-                                          IoUtils.stringToStream(candidateWithNewLevel));
-
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var candidate = (NviCandidate) getMessageBody().candidate();
@@ -437,79 +413,6 @@ class EvaluateNviCandidateHandlerTest {
     }
 
     @Test
-    @Deprecated
-    void shouldCreateNewCandidateEventOnValidDeprecatedAcademicArticle() throws IOException {
-        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var path = "evaluator/candidate_academicArticle_deprecated.json";
-        var content = IoUtils.inputStreamFromResources(path);
-        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createEvent(new PersistedResourceMessage(fileUri));
-        handler.handleRequest(event, context);
-        var messageBody = getMessageBody();
-        var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_ARTICLE.getValue(),
-                                                                   expectedPoints,
-                                                                   fileUri, JOURNAL,
-                                                                   ONE, expectedPoints, Level.LEVEL_ONE);
-        assertEquals(expectedEvaluatedMessage, messageBody);
-    }
-
-    @Test
-    @Deprecated
-    void shouldCreateNewCandidateEventWithCorrectDataOnValidDeprecatedAcademicChapter() throws IOException {
-        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var path = "evaluator/candidate_academicChapter_deprecated.json";
-        var content = IoUtils.inputStreamFromResources(path);
-        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createEvent(new PersistedResourceMessage(fileUri));
-        handler.handleRequest(event, context);
-        var messageBody = getMessageBody();
-        var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(InstanceType.ACADEMIC_CHAPTER.getValue(),
-                                                                   expectedPoints,
-                                                                   fileUri, SERIES,
-                                                                   ONE, expectedPoints, Level.LEVEL_ONE);
-        assertEquals(expectedEvaluatedMessage, messageBody);
-    }
-
-    @Test
-    @Deprecated
-    void shouldCreateNewCandidateEventWithCorrectDataOnValidDeprecatedAcademicMonograph() throws IOException {
-        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var path = "evaluator/candidate_academicMonograph_deprecated.json";
-        var content = IoUtils.inputStreamFromResources(path);
-        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createEvent(new PersistedResourceMessage(fileUri));
-        handler.handleRequest(event, context);
-        var messageBody = getMessageBody();
-        var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_MONOGRAPH.getValue(),
-                                                                   expectedPoints,
-                                                                   fileUri, SERIES,
-                                                                   BigDecimal.valueOf(5), expectedPoints,
-                                                                   Level.LEVEL_ONE);
-        assertEquals(expectedEvaluatedMessage, messageBody);
-    }
-
-    @Test
-    @Deprecated
-    void shouldCreateNewCandidateEventWithCorrectDataOnValidDeprecatedAcademicLiteratureReview() throws IOException {
-        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var path = "evaluator/candidate_academicLiteratureReview_deprecated.json";
-        var content = IoUtils.inputStreamFromResources(path);
-        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-        var event = createEvent(new PersistedResourceMessage(fileUri));
-        handler.handleRequest(event, context);
-        var messageBody = getMessageBody();
-        var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_LITERATURE_REVIEW.getValue(),
-                                                                   expectedPoints,
-                                                                   fileUri, JOURNAL,
-                                                                   ONE, expectedPoints, Level.LEVEL_ONE);
-        assertEquals(expectedEvaluatedMessage, messageBody);
-    }
-
-    @Test
     void shouldCreateDlqWhenUnableToConnectToResources() {
 
     }
@@ -528,12 +431,12 @@ class EvaluateNviCandidateHandlerTest {
                                                                          BigDecimal points, URI bucketUri,
                                                                          PublicationChannel publicationChannel,
                                                                          BigDecimal basePoints,
-                                                                         BigDecimal totalPoints, Level level) {
+                                                                         BigDecimal totalPoints) {
         return CandidateEvaluatedMessage.builder()
                    .withCandidateType(createExpectedCandidate(instanceType,
                                                               Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID,
                                                                      points.setScale(SCALE, RoundingMode.HALF_UP)),
-                                                              publicationChannel, level.getValue(),
+                                                              publicationChannel, Level.LEVEL_ONE.getValue(),
                                                               basePoints, totalPoints, bucketUri))
                    .build();
     }
@@ -556,14 +459,21 @@ class EvaluateNviCandidateHandlerTest {
                    .withCreatorShareCount(countCreatorShares(verifiedCreators))
                    .withBasePoints(basePoints)
                    .withVerifiedCreators(verifiedCreators)
-                   .withInstitutionPoints(institutionPoints)
+                   .withInstitutionPoints(institutionPoints.entrySet().stream()
+                                              .map(entry -> new InstitutionPoints(entry.getKey(), entry.getValue(),
+                                                                                  List.of(
+                                                                                      new CreatorAffiliationPoints(
+                                                                                          HARDCODED_CREATOR_ID,
+                                                                                          CRISTIN_NVI_ORG_SUB_UNIT_ID,
+                                                                                          entry.getValue()))))
+                                              .toList())
                    .withTotalPoints(totalPoints)
                    .build();
     }
 
     private static int countCreatorShares(List<NviCreator> nviCreators) {
         return (int) nviCreators.stream()
-                         .mapToLong(nviCreator -> nviCreator.nviAffiliation().size())
+                         .mapToLong(creator -> creator.nviAffiliations().size())
                          .sum();
     }
 

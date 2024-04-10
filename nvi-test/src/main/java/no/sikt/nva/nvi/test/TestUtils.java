@@ -34,6 +34,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -46,6 +47,8 @@ import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
@@ -81,19 +84,24 @@ public final class TestUtils {
     }
 
     public static DbCandidate.Builder randomCandidateBuilder(boolean applicable) {
+        var institutionId = randomUri();
+        var creatorId = randomUri();
+        var institutionPoints = randomBigDecimal();
         return DbCandidate.builder()
                    .publicationId(randomUri())
                    .publicationBucketUri(randomUri())
                    .applicable(applicable)
                    .instanceType(randomInstanceTypeExcluding(NON_CANDIDATE.getValue()))
-                   .points(List.of(new DbInstitutionPoints(randomUri(), randomBigDecimal())))
+                   .points(List.of(new DbInstitutionPoints(institutionId, institutionPoints,
+                                                           List.of(new DbCreatorAffiliationPoints(
+                                                               creatorId, institutionId, institutionPoints)))))
                    .level(randomElement(DbLevel.values()))
                    .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
                    .internationalCollaboration(randomBoolean())
                    .creatorCount(randomInteger())
                    .createdDate(Instant.now())
                    .modifiedDate(Instant.now())
-                   .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))));
+                   .creators(List.of(new DbCreator(creatorId, List.of(institutionId))));
     }
 
     public static InstanceType randomInstanceType() {
@@ -249,7 +257,7 @@ public final class TestUtils {
         return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(
                                                 NON_CANDIDATE.getValue()),
                                             1, randomBigDecimal(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
+                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
                                             year,
                                             randomUri());
     }
@@ -258,7 +266,7 @@ public final class TestUtils {
         return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(
                                                 NON_CANDIDATE.getValue()),
                                             1, randomBigDecimal(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getVersionOneValue(),
+                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
                                             CURRENT_YEAR,
                                             institutions);
     }
@@ -276,7 +284,14 @@ public final class TestUtils {
                            .collect(Collectors.toMap(Function.identity(), e -> List.of(institutions)));
 
         var points = Arrays.stream(institutions)
-                         .collect(Collectors.toMap(Function.identity(), e -> randomBigDecimal()));
+                         .map(institution -> {
+                             var institutionPoints = randomBigDecimal();
+                             return new InstitutionPoints(institution, institutionPoints,
+                                                          creators.keySet().stream()
+                                                              .map(creator -> new CreatorAffiliationPoints(
+                                                                  creator, institution, institutionPoints))
+                                                              .toList());
+                         }).toList();
 
         return createUpsertCandidateRequest(publicationId, publicationBucketUri, isApplicable,
                                             new PublicationDate(String.valueOf(year), null, null), creators,
@@ -295,7 +310,7 @@ public final class TestUtils {
                                                                       String instanceType,
                                                                       String channelType, URI channelId,
                                                                       String level,
-                                                                      Map<URI, BigDecimal> points,
+                                                                      List<InstitutionPoints> points,
                                                                       final Integer creatorShareCount,
                                                                       final boolean isInternationalCollaboration,
                                                                       final BigDecimal collaborationFactor,
@@ -370,7 +385,7 @@ public final class TestUtils {
             }
 
             @Override
-            public Map<URI, BigDecimal> institutionPoints() {
+            public List<InstitutionPoints> institutionPoints() {
                 return points;
             }
 

@@ -12,18 +12,6 @@ ASK WHERE {
   ?publicationDate a nva:PublicationDate ;
                     nva:year ?year.
 
-  OPTIONAL {
-    SELECT ?level WHERE {
-        VALUES ?channelType { nva:Publisher  nva:Series   nva:Journal }
-        VALUES ?rawLevel {"0" "1" "2"}
-        ?a a ?channelType ;
-           nva:level ?rawLevel .
-        OPTIONAL { ?b a nva:Series ;
-                      nva:level ?seriesLevel . }
-        BIND(IF(BOUND(?seriesLevel), ?seriesLevel, ?rawLevel) AS ?level)
-      }
-  }
-
   OPTIONAL{
       SELECT ?scientificValue WHERE {
         VALUES ?channelType { nva:Publisher  nva:Series   nva:Journal }
@@ -38,7 +26,7 @@ ASK WHERE {
 
   BIND(IF(BOUND(?level), ?level, ?scientificValue) AS ?levelValue)
 
-  VALUES ?validLevel {"1" "2" "LevelOne" "LevelTwo"}
+  VALUES ?validLevel {"LevelOne" "LevelTwo"}
   FILTER(?levelValue = ?validLevel)
   FILTER(xsd:integer(?year) > 2021)
 }

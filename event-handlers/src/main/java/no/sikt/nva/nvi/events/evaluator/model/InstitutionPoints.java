@@ -6,9 +6,26 @@ import java.util.List;
 
 public record InstitutionPoints(URI institutionId,
                                 BigDecimal institutionPoints,
-                                List<AffiliationPoints> affiliationPoints) {
+                                List<CreatorAffiliationPoints> creatorAffiliationPoints) {
 
-    public record AffiliationPoints(URI affiliationId, URI nviCreator, BigDecimal points) {
+    public no.sikt.nva.nvi.common.service.model.InstitutionPoints toInstitutionPoints() {
+        return new no.sikt.nva.nvi.common.service.model.InstitutionPoints(institutionId, institutionPoints,
+                                                                          getCreatorAffiliationPoints());
+    }
 
+    private List<no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints>
+    getCreatorAffiliationPoints() {
+        return creatorAffiliationPoints.stream()
+                   .map(CreatorAffiliationPoints::toCreatorAffiliationPoints)
+                   .toList();
+    }
+
+    public record CreatorAffiliationPoints(URI affiliationId, URI nviCreator, BigDecimal points) {
+
+        public no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints
+        toCreatorAffiliationPoints() {
+            return new no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints(
+                nviCreator, affiliationId, points);
+        }
     }
 }
