@@ -376,16 +376,8 @@ public final class Candidate {
                    .stream()
                    .anyMatch(institutionPoints -> isNotequalIgnoringScaleAndRoundingMode(
                        institutionPoints.points(),
-                       extractRequestPoints(request, institutionPoints.institutionId())
+                       request.getPointsForInstitution(institutionPoints.institutionId())
                    ));
-    }
-
-    private static BigDecimal extractRequestPoints(UpsertCandidateRequest request, URI institutionId) {
-        return request.institutionPoints().stream()
-                   .filter(institutionPoints -> institutionPoints.institutionId().equals(institutionId))
-                   .map(InstitutionPoints::institutionPoints)
-                   .findFirst()
-                   .orElseThrow();
     }
 
     private static boolean isNotequalIgnoringScaleAndRoundingMode(BigDecimal existingPoints, BigDecimal requestPoints) {

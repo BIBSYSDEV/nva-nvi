@@ -18,8 +18,8 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -165,10 +165,9 @@ class EvaluateNviCandidateHandlerTest {
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();
-        var institutionPoints = ((NviCandidate) messageBody.candidate()).institutionPoints();
-        assertEquals(1, institutionPoints.size());
-        assertTrue(institutionPoints.stream().map(
-            InstitutionPoints::institutionId).anyMatch(uri -> uri.equals(CRISTIN_NVI_ORG_TOP_LEVEL_ID)));
+        var candidate = (NviCandidate) messageBody.candidate();
+        assertEquals(1, candidate.institutionPoints().size());
+        assertNotNull(candidate.getPointsForInstitution(CRISTIN_NVI_ORG_TOP_LEVEL_ID));
     }
 
     @Test
@@ -244,9 +243,9 @@ class EvaluateNviCandidateHandlerTest {
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();
-        var institutionPoints = ((NviCandidate) messageBody.candidate()).institutionPoints();
-        assertThat(institutionPoints, notNullValue());
-        assertThat(getInstitutionPoints(institutionPoints, CRISTIN_NVI_ORG_TOP_LEVEL_ID),
+        var candidate = (NviCandidate) messageBody.candidate();
+        assertThat(candidate.institutionPoints(), notNullValue());
+        assertThat(candidate.getPointsForInstitution(CRISTIN_NVI_ORG_TOP_LEVEL_ID),
                    is(equalTo(BigDecimal.valueOf(1).setScale(4, RoundingMode.HALF_UP))));
     }
 
@@ -258,9 +257,9 @@ class EvaluateNviCandidateHandlerTest {
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();
-        var institutionPoints = ((NviCandidate) messageBody.candidate()).institutionPoints();
-        assertThat(institutionPoints, notNullValue());
-        assertThat(getInstitutionPoints(institutionPoints, CRISTIN_NVI_ORG_TOP_LEVEL_ID), notNullValue());
+        var candidate = (NviCandidate) messageBody.candidate();
+        assertThat(candidate.institutionPoints(), notNullValue());
+        assertThat(candidate.getPointsForInstitution(CRISTIN_NVI_ORG_TOP_LEVEL_ID), notNullValue());
     }
 
     @Test
@@ -426,14 +425,6 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldReadDlqAndRetryAfterGivenTime() {
 
-    }
-
-    private static BigDecimal getInstitutionPoints(List<InstitutionPoints> institutionPoints, URI institutionId) {
-        return institutionPoints.stream()
-                   .filter(institutionPoint -> institutionPoint.institutionId().equals(institutionId))
-                   .map(InstitutionPoints::institutionPoints)
-                   .findFirst()
-                   .orElseThrow();
     }
 
     private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(String instanceType,
