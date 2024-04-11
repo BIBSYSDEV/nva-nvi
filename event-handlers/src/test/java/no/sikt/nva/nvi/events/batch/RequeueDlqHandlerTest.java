@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.events.batch;
 
+import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.generateMessages;
+import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.setUpSqsClient;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -11,16 +13,16 @@ import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -33,10 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import software.amazon.awssdk.http.SdkHttpResponse;
 import software.amazon.awssdk.services.sqs.SqsClient;
-import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
-import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
@@ -45,9 +44,9 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 public class RequeueDlqHandlerTest {
 
     public static final Context CONTEXT = mock(Context.class);
+    private static final String DLQ_URL = "https://some-sqs-url";
     private RequeueDlqHandler handler;
     private SqsClient sqsClient;
-    private static final String DLQ_URL = "https://some-sqs-url";
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
 
@@ -62,33 +61,6 @@ public class RequeueDlqHandlerTest {
         periodRepository = mock(PeriodRepository.class);
 
         handler = new RequeueDlqHandler(client, DLQ_URL, candidateRepository, periodRepository);
-    }
-
-    private static SqsClient setUpSqsClient() {
-        var client = mock(SqsClient.class);
-
-        var status = SdkHttpResponse.builder().statusCode(202).build();
-        var response = DeleteMessageResponse.builder();
-        response.sdkHttpResponse(status);
-
-        when(client.deleteMessage(any(DeleteMessageRequest.class)))
-            .thenReturn(response.build());
-
-        return client;
-    }
-
-    private static CandidateRepository setupCandidateRepository() {
-        var repo = mock(CandidateRepository.class);
-
-        var candidate = createCandidateDao();
-
-        when(repo.findByPublicationId(any()))
-            .thenReturn(Optional.of(candidate));
-
-        when(repo.findCandidateById(any()))
-            .thenReturn(Optional.of(candidate));
-
-        return repo;
     }
 
     @Test
@@ -176,10 +148,6 @@ public class RequeueDlqHandlerTest {
         assertEquals(5, response.failedBatchesCount());
     }
 
-    private static long getSuccessCount(RequeueDlqOutput response) {
-        return response.messages().stream().filter(NviProcessMessageResult::success).count();
-    }
-
     @Test
     void missingCustomAttributeShouldFail() {
         var message = Message.builder()
@@ -197,10 +165,6 @@ public class RequeueDlqHandlerTest {
 
         var error = response.messages().stream().filter(a -> !a.success()).findFirst().get().error().get();
         assertTrue(error.contains("Exception"));
-    }
-
-    private static long getFailureCount(RequeueDlqOutput response) {
-        return response.messages().stream().filter(a -> !a.success()).count();
     }
 
     @Test
@@ -227,9 +191,8 @@ public class RequeueDlqHandlerTest {
 
         var response = handler.handleRequest(new RequeueDlqInput(100), CONTEXT);
 
-
         var message = response.messages().stream().filter(NviProcessMessageResult::success).findFirst()
-                                .get().message().messageId();
+                          .get().message().messageId();
 
         assertTrue(message.contains("myInput"));
     }
@@ -260,21 +223,45 @@ public class RequeueDlqHandlerTest {
         assertEquals(10, input.count());
     }
 
+    private static CandidateRepository setupCandidateRepository() {
+        var repo = mock(CandidateRepository.class);
+
+        var candidate = createCandidateDao();
+
+        when(repo.findByPublicationId(any()))
+            .thenReturn(Optional.of(candidate));
+
+        when(repo.findCandidateById(any()))
+            .thenReturn(Optional.of(candidate));
+
+        return repo;
+    }
+
+    private static long getSuccessCount(RequeueDlqOutput response) {
+        return response.messages().stream().filter(NviProcessMessageResult::success).count();
+    }
+
+    private static long getFailureCount(RequeueDlqOutput response) {
+        return response.messages().stream().filter(a -> !a.success()).count();
+    }
+
     private static CandidateDao createCandidateDao() {
+        var institutionId = randomUri();
+        var institutionPoints = BigDecimal.valueOf(1);
+        var creatorId = randomUri();
         return CandidateDao.builder()
+                   .identifier(UUID.randomUUID())
                    .candidate(DbCandidate.builder()
                                   .publicationDate(
                                       DbPublicationDate.builder()
                                           .day("1")
                                           .month("1")
                                           .year("2000").build())
-                                  .points(List.of(
-                                      DbInstitutionPoints.builder()
-                                          .institutionId(randomUri())
-                                          .points(BigDecimal.valueOf(1))
-                                          .build()))
+                                  .points(
+                                      List.of(generateInstitutionPoints(institutionId, institutionPoints, creatorId)))
                                   .instanceType(InstanceType.ACADEMIC_ARTICLE.getValue())
                                   .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))))
+                                  .creators(List.of(new DbCreator(creatorId, List.of(institutionId))))
                                   .level(DbLevel.LEVEL_ONE)
                                   .channelType(ChannelType.JOURNAL)
                                   .totalPoints(BigDecimal.valueOf(1))
@@ -285,15 +272,21 @@ public class RequeueDlqHandlerTest {
                    .build();
     }
 
-    private static List<Message> generateMessages(int count, String batchPrefix) {
-        return IntStream.rangeClosed(1, count)
-                   .mapToObj(i -> Message.builder()
-                                      .messageId(batchPrefix + i)
-                                      .receiptHandle(batchPrefix + i)
-                                      .messageAttributes(
-                                          Map.of("candidateIdentifier", MessageAttributeValue.builder().stringValue(
-                                              UUID.randomUUID().toString()).build()))
-                                      .build())
-                   .collect(Collectors.toList());
+    private static DbInstitutionPoints generateInstitutionPoints(URI institutionId, BigDecimal institutionPoints,
+                                                                 URI creatorId) {
+        return DbInstitutionPoints.builder()
+                   .institutionId(randomUri())
+                   .points(BigDecimal.valueOf(1))
+                   .institutionId(institutionId)
+                   .points(institutionPoints)
+                   .creatorAffiliationPoints(
+                       List.of(generateCreatorAffiliationPoints(institutionId, institutionPoints, creatorId)))
+                   .build();
+    }
+
+    private static DbCreatorAffiliationPoints generateCreatorAffiliationPoints(URI institutionId,
+                                                                               BigDecimal institutionPoints,
+                                                                               URI creatorId) {
+        return new DbCreatorAffiliationPoints(creatorId, institutionId, institutionPoints);
     }
 }

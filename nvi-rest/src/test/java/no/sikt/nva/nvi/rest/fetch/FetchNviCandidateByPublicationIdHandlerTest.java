@@ -5,8 +5,7 @@ import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
-import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -19,7 +18,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -37,8 +35,8 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
 
-    private static final Context CONTEXT = mock(Context.class);
     public static final URI CUSTOMER_ID = randomUri();
+    private static final Context CONTEXT = mock(Context.class);
     private final DynamoDbClient localDynamo = initializeTestDatabase();
     private ByteArrayOutputStream output;
     private FetchNviCandidateByPublicationIdHandler handler;
@@ -90,8 +88,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnCandidateWithReportStatus() throws IOException {
-        var candidate = candidateRepository.create(randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
-                                                   List.of(randomApproval()));
+        var candidate = setupReportedCandidate(candidateRepository);
         var request = requestWithAccessRight(candidate.candidate().publicationId());
 
         handler.handleRequest(request, output, CONTEXT);

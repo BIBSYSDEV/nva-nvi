@@ -75,7 +75,7 @@ public final class IndexDocumentTestUtils {
     }
 
     private static BigDecimal getPoints(Candidate candidate, URI institutionId) {
-        return candidate.getInstitutionPoints()
+        return candidate.getInstitutionPointsMap()
                    .entrySet()
                    .stream()
                    .filter(entry -> entry.getKey().equals(institutionId))

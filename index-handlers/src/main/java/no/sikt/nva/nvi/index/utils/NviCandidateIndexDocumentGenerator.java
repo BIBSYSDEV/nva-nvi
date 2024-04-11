@@ -74,7 +74,7 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private static BigDecimal getInstitutionPoints(Approval approval, Candidate candidate) {
-        return candidate.getInstitutionPoints().get(approval.getInstitutionId());
+        return candidate.getInstitutionPointsMap().get(approval.getInstitutionId());
     }
 
     private NviCandidateIndexDocument buildCandidate(JsonNode resource, Candidate candidate,

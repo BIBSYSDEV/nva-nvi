@@ -40,6 +40,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
@@ -83,8 +84,7 @@ public final class TestUtils {
         return UriWrapper.fromHost(API_HOST).addChild(PUBLICATION_API_PATH).addChild(identifier.toString()).getUri();
     }
 
-    public static DbCandidate.Builder randomCandidateBuilder(boolean applicable) {
-        var institutionId = randomUri();
+    public static DbCandidate.Builder randomCandidateBuilder(boolean applicable, URI institutionId) {
         var creatorId = randomUri();
         var institutionPoints = randomBigDecimal();
         return DbCandidate.builder()
@@ -102,6 +102,10 @@ public final class TestUtils {
                    .createdDate(Instant.now())
                    .modifiedDate(Instant.now())
                    .creators(List.of(new DbCreator(creatorId, List.of(institutionId))));
+    }
+
+    public static DbCandidate.Builder randomCandidateBuilder(boolean applicable) {
+        return randomCandidateBuilder(applicable, randomUri());
     }
 
     public static InstanceType randomInstanceType() {
@@ -128,8 +132,8 @@ public final class TestUtils {
         return randomCandidateBuilder(true).build();
     }
 
-    public static DbApprovalStatus randomApproval() {
-        return new DbApprovalStatus(randomUri(),
+    public static DbApprovalStatus randomApproval(URI institutionId) {
+        return new DbApprovalStatus(institutionId,
                                     randomElement(DbStatus.values()),
                                     randomUsername(),
                                     randomUsername(),
@@ -137,12 +141,20 @@ public final class TestUtils {
                                     randomString());
     }
 
+    public static DbApprovalStatus randomApproval() {
+        return randomApproval(randomUri());
+    }
+
     public static List<CandidateDao> createNumberOfCandidatesForYear(String year, int number,
                                                                      CandidateRepository repository) {
         return IntStream.range(0, number)
                    .mapToObj(i -> randomCandidateWithYear(year))
-                   .map(candidate -> repository.create(candidate, List.of()))
+                   .map(candidate -> createCandidateDao(repository, candidate))
                    .toList();
+    }
+
+    public static CandidateDao createCandidateDao(CandidateRepository repository, DbCandidate candidate) {
+        return repository.create(candidate, List.of());
     }
 
     public static DbNviPeriod.Builder randomNviPeriodBuilder() {
@@ -400,8 +412,17 @@ public final class TestUtils {
         return new CreateNoteRequest(text, username, randomUri());
     }
 
-    private static DbCandidate randomCandidateWithYear(String year) {
+    public static DbCandidate randomCandidateWithYear(String year) {
         return randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
+    }
+
+    public static CandidateDao setupReportedCandidate(CandidateRepository repository) {
+        var institutionId = randomUri();
+        return repository.create(randomCandidateBuilder(true, institutionId).build()
+                                     .copy()
+                                     .reportStatus(ReportStatus.REPORTED)
+                                     .build(),
+                                 List.of(randomApproval(institutionId)));
     }
 
     private static DbPublicationDate publicationDate(String year) {
