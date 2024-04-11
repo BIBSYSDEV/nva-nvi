@@ -7,7 +7,6 @@ import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.NB_FIELD;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractAffiliations;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -73,15 +72,6 @@ public final class IndexDocumentTestUtils {
                    .withPoints(InstitutionPoints.from(candidate.getInstitutionPoints(approvalEntry.getKey())))
                    .withLabels(Map.of(EN_FIELD, HARDCODED_ENGLISH_LABEL, NB_FIELD, HARDCODED_NORWEGIAN_LABEL))
                    .build();
-    }
-
-    private static BigDecimal getPoints(Candidate candidate, URI institutionId) {
-        return candidate.getInstitutionPointsMap()
-                   .entrySet()
-                   .stream()
-                   .filter(entry -> entry.getKey().equals(institutionId))
-                   .findFirst()
-                   .map(Entry::getValue).orElse(null);
     }
 
     private static PublicationDate mapToPublicationDate(
