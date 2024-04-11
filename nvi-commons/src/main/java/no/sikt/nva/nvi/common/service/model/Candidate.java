@@ -199,10 +199,13 @@ public final class Candidate {
         return institutionPoints;
     }
 
-    public BigDecimal getPointsForInstitution(URI institutionId) {
+    public BigDecimal getPointValueForInstitution(URI institutionId) {
+        return getInstitutionPoints(institutionId).institutionPoints();
+    }
+
+    public InstitutionPoints getInstitutionPoints(URI institutionId) {
         return institutionPoints.stream()
                    .filter(institutionPoints -> institutionPoints.institutionId().equals(institutionId))
-                   .map(InstitutionPoints::institutionPoints)
                    .findFirst()
                    .orElseThrow();
     }
@@ -642,7 +645,7 @@ public final class Candidate {
                    .withAssignee(mapToUsernameString(approval.getAssignee()))
                    .withFinalizedBy(mapToUsernameString(approval.getFinalizedBy()))
                    .withFinalizedDate(approval.getFinalizedDate())
-                   .withPoints(getPointsForInstitution(approval.getInstitutionId()))
+                   .withPoints(getPointValueForInstitution(approval.getInstitutionId()))
                    .withReason(approval.getReason())
                    .build();
     }

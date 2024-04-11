@@ -49,6 +49,8 @@ import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.Contributor;
+import no.sikt.nva.nvi.index.model.InstitutionPoints;
+import no.sikt.nva.nvi.index.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.Organization;
 import no.sikt.nva.nvi.index.model.PublicationDate;
@@ -537,7 +539,7 @@ public class OpenSearchClientTest {
     }
 
     private static Approval randomApprovalWithCustomerAndAssignee(String affiliation, String assignee) {
-        return new Approval(affiliation, Map.of(), randomStatus(), randomBigDecimal(SCALE), assignee);
+        return new Approval(affiliation, Map.of(), randomStatus(), randomInstitutionPoints(), assignee);
     }
 
     private static List<Approval> randomApprovalList() {
@@ -545,7 +547,15 @@ public class OpenSearchClientTest {
     }
 
     private static Approval randomApproval() {
-        return new Approval(randomString(), Map.of(), randomStatus(), randomBigDecimal(SCALE), null);
+        return new Approval(randomString(), Map.of(), randomStatus(), randomInstitutionPoints(), null);
+    }
+
+    private static InstitutionPoints randomInstitutionPoints() {
+        return new InstitutionPoints(randomUri(), randomBigDecimal(SCALE), randomCreatorAffiliationPoints());
+    }
+
+    private static List<CreatorAffiliationPoints> randomCreatorAffiliationPoints() {
+        return List.of(new CreatorAffiliationPoints(randomUri(), randomUri(), randomBigDecimal(SCALE)));
     }
 
     private static ApprovalStatus randomStatus() {

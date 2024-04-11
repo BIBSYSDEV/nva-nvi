@@ -21,6 +21,7 @@ import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.ContributorType;
+import no.sikt.nva.nvi.index.model.InstitutionPoints;
 import no.sikt.nva.nvi.index.model.NviContributor;
 import no.sikt.nva.nvi.index.model.NviOrganization;
 import no.sikt.nva.nvi.index.model.Organization;
@@ -69,7 +70,7 @@ public final class IndexDocumentTestUtils {
                    .withInstitutionId(approvalEntry.getKey().toString())
                    .withApprovalStatus(ApprovalStatus.fromValue(approvalEntry.getValue().getStatus().getValue()))
                    .withAssignee(Objects.nonNull(assignee) ? assignee.value() : null)
-                   .withPoints(getPoints(candidate, approvalEntry.getKey()))
+                   .withPoints(InstitutionPoints.from(candidate.getInstitutionPoints(approvalEntry.getKey())))
                    .withLabels(Map.of(EN_FIELD, HARDCODED_ENGLISH_LABEL, NB_FIELD, HARDCODED_NORWEGIAN_LABEL))
                    .build();
     }
