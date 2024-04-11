@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,9 +44,9 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 public class RequeueDlqHandlerTest {
 
     public static final Context CONTEXT = mock(Context.class);
+    private static final String DLQ_URL = "https://some-sqs-url";
     private RequeueDlqHandler handler;
     private SqsClient sqsClient;
-    private static final String DLQ_URL = "https://some-sqs-url";
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
 
@@ -60,20 +61,6 @@ public class RequeueDlqHandlerTest {
         periodRepository = mock(PeriodRepository.class);
 
         handler = new RequeueDlqHandler(client, DLQ_URL, candidateRepository, periodRepository);
-    }
-
-    private static CandidateRepository setupCandidateRepository() {
-        var repo = mock(CandidateRepository.class);
-
-        var candidate = createCandidateDao();
-
-        when(repo.findByPublicationId(any()))
-            .thenReturn(Optional.of(candidate));
-
-        when(repo.findCandidateById(any()))
-            .thenReturn(Optional.of(candidate));
-
-        return repo;
     }
 
     @Test
@@ -161,10 +148,6 @@ public class RequeueDlqHandlerTest {
         assertEquals(5, response.failedBatchesCount());
     }
 
-    private static long getSuccessCount(RequeueDlqOutput response) {
-        return response.messages().stream().filter(NviProcessMessageResult::success).count();
-    }
-
     @Test
     void missingCustomAttributeShouldFail() {
         var message = Message.builder()
@@ -182,10 +165,6 @@ public class RequeueDlqHandlerTest {
 
         var error = response.messages().stream().filter(a -> !a.success()).findFirst().get().error().get();
         assertTrue(error.contains("Exception"));
-    }
-
-    private static long getFailureCount(RequeueDlqOutput response) {
-        return response.messages().stream().filter(a -> !a.success()).count();
     }
 
     @Test
@@ -212,9 +191,8 @@ public class RequeueDlqHandlerTest {
 
         var response = handler.handleRequest(new RequeueDlqInput(100), CONTEXT);
 
-
         var message = response.messages().stream().filter(NviProcessMessageResult::success).findFirst()
-                                .get().message().messageId();
+                          .get().message().messageId();
 
         assertTrue(message.contains("myInput"));
     }
@@ -245,6 +223,28 @@ public class RequeueDlqHandlerTest {
         assertEquals(10, input.count());
     }
 
+    private static CandidateRepository setupCandidateRepository() {
+        var repo = mock(CandidateRepository.class);
+
+        var candidate = createCandidateDao();
+
+        when(repo.findByPublicationId(any()))
+            .thenReturn(Optional.of(candidate));
+
+        when(repo.findCandidateById(any()))
+            .thenReturn(Optional.of(candidate));
+
+        return repo;
+    }
+
+    private static long getSuccessCount(RequeueDlqOutput response) {
+        return response.messages().stream().filter(NviProcessMessageResult::success).count();
+    }
+
+    private static long getFailureCount(RequeueDlqOutput response) {
+        return response.messages().stream().filter(a -> !a.success()).count();
+    }
+
     private static CandidateDao createCandidateDao() {
         var institutionId = randomUri();
         var institutionPoints = BigDecimal.valueOf(1);
@@ -257,16 +257,8 @@ public class RequeueDlqHandlerTest {
                                           .day("1")
                                           .month("1")
                                           .year("2000").build())
-                                  .points(List.of(
-                                      DbInstitutionPoints.builder()
-                                          .institutionId(randomUri())
-                                          .points(BigDecimal.valueOf(1))
-                                          .institutionId(institutionId)
-                                          .points(institutionPoints)
-                                          .creatorAffiliationPoints(List.of(new DbCreatorAffiliationPoints(creatorId,
-                                                                                                           institutionId,
-                                                                                                           institutionPoints)))
-                                          .build()))
+                                  .points(
+                                      List.of(generateInstitutionPoints(institutionId, institutionPoints, creatorId)))
                                   .instanceType(InstanceType.ACADEMIC_ARTICLE.getValue())
                                   .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))))
                                   .creators(List.of(new DbCreator(creatorId, List.of(institutionId))))
@@ -278,5 +270,23 @@ public class RequeueDlqHandlerTest {
                                   .publicationBucketUri(randomUri())
                                   .build())
                    .build();
+    }
+
+    private static DbInstitutionPoints generateInstitutionPoints(URI institutionId, BigDecimal institutionPoints,
+                                                                 URI creatorId) {
+        return DbInstitutionPoints.builder()
+                   .institutionId(randomUri())
+                   .points(BigDecimal.valueOf(1))
+                   .institutionId(institutionId)
+                   .points(institutionPoints)
+                   .creatorAffiliationPoints(
+                       List.of(generateCreatorAffiliationPoints(institutionId, institutionPoints, creatorId)))
+                   .build();
+    }
+
+    private static DbCreatorAffiliationPoints generateCreatorAffiliationPoints(URI institutionId,
+                                                                               BigDecimal institutionPoints,
+                                                                               URI creatorId) {
+        return new DbCreatorAffiliationPoints(creatorId, institutionId, institutionPoints);
     }
 }
