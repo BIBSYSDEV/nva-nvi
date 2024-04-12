@@ -14,8 +14,7 @@ import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandPublicationDetai
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
-import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -43,7 +42,6 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.ConsumptionAttributes;
@@ -120,8 +118,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     void shouldBuildIndexDocumentWithReportedPeriodWhenCandidateIsReported() {
         //Using repository to create reported candidate because setting Candidate as reported is not implemented yet
         //TODO: Use Candidate.setReported when implemented
-        var dao = candidateRepository.create(randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
-                                             List.of(randomApproval()));
+        var dao = setupReportedCandidate(candidateRepository);
         var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
             candidate).indexDocument();

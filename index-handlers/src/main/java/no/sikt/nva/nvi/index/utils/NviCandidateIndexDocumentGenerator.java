@@ -22,7 +22,6 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,6 +39,7 @@ import no.sikt.nva.nvi.common.service.model.Username;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.ContributorType;
+import no.sikt.nva.nvi.index.model.InstitutionPoints;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.NviContributor;
 import no.sikt.nva.nvi.index.model.NviOrganization;
@@ -73,8 +73,8 @@ public final class NviCandidateIndexDocumentGenerator {
             () -> dtoObjectMapper.readValue(response, no.sikt.nva.nvi.common.model.Organization.class)).orElseThrow();
     }
 
-    private static BigDecimal getInstitutionPoints(Approval approval, Candidate candidate) {
-        return candidate.getInstitutionPointsMap().get(approval.getInstitutionId());
+    private static InstitutionPoints getInstitutionPoints(Approval approval, Candidate candidate) {
+        return InstitutionPoints.from(candidate.getInstitutionPoints(approval.getInstitutionId()));
     }
 
     private NviCandidateIndexDocument buildCandidate(JsonNode resource, Candidate candidate,

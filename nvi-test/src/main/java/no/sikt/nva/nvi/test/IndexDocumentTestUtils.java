@@ -7,7 +7,6 @@ import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.NB_FIELD;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractAffiliations;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +20,7 @@ import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.Contributor;
 import no.sikt.nva.nvi.index.model.ContributorType;
+import no.sikt.nva.nvi.index.model.InstitutionPoints;
 import no.sikt.nva.nvi.index.model.NviContributor;
 import no.sikt.nva.nvi.index.model.NviOrganization;
 import no.sikt.nva.nvi.index.model.Organization;
@@ -69,18 +69,9 @@ public final class IndexDocumentTestUtils {
                    .withInstitutionId(approvalEntry.getKey().toString())
                    .withApprovalStatus(ApprovalStatus.fromValue(approvalEntry.getValue().getStatus().getValue()))
                    .withAssignee(Objects.nonNull(assignee) ? assignee.value() : null)
-                   .withPoints(getPoints(candidate, approvalEntry.getKey()))
+                   .withPoints(InstitutionPoints.from(candidate.getInstitutionPoints(approvalEntry.getKey())))
                    .withLabels(Map.of(EN_FIELD, HARDCODED_ENGLISH_LABEL, NB_FIELD, HARDCODED_NORWEGIAN_LABEL))
                    .build();
-    }
-
-    private static BigDecimal getPoints(Candidate candidate, URI institutionId) {
-        return candidate.getInstitutionPointsMap()
-                   .entrySet()
-                   .stream()
-                   .filter(entry -> entry.getKey().equals(institutionId))
-                   .findFirst()
-                   .map(Entry::getValue).orElse(null);
     }
 
     private static PublicationDate mapToPublicationDate(

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.math.BigDecimal;
 import java.util.Map;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
@@ -16,7 +15,7 @@ import java.util.Map;
 public record Approval(String institutionId,
                        Map<String, String> labels,
                        ApprovalStatus approvalStatus,
-                       BigDecimal points,
+                       InstitutionPoints points,
                        String assignee) {
 
     public static Builder builder() {
@@ -28,7 +27,7 @@ public record Approval(String institutionId,
         private String institutionId;
         private Map<String, String> labels;
         private ApprovalStatus approvalStatus;
-        private BigDecimal points;
+        private InstitutionPoints points;
         private String assignee;
 
         private Builder() {
@@ -49,7 +48,7 @@ public record Approval(String institutionId,
             return this;
         }
 
-        public Builder withPoints(BigDecimal points) {
+        public Builder withPoints(InstitutionPoints points) {
             this.points = points;
             return this;
         }
