@@ -271,7 +271,7 @@ public final class CristinMapper {
                                                                                        .collect(Collectors.toList()));
     }
 
-    private static InstitutionPoints toPoints(List<CristinLocale> institutions, ArrayList<ScientificPerson> list) {
+    private static InstitutionPoints toPoints(List<CristinLocale> institutions, List<ScientificPerson> list) {
         return new InstitutionPoints(getTopLevelOrganization(list.get(0), institutions), list.stream()
                                                                                              .map(
                                                                                                  CristinMapper::extractAuthorPointsForAffiliation)
