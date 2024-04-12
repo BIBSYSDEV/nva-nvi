@@ -28,6 +28,7 @@ import no.sikt.nva.nvi.index.model.OrganizationType;
 import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import nva.commons.core.paths.UnixPath;
+import nva.commons.core.paths.UriWrapper;
 
 public final class IndexDocumentTestUtils {
 
@@ -141,8 +142,7 @@ public final class IndexDocumentTestUtils {
     }
 
     private static OrganizationType toAffiliationWithPartOf(URI uri, boolean isNviAffiliation) {
-        return isNviAffiliation ? generateNviOrganization(uri)
-                   : generateOrganization(uri);
+        return isNviAffiliation ? generateNviOrganization(uri) : generateOrganization(uri);
     }
 
     private static OrganizationType generateOrganization(URI uri) {
@@ -155,7 +155,7 @@ public final class IndexDocumentTestUtils {
     private static OrganizationType generateNviOrganization(URI uri) {
         return NviOrganization.builder()
                    .withId(uri.toString())
-                   .withPartOf(List.of(HARD_CODED_PART_OF))
+                   .withPartOf(List.of(HARD_CODED_PART_OF, UriWrapper.fromUri(HARD_CODED_PART_OF).getLastPathElement()))
                    .build();
     }
 }

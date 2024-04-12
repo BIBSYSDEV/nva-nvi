@@ -49,6 +49,9 @@ import no.sikt.nva.nvi.index.model.PublicationDate;
 import no.sikt.nva.nvi.index.model.PublicationDetails;
 import no.sikt.nva.nvi.index.model.ReportingPeriod;
 import no.unit.nva.auth.uriretriever.UriRetriever;
+import nva.commons.core.paths.UriWrapper;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.NodeIterator;
 import org.apache.jena.rdf.model.RDFNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,6 +78,23 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static InstitutionPoints getInstitutionPoints(Approval approval, Candidate candidate) {
         return InstitutionPoints.from(candidate.getInstitutionPoints(approval.getInstitutionId()));
+    }
+
+    private static NviOrganization buildNviOrganization(String id, List<String> rdfNodes) {
+        var partOfIdentifiers = rdfNodes.stream().map(node -> UriWrapper.fromUri(node).getLastPathElement());
+        var partOfList = Stream.concat(rdfNodes.stream(), partOfIdentifiers).toList();
+        return NviOrganization.builder()
+                   .withId(id)
+                   .withPartOf(partOfList)
+                   .build();
+    }
+
+    private static NodeIterator listPropertyPartOfObjects(Model model) {
+        return model.listObjectsOfProperty(model.createProperty(PART_OF_PROPERTY));
+    }
+
+    private static List<String> toListOfRdfNodes(NodeIterator nodeIterator) {
+        return nodeIterator.toList().stream().map(RDFNode::toString).toList();
     }
 
     private NviCandidateIndexDocument buildCandidate(JsonNode resource, Candidate candidate,
@@ -238,12 +258,9 @@ public final class NviCandidateIndexDocumentGenerator {
     private NviOrganization generateAffiliationWithPartOf(String id) {
         return attempt(() -> getRawContentFromUriCached(id)).map(Optional::get)
                    .map(str -> createModel(dtoObjectMapper.readTree(str)))
-                   .map(model -> model.listObjectsOfProperty(model.createProperty(PART_OF_PROPERTY)))
-                   .map(nodeIterator -> nodeIterator.toList().stream().map(RDFNode::toString).toList())
-                   .map(result -> NviOrganization.builder()
-                                      .withId(id)
-                                      .withPartOf(result)
-                                      .build())
+                   .map(NviCandidateIndexDocumentGenerator::listPropertyPartOfObjects)
+                   .map(NviCandidateIndexDocumentGenerator::toListOfRdfNodes)
+                   .map(result -> buildNviOrganization(id, result))
                    .orElseThrow();
     }
 
