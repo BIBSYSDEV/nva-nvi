@@ -68,6 +68,10 @@ public class Approval {
         return nonNull(assignee) && nonNull(assignee.value());
     }
 
+    public boolean isPendingAndUnassigned() {
+        return ApprovalStatus.PENDING.equals(status) && !isAssigned();
+    }
+
     public Approval update(UpdateApprovalRequest input) {
         if (input instanceof UpdateAssigneeRequest request) {
             var newDao = repository.updateApprovalStatusDao(identifier, updateAssignee(request));
