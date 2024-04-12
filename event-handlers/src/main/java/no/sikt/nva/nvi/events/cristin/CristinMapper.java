@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
@@ -263,21 +264,20 @@ public final class CristinMapper {
         List<CristinLocale> institutions) {
         return Collectors.collectingAndThen(
             Collectors.groupingBy(scientificPerson -> getTopLevelOrganization(scientificPerson, institutions),
-                                  Collectors.toCollection(ArrayList::new)), map -> map.entrySet()
-                                                                                       .stream()
-                                                                                       .map(entry -> toPoints(
-                                                                                           institutions,
-                                                                                           entry.getValue()))
-                                                                                       .collect(Collectors.toList()));
+                                  Collectors.toCollection(ArrayList::new)),
+            map -> getInstitutionPointsStream(institutions, map).collect(Collectors.toList()));
+    }
+
+    private static Stream<InstitutionPoints> getInstitutionPointsStream(List<CristinLocale> institutions,
+                                                                        Map<URI, ArrayList<ScientificPerson>> map) {
+        return map.entrySet().stream().map(entry -> toPoints(institutions, entry.getValue()));
     }
 
     private static InstitutionPoints toPoints(List<CristinLocale> institutions, List<ScientificPerson> list) {
-        return new InstitutionPoints(getTopLevelOrganization(list.get(0), institutions), list.stream()
-                                                                                             .map(
-                                                                                                 CristinMapper::extractAuthorPointsForAffiliation)
-                                                                                             .reduce(BigDecimal.ZERO,
-                                                                                                     BigDecimal::add),
-                                     list.stream().map(CristinMapper::toCreatorPoints).collect(Collectors.toList()));
+        return new InstitutionPoints(
+            getTopLevelOrganization(list.get(0), institutions),
+            list.stream().map(CristinMapper::extractAuthorPointsForAffiliation).reduce(BigDecimal.ZERO, BigDecimal::add),
+            list.stream().map(CristinMapper::toCreatorPoints).collect(Collectors.toList()));
     }
 
     private static CreatorPoints toCreatorPoints(ScientificPerson person) {
