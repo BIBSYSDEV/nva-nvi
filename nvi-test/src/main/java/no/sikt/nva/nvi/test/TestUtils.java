@@ -416,10 +416,10 @@ public final class TestUtils {
         return randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
     }
 
-    public static CandidateDao setupReportedCandidate(CandidateRepository repository) {
+    public static CandidateDao setupReportedCandidate(CandidateRepository repository, String year) {
         var institutionId = randomUri();
-        return repository.create(randomCandidateBuilder(true, institutionId).build()
-                                     .copy()
+        return repository.create(randomCandidateBuilder(true, institutionId)
+                                     .publicationDate(DbPublicationDate.builder().year(year).build())
                                      .reportStatus(ReportStatus.REPORTED)
                                      .build(),
                                  List.of(randomApproval(institutionId)));

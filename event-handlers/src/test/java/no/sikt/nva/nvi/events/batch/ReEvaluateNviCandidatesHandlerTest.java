@@ -4,6 +4,7 @@ import static no.sikt.nva.nvi.test.TestUtils.createNumberOfCandidatesForYear;
 import static no.sikt.nva.nvi.test.TestUtils.getYearIndexStartMarker;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
+import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.sortByIdentifier;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
@@ -29,9 +30,9 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.model.ReEvaluateRequest;
+import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
 import no.unit.nva.stubs.FakeEventBridgeClient;
@@ -85,6 +86,15 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
         var handler = new ReEvaluateNviCandidatesHandler(mockedNviService, sqsClient, environment, eventBridgeClient);
         handler.handleRequest(eventStream(createRequest(year, pageSizeBiggerThanMaxPageSize)), outputStream, context);
         verify(mockedNviService, times(1)).fetchCandidatesByYear(year, DEFAULT_PAGE_SIZE, null);
+    }
+
+    @Test
+    void shouldNotSendMessagesForReportedCandidates() {
+        var year = randomYear();
+        setupReportedCandidate(candidateRepository, year);
+        handler.handleRequest(eventStream(createRequest(year)), outputStream, context);
+        var sentBatches = sqsClient.getSentBatches();
+        assertEquals(0, sentBatches.size());
     }
 
     @Test
