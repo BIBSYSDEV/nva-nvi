@@ -81,11 +81,11 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
         var year = randomYear();
         var pageSizeBiggerThanMaxPageSize = MAX_PAGE_SIZE + randomIntBetween(1, 100);
         var mockedNviService = mock(NviService.class);
-        when(mockedNviService.fetchCandidatesByYear(year, DEFAULT_PAGE_SIZE, null))
+        when(mockedNviService.fetchNonReportedCandidatesByYear(year, DEFAULT_PAGE_SIZE, null))
             .thenReturn(new ListingResult<>(false, null, 0, List.of()));
         var handler = new ReEvaluateNviCandidatesHandler(mockedNviService, sqsClient, environment, eventBridgeClient);
         handler.handleRequest(eventStream(createRequest(year, pageSizeBiggerThanMaxPageSize)), outputStream, context);
-        verify(mockedNviService, times(1)).fetchCandidatesByYear(year, DEFAULT_PAGE_SIZE, null);
+        verify(mockedNviService, times(1)).fetchNonReportedCandidatesByYear(year, DEFAULT_PAGE_SIZE, null);
     }
 
     @Test

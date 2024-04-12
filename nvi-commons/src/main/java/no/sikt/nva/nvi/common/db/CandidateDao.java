@@ -188,6 +188,16 @@ public final class CandidateDao extends Dao {
         return attempt(() -> JsonUtils.dtoObjectMapper.writeValueAsString(this)).orElseThrow();
     }
 
+    @DynamoDbIgnore
+    public boolean isReported() {
+        return ReportStatus.REPORTED.equals(candidate.reportStatus);
+    }
+
+    @DynamoDbIgnore
+    public boolean isNotReported() {
+        return !isReported();
+    }
+
     @Deprecated
     private String migratePeriodYear() {
         return isApplicableAndMissingPeriodYear() ? candidate.publicationDate().year() : periodYear;

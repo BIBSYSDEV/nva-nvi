@@ -72,9 +72,9 @@ public class NviService {
         return scanResult;
     }
 
-    public ListingResult<CandidateDao> fetchCandidatesByYear(String year, Integer pageSize,
-                                                             Map<String, String> startMarker) {
-        return candidateRepository.fetchCandidatesByYear(year, pageSize, startMarker);
+    public ListingResult<CandidateDao> fetchNonReportedCandidatesByYear(String year, Integer pageSize,
+                                                                        Map<String, String> startMarker) {
+        return candidateRepository.fetchNonReportedCandidatesByYear(year, pageSize, startMarker);
     }
 
     private static boolean isInteger(String value) {

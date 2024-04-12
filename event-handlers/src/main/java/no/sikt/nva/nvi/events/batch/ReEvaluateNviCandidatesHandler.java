@@ -69,7 +69,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
                                 Context context) {
         validateInput(input);
         LOGGER.info(QUERY_STARTING_POINT_MESSAGE, input.startMarker());
-        var result = getListingResultWithCandidates(input);
+        var result = getListingResultWithNonReportedCandidates(input);
         logResult(result);
         splitIntoBatches(mapToFileUris(result)).forEach(fileUriList -> sendBatch(createMessages(fileUriList)));
         if (result.shouldContinueScan()) {
@@ -107,10 +107,10 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
         LOGGER.info(PUT_EVENT_RESPONSE_MESSAGE, response.toString());
     }
 
-    private ListingResult<CandidateDao> getListingResultWithCandidates(ReEvaluateRequest input) {
-        return nviService.fetchCandidatesByYear(input.year(),
-                                                input.pageSize(),
-                                                input.startMarker());
+    private ListingResult<CandidateDao> getListingResultWithNonReportedCandidates(ReEvaluateRequest input) {
+        return nviService.fetchNonReportedCandidatesByYear(input.year(),
+                                                           input.pageSize(),
+                                                           input.startMarker());
     }
 
     private Stream<List<URI>> splitIntoBatches(List<URI> fileUris) {
