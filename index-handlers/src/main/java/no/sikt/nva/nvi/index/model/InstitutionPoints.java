@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.index.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -15,7 +14,7 @@ import java.util.List;
 @JsonTypeName("InstitutionPoints")
 public record InstitutionPoints(URI institutionId,
                                 BigDecimal institutionPoints,
-                                @JsonProperty("breakdown") List<CreatorAffiliationPoints> creatorAffiliationPoints) {
+                                List<CreatorAffiliationPoints> creatorAffiliationPoints) {
 
     public static InstitutionPoints from(no.sikt.nva.nvi.common.service.model.InstitutionPoints institutionPoints) {
         return new InstitutionPoints(institutionPoints.institutionId(),
