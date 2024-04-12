@@ -4,6 +4,8 @@ import static no.sikt.nva.nvi.events.cristin.CristinMapper.AFFILIATION_DELIMITER
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -30,6 +32,7 @@ class CristinMapperTest {
     private static final BigDecimal POINTS_PER_CONTRIBUTOR = new BigDecimal("2.1398");
     private static final int CALCULATION_PRECISION = 10;
     private static final int SCALE = 4;
+    private static final String CRISTIN_PERSON_IDENTIFIER = randomString();
 
     @Test
     void shouldThrowNullPointerExceptionWhenQualityCodeIsMissing() {
@@ -384,6 +387,40 @@ class CristinMapperTest {
         assertNull(dbCandidate.channelType());
     }
 
+    @Test
+    void shouldMapCreatorAffiliationPointsWhenSingleCreatorAtInstitution() {
+        var creator = scientificPersonAtInstitutionWithPoints(INSTITUTION_IDENTIFIER, POINTS_PER_CONTRIBUTOR);
+        var scientificResource = scientificResourceWithCreators(List.of(creator));
+        var cristinLocale = cristinLocaleWithInstitutionIdentifier(INSTITUTION_IDENTIFIER);
+        var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
+        var dbCandidate = CristinMapper.toDbCandidate(report.build());
+
+        var pointsPerAffiliation = dbCandidate.points().get(0)
+                                       .creatorAffiliationPoints().get(0);
+
+        var expectedCreatorPoints = POINTS_PER_CONTRIBUTOR.setScale(SCALE, RoundingMode.HALF_UP);
+        assertEquals(expectedCreatorPoints, pointsPerAffiliation.points());
+    }
+
+    @Test
+    void shouldMapCreatorAffiliationPointsWhenMultipleCreatorsAtInstitution() {
+        var firstCreator = scientificPersonAtInstitutionWithPoints(INSTITUTION_IDENTIFIER, POINTS_PER_CONTRIBUTOR);
+        var secondCreator = scientificPersonAtInstitutionWithPoints(INSTITUTION_IDENTIFIER, POINTS_PER_CONTRIBUTOR);
+        var scientificResource = scientificResourceWithCreators(List.of(firstCreator, secondCreator));
+        var cristinLocale = cristinLocaleWithInstitutionIdentifier(INSTITUTION_IDENTIFIER);
+        var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
+        var dbCandidate = CristinMapper.toDbCandidate(report.build());
+
+        var institutionPoints = dbCandidate.points().get(0);
+        var expectedSingleCreatorPoints = POINTS_PER_CONTRIBUTOR.setScale(SCALE, RoundingMode.HALF_UP);
+
+        institutionPoints.creatorAffiliationPoints().forEach(creatorPoints -> {
+            assertEquals(creatorPoints.points(), expectedSingleCreatorPoints);
+            assertThat(creatorPoints.creatorId().toString(), containsString(CRISTIN_PERSON_IDENTIFIER));
+            }
+        );
+    }
+
     private static CristinNviReport nviReportWithInstanceTypeAndReference(String instanceType, String reference) {
         var institutionIdentifier = randomString();
         var creators = List.of(scientificPersonAtInstitutionWithPoints(institutionIdentifier, POINTS_PER_CONTRIBUTOR),
@@ -443,6 +480,7 @@ class CristinMapperTest {
                    .withPublicationTypeLevelPoints(BASE_POINTS_CRISTIN_ENTRY)
                    .withAuthorPointsForAffiliation(points.toString())
                    .withCollaborationFactor(INTERNATIONAL_COLLABORATION_FACTOR_CRISTIN_ENTRY)
+                   .withCristinPersonIdentifier(CRISTIN_PERSON_IDENTIFIER)
                    .build();
     }
 
