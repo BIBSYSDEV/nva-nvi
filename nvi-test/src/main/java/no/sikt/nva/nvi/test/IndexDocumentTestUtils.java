@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.service.model.Approval;
@@ -47,7 +46,7 @@ public final class IndexDocumentTestUtils {
         return candidate.getApprovals()
                    .entrySet()
                    .stream()
-                   .map(entry -> toApproval(entry, candidate))
+                   .map(entry -> toApproval(entry.getValue(), candidate))
                    .toList();
     }
 
@@ -62,16 +61,27 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static no.sikt.nva.nvi.index.model.Approval toApproval(Entry<URI, Approval> approvalEntry,
+    private static no.sikt.nva.nvi.index.model.Approval toApproval(Approval approval,
                                                                    Candidate candidate) {
-        var assignee = approvalEntry.getValue().getAssignee();
+        var assignee = approval.getAssignee();
         return no.sikt.nva.nvi.index.model.Approval.builder()
-                   .withInstitutionId(approvalEntry.getKey().toString())
-                   .withApprovalStatus(ApprovalStatus.fromValue(approvalEntry.getValue().getStatus().getValue()))
+                   .withInstitutionId(approval.getInstitutionId().toString())
+                   .withApprovalStatus(getApprovalStatus(approval))
                    .withAssignee(Objects.nonNull(assignee) ? assignee.value() : null)
-                   .withPoints(InstitutionPoints.from(candidate.getInstitutionPoints(approvalEntry.getKey())))
+                   .withPoints(InstitutionPoints.from(candidate.getInstitutionPoints(approval.getInstitutionId())))
                    .withLabels(Map.of(EN_FIELD, HARDCODED_ENGLISH_LABEL, NB_FIELD, HARDCODED_NORWEGIAN_LABEL))
                    .build();
+    }
+
+    private static ApprovalStatus getApprovalStatus(Approval approval) {
+        return isApprovalPendingAndUnassigned(approval)
+                   ? ApprovalStatus.NEW
+                   : ApprovalStatus.fromValue(approval.getStatus().getValue());
+    }
+
+    private static boolean isApprovalPendingAndUnassigned(Approval approval) {
+        return no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING.equals(approval.getStatus())
+               && Objects.isNull(approval.getAssignee());
     }
 
     private static PublicationDate mapToPublicationDate(
