@@ -93,14 +93,15 @@ public class CandidateRepository extends DynamoRepository {
         batches.forEach(batch -> dynamoDbRetryClient.batchWriteItem(toBatchRequest(batch)));
     }
 
-    public ListingResult<CandidateDao> fetchNonReportedCandidatesByYear(String year,
-                                                                        Integer pageSize, Map<String, String> startMarker) {
+    public ListingResult<CandidateDao> fetchCandidatesByYear(String year,
+                                                             boolean includeReportedCandidates,
+                                                             Integer pageSize, Map<String, String> startMarker) {
         var page = queryYearIndex(year, pageSize, startMarker);
         return new ListingResult<>(thereAreMorePagesToScan(page),
                                    nonNull(page.lastEvaluatedKey())
                                        ? toStringMap(page.lastEvaluatedKey()) : emptyMap(),
                                    page.items().size(),
-                                   filterOutReportedCandidates(page));
+                                   includeReportedCandidates ? page.items() : filterOutReportedCandidates(page));
     }
 
     public CandidateDao create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {

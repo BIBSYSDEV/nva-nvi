@@ -108,9 +108,10 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
     }
 
     private ListingResult<CandidateDao> getListingResultWithNonReportedCandidates(ReEvaluateRequest input) {
-        return nviService.fetchNonReportedCandidatesByYear(input.year(),
-                                                           input.pageSize(),
-                                                           input.startMarker());
+        var includeReportedCandidates = false;
+        return nviService.fetchCandidatesByYear(input.year(),
+                                                includeReportedCandidates, input.pageSize(),
+                                                input.startMarker());
     }
 
     private Stream<List<URI>> splitIntoBatches(List<URI> fileUris) {
