@@ -4,11 +4,11 @@ import static no.sikt.nva.nvi.index.Aggregations.COMPLETED_AGGREGATION_AGG;
 import static no.sikt.nva.nvi.index.Aggregations.TOTAL_COUNT_AGGREGATION_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVED_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVED_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNED_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNED_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNMENTS_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNMENTS_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.NEW_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.NEW_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
@@ -201,10 +201,10 @@ public class OpenSearchClientTest {
     @MethodSource("aggregationNameAndExpectedCountProvider")
     void shouldReturnAggregationsWithExpectedCount(Entry<String, Integer> entry)
         throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_pending.json"),
+        addDocumentsToIndex(documentFromString("document_new.json"),
+                            documentFromString("document_new_collaboration.json"),
+                            documentFromString("document_pending.json"),
                             documentFromString("document_pending_collaboration.json"),
-                            documentFromString("document_assigned.json"),
-                            documentFromString("document_assigned_collaboration.json"),
                             documentFromString("document_approved.json"),
                             documentFromString("document_approved_collaboration.json"),
                             documentFromString("document_rejected.json"),
@@ -282,10 +282,10 @@ public class OpenSearchClientTest {
     @MethodSource("filterNameProvider")
     void shouldReturnSearchResultsUsingFilter(Entry<String, Integer> entry)
         throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_pending.json"),
+        addDocumentsToIndex(documentFromString("document_new.json"),
+                            documentFromString("document_new_collaboration.json"),
+                            documentFromString("document_pending.json"),
                             documentFromString("document_pending_collaboration.json"),
-                            documentFromString("document_assigned.json"),
-                            documentFromString("document_assigned_collaboration.json"),
                             documentFromString("document_approved.json"),
                             documentFromString("document_approved_collaboration.json"),
                             documentFromString("document_rejected.json"),
@@ -412,10 +412,10 @@ public class OpenSearchClientTest {
     @MethodSource("filterNameProvider")
     void shouldReturnSearchResultsUsingFilterAndSearchTermCombined(Entry<String, Integer> entry)
         throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_pending.json"),
+        addDocumentsToIndex(documentFromString("document_new.json"),
+                            documentFromString("document_new_collaboration.json"),
+                            documentFromString("document_pending.json"),
                             documentFromString("document_pending_collaboration.json"),
-                            documentFromString("document_assigned.json"),
-                            documentFromString("document_assigned_collaboration.json"),
                             documentFromString("document_approved.json"),
                             documentFromString("document_approved_collaboration.json"),
                             documentFromString("document_rejected.json"),
@@ -431,7 +431,7 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldReturnSingleDocumentWhenFilteringByCategory() throws InterruptedException, IOException {
-        addDocumentsToIndex(documentFromString("document_pending.json"),
+        addDocumentsToIndex(documentFromString("document_new.json"),
                             documentFromString("document_pending_category_degree_bachelor.json"));
 
         var searchParameters =
@@ -578,10 +578,10 @@ public class OpenSearchClientTest {
 
     private static Stream<Entry<String, Integer>> aggregationNameAndExpectedCountProvider() {
         var map = new HashMap<String, Integer>();
+        map.put(NEW_AGG, 2);
+        map.put(NEW_COLLABORATION_AGG, 1);
         map.put(PENDING_AGG, 2);
         map.put(PENDING_COLLABORATION_AGG, 1);
-        map.put(ASSIGNED_AGG, 2);
-        map.put(ASSIGNED_COLLABORATION_AGG, 1);
         map.put(APPROVED_AGG, 2);
         map.put(APPROVED_COLLABORATION_AGG, 1);
         map.put(REJECTED_AGG, 2);
@@ -594,10 +594,10 @@ public class OpenSearchClientTest {
 
     private static Stream<Entry<String, Integer>> filterNameProvider() {
         var map = new HashMap<String, Integer>();
+        map.put(NEW_AGG, 2);
+        map.put(NEW_COLLABORATION_AGG, 1);
         map.put(PENDING_AGG, 2);
         map.put(PENDING_COLLABORATION_AGG, 1);
-        map.put(ASSIGNED_AGG, 2);
-        map.put(ASSIGNED_COLLABORATION_AGG, 1);
         map.put(APPROVED_AGG, 2);
         map.put(APPROVED_COLLABORATION_AGG, 1);
         map.put(REJECTED_AGG, 2);

@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index.aws;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.APPROVED;
+import static no.sikt.nva.nvi.index.model.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.AFFILIATIONS;
@@ -33,7 +34,6 @@ import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
-import org.opensearch.client.opensearch._types.query_dsl.ExistsQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchPhraseQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
@@ -186,25 +186,10 @@ public class CandidateQuery {
             .orElse(null);
     }
 
-    private static Query statusQueryWithAssignee(String customer, ApprovalStatus status, boolean hasAssignee) {
+    private static Query statusQueryWithAssignee(String customer, ApprovalStatus status) {
         return nestedQuery(APPROVALS,
                            termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)),
-                           termQuery(status.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)),
-                           hasAssignee
-                               ? existsQuery(jsonPathOf(APPROVALS, ASSIGNEE))
-                               : notExistsQuery(jsonPathOf(APPROVALS, ASSIGNEE)));
-    }
-
-    private static Query notExistsQuery(String field) {
-        return new BoolQuery.Builder()
-            .mustNot(new ExistsQuery.Builder().field(field).build()._toQuery())
-            .build()._toQuery();
-    }
-
-    private static Query existsQuery(String field) {
-        return new BoolQuery.Builder()
-            .must(new ExistsQuery.Builder().field(field).build()._toQuery())
-            .build()._toQuery();
+                           termQuery(status.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)));
     }
 
     private List<Query> specificMatch() {
@@ -229,15 +214,15 @@ public class CandidateQuery {
 
         var aggregation = switch (filter) {
             case EMPTY_FILTER -> null;
-            case PENDING_AGG -> statusQueryWithAssignee(customer, PENDING, false);
+            case NEW_AGG -> statusQueryWithAssignee(customer, NEW);
 
-            case PENDING_COLLABORATION_AGG -> mustMatch(statusQueryWithAssignee(customer, PENDING, false),
+            case NEW_COLLABORATION_AGG -> mustMatch(statusQueryWithAssignee(customer, NEW),
+                                                    multipleApprovalsQuery());
+
+            case PENDING_AGG -> mustMatch(statusQueryWithAssignee(customer, PENDING));
+
+            case PENDING_COLLABORATION_AGG -> mustMatch(statusQueryWithAssignee(customer, PENDING),
                                                         multipleApprovalsQuery());
-
-            case ASSIGNED_AGG -> mustMatch(statusQueryWithAssignee(customer, PENDING, true));
-
-            case ASSIGNED_COLLABORATION_AGG -> mustMatch(statusQueryWithAssignee(customer, PENDING, true),
-                                                         multipleApprovalsQuery());
 
             case APPROVED_AGG -> mustMatch(statusQuery(customer, APPROVED));
 
@@ -304,10 +289,10 @@ public class CandidateQuery {
     }
 
     public enum QueryFilterType {
-        PENDING_AGG("pending"),
-        PENDING_COLLABORATION_AGG("pendingCollaboration"),
-        ASSIGNED_AGG("assigned"),
-        ASSIGNED_COLLABORATION_AGG("assignedCollaboration"),
+        NEW_AGG("pending"),
+        NEW_COLLABORATION_AGG("pendingCollaboration"),
+        PENDING_AGG("assigned"),
+        PENDING_COLLABORATION_AGG("assignedCollaboration"),
         APPROVED_AGG("approved"),
         APPROVED_COLLABORATION_AGG("approvedCollaboration"),
         REJECTED_AGG("rejected"),

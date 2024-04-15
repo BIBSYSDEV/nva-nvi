@@ -17,10 +17,10 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 public final class SearchConstants {
 
-    public static final String PENDING_AGG = "pending";
-    public static final String PENDING_COLLABORATION_AGG = "pendingCollaboration";
-    public static final String ASSIGNED_AGG = "assigned";
-    public static final String ASSIGNED_COLLABORATION_AGG = "assignedCollaboration";
+    public static final String NEW_AGG = "pending";
+    public static final String NEW_COLLABORATION_AGG = "pendingCollaboration";
+    public static final String PENDING_AGG = "assigned";
+    public static final String PENDING_COLLABORATION_AGG = "assignedCollaboration";
     public static final String APPROVED_AGG = "approved";
     public static final String APPROVED_COLLABORATION_AGG = "approvedCollaboration";
     public static final String REJECTED_AGG = "rejected";
