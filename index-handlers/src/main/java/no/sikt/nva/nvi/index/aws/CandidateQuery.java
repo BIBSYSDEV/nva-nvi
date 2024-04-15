@@ -171,8 +171,8 @@ public class CandidateQuery {
         return organizations.stream().map(CandidateQuery::getLastPathElement).toList();
     }
 
-    private static String getLastPathElement(String institution) {
-        return UriWrapper.fromUri(institution).getLastPathElement();
+    private static String getLastPathElement(String organization) {
+        return UriWrapper.fromUri(organization).getLastPathElement();
     }
 
     private static Query contributorQueryExcludingSubUnits(List<String> organizations) {
