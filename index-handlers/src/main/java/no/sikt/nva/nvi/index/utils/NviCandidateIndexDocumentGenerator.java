@@ -80,21 +80,24 @@ public final class NviCandidateIndexDocumentGenerator {
         return InstitutionPoints.from(candidate.getInstitutionPoints(approval.getInstitutionId()));
     }
 
-    private static NviOrganization buildNviOrganization(String id, List<String> rdfNodes) {
-        var partOfIdentifiers = rdfNodes.stream().map(node -> UriWrapper.fromUri(node).getLastPathElement());
-        var partOfList = Stream.concat(rdfNodes.stream(), partOfIdentifiers).toList();
+    private static NviOrganization buildNviOrganization(String id, Stream<String> rdfNodes) {
+        var partOfIdentifiers = rdfNodes.map(NviCandidateIndexDocumentGenerator::getLastPathElement).toList();
         return NviOrganization.builder()
                    .withId(id)
-                   .withPartOf(partOfList)
+                   .withPartOf(partOfIdentifiers)
                    .build();
+    }
+
+    private static String getLastPathElement(String uri) {
+        return UriWrapper.fromUri(uri).getLastPathElement();
     }
 
     private static NodeIterator listPropertyPartOfObjects(Model model) {
         return model.listObjectsOfProperty(model.createProperty(PART_OF_PROPERTY));
     }
 
-    private static List<String> toListOfRdfNodes(NodeIterator nodeIterator) {
-        return nodeIterator.toList().stream().map(RDFNode::toString).toList();
+    private static Stream<String> toStreamOfRdfNodes(NodeIterator nodeIterator) {
+        return nodeIterator.toList().stream().map(RDFNode::toString);
     }
 
     private NviCandidateIndexDocument buildCandidate(JsonNode resource, Candidate candidate,
@@ -259,7 +262,7 @@ public final class NviCandidateIndexDocumentGenerator {
         return attempt(() -> getRawContentFromUriCached(id)).map(Optional::get)
                    .map(str -> createModel(dtoObjectMapper.readTree(str)))
                    .map(NviCandidateIndexDocumentGenerator::listPropertyPartOfObjects)
-                   .map(NviCandidateIndexDocumentGenerator::toListOfRdfNodes)
+                   .map(NviCandidateIndexDocumentGenerator::toStreamOfRdfNodes)
                    .map(result -> buildNviOrganization(id, result))
                    .orElseThrow();
     }

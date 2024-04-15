@@ -155,7 +155,7 @@ public final class IndexDocumentTestUtils {
     private static OrganizationType generateNviOrganization(URI uri) {
         return NviOrganization.builder()
                    .withId(uri.toString())
-                   .withPartOf(List.of(HARD_CODED_PART_OF, UriWrapper.fromUri(HARD_CODED_PART_OF).getLastPathElement()))
+                   .withPartOf(List.of(UriWrapper.fromUri(HARD_CODED_PART_OF).getLastPathElement()))
                    .build();
     }
 }
