@@ -31,8 +31,11 @@
       "@type": "xsd:dateTime"
     },
     "partOf": {
-      "@type": "@id",
-      "@container": "@set"
+      "@container": "@set",
+      "@context": {
+        "@base": "__REPLACE_WITH_API_DOMAIN__/cristin/organization"
+      },
+      "@type": "@id"
     }
   }
 }

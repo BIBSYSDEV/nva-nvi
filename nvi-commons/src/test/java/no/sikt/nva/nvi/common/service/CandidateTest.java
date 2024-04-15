@@ -490,7 +490,8 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnNviCandidateContextAsString() {
-        var expectedContext = stringFromResources(Path.of("nviCandidateContext.json"));
+        var expectedContext = stringFromResources(Path.of("nviCandidateContext.json")).replace(
+            "__REPLACE_WITH_API_DOMAIN__", new Environment().readEnv("API_HOST"));
         assertThat(Candidate.getJsonLdContext(), is(equalTo(expectedContext)));
     }
 
