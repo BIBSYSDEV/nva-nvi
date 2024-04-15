@@ -152,12 +152,12 @@ public class CandidateQuery {
                    .build()._toQuery();
     }
 
-    private static Query contributorQueryIncludingSubUnits(List<String> institutions) {
-        var institutionIdentifiers = extractIdentifiers(institutions);
+    private static Query contributorQueryIncludingSubUnits(List<String> organizations) {
+        var institutionIdentifiers = extractIdentifiers(organizations);
         return nestedQuery(jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS),
                            QueryBuilders.bool().must(
                                matchAtLeastOne(
-                                   termsQuery(institutions,
+                                   termsQuery(organizations,
                                               jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, ID)),
                                    termsQuery(institutionIdentifiers,
                                               jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, PART_OF))
@@ -167,18 +167,18 @@ public class CandidateQuery {
         );
     }
 
-    private static List<String> extractIdentifiers(List<String> institutions) {
-        return institutions.stream().map(CandidateQuery::getLastPathElement).toList();
+    private static List<String> extractIdentifiers(List<String> organizations) {
+        return organizations.stream().map(CandidateQuery::getLastPathElement).toList();
     }
 
     private static String getLastPathElement(String institution) {
         return UriWrapper.fromUri(institution).getLastPathElement();
     }
 
-    private static Query contributorQueryExcludingSubUnits(List<String> institutions) {
+    private static Query contributorQueryExcludingSubUnits(List<String> organizations) {
         return nestedQuery(jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS),
                            QueryBuilders.bool().must(
-                               termsQuery(institutions,
+                               termsQuery(organizations,
                                           jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, ID)),
                                matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, ROLE))
                            ).build()._toQuery()
