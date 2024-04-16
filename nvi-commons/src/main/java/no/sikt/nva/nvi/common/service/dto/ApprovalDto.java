@@ -8,14 +8,15 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
-import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
+import no.sikt.nva.nvi.common.service.model.Approval;
+import no.sikt.nva.nvi.common.service.model.Username;
 
 @JsonTypeName(ApprovalDto.APPROVAL)
 @JsonTypeInfo(use = Id.NAME, property = "type")
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 public record ApprovalDto(URI institutionId,
-                          ApprovalStatus status,
+                          ApprovalStatusDto status,
                           BigDecimal points,
                           String assignee,
                           String finalizedBy,
@@ -28,10 +29,26 @@ public record ApprovalDto(URI institutionId,
         return new Builder();
     }
 
+    public static ApprovalDto fromApprovalAndInstitutionPoints(Approval approval, BigDecimal points) {
+        return ApprovalDto.builder()
+                   .withInstitutionId(approval.getInstitutionId())
+                   .withStatus(ApprovalStatusDto.from(approval.getStatus(), approval.isAssigned()))
+                   .withPoints(points)
+                   .withAssignee(mapToUsernameString(approval.getAssignee()))
+                   .withFinalizedBy(mapToUsernameString(approval.getFinalizedBy()))
+                   .withFinalizedDate(approval.getFinalizedDate())
+                   .withReason(approval.getReason())
+                   .build();
+    }
+
+    private static String mapToUsernameString(Username assignee) {
+        return assignee != null ? assignee.value() : null;
+    }
+
     public static final class Builder {
 
         private URI institutionId;
-        private ApprovalStatus status;
+        private ApprovalStatusDto status;
         private BigDecimal points;
         private String assignee;
         private String finalizedBy;
@@ -46,7 +63,7 @@ public record ApprovalDto(URI institutionId,
             return this;
         }
 
-        public Builder withStatus(ApprovalStatus status) {
+        public Builder withStatus(ApprovalStatusDto status) {
             this.status = status;
             return this;
         }
