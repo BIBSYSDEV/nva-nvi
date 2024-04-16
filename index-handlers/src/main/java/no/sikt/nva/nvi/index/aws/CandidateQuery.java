@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
+import nva.commons.core.paths.UriWrapper;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
@@ -79,8 +80,8 @@ public class CandidateQuery {
 
     public static Query matchAtLeastOne(Query... queries) {
         return new Query.Builder()
-            .bool(new BoolQuery.Builder().should(Arrays.stream(queries).toList()).build())
-            .build();
+                   .bool(new BoolQuery.Builder().should(Arrays.stream(queries).toList()).build())
+                   .build();
     }
 
     public Query toQuery() {
@@ -89,8 +90,8 @@ public class CandidateQuery {
 
     private static Query mustMatch(Query... queries) {
         return new Query.Builder()
-            .bool(new BoolQuery.Builder().must(Arrays.stream(queries).toList()).build())
-            .build();
+                   .bool(new BoolQuery.Builder().must(Arrays.stream(queries).toList()).build())
+                   .build();
     }
 
     private static Query multipleApprovalsQuery() {
@@ -99,9 +100,9 @@ public class CandidateQuery {
 
     private static Query nestedQuery(String path, Query... queries) {
         return new NestedQuery.Builder()
-            .path(path)
-            .query(mustMatch(queries))
-            .build()._toQuery();
+                   .path(path)
+                   .query(mustMatch(queries))
+                   .build()._toQuery();
     }
 
     private static Query statusQuery(String customer, ApprovalStatus status) {
@@ -112,10 +113,10 @@ public class CandidateQuery {
 
     private static Query termQuery(String value, String field) {
         return nonNull(value)
-                   ?  new TermQuery.Builder()
-                          .value(new FieldValue.Builder().stringValue(value).build())
-                          .field(field)
-                          .build()._toQuery()
+                   ? new TermQuery.Builder()
+                         .value(new FieldValue.Builder().stringValue(value).build())
+                         .field(field)
+                         .build()._toQuery()
                    : new MatchAllQuery.Builder().build()._toQuery();
     }
 
@@ -140,24 +141,25 @@ public class CandidateQuery {
     private static Query termsQuery(List<String> values, String field) {
         var termsFields = values.stream().map(FieldValue::of).toList();
         return new TermsQuery.Builder()
-            .field(field)
-            .terms(new TermsQueryField.Builder().value(termsFields).build())
-            .build()._toQuery();
+                   .field(field)
+                   .terms(new TermsQueryField.Builder().value(termsFields).build())
+                   .build()._toQuery();
     }
 
     private static Query matchQuery(String value, String field) {
         return new MatchQuery.Builder().field(field)
-            .query(new FieldValue.Builder().stringValue(value).build())
-            .build()._toQuery();
+                   .query(new FieldValue.Builder().stringValue(value).build())
+                   .build()._toQuery();
     }
 
-    private static Query contributorQueryIncludingSubUnits(List<String> institutions) {
+    private static Query contributorQueryIncludingSubUnits(List<String> organizations) {
+        var institutionIdentifiers = extractIdentifiers(organizations);
         return nestedQuery(jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS),
                            QueryBuilders.bool().must(
                                matchAtLeastOne(
-                                   termsQuery(institutions,
+                                   termsQuery(organizations,
                                               jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, ID)),
-                                   termsQuery(institutions,
+                                   termsQuery(institutionIdentifiers,
                                               jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, PART_OF))
                                ),
                                matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, ROLE))
@@ -165,10 +167,18 @@ public class CandidateQuery {
         );
     }
 
-    private static Query contributorQueryExcludingSubUnits(List<String> institutions) {
+    private static List<String> extractIdentifiers(List<String> organizations) {
+        return organizations.stream().map(CandidateQuery::getLastPathElement).toList();
+    }
+
+    private static String getLastPathElement(String organization) {
+        return UriWrapper.fromUri(organization).getLastPathElement();
+    }
+
+    private static Query contributorQueryExcludingSubUnits(List<String> organizations) {
         return nestedQuery(jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS),
                            QueryBuilders.bool().must(
-                               termsQuery(institutions,
+                               termsQuery(organizations,
                                           jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, ID)),
                                matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, ROLE))
                            ).build()._toQuery()
@@ -182,8 +192,8 @@ public class CandidateQuery {
 
     private static Query categoryQuery(String category) {
         return Optional.ofNullable(category)
-            .map(c -> termQuery(c, jsonPathOf(PUBLICATION_DETAILS, TYPE, KEYWORD)))
-            .orElse(null);
+                   .map(c -> termQuery(c, jsonPathOf(PUBLICATION_DETAILS, TYPE, KEYWORD)))
+                   .orElse(null);
     }
 
     private static Query statusQueryWithAssignee(String customer, ApprovalStatus status, boolean hasAssignee) {
@@ -197,14 +207,14 @@ public class CandidateQuery {
 
     private static Query notExistsQuery(String field) {
         return new BoolQuery.Builder()
-            .mustNot(new ExistsQuery.Builder().field(field).build()._toQuery())
-            .build()._toQuery();
+                   .mustNot(new ExistsQuery.Builder().field(field).build()._toQuery())
+                   .build()._toQuery();
     }
 
     private static Query existsQuery(String field) {
         return new BoolQuery.Builder()
-            .must(new ExistsQuery.Builder().field(field).build()._toQuery())
-            .build()._toQuery();
+                   .must(new ExistsQuery.Builder().field(field).build()._toQuery())
+                   .build()._toQuery();
     }
 
     private List<Query> specificMatch() {
@@ -220,9 +230,9 @@ public class CandidateQuery {
         return Stream.of(searchTermQuery, institutionQuery, filterQuery, yearQuery, categoryQuery, titleQuery,
                          contributorQuery,
                          assigneeQuery)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .toList();
+                   .filter(Optional::isPresent)
+                   .map(Optional::get)
+                   .toList();
     }
 
     private Optional<Query> constructQueryWithFilter() {
@@ -278,29 +288,29 @@ public class CandidateQuery {
 
     private Optional<Query> createTitleQuery(String title) {
         return Optional.ofNullable(title)
-            .map(t -> new MatchPhraseQuery.Builder()
-                .field(jsonPathOf(PUBLICATION_DETAILS, TITLE))
-                .query(t)
-                .build()
-                ._toQuery());
+                   .map(t -> new MatchPhraseQuery.Builder()
+                                 .field(jsonPathOf(PUBLICATION_DETAILS, TITLE))
+                                 .query(t)
+                                 .build()
+                                 ._toQuery());
     }
 
     private Optional<Query> createContributorQuery(String contributor) {
         return Optional.ofNullable(contributor)
-            .map(c -> new MatchPhraseQuery.Builder()
-                .field(jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, NAME))
-                .query(c)
-                .build()
-                ._toQuery());
+                   .map(c -> new MatchPhraseQuery.Builder()
+                                 .field(jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, NAME))
+                                 .query(c)
+                                 .build()
+                                 ._toQuery());
     }
 
     private Optional<Query> createAssigneeQuery(String assignee) {
         return Optional.ofNullable(assignee)
-            .map(a -> new MatchPhraseQuery.Builder()
-                .field(jsonPathOf(APPROVALS, ASSIGNEE))
-                .query(a)
-                .build()
-                ._toQuery());
+                   .map(a -> new MatchPhraseQuery.Builder()
+                                 .field(jsonPathOf(APPROVALS, ASSIGNEE))
+                                 .query(a)
+                                 .build()
+                                 ._toQuery());
     }
 
     public enum QueryFilterType {
@@ -325,8 +335,8 @@ public class CandidateQuery {
         public static Optional<QueryFilterType> parse(String candidate) {
             var testValue = isNull(candidate) ? "" : candidate;
             return Arrays.stream(values())
-                .filter(item -> item.getFilter().equalsIgnoreCase(testValue))
-                .findAny();
+                       .filter(item -> item.getFilter().equalsIgnoreCase(testValue))
+                       .findAny();
         }
 
         @JsonValue
