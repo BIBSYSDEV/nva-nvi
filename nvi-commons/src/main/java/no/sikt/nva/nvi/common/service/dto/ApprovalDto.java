@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service.dto;
 
+import static java.util.Objects.nonNull;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
@@ -32,7 +33,7 @@ public record ApprovalDto(URI institutionId,
     public static ApprovalDto fromApprovalAndInstitutionPoints(Approval approval, BigDecimal points) {
         return ApprovalDto.builder()
                    .withInstitutionId(approval.getInstitutionId())
-                   .withStatus(ApprovalStatusDto.from(approval.getStatus(), approval.isAssigned()))
+                   .withStatus(ApprovalStatusDto.from(approval))
                    .withPoints(points)
                    .withAssignee(mapToUsernameString(approval.getAssignee()))
                    .withFinalizedBy(mapToUsernameString(approval.getFinalizedBy()))
@@ -42,7 +43,7 @@ public record ApprovalDto(URI institutionId,
     }
 
     private static String mapToUsernameString(Username assignee) {
-        return assignee != null ? assignee.value() : null;
+        return nonNull(assignee) ? assignee.value() : null;
     }
 
     public static final class Builder {

@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.service.dto;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
+import no.sikt.nva.nvi.common.service.model.Approval;
 
 public enum ApprovalStatusDto {
 
@@ -14,9 +14,9 @@ public enum ApprovalStatusDto {
         this.value = value;
     }
 
-    public static ApprovalStatusDto from(ApprovalStatus status, boolean approvalHasAssignee) {
-        return switch (status) {
-            case PENDING -> approvalHasAssignee ? PENDING : NEW;
+    public static ApprovalStatusDto from(Approval approval) {
+        return switch (approval.getStatus()) {
+            case PENDING -> approval.isAssigned() ? PENDING : NEW;
             case APPROVED -> APPROVED;
             case REJECTED -> REJECTED;
         };

@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.rest.upsert;
 
-import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
@@ -156,7 +155,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var candidateResponse = response.getBodyObject(CandidateDto.class);
         var actualApproval = candidateResponse.approvals().get(0);
-        var expectedStatus = ApprovalStatusDto.from(newStatus, nonNull(actualApproval.assignee()));
+        var expectedStatus = getExpectedApprovalStatus(newStatus);
         assertThat(actualApproval.status().getValue(), is(equalTo(expectedStatus.getValue())));
     }
 
@@ -174,10 +173,9 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var candidateResponse = response.getBodyObject(CandidateDto.class);
         var actualApproval = candidateResponse.approvals().get(0);
-        var expectedStatus = ApprovalStatusDto.from(newStatus, nonNull(actualApproval.assignee()));
         assertThat(actualApproval.finalizedBy(), is(nullValue()));
         assertThat(actualApproval.finalizedDate(), is(nullValue()));
-        assertThat(actualApproval.status().getValue(), is(equalTo(expectedStatus.getValue())));
+        assertThat(actualApproval.status().getValue(), is(equalTo(ApprovalStatusDto.NEW.getValue())));
     }
 
     @ParameterizedTest
@@ -214,9 +212,8 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var candidateResponse = response.getBodyObject(CandidateDto.class);
-
         var actualApproval = candidateResponse.approvals().get(0);
-        var expectedStatus = ApprovalStatusDto.from(newStatus, nonNull(actualApproval.assignee()));
+        var expectedStatus = getExpectedApprovalStatus(newStatus);
         assertThat(actualApproval.status().getValue(), is(equalTo(expectedStatus.getValue())));
         assertThat(actualApproval.reason(), is(nullValue()));
     }
@@ -267,6 +264,14 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
                    .withAccessRights(institutionId, AccessRight.MANAGE_NVI_CANDIDATES)
                    .withUserName(username)
                    .build();
+    }
+
+    private ApprovalStatusDto getExpectedApprovalStatus(ApprovalStatus status) {
+        return switch (status) {
+            case PENDING -> ApprovalStatusDto.NEW;
+            case APPROVED -> ApprovalStatusDto.APPROVED;
+            case REJECTED -> ApprovalStatusDto.REJECTED;
+        };
     }
 
     private InputStream createRequest(UUID candidateIdentifier, URI institutionId, ApprovalStatus status)
