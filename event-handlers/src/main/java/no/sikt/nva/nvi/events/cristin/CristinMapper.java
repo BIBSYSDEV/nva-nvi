@@ -10,6 +10,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -17,17 +18,20 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
+import no.sikt.nva.nvi.events.cristin.InstitutionPoints.CreatorPoints;
 import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -93,8 +97,8 @@ public final class CristinMapper {
                    .collaborationFactor(extractCollaborationFactor(cristinNviReport))
                    .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
                    .creators(extractCreators(cristinNviReport))
-//                   .creatorCount()
-//                   .creatorShareCount()
+                   //                   .creatorCount()
+                   //                   .creatorShareCount()
                    .channelId(extractChannelId(cristinNviReport))
                    .channelType(extractChannelType(cristinNviReport))
                    .build();
@@ -115,7 +119,8 @@ public final class CristinMapper {
     }
 
     private static BigDecimal sumPoints(List<DbInstitutionPoints> points) {
-        return points.stream().map(DbInstitutionPoints::points)
+        return points.stream()
+                   .map(DbInstitutionPoints::points)
                    .reduce(BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP), BigDecimal::add);
     }
 
@@ -172,14 +177,13 @@ public final class CristinMapper {
     }
 
     private static String extractChannelIdForAcademicMonograph(JsonNode referenceNode) {
-        return nonNull(extractJsonNodeTextValue(referenceNode, SERIES_ID_JSON_POINTER))
-                   ? extractJsonNodeTextValue(referenceNode, SERIES_ID_JSON_POINTER)
-                   : extractJsonNodeTextValue(referenceNode,PUBLISHER_ID_JSON_POINTER);
+        return nonNull(extractJsonNodeTextValue(referenceNode, SERIES_ID_JSON_POINTER)) ? extractJsonNodeTextValue(
+            referenceNode, SERIES_ID_JSON_POINTER) : extractJsonNodeTextValue(referenceNode, PUBLISHER_ID_JSON_POINTER);
     }
 
     private static String extractChannelTypeForAcademicMonograph(JsonNode referenceNode) {
-        return nonNull(extractJsonNodeTextValue(referenceNode, SERIES_TYPE_JSON_POINTER))
-                   ? extractJsonNodeTextValue(referenceNode,SERIES_TYPE_JSON_POINTER)
+        return nonNull(extractJsonNodeTextValue(referenceNode, SERIES_TYPE_JSON_POINTER)) ? extractJsonNodeTextValue(
+            referenceNode, SERIES_TYPE_JSON_POINTER)
                    : extractJsonNodeTextValue(referenceNode, PUBLISHER_TYPE_JSON_POINTER);
     }
 
@@ -225,8 +229,7 @@ public final class CristinMapper {
         var institutions = cristinNviReport.cristinLocales();
         return getCreators(cristinNviReport).stream()
                    .filter(CristinMapper::hasInstitutionPoints)
-                   .collect(collectToMapOfPoints(institutions))
-                   .entrySet()
+                   .collect(collectToInstitutionOfPoints(institutions))
                    .stream()
                    .map(CristinMapper::toDbInstitutionPoints)
                    .collect(Collectors.toList());
@@ -236,21 +239,50 @@ public final class CristinMapper {
         return nonNull(scientificPerson.getAuthorPointsForAffiliation());
     }
 
-    private static DbInstitutionPoints toDbInstitutionPoints(Entry<URI, BigDecimal> entry) {
-        //TODO: Implement creatorAffiliationPoints
-        return new DbInstitutionPoints(entry.getKey(), entry.getValue(), List.of());
+    private static DbInstitutionPoints toDbInstitutionPoints(InstitutionPoints institutionPoints) {
+        return new DbInstitutionPoints(institutionPoints.institutionId(), institutionPoints.points(),
+                                       toCreatorPoints(institutionPoints));
+    }
+
+    private static List<DbCreatorAffiliationPoints> toCreatorPoints(InstitutionPoints institutionPoints) {
+        return institutionPoints.creatorPoints()
+                   .stream()
+                   .map(CristinMapper::getDbCreatorAffiliationPoints)
+                   .collect(Collectors.toList());
+    }
+
+    private static DbCreatorAffiliationPoints getDbCreatorAffiliationPoints(CreatorPoints creatorPoints) {
+        return new DbCreatorAffiliationPoints(creatorPoints.creatorId(), creatorPoints.affiliationId(),
+                                              creatorPoints.points());
     }
 
     private static List<ScientificPerson> getCreators(CristinNviReport cristinNviReport) {
         return cristinNviReport.scientificResources().get(0).getCreators();
     }
 
-    private static Collector<ScientificPerson, ?, Map<URI, BigDecimal>> collectToMapOfPoints(
+    private static Collector<ScientificPerson, ?, List<InstitutionPoints>> collectToInstitutionOfPoints(
         List<CristinLocale> institutions) {
-        return Collectors.groupingBy(scientificPerson -> getTopLevelOrganization(scientificPerson, institutions),
-                                     Collectors.reducing(BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP),
-                                                         CristinMapper::extractAuthorPointsForAffiliation,
-                                                         BigDecimal::add));
+        return Collectors.collectingAndThen(
+            Collectors.groupingBy(scientificPerson -> getTopLevelOrganization(scientificPerson, institutions),
+                                  Collectors.toCollection(ArrayList::new)),
+            map -> getInstitutionPointsStream(institutions, map).collect(Collectors.toList()));
+    }
+
+    private static Stream<InstitutionPoints> getInstitutionPointsStream(List<CristinLocale> institutions,
+                                                                        Map<URI, ArrayList<ScientificPerson>> map) {
+        return map.entrySet().stream().map(entry -> toPoints(institutions, entry.getValue()));
+    }
+
+    private static InstitutionPoints toPoints(List<CristinLocale> institutions, List<ScientificPerson> list) {
+        return new InstitutionPoints(
+            getTopLevelOrganization(list.get(0), institutions),
+            list.stream().map(CristinMapper::extractAuthorPointsForAffiliation).reduce(BigDecimal.ZERO, BigDecimal::add),
+            list.stream().map(CristinMapper::toCreatorPoints).collect(Collectors.toList()));
+    }
+
+    private static CreatorPoints toCreatorPoints(ScientificPerson person) {
+        return new CreatorPoints(constructPersonCristinId(person), constructCristinOrganizationId(person),
+                                 CristinMapper.extractAuthorPointsForAffiliation(person));
     }
 
     private static BigDecimal extractAuthorPointsForAffiliation(ScientificPerson scientificPerson) {

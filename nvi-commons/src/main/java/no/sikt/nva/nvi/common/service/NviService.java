@@ -66,15 +66,17 @@ public class NviService {
         return periodRepository.getPeriods();
     }
 
-    public ListingResult<Dao> migrateAndUpdateVersion(int pageSize, Map<String, String> startMarker, List<KeyField> types) {
+    public ListingResult<Dao> migrateAndUpdateVersion(int pageSize, Map<String, String> startMarker,
+                                                      List<KeyField> types) {
         var scanResult = candidateRepository.scanEntries(pageSize, startMarker, types);
         candidateRepository.writeEntries(scanResult.getDatabaseEntries());
         return scanResult;
     }
 
-    public ListingResult<CandidateDao> fetchCandidatesByYear(String year, Integer pageSize,
+    public ListingResult<CandidateDao> fetchCandidatesByYear(String year,
+                                                             boolean includeReportedCandidates, Integer pageSize,
                                                              Map<String, String> startMarker) {
-        return candidateRepository.fetchCandidatesByYear(year, pageSize, startMarker);
+        return candidateRepository.fetchCandidatesByYear(year, includeReportedCandidates, pageSize, startMarker);
     }
 
     private static boolean isInteger(String value) {

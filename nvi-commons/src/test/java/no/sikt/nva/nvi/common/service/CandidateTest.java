@@ -13,6 +13,7 @@ import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomInstanceTypeExcluding;
 import static no.sikt.nva.nvi.test.TestUtils.randomLevelExcluding;
+import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
@@ -490,7 +491,8 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnNviCandidateContextAsString() {
-        var expectedContext = stringFromResources(Path.of("nviCandidateContext.json"));
+        var expectedContext = stringFromResources(Path.of("nviCandidateContext.json")).replace(
+            "__REPLACE_WITH_API_DOMAIN__", new Environment().readEnv("API_HOST"));
         assertThat(Candidate.getJsonLdContext(), is(equalTo(expectedContext)));
     }
 
@@ -502,7 +504,7 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnCandidateWithReportStatus() {
-        var dao = setupReportedCandidate(candidateRepository);
+        var dao = setupReportedCandidate(candidateRepository, randomYear());
         var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
         assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));
         assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));

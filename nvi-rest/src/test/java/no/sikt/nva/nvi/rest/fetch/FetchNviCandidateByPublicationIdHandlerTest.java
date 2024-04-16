@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -88,7 +89,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnCandidateWithReportStatus() throws IOException {
-        var candidate = setupReportedCandidate(candidateRepository);
+        var candidate = setupReportedCandidate(candidateRepository, randomYear());
         var request = requestWithAccessRight(candidate.candidate().publicationId());
 
         handler.handleRequest(request, output, CONTEXT);

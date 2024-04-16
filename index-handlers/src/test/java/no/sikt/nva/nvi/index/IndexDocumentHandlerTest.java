@@ -14,6 +14,7 @@ import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandPublicationDetai
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
@@ -119,7 +120,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     void shouldBuildIndexDocumentWithReportedPeriodWhenCandidateIsReported() {
         //Using repository to create reported candidate because setting Candidate as reported is not implemented yet
         //TODO: Use Candidate.setReported when implemented
-        var dao = setupReportedCandidate(candidateRepository);
+        var dao = setupReportedCandidate(candidateRepository, randomYear());
         var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
             candidate).indexDocument();

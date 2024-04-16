@@ -94,13 +94,14 @@ public class CandidateRepository extends DynamoRepository {
     }
 
     public ListingResult<CandidateDao> fetchCandidatesByYear(String year,
+                                                             boolean includeReportedCandidates,
                                                              Integer pageSize, Map<String, String> startMarker) {
         var page = queryYearIndex(year, pageSize, startMarker);
         return new ListingResult<>(thereAreMorePagesToScan(page),
                                    nonNull(page.lastEvaluatedKey())
                                        ? toStringMap(page.lastEvaluatedKey()) : emptyMap(),
                                    page.items().size(),
-                                   page.items());
+                                   includeReportedCandidates ? page.items() : filterOutReportedCandidates(page));
     }
 
     public CandidateDao create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
@@ -199,6 +200,13 @@ public class CandidateRepository extends DynamoRepository {
     protected static QueryConditional queryCandidateParts(UUID id, String type) {
         return sortBeginsWith(
             Key.builder().partitionValue(CandidateDao.createPartitionKey(id.toString())).sortValue(type).build());
+    }
+
+    private static List<CandidateDao> filterOutReportedCandidates(Page<CandidateDao> page) {
+        return page.items()
+                   .stream()
+                   .filter(CandidateDao::isNotReported)
+                   .collect(Collectors.toList());
     }
 
     private static <T> Stream<List<T>> getBatches(List<T> scanResult) {
