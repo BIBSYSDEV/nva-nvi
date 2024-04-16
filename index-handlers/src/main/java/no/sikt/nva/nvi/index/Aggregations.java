@@ -5,20 +5,22 @@ import static no.sikt.nva.nvi.index.model.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.ApprovalStatus.REJECTED;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.APPROVED_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.APPROVED_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.ASSIGNMENTS_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.COMPLETED_AGGREGATION_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.NEW_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.NEW_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.PENDING_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.PENDING_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.REJECTED_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.REJECTED_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.TOTAL_COUNT_AGGREGATION_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVED_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNMENTS_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.NEW_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.NEW_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NUMBER_OF_APPROVALS;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_COLLABORATION_AGG;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,8 +38,6 @@ import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 
 public final class Aggregations {
 
-    public static final String COMPLETED_AGGREGATION_AGG = "completed";
-    public static final String TOTAL_COUNT_AGGREGATION_AGG = "totalCount";
     public static final int MULTIPLE = 2;
     private static final CharSequence JSON_PATH_DELIMITER = ".";
 
@@ -46,17 +46,19 @@ public final class Aggregations {
 
     public static Map<String, Aggregation> generateAggregations(String username, String customer) {
         var aggregations = new HashMap<String, Aggregation>();
-        aggregations.put(NEW_AGG, statusAggregation(customer, NEW));
-        aggregations.put(NEW_COLLABORATION_AGG, collaborationAggregation(customer, NEW));
-        aggregations.put(PENDING_AGG, statusAggregation(customer, PENDING));
-        aggregations.put(PENDING_COLLABORATION_AGG, collaborationAggregation(customer, PENDING));
-        aggregations.put(APPROVED_AGG, statusAggregation(customer, APPROVED));
-        aggregations.put(APPROVED_COLLABORATION_AGG, finalizedCollaborationAggregation(customer, APPROVED));
-        aggregations.put(REJECTED_AGG, statusAggregation(customer, REJECTED));
-        aggregations.put(REJECTED_COLLABORATION_AGG, finalizedCollaborationAggregation(customer, REJECTED));
-        aggregations.put(ASSIGNMENTS_AGG, assignmentsAggregation(username, customer));
-        aggregations.put(COMPLETED_AGGREGATION_AGG, completedAggregation(customer));
-        aggregations.put(TOTAL_COUNT_AGGREGATION_AGG, totalCountAggregation(customer));
+        aggregations.put(NEW_AGG.getAggregationName(), statusAggregation(customer, NEW));
+        aggregations.put(NEW_COLLABORATION_AGG.getAggregationName(), collaborationAggregation(customer, NEW));
+        aggregations.put(PENDING_AGG.getAggregationName(), statusAggregation(customer, PENDING));
+        aggregations.put(PENDING_COLLABORATION_AGG.getAggregationName(), collaborationAggregation(customer, PENDING));
+        aggregations.put(APPROVED_AGG.getAggregationName(), statusAggregation(customer, APPROVED));
+        aggregations.put(APPROVED_COLLABORATION_AGG.getAggregationName(),
+                         finalizedCollaborationAggregation(customer, APPROVED));
+        aggregations.put(REJECTED_AGG.getAggregationName(), statusAggregation(customer, REJECTED));
+        aggregations.put(REJECTED_COLLABORATION_AGG.getAggregationName(),
+                         finalizedCollaborationAggregation(customer, REJECTED));
+        aggregations.put(ASSIGNMENTS_AGG.getAggregationName(), assignmentsAggregation(username, customer));
+        aggregations.put(COMPLETED_AGGREGATION_AGG.getAggregationName(), completedAggregation(customer));
+        aggregations.put(TOTAL_COUNT_AGGREGATION_AGG.getAggregationName(), totalCountAggregation(customer));
         return aggregations;
     }
 
@@ -76,12 +78,6 @@ public final class Aggregations {
     }
 
     public static Query statusQuery(String customer, ApprovalStatus status) {
-        return nestedQuery(APPROVALS,
-                           termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)),
-                           termQuery(status.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)));
-    }
-
-    public static Query statusQueryWithAssignee(String customer, ApprovalStatus status) {
         return nestedQuery(APPROVALS,
                            termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)),
                            termQuery(status.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)));
@@ -160,11 +156,9 @@ public final class Aggregations {
                    .build();
     }
 
-    private static Aggregation collaborationAggregation(String customer,
-                                                        ApprovalStatus status) {
+    private static Aggregation collaborationAggregation(String customer, ApprovalStatus status) {
         return new Aggregation.Builder()
-                   .filter(mustMatch(statusQueryWithAssignee(customer, status),
-                                     multipleApprovalsQuery()))
+                   .filter(mustMatch(statusQuery(customer, status), multipleApprovalsQuery()))
                    .build();
     }
 

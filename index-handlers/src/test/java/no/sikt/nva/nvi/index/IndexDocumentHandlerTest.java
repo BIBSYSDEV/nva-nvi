@@ -157,7 +157,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldSetApprovalStatusNewWhenApprovalIsPendingAndUnassigned(){
+    void shouldSetApprovalStatusNewWhenApprovalIsPendingAndUnassigned() {
         var institutionId = randomUri();
         var candidate = randomApplicableCandidate(institutionId);
         setUpExistingResourceInS3AndGenerateExpectedDocument(candidate);

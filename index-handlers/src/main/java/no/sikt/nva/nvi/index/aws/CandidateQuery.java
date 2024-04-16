@@ -298,7 +298,6 @@ public class CandidateQuery {
         REJECTED_AGG("rejected"),
         REJECTED_COLLABORATION_AGG("rejectedCollaboration"),
         ASSIGNMENTS_AGG("assignments"),
-
         EMPTY_FILTER("");
 
         private final String filter;
