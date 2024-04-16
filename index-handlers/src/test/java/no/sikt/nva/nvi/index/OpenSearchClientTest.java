@@ -1,16 +1,16 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.index.Aggregations.COMPLETED_AGGREGATION_AGG;
-import static no.sikt.nva.nvi.index.Aggregations.TOTAL_COUNT_AGGREGATION_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVED_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVED_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNED_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNED_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNMENTS_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.PENDING_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.REJECTED_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.APPROVED_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.APPROVED_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.ASSIGNMENTS_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.COMPLETED_AGGREGATION_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.NEW_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.NEW_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.PENDING_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.PENDING_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.REJECTED_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.REJECTED_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.utils.SearchAggregations.TOTAL_COUNT_AGGREGATION_AGG;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -44,6 +44,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.index.aws.CandidateQuery.QueryFilterType;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.model.Approval;
 import no.sikt.nva.nvi.index.model.ApprovalStatus;
@@ -201,10 +202,10 @@ public class OpenSearchClientTest {
     @MethodSource("aggregationNameAndExpectedCountProvider")
     void shouldReturnAggregationsWithExpectedCount(Entry<String, Integer> entry)
         throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_pending.json"),
+        addDocumentsToIndex(documentFromString("document_new.json"),
+                            documentFromString("document_new_collaboration.json"),
+                            documentFromString("document_pending.json"),
                             documentFromString("document_pending_collaboration.json"),
-                            documentFromString("document_assigned.json"),
-                            documentFromString("document_assigned_collaboration.json"),
                             documentFromString("document_approved.json"),
                             documentFromString("document_approved_collaboration.json"),
                             documentFromString("document_rejected.json"),
@@ -282,10 +283,10 @@ public class OpenSearchClientTest {
     @MethodSource("filterNameProvider")
     void shouldReturnSearchResultsUsingFilter(Entry<String, Integer> entry)
         throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_pending.json"),
+        addDocumentsToIndex(documentFromString("document_new.json"),
+                            documentFromString("document_new_collaboration.json"),
+                            documentFromString("document_pending.json"),
                             documentFromString("document_pending_collaboration.json"),
-                            documentFromString("document_assigned.json"),
-                            documentFromString("document_assigned_collaboration.json"),
                             documentFromString("document_approved.json"),
                             documentFromString("document_approved_collaboration.json"),
                             documentFromString("document_rejected.json"),
@@ -412,10 +413,10 @@ public class OpenSearchClientTest {
     @MethodSource("filterNameProvider")
     void shouldReturnSearchResultsUsingFilterAndSearchTermCombined(Entry<String, Integer> entry)
         throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_pending.json"),
+        addDocumentsToIndex(documentFromString("document_new.json"),
+                            documentFromString("document_new_collaboration.json"),
+                            documentFromString("document_pending.json"),
                             documentFromString("document_pending_collaboration.json"),
-                            documentFromString("document_assigned.json"),
-                            documentFromString("document_assigned_collaboration.json"),
                             documentFromString("document_approved.json"),
                             documentFromString("document_approved_collaboration.json"),
                             documentFromString("document_rejected.json"),
@@ -431,7 +432,7 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldReturnSingleDocumentWhenFilteringByCategory() throws InterruptedException, IOException {
-        addDocumentsToIndex(documentFromString("document_pending.json"),
+        addDocumentsToIndex(documentFromString("document_new.json"),
                             documentFromString("document_pending_category_degree_bachelor.json"));
 
         var searchParameters =
@@ -578,31 +579,31 @@ public class OpenSearchClientTest {
 
     private static Stream<Entry<String, Integer>> aggregationNameAndExpectedCountProvider() {
         var map = new HashMap<String, Integer>();
-        map.put(PENDING_AGG, 2);
-        map.put(PENDING_COLLABORATION_AGG, 1);
-        map.put(ASSIGNED_AGG, 2);
-        map.put(ASSIGNED_COLLABORATION_AGG, 1);
-        map.put(APPROVED_AGG, 2);
-        map.put(APPROVED_COLLABORATION_AGG, 1);
-        map.put(REJECTED_AGG, 2);
-        map.put(REJECTED_COLLABORATION_AGG, 1);
-        map.put(ASSIGNMENTS_AGG, 4);
-        map.put(COMPLETED_AGGREGATION_AGG, 4);
-        map.put(TOTAL_COUNT_AGGREGATION_AGG, 8);
+        map.put(NEW_AGG.getAggregationName(), 2);
+        map.put(NEW_COLLABORATION_AGG.getAggregationName(), 1);
+        map.put(PENDING_AGG.getAggregationName(), 2);
+        map.put(PENDING_COLLABORATION_AGG.getAggregationName(), 1);
+        map.put(APPROVED_AGG.getAggregationName(), 2);
+        map.put(APPROVED_COLLABORATION_AGG.getAggregationName(), 1);
+        map.put(REJECTED_AGG.getAggregationName(), 2);
+        map.put(REJECTED_COLLABORATION_AGG.getAggregationName(), 1);
+        map.put(ASSIGNMENTS_AGG.getAggregationName(), 4);
+        map.put(COMPLETED_AGGREGATION_AGG.getAggregationName(), 4);
+        map.put(TOTAL_COUNT_AGGREGATION_AGG.getAggregationName(), 8);
         return map.entrySet().stream();
     }
 
     private static Stream<Entry<String, Integer>> filterNameProvider() {
         var map = new HashMap<String, Integer>();
-        map.put(PENDING_AGG, 2);
-        map.put(PENDING_COLLABORATION_AGG, 1);
-        map.put(ASSIGNED_AGG, 2);
-        map.put(ASSIGNED_COLLABORATION_AGG, 1);
-        map.put(APPROVED_AGG, 2);
-        map.put(APPROVED_COLLABORATION_AGG, 1);
-        map.put(REJECTED_AGG, 2);
-        map.put(REJECTED_COLLABORATION_AGG, 1);
-        map.put(ASSIGNMENTS_AGG, 4);
+        map.put(QueryFilterType.NEW_AGG.getFilter(), 2);
+        map.put(QueryFilterType.NEW_COLLABORATION_AGG.getFilter(), 1);
+        map.put(QueryFilterType.PENDING_AGG.getFilter(), 2);
+        map.put(QueryFilterType.PENDING_COLLABORATION_AGG.getFilter(), 1);
+        map.put(QueryFilterType.APPROVED_AGG.getFilter(), 2);
+        map.put(QueryFilterType.APPROVED_COLLABORATION_AGG.getFilter(), 1);
+        map.put(QueryFilterType.REJECTED_AGG.getFilter(), 2);
+        map.put(QueryFilterType.REJECTED_COLLABORATION_AGG.getFilter(), 1);
+        map.put(QueryFilterType.ASSIGNMENTS_AGG.getFilter(), 4);
         return map.entrySet().stream();
     }
 

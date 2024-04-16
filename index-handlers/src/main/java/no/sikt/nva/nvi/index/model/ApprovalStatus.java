@@ -5,6 +5,7 @@ import java.util.Arrays;
 import nva.commons.core.SingletonCollector;
 
 public enum ApprovalStatus {
+    NEW("New"),
     PENDING("Pending"),
     APPROVED("Approved"),
     REJECTED("Rejected");
@@ -15,15 +16,15 @@ public enum ApprovalStatus {
         this.value = value;
     }
 
-    @JsonValue
-    public String getValue() {
-        return value;
-    }
-
     public static ApprovalStatus fromValue(String candidate) {
         return Arrays.stream(values())
                    .filter(item -> item.getValue().equalsIgnoreCase(candidate))
                    .collect(SingletonCollector.tryCollect())
                    .orElseThrow();
+    }
+
+    @JsonValue
+    public String getValue() {
+        return value;
     }
 }

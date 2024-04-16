@@ -45,6 +45,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
+import no.sikt.nva.nvi.index.model.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.ConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
@@ -154,6 +155,19 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate)));
         assertEquals(expectedConsumptionAttributes, actualIndexDocument.consumptionAttributes());
+    }
+
+    @Test
+    void shouldSetApprovalStatusNewWhenApprovalIsPendingAndUnassigned() {
+        var institutionId = randomUri();
+        var candidate = randomApplicableCandidate(institutionId);
+        setUpExistingResourceInS3AndGenerateExpectedDocument(candidate);
+        var event = createEvent(candidate.getIdentifier());
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        assertEquals(ApprovalStatus.NEW,
+                     actualIndexDocument.getApprovalForInstitution(institutionId.toString()).approvalStatus());
     }
 
     @Test
@@ -489,6 +503,12 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     private Candidate randomApplicableCandidate() {
         return Candidate.upsert(createUpsertCandidateRequest(SOME_REPORTING_YEAR), candidateRepository,
+                                periodRepository)
+                   .orElseThrow();
+    }
+
+    private Candidate randomApplicableCandidate(URI institutionId) {
+        return Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository,
                                 periodRepository)
                    .orElseThrow();
     }

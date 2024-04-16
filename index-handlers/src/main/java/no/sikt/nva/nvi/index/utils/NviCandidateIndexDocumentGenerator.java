@@ -100,6 +100,11 @@ public final class NviCandidateIndexDocumentGenerator {
         return nodeIterator.toList().stream().map(RDFNode::toString);
     }
 
+    private static ApprovalStatus getApprovalStatus(Approval approval) {
+        return approval.isPendingAndUnassigned() ? ApprovalStatus.NEW
+                   : ApprovalStatus.fromValue(approval.getStatus().getValue());
+    }
+
     private NviCandidateIndexDocument buildCandidate(JsonNode resource, Candidate candidate,
                                                      List<no.sikt.nva.nvi.index.model.Approval> approvals) {
         return NviCandidateIndexDocument.builder()
@@ -149,7 +154,7 @@ public final class NviCandidateIndexDocumentGenerator {
         return no.sikt.nva.nvi.index.model.Approval.builder()
                    .withInstitutionId(approval.getInstitutionId().toString())
                    .withLabels(extractLabels(resource, approval))
-                   .withApprovalStatus(ApprovalStatus.fromValue(approval.getStatus().getValue()))
+                   .withApprovalStatus(getApprovalStatus(approval))
                    .withPoints(getInstitutionPoints(approval, candidate))
                    .withAssignee(extractAssignee(approval))
                    .build();
