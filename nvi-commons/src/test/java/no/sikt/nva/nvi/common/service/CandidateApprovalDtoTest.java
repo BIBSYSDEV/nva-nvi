@@ -72,11 +72,9 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
         var candidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
-                            .orElseThrow()
-                            .toDto();
-        assertThat(candidate.approvals().size(), is(equalTo(1)));
-        assertThat(candidate.approvals().get(0).status(), is(equalTo(ApprovalStatus.PENDING)));
-        assertThat(candidate.approvals().get(0).institutionId(), is(equalTo(institutionId)));
+                            .orElseThrow();
+        assertThat(candidate.getApprovals().size(), is(equalTo(1)));
+        assertThat(candidate.getApprovals().get(institutionId).getStatus(), is(equalTo(ApprovalStatus.PENDING)));
     }
 
     @ParameterizedTest(name = "Should update from old status {0} to new status {1}")
@@ -91,7 +89,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
         var updatedCandidate = existingCandidate.updateApproval(
             createUpdateStatusRequest(newStatus, institutionId, randomString()));
 
-        var actualNewStatus = updatedCandidate.toDto().approvals().get(0).status();
+        var actualNewStatus = updatedCandidate.getApprovals().get(institutionId).getStatus();
         assertThat(actualNewStatus, is(equalTo(newStatus)));
     }
 
@@ -112,11 +110,11 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
         candidateBO.updateApproval(new UpdateAssigneeRequest(institutionId, assignee))
             .updateApproval(createUpdateStatusRequest(oldStatus, institutionId, randomString()))
             .updateApproval(createUpdateStatusRequest(ApprovalStatus.PENDING, institutionId, randomString()));
-        var approvalStatus = candidateBO.toDto().approvals().get(0);
-        assertThat(approvalStatus.status(), is(equalTo(ApprovalStatus.PENDING)));
-        assertThat(approvalStatus.assignee(), is(assignee));
-        assertThat(approvalStatus.finalizedBy(), is(nullValue()));
-        assertThat(approvalStatus.finalizedDate(), is(nullValue()));
+        var approvalStatus = candidateBO.getApprovals().get(institutionId);
+        assertThat(approvalStatus.getStatus(), is(equalTo(ApprovalStatus.PENDING)));
+        assertThat(approvalStatus.getAssignee().value(), is(assignee));
+        assertThat(approvalStatus.getFinalizedBy(), is(nullValue()));
+        assertThat(approvalStatus.getFinalizedDate(), is(nullValue()));
     }
 
     @ParameterizedTest
@@ -131,10 +129,10 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
                                                                   randomString()));
 
         var updatedCandidate = rejectedCandidate.updateApproval(
-            createUpdateStatusRequest(newStatus, institutionId, randomString())).toDto();
-        assertThat(updatedCandidate.approvals().size(), is(equalTo(1)));
-        assertThat(updatedCandidate.approvals().get(0).status(), is(equalTo(newStatus)));
-        assertThat(updatedCandidate.approvals().get(0).reason(), is(nullValue()));
+            createUpdateStatusRequest(newStatus, institutionId, randomString()));
+        assertThat(updatedCandidate.getApprovals().size(), is(equalTo(1)));
+        assertThat(updatedCandidate.getApprovals().get(institutionId).getStatus(), is(equalTo(newStatus)));
+        assertThat(updatedCandidate.getApprovals().get(institutionId).getReason(), is(nullValue()));
     }
 
     @Test
@@ -238,11 +236,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
         candidateBO.updateApproval(createUpdateStatusRequest(ApprovalStatus.APPROVED, institutionId, randomString()));
 
         var status = Candidate.fetch(candidateBO::getIdentifier, candidateRepository, periodRepository)
-                         .toDto()
-                         .approvals()
-                         .get(0)
-                         .status();
-
+                                  .getApprovals().get(institutionId).getStatus();
         assertThat(status, is(equalTo(ApprovalStatus.APPROVED)));
     }
 
