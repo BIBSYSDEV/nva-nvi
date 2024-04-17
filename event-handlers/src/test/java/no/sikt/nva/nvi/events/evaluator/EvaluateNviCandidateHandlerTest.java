@@ -85,7 +85,7 @@ class EvaluateNviCandidateHandlerTest {
     private static final URI HARDCODED_PUBLICATION_ID = URI.create(
         "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d");
     private static final String ERROR_COULD_NOT_FETCH_CRISTIN_ORG = "Could not fetch Cristin organization for: ";
-    private static final String COULD_NOT_FETCH_CUSTOMER_MESSAGE = "Could not fetch topLevelCristinOrg for: ";
+    private static final String COULD_NOT_FETCH_CUSTOMER_MESSAGE = "Could not fetch customer for: ";
     private static final URI CRISTIN_NVI_ORG_TOP_LEVEL_ID = URI.create(
         "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
     private static final URI CRISTIN_NVI_ORG_SUB_UNIT_ID = URI.create(
