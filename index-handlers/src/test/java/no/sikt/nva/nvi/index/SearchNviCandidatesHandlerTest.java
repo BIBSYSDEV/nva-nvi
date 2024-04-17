@@ -52,6 +52,7 @@ import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
+import nva.commons.logutils.LogUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,6 +72,8 @@ import org.zalando.problem.Problem;
 @Testcontainers
 public class SearchNviCandidatesHandlerTest {
 
+    public static final URI TOP_LEVEL_CRISTIN_ORG = URI.create(
+        "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     private static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     private static final String QUERY_PARAM_FILTER = "filter";
     private static final String QUERY_PARAM_CATEGORY = "category";
@@ -220,7 +223,6 @@ public class SearchNviCandidatesHandlerTest {
 
     @Test
     void shouldReturnResultsWithUserTopLevelOrgAsDefaultAffiliationIfNotSet() throws IOException {
-        var topLevelCristinOrg = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
         var searchedAffiliations = List.of(randomSiktSubUnit(), randomSiktSubUnit());
 
         var matcher =
@@ -229,7 +231,7 @@ public class SearchNviCandidatesHandlerTest {
         when(openSearchClient.search(argThat(matcher)))
             .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
 
-        var request = requestWithInstitutionsAndTopLevelCristinOrgId(searchedAffiliations, topLevelCristinOrg);
+        var request = requestWithInstitutionsAndTopLevelCristinOrgId(searchedAffiliations, TOP_LEVEL_CRISTIN_ORG);
         handler.handleRequest(request, output, context);
 
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -242,10 +244,10 @@ public class SearchNviCandidatesHandlerTest {
     void shouldReturnForbiddenWhenTryingToSearchForAffiliationOutsideOfCustomersCristinIdScope() throws IOException {
         when(openSearchClient.search(any()))
             .thenThrow(RuntimeException.class);
-        var topLevelCristinOrg = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
         var searchedAffiliation = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/0.0.0.0");
 
-        var request = requestWithInstitutionsAndTopLevelCristinOrgId(List.of(searchedAffiliation), topLevelCristinOrg);
+        var request = requestWithInstitutionsAndTopLevelCristinOrgId(List.of(searchedAffiliation),
+                                                                     TOP_LEVEL_CRISTIN_ORG);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -266,6 +268,16 @@ public class SearchNviCandidatesHandlerTest {
             objectMapper.readValue(response.getBody(), TYPE_REF);
 
         assertThat(paginatedResult.getHits(), hasSize(1));
+    }
+
+    @Test
+    void shouldLogAggregationTypeAndOrganization() throws IOException {
+        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of("aggregation", "approvalStatuses",
+                                                                  "organization", TOP_LEVEL_CRISTIN_ORG.toString()));
+        final var logAppender = LogUtils.getTestingAppender(SearchNviCandidatesHandler.class);
+        handler.handleRequest(request, output, context);
+        assertThat(logAppender.getMessages(), containsString("Aggregation type approvalStatuses requested for "
+                                                             + "organization " + TOP_LEVEL_CRISTIN_ORG));
     }
 
     private static void mockOpenSearchClient() throws IOException {
@@ -324,6 +336,15 @@ public class SearchNviCandidatesHandlerTest {
                                       PublicationDate.builder().withYear(randomString()).build(), List.of());
     }
 
+    private static InputStream createRequest(URI topLevelCristinOrgId, Map<String, String> queryParams)
+        throws JsonProcessingException {
+        return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
+                   .withTopLevelCristinOrgId(topLevelCristinOrgId)
+                   .withUserName(randomString())
+                   .withQueryParameters(queryParams)
+                   .build();
+    }
+
     private URI constructBasePath() {
         return UriWrapper.fromHost(API_HOST).addChild(CUSTOM_DOMAIN_BASE_PATH).addChild(CANDIDATE_PATH).getUri();
     }
@@ -366,32 +387,24 @@ public class SearchNviCandidatesHandlerTest {
                                                          String category,
                                                          String title)
         throws JsonProcessingException {
-        return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
-                   .withTopLevelCristinOrgId(randomUri())
-                   .withUserName(randomString())
-                   .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS, String.join(COMMA,
-                                                                                     institutions.stream()
-                                                                                         .map(URI::toString)
-                                                                                         .toList()),
-                                               QUERY_PARAM_EXCLUDE_SUB_UNITS, "true",
-                                               QUERY_PARAM_FILTER, filter,
-                                               QUERY_PARAM_CATEGORY, category,
-                                               QUERY_PARAM_TITLE, title,
-                                               QUERY_PARAM_SEARCH_TERM, searchTerm))
-                   .build();
+        return createRequest(randomUri(), Map.of(QUERY_PARAM_AFFILIATIONS, String.join(COMMA,
+                                                                                       institutions.stream()
+                                                                                           .map(URI::toString)
+                                                                                           .toList()),
+                                                 QUERY_PARAM_EXCLUDE_SUB_UNITS, "true",
+                                                 QUERY_PARAM_FILTER, filter,
+                                                 QUERY_PARAM_CATEGORY, category,
+                                                 QUERY_PARAM_TITLE, title,
+                                                 QUERY_PARAM_SEARCH_TERM, searchTerm));
     }
 
     private InputStream requestWithInstitutionsAndTopLevelCristinOrgId(List<URI> institutions, URI cristinId)
         throws JsonProcessingException {
-        return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
-                   .withTopLevelCristinOrgId(cristinId)
-                   .withUserName(randomString())
-                   .withQueryParameters(Map.of(QUERY_PARAM_AFFILIATIONS,
+        return createRequest(cristinId, Map.of(QUERY_PARAM_AFFILIATIONS,
                                                String.join(",",
                                                            institutions.stream().map(URI::toString).toList()),
                                                QUERY_PARAM_EXCLUDE_SUB_UNITS,
-                                               "true"))
-                   .build();
+                                               "true"));
     }
 
     private InputStream requestWithoutQueryParameters() throws JsonProcessingException {
