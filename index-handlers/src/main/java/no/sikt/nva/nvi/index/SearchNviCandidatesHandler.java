@@ -61,9 +61,9 @@ public class SearchNviCandidatesHandler
     protected PaginatedSearchResult<NviCandidateIndexDocument> processInput(Void input, RequestInfo requestInfo,
                                                                             Context context)
         throws UnauthorizedException {
-        var candidateSearchParameters = getCandidateSearchParameters(requestInfo);
-        logger.info("Aggregation type {} requested for topLevelCristinOrg {}", candidateSearchParameters.aggregationType(),
-                    candidateSearchParameters.topLevelCristinOrg());
+        validateAccessRights(requestInfo);
+        var candidateSearchParameters = CandidateSearchParameters.fromRequestInfo(requestInfo);
+        logAggregationType(candidateSearchParameters);
         return attempt(() -> openSearchClient.search(candidateSearchParameters))
                    .map(searchResponse -> toPaginatedResult(searchResponse, candidateSearchParameters))
                    .orElseThrow();
@@ -79,13 +79,8 @@ public class SearchNviCandidatesHandler
     }
 
     private static List<URI> getAffiliations(RequestInfo requestInfo, URI topLevelOrg) {
-        if (!userIsNviAdmin(requestInfo)) {
-            return Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
-                       .orElse(List.of(topLevelOrg));
-        } else {
-            return Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
-                       .orElse(List.of());
-        }
+        return Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
+                   .orElse(List.of(topLevelOrg));
     }
 
     private static List<URI> extractQueryParamAffiliations(RequestInfo requestInfo) {
@@ -100,18 +95,22 @@ public class SearchNviCandidatesHandler
                                                  new Environment().readEnv("BACKEND_CLIENT_SECRET_NAME"));
     }
 
-    private CandidateSearchParameters getCandidateSearchParameters(RequestInfo requestInfo)
-        throws UnauthorizedException {
-        var isAdmin = userIsNviAdmin(requestInfo);
-        var topLevelOrg = !isAdmin ? requestInfo.getTopLevelOrgCristinId().orElseThrow() : null;
-        var affiliations = getAffiliations(requestInfo, topLevelOrg);
-        if (!isAdmin) {
+    private static boolean userIsNotNviAdmin(RequestInfo requestInfo) {
+        return !userIsNviAdmin(requestInfo);
+    }
+
+    private void logAggregationType(CandidateSearchParameters candidateSearchParameters) {
+        logger.info("Aggregation type {} requested for topLevelCristinOrg {}",
+                    candidateSearchParameters.aggregationType(),
+                    candidateSearchParameters.topLevelCristinOrg());
+    }
+
+    private void validateAccessRights(RequestInfo requestInfo) throws UnauthorizedException {
+        if (userIsNotNviAdmin(requestInfo)) {
+            var topLevelOrg = requestInfo.getTopLevelOrgCristinId().orElseThrow();
+            var affiliations = getAffiliations(requestInfo, topLevelOrg);
             assertUserIsAllowedToSearchAffiliations(affiliations, topLevelOrg);
         }
-        return CandidateSearchParameters.fromRequestInfo(requestInfo)
-                   .withAffiliations(affiliations)
-                   .withTopLevelCristinOrg(topLevelOrg)
-                   .build();
     }
 
     private void assertUserIsAllowedToSearchAffiliations(List<URI> affiliations, URI topLevelOrg)

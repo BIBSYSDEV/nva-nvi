@@ -48,7 +48,7 @@ public record CandidateSearchParameters(String searchTerm,
         return new Builder();
     }
 
-    public static CandidateSearchParameters.Builder fromRequestInfo(RequestInfo requestInfo)
+    public static CandidateSearchParameters fromRequestInfo(RequestInfo requestInfo)
         throws UnauthorizedException {
         var aggregationType = extractQueryParamAggregationType(requestInfo);
         return CandidateSearchParameters.builder()
@@ -65,7 +65,8 @@ public record CandidateSearchParameters(String searchTerm,
                    .withAggregationType(aggregationType)
                    .withOffset(extractQueryParamOffsetOrDefault(requestInfo))
                    .withSize(extractQueryParamSizeOrDefault(requestInfo))
-                   .withTopLevelCristinOrg(requestInfo.getTopLevelOrgCristinId().orElse(null));
+                   .withTopLevelCristinOrg(requestInfo.getTopLevelOrgCristinId().orElse(null))
+                   .build();
     }
 
     public String topLevelOrgUriAsString() {
@@ -89,7 +90,7 @@ public record CandidateSearchParameters(String searchTerm,
     private static List<URI> extractQueryParamAffiliations(RequestInfo requestInfo) {
         return requestInfo.getQueryParameterOpt(QUERY_PARAM_AFFILIATIONS)
                    .map(CandidateSearchParameters::splitStringToUris)
-                   .orElse(null);
+                   .orElse(requestInfo.getTopLevelOrgCristinId().map(List::of).orElse(List.of()));
     }
 
     private static List<URI> splitStringToUris(String s) {
