@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.math.BigDecimal;
@@ -64,6 +65,7 @@ import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
+import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
@@ -315,9 +317,11 @@ class CandidateTest extends LocalDynamoTest {
             assertThat(dto.identifier(), is(equalTo(candidateBO.getIdentifier())));
             var periodStatus = getDefaultPeriodStatus();
             assertThat(dto.period().status(), is(equalTo(periodStatus.status())));
-            assertThat(approvalMap.get(institutionToApprove).status(), is(equalTo(ApprovalStatus.APPROVED)));
+            var approvalDto = approvalMap.get(institutionToApprove);
+            assertThat(approvalDto.status().getValue(), is(equalTo(ApprovalStatusDto.APPROVED.getValue())));
+            assertNotNull(approvalDto.finalizedDate());
             var rejectedAP = approvalMap.get(institutionToReject);
-            assertThat(rejectedAP.status(), is(equalTo(ApprovalStatus.REJECTED)));
+            assertThat(rejectedAP.status(), is(equalTo(ApprovalStatusDto.REJECTED)));
             assertThat(rejectedAP.reason(), is(notNullValue()));
             assertThat(rejectedAP.points(),
                        is(setScaleAndRoundingMode(createRequest.getPointsForInstitution(rejectedAP.institutionId()))));
@@ -486,7 +490,7 @@ class CandidateTest extends LocalDynamoTest {
         var updatedCandidate = Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository)
                                    .orElseThrow();
         var updatedApproval = updatedCandidate.toDto().approvals().get(0);
-        assertThat(updatedApproval.status(), is(equalTo(ApprovalStatus.PENDING)));
+        assertThat(updatedApproval.status(), is(equalTo(ApprovalStatusDto.NEW)));
     }
 
     @Test

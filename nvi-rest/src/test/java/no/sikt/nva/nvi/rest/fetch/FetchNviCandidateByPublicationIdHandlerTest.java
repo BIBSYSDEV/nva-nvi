@@ -23,6 +23,7 @@ import java.util.Map;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.ReportStatus;
+import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -97,6 +98,20 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
         var actualCandidate = response.getBodyObject(CandidateDto.class);
 
         assertEquals(ReportStatus.REPORTED.getValue(), actualCandidate.status());
+    }
+
+    @Test
+    void shouldReturnCandidateDtoWithApprovalStatusNewWhenApprovalStatusIsPendingAndUnassigned() throws IOException {
+        var candidate =
+            Candidate.upsert(createUpsertCandidateRequest(randomUri()), candidateRepository, periodRepository)
+                .orElseThrow();
+        var request = requestWithAccessRight(candidate.getPublicationDetails().publicationId());
+        handler.handleRequest(request, output, CONTEXT);
+        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+        var actualResponse = response.getBodyObject(CandidateDto.class);
+        var actualStatus = actualResponse.approvals().get(0).status();
+
+        assertEquals(ApprovalStatusDto.NEW, actualStatus);
     }
 
     private static InputStream requestWithAccessRight(URI publicationId)

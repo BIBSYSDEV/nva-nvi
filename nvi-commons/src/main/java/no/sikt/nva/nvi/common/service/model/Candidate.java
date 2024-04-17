@@ -575,9 +575,7 @@ public final class Candidate {
                    .build();
     }
 
-    private static String mapToUsernameString(Username assignee) {
-        return assignee != null ? assignee.value() : null;
-    }
+
 
     private void setUserAsAssigneeIfApprovalIsUnassigned(String username, URI institutionId) {
         approvals.computeIfPresent(institutionId, (uri, approval) -> updateAssigneeIfUnassigned(username, approval));
@@ -636,18 +634,11 @@ public final class Candidate {
     }
 
     private List<ApprovalDto> mapToApprovalDtos() {
-        return streamApprovals().map(this::mapToApprovalDto).toList();
+        return streamApprovals().map(this::toApprovalDto).toList();
     }
 
-    private ApprovalDto mapToApprovalDto(Approval approval) {
-        return ApprovalDto.builder()
-                   .withInstitutionId(approval.getInstitutionId())
-                   .withStatus(approval.getStatus())
-                   .withAssignee(mapToUsernameString(approval.getAssignee()))
-                   .withFinalizedBy(mapToUsernameString(approval.getFinalizedBy()))
-                   .withFinalizedDate(approval.getFinalizedDate())
-                   .withPoints(getPointValueForInstitution(approval.getInstitutionId()))
-                   .withReason(approval.getReason())
-                   .build();
+    private ApprovalDto toApprovalDto(Approval approval) {
+        var points = getPointValueForInstitution(approval.getInstitutionId());
+        return ApprovalDto.fromApprovalAndInstitutionPoints(approval, points);
     }
 }

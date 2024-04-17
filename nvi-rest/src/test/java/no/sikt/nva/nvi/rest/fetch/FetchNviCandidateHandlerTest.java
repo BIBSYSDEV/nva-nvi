@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -119,6 +120,21 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldReturnCandidateDtoWithApprovalStatusNewWhenApprovalStatusIsPendingAndUnassigned() throws IOException {
+        var institutionId = randomUri();
+        var candidate =
+            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+                .orElseThrow();
+        var request = createRequest(candidate.getIdentifier(), institutionId, MANAGE_NVI_CANDIDATES);
+        handler.handleRequest(request, output, CONTEXT);
+        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+        var actualResponse = response.getBodyObject(CandidateDto.class);
+        var actualStatus = actualResponse.approvals().get(0).status();
+
+        assertEquals(ApprovalStatusDto.NEW, actualStatus);
+    }
+
+    @Test
     void shouldReturnValidCandidateWhenUserIsNviAdmin() throws IOException {
         var institutionId = randomUri();
         var candidate =
@@ -151,7 +167,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     private static InputStream createRequestWithoutAccessRight(UUID candidateIdentifier, URI cristinInstitutionId)
         throws JsonProcessingException {
         var customerId = randomUri();
-        return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
+        return new HandlerRequestBuilder<>(dtoObjectMapper)
                    .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
                    .withCurrentCustomer(customerId)
                    .withTopLevelCristinOrgId(cristinInstitutionId)
