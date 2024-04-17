@@ -3,17 +3,29 @@ package no.sikt.nva.nvi.index.model;
 import static nva.commons.core.StringUtils.EMPTY_STRING;
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.core.JacocoGenerated;
 
-public record CandidateSearchParameters(String searchTerm, List<URI> affiliations, boolean excludeSubUnits,
-                                        String filter, String username,
-                                        String year, String category, String title, String contributor,
-                                        String assignee, URI customer,
+public record CandidateSearchParameters(String searchTerm,
+                                        List<URI> affiliations,
+                                        boolean excludeSubUnits,
+                                        String filter,
+                                        String username,
+                                        String year,
+                                        String category,
+                                        String title,
+                                        String contributor,
+                                        String assignee,
+                                        URI topLevelCristinOrg,
                                         int offset,
                                         int size) implements JsonSerializable {
     public static Builder builder() {
         return new Builder();
+    }
+
+    public String topLevelOrgUriAsString(){
+        return Optional.ofNullable(topLevelCristinOrg).map(URI::toString).orElse(null);
     }
 
     @JacocoGenerated

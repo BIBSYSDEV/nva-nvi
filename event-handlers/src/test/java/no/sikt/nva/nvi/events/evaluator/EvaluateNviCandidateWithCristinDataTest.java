@@ -58,7 +58,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
     private static final String BUCKET_NAME = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
     private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
     private static final String CUSTOMER_API_NVI_RESPONSE = "{" + "\"nviInstitution\" : \"true\"" + "}";
-    private static final String CUSTOMER = "customer";
+    private static final String CUSTOMER = "topLevelCristinOrg";
     private static final String CRISTIN_ID = "cristinId";
     private final Context context = mock(Context.class);
     private S3Driver s3Driver;

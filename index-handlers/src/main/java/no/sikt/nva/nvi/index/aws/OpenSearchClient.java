@@ -142,9 +142,9 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
 
     private static void logSearchRequest(CandidateSearchParameters params) {
         LOGGER.info("Generating search request with affiliations: {}, excludeSubUnits: {}, filter: {}, username: {}, "
-                    + "customer: {}, offset: "
+                    + "topLevelCristinOrg: {}, offset: "
                     + "{}, size: {}", params.affiliations(), params.excludeSubUnits(), params.filter(),
-                    params.username(), params.customer(), params.offset(),
+                    params.username(), params.topLevelCristinOrg(), params.offset(),
                     params.size());
     }
 
@@ -188,13 +188,9 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
                    .index(NVI_CANDIDATES_INDEX)
                    .query(query)
                    .aggregations(Aggregations.generateAggregations(candidateSearchParameters.username(),
-                                                                   getCustomer(candidateSearchParameters)))
+                                                                   candidateSearchParameters.topLevelOrgUriAsString()))
                    .from(candidateSearchParameters.offset())
                    .size(candidateSearchParameters.size())
                    .build();
-    }
-
-    private static String getCustomer(CandidateSearchParameters candidateSearchParameters) {
-        return Optional.ofNullable(candidateSearchParameters.customer()).map(URI::toString).orElse(null);
     }
 }
