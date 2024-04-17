@@ -273,12 +273,13 @@ public class SearchNviCandidatesHandlerTest {
 
     @Test
     void shouldLogAggregationTypeAndOrganization() throws IOException {
-        var aggregationType = "organizationApprovalOverview";
+        var aggregationType = "organizationApprovalStatuses";
         var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of(QUERY_AGGREGATION_TYPE, aggregationType));
         final var logAppender = LogUtils.getTestingAppender(SearchNviCandidatesHandler.class);
         handler.handleRequest(request, output, context);
-        assertThat(logAppender.getMessages(), containsString("Aggregation type organizationApprovalOverview requested for "
-                                                             + "topLevelCristinOrg " + TOP_LEVEL_CRISTIN_ORG));
+        assertThat(logAppender.getMessages(),
+                   containsString("Aggregation type organizationApprovalStatuses requested for "
+                                  + "topLevelCristinOrg " + TOP_LEVEL_CRISTIN_ORG));
     }
 
     private static void mockOpenSearchClient() throws IOException {
