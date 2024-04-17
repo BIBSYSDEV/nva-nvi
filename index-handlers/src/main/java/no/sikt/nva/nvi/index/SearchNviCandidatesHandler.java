@@ -36,10 +36,10 @@ import org.slf4j.LoggerFactory;
 public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
-    private final Logger logger = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
     private static final String USER_IS_NOT_ALLOWED_TO_SEARCH_FOR_AFFILIATIONS_S
         = "User is not allowed to search for affiliations: %s";
     private static final String COMMA_AND_SPACE = ", ";
+    private final Logger logger = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
     private final AuthorizedBackendUriRetriever uriRetriever;
 
@@ -47,7 +47,7 @@ public class SearchNviCandidatesHandler
     public SearchNviCandidatesHandler() {
         super(Void.class);
         this.openSearchClient = defaultOpenSearchClient();
-        this.uriRetriever = defaultUriRetriever();
+        this.uriRetriever = defaultUriRetriever(new Environment());
     }
 
     public SearchNviCandidatesHandler(SearchClient<NviCandidateIndexDocument> openSearchClient,
@@ -85,14 +85,20 @@ public class SearchNviCandidatesHandler
 
     private static List<URI> extractQueryParamAffiliations(RequestInfo requestInfo) {
         return requestInfo.getQueryParameterOpt(QUERY_PARAM_AFFILIATIONS)
-                   .map(s -> Arrays.stream(s.split(",")).map(URI::create).collect(Collectors.toList()))
+                   .map(SearchNviCandidatesHandler::toListOfUris)
                    .orElse(null);
     }
 
+    private static List<URI> toListOfUris(String uriListAsString) {
+        return Arrays.stream(uriListAsString.split(COMMA))
+                   .map(URI::create)
+                   .collect(Collectors.toList());
+    }
+
     @JacocoGenerated
-    private static AuthorizedBackendUriRetriever defaultUriRetriever() {
-        return new AuthorizedBackendUriRetriever(new Environment().readEnv("BACKEND_CLIENT_AUTH_URL"),
-                                                 new Environment().readEnv("BACKEND_CLIENT_SECRET_NAME"));
+    private static AuthorizedBackendUriRetriever defaultUriRetriever(Environment environment) {
+        return new AuthorizedBackendUriRetriever(environment.readEnv("BACKEND_CLIENT_AUTH_URL"),
+                                                 environment.readEnv("BACKEND_CLIENT_SECRET_NAME"));
     }
 
     private static boolean userIsNotNviAdmin(RequestInfo requestInfo) {

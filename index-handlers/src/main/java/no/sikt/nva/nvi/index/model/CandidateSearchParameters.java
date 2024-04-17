@@ -93,8 +93,8 @@ public record CandidateSearchParameters(String searchTerm,
                    .orElse(requestInfo.getTopLevelOrgCristinId().map(List::of).orElse(List.of()));
     }
 
-    private static List<URI> splitStringToUris(String s) {
-        return Arrays.stream(s.split(COMMA)).map(URI::create).collect(Collectors.toList());
+    private static List<URI> splitStringToUris(String uriListAsString) {
+        return Arrays.stream(uriListAsString.split(COMMA)).map(URI::create).collect(Collectors.toList());
     }
 
     private static boolean extractQueryParamExcludeSubUnitsOrDefault(RequestInfo requestInfo) {
