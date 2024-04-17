@@ -196,12 +196,6 @@ public class CandidateQuery {
                    .orElse(null);
     }
 
-    private static Query statusQueryWithAssignee(String customer, ApprovalStatus status) {
-        return nestedQuery(APPROVALS,
-                           termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)),
-                           termQuery(status.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)));
-    }
-
     private List<Query> specificMatch() {
         var institutionQuery = affiliations.isEmpty() ? Optional.<Query>empty() : createInstitutionQuery();
         var filterQuery = constructQueryWithFilter();
@@ -224,15 +218,14 @@ public class CandidateQuery {
 
         var aggregation = switch (filter) {
             case EMPTY_FILTER -> null;
-            case NEW_AGG -> statusQueryWithAssignee(topLevelCristinOrg, NEW);
+            case NEW_AGG -> statusQuery(topLevelCristinOrg, NEW);
 
-            case NEW_COLLABORATION_AGG -> mustMatch(statusQueryWithAssignee(topLevelCristinOrg, NEW),
-                                                    multipleApprovalsQuery());
+            case NEW_COLLABORATION_AGG -> mustMatch(statusQuery(topLevelCristinOrg, NEW), multipleApprovalsQuery());
 
-            case PENDING_AGG -> mustMatch(statusQueryWithAssignee(topLevelCristinOrg, PENDING));
+            case PENDING_AGG -> mustMatch(statusQuery(topLevelCristinOrg, PENDING));
 
-            case PENDING_COLLABORATION_AGG -> mustMatch(statusQueryWithAssignee(topLevelCristinOrg, PENDING),
-                                                        multipleApprovalsQuery());
+            case PENDING_COLLABORATION_AGG ->
+                mustMatch(statusQuery(topLevelCristinOrg, PENDING), multipleApprovalsQuery());
 
             case APPROVED_AGG -> mustMatch(statusQuery(topLevelCristinOrg, APPROVED));
 
