@@ -196,16 +196,16 @@ public class SearchNviCandidatesHandler
             .map(model -> model.listObjectsOfProperty(model.createProperty(HAS_PART_PROPERTY)))
             .map(node -> node.toList().stream().map(RDFNode::toString))
             .map(s -> Stream.concat(s, Stream.of(topLevelOrg.toString())))
+            .map(stream -> stream.map(URI::create))
             .orElseThrow()
             .collect(Collectors.toSet());
 
-        var illegal = Sets.difference(new HashSet<>(affiliations.stream().map(URI::toString)
-                                                        .collect(Collectors.toSet())), allowed);
+        var illegal = Sets.difference(new HashSet<>(affiliations), allowed);
 
         if (!illegal.isEmpty()) {
             throw new UnauthorizedException(
                 String.format(USER_IS_NOT_ALLOWED_TO_SEARCH_FOR_AFFILIATIONS_S,
-                              String.join(COMMA_AND_SPACE, illegal))
+                              String.join(COMMA_AND_SPACE, illegal.toString()))
             );
         }
     }
