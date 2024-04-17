@@ -56,7 +56,7 @@ public class CandidateQuery {
     private final boolean excludeSubUnits;
     private final QueryFilterType filter;
     private final String username;
-    private final String customer;
+    private final String topLevelCristinOrg;
     private final String searchTerm;
     private final String year;
     private final String category;
@@ -70,7 +70,7 @@ public class CandidateQuery {
         this.excludeSubUnits = params.excludeSubUnits;
         this.filter = params.filter;
         this.username = params.username;
-        this.customer = params.customer;
+        this.topLevelCristinOrg = params.topLevelCristinOrg;
         this.year = params.year;
         this.category = params.category;
         this.title = params.title;
@@ -196,12 +196,6 @@ public class CandidateQuery {
                    .orElse(null);
     }
 
-    private static Query statusQueryWithAssignee(String customer, ApprovalStatus status) {
-        return nestedQuery(APPROVALS,
-                           termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)),
-                           termQuery(status.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)));
-    }
-
     private List<Query> specificMatch() {
         var institutionQuery = affiliations.isEmpty() ? Optional.<Query>empty() : createInstitutionQuery();
         var filterQuery = constructQueryWithFilter();
@@ -224,29 +218,28 @@ public class CandidateQuery {
 
         var aggregation = switch (filter) {
             case EMPTY_FILTER -> null;
-            case NEW_AGG -> statusQueryWithAssignee(customer, NEW);
+            case NEW_AGG -> statusQuery(topLevelCristinOrg, NEW);
 
-            case NEW_COLLABORATION_AGG -> mustMatch(statusQueryWithAssignee(customer, NEW),
-                                                    multipleApprovalsQuery());
+            case NEW_COLLABORATION_AGG -> mustMatch(statusQuery(topLevelCristinOrg, NEW), multipleApprovalsQuery());
 
-            case PENDING_AGG -> mustMatch(statusQueryWithAssignee(customer, PENDING));
+            case PENDING_AGG -> mustMatch(statusQuery(topLevelCristinOrg, PENDING));
 
-            case PENDING_COLLABORATION_AGG -> mustMatch(statusQueryWithAssignee(customer, PENDING),
-                                                        multipleApprovalsQuery());
+            case PENDING_COLLABORATION_AGG ->
+                mustMatch(statusQuery(topLevelCristinOrg, PENDING), multipleApprovalsQuery());
 
-            case APPROVED_AGG -> mustMatch(statusQuery(customer, APPROVED));
+            case APPROVED_AGG -> mustMatch(statusQuery(topLevelCristinOrg, APPROVED));
 
-            case APPROVED_COLLABORATION_AGG -> mustMatch(statusQuery(customer, APPROVED),
+            case APPROVED_COLLABORATION_AGG -> mustMatch(statusQuery(topLevelCristinOrg, APPROVED),
                                                          containsPendingStatusQuery(),
                                                          multipleApprovalsQuery());
 
-            case REJECTED_AGG -> mustMatch(statusQuery(customer, REJECTED));
+            case REJECTED_AGG -> mustMatch(statusQuery(topLevelCristinOrg, REJECTED));
 
-            case REJECTED_COLLABORATION_AGG -> mustMatch(statusQuery(customer, REJECTED),
+            case REJECTED_COLLABORATION_AGG -> mustMatch(statusQuery(topLevelCristinOrg, REJECTED),
                                                          containsPendingStatusQuery(),
                                                          multipleApprovalsQuery());
 
-            case ASSIGNMENTS_AGG -> mustMatch(assignmentsQuery(username, customer));
+            case ASSIGNMENTS_AGG -> mustMatch(assignmentsQuery(username, topLevelCristinOrg));
         };
 
         return Optional.ofNullable(aggregation);
@@ -335,7 +328,7 @@ public class CandidateQuery {
         private boolean excludeSubUnits;
         private QueryFilterType filter;
         private String username;
-        private String customer;
+        private String topLevelCristinOrg;
         private String searchTerm;
         private String year;
         private String category;
@@ -367,8 +360,8 @@ public class CandidateQuery {
             return this;
         }
 
-        public Builder withCustomer(String customer) {
-            this.customer = customer;
+        public Builder withTopLevelCristinOrg(String topLevelCristinOrg) {
+            this.topLevelCristinOrg = topLevelCristinOrg;
             return this;
         }
 
@@ -410,7 +403,7 @@ public class CandidateQuery {
             params.excludeSubUnits = this.excludeSubUnits;
             params.filter = this.filter;
             params.username = this.username;
-            params.customer = this.customer;
+            params.topLevelCristinOrg = this.topLevelCristinOrg;
             params.year = this.year;
             params.category = this.category;
             params.title = this.title;
@@ -428,7 +421,7 @@ public class CandidateQuery {
         public boolean excludeSubUnits;
         public QueryFilterType filter;
         public String username;
-        public String customer;
+        public String topLevelCristinOrg;
         public String year;
         public String category;
         public String title;

@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.index.utils;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,7 +52,7 @@ public final class SearchConstants {
             .withExcludeSubUnits(params.excludeSubUnits())
             .withFilter(filterType)
             .withUsername(params.username())
-            .withCustomer(Optional.ofNullable(params.customer()).map(URI::toString).orElse(null))
+            .withTopLevelCristinOrg(params.topLevelOrgUriAsString())
             .withYear(params.year())
             .withCategory(params.category())
             .withTitle(params.title())
