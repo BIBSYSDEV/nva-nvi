@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.StorageWriter;
-import no.sikt.nva.nvi.index.model.IndexDocumentWithConsumptionAttributes;
+import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UnixPath;

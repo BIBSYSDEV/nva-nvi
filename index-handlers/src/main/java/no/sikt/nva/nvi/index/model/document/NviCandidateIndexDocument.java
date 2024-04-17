@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.model;
+package no.sikt.nva.nvi.index.model.document;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;

@@ -16,7 +16,7 @@ import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.utils.DynamoDbUtils;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
-import no.sikt.nva.nvi.index.model.IndexDocumentWithConsumptionAttributes;
+import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
