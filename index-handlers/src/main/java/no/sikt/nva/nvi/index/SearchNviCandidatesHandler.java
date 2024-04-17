@@ -32,6 +32,8 @@ import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.StringUtils;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.NodeIterator;
 import org.apache.jena.rdf.model.RDFNode;
 
 public class SearchNviCandidatesHandler
@@ -121,7 +123,7 @@ public class SearchNviCandidatesHandler
     }
 
     private static List<URI> splitStringToUris(String s) {
-        return Arrays.stream(s.split(COMMA)).map(URI::create).collect(Collectors.toList());
+        return toUris(Arrays.stream(s.split(COMMA))).collect(Collectors.toList());
     }
 
     private static boolean extractQueryParamExcludeSubUnitsOrDefault(RequestInfo requestInfo) {
@@ -160,6 +162,22 @@ public class SearchNviCandidatesHandler
                                                  new Environment().readEnv("BACKEND_CLIENT_SECRET_NAME"));
     }
 
+    private static Stream<URI> toUris(Stream<String> stream) {
+        return stream.map(URI::create);
+    }
+
+    private static Stream<String> concat(URI topLevelOrg, Stream<String> stringStream) {
+        return Stream.concat(stringStream, Stream.of(topLevelOrg.toString()));
+    }
+
+    private static Stream<String> toStreamOfRfdNodes(NodeIterator nodeIterator) {
+        return nodeIterator.toList().stream().map(RDFNode::toString);
+    }
+
+    private static NodeIterator getObjectsOfPropertyPartOf(Model model) {
+        return model.listObjectsOfProperty(model.createProperty(HAS_PART_PROPERTY));
+    }
+
     private CandidateSearchParameters getCandidateSearchParameters(RequestInfo requestInfo)
         throws UnauthorizedException {
         boolean isAdmin = userIsNviAdmin(requestInfo);
@@ -192,13 +210,13 @@ public class SearchNviCandidatesHandler
         throws UnauthorizedException {
         var allowed = attempt(() -> this.uriRetriever.getRawContent(topLevelOrg, APPLICATION_JSON)).map(
                 Optional::orElseThrow)
-            .map(str -> createModel(dtoObjectMapper.readTree(str)))
-            .map(model -> model.listObjectsOfProperty(model.createProperty(HAS_PART_PROPERTY)))
-            .map(node -> node.toList().stream().map(RDFNode::toString))
-            .map(s -> Stream.concat(s, Stream.of(topLevelOrg.toString())))
-            .map(stream -> stream.map(URI::create))
-            .orElseThrow()
-            .collect(Collectors.toSet());
+                          .map(str -> createModel(dtoObjectMapper.readTree(str)))
+                          .map(SearchNviCandidatesHandler::getObjectsOfPropertyPartOf)
+                          .map(SearchNviCandidatesHandler::toStreamOfRfdNodes)
+                          .map(node -> concat(topLevelOrg, node))
+                          .map(SearchNviCandidatesHandler::toUris)
+                          .orElseThrow()
+                          .collect(Collectors.toSet());
 
         var illegal = Sets.difference(new HashSet<>(affiliations), allowed);
 
