@@ -157,7 +157,7 @@ public class OpenSearchClientTest {
         int size = 10;
         var searchParameters =
             CandidateSearchParameters.builder()
-                .withUsername(USERNAME).withAffiliations(List.of(CUSTOMER)).withCustomer(CUSTOMER)
+                .withUsername(USERNAME).withAffiliations(List.of(CUSTOMER)).withTopLevelCristinOrg(CUSTOMER)
                 .withYear(YEAR).withOffset(offset).withSize(size).build();
         var searchResponse = openSearchClient.search(searchParameters);
 
@@ -462,8 +462,7 @@ public class OpenSearchClientTest {
         );
 
         var searchParameters = CandidateSearchParameters.builder().build();
-        var searchResponse =
-            openSearchClient.search(searchParameters);
+        var searchResponse = openSearchClient.search(searchParameters);
 
         assertThat(searchResponse.hits().hits(), hasSize(3));
     }
@@ -610,7 +609,7 @@ public class OpenSearchClientTest {
     private static CandidateSearchParameters.Builder defaultSearchParameters() {
         return CandidateSearchParameters.builder()
                    .withAffiliations(List.of())
-                   .withCustomer(CUSTOMER).withUsername(USERNAME).withYear(YEAR);
+                   .withTopLevelCristinOrg(CUSTOMER).withUsername(USERNAME).withYear(YEAR);
     }
 
     private static String getRandomWord(String str) {

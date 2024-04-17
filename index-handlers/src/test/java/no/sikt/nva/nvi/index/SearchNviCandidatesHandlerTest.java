@@ -1,8 +1,9 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_EXCLUDE_SUB_UNITS;
-import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_SEARCH_TERM;
-import static no.sikt.nva.nvi.index.SearchNviCandidatesHandler.QUERY_PARAM_TITLE;
+import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_AGGREGATION_TYPE;
+import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_EXCLUDE_SUB_UNITS;
+import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_SEARCH_TERM;
+import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_TITLE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
@@ -272,12 +273,12 @@ public class SearchNviCandidatesHandlerTest {
 
     @Test
     void shouldLogAggregationTypeAndOrganization() throws IOException {
-        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of("aggregation", "approvalStatuses",
-                                                                  "organization", TOP_LEVEL_CRISTIN_ORG.toString()));
+        var aggregationType = "organizationApprovalOverview";
+        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of(QUERY_AGGREGATION_TYPE, aggregationType));
         final var logAppender = LogUtils.getTestingAppender(SearchNviCandidatesHandler.class);
         handler.handleRequest(request, output, context);
-        assertThat(logAppender.getMessages(), containsString("Aggregation type approvalStatuses requested for "
-                                                             + "organization " + TOP_LEVEL_CRISTIN_ORG));
+        assertThat(logAppender.getMessages(), containsString("Aggregation type organizationApprovalOverview requested for "
+                                                             + "topLevelCristinOrg " + TOP_LEVEL_CRISTIN_ORG));
     }
 
     private static void mockOpenSearchClient() throws IOException {
@@ -401,8 +402,7 @@ public class SearchNviCandidatesHandlerTest {
     private InputStream requestWithInstitutionsAndTopLevelCristinOrgId(List<URI> institutions, URI cristinId)
         throws JsonProcessingException {
         return createRequest(cristinId, Map.of(QUERY_PARAM_AFFILIATIONS,
-                                               String.join(",",
-                                                           institutions.stream().map(URI::toString).toList()),
+                                               String.join(",", institutions.stream().map(URI::toString).toList()),
                                                QUERY_PARAM_EXCLUDE_SUB_UNITS,
                                                "true"));
     }
