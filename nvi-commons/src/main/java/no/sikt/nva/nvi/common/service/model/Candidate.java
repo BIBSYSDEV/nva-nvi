@@ -197,7 +197,7 @@ public final class Candidate {
     }
 
     public List<InstitutionPoints> getInstitutionPoints() {
-        return institutionPoints;
+        return nonNull(institutionPoints) ? institutionPoints : List.of();
     }
 
     public BigDecimal getPointValueForInstitution(URI institutionId) {
