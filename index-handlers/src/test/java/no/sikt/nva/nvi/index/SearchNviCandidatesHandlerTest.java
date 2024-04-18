@@ -197,6 +197,18 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
+    void shouldReturnPaginatedSearchResultWithAggregationTypeInIdIfGiven() throws IOException {
+        mockOpenSearchClient();
+        var aggregationType = "organizationApprovalStatuses";
+        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of(QUERY_AGGREGATION_TYPE, aggregationType));
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
+        var actualId = paginatedSearchResult.getId().toString();
+        assertThat(actualId, containsString(QUERY_AGGREGATION_TYPE + "=" + aggregationType));
+    }
+
+    @Test
     void shouldReturnPaginatedSearchResultWithAggregations() throws IOException {
         var documents = generateNumberOfIndexDocuments(10);
         var aggregationName = randomString();

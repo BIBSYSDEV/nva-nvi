@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.utils;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_AGGREGATION_TYPE;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_AFFILIATIONS;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_ASSIGNEE;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_CATEGORY;
@@ -60,32 +61,24 @@ public final class PaginatedResultConverter {
             searchResultParameters.size(),
             extractTotalNumberOfHits(searchResponse),
             extractsHits(searchResponse),
-            getQueryParameters(candidateSearchParameters.searchTerm(),
-                               candidateSearchParameters.affiliations(),
-                               candidateSearchParameters.excludeSubUnits(),
-                               candidateSearchParameters.filter(),
-                               candidateSearchParameters.category(),
-                               candidateSearchParameters.title(),
-                               candidateSearchParameters.contributor(),
-                               candidateSearchParameters.assignee()),
+            getQueryParameters(candidateSearchParameters),
             extractAggregations(searchResponse));
 
         LOGGER.info("Returning paginatedSearchResult with id: {}", paginatedSearchResult.getId().toString());
         return paginatedSearchResult;
     }
 
-    private static Map<String, String> getQueryParameters(String searchTerm, List<URI> affiliations,
-                                                          boolean excludeSubUnits, String filter, String category,
-                                                          String title, String contributor, String assignee) {
+    private static Map<String, String> getQueryParameters(CandidateSearchParameters parameters) {
         var queryParams = new HashMap<String, String>();
-        putIfValueNotNull(queryParams, QUERY_PARAM_SEARCH_TERM, searchTerm);
-        putAffiliationsIfNotNullOrEmpty(queryParams, QUERY_PARAM_AFFILIATIONS, affiliations);
-        putIfTrue(queryParams, QUERY_PARAM_EXCLUDE_SUB_UNITS, excludeSubUnits);
-        putIfValueNotEmpty(queryParams, QUERY_PARAM_FILTER, filter);
-        putIfValueNotNull(queryParams, QUERY_PARAM_CATEGORY, category);
-        putIfValueNotNull(queryParams, QUERY_PARAM_TITLE, title);
-        putIfValueNotNull(queryParams, QUERY_PARAM_CONTRIBUTOR, contributor);
-        putIfValueNotNull(queryParams, QUERY_PARAM_ASSIGNEE, assignee);
+        putIfValueNotNull(queryParams, QUERY_PARAM_SEARCH_TERM, parameters.searchTerm());
+        putAffiliationsIfNotNullOrEmpty(queryParams, QUERY_PARAM_AFFILIATIONS, parameters.affiliations());
+        putIfTrue(queryParams, QUERY_PARAM_EXCLUDE_SUB_UNITS, parameters.excludeSubUnits());
+        putIfValueNotEmpty(queryParams, QUERY_PARAM_FILTER, parameters.filter());
+        putIfValueNotNull(queryParams, QUERY_PARAM_CATEGORY, parameters.category());
+        putIfValueNotNull(queryParams, QUERY_PARAM_TITLE, parameters.title());
+        putIfValueNotNull(queryParams, QUERY_PARAM_CONTRIBUTOR, parameters.contributor());
+        putIfValueNotNull(queryParams, QUERY_PARAM_ASSIGNEE, parameters.assignee());
+        putIfValueNotNull(queryParams, QUERY_AGGREGATION_TYPE, parameters.aggregationType());
         return queryParams;
     }
 
