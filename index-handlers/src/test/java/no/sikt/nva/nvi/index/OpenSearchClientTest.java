@@ -12,6 +12,7 @@ import static no.sikt.nva.nvi.index.model.search.SearchAggregation.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.REJECTED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.TOTAL_COUNT_AGGREGATION_AGG;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -62,7 +63,6 @@ import no.sikt.nva.nvi.index.model.search.SearchAggregation;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
-import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.ioutils.IoUtils;
 import org.apache.http.HttpHost;
 import org.jetbrains.annotations.NotNull;
@@ -76,6 +76,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
+import org.opensearch.client.opensearch._types.aggregations.NestedAggregate;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.testcontainers.OpensearchContainer;
 
@@ -474,6 +477,50 @@ public class OpenSearchClientTest {
         assertThat(searchResponse.hits().hits(), hasSize(3));
     }
 
+    @Test
+    void shouldReturnOrganizationAggregationWithSubAggregations() throws IOException, InterruptedException {
+        addDocumentsToIndex(documentFromString("document_organization_aggregation.json"));
+        var aggregation = SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
+        var searchParameters = defaultSearchParameters().withAggregationType(aggregation).build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        Aggregate value = searchResponse.aggregations().get(aggregation);
+        var actualAggregate = dtoObjectMapper.writeValueAsString(value);
+        var expectedAggregate =
+            dtoObjectMapper.writeValueAsString(getAggregate(buildNestedAggregate(getExpecyedAggregateMap())));
+        assertEquals(expectedAggregate, actualAggregate);
+    }
+
+    private static Map<String, Aggregate> getExpecyedAggregateMap() {
+        return Map.of("someId",
+                      buildNestedAggregate(Map.of("new", createAggregate(filterAggregate(1)),
+                                                  "pending", createAggregate(filterAggregate(0)),
+                                                  "approved", createAggregate(filterAggregate(0)),
+                                                  "rejected", createAggregate(filterAggregate(0))))
+                          ._toAggregate());
+    }
+
+    private static Aggregate getAggregate(NestedAggregate nestedAggregate) {
+        return new Aggregate(nestedAggregate);
+    }
+
+    private static NestedAggregate buildNestedAggregate(Map<String, Aggregate> aggregateMap) {
+        return new NestedAggregate.Builder()
+                   .aggregations(aggregateMap)
+
+                   .docCount(0)
+                   .build();
+    }
+
+    private static Aggregate createAggregate(FilterAggregate filterAggregate) {
+        return new Aggregate(filterAggregate);
+    }
+
+    private static FilterAggregate filterAggregate(int docCount) {
+        return new FilterAggregate.Builder()
+                   .docCount(docCount)
+                   .build();
+    }
+
     private static void addDocumentToIndex() {
         try {
             addDocumentsToIndex(singleNviCandidateIndexDocumentWithCustomer(
@@ -504,7 +551,7 @@ public class OpenSearchClientTest {
             mapper.serialize(searchResponse, generator);
         }
 
-        var json = attempt(() -> JsonUtils.dtoObjectMapper.readTree(writer.toString())).orElseThrow();
+        var json = attempt(() -> dtoObjectMapper.readTree(writer.toString())).orElseThrow();
 
         return json.get("aggregations");
     }
@@ -515,7 +562,7 @@ public class OpenSearchClientTest {
 
     private static NviCandidateIndexDocument documentFromString(String fileName) throws JsonProcessingException {
         var string = IoUtils.stringFromResources(Path.of(fileName));
-        return JsonUtils.dtoObjectMapper.readValue(string, NviCandidateIndexDocument.class);
+        return dtoObjectMapper.readValue(string, NviCandidateIndexDocument.class);
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
