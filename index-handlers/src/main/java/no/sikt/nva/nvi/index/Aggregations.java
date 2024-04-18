@@ -146,20 +146,20 @@ public final class Aggregations {
     }
 
     private static void generateSingleAggregation(String aggregationType, String username, String topLevelCristinOrg,
-                                                  HashMap<String, Aggregation> aggregations) {
+                                                  Map<String, Aggregation> aggregations) {
         var aggregation = SearchAggregation.parse(aggregationType);
         addAggregation(username, topLevelCristinOrg, aggregations, aggregation);
     }
 
     private static void generateAllAggregationTypes(String username, String topLevelCristinOrg,
-                                                    HashMap<String, Aggregation> aggregations) {
+                                                    Map<String, Aggregation> aggregations) {
         for (var aggregation : SearchAggregation.values()) {
             addAggregation(username, topLevelCristinOrg, aggregations, aggregation);
         }
     }
 
     private static void addAggregation(String username, String topLevelCristinOrg,
-                                       HashMap<String, Aggregation> aggregations,
+                                       Map<String, Aggregation> aggregations,
                                        SearchAggregation aggregation) {
         aggregations.put(aggregation.getAggregationName(),
                          aggregation.generateAggregation(username, topLevelCristinOrg));
