@@ -12,6 +12,7 @@ import static no.sikt.nva.nvi.index.model.search.SearchAggregations.REJECTED_AGG
 import static no.sikt.nva.nvi.index.model.search.SearchAggregations.REJECTED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregations.TOTAL_COUNT_AGGREGATION_AGG;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
@@ -211,6 +212,18 @@ public class OpenSearchClientTest {
         var searchResponse = openSearchClient.search(searchParameters);
         var aggregations = searchResponse.aggregations();
         assertEquals(SearchAggregations.values().length, aggregations.keySet().size());
+    }
+
+    @Test
+    void shouldReturnSpecificAggregationsWhenSpecificAggregationTypeRequested() throws IOException {
+        var requestedAggregation = randomElement(SearchAggregations.values()).getAggregationName();
+        var searchParameters = CandidateSearchParameters.builder()
+                                   .withAggregationType(requestedAggregation)
+                                   .build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        var aggregations = searchResponse.aggregations();
+        assertEquals(1, aggregations.keySet().size());
+        assertEquals(requestedAggregation, aggregations.keySet().iterator().next());
     }
 
     @Test
