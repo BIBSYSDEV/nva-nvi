@@ -1,11 +1,9 @@
-package no.sikt.nva.nvi.index.model;
+package no.sikt.nva.nvi.index.model.search;
 
-import static nva.commons.core.StringUtils.EMPTY_STRING;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import no.unit.nva.commons.json.JsonSerializable;
-import nva.commons.core.JacocoGenerated;
 
 public record CandidateSearchParameters(String searchTerm,
                                         List<URI> affiliations,
@@ -18,34 +16,37 @@ public record CandidateSearchParameters(String searchTerm,
                                         String contributor,
                                         String assignee,
                                         URI topLevelCristinOrg,
-                                        int offset,
-                                        int size) implements JsonSerializable {
+                                        SearchResultParameters searchResultParameters) implements JsonSerializable {
+
     public static Builder builder() {
         return new Builder();
     }
 
-    public String topLevelOrgUriAsString(){
+    public String topLevelOrgUriAsString() {
         return Optional.ofNullable(topLevelCristinOrg).map(URI::toString).orElse(null);
     }
 
-    @JacocoGenerated
     public static final class Builder {
 
+        private String searchTerm;
         private List<URI> affiliations;
         private boolean excludeSubUnits;
-        private String filter = EMPTY_STRING;
+        private String filter;
         private String username;
-        private String searchTerm;
         private String year;
         private String category;
         private String title;
         private String contributor;
         private String assignee;
-        private URI customer;
-        private int offset;
-        private int size = 10;
+        private URI topLevelCristinOrg;
+        private SearchResultParameters searchResultParameters = SearchResultParameters.builder().build();
 
-        public Builder() {
+        private Builder() {
+        }
+
+        public Builder withSearchTerm(String searchTerm) {
+            this.searchTerm = searchTerm;
+            return this;
         }
 
         public Builder withAffiliations(List<URI> affiliations) {
@@ -65,11 +66,6 @@ public record CandidateSearchParameters(String searchTerm,
 
         public Builder withUsername(String username) {
             this.username = username;
-            return this;
-        }
-
-        public Builder withSearchTerm(String searchTerm) {
-            this.searchTerm = searchTerm;
             return this;
         }
 
@@ -98,35 +94,20 @@ public record CandidateSearchParameters(String searchTerm,
             return this;
         }
 
-        public Builder withCustomer(URI customer) {
-            this.customer = customer;
+        public Builder withTopLevelCristinOrg(URI topLevelCristinOrg) {
+            this.topLevelCristinOrg = topLevelCristinOrg;
             return this;
         }
 
-        public Builder withOffset(int offset) {
-            this.offset = offset;
-            return this;
-        }
-
-        public Builder withSize(int size) {
-            this.size = size;
+        public Builder withSearchResultParameters(SearchResultParameters searchResultParameters) {
+            this.searchResultParameters = searchResultParameters;
             return this;
         }
 
         public CandidateSearchParameters build() {
-            return new CandidateSearchParameters(searchTerm,
-                                                 affiliations,
-                                                 excludeSubUnits,
-                                                 filter,
-                                                 username,
-                                                 year,
-                                                 category,
-                                                 title,
-                                                 contributor,
-                                                 assignee,
-                                                 customer,
-                                                 offset,
-                                                 size);
+            return new CandidateSearchParameters(searchTerm, affiliations, excludeSubUnits, filter, username, year,
+                                                 category, title, contributor, assignee, topLevelCristinOrg,
+                                                 searchResultParameters);
         }
     }
 }

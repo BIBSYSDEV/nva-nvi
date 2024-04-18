@@ -15,8 +15,8 @@ import java.time.Clock;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
 import no.sikt.nva.nvi.index.Aggregations;
-import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
-import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.utils.SearchConstants;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CachedValueProvider;
@@ -143,8 +143,8 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         LOGGER.info("Generating search request with affiliations: {}, excludeSubUnits: {}, filter: {}, username: {}, "
                     + "topLevelCristinOrg: {}, offset: "
                     + "{}, size: {}", params.affiliations(), params.excludeSubUnits(), params.filter(),
-                    params.username(), params.topLevelCristinOrg(), params.offset(),
-                    params.size());
+                    params.username(), params.topLevelCristinOrg(), params.searchResultParameters().offset(),
+                    params.searchResultParameters().size());
     }
 
     private static DeleteRequest contructDeleteRequest(UUID identifier) {
@@ -183,13 +183,14 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
 
     private SearchRequest constructSearchRequest(CandidateSearchParameters candidateSearchParameters) {
         var query = SearchConstants.constructQuery(candidateSearchParameters);
+        var searchResultParameters = candidateSearchParameters.searchResultParameters();
         return new SearchRequest.Builder()
                    .index(NVI_CANDIDATES_INDEX)
                    .query(query)
                    .aggregations(Aggregations.generateAggregations(candidateSearchParameters.username(),
                                                                    candidateSearchParameters.topLevelOrgUriAsString()))
-                   .from(candidateSearchParameters.offset())
-                   .size(candidateSearchParameters.size())
+                   .from(searchResultParameters.offset())
+                   .size(searchResultParameters.size())
                    .build();
     }
 }

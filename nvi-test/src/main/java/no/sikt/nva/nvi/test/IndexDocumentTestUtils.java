@@ -16,16 +16,16 @@ import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
-import no.sikt.nva.nvi.index.model.ApprovalStatus;
-import no.sikt.nva.nvi.index.model.Contributor;
-import no.sikt.nva.nvi.index.model.ContributorType;
-import no.sikt.nva.nvi.index.model.InstitutionPoints;
-import no.sikt.nva.nvi.index.model.NviContributor;
-import no.sikt.nva.nvi.index.model.NviOrganization;
-import no.sikt.nva.nvi.index.model.Organization;
-import no.sikt.nva.nvi.index.model.OrganizationType;
-import no.sikt.nva.nvi.index.model.PublicationDate;
-import no.sikt.nva.nvi.index.model.PublicationDetails;
+import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
+import no.sikt.nva.nvi.index.model.document.Contributor;
+import no.sikt.nva.nvi.index.model.document.ContributorType;
+import no.sikt.nva.nvi.index.model.document.InstitutionPoints;
+import no.sikt.nva.nvi.index.model.document.NviContributor;
+import no.sikt.nva.nvi.index.model.document.NviOrganization;
+import no.sikt.nva.nvi.index.model.document.Organization;
+import no.sikt.nva.nvi.index.model.document.OrganizationType;
+import no.sikt.nva.nvi.index.model.document.PublicationDate;
+import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 
@@ -43,7 +43,7 @@ public final class IndexDocumentTestUtils {
         return UnixPath.of(NVI_CANDIDATES_FOLDER).addChild(candidate.getIdentifier().toString() + GZIP_ENDING);
     }
 
-    public static List<no.sikt.nva.nvi.index.model.Approval> expandApprovals(Candidate candidate) {
+    public static List<no.sikt.nva.nvi.index.model.document.Approval> expandApprovals(Candidate candidate) {
         return candidate.getApprovals()
                    .entrySet()
                    .stream()
@@ -62,10 +62,10 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static no.sikt.nva.nvi.index.model.Approval toApproval(Approval approval,
-                                                                   Candidate candidate) {
+    private static no.sikt.nva.nvi.index.model.document.Approval toApproval(Approval approval,
+                                                                            Candidate candidate) {
         var assignee = approval.getAssignee();
-        return no.sikt.nva.nvi.index.model.Approval.builder()
+        return no.sikt.nva.nvi.index.model.document.Approval.builder()
                    .withInstitutionId(approval.getInstitutionId().toString())
                    .withApprovalStatus(getApprovalStatus(approval))
                    .withAssignee(Objects.nonNull(assignee) ? assignee.value() : null)

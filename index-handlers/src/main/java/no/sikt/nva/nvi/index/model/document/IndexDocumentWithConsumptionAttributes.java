@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.model;
+package no.sikt.nva.nvi.index.model.document;
 
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.net.URI;
 import no.sikt.nva.nvi.common.StorageWriter;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.index.model.PersistedResource;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 
 @JsonSerialize
