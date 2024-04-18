@@ -444,8 +444,7 @@ public class OpenSearchClientTest {
         );
 
         var searchParameters = CandidateSearchParameters.builder().build();
-        var searchResponse =
-            openSearchClient.search(searchParameters);
+        var searchResponse = openSearchClient.search(searchParameters);
 
         assertThat(searchResponse.hits().hits(), hasSize(3));
     }

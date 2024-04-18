@@ -1,10 +1,10 @@
 package no.sikt.nva.nvi.index;
 
-import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.APPLICATION_JSON;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.HAS_PART_PROPERTY;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
 import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient;
+import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_AFFILIATIONS;
 import static no.sikt.nva.nvi.index.utils.PaginatedResultConverter.toPaginatedResult;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
@@ -12,7 +12,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.google.common.collect.Sets;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -22,7 +21,6 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
-import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import nva.commons.apigateway.AccessRight;
@@ -31,31 +29,19 @@ import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
-import nva.commons.core.StringUtils;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.NodeIterator;
 import org.apache.jena.rdf.model.RDFNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
-    public static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
-    public static final String QUERY_PARAM_EXCLUDE_SUB_UNITS = "excludeSubUnits";
-    public static final String QUERY_PARAM_FILTER = "filter";
-    public static final String QUERY_PARAM_TITLE = "title";
-    public static final String QUERY_PARAM_SEARCH_TERM = "query";
-    public static final String QUERY_PARAM_YEAR = "year";
-    public static final String QUERY_PARAM_CATEGORY = "category";
-    public static final String QUERY_PARAM_CONTRIBUTOR = "contributor";
-    public static final String QUERY_PARAM_ASSIGNEE = "assignee";
-    public static final String USER_IS_NOT_ALLOWED_TO_SEARCH_FOR_AFFILIATIONS_S
+    private static final String USER_IS_NOT_ALLOWED_TO_SEARCH_FOR_AFFILIATIONS_S
         = "User is not allowed to search for affiliations: %s";
-    public static final String COMMA_AND_SPACE = ", ";
-    private static final String DEFAULT_STRING = StringUtils.EMPTY_STRING;
-    private static final String QUERY_SIZE_PARAM = "size";
-    private static final String QUERY_OFFSET_PARAM = "offset";
-    private static final int DEFAULT_QUERY_SIZE = 10;
-    private static final int DEFAULT_OFFSET_SIZE = 0;
+    private static final String COMMA_AND_SPACE = ", ";
+    private final Logger logger = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
     private final AuthorizedBackendUriRetriever uriRetriever;
 
@@ -63,7 +49,7 @@ public class SearchNviCandidatesHandler
     public SearchNviCandidatesHandler() {
         super(Void.class);
         this.openSearchClient = defaultOpenSearchClient();
-        this.uriRetriever = defaultUriRetriever();
+        this.uriRetriever = defaultUriRetriever(new Environment());
     }
 
     public SearchNviCandidatesHandler(SearchClient<NviCandidateIndexDocument> openSearchClient,
@@ -77,7 +63,9 @@ public class SearchNviCandidatesHandler
     protected PaginatedSearchResult<NviCandidateIndexDocument> processInput(Void input, RequestInfo requestInfo,
                                                                             Context context)
         throws UnauthorizedException {
-        var candidateSearchParameters = getCandidateSearchParameters(requestInfo);
+        validateAccessRights(requestInfo);
+        var candidateSearchParameters = CandidateSearchParameters.fromRequestInfo(requestInfo);
+        logAggregationType(candidateSearchParameters);
         return attempt(() -> openSearchClient.search(candidateSearchParameters))
                    .map(searchResponse -> toPaginatedResult(searchResponse, candidateSearchParameters))
                    .orElseThrow();
@@ -92,74 +80,31 @@ public class SearchNviCandidatesHandler
         return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI);
     }
 
-    private static SearchResultParameters getResultParameters(Integer size, Integer offset) {
-        return SearchResultParameters.builder().withSize(size).withOffset(offset).build();
-    }
-
     private static List<URI> getAffiliations(RequestInfo requestInfo, URI topLevelOrg) {
-        if (!userIsNviAdmin(requestInfo)) {
-            return Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
-                       .orElse(List.of(topLevelOrg));
-        } else {
-            return Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
-                       .orElse(List.of());
-        }
-    }
-
-    private static Integer extractQueryParamSizeOrDefault(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameterOpt(QUERY_SIZE_PARAM).map(Integer::parseInt).orElse(DEFAULT_QUERY_SIZE);
-    }
-
-    private static Integer extractQueryParamOffsetOrDefault(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameterOpt(QUERY_OFFSET_PARAM)
-                   .map(Integer::parseInt)
-                   .orElse(DEFAULT_OFFSET_SIZE);
+        return Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
+                   .orElse(List.of(topLevelOrg));
     }
 
     private static List<URI> extractQueryParamAffiliations(RequestInfo requestInfo) {
         return requestInfo.getQueryParameterOpt(QUERY_PARAM_AFFILIATIONS)
-                   .map(SearchNviCandidatesHandler::splitStringToUris)
+                   .map(SearchNviCandidatesHandler::toListOfUris)
                    .orElse(null);
     }
 
-    private static List<URI> splitStringToUris(String s) {
-        return toUris(Arrays.stream(s.split(COMMA))).collect(Collectors.toList());
-    }
-
-    private static boolean extractQueryParamExcludeSubUnitsOrDefault(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameterOpt(QUERY_PARAM_EXCLUDE_SUB_UNITS)
-                   .map(Boolean::parseBoolean).orElse(false);
-    }
-
-    private static String extractQueryParamFilterOrDefault(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameters()
-                   .getOrDefault(QUERY_PARAM_FILTER, DEFAULT_STRING);
-    }
-
-    private static String extractQueryParamSearchTermOrDefault(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameters().get(QUERY_PARAM_SEARCH_TERM);
-    }
-
-    private static String extractQueryParamCategoryOrDefault(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameters().get(QUERY_PARAM_CATEGORY);
-    }
-
-    private static String extractQueryParamTitle(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameters().get(QUERY_PARAM_TITLE);
-    }
-
-    private static String extractQueryParamContributor(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameters().get(QUERY_PARAM_CONTRIBUTOR);
-    }
-
-    private static String extractQueryParamAssignee(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameters().get(QUERY_PARAM_ASSIGNEE);
+    private static List<URI> toListOfUris(String uriListAsString) {
+        return Arrays.stream(uriListAsString.split(COMMA))
+                   .map(URI::create)
+                   .collect(Collectors.toList());
     }
 
     @JacocoGenerated
-    private static AuthorizedBackendUriRetriever defaultUriRetriever() {
-        return new AuthorizedBackendUriRetriever(new Environment().readEnv("BACKEND_CLIENT_AUTH_URL"),
-                                                 new Environment().readEnv("BACKEND_CLIENT_SECRET_NAME"));
+    private static AuthorizedBackendUriRetriever defaultUriRetriever(Environment environment) {
+        return new AuthorizedBackendUriRetriever(environment.readEnv("BACKEND_CLIENT_AUTH_URL"),
+                                                 environment.readEnv("BACKEND_CLIENT_SECRET_NAME"));
+    }
+
+    private static boolean userIsNotNviAdmin(RequestInfo requestInfo) {
+        return !userIsNviAdmin(requestInfo);
     }
 
     private static Stream<URI> toUris(Stream<String> stream) {
@@ -178,32 +123,18 @@ public class SearchNviCandidatesHandler
         return model.listObjectsOfProperty(model.createProperty(HAS_PART_PROPERTY));
     }
 
-    private CandidateSearchParameters getCandidateSearchParameters(RequestInfo requestInfo)
-        throws UnauthorizedException {
-        boolean isAdmin = userIsNviAdmin(requestInfo);
-        var offset = extractQueryParamOffsetOrDefault(requestInfo);
-        var size = extractQueryParamSizeOrDefault(requestInfo);
-        var filter = extractQueryParamFilterOrDefault(requestInfo);
-        var excludeSubUnits = extractQueryParamExcludeSubUnitsOrDefault(requestInfo);
-        var topLevelOrg = !isAdmin ? requestInfo.getTopLevelOrgCristinId().orElseThrow() : null;
-        var affiliations = getAffiliations(requestInfo, topLevelOrg);
-        var username = requestInfo.getUserName();
-        var searchTerm = extractQueryParamSearchTermOrDefault(requestInfo);
-        var year = extractQueryParamPublicationDateOrDefault(requestInfo, isAdmin);
-        var category = extractQueryParamCategoryOrDefault(requestInfo);
-        var title = extractQueryParamTitle(requestInfo);
-        var contributor = extractQueryParamContributor(requestInfo);
-        var assignee = extractQueryParamAssignee(requestInfo);
+    private void logAggregationType(CandidateSearchParameters candidateSearchParameters) {
+        logger.info("Aggregation type {} requested for topLevelCristinOrg {}",
+                    candidateSearchParameters.aggregationType(),
+                    candidateSearchParameters.topLevelCristinOrg());
+    }
 
-        if (!isAdmin) {
+    private void validateAccessRights(RequestInfo requestInfo) throws UnauthorizedException {
+        if (userIsNotNviAdmin(requestInfo)) {
+            var topLevelOrg = requestInfo.getTopLevelOrgCristinId().orElseThrow();
+            var affiliations = getAffiliations(requestInfo, topLevelOrg);
             assertUserIsAllowedToSearchAffiliations(affiliations, topLevelOrg);
         }
-
-        return new CandidateSearchParameters(searchTerm, affiliations, excludeSubUnits,
-                                             filter, username,
-                                             year, category, title, contributor,
-                                             assignee, topLevelOrg,
-                                             getResultParameters(size, offset));
     }
 
     private void assertUserIsAllowedToSearchAffiliations(List<URI> affiliations, URI topLevelOrg)
@@ -226,11 +157,6 @@ public class SearchNviCandidatesHandler
                               String.join(COMMA_AND_SPACE, illegal.toString()))
             );
         }
-    }
-
-    private String extractQueryParamPublicationDateOrDefault(RequestInfo requestInfo, boolean isAdmin) {
-        var yearQueryParam = requestInfo.getQueryParameters().getOrDefault(QUERY_PARAM_YEAR, null);
-        return isAdmin || nonNull(yearQueryParam) ? yearQueryParam : String.valueOf(ZonedDateTime.now().getYear());
     }
 }
 
