@@ -201,14 +201,16 @@ public final class Candidate {
     }
 
     public BigDecimal getPointValueForInstitution(URI institutionId) {
-        return getInstitutionPoints(institutionId).institutionPoints();
+        return getInstitutionPoints(institutionId)
+                   .map(InstitutionPoints::institutionPoints)
+                   .orElse(null);
     }
 
-    public InstitutionPoints getInstitutionPoints(URI institutionId) {
+    //TODO: Make method return InstitutionPoints once we have migrated candidates from Cristin
+    public Optional<InstitutionPoints> getInstitutionPoints(URI institutionId) {
         return institutionPoints.stream()
                    .filter(institutionPoints -> institutionPoints.institutionId().equals(institutionId))
-                   .findFirst()
-                   .orElseThrow();
+                   .findFirst();
     }
 
     public Map<URI, Approval> getApprovals() {

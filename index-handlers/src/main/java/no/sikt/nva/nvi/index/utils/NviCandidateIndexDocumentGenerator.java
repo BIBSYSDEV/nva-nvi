@@ -77,7 +77,9 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private static InstitutionPoints getInstitutionPoints(Approval approval, Candidate candidate) {
-        return InstitutionPoints.from(candidate.getInstitutionPoints(approval.getInstitutionId()));
+        return candidate.getInstitutionPoints(approval.getInstitutionId())
+                   .map(InstitutionPoints::from)
+                   .orElse(null);
     }
 
     private static NviOrganization buildNviOrganization(String id, Stream<String> rdfNodes) {
