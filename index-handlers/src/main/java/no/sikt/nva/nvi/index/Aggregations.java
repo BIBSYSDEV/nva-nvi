@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.index.model.search.SearchAggregations.ASSIGNMENTS_
 import static no.sikt.nva.nvi.index.model.search.SearchAggregations.COMPLETED_AGGREGATION_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregations.NEW_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregations.NEW_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.model.search.SearchAggregations.ORGANIZATION_APPROVAL_STATUS_AGGREGATION_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregations.PENDING_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregations.PENDING_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregations.REJECTED_AGG;
@@ -39,26 +40,36 @@ import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 public final class Aggregations {
 
     public static final int MULTIPLE = 2;
+    public static final String ALL_AGGREGATIONS = "all";
     private static final CharSequence JSON_PATH_DELIMITER = ".";
 
     private Aggregations() {
     }
 
-    public static Map<String, Aggregation> generateAggregations(String username, String customer) {
+    public static Map<String, Aggregation> generateAggregations(String aggregationType, String username,
+                                                                String topLevelCristinOrg) {
         var aggregations = new HashMap<String, Aggregation>();
-        aggregations.put(NEW_AGG.getAggregationName(), statusAggregation(customer, NEW));
-        aggregations.put(NEW_COLLABORATION_AGG.getAggregationName(), collaborationAggregation(customer, NEW));
-        aggregations.put(PENDING_AGG.getAggregationName(), statusAggregation(customer, PENDING));
-        aggregations.put(PENDING_COLLABORATION_AGG.getAggregationName(), collaborationAggregation(customer, PENDING));
-        aggregations.put(APPROVED_AGG.getAggregationName(), statusAggregation(customer, APPROVED));
-        aggregations.put(APPROVED_COLLABORATION_AGG.getAggregationName(),
-                         finalizedCollaborationAggregation(customer, APPROVED));
-        aggregations.put(REJECTED_AGG.getAggregationName(), statusAggregation(customer, REJECTED));
-        aggregations.put(REJECTED_COLLABORATION_AGG.getAggregationName(),
-                         finalizedCollaborationAggregation(customer, REJECTED));
-        aggregations.put(ASSIGNMENTS_AGG.getAggregationName(), assignmentsAggregation(username, customer));
-        aggregations.put(COMPLETED_AGGREGATION_AGG.getAggregationName(), completedAggregation(customer));
-        aggregations.put(TOTAL_COUNT_AGGREGATION_AGG.getAggregationName(), totalCountAggregation(customer));
+        if (aggregationType.equals(ALL_AGGREGATIONS)) {
+            aggregations.put(NEW_AGG.getAggregationName(), statusAggregation(topLevelCristinOrg, NEW));
+            aggregations.put(NEW_COLLABORATION_AGG.getAggregationName(),
+                             collaborationAggregation(topLevelCristinOrg, NEW));
+            aggregations.put(PENDING_AGG.getAggregationName(), statusAggregation(topLevelCristinOrg, PENDING));
+            aggregations.put(PENDING_COLLABORATION_AGG.getAggregationName(),
+                             collaborationAggregation(topLevelCristinOrg, PENDING));
+            aggregations.put(APPROVED_AGG.getAggregationName(), statusAggregation(topLevelCristinOrg, APPROVED));
+            aggregations.put(APPROVED_COLLABORATION_AGG.getAggregationName(),
+                             finalizedCollaborationAggregation(topLevelCristinOrg, APPROVED));
+            aggregations.put(REJECTED_AGG.getAggregationName(), statusAggregation(topLevelCristinOrg, REJECTED));
+            aggregations.put(REJECTED_COLLABORATION_AGG.getAggregationName(),
+                             finalizedCollaborationAggregation(topLevelCristinOrg, REJECTED));
+            aggregations.put(ASSIGNMENTS_AGG.getAggregationName(),
+                             assignmentsAggregation(username, topLevelCristinOrg));
+            aggregations.put(COMPLETED_AGGREGATION_AGG.getAggregationName(), completedAggregation(topLevelCristinOrg));
+            aggregations.put(TOTAL_COUNT_AGGREGATION_AGG.getAggregationName(),
+                             totalCountAggregation(topLevelCristinOrg));
+            aggregations.put(ORGANIZATION_APPROVAL_STATUS_AGGREGATION_AGG.getAggregationName(),
+                             organizationApprovalStatusAggregations(topLevelCristinOrg));
+        }
         return aggregations;
     }
 
@@ -105,6 +116,13 @@ public final class Aggregations {
         return nestedQuery(APPROVALS,
                            termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)),
                            termQuery(username, jsonPathOf(APPROVALS, ASSIGNEE)));
+    }
+
+    private static Aggregation organizationApprovalStatusAggregations(String topLevelCristinOrg) {
+        //TODO: Implement NP-46528
+        //TODO: TotalCountAggregation is a placeholder for the actual implementation. Remove it when the actual
+        // implementation is done.
+        return totalCountAggregation(topLevelCristinOrg);
     }
 
     private static Query matchAllQuery() {
