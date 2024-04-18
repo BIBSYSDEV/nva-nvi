@@ -1,16 +1,16 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.index.model.search.SearchAggregations.APPROVED_AGG;
-import static no.sikt.nva.nvi.index.model.search.SearchAggregations.APPROVED_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.model.search.SearchAggregations.ASSIGNMENTS_AGG;
-import static no.sikt.nva.nvi.index.model.search.SearchAggregations.COMPLETED_AGGREGATION_AGG;
-import static no.sikt.nva.nvi.index.model.search.SearchAggregations.NEW_AGG;
-import static no.sikt.nva.nvi.index.model.search.SearchAggregations.NEW_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.model.search.SearchAggregations.PENDING_AGG;
-import static no.sikt.nva.nvi.index.model.search.SearchAggregations.PENDING_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.model.search.SearchAggregations.REJECTED_AGG;
-import static no.sikt.nva.nvi.index.model.search.SearchAggregations.REJECTED_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.model.search.SearchAggregations.TOTAL_COUNT_AGGREGATION_AGG;
+import static no.sikt.nva.nvi.index.model.search.SearchAggregation.APPROVED_AGG;
+import static no.sikt.nva.nvi.index.model.search.SearchAggregation.APPROVED_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.model.search.SearchAggregation.ASSIGNMENTS_AGG;
+import static no.sikt.nva.nvi.index.model.search.SearchAggregation.COMPLETED_AGGREGATION_AGG;
+import static no.sikt.nva.nvi.index.model.search.SearchAggregation.NEW_AGG;
+import static no.sikt.nva.nvi.index.model.search.SearchAggregation.NEW_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.model.search.SearchAggregation.PENDING_AGG;
+import static no.sikt.nva.nvi.index.model.search.SearchAggregation.PENDING_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.model.search.SearchAggregation.REJECTED_AGG;
+import static no.sikt.nva.nvi.index.model.search.SearchAggregation.REJECTED_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.model.search.SearchAggregation.TOTAL_COUNT_AGGREGATION_AGG;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -58,7 +58,7 @@ import no.sikt.nva.nvi.index.model.document.Organization;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
-import no.sikt.nva.nvi.index.model.search.SearchAggregations;
+import no.sikt.nva.nvi.index.model.search.SearchAggregation;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
@@ -211,12 +211,12 @@ public class OpenSearchClientTest {
                                    .build();
         var searchResponse = openSearchClient.search(searchParameters);
         var aggregations = searchResponse.aggregations();
-        assertEquals(SearchAggregations.values().length, aggregations.keySet().size());
+        assertEquals(SearchAggregation.values().length, aggregations.keySet().size());
     }
 
     @Test
     void shouldReturnSpecificAggregationsWhenSpecificAggregationTypeRequested() throws IOException {
-        var requestedAggregation = randomElement(SearchAggregations.values()).getAggregationName();
+        var requestedAggregation = randomElement(SearchAggregation.values()).getAggregationName();
         var searchParameters = CandidateSearchParameters.builder()
                                    .withAggregationType(requestedAggregation)
                                    .build();
