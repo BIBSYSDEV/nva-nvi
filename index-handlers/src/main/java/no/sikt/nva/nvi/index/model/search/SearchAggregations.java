@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.utils;
+package no.sikt.nva.nvi.index.model.search;
 
 public enum SearchAggregations {
     NEW_AGG("pending"),
@@ -11,7 +11,8 @@ public enum SearchAggregations {
     REJECTED_COLLABORATION_AGG("rejectedCollaboration"),
     ASSIGNMENTS_AGG("assignments"),
     COMPLETED_AGGREGATION_AGG("completed"),
-    TOTAL_COUNT_AGGREGATION_AGG("totalCount");
+    TOTAL_COUNT_AGGREGATION_AGG("totalCount"),
+    ORGANIZATION_APPROVAL_STATUS_AGGREGATION_AGG("organizationApprovalStatuses"),;
 
     private final String aggregationName;
 
