@@ -1,21 +1,9 @@
 package no.sikt.nva.nvi.index;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
-import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
-import static no.sikt.nva.nvi.index.utils.SearchAggregations.APPROVED_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchAggregations.APPROVED_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchAggregations.ASSIGNMENTS_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchAggregations.COMPLETED_AGGREGATION_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchAggregations.NEW_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchAggregations.NEW_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchAggregations.PENDING_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchAggregations.PENDING_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchAggregations.REJECTED_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchAggregations.REJECTED_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.utils.SearchAggregations.TOTAL_COUNT_AGGREGATION_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
@@ -25,6 +13,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
+import no.sikt.nva.nvi.index.model.search.SearchAggregation;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
@@ -39,27 +28,17 @@ import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 public final class Aggregations {
 
     public static final int MULTIPLE = 2;
+    public static final String ALL_AGGREGATIONS = "all";
     private static final CharSequence JSON_PATH_DELIMITER = ".";
 
     private Aggregations() {
     }
 
-    public static Map<String, Aggregation> generateAggregations(String username, String customer) {
-        var aggregations = new HashMap<String, Aggregation>();
-        aggregations.put(NEW_AGG.getAggregationName(), statusAggregation(customer, NEW));
-        aggregations.put(NEW_COLLABORATION_AGG.getAggregationName(), collaborationAggregation(customer, NEW));
-        aggregations.put(PENDING_AGG.getAggregationName(), statusAggregation(customer, PENDING));
-        aggregations.put(PENDING_COLLABORATION_AGG.getAggregationName(), collaborationAggregation(customer, PENDING));
-        aggregations.put(APPROVED_AGG.getAggregationName(), statusAggregation(customer, APPROVED));
-        aggregations.put(APPROVED_COLLABORATION_AGG.getAggregationName(),
-                         finalizedCollaborationAggregation(customer, APPROVED));
-        aggregations.put(REJECTED_AGG.getAggregationName(), statusAggregation(customer, REJECTED));
-        aggregations.put(REJECTED_COLLABORATION_AGG.getAggregationName(),
-                         finalizedCollaborationAggregation(customer, REJECTED));
-        aggregations.put(ASSIGNMENTS_AGG.getAggregationName(), assignmentsAggregation(username, customer));
-        aggregations.put(COMPLETED_AGGREGATION_AGG.getAggregationName(), completedAggregation(customer));
-        aggregations.put(TOTAL_COUNT_AGGREGATION_AGG.getAggregationName(), totalCountAggregation(customer));
-        return aggregations;
+    public static Map<String, Aggregation> generateAggregations(String aggregationType, String username,
+                                                                String topLevelCristinOrg) {
+        return aggregationTypeIsNotSpecified(aggregationType)
+                   ? generateAllAggregationTypes(username, topLevelCristinOrg)
+                   : generateSingleAggregation(aggregationType, username, topLevelCristinOrg);
     }
 
     public static Query containsPendingStatusQuery() {
@@ -107,31 +86,27 @@ public final class Aggregations {
                            termQuery(username, jsonPathOf(APPROVALS, ASSIGNEE)));
     }
 
-    private static Query matchAllQuery() {
-        return new MatchAllQuery.Builder().build()._toQuery();
+    public static Aggregation organizationApprovalStatusAggregations(String topLevelCristinOrg) {
+        //TODO: Implement NP-46528
+        //TODO: TotalCountAggregation is a placeholder for the actual implementation. Remove it when the actual
+        // implementation is done.
+        return totalCountAggregation(topLevelCristinOrg);
     }
 
-    private static Query toTermQuery(String value, String field) {
-        return new TermQuery.Builder()
-                   .value(new FieldValue.Builder().stringValue(value).build())
-                   .field(field)
-                   .build()._toQuery();
-    }
-
-    private static Aggregation statusAggregation(String customer, ApprovalStatus status) {
+    public static Aggregation statusAggregation(String customer, ApprovalStatus status) {
         return new Aggregation.Builder()
                    .filter(mustMatch(statusQuery(customer, status)))
                    .build();
     }
 
-    private static Aggregation totalCountAggregation(String customer) {
+    public static Aggregation totalCountAggregation(String customer) {
         return new Aggregation.Builder()
                    .filter(
                        mustMatch(nestedQuery(APPROVALS, termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)))))
                    .build();
     }
 
-    private static Aggregation completedAggregation(String customer) {
+    public static Aggregation completedAggregation(String customer) {
         var notPendingQuery = nestedQuery(APPROVALS,
                                           termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)),
                                           mustNotMatch(PENDING.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)),
@@ -142,13 +117,13 @@ public final class Aggregations {
                    .build();
     }
 
-    private static Aggregation assignmentsAggregation(String username, String customer) {
+    public static Aggregation assignmentsAggregation(String username, String customer) {
         return new Aggregation.Builder()
                    .filter(mustMatch(assignmentsQuery(username, customer)))
                    .build();
     }
 
-    private static Aggregation finalizedCollaborationAggregation(String customer, ApprovalStatus status) {
+    public static Aggregation finalizedCollaborationAggregation(String customer, ApprovalStatus status) {
         return new Aggregation.Builder()
                    .filter(mustMatch(statusQuery(customer, status),
                                      containsPendingStatusQuery(),
@@ -156,10 +131,48 @@ public final class Aggregations {
                    .build();
     }
 
-    private static Aggregation collaborationAggregation(String customer, ApprovalStatus status) {
+    public static Aggregation collaborationAggregation(String customer, ApprovalStatus status) {
         return new Aggregation.Builder()
                    .filter(mustMatch(statusQuery(customer, status), multipleApprovalsQuery()))
                    .build();
+    }
+
+    private static boolean aggregationTypeIsNotSpecified(String aggregationType) {
+        return isNull(aggregationType) || ALL_AGGREGATIONS.equals(aggregationType);
+    }
+
+    private static Map<String, Aggregation> generateSingleAggregation(String aggregationType, String username,
+                                                                      String topLevelCristinOrg) {
+        var aggregation = SearchAggregation.parse(aggregationType);
+        var aggregations = new HashMap<String, Aggregation>();
+        addAggregation(username, topLevelCristinOrg, aggregations, aggregation);
+        return aggregations;
+    }
+
+    private static Map<String, Aggregation> generateAllAggregationTypes(String username, String topLevelCristinOrg) {
+        var aggregations = new HashMap<String, Aggregation>();
+        for (var aggregation : SearchAggregation.values()) {
+            addAggregation(username, topLevelCristinOrg, aggregations, aggregation);
+        }
+        return aggregations;
+    }
+
+    private static void addAggregation(String username, String topLevelCristinOrg,
+                                       Map<String, Aggregation> aggregations,
+                                       SearchAggregation aggregation) {
+        aggregations.put(aggregation.getAggregationName(),
+                         aggregation.generateAggregation(username, topLevelCristinOrg));
+    }
+
+    private static Query matchAllQuery() {
+        return new MatchAllQuery.Builder().build()._toQuery();
+    }
+
+    private static Query toTermQuery(String value, String field) {
+        return new TermQuery.Builder()
+                   .value(new FieldValue.Builder().stringValue(value).build())
+                   .field(field)
+                   .build()._toQuery();
     }
 
     private static Query mustNotMatch(String value, String field) {

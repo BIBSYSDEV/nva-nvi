@@ -181,16 +181,17 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         return new RuntimeException(exception.getMessage());
     }
 
-    private SearchRequest constructSearchRequest(CandidateSearchParameters candidateSearchParameters) {
-        var query = SearchConstants.constructQuery(candidateSearchParameters);
-        var searchResultParameters = candidateSearchParameters.searchResultParameters();
+    private SearchRequest constructSearchRequest(CandidateSearchParameters parameters) {
+        var query = SearchConstants.constructQuery(parameters);
+        var resultParameters = parameters.searchResultParameters();
         return new SearchRequest.Builder()
                    .index(NVI_CANDIDATES_INDEX)
                    .query(query)
-                   .aggregations(Aggregations.generateAggregations(candidateSearchParameters.username(),
-                                                                   candidateSearchParameters.topLevelOrgUriAsString()))
-                   .from(searchResultParameters.offset())
-                   .size(searchResultParameters.size())
+                   .aggregations(Aggregations.generateAggregations(parameters.aggregationType(),
+                                                                   parameters.username(),
+                                                                   parameters.topLevelOrgUriAsString()))
+                   .from(resultParameters.offset())
+                   .size(resultParameters.size())
                    .build();
     }
 }
