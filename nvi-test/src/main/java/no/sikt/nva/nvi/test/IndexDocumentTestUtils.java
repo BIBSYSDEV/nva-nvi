@@ -69,7 +69,7 @@ public final class IndexDocumentTestUtils {
                    .withInstitutionId(approval.getInstitutionId().toString())
                    .withApprovalStatus(getApprovalStatus(approval))
                    .withAssignee(Objects.nonNull(assignee) ? assignee.value() : null)
-                   .withPoints(InstitutionPoints.from(candidate.getInstitutionPoints(approval.getInstitutionId())))
+                   .withPoints(candidate.getInstitutionPoints(approval.getInstitutionId()).map(InstitutionPoints::from).orElse(null))
                    .withLabels(Map.of(EN_FIELD, HARDCODED_ENGLISH_LABEL, NB_FIELD, HARDCODED_NORWEGIAN_LABEL))
                    .build();
     }
