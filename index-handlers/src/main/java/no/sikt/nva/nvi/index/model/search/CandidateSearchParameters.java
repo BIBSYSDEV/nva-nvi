@@ -47,10 +47,6 @@ public record CandidateSearchParameters(String searchTerm,
         return new Builder();
     }
 
-    public String topLevelOrgUriAsString() {
-        return Optional.ofNullable(topLevelCristinOrg).map(URI::toString).orElse(null);
-    }
-
     public static CandidateSearchParameters fromRequestInfo(RequestInfo requestInfo)
         throws UnauthorizedException {
         var aggregationType = extractQueryParamAggregationType(requestInfo);
@@ -66,10 +62,16 @@ public record CandidateSearchParameters(String searchTerm,
                    .withContributor(extractQueryParamContributor(requestInfo))
                    .withAssignee(extractQueryParamAssignee(requestInfo))
                    .withAggregationType(aggregationType)
-                   .withOffset(extractQueryParamOffsetOrDefault(requestInfo))
-                   .withSize(extractQueryParamSizeOrDefault(requestInfo))
+                   .withSearchResultParameters(SearchResultParameters.builder()
+                                                   .withOffset(extractQueryParamOffsetOrDefault(requestInfo))
+                                                   .withSize(extractQueryParamSizeOrDefault(requestInfo))
+                                                   .build())
                    .withTopLevelCristinOrg(requestInfo.getTopLevelOrgCristinId().orElse(null))
                    .build();
+    }
+
+    public String topLevelOrgUriAsString() {
+        return Optional.ofNullable(topLevelCristinOrg).map(URI::toString).orElse(null);
     }
 
     private static String extractQueryParamAggregationType(RequestInfo requestInfo) {

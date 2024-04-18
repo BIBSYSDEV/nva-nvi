@@ -21,7 +21,6 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
-import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import nva.commons.apigateway.AccessRight;
@@ -30,7 +29,6 @@ import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
-import nva.commons.core.StringUtils;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.NodeIterator;
 import org.apache.jena.rdf.model.RDFNode;
@@ -80,10 +78,6 @@ public class SearchNviCandidatesHandler
 
     private static boolean userIsNviAdmin(RequestInfo requestInfo) {
         return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI);
-    }
-
-    private static SearchResultParameters getResultParameters(Integer size, Integer offset) {
-        return SearchResultParameters.builder().withSize(size).withOffset(offset).build();
     }
 
     private static List<URI> getAffiliations(RequestInfo requestInfo, URI topLevelOrg) {
