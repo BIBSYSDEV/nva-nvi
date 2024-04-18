@@ -36,13 +36,9 @@ public final class Aggregations {
 
     public static Map<String, Aggregation> generateAggregations(String aggregationType, String username,
                                                                 String topLevelCristinOrg) {
-        var aggregations = new HashMap<String, Aggregation>();
-        if (aggregationTypeIsNotSpecified(aggregationType)) {
-            generateAllAggregationTypes(username, topLevelCristinOrg, aggregations);
-        } else {
-            generateSingleAggregation(aggregationType, username, topLevelCristinOrg, aggregations);
-        }
-        return aggregations;
+        return aggregationTypeIsNotSpecified(aggregationType)
+                   ? generateAllAggregationTypes(username, topLevelCristinOrg)
+                   : generateSingleAggregation(aggregationType, username, topLevelCristinOrg);
     }
 
     public static Query containsPendingStatusQuery() {
@@ -145,17 +141,20 @@ public final class Aggregations {
         return isNull(aggregationType) || ALL_AGGREGATIONS.equals(aggregationType);
     }
 
-    private static void generateSingleAggregation(String aggregationType, String username, String topLevelCristinOrg,
-                                                  Map<String, Aggregation> aggregations) {
+    private static Map<String, Aggregation> generateSingleAggregation(String aggregationType, String username,
+                                                                      String topLevelCristinOrg) {
         var aggregation = SearchAggregation.parse(aggregationType);
+        var aggregations = new HashMap<String, Aggregation>();
         addAggregation(username, topLevelCristinOrg, aggregations, aggregation);
+        return aggregations;
     }
 
-    private static void generateAllAggregationTypes(String username, String topLevelCristinOrg,
-                                                    Map<String, Aggregation> aggregations) {
+    private static Map<String, Aggregation> generateAllAggregationTypes(String username, String topLevelCristinOrg) {
+        var aggregations = new HashMap<String, Aggregation>();
         for (var aggregation : SearchAggregation.values()) {
             addAggregation(username, topLevelCristinOrg, aggregations, aggregation);
         }
+        return aggregations;
     }
 
     private static void addAggregation(String username, String topLevelCristinOrg,
