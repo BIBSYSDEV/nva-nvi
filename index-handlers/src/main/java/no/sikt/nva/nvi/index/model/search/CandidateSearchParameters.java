@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.model;
+package no.sikt.nva.nvi.index.model.search;
 
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_AGGREGATION_TYPE;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_OFFSET_PARAM;
@@ -36,8 +36,7 @@ public record CandidateSearchParameters(String searchTerm,
                                         String assignee,
                                         URI topLevelCristinOrg,
                                         String aggregationType,
-                                        int offset,
-                                        int size) implements JsonSerializable {
+                                        SearchResultParameters searchResultParameters) implements JsonSerializable {
 
     public static final String DEFAULT_AGGREGATION_TYPE = "all";
     private static final String DEFAULT_STRING = StringUtils.EMPTY_STRING;
@@ -46,6 +45,10 @@ public record CandidateSearchParameters(String searchTerm,
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    public String topLevelOrgUriAsString() {
+        return Optional.ofNullable(topLevelCristinOrg).map(URI::toString).orElse(null);
     }
 
     public static CandidateSearchParameters fromRequestInfo(RequestInfo requestInfo)
@@ -67,10 +70,6 @@ public record CandidateSearchParameters(String searchTerm,
                    .withSize(extractQueryParamSizeOrDefault(requestInfo))
                    .withTopLevelCristinOrg(requestInfo.getTopLevelOrgCristinId().orElse(null))
                    .build();
-    }
-
-    public String topLevelOrgUriAsString() {
-        return Optional.ofNullable(topLevelCristinOrg).map(URI::toString).orElse(null);
     }
 
     private static String extractQueryParamAggregationType(RequestInfo requestInfo) {
@@ -145,8 +144,7 @@ public record CandidateSearchParameters(String searchTerm,
         private String assignee;
         private URI topLevelCristinOrg;
         private String aggregationType;
-        private int offset;
-        private int size = 10;
+        private SearchResultParameters searchResultParameters = SearchResultParameters.builder().build();
 
         private Builder() {
         }
@@ -211,20 +209,15 @@ public record CandidateSearchParameters(String searchTerm,
             return this;
         }
 
-        public Builder withOffset(int offset) {
-            this.offset = offset;
-            return this;
-        }
-
-        public Builder withSize(int size) {
-            this.size = size;
+        public Builder withSearchResultParameters(SearchResultParameters searchResultParameters) {
+            this.searchResultParameters = searchResultParameters;
             return this;
         }
 
         public CandidateSearchParameters build() {
             return new CandidateSearchParameters(searchTerm, affiliations, excludeSubUnits, filter, username, year,
                                                  category, title, contributor, assignee, topLevelCristinOrg,
-                                                 aggregationType, offset, size);
+                                                 aggregationType, searchResultParameters);
         }
     }
 }

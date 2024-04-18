@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.index.aws.CandidateQuery;
 import no.sikt.nva.nvi.index.aws.CandidateQuery.QueryFilterType;
-import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
+import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import nva.commons.core.Environment;
 import org.opensearch.client.opensearch._types.mapping.KeywordProperty;
 import org.opensearch.client.opensearch._types.mapping.NestedProperty;

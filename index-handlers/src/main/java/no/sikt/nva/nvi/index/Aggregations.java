@@ -1,10 +1,10 @@
 package no.sikt.nva.nvi.index;
 
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.index.model.ApprovalStatus.APPROVED;
-import static no.sikt.nva.nvi.index.model.ApprovalStatus.NEW;
-import static no.sikt.nva.nvi.index.model.ApprovalStatus.PENDING;
-import static no.sikt.nva.nvi.index.model.ApprovalStatus.REJECTED;
+import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.APPROVED;
+import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
+import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
+import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.index.utils.SearchAggregations.APPROVED_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchAggregations.APPROVED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.utils.SearchAggregations.ASSIGNMENTS_AGG;
@@ -24,7 +24,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.NUMBER_OF_APPROVALS;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import no.sikt.nva.nvi.index.model.ApprovalStatus;
+import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;

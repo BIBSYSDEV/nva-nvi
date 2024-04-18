@@ -1,7 +1,6 @@
-package no.sikt.nva.nvi.index.model;
+package no.sikt.nva.nvi.index.model.document;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -11,8 +10,8 @@ import java.util.List;
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonTypeName("Organization")
-public record NviOrganization(@JsonProperty("id") String id,
-                              @JsonProperty("partOf") List<String> partOf) implements OrganizationType {
+public record Organization(String id,
+                           List<String> partOf) implements OrganizationType {
 
     public static Builder builder() {
         return new Builder();
@@ -36,8 +35,8 @@ public record NviOrganization(@JsonProperty("id") String id,
             return this;
         }
 
-        public NviOrganization build() {
-            return new NviOrganization(id, partOf);
+        public Organization build() {
+            return new Organization(id, partOf);
         }
     }
 }

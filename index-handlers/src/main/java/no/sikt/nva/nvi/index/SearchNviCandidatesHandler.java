@@ -19,8 +19,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.SearchClient;
-import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
-import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
+import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import nva.commons.apigateway.AccessRight;
@@ -29,6 +30,9 @@ import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.StringUtils;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.NodeIterator;
 import org.apache.jena.rdf.model.RDFNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,6 +82,10 @@ public class SearchNviCandidatesHandler
         return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI);
     }
 
+    private static SearchResultParameters getResultParameters(Integer size, Integer offset) {
+        return SearchResultParameters.builder().withSize(size).withOffset(offset).build();
+    }
+
     private static List<URI> getAffiliations(RequestInfo requestInfo, URI topLevelOrg) {
         return Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
                    .orElse(List.of(topLevelOrg));
@@ -105,6 +113,22 @@ public class SearchNviCandidatesHandler
         return !userIsNviAdmin(requestInfo);
     }
 
+    private static Stream<URI> toUris(Stream<String> stream) {
+        return stream.map(URI::create);
+    }
+
+    private static Stream<String> concat(URI topLevelOrg, Stream<String> stringStream) {
+        return Stream.concat(stringStream, Stream.of(topLevelOrg.toString()));
+    }
+
+    private static Stream<String> toStreamOfRfdNodes(NodeIterator nodeIterator) {
+        return nodeIterator.toList().stream().map(RDFNode::toString);
+    }
+
+    private static NodeIterator getObjectsOfPropertyPartOf(Model model) {
+        return model.listObjectsOfProperty(model.createProperty(HAS_PART_PROPERTY));
+    }
+
     private void logAggregationType(CandidateSearchParameters candidateSearchParameters) {
         logger.info("Aggregation type {} requested for topLevelCristinOrg {}",
                     candidateSearchParameters.aggregationType(),
@@ -121,22 +145,22 @@ public class SearchNviCandidatesHandler
 
     private void assertUserIsAllowedToSearchAffiliations(List<URI> affiliations, URI topLevelOrg)
         throws UnauthorizedException {
-        var allowed = attempt(() -> this.uriRetriever.getRawContent(topLevelOrg, APPLICATION_JSON))
-                          .map(Optional::orElseThrow)
+        var allowed = attempt(() -> this.uriRetriever.getRawContent(topLevelOrg, APPLICATION_JSON)).map(
+                Optional::orElseThrow)
                           .map(str -> createModel(dtoObjectMapper.readTree(str)))
-                          .map(model -> model.listObjectsOfProperty(model.createProperty(HAS_PART_PROPERTY)))
-                          .map(node -> node.toList().stream().map(RDFNode::toString))
-                          .map(s -> Stream.concat(s, Stream.of(topLevelOrg.toString())))
+                          .map(SearchNviCandidatesHandler::getObjectsOfPropertyPartOf)
+                          .map(SearchNviCandidatesHandler::toStreamOfRfdNodes)
+                          .map(node -> concat(topLevelOrg, node))
+                          .map(SearchNviCandidatesHandler::toUris)
                           .orElseThrow()
                           .collect(Collectors.toSet());
 
-        var illegal = Sets.difference(new HashSet<>(affiliations.stream().map(URI::toString)
-                                                        .collect(Collectors.toSet())), allowed);
+        var illegal = Sets.difference(new HashSet<>(affiliations), allowed);
 
         if (!illegal.isEmpty()) {
             throw new UnauthorizedException(
                 String.format(USER_IS_NOT_ALLOWED_TO_SEARCH_FOR_AFFILIATIONS_S,
-                              String.join(COMMA_AND_SPACE, illegal))
+                              String.join(COMMA_AND_SPACE, illegal.toString()))
             );
         }
     }

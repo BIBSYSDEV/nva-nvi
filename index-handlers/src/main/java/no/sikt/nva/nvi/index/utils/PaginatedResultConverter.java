@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import no.sikt.nva.nvi.index.model.CandidateSearchParameters;
-import no.sikt.nva.nvi.index.model.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import nva.commons.apigateway.exceptions.UnprocessableContentException;
@@ -53,10 +53,11 @@ public final class PaginatedResultConverter {
     public static PaginatedSearchResult<NviCandidateIndexDocument> toPaginatedResult(
         SearchResponse<NviCandidateIndexDocument> searchResponse, CandidateSearchParameters candidateSearchParameters)
         throws UnprocessableContentException {
+        var searchResultParameters = candidateSearchParameters.searchResultParameters();
         var paginatedSearchResult = PaginatedSearchResult.create(
             constructBaseUri(),
-            candidateSearchParameters.offset(),
-            candidateSearchParameters.size(),
+            searchResultParameters.offset(),
+            searchResultParameters.size(),
             extractTotalNumberOfHits(searchResponse),
             extractsHits(searchResponse),
             getQueryParameters(candidateSearchParameters.searchTerm(),
