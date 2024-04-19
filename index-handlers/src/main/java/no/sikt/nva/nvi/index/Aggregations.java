@@ -8,16 +8,18 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_IDENTIFIER;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.INVOLVED_SUB_UNITS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NUMBER_OF_APPROVALS;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.search.SearchAggregation;
+import no.sikt.nva.nvi.index.utils.SearchConstants;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
-import org.opensearch.client.opensearch._types.aggregations.NestedAggregate;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
 import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
@@ -95,22 +97,35 @@ public final class Aggregations {
         // implementation is done.
         // Create the inner aggregation
 
+        Aggregation approvalIdentifierAggregation = new Aggregation.Builder()
+                                                        .terms(new TermsAggregation.Builder()
+                                                                   .field(jsonPathOf(APPROVALS, INSTITUTION_ID))
+                                                                   .build())
+                                                        .build();
 
-        var aggregation =  new Aggregation.Builder()
-                                      .terms(new TermsAggregation.Builder()
-                                                 .field(jsonPathOf(APPROVALS, APPROVAL_STATUS))
-                                                 .build())
-                                      .build();
+        Aggregation approvalInvolvedSubUnitsAggregation = new Aggregation.Builder()
+                                                        .terms(new TermsAggregation.Builder()
+                                                                   .field(jsonPathOf(APPROVALS, INVOLVED_SUB_UNITS))
+                                                                   .build())
+                                                        .build();
 
-        // Create the nested aggregation
-        NestedAggregation nestedAggregation = new NestedAggregation.Builder()
-                                                  .path(CONTRIBUTORS)
-                                                  .build();
+        Aggregation statusAggregation = new Aggregation.Builder()
+                                            .terms(new TermsAggregation.Builder()
+                                                       .field(jsonPathOf(APPROVALS, APPROVAL_STATUS))
+                                                       .build())
+                                            .aggregations(Map.of("approvalIdentifierAggregation",
+                                                                 approvalIdentifierAggregation,
+                                                                 "approvalInvolvedSubUnitsAggregation",
+                                                                 approvalInvolvedSubUnitsAggregation))
+                                            .build();
 
-        // Create the main aggregation and add the nested aggregation
+        NestedAggregation approvalNestedAggregation = new NestedAggregation.Builder()
+                                                          .path(jsonPathOf(APPROVALS))
+                                                          .build();
+
         Aggregation mainAggregation = new Aggregation.Builder()
-                                          .nested(nestedAggregation)
-                                          .aggregations("statusAggregation", aggregation)
+                                          .nested(approvalNestedAggregation)
+                                          .aggregations(Map.of("statusAggregation", statusAggregation))
                                           .build();
         return mainAggregation;
     }

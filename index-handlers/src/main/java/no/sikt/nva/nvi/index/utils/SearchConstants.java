@@ -38,6 +38,8 @@ public final class SearchConstants {
     public static final String SEARCH_INFRASTRUCTURE_API_HOST = readSearchInfrastructureApiHost();
     public static final String SEARCH_INFRASTRUCTURE_AUTH_URI = readSearchInfrastructureAuthUri();
     public static final String JSON_PATH_DELIMITER = ".";
+    public static final String INSTITUTION_IDENTIFIER = "institutionIdentifier";
+    public static final String INVOLVED_SUB_UNITS = "involvedSubUnits";
 
     private SearchConstants() {
 
@@ -81,6 +83,10 @@ public final class SearchConstants {
         return new NestedProperty.Builder().includeInParent(true).properties(affiliationsProperties()).build();
     }
 
+    private static NestedProperty involvedSubUnitsNestedProperty() {
+        return new NestedProperty.Builder().includeInParent(true).build();
+    }
+
     private static NestedProperty approvalsNestedProperty() {
         return new NestedProperty.Builder().includeInParent(true).properties(approvalProperties()).build();
     }
@@ -94,8 +100,12 @@ public final class SearchConstants {
     }
 
     private static Map<String, Property> approvalProperties() {
-        return Map.of(INSTITUTION_ID, keywordProperty(), ASSIGNEE, textPropertyWithNetsedKeyword(),
-                      APPROVAL_STATUS, keywordProperty());
+        return Map.of(INSTITUTION_ID, keywordProperty(),
+                      ASSIGNEE, textPropertyWithNetsedKeyword(),
+                      APPROVAL_STATUS, keywordProperty(),
+                      INSTITUTION_IDENTIFIER, keywordProperty(),
+                      INVOLVED_SUB_UNITS, involvedSubUnitsNestedProperty()._toProperty()
+        );
     }
 
     private static Map<String, Property> contributorsProperties() {
