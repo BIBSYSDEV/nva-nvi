@@ -17,6 +17,9 @@ import no.sikt.nva.nvi.index.model.search.SearchAggregation;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.NestedAggregate;
+import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
+import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
@@ -86,11 +89,30 @@ public final class Aggregations {
                            termQuery(username, jsonPathOf(APPROVALS, ASSIGNEE)));
     }
 
-    public static Aggregation organizationApprovalStatusAggregations(String topLevelCristinOrg) {
+    public static Aggregation organizationApprovalStatusAggregations() {
         //TODO: Implement NP-46528
         //TODO: TotalCountAggregation is a placeholder for the actual implementation. Remove it when the actual
         // implementation is done.
-        return totalCountAggregation(topLevelCristinOrg);
+        // Create the inner aggregation
+
+
+        var aggregation =  new Aggregation.Builder()
+                                      .terms(new TermsAggregation.Builder()
+                                                 .field(jsonPathOf(APPROVALS, APPROVAL_STATUS))
+                                                 .build())
+                                      .build();
+
+        // Create the nested aggregation
+        NestedAggregation nestedAggregation = new NestedAggregation.Builder()
+                                                  .path(CONTRIBUTORS)
+                                                  .build();
+
+        // Create the main aggregation and add the nested aggregation
+        Aggregation mainAggregation = new Aggregation.Builder()
+                                          .nested(nestedAggregation)
+                                          .aggregations("statusAggregation", aggregation)
+                                          .build();
+        return mainAggregation;
     }
 
     public static Aggregation statusAggregation(String customer, ApprovalStatus status) {

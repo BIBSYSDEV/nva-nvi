@@ -77,8 +77,6 @@ import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
-import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
-import org.opensearch.client.opensearch._types.aggregations.NestedAggregate;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.testcontainers.OpensearchContainer;
 
@@ -479,46 +477,14 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldReturnOrganizationAggregationWithSubAggregations() throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_organization_aggregation.json"));
+        addDocumentsToIndex(documentFromString("document_organization_aggregation_pending.json"));
+        addDocumentsToIndex(documentFromString("document_organization_aggregation_new.json"));
         var aggregation = SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
         var searchParameters = defaultSearchParameters().withAggregationType(aggregation).build();
         var searchResponse = openSearchClient.search(searchParameters);
-        Aggregate value = searchResponse.aggregations().get(aggregation);
-        var actualAggregate = dtoObjectMapper.writeValueAsString(value);
-        var expectedAggregate =
-            dtoObjectMapper.writeValueAsString(getAggregate(buildNestedAggregate(getExpecyedAggregateMap())));
+        var actualAggregate = searchResponse.aggregations().get(aggregation);
+        var expectedAggregate = createExpectedNestedAggregation();
         assertEquals(expectedAggregate, actualAggregate);
-    }
-
-    private static Map<String, Aggregate> getExpecyedAggregateMap() {
-        return Map.of("someId",
-                      buildNestedAggregate(Map.of("new", createAggregate(filterAggregate(1)),
-                                                  "pending", createAggregate(filterAggregate(0)),
-                                                  "approved", createAggregate(filterAggregate(0)),
-                                                  "rejected", createAggregate(filterAggregate(0))))
-                          ._toAggregate());
-    }
-
-    private static Aggregate getAggregate(NestedAggregate nestedAggregate) {
-        return new Aggregate(nestedAggregate);
-    }
-
-    private static NestedAggregate buildNestedAggregate(Map<String, Aggregate> aggregateMap) {
-        return new NestedAggregate.Builder()
-                   .aggregations(aggregateMap)
-
-                   .docCount(0)
-                   .build();
-    }
-
-    private static Aggregate createAggregate(FilterAggregate filterAggregate) {
-        return new Aggregate(filterAggregate);
-    }
-
-    private static FilterAggregate filterAggregate(int docCount) {
-        return new FilterAggregate.Builder()
-                   .docCount(docCount)
-                   .build();
     }
 
     private static void addDocumentToIndex() {
@@ -689,6 +655,10 @@ public class OpenSearchClientTest {
         Random random = new Random();
         int index = random.nextInt(words.length);
         return words[index];
+    }
+
+    private Aggregate createExpectedNestedAggregation() {
+        return null;
     }
 
     public static final class FakeCachedJwtProvider {
