@@ -68,10 +68,6 @@ public final class SearchConstants {
                    .toQuery();
     }
 
-    public static TypeMapping mappings() {
-        return MAPPINGS;
-    }
-
     private static Map<String, Property> mappingProperties() {
         return Map.of(JSON_PATH_CONTRIBUTORS, nestedProperty(contributorsProperties()),
                       APPROVALS, nestedProperty(approvalProperties())
