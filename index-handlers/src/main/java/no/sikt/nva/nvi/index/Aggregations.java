@@ -10,6 +10,7 @@ import static no.sikt.nva.nvi.index.utils.AggregationFunctions.mustMatch;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.mustNotMatch;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.nestedAggregation;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.nestedQuery;
+import static no.sikt.nva.nvi.index.utils.AggregationFunctions.rangeFromQuery;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.termsAggregation;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
@@ -22,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.search.SearchAggregation;
-import no.sikt.nva.nvi.index.utils.AggregationFunctions;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
@@ -32,6 +32,7 @@ public final class Aggregations {
     private static final String ALL_AGGREGATIONS = "all";
     private static final String APPROVAL_IDENTIFIER_AGGREGATION = "approvalIdentifierAggregation";
     private static final String APPROVAL_INVOLVED_SUB_UNITS_AGGREGATION = "approvalInvolvedSubUnitsAggregation";
+    private static final String STATUS_AGGREGATION = "statusAggregation";
 
     private Aggregations() {
     }
@@ -50,7 +51,7 @@ public final class Aggregations {
     }
 
     public static Query multipleApprovalsQuery() {
-        return mustMatch(AggregationFunctions.rangeFromQuery(NUMBER_OF_APPROVALS, MULTIPLE));
+        return mustMatch(rangeFromQuery(NUMBER_OF_APPROVALS, MULTIPLE));
     }
 
     public static Query statusQuery(String customer, ApprovalStatus status) {
@@ -70,17 +71,17 @@ public final class Aggregations {
         // implementation is done.
         // Create the inner aggregation
 
-        var identifiers = termsAggregation(INSTITUTION_IDENTIFIER, APPROVALS)._toAggregation();
-        var involvedSubUnits = termsAggregation(INVOLVED_SUB_UNITS)._toAggregation();
+        var identifiers = termsAggregation(APPROVALS, INSTITUTION_IDENTIFIER)._toAggregation();
+        var involvedSubUnits = termsAggregation(APPROVALS, INVOLVED_SUB_UNITS)._toAggregation();
         var statusAggregation = new Aggregation.Builder()
-                                    .terms(termsAggregation(APPROVAL_STATUS))
+                                    .terms(termsAggregation(APPROVALS, APPROVAL_STATUS))
                                     .aggregations(Map.of(APPROVAL_IDENTIFIER_AGGREGATION, identifiers,
                                                          APPROVAL_INVOLVED_SUB_UNITS_AGGREGATION, involvedSubUnits))
                                     .build();
 
         return new Aggregation.Builder()
                    .nested(nestedAggregation(APPROVALS))
-                   .aggregations(Map.of("statusAggregation", statusAggregation))
+                   .aggregations(Map.of(STATUS_AGGREGATION, statusAggregation))
                    .build();
     }
 
