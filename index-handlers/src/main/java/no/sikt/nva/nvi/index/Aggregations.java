@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.Map;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.search.SearchAggregation;
-import no.sikt.nva.nvi.index.utils.SearchConstants;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
@@ -91,7 +90,7 @@ public final class Aggregations {
                            termQuery(username, jsonPathOf(APPROVALS, ASSIGNEE)));
     }
 
-    public static Aggregation organizationApprovalStatusAggregations() {
+    public static Aggregation organizationApprovalStatusAggregations(String topLevelCristinOrg) {
         //TODO: Implement NP-46528
         //TODO: TotalCountAggregation is a placeholder for the actual implementation. Remove it when the actual
         // implementation is done.
@@ -99,15 +98,16 @@ public final class Aggregations {
 
         Aggregation approvalIdentifierAggregation = new Aggregation.Builder()
                                                         .terms(new TermsAggregation.Builder()
-                                                                   .field(jsonPathOf(APPROVALS, INSTITUTION_ID))
+                                                                   .field(jsonPathOf(APPROVALS, INSTITUTION_IDENTIFIER))
                                                                    .build())
                                                         .build();
 
         Aggregation approvalInvolvedSubUnitsAggregation = new Aggregation.Builder()
-                                                        .terms(new TermsAggregation.Builder()
-                                                                   .field(jsonPathOf(APPROVALS, INVOLVED_SUB_UNITS))
-                                                                   .build())
-                                                        .build();
+                                                              .terms(new TermsAggregation.Builder()
+                                                                         .field(
+                                                                             jsonPathOf(APPROVALS, INVOLVED_SUB_UNITS))
+                                                                         .build())
+                                                              .build();
 
         Aggregation statusAggregation = new Aggregation.Builder()
                                             .terms(new TermsAggregation.Builder()

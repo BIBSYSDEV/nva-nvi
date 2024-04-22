@@ -1,11 +1,11 @@
 package no.sikt.nva.nvi.index.aws;
 
 import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.MAPPINGS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_API_HOST;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_CREDENTIALS;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.mappings;
 import static nva.commons.core.attempt.Try.attempt;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import java.io.IOException;
@@ -103,9 +103,8 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     public SearchResponse<NviCandidateIndexDocument> search(CandidateSearchParameters candidateSearchParameters)
         throws IOException {
         logSearchRequest(candidateSearchParameters);
-        return client.withTransportOptions(getOptions())
-                   .search(constructSearchRequest(candidateSearchParameters),
-                           NviCandidateIndexDocument.class);
+        return client.withTransportOptions(getOptions()).search(constructSearchRequest(candidateSearchParameters),
+                                                                NviCandidateIndexDocument.class);
     }
 
     @Override
@@ -169,7 +168,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     private static CreateIndexRequest getCreateIndexRequest() {
-        return new CreateIndexRequest.Builder().mappings(mappings()).index(NVI_CANDIDATES_INDEX).build();
+        return new CreateIndexRequest.Builder().mappings(MAPPINGS).index(NVI_CANDIDATES_INDEX).build();
     }
 
     private TransportOptions getOptions() {
