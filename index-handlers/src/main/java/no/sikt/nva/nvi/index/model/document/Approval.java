@@ -57,8 +57,8 @@ public record Approval(URI institutionId,
             return this;
         }
 
-        public Builder withInvolvedOrganizations(Set<URI> involvedSubUnits) {
-            this.involvedOrganizations = involvedSubUnits;
+        public Builder withInvolvedOrganizations(Set<URI> involvedOrganizations) {
+            this.involvedOrganizations = involvedOrganizations;
             return this;
         }
 

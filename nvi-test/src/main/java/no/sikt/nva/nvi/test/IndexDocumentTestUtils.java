@@ -73,7 +73,7 @@ public final class IndexDocumentTestUtils {
                    .withApprovalStatus(getApprovalStatus(approval))
                    .withAssignee(Objects.nonNull(assignee) ? assignee.value() : null)
                    .withPoints(getInstitutionPoints(approval, candidate))
-                   .withInvolvedOrganizations(extractInvolvedSubUnits(approval, candidate))
+                   .withInvolvedOrganizations(extractInvolvedOrganizations(approval, candidate))
                    .withLabels(Map.of(EN_FIELD, HARDCODED_ENGLISH_LABEL, NB_FIELD,
                                       HARDCODED_NORWEGIAN_LABEL))
                    .build();
@@ -85,7 +85,7 @@ public final class IndexDocumentTestUtils {
                    .orElse(null);
     }
 
-    private static Set<URI> extractInvolvedSubUnits(Approval approval, Candidate candidate) {
+    private static Set<URI> extractInvolvedOrganizations(Approval approval, Candidate candidate) {
         return candidate.getInstitutionPoints(approval.getInstitutionId())
                    .map(no.sikt.nva.nvi.common.service.model.InstitutionPoints::creatorAffiliationPoints)
                    .map(IndexDocumentTestUtils::getAffiliationsWithPoints)

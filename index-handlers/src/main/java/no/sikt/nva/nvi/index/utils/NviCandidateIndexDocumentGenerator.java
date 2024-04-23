@@ -110,7 +110,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    : ApprovalStatus.fromValue(approval.getStatus().getValue());
     }
 
-    private static Set<URI> extractInvolvedSubUnits(Candidate candidate, Approval approval) {
+    private static Set<URI> extractInvolvedOrganizations(Candidate candidate, Approval approval) {
         return candidate.getInstitutionPoints(approval.getInstitutionId())
                    .map(no.sikt.nva.nvi.common.service.model.InstitutionPoints::creatorAffiliationPoints)
                    .map(NviCandidateIndexDocumentGenerator::getAffiliationsWithPoints)
@@ -175,7 +175,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withLabels(extractLabels(resource, approval))
                    .withApprovalStatus(getApprovalStatus(approval))
                    .withPoints(getInstitutionPoints(approval, candidate))
-                   .withInvolvedOrganizations(extractInvolvedSubUnits(candidate, approval))
+                   .withInvolvedOrganizations(extractInvolvedOrganizations(candidate, approval))
                    .withAssignee(extractAssignee(approval))
                    .build();
     }
