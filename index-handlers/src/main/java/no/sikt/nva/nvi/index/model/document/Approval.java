@@ -5,8 +5,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -18,7 +18,7 @@ public record Approval(URI institutionId,
                        Map<String, String> labels,
                        ApprovalStatus approvalStatus,
                        InstitutionPoints points,
-                       List<URI> involvedSubUnits,
+                       Set<URI> involvedSubUnits,
                        String assignee) {
 
     public static Builder builder() {
@@ -31,7 +31,7 @@ public record Approval(URI institutionId,
         private Map<String, String> labels;
         private ApprovalStatus approvalStatus;
         private InstitutionPoints points;
-        private List<URI> involvedSubUnits;
+        private Set<URI> involvedSubUnits;
         private String assignee;
 
         private Builder() {
@@ -57,7 +57,7 @@ public record Approval(URI institutionId,
             return this;
         }
 
-        public Builder withInvolvedSubUnits(List<URI> involvedSubUnits) {
+        public Builder withInvolvedSubUnits(Set<URI> involvedSubUnits) {
             this.involvedSubUnits = involvedSubUnits;
             return this;
         }

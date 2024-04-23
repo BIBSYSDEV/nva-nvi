@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -560,7 +561,7 @@ public class OpenSearchClientTest {
     }
 
     private static Approval randomApprovalWithCustomerAndAssignee(URI affiliation, String assignee) {
-        return new Approval(affiliation, Map.of(), randomStatus(), randomInstitutionPoints(), List.of(), assignee);
+        return new Approval(affiliation, Map.of(), randomStatus(), randomInstitutionPoints(), Set.of(), assignee);
     }
 
     private static List<Approval> randomApprovalList() {
@@ -568,7 +569,7 @@ public class OpenSearchClientTest {
     }
 
     private static Approval randomApproval() {
-        return new Approval(randomUri(), Map.of(), randomStatus(), randomInstitutionPoints(), List.of(), null);
+        return new Approval(randomUri(), Map.of(), randomStatus(), randomInstitutionPoints(), Set.of(), null);
     }
 
     private static InstitutionPoints randomInstitutionPoints() {

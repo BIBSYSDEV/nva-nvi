@@ -29,11 +29,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.service.model.Username;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
@@ -107,6 +110,19 @@ public final class NviCandidateIndexDocumentGenerator {
                    : ApprovalStatus.fromValue(approval.getStatus().getValue());
     }
 
+    private static Set<URI> extractInvolvedSubUnits(Candidate candidate, Approval approval) {
+        return candidate.getInstitutionPoints(approval.getInstitutionId())
+                   .map(no.sikt.nva.nvi.common.service.model.InstitutionPoints::creatorAffiliationPoints)
+                   .map(NviCandidateIndexDocumentGenerator::getAffiliationsWithPoints)
+                   .orElse(Set.of());
+    }
+
+    private static Set<URI> getAffiliationsWithPoints(List<CreatorAffiliationPoints> creatorAffiliationPoints) {
+        return creatorAffiliationPoints.stream()
+                   .map(CreatorAffiliationPoints::affiliationId)
+                   .collect(Collectors.toSet());
+    }
+
     private NviCandidateIndexDocument buildCandidate(JsonNode resource, Candidate candidate,
                                                      List<no.sikt.nva.nvi.index.model.document.Approval> approvals) {
         return NviCandidateIndexDocument.builder()
@@ -152,12 +168,14 @@ public final class NviCandidateIndexDocumentGenerator {
                    .orElseThrow(() -> logFailingAffiliationHttpRequest(institutionId.toString()));
     }
 
-    private no.sikt.nva.nvi.index.model.document.Approval toApproval(JsonNode resource, Approval approval, Candidate candidate) {
+    private no.sikt.nva.nvi.index.model.document.Approval toApproval(JsonNode resource, Approval approval,
+                                                                     Candidate candidate) {
         return no.sikt.nva.nvi.index.model.document.Approval.builder()
                    .withInstitutionId(approval.getInstitutionId())
                    .withLabels(extractLabels(resource, approval))
                    .withApprovalStatus(getApprovalStatus(approval))
                    .withPoints(getInstitutionPoints(approval, candidate))
+                   .withInvolvedSubUnits(extractInvolvedSubUnits(candidate, approval))
                    .withAssignee(extractAssignee(approval))
                    .build();
     }

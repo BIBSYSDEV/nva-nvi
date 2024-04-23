@@ -165,7 +165,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
         var indexDocument =
             NviCandidateIndexDocument.builder()
                 .withContext(NVI_CONTEXT)
-                .withApprovals(expandApprovals(candidate, expandedPublicationDetails))
+                .withApprovals(expandApprovals(candidate))
                 .withIdentifier(candidate.getIdentifier())
                 .withPublicationDetails(expandedPublicationDetails)
                 .withPoints(randomBigDecimal())

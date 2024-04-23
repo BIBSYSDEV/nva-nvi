@@ -12,8 +12,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
@@ -27,12 +30,12 @@ import no.sikt.nva.nvi.index.model.document.OrganizationType;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import nva.commons.core.paths.UnixPath;
-import nva.commons.core.paths.UriWrapper;
 
 public final class IndexDocumentTestUtils {
 
     public static final String HARD_CODED_TOP_LEVEL_ORG = "hardCodedPartOf";
-    public static final String HARD_CODED_PART_OF = "https://example.org/organization/" + HARD_CODED_TOP_LEVEL_ORG;
+    public static final URI HARD_CODED_PART_OF = URI.create(
+        "https://example.org/organization/" + HARD_CODED_TOP_LEVEL_ORG);
     public static final URI NVI_CONTEXT = URI.create("https://bibsysdev.github.io/src/nvi-context.json");
     public static final String NVI_CANDIDATES_FOLDER = "nvi-candidates";
     public static final String GZIP_ENDING = ".gz";
@@ -44,12 +47,11 @@ public final class IndexDocumentTestUtils {
         return UnixPath.of(NVI_CANDIDATES_FOLDER).addChild(candidate.getIdentifier().toString() + GZIP_ENDING);
     }
 
-    public static List<no.sikt.nva.nvi.index.model.document.Approval> expandApprovals(Candidate candidate,
-                                                                                      PublicationDetails publicationDetails) {
+    public static List<no.sikt.nva.nvi.index.model.document.Approval> expandApprovals(Candidate candidate) {
         return candidate.getApprovals()
                    .values()
                    .stream()
-                   .map(approval -> toApproval(approval, candidate, publicationDetails))
+                   .map(approval -> toApproval(approval, candidate))
                    .toList();
     }
 
@@ -64,16 +66,16 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static no.sikt.nva.nvi.index.model.document.Approval toApproval(Approval approval, Candidate candidate,
-                                                                            PublicationDetails publicationDetails) {
+    private static no.sikt.nva.nvi.index.model.document.Approval toApproval(Approval approval, Candidate candidate) {
         var assignee = approval.getAssignee();
         return no.sikt.nva.nvi.index.model.document.Approval.builder()
                    .withInstitutionId(approval.getInstitutionId())
                    .withApprovalStatus(getApprovalStatus(approval))
                    .withAssignee(Objects.nonNull(assignee) ? assignee.value() : null)
                    .withPoints(getInstitutionPoints(approval, candidate))
-                   .withInvolvedSubUnits(extractInvolvedSubUnits(publicationDetails, HARD_CODED_TOP_LEVEL_ORG))
-                   .withLabels(Map.of(EN_FIELD, HARDCODED_ENGLISH_LABEL, NB_FIELD, HARDCODED_NORWEGIAN_LABEL))
+                   .withInvolvedSubUnits(extractInvolvedSubUnits(approval, candidate))
+                   .withLabels(Map.of(EN_FIELD, HARDCODED_ENGLISH_LABEL, NB_FIELD,
+                                      HARDCODED_NORWEGIAN_LABEL))
                    .build();
     }
 
@@ -83,14 +85,17 @@ public final class IndexDocumentTestUtils {
                    .orElse(null);
     }
 
-    private static List<URI> extractInvolvedSubUnits(PublicationDetails publicationDetails, String topLevelOrg) {
-        return publicationDetails.contributors().stream()
-                   .filter(contributor -> contributor instanceof NviContributor)
-                   .flatMap(contributor -> contributor.affiliations().stream())
-                   .filter(affiliation -> affiliation instanceof NviOrganization)
-                   .filter(affiliation -> affiliation.partOf().contains(topLevelOrg))
-                   .map(OrganizationType::id)
-                   .toList();
+    private static Set<URI> extractInvolvedSubUnits(Approval approval, Candidate candidate) {
+        return candidate.getInstitutionPoints(approval.getInstitutionId())
+                   .map(no.sikt.nva.nvi.common.service.model.InstitutionPoints::creatorAffiliationPoints)
+                   .map(IndexDocumentTestUtils::getAffiliationsWithPoints)
+                   .orElse(Set.of());
+    }
+
+    private static Set<URI> getAffiliationsWithPoints(List<CreatorAffiliationPoints> creatorAffiliationPoints) {
+        return creatorAffiliationPoints.stream()
+                   .map(CreatorAffiliationPoints::affiliationId)
+                   .collect(Collectors.toSet());
     }
 
     private static ApprovalStatus getApprovalStatus(Approval approval) {
@@ -177,14 +182,14 @@ public final class IndexDocumentTestUtils {
     private static OrganizationType generateOrganization(URI id) {
         return Organization.builder()
                    .withId(id)
-                   .withPartOf(List.of(HARD_CODED_PART_OF))
+                   .withPartOf(List.of(HARD_CODED_TOP_LEVEL_ORG))
                    .build();
     }
 
     private static OrganizationType generateNviOrganization(URI id) {
         return NviOrganization.builder()
                    .withId(id)
-                   .withPartOf(List.of(UriWrapper.fromUri(HARD_CODED_PART_OF).getLastPathElement()))
+                   .withPartOf(List.of(HARD_CODED_TOP_LEVEL_ORG))
                    .build();
     }
 }
