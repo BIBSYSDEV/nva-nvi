@@ -106,7 +106,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldBuildIndexDocumentAndPersistInS3WhenReceivingSqsEvent() {
-        var candidate = randomApplicableCandidate();
+        var candidate = randomApplicableCandidate(HARD_CODED_PART_OF, randomUri());
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
             candidate).indexDocument();
         var event = createEvent(candidate.getIdentifier());
@@ -133,7 +133,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldFetchOrganizationLabelsFromCristinApiWhenExpandedResourceIsMissingTopLevelOrganization() {
-        var candidate = randomApplicableCandidate();
+        var candidate = randomApplicableCandidate(HARD_CODED_PART_OF, randomUri());
         var expandedResource = createExpandedResource(candidate);
         setupResourceMissingTopLevelOrganizationsInS3(expandedResource, candidate);
         var expectedIndexDocument = IndexDocumentWithConsumptionAttributes.from(
@@ -160,14 +160,13 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     @Test
     void shouldSetApprovalStatusNewWhenApprovalIsPendingAndUnassigned() {
         var institutionId = randomUri();
-        var candidate = randomApplicableCandidate(institutionId);
+        var candidate = randomApplicableCandidate(institutionId, institutionId);
         setUpExistingResourceInS3AndGenerateExpectedDocument(candidate);
         var event = createEvent(candidate.getIdentifier());
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-        assertEquals(ApprovalStatus.NEW,
-                     actualIndexDocument.getApprovalForInstitution(institutionId.toString()).approvalStatus());
+        assertEquals(ApprovalStatus.NEW, actualIndexDocument.getApprovalForInstitution(institutionId).approvalStatus());
     }
 
     @Test
@@ -292,7 +291,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldNotFailForWholeBatchWhenFailingToFetchOneCandidate() {
-        var candidateToSucceed = randomApplicableCandidate();
+        var candidateToSucceed = randomApplicableCandidate(HARD_CODED_PART_OF, randomUri());
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
             candidateToSucceed);
         var event = createEvent(List.of(UUID.randomUUID(), candidateToSucceed.getIdentifier()));
@@ -304,7 +303,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldNotFailForWholeBatchWhenFailingParseOneEventRecord() {
-        var candidateToSucceed = randomApplicableCandidate();
+        var candidateToSucceed = randomApplicableCandidate(HARD_CODED_PART_OF, randomUri());
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
             candidateToSucceed);
         var event = createEventWithOneInvalidRecord(candidateToSucceed.getIdentifier());
@@ -447,7 +446,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     private Optional<HttpResponse<String>> generateResponse(URI affiliation) {
         var affiliationOrganizationNode = generateOrganizationNode(affiliation.toString());
         var partOfArrayNode = dtoObjectMapper.createArrayNode();
-        var partOfOrganizationNode = generateOrganizationNode(HARD_CODED_PART_OF);
+        var partOfOrganizationNode = generateOrganizationNode(HARD_CODED_PART_OF.toString());
         partOfArrayNode.add(partOfOrganizationNode);
         affiliationOrganizationNode.set("partOf", partOfArrayNode);
         return Optional.of(createResponse(
@@ -507,8 +506,8 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
                    .orElseThrow();
     }
 
-    private Candidate randomApplicableCandidate(URI institutionId) {
-        return Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository,
+    private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation) {
+        return Candidate.upsert(createUpsertCandidateRequest(topLevelOrg, affiliation), candidateRepository,
                                 periodRepository)
                    .orElseThrow();
     }

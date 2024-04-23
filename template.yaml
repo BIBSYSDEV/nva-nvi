@@ -804,7 +804,6 @@ Resources:
       SnapStart:
         ApplyOn: PublishedVersions
       Timeout: 60
-      ReservedConcurrentExecutions: 25
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
@@ -832,7 +831,6 @@ Resources:
       SnapStart:
         ApplyOn: PublishedVersions
       Timeout: 30
-      ReservedConcurrentExecutions: 50
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket

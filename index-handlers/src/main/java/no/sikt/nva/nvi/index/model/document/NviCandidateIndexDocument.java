@@ -46,7 +46,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         return new Builder();
     }
 
-    public Approval getApprovalForInstitution(String institutionId) {
+    public Approval getApprovalForInstitution(URI institutionId) {
         return approvals.stream()
                    .filter(approval -> approval.institutionId().equals(institutionId))
                    .findAny()

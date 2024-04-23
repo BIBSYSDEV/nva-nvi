@@ -4,13 +4,14 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.net.URI;
 import java.util.List;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonTypeName("Organization")
-public record Organization(String id,
+public record Organization(URI id,
                            List<String> partOf) implements OrganizationType {
 
     public static Builder builder() {
@@ -19,13 +20,13 @@ public record Organization(String id,
 
     public static final class Builder {
 
-        private String id;
+        private URI id;
         private List<String> partOf;
 
         private Builder() {
         }
 
-        public Builder withId(String id) {
+        public Builder withId(URI id) {
             this.id = id;
             return this;
         }
