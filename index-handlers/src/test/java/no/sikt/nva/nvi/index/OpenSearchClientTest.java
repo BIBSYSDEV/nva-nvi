@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -312,11 +313,11 @@ public class OpenSearchClientTest {
     void shouldReturnSingleDocumentWhenFilteringBySearchTerm() throws InterruptedException, IOException {
         var customer = randomUri();
         var searchTerm = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
-        var document = singleNviCandidateIndexDocumentWithCustomer(customer.toString(),
+        var document = singleNviCandidateIndexDocumentWithCustomer(customer,
                                                                    searchTerm, randomString(),
                                                                    YEAR, randomString());
         addDocumentsToIndex(document, singleNviCandidateIndexDocumentWithCustomer(
-            customer.toString(), randomString(), randomString(), randomString(), randomString()));
+            customer, randomString(), randomString(), randomString(), randomString()));
 
         var searchParameters =
             defaultSearchParameters().withAffiliations(List.of(customer))
@@ -334,11 +335,11 @@ public class OpenSearchClientTest {
     void shouldReturnSingleDocumentWhenFilteringByYear() throws InterruptedException, IOException {
         var customer = randomUri();
         var year = randomString();
-        var document = singleNviCandidateIndexDocumentWithCustomer(customer.toString(), randomString(),
+        var document = singleNviCandidateIndexDocumentWithCustomer(customer, randomString(),
                                                                    randomString(), year,
                                                                    randomString());
         addDocumentsToIndex(document,
-                            singleNviCandidateIndexDocumentWithCustomer(customer.toString(), randomString(),
+                            singleNviCandidateIndexDocumentWithCustomer(customer, randomString(),
                                                                         randomString(), randomString(),
                                                                         randomString()));
 
@@ -354,10 +355,10 @@ public class OpenSearchClientTest {
     void shouldReturnSingleDocumentWhenFilteringByTitle() throws InterruptedException, IOException {
         var customer = randomUri();
         var title = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
-        var document = singleNviCandidateIndexDocumentWithCustomer(customer.toString(), randomString(),
+        var document = singleNviCandidateIndexDocumentWithCustomer(customer, randomString(),
                                                                    randomString(), YEAR, title);
         addDocumentsToIndex(document,
-                            singleNviCandidateIndexDocumentWithCustomer(customer.toString(), randomString(),
+                            singleNviCandidateIndexDocumentWithCustomer(customer, randomString(),
                                                                         randomString(), randomString(),
                                                                         randomString()));
 
@@ -377,11 +378,11 @@ public class OpenSearchClientTest {
     void shouldReturnSingleDocumentWhenFilteringByContributor() throws InterruptedException, IOException {
         var customer = randomUri();
         var contributor = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
-        var document = singleNviCandidateIndexDocumentWithCustomer(customer.toString(),
+        var document = singleNviCandidateIndexDocumentWithCustomer(customer,
                                                                    contributor, randomString(),
                                                                    YEAR, randomString());
         addDocumentsToIndex(document, singleNviCandidateIndexDocumentWithCustomer(
-            customer.toString(), randomString(), randomString(), randomString(), randomString()));
+            customer, randomString(), randomString(), randomString(), randomString()));
 
         var searchParameters =
             defaultSearchParameters().withAffiliations(List.of(customer))
@@ -399,10 +400,10 @@ public class OpenSearchClientTest {
     void shouldReturnSingleDocumentWhenFilteringByAssignee() throws InterruptedException, IOException {
         var customer = randomUri();
         var assignee = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
-        var document = singleNviCandidateIndexDocumentWithCustomer(customer.toString(), randomString(), assignee,
+        var document = singleNviCandidateIndexDocumentWithCustomer(customer, randomString(), assignee,
                                                                    YEAR, randomString());
         addDocumentsToIndex(document, singleNviCandidateIndexDocumentWithCustomer(
-            customer.toString(), randomString(), randomString(), randomString(), randomString()));
+            customer, randomString(), randomString(), randomString(), randomString()));
 
         var searchParameters =
             defaultSearchParameters().withAffiliations(List.of(customer))
@@ -476,10 +477,8 @@ public class OpenSearchClientTest {
 
     private static void addDocumentToIndex() {
         try {
-            addDocumentsToIndex(singleNviCandidateIndexDocumentWithCustomer(
-                ORGANIZATION.toString(), randomString(), randomString(),
-                YEAR,
-                randomString()));
+            addDocumentsToIndex(singleNviCandidateIndexDocumentWithCustomer(ORGANIZATION, randomString(),
+                                                                            randomString(), YEAR, randomString()));
         } catch (InterruptedException exception) {
             throw new RuntimeException(exception);
         }
@@ -529,7 +528,7 @@ public class OpenSearchClientTest {
                    .build();
     }
 
-    private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomer(String customer,
+    private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomer(URI customer,
                                                                                          String contributor,
                                                                                          String assignee,
                                                                                          String year,
@@ -544,7 +543,7 @@ public class OpenSearchClientTest {
                    .build();
     }
 
-    private static PublicationDetails randomPublicationDetailsWithCustomer(String affiliation,
+    private static PublicationDetails randomPublicationDetailsWithCustomer(URI affiliation,
                                                                            String contributor,
                                                                            String year,
                                                                            String title) {
@@ -561,8 +560,8 @@ public class OpenSearchClientTest {
                                       List.of(contributorBuilder.build()));
     }
 
-    private static Approval randomApprovalWithCustomerAndAssignee(String affiliation, String assignee) {
-        return new Approval(affiliation, Map.of(), randomStatus(), randomInstitutionPoints(), assignee);
+    private static Approval randomApprovalWithCustomerAndAssignee(URI affiliation, String assignee) {
+        return new Approval(affiliation, Map.of(), randomStatus(), randomInstitutionPoints(), Set.of(), assignee);
     }
 
     private static List<Approval> randomApprovalList() {
@@ -570,7 +569,7 @@ public class OpenSearchClientTest {
     }
 
     private static Approval randomApproval() {
-        return new Approval(randomString(), Map.of(), randomStatus(), randomInstitutionPoints(), null);
+        return new Approval(randomUri(), Map.of(), randomStatus(), randomInstitutionPoints(), Set.of(), null);
     }
 
     private static InstitutionPoints randomInstitutionPoints() {

@@ -283,6 +283,24 @@ public final class TestUtils {
                                             institutions);
     }
 
+    public static UpsertCandidateRequest createUpsertCandidateRequest(URI topLevelOrg, URI affiliation) {
+        var creatorId = randomUri();
+        var creators = Map.of(creatorId, List.of(affiliation));
+        var points = randomBigDecimal();
+        var institutionPoints = List.of(new InstitutionPoints(topLevelOrg, points,
+                                                              List.of(new CreatorAffiliationPoints(
+                                                                  creatorId, affiliation, points))));
+
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true,
+                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null), creators,
+                                            randomInstanceTypeExcluding(
+                                                NON_CANDIDATE.getValue()),
+                                            randomElement(ChannelType.values()).getValue(), randomUri(),
+                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(), institutionPoints,
+                                            randomInteger(), randomBoolean(),
+                                            randomBigDecimal(), randomBigDecimal(), randomBigDecimal());
+    }
+
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
                                                                       URI publicationBucketUri,
                                                                       boolean isApplicable,

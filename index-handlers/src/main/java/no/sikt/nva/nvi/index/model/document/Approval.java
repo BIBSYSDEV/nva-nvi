@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.net.URI;
 import java.util.Map;
+import java.util.Set;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -12,10 +14,11 @@ import java.util.Map;
     use = JsonTypeInfo.Id.NAME,
     property = "type")
 @JsonTypeName("Approval")
-public record Approval(String institutionId,
+public record Approval(URI institutionId,
                        Map<String, String> labels,
                        ApprovalStatus approvalStatus,
                        InstitutionPoints points,
+                       Set<URI> involvedOrganizations,
                        String assignee) {
 
     public static Builder builder() {
@@ -24,16 +27,17 @@ public record Approval(String institutionId,
 
     public static final class Builder {
 
-        private String institutionId;
+        private URI institutionId;
         private Map<String, String> labels;
         private ApprovalStatus approvalStatus;
         private InstitutionPoints points;
+        private Set<URI> involvedOrganizations;
         private String assignee;
 
         private Builder() {
         }
 
-        public Builder withInstitutionId(String institutionId) {
+        public Builder withInstitutionId(URI institutionId) {
             this.institutionId = institutionId;
             return this;
         }
@@ -53,13 +57,18 @@ public record Approval(String institutionId,
             return this;
         }
 
+        public Builder withInvolvedOrganizations(Set<URI> involvedOrganizations) {
+            this.involvedOrganizations = involvedOrganizations;
+            return this;
+        }
+
         public Builder withAssignee(String assignee) {
             this.assignee = assignee;
             return this;
         }
 
         public Approval build() {
-            return new Approval(institutionId, labels, approvalStatus, points, assignee);
+            return new Approval(institutionId, labels, approvalStatus, points, involvedOrganizations, assignee);
         }
     }
 }

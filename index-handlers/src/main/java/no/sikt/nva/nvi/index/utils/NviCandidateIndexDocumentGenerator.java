@@ -29,11 +29,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.service.model.Username;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
@@ -60,7 +63,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NviCandidateIndexDocumentGenerator.class);
     private final OrganizationRetriever organizationRetriever;
-    private final Map<String, String> temporaryCache = new HashMap<>();
+    private final Map<URI, String> temporaryCache = new HashMap<>();
 
     public NviCandidateIndexDocumentGenerator(UriRetriever uriRetriever) {
         this.organizationRetriever = new OrganizationRetriever(uriRetriever);
@@ -82,7 +85,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .orElse(null);
     }
 
-    private static NviOrganization buildNviOrganization(String id, Stream<String> rdfNodes) {
+    private static NviOrganization buildNviOrganization(URI id, Stream<String> rdfNodes) {
         var partOfIdentifiers = rdfNodes.map(NviCandidateIndexDocumentGenerator::getLastPathElement).toList();
         return NviOrganization.builder()
                    .withId(id)
@@ -105,6 +108,19 @@ public final class NviCandidateIndexDocumentGenerator {
     private static ApprovalStatus getApprovalStatus(Approval approval) {
         return approval.isPendingAndUnassigned() ? ApprovalStatus.NEW
                    : ApprovalStatus.fromValue(approval.getStatus().getValue());
+    }
+
+    private static Set<URI> extractInvolvedOrganizations(Candidate candidate, Approval approval) {
+        return candidate.getInstitutionPoints(approval.getInstitutionId())
+                   .map(no.sikt.nva.nvi.common.service.model.InstitutionPoints::creatorAffiliationPoints)
+                   .map(NviCandidateIndexDocumentGenerator::getAffiliationsWithPoints)
+                   .orElse(Set.of());
+    }
+
+    private static Set<URI> getAffiliationsWithPoints(List<CreatorAffiliationPoints> creatorAffiliationPoints) {
+        return creatorAffiliationPoints.stream()
+                   .map(CreatorAffiliationPoints::affiliationId)
+                   .collect(Collectors.toSet());
     }
 
     private NviCandidateIndexDocument buildCandidate(JsonNode resource, Candidate candidate,
@@ -147,17 +163,19 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private no.sikt.nva.nvi.common.model.Organization fetchOrganization(URI institutionId) {
-        return getRawContentFromUriCached(institutionId.toString())
+        return getRawContentFromUriCached(institutionId)
                    .map(NviCandidateIndexDocumentGenerator::toOrganization)
                    .orElseThrow(() -> logFailingAffiliationHttpRequest(institutionId.toString()));
     }
 
-    private no.sikt.nva.nvi.index.model.document.Approval toApproval(JsonNode resource, Approval approval, Candidate candidate) {
+    private no.sikt.nva.nvi.index.model.document.Approval toApproval(JsonNode resource, Approval approval,
+                                                                     Candidate candidate) {
         return no.sikt.nva.nvi.index.model.document.Approval.builder()
-                   .withInstitutionId(approval.getInstitutionId().toString())
+                   .withInstitutionId(approval.getInstitutionId())
                    .withLabels(extractLabels(resource, approval))
                    .withApprovalStatus(getApprovalStatus(approval))
                    .withPoints(getInstitutionPoints(approval, candidate))
+                   .withInvolvedOrganizations(extractInvolvedOrganizations(candidate, approval))
                    .withAssignee(extractAssignee(approval))
                    .build();
     }
@@ -241,15 +259,14 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private OrganizationType expandAffiliation(JsonNode affiliation, JsonNode contributor, Candidate candidate) {
         var id = extractJsonNodeTextValue(affiliation, JSON_PTR_ID);
-
         if (isNull(id)) {
             LOGGER.info("Skipping expansion of affiliation because of missing institutionId: {}", affiliation);
             return null;
         }
-
+        var affiliationUri = URI.create(id);
         return isNviAffiliation(affiliation, contributor, candidate)
-                   ? generateAffiliationWithPartOf(id)
-                   : Organization.builder().withId(id).build();
+                   ? generateAffiliationWithPartOf(affiliationUri)
+                   : Organization.builder().withId(affiliationUri).build();
     }
 
     private boolean isNviAffiliation(JsonNode affiliation, JsonNode contributor, Candidate candidate) {
@@ -265,7 +282,7 @@ public final class NviCandidateIndexDocumentGenerator {
         return creator.affiliations().stream().anyMatch(affiliation -> affiliation.toString().equals(affiliationId));
     }
 
-    private NviOrganization generateAffiliationWithPartOf(String id) {
+    private NviOrganization generateAffiliationWithPartOf(URI id) {
         return attempt(() -> getRawContentFromUriCached(id)).map(Optional::get)
                    .map(str -> createModel(dtoObjectMapper.readTree(str)))
                    .map(NviCandidateIndexDocumentGenerator::listPropertyPartOfObjects)
@@ -274,7 +291,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .orElseThrow();
     }
 
-    private Optional<String> getRawContentFromUriCached(String id) {
+    private Optional<String> getRawContentFromUriCached(URI id) {
         if (temporaryCache.containsKey(id)) {
             return Optional.of(temporaryCache.get(id));
         }
@@ -291,8 +308,8 @@ public final class NviCandidateIndexDocumentGenerator {
         return new RuntimeException("Failure while retrieving affiliation");
     }
 
-    private Optional<String> getRawContentFromUri(String uri) {
-        return attempt(() -> organizationRetriever.fetchOrganization(URI.create(uri)).asJsonString()).toOptional();
+    private Optional<String> getRawContentFromUri(URI uri) {
+        return attempt(() -> organizationRetriever.fetchOrganization(uri).asJsonString()).toOptional();
     }
 
     private String extractId(JsonNode resource) {
