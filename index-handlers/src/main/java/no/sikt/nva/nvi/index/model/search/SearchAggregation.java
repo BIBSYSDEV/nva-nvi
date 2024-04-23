@@ -31,12 +31,12 @@ public enum SearchAggregation {
                                (username, topLevelCristinOrg) -> finalizedCollaborationAggregation(
                                    topLevelCristinOrg, REJECTED)),
     ASSIGNMENTS_AGG("assignments", Aggregations::assignmentsAggregation),
-    COMPLETED_AGGREGATION_AGG("completed", (username, topLevelCristinOrg) -> completedAggregation(topLevelCristinOrg)),
+    COMPLETED_AGGREGATION_AGG("completed",
+                              (username, topLevelCristinOrg) -> completedAggregation(topLevelCristinOrg)),
     TOTAL_COUNT_AGGREGATION_AGG("totalCount",
                                 (username, topLevelCristinOrg) -> totalCountAggregation(topLevelCristinOrg)),
     ORGANIZATION_APPROVAL_STATUS_AGGREGATION("organizationApprovalStatuses",
-                                             (username, topLevelCristinOrg) -> organizationApprovalStatusAggregations(
-                                                 topLevelCristinOrg));
+                                             (username, topLevelCristinOrg) -> organizationApprovalStatusAggregations());
 
     private final String aggregationName;
 

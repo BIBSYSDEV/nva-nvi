@@ -16,8 +16,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_IDENTIFIER;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.INVOLVED_SUB_UNITS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.INVOLVED_ORGS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NUMBER_OF_APPROVALS;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,11 +27,13 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 public final class Aggregations {
 
+    public static final String APPROVAL_STATUS_PATH = joinWithDelimiter(APPROVALS, APPROVAL_STATUS);
+    public static final String INSTITUTION_ID_PATH = joinWithDelimiter(APPROVALS, INSTITUTION_ID);
+    public static final String ASSIGNEE_PATH = joinWithDelimiter(APPROVALS, ASSIGNEE);
     private static final int MULTIPLE = 2;
     private static final String ALL_AGGREGATIONS = "all";
-    private static final String APPROVAL_IDENTIFIER_AGGREGATION = "approvalIdentifierAggregation";
-    private static final String APPROVAL_INVOLVED_SUB_UNITS_AGGREGATION = "approvalInvolvedSubUnitsAggregation";
-    private static final String STATUS_AGGREGATION = "statusAggregation";
+    private static final String APPROVAL_ORGANIZATIONS_AGGREGATION = "organizations";
+    private static final String STATUS_AGGREGATION = "status";
 
     private Aggregations() {
     }
@@ -45,7 +46,7 @@ public final class Aggregations {
     }
 
     public static Query containsPendingStatusQuery() {
-        final var queries = fieldValueQuery(joinWithDelimiter(APPROVALS, APPROVAL_STATUS), PENDING.getValue());
+        final var queries = statusQuery(PENDING);
         final var query = mustMatch(queries);
         return nestedQuery(APPROVALS, query);
     }
@@ -65,17 +66,11 @@ public final class Aggregations {
         );
     }
 
-    public static Aggregation organizationApprovalStatusAggregations(String topLevelCristinOrg) {
-        //TODO: Implement NP-46528
-        //TODO: TotalCountAggregation is a placeholder for the actual implementation. Remove it when the actual
-        // implementation is done.
-
-        var identifiers = termsAggregation(APPROVALS, INSTITUTION_IDENTIFIER)._toAggregation();
-        var involvedSubUnits = termsAggregation(APPROVALS, INVOLVED_SUB_UNITS)._toAggregation();
+    public static Aggregation organizationApprovalStatusAggregations() {
+        var involvedOrgs = termsAggregation(APPROVALS, INVOLVED_ORGS)._toAggregation();
         var statusAggregation = new Aggregation.Builder()
                                     .terms(termsAggregation(APPROVALS, APPROVAL_STATUS))
-                                    .aggregations(Map.of(APPROVAL_IDENTIFIER_AGGREGATION, identifiers,
-                                                         APPROVAL_INVOLVED_SUB_UNITS_AGGREGATION, involvedSubUnits))
+                                    .aggregations(Map.of(APPROVAL_ORGANIZATIONS_AGGREGATION, involvedOrgs))
                                     .build();
 
         return new Aggregation.Builder()
@@ -85,7 +80,7 @@ public final class Aggregations {
     }
 
     public static Aggregation totalCountAggregation(String customer) {
-        final var fieldValueQuery = fieldValueQuery(joinWithDelimiter(APPROVALS, INSTITUTION_ID), customer);
+        final var fieldValueQuery = approvalInstitutionIdQuery(customer);
         final var query = mustMatch(fieldValueQuery);
         return filterAggregation(mustMatch(nestedQuery(APPROVALS, query)));
     }
@@ -96,9 +91,9 @@ public final class Aggregations {
 
     public static Aggregation completedAggregation(String customer) {
         final var queries = new Query[]{
-            fieldValueQuery(joinWithDelimiter(APPROVALS, INSTITUTION_ID), customer),
-            mustNotMatch(PENDING.getValue(), joinWithDelimiter(APPROVALS, APPROVAL_STATUS)),
-            mustNotMatch(NEW.getValue(), joinWithDelimiter(APPROVALS, APPROVAL_STATUS))};
+            approvalInstitutionIdQuery(customer),
+            mustNotMatch(PENDING.getValue(), APPROVAL_STATUS_PATH),
+            mustNotMatch(NEW.getValue(), APPROVAL_STATUS_PATH)};
         var notPendingQuery = nestedQuery(APPROVALS, mustMatch(queries));
         return filterAggregation(mustMatch(notPendingQuery));
     }
@@ -116,17 +111,25 @@ public final class Aggregations {
         return filterAggregation(mustMatch(statusQuery(customer, status), multipleApprovalsQuery()));
     }
 
+    private static Query statusQuery(ApprovalStatus approvalStatus) {
+        return fieldValueQuery(APPROVAL_STATUS_PATH, approvalStatus.getValue());
+    }
+
+    private static Query approvalInstitutionIdQuery(String customer) {
+        return fieldValueQuery(INSTITUTION_ID_PATH, customer);
+    }
+
     private static Query[] assigneeForInstitution(String institutionId, String username) {
         return new Query[]{
-            fieldValueQuery(joinWithDelimiter(APPROVALS, INSTITUTION_ID), institutionId),
-            fieldValueQuery(joinWithDelimiter(APPROVALS, ASSIGNEE), username)
+            approvalInstitutionIdQuery(institutionId),
+            fieldValueQuery(ASSIGNEE_PATH, username)
         };
     }
 
     private static Query[] statusForInstitution(String institutionId, ApprovalStatus status) {
         return new Query[]{
-            fieldValueQuery(joinWithDelimiter(APPROVALS, INSTITUTION_ID), institutionId),
-            fieldValueQuery(joinWithDelimiter(APPROVALS, APPROVAL_STATUS), status.getValue())
+            approvalInstitutionIdQuery(institutionId),
+            statusQuery(status)
         };
     }
 

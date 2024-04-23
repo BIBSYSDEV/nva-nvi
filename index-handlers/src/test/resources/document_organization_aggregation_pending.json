@@ -15,29 +15,32 @@
         "type": "NviContributor",
         "id": "https://api.dev.nva.aws.unit.no/cristin/person/1136326",
         "name": "Kir",
-        "affiliations" : [ {
-          "type": "NviOrganization",
-          "id": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.0.0",
-          "partOf": ["20754.0.0.0"]
-        } ],
-        "role" : "Creator"
+        "affiliations": [
+          {
+            "type": "NviOrganization",
+            "id": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.0.0",
+            "partOf": [
+              "20754.0.0.0"
+            ]
+          }
+        ],
+        "role": "Creator"
       },
       {
         "type": "NviContributor",
         "id": "https://api.dev.nva.aws.unit.no/cristin/person/1136326",
         "name": "Mona",
-        "affiliations" : [ {
-          "type": "NviOrganization",
-          "id": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.1.0",
-          "partOf": ["20754.0.0.0", "20754.1.0.0"]
-        },
-        {
-          "type": "NviOrganization",
-          "id": "https://api.dev.nva.aws.unit.no/cristin/organization/1029.1.1.1",
-          "partOf": ["1029.0.0.0"]
-        }
+        "affiliations": [
+          {
+            "type": "NviOrganization",
+            "id": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.1.0",
+            "partOf": [
+              "20754.0.0.0",
+              "20754.1.0.0"
+            ]
+          }
         ],
-        "role" : "Creator"
+        "role": "Creator"
       }
     ]
   },
@@ -46,17 +49,12 @@
       "type": "Approval",
       "assignee": "user1",
       "institutionId": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
-      "institutionIdentifier": "20754.0.0.0",
-      "involvedSubUnits": ["20754.1.0.0", "20754.1.1.0"],
+      "involvedOrganizations": [
+        "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
+        "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.0.0",
+        "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.1.0"
+      ],
       "approvalStatus": "Pending"
-    },
-    {
-      "type": "Approval",
-      "assignee": "user1",
-      "institutionId": "https://api.dev.nva.aws.unit.no/cristin/organization/1111.0.0.0",
-      "institutionIdentifier": "1111.0.0.0",
-      "involvedSubUnits": ["1111.0.0.0"],
-      "approvalStatus": "Approved"
     }
   ]
 }

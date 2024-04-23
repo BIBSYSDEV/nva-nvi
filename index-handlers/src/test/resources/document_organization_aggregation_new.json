@@ -17,8 +17,8 @@
         "name": "Kir",
         "affiliations" : [ {
           "type": "NviOrganization",
-          "id": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.0.0",
-          "partOf": ["20754.0.0.0"]
+          "id": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
+          "partOf": []
         } ],
         "role" : "Creator"
       },
@@ -28,8 +28,8 @@
         "name": "Mona",
         "affiliations" : [ {
           "type": "NviOrganization",
-          "id": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.1.0",
-          "partOf": ["20754.0.0.0", "20754.1.0.0"]
+          "id": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.0.0",
+          "partOf": ["20754.0.0.0"]
         } ],
         "role" : "Creator"
       }
@@ -40,21 +40,11 @@
       "type": "Approval",
       "assignee": "user1",
       "institutionId": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
-      "institutionIdentifier": "20754.0.0.0",
-      "involvedSubUnits": ["20754.1.0.0", "20754.1.1.0"],
-      "labels": {
-        "nb": "Sikt – Kunnskapssektorens tjenesteleverandør",
-        "en": "Sikt - Norwegian Agency for Shared Services in Education and Research"
-      },
+      "involvedOrganizations": [
+        "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
+        "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.0.0"
+      ],
       "approvalStatus": "New"
-    },
-    {
-      "type": "Approval",
-      "assignee": "user1",
-      "institutionId": "https://api.dev.nva.aws.unit.no/cristin/organization/1111.0.0.0",
-      "institutionIdentifier": "1111.0.0.0",
-      "involvedSubUnits": ["1111.0.0.0"],
-      "approvalStatus": "Approved"
     }
   ]
 }
