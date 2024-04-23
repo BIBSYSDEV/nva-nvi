@@ -482,14 +482,15 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     private NviCandidateIndexDocument createExpectedNviIndexDocument(JsonNode expandedResource, Candidate candidate) {
+        var expandedPublicationDetails = expandPublicationDetails(candidate, expandedResource);
         return NviCandidateIndexDocument.builder()
                    .withContext(Candidate.getContextUri())
                    .withId(candidate.getId())
                    .withIsApplicable(candidate.isApplicable())
                    .withIdentifier(candidate.getIdentifier())
-                   .withApprovals(expandApprovals(candidate))
+                   .withApprovals(expandApprovals(candidate, expandedPublicationDetails))
                    .withPoints(candidate.getTotalPoints())
-                   .withPublicationDetails(expandPublicationDetails(candidate, expandedResource))
+                   .withPublicationDetails(expandedPublicationDetails)
                    .withNumberOfApprovals(candidate.getApprovals().size())
                    .withCreatorShareCount(candidate.getCreatorShareCount())
                    .withReported(candidate.isReported())

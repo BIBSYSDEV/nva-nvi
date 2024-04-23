@@ -46,11 +46,11 @@ import software.amazon.awssdk.services.s3.S3Client;
 class UpdateIndexHandlerTest extends LocalDynamoTest {
 
     public static final Context CONTEXT = mock(Context.class);
-    private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
     public static final Environment ENVIRONMENT = new Environment();
-    private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
     public static final String INDEX_DLQ = "INDEX_DLQ";
     public static final String INDEX_DLQ_URL = ENVIRONMENT.readEnv(INDEX_DLQ);
+    private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
+    private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
     private final S3Client s3Client = new FakeS3Client();
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
@@ -161,12 +161,13 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     private IndexDocumentWithConsumptionAttributes setupExistingIndexDocumentInBucket(Candidate candidate) {
+        var expandedPublicationDetails = expandPublicationDetails(candidate, createExpandedResource(candidate));
         var indexDocument =
             NviCandidateIndexDocument.builder()
                 .withContext(NVI_CONTEXT)
-                .withApprovals(expandApprovals(candidate))
+                .withApprovals(expandApprovals(candidate, expandedPublicationDetails))
                 .withIdentifier(candidate.getIdentifier())
-                .withPublicationDetails(expandPublicationDetails(candidate, createExpandedResource(candidate)))
+                .withPublicationDetails(expandedPublicationDetails)
                 .withPoints(randomBigDecimal())
                 .build();
 
