@@ -104,8 +104,7 @@ public final class SearchConstants {
     }
 
     private static Map<String, Property> affiliationsProperties() {
-        return Map.of(ID, keywordProperty(), PART_OF, keywordProperty()
-        );
+        return Map.of(ID, keywordProperty(), PART_OF, keywordProperty());
     }
 
     private static Property keywordProperty() {

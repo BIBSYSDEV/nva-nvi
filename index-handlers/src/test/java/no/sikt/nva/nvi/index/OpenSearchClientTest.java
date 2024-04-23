@@ -303,9 +303,7 @@ public class OpenSearchClientTest {
         var searchParameters =
             defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_ID)).withFilter(entry.getKey()).build();
 
-        var searchResponse =
-            openSearchClient.search(searchParameters);
-
+        var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));
     }
 

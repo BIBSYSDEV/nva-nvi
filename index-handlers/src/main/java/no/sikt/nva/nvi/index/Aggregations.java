@@ -69,7 +69,6 @@ public final class Aggregations {
         //TODO: Implement NP-46528
         //TODO: TotalCountAggregation is a placeholder for the actual implementation. Remove it when the actual
         // implementation is done.
-        // Create the inner aggregation
 
         var identifiers = termsAggregation(APPROVALS, INSTITUTION_IDENTIFIER)._toAggregation();
         var involvedSubUnits = termsAggregation(APPROVALS, INVOLVED_SUB_UNITS)._toAggregation();

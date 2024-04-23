@@ -53,7 +53,7 @@
       "assignee": "user1",
       "institutionId": "https://api.dev.nva.aws.unit.no/cristin/organization/1111.0.0.0",
       "institutionIdentifier": "1111.0.0.0",
-      "involvedSubUnits": [],
+      "involvedSubUnits": ["1111.0.0.0"],
       "approvalStatus": "Approved"
     }
   ]

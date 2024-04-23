@@ -17,7 +17,7 @@ import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 
 public final class AggregationFunctions {
 
-    private static final CharSequence JSON_PATH_DELIMITER = ".";
+    private static final CharSequence DELIMITER = ".";
 
     private AggregationFunctions() {
     }
@@ -48,7 +48,7 @@ public final class AggregationFunctions {
     }
 
     public static String joinWithDelimiter(String... args) {
-        return String.join(JSON_PATH_DELIMITER, args);
+        return String.join(DELIMITER, args);
     }
 
     public static Aggregation filterAggregation(Query filterQuery) {
