@@ -18,7 +18,7 @@ public record Approval(URI institutionId,
                        Map<String, String> labels,
                        ApprovalStatus approvalStatus,
                        InstitutionPoints points,
-                       Set<URI> involvedSubUnits,
+                       Set<URI> involvedOrganizations,
                        String assignee) {
 
     public static Builder builder() {
@@ -31,7 +31,7 @@ public record Approval(URI institutionId,
         private Map<String, String> labels;
         private ApprovalStatus approvalStatus;
         private InstitutionPoints points;
-        private Set<URI> involvedSubUnits;
+        private Set<URI> involvedOrganizations;
         private String assignee;
 
         private Builder() {
@@ -57,8 +57,8 @@ public record Approval(URI institutionId,
             return this;
         }
 
-        public Builder withInvolvedSubUnits(Set<URI> involvedSubUnits) {
-            this.involvedSubUnits = involvedSubUnits;
+        public Builder withInvolvedOrganizations(Set<URI> involvedSubUnits) {
+            this.involvedOrganizations = involvedSubUnits;
             return this;
         }
 
@@ -68,7 +68,7 @@ public record Approval(URI institutionId,
         }
 
         public Approval build() {
-            return new Approval(institutionId, labels, approvalStatus, points, involvedSubUnits, assignee);
+            return new Approval(institutionId, labels, approvalStatus, points, involvedOrganizations, assignee);
         }
     }
 }

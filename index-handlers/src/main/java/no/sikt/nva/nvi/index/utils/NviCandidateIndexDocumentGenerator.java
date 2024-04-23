@@ -175,7 +175,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withLabels(extractLabels(resource, approval))
                    .withApprovalStatus(getApprovalStatus(approval))
                    .withPoints(getInstitutionPoints(approval, candidate))
-                   .withInvolvedSubUnits(extractInvolvedSubUnits(candidate, approval))
+                   .withInvolvedOrganizations(extractInvolvedSubUnits(candidate, approval))
                    .withAssignee(extractAssignee(approval))
                    .build();
     }
