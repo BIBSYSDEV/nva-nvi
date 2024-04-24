@@ -34,11 +34,6 @@ public final class PaginatedResultConverter {
     private static final String HOST = ENVIRONMENT.readEnv("API_HOST");
     private static final String CUSTOM_DOMAIN_BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String CANDIDATE_PATH = "candidate";
-    private static final String WORD_ENDING_WITH_HASHTAG_REGEX = "[A-za-z0-9]*#";
-    private static final Map<String, String> AGGREGATION_FIELDS_TO_CHANGE = Map.of(
-        "doc_count_error_upper_bound", "docCountErrorUpperBound",
-        "sum_other_doc_count", "sumOtherDocCount",
-        "doc_count", "docCount");
 
     private PaginatedResultConverter() {
 
