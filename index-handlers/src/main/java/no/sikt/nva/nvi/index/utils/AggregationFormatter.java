@@ -5,60 +5,31 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.StringWriter;
 import java.util.Map;
-import java.util.Optional;
-import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.unit.nva.commons.json.JsonUtils;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
-import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 
 public final class AggregationFormatter {
-
-    private static final String WORD_ENDING_WITH_HASHTAG_REGEX = "[A-za-z0-9]*#";
-    private static final Map<String, String> AGGREGATION_FIELDS_TO_CHANGE = Map.of(
-        "doc_count_error_upper_bound", "docCountErrorUpperBound",
-        "sum_other_doc_count", "sumOtherDocCount",
-        "doc_count", "docCount");
 
     private AggregationFormatter() {
     }
 
-    public static JsonNode format(SearchResponse<NviCandidateIndexDocument> searchResponse) {
-        var writer = new StringWriter();
-        var mapper = new JsonbJsonpMapper();
+    public static JsonNode format(Map<String, Aggregate> aggregations) {
+        ObjectNode root = new ObjectNode(JsonUtils.dtoObjectMapper.getNodeFactory());
 
-        try (var generator = mapper.jsonProvider().createGenerator(writer)) {
-            mapper.serialize(searchResponse, generator);
-        }
+        aggregations.forEach((key, value) -> {
+            root.set(key, formatAggregation(value));
+        });
 
-        var json = attempt(() -> JsonUtils.dtoObjectMapper.readTree(writer.toString())).orElseThrow();
-        var aggregations = (ObjectNode) json.get("aggregations");
-
-        if (aggregations == null) {
-            return null;
-        }
-
-        return formatAggregations(aggregations);
+        return root;
     }
 
-    private static JsonNode formatAggregations(JsonNode aggregations) {
-        var outputAggregationNode = JsonUtils.dtoObjectMapper.createObjectNode();
-
-        var iterator = aggregations.fields();
-        while (iterator.hasNext()) {
-            var nodeEntry = iterator.next();
-            var fieldName = nodeEntry.getKey();
-
-            var newName = Optional.ofNullable(AGGREGATION_FIELDS_TO_CHANGE.get(fieldName));
-            if (newName.isEmpty()) {
-                newName = Optional.of(fieldName.replaceFirst(WORD_ENDING_WITH_HASHTAG_REGEX, ""));
-            }
-
-            var value = nodeEntry.getValue().isValueNode()
-                            ? nodeEntry.getValue() : formatAggregations(nodeEntry.getValue());
-
-            outputAggregationNode.set(newName.get(), value);
+    private static JsonNode formatAggregation(Aggregate aggregate) {
+        var writer = new StringWriter();
+        var mapper = new JsonbJsonpMapper();
+        try (var generator = mapper.jsonProvider().createGenerator(writer)) {
+            mapper.serialize(aggregate, generator);
         }
-
-        return outputAggregationNode;
+        return attempt(() -> JsonUtils.dtoObjectMapper.readTree(writer.toString())).orElseThrow();
     }
 }

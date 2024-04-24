@@ -231,7 +231,7 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldReturnPaginatedSearchResultWithNestedAggregations() throws IOException {
         var documents = generateNumberOfIndexDocuments(3);
-        var aggregationName = randomString();
+        var aggregationName = "someNestedAggregation";
         when(openSearchClient.search(any()))
             .thenReturn(createSearchResponse(documents, aggregationName, nestedAggregate()));
         handler.handleRequest(emptyRequest(), output, context);
