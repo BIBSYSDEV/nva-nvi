@@ -11,24 +11,17 @@ import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_FILT
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_SEARCH_TERM;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_TITLE;
 import static nva.commons.apigateway.RestRequestHandler.COMMA;
-import static nva.commons.core.attempt.Try.attempt;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.io.StringWriter;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
-import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import nva.commons.apigateway.exceptions.UnprocessableContentException;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
-import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
@@ -62,7 +55,7 @@ public final class PaginatedResultConverter {
             extractTotalNumberOfHits(searchResponse),
             extractsHits(searchResponse),
             getQueryParameters(candidateSearchParameters),
-            extractAggregations(searchResponse));
+            AggregationFormatter.format(searchResponse));
 
         LOGGER.info("Returning paginatedSearchResult with id: {}", paginatedSearchResult.getId().toString());
         return paginatedSearchResult;
@@ -123,45 +116,5 @@ public final class PaginatedResultConverter {
 
     private static URI constructBaseUri() {
         return UriWrapper.fromHost(HOST).addChild(CUSTOM_DOMAIN_BASE_PATH).addChild(CANDIDATE_PATH).getUri();
-    }
-
-    private static JsonNode extractAggregations(SearchResponse<NviCandidateIndexDocument> searchResponse) {
-        var writer = new StringWriter();
-        var mapper = new JsonbJsonpMapper();
-
-        try (var generator = mapper.jsonProvider().createGenerator(writer)) {
-            mapper.serialize(searchResponse, generator);
-        }
-
-        var json = attempt(() -> JsonUtils.dtoObjectMapper.readTree(writer.toString())).orElseThrow();
-        var aggregations = (ObjectNode) json.get("aggregations");
-
-        if (aggregations == null) {
-            return null;
-        }
-
-        return formatAggregations(aggregations);
-    }
-
-    private static JsonNode formatAggregations(JsonNode aggregations) {
-        var outputAggregationNode = JsonUtils.dtoObjectMapper.createObjectNode();
-
-        var iterator = aggregations.fields();
-        while (iterator.hasNext()) {
-            var nodeEntry = iterator.next();
-            var fieldName = nodeEntry.getKey();
-
-            var newName = Optional.ofNullable(AGGREGATION_FIELDS_TO_CHANGE.get(fieldName));
-            if (newName.isEmpty()) {
-                newName = Optional.of(fieldName.replaceFirst(WORD_ENDING_WITH_HASHTAG_REGEX, ""));
-            }
-
-            var value = nodeEntry.getValue().isValueNode()
-                            ? nodeEntry.getValue() : formatAggregations(nodeEntry.getValue());
-
-            outputAggregationNode.set(newName.get(), value);
-        }
-
-        return outputAggregationNode;
     }
 }
