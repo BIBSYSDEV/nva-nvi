@@ -242,25 +242,18 @@ public class SearchNviCandidatesHandlerTest {
         var actualNestedAggregation = aggregations.get(aggregationName);
         var expectedNestedAggregation = """
             {
-              "doc_count": 3,
-              "status": {
-                "buckets": [
-                  {
-                    "key": "Pending",
-                    "doc_count": 3,
-                    "organizations": {
-                      "buckets": [
-                        {
-                          "key": "someOrgId",
-                          "doc_count": 2
-                        }
-                      ]
+              "docCount" : 3,
+              "status" : {
+                "Pending" : {
+                  "docCount" : 3,
+                  "organizations" : {
+                    "someOrgId" : {
+                      "docCount" : 2
                     }
                   }
-                ]
+                }
               }
-            }
-            """;
+            }""";
         assertEquals(expectedNestedAggregation, objectMapper.writeValueAsString(actualNestedAggregation));
     }
 
