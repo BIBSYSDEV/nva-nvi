@@ -8,13 +8,14 @@ import no.sikt.nva.nvi.index.aws.CandidateQuery.QueryFilterType;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import nva.commons.core.Environment;
 import org.opensearch.client.opensearch._types.mapping.KeywordProperty;
-import org.opensearch.client.opensearch._types.mapping.NestedProperty;
+import org.opensearch.client.opensearch._types.mapping.NestedProperty.Builder;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TextProperty;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 public final class SearchConstants {
+
     public static final String ID = "id";
     public static final String INSTITUTION_ID = "institutionId";
     public static final String ASSIGNEE = "assignee";
@@ -38,6 +39,10 @@ public final class SearchConstants {
     public static final String SEARCH_INFRASTRUCTURE_API_HOST = readSearchInfrastructureApiHost();
     public static final String SEARCH_INFRASTRUCTURE_AUTH_URI = readSearchInfrastructureAuthUri();
     public static final String JSON_PATH_DELIMITER = ".";
+    public static final String JSON_PATH_CONTRIBUTORS = String.join(JSON_PATH_DELIMITER, PUBLICATION_DETAILS,
+                                                                    CONTRIBUTORS);
+    public static final TypeMapping MAPPINGS = new TypeMapping.Builder().properties(mappingProperties()).build();
+    public static final String INVOLVED_ORGS = "involvedOrganizations";
 
     private SearchConstants() {
 
@@ -45,44 +50,31 @@ public final class SearchConstants {
 
     public static Query constructQuery(CandidateSearchParameters params) {
         var filterType = QueryFilterType.parse(params.filter())
-            .orElseThrow(() -> new IllegalStateException("unknown filter " + params.filter()));
+                             .orElseThrow(() -> new IllegalStateException("unknown filter " + params.filter()));
         return new CandidateQuery.Builder()
-            .withSearchTerm(params.searchTerm())
-            .withInstitutions(Optional.ofNullable(params.affiliations()).orElse(List.of()))
-            .withExcludeSubUnits(params.excludeSubUnits())
-            .withFilter(filterType)
-            .withUsername(params.username())
-            .withTopLevelCristinOrg(params.topLevelOrgUriAsString())
-            .withYear(params.year())
-            .withCategory(params.category())
-            .withTitle(params.title())
-            .withContributor(params.contributor())
-            .withAssignee(params.assignee())
-            .build()
-            .toQuery();
-    }
-
-    public static TypeMapping mappings() {
-        return new TypeMapping.Builder().properties(mappingProperties()).build();
+                   .withSearchTerm(params.searchTerm())
+                   .withInstitutions(Optional.ofNullable(params.affiliations()).orElse(List.of()))
+                   .withExcludeSubUnits(params.excludeSubUnits())
+                   .withFilter(filterType)
+                   .withUsername(params.username())
+                   .withTopLevelCristinOrg(params.topLevelOrgUriAsString())
+                   .withYear(params.year())
+                   .withCategory(params.category())
+                   .withTitle(params.title())
+                   .withContributor(params.contributor())
+                   .withAssignee(params.assignee())
+                   .build()
+                   .toQuery();
     }
 
     private static Map<String, Property> mappingProperties() {
-        return Map.of(String.join(JSON_PATH_DELIMITER, PUBLICATION_DETAILS, CONTRIBUTORS),
-                      new Property.Builder().nested(contributorsNestedProperty()).build(),
-                      APPROVALS, new Property.Builder().nested(approvalsNestedProperty()).build()
+        return Map.of(JSON_PATH_CONTRIBUTORS, nestedProperty(contributorsProperties()),
+                      APPROVALS, nestedProperty(approvalProperties())
         );
     }
 
-    private static NestedProperty contributorsNestedProperty() {
-        return new NestedProperty.Builder().includeInParent(true).properties(contributorsProperties()).build();
-    }
-
-    private static NestedProperty affiliationsNestedProperty() {
-        return new NestedProperty.Builder().includeInParent(true).properties(affiliationsProperties()).build();
-    }
-
-    private static NestedProperty approvalsNestedProperty() {
-        return new NestedProperty.Builder().includeInParent(true).properties(approvalProperties()).build();
+    private static Property nestedProperty(Map<String, Property> properties) {
+        return new Builder().includeInParent(true).properties(properties).build()._toProperty();
     }
 
     private static String readSearchInfrastructureApiHost() {
@@ -94,30 +86,30 @@ public final class SearchConstants {
     }
 
     private static Map<String, Property> approvalProperties() {
-        return Map.of(INSTITUTION_ID, keywordProperty(), ASSIGNEE, textPropertyWithNetsedKeyword(),
-                      APPROVAL_STATUS, keywordProperty());
+        return Map.of(ASSIGNEE, textPropertyWithNestedKeyword(),
+                      INSTITUTION_ID, keywordProperty(),
+                      INVOLVED_ORGS, keywordProperty(),
+                      APPROVAL_STATUS, keywordProperty()
+        );
     }
 
     private static Map<String, Property> contributorsProperties() {
         return Map.of(ID, keywordProperty(),
-                      NAME, textPropertyWithNetsedKeyword(),
-                      AFFILIATIONS, affiliationsNestedProperty()._toProperty(),
+                      NAME, textPropertyWithNestedKeyword(),
+                      AFFILIATIONS, nestedProperty(affiliationsProperties()),
                       ROLE, keywordProperty()
         );
     }
 
     private static Map<String, Property> affiliationsProperties() {
-        return Map.of(ID, keywordProperty(),
-                      PART_OF, keywordProperty()
-        );
+        return Map.of(ID, keywordProperty(), PART_OF, keywordProperty());
     }
 
     private static Property keywordProperty() {
-        return new Property.Builder().keyword(new KeywordProperty.Builder().build()).build();
+        return new KeywordProperty.Builder().build()._toProperty();
     }
 
-    private static Property textPropertyWithNetsedKeyword() {
-        return new Property.Builder().text(new TextProperty.Builder().fields(
-            Map.of(KEYWORD, keywordProperty())).build()).build();
+    private static Property textPropertyWithNestedKeyword() {
+        return new TextProperty.Builder().fields(Map.of(KEYWORD, keywordProperty())).build()._toProperty();
     }
 }

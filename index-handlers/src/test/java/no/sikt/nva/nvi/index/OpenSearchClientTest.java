@@ -12,6 +12,7 @@ import static no.sikt.nva.nvi.index.model.search.SearchAggregation.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.REJECTED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.TOTAL_COUNT_AGGREGATION_AGG;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -63,7 +64,6 @@ import no.sikt.nva.nvi.index.model.search.SearchAggregation;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
-import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.ioutils.IoUtils;
 import org.apache.http.HttpHost;
 import org.jetbrains.annotations.NotNull;
@@ -77,6 +77,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate.Kind;
+import org.opensearch.client.opensearch._types.aggregations.Buckets;
+import org.opensearch.client.opensearch._types.aggregations.NestedAggregate;
+import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
+import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.testcontainers.OpensearchContainer;
 
@@ -93,6 +99,8 @@ public class OpenSearchClientTest {
     public static final URI SIKT_INSTITUTION_ID
         = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     public static final int SCALE = 4;
+    public static final String SIKT_LEVEL_2_ID = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.0.0";
+    public static final String SIKT_LEVEL_3_ID = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.1.0";
     private static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:2.0.0";
     private static final URI ORGANIZATION = URI.create(
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
@@ -303,9 +311,7 @@ public class OpenSearchClientTest {
         var searchParameters =
             defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_ID)).withFilter(entry.getKey()).build();
 
-        var searchResponse =
-            openSearchClient.search(searchParameters);
-
+        var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));
     }
 
@@ -475,6 +481,54 @@ public class OpenSearchClientTest {
         assertThat(searchResponse.hits().hits(), hasSize(3));
     }
 
+    @Test
+    void shouldReturnOrganizationAggregationWithSubAggregations() throws IOException, InterruptedException {
+        addDocumentsToIndex(documentFromString("document_organization_aggregation_pending.json"));
+        addDocumentsToIndex(documentFromString("document_organization_aggregation_new.json"));
+        var aggregation = SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
+        var searchParameters = defaultSearchParameters().withAggregationType(aggregation).build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        var actualAggregate = searchResponse.aggregations().get(aggregation);
+        assertEquals(Kind.Nested, actualAggregate._kind());
+        var actualStatusAggregation = ((NestedAggregate) actualAggregate._get()).aggregations().get("status");
+        assertEquals(Kind.Sterms, actualStatusAggregation._kind());
+        var actualStatusBuckets = ((StringTermsAggregate) actualStatusAggregation._get()).buckets();
+        assertExpectedOrganizationAggregationForEachStatus(actualStatusBuckets);
+    }
+
+    private static void assertExpectedOrganizationAggregationForEachStatus(
+        Buckets<StringTermsBucket> actualStatusBuckets) {
+        actualStatusBuckets.array().forEach(bucket -> {
+            var key = bucket.key();
+            var organizationAggregation = bucket.aggregations().get("organizations");
+            if (key.equals(ApprovalStatus.PENDING.getValue())) {
+                var expectedKeys = List.of(SIKT_INSTITUTION_ID.toString(), SIKT_LEVEL_2_ID, SIKT_LEVEL_3_ID);
+                assertExpectedSubAggregations(organizationAggregation, expectedKeys);
+            } else if (key.equals(ApprovalStatus.NEW.getValue())) {
+                var expectedKeys = List.of(SIKT_INSTITUTION_ID.toString(), SIKT_LEVEL_2_ID);
+                assertExpectedSubAggregations(organizationAggregation, expectedKeys);
+            } else {
+                throw new RuntimeException("Unexpected key: " + key);
+            }
+        });
+    }
+
+    private static void assertExpectedSubAggregations(Aggregate subAggregation, List<String> expectedKeys) {
+        assertEquals(Kind.Sterms, subAggregation._kind());
+        var subBuckets = ((StringTermsAggregate) subAggregation._get()).buckets();
+        assertEquals(expectedKeys.size(), subBuckets.array().size());
+        assertContainsKeys(expectedKeys, subBuckets);
+    }
+
+    private static void assertContainsKeys(List<String> expectedKeys, Buckets<StringTermsBucket> subBuckets) {
+        expectedKeys.forEach(key -> assertContainsKey(subBuckets, key));
+    }
+
+    private static void assertContainsKey(Buckets<StringTermsBucket> subBuckets, String orgId) {
+        assertThat(
+            subBuckets.array().stream().filter(subBucket -> subBucket.key().equals(orgId)).count(), is(1L));
+    }
+
     private static void addDocumentToIndex() {
         try {
             addDocumentsToIndex(singleNviCandidateIndexDocumentWithCustomer(ORGANIZATION, randomString(),
@@ -503,7 +557,7 @@ public class OpenSearchClientTest {
             mapper.serialize(searchResponse, generator);
         }
 
-        var json = attempt(() -> JsonUtils.dtoObjectMapper.readTree(writer.toString())).orElseThrow();
+        var json = attempt(() -> dtoObjectMapper.readTree(writer.toString())).orElseThrow();
 
         return json.get("aggregations");
     }
@@ -514,7 +568,7 @@ public class OpenSearchClientTest {
 
     private static NviCandidateIndexDocument documentFromString(String fileName) throws JsonProcessingException {
         var string = IoUtils.stringFromResources(Path.of(fileName));
-        return JsonUtils.dtoObjectMapper.readValue(string, NviCandidateIndexDocument.class);
+        return dtoObjectMapper.readValue(string, NviCandidateIndexDocument.class);
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
