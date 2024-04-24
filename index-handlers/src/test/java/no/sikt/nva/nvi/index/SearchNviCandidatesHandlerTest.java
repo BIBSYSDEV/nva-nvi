@@ -230,7 +230,7 @@ public class SearchNviCandidatesHandlerTest {
 
     @Test
     void shouldReturnPaginatedSearchResultWithNestedAggregations() throws IOException {
-        var documents = generateNumberOfIndexDocuments(10);
+        var documents = generateNumberOfIndexDocuments(3);
         var aggregationName = randomString();
         when(openSearchClient.search(any()))
             .thenReturn(createSearchResponse(documents, aggregationName, nestedAggregate()));
@@ -242,7 +242,7 @@ public class SearchNviCandidatesHandlerTest {
         var actualNestedAggregation = aggregations.get(aggregationName);
         var expectedNestedAggregation = """
             {
-              "doc_count": 1,
+              "doc_count": 3,
               "status": {
                 "buckets": [
                   {
@@ -344,6 +344,7 @@ public class SearchNviCandidatesHandlerTest {
         var statusAggregation = createTermsAggregateWithBuckets(statusBuckets);
         return new NestedAggregate.Builder().docCount(randomInteger())
                    .aggregations("status", statusAggregation)
+                   .docCount(3)
                    .build()._toAggregate();
     }
 
