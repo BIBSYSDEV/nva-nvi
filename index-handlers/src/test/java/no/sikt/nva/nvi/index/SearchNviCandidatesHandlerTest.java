@@ -55,7 +55,6 @@ import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.hamcrest.Matchers;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
@@ -262,12 +261,15 @@ public class SearchNviCandidatesHandlerTest {
         var expectedNestedAggregation = """
             {
               "docCount" : 3,
-              "organizations" : {
-                "someOrgId" : {
-                  "docCount" : 3,
-                  "status" : {
-                    "Pending" : {
-                      "docCount" : 2
+              "someOrgId" : {
+                "docCount" : 3,
+                "organizations" : {
+                  "someOrgId" : {
+                    "docCount" : 3,
+                    "status" : {
+                      "Pending" : {
+                        "docCount" : 2
+                      }
                     }
                   }
                 }
@@ -351,12 +353,20 @@ public class SearchNviCandidatesHandlerTest {
         var pendingBucket = getStringTermsBucket("Pending", Map.of(), 2);
         var statusBuckets = createBuckets(pendingBucket);
         var statusAggregation = createTermsAggregateWithBuckets(statusBuckets);
-        var orgBucket = getStringTermsBucket("someOrgId", Map.of("status", statusAggregation), 3);
+        var someOrgId = "someOrgId";
+        var orgBucket = getStringTermsBucket(someOrgId, Map.of("status", statusAggregation), 3);
         var orgBuckets = createBuckets(orgBucket);
         var orgAggregation = createTermsAggregateWithBuckets(orgBuckets);
+        var filterAggregate = getFilterAggregate(3, Map.of("organizations", orgAggregation));
         return new NestedAggregate.Builder().docCount(randomInteger())
-                   .aggregations("organizations", orgAggregation)
+                   .aggregations(someOrgId, filterAggregate)
                    .docCount(3)
+                   .build()._toAggregate();
+    }
+
+    private static Aggregate getFilterAggregate(int docCount, Map<String, Aggregate> aggregations) {
+        return new FilterAggregate.Builder().docCount(docCount)
+                   .aggregations(aggregations)
                    .build()._toAggregate();
     }
 
@@ -377,9 +387,8 @@ public class SearchNviCandidatesHandlerTest {
         return new Buckets.Builder<StringTermsBucket>().array(List.of(bucket)).build();
     }
 
-    @NotNull
     private static Aggregate randomFilterAggregate(Integer docCount) {
-        return new Aggregate(new FilterAggregate.Builder().docCount(docCount).build());
+        return getFilterAggregate(docCount, Map.of());
     }
 
     private static void mockOpenSearchClient() throws IOException {
