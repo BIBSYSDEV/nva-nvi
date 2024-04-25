@@ -8,6 +8,11 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import com.fasterxml.jackson.databind.MappingIterator;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import java.io.StringReader;
+import java.nio.file.Path;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao;
@@ -16,24 +21,31 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.unit.nva.events.models.EventReference;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.ioutils.IoUtils;
 import software.amazon.awssdk.services.s3.S3Client;
 
 public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, Void> {
 
     public static final String NVI_ERRORS = "NVI_ERRORS";
     public static final String MISSING_REPORTED_YEAR_MESSAGE = "Reported year is missing!";
+    public static final String CRISTIN_DEPARTMENT_TRANSFERS = "cristin_transfer_departments.csv";
+    public static final String CRISTIN_DEPARTMENT_TRANSFERS_STRING = IoUtils.stringFromResources(
+        Path.of(CRISTIN_DEPARTMENT_TRANSFERS));
     private final CandidateRepository repository;
     private final S3Client s3Client;
+    private final CristinMapper cristinMapper;
 
     @JacocoGenerated
     public CristinNviReportEventConsumer() {
         this.repository = new CandidateRepository(defaultDynamoClient());
         this.s3Client = S3Driver.defaultS3Client().build();
+        this.cristinMapper = CristinMapper.withDepartmentTransfers(readCristinDepartments());
     }
 
     public CristinNviReportEventConsumer(CandidateRepository candidateRepository, S3Client s3Client) {
         this.repository = candidateRepository;
         this.s3Client = s3Client;
+        this.cristinMapper = CristinMapper.withDepartmentTransfers(readCristinDepartments());
     }
 
     @Override
@@ -44,13 +56,13 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
         return null;
     }
 
-    private static DbCandidate createDbCandidate(CristinNviReport cristinNviReport) {
-        return attempt(() -> CristinMapper.toDbCandidate(cristinNviReport)).orElseThrow(
+    private DbCandidate createDbCandidate(CristinNviReport cristinNviReport) {
+        return attempt(() -> cristinMapper.toDbCandidate(cristinNviReport)).orElseThrow(
             CristinConversionException::fromFailure);
     }
 
-    private static List<DbApprovalStatus> createApprovals(CristinNviReport cristinNviReport) {
-        return attempt(() -> CristinMapper.toApprovals(cristinNviReport)).orElseThrow(
+    private List<DbApprovalStatus> createApprovals(CristinNviReport cristinNviReport) {
+        return attempt(() -> cristinMapper.toApprovals(cristinNviReport)).orElseThrow(
             CristinConversionException::fromFailure);
     }
 
@@ -100,6 +112,19 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
             throw new IllegalArgumentException(MISSING_REPORTED_YEAR_MESSAGE);
         } else {
             return repository.create(candidate, approvals, yearReported);
+        }
+    }
+
+    private List<CristinDepartmentTransfer> readCristinDepartments() {
+        try (StringReader reader = new StringReader(CRISTIN_DEPARTMENT_TRANSFERS_STRING)) {
+            MappingIterator<CristinDepartmentTransfer> iterator =
+                new CsvMapper()
+                    .readerFor(CristinDepartmentTransfer.class)
+                    .with(CsvSchema.emptySchema().withHeader())
+                    .readValues(reader);
+            return iterator.readAll();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }
