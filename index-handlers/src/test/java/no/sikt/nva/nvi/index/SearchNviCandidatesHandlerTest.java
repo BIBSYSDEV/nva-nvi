@@ -262,11 +262,11 @@ public class SearchNviCandidatesHandlerTest {
         var expectedNestedAggregation = """
             {
               "docCount" : 3,
-              "status" : {
-                "Pending" : {
+              "organizations" : {
+                "someOrgId" : {
                   "docCount" : 3,
-                  "organizations" : {
-                    "someOrgId" : {
+                  "status" : {
+                    "Pending" : {
                       "docCount" : 2
                     }
                   }
@@ -348,14 +348,14 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     private static Aggregate nestedAggregate() {
-        var orgBucket = getStringTermsBucket("someOrgId", Map.of(), 2);
-        var orgBuckets = createBuckets(orgBucket);
-        var orgAggregation = createTermsAggregateWithBuckets(orgBuckets);
-        var pendingBucket = getStringTermsBucket("Pending", Map.of("organizations", orgAggregation), 3);
+        var pendingBucket = getStringTermsBucket("Pending", Map.of(), 2);
         var statusBuckets = createBuckets(pendingBucket);
         var statusAggregation = createTermsAggregateWithBuckets(statusBuckets);
+        var orgBucket = getStringTermsBucket("someOrgId", Map.of("status", statusAggregation), 3);
+        var orgBuckets = createBuckets(orgBucket);
+        var orgAggregation = createTermsAggregateWithBuckets(orgBuckets);
         return new NestedAggregate.Builder().docCount(randomInteger())
-                   .aggregations("status", statusAggregation)
+                   .aggregations("organizations", orgAggregation)
                    .docCount(3)
                    .build()._toAggregate();
     }
