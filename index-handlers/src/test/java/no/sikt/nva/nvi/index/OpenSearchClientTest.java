@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.index;
 
+import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
+import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.APPROVED_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.APPROVED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.ASSIGNMENTS_AGG;
@@ -490,23 +492,27 @@ public class OpenSearchClientTest {
         var searchResponse = openSearchClient.search(searchParameters);
         var actualAggregate = searchResponse.aggregations().get(aggregation);
         assertEquals(Kind.Nested, actualAggregate._kind());
-        var actualStatusAggregation = ((NestedAggregate) actualAggregate._get()).aggregations().get("status");
-        assertEquals(Kind.Sterms, actualStatusAggregation._kind());
-        var actualStatusBuckets = ((StringTermsAggregate) actualStatusAggregation._get()).buckets();
-        assertExpectedOrganizationAggregationForEachStatus(actualStatusBuckets);
+        var actualOrganizationAggregation = ((NestedAggregate) actualAggregate._get()).aggregations()
+                                                .get("organizations");
+        assertEquals(Kind.Sterms, actualOrganizationAggregation._kind());
+        var actualOrgBuckets = ((StringTermsAggregate) actualOrganizationAggregation._get()).buckets();
+        assertExpectedOrganizationAggregationForEachStatus(actualOrgBuckets);
     }
 
     private static void assertExpectedOrganizationAggregationForEachStatus(
         Buckets<StringTermsBucket> actualStatusBuckets) {
         actualStatusBuckets.array().forEach(bucket -> {
             var key = bucket.key();
-            var organizationAggregation = bucket.aggregations().get("organizations");
-            if (key.equals(ApprovalStatus.PENDING.getValue())) {
-                var expectedKeys = List.of(SIKT_INSTITUTION_ID.toString(), SIKT_LEVEL_2_ID, SIKT_LEVEL_3_ID);
-                assertExpectedSubAggregations(organizationAggregation, expectedKeys);
-            } else if (key.equals(ApprovalStatus.NEW.getValue())) {
-                var expectedKeys = List.of(SIKT_INSTITUTION_ID.toString(), SIKT_LEVEL_2_ID);
-                assertExpectedSubAggregations(organizationAggregation, expectedKeys);
+            var statusAggregation = bucket.aggregations().get("status");
+            if (key.equals(SIKT_INSTITUTION_ID.toString())) {
+                var expectedKeys = List.of(NEW.getValue(), PENDING.getValue());
+                assertExpectedSubAggregations(statusAggregation, expectedKeys);
+            } else if (key.equals(SIKT_LEVEL_2_ID)) {
+                var expectedKeys = List.of(NEW.getValue(), PENDING.getValue());
+                assertExpectedSubAggregations(statusAggregation, expectedKeys);
+            } else if (key.equals(SIKT_LEVEL_3_ID)) {
+                var expectedKeys = List.of(PENDING.getValue());
+                assertExpectedSubAggregations(statusAggregation, expectedKeys);
             } else {
                 throw new RuntimeException("Unexpected key: " + key);
             }

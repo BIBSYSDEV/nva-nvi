@@ -67,15 +67,15 @@ public final class Aggregations {
     }
 
     public static Aggregation organizationApprovalStatusAggregations() {
-        var involvedOrgs = termsAggregation(APPROVALS, INVOLVED_ORGS)._toAggregation();
-        var statusAggregation = new Aggregation.Builder()
-                                    .terms(termsAggregation(APPROVALS, APPROVAL_STATUS))
-                                    .aggregations(Map.of(APPROVAL_ORGANIZATIONS_AGGREGATION, involvedOrgs))
-                                    .build();
+        var statusAggregation = termsAggregation(APPROVALS, APPROVAL_STATUS)._toAggregation();
+        var organizationAggregation = new Aggregation.Builder()
+                                          .terms(termsAggregation(APPROVALS, INVOLVED_ORGS))
+                                          .aggregations(Map.of(STATUS_AGGREGATION, statusAggregation))
+                                          .build();
 
         return new Aggregation.Builder()
                    .nested(nestedAggregation(APPROVALS))
-                   .aggregations(Map.of(STATUS_AGGREGATION, statusAggregation))
+                   .aggregations(Map.of(APPROVAL_ORGANIZATIONS_AGGREGATION, organizationAggregation))
                    .build();
     }
 
