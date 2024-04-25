@@ -36,7 +36,7 @@ public enum SearchAggregation {
     TOTAL_COUNT_AGGREGATION_AGG("totalCount",
                                 (username, topLevelCristinOrg) -> totalCountAggregation(topLevelCristinOrg)),
     ORGANIZATION_APPROVAL_STATUS_AGGREGATION("organizationApprovalStatuses",
-                                             (username, topLevelCristinOrg) -> organizationApprovalStatusAggregations());
+                                             (username, topLevelCristinOrg) -> organizationApprovalStatusAggregations(topLevelCristinOrg));
 
     private final String aggregationName;
 

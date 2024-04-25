@@ -66,16 +66,19 @@ public final class Aggregations {
         );
     }
 
-    public static Aggregation organizationApprovalStatusAggregations() {
+    public static Aggregation organizationApprovalStatusAggregations(String topLevelCristinOrg) {
         var statusAggregation = termsAggregation(APPROVALS, APPROVAL_STATUS)._toAggregation();
         var organizationAggregation = new Aggregation.Builder()
                                           .terms(termsAggregation(APPROVALS, INVOLVED_ORGS))
                                           .aggregations(Map.of(STATUS_AGGREGATION, statusAggregation))
                                           .build();
+        var filterAggregation = filterAggregation(
+            mustMatch(approvalInstitutionIdQuery(topLevelCristinOrg)),
+            Map.of(APPROVAL_ORGANIZATIONS_AGGREGATION, organizationAggregation));
 
         return new Aggregation.Builder()
                    .nested(nestedAggregation(APPROVALS))
-                   .aggregations(Map.of(APPROVAL_ORGANIZATIONS_AGGREGATION, organizationAggregation))
+                   .aggregations(Map.of(topLevelCristinOrg, filterAggregation))
                    .build();
     }
 

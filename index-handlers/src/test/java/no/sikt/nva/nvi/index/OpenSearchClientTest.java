@@ -84,6 +84,7 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate.Kind;
 import org.opensearch.client.opensearch._types.aggregations.Buckets;
+import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
@@ -513,8 +514,10 @@ public class OpenSearchClientTest {
         var searchResponse = openSearchClient.search(searchParameters);
         var actualAggregate = searchResponse.aggregations().get(aggregation);
         var actualOrganizationAggregation = ((NestedAggregate) actualAggregate._get()).aggregations()
-                                                .get("organizations");
-        var actualOrgBuckets = ((StringTermsAggregate) actualOrganizationAggregation._get()).buckets();
+                                                .get(SIKT_INSTITUTION_ID.toString());
+        var filterAggregate = ((FilterAggregate) actualOrganizationAggregation._get()).aggregations()
+                                 .get("organizations");
+        var actualOrgBuckets = ((StringTermsAggregate) filterAggregate._get()).buckets();
         var orgIds = actualOrgBuckets.array().stream().map(StringTermsBucket::key).toList();
         assertThat(orgIds, containsInAnyOrder(SIKT_INSTITUTION_ID.toString()));
         assertThat(orgIds, not(containsInAnyOrder(NTNU_INSTITUTION_ID.toString())));
