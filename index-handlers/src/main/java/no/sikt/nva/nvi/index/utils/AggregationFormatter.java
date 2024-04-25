@@ -61,6 +61,14 @@ public final class AggregationFormatter {
         try (var generator = mapper.jsonProvider().createGenerator(writer)) {
             mapper.serialize(aggregate, generator);
         }
-        return attempt(() -> JsonUtils.dtoObjectMapper.readTree(writer.toString())).orElseThrow();
+        var aggregateNode = attempt(() -> JsonUtils.dtoObjectMapper.readTree(writer.toString())).orElseThrow();
+        return replaceDocCount(aggregateNode);
+    }
+
+    private static ObjectNode replaceDocCount(JsonNode jsonNode) {
+        var object = (ObjectNode) jsonNode;
+        object.set(DOC_COUNT, jsonNode.get("doc_count"));
+        object.remove("doc_count");
+        return object;
     }
 }
