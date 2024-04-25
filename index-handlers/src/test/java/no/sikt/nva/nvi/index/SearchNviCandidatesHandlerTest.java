@@ -39,10 +39,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
-import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
+import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.commons.json.JsonUtils;
@@ -55,12 +55,17 @@ import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.hamcrest.Matchers;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
 import org.opensearch.client.opensearch._types.ShardStatistics;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.Buckets;
 import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
+import org.opensearch.client.opensearch._types.aggregations.NestedAggregate;
+import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
+import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.SearchResponse.Builder;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -209,18 +214,66 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
-    void shouldReturnPaginatedSearchResultWithAggregations() throws IOException {
+    void shouldReturnPaginatedSearchResultWithFilterAggregations() throws IOException {
         var documents = generateNumberOfIndexDocuments(10);
         var aggregationName = randomString();
         var docCount = randomInteger();
         when(openSearchClient.search(any()))
-            .thenReturn(createSearchResponse(documents, 10, aggregationName, docCount));
+            .thenReturn(createSearchResponse(documents, aggregationName, randomFilterAggregate(docCount)));
         handler.handleRequest(emptyRequest(), output, context);
         var response =
             GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedResult = objectMapper.readValue(response.getBody(), TYPE_REF);
 
         assertThat(paginatedResult.getHits(), hasSize(10));
+    }
+
+    @Test
+    void shouldUseCamelCaseOnDocCount() throws IOException {
+        var documents = generateNumberOfIndexDocuments(1);
+        var aggregationName = "someAggregation";
+        when(openSearchClient.search(any()))
+            .thenReturn(createSearchResponse(documents, aggregationName, randomFilterAggregate(1)));
+        handler.handleRequest(emptyRequest(), output, context);
+        var response =
+            GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedResult = objectMapper.readValue(response.getBody(), TYPE_REF);
+        var aggregations = paginatedResult.getAggregations();
+        var actualFilterAggregation = aggregations.get(aggregationName);
+        var expectedFilterAggregation = """
+            {
+              "docCount" : 1
+            }""";
+        assertEquals(expectedFilterAggregation, objectMapper.writeValueAsString(actualFilterAggregation));
+    }
+
+    @Test
+    void shouldReturnPaginatedSearchResultWithNestedAggregations() throws IOException {
+        var documents = generateNumberOfIndexDocuments(3);
+        var aggregationName = "someNestedAggregation";
+        when(openSearchClient.search(any()))
+            .thenReturn(createSearchResponse(documents, aggregationName, nestedAggregate()));
+        handler.handleRequest(emptyRequest(), output, context);
+        var response =
+            GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedResult = objectMapper.readValue(response.getBody(), TYPE_REF);
+        var aggregations = paginatedResult.getAggregations();
+        var actualNestedAggregation = aggregations.get(aggregationName);
+        var expectedNestedAggregation = """
+            {
+              "docCount" : 3,
+              "organizations" : {
+                "someOrgId" : {
+                  "docCount" : 3,
+                  "status" : {
+                    "Pending" : {
+                      "docCount" : 2
+                    }
+                  }
+                }
+              }
+            }""";
+        assertEquals(expectedNestedAggregation, objectMapper.writeValueAsString(actualNestedAggregation));
     }
 
     @Test
@@ -294,6 +347,41 @@ public class SearchNviCandidatesHandlerTest {
                                   + "topLevelCristinOrg " + TOP_LEVEL_CRISTIN_ORG));
     }
 
+    private static Aggregate nestedAggregate() {
+        var pendingBucket = getStringTermsBucket("Pending", Map.of(), 2);
+        var statusBuckets = createBuckets(pendingBucket);
+        var statusAggregation = createTermsAggregateWithBuckets(statusBuckets);
+        var orgBucket = getStringTermsBucket("someOrgId", Map.of("status", statusAggregation), 3);
+        var orgBuckets = createBuckets(orgBucket);
+        var orgAggregation = createTermsAggregateWithBuckets(orgBuckets);
+        return new NestedAggregate.Builder().docCount(randomInteger())
+                   .aggregations("organizations", orgAggregation)
+                   .docCount(3)
+                   .build()._toAggregate();
+    }
+
+    private static Aggregate createTermsAggregateWithBuckets(Buckets<StringTermsBucket> buckets) {
+        return new StringTermsAggregate.Builder().buckets(buckets).sumOtherDocCount(2).build()._toAggregate();
+    }
+
+    private static StringTermsBucket getStringTermsBucket(String key, Map<String, Aggregate> aggregateMap,
+                                                          int docCount) {
+        return new StringTermsBucket.Builder()
+                   .key(key)
+                   .aggregations(aggregateMap)
+                   .docCount(docCount)
+                   .build();
+    }
+
+    private static Buckets<StringTermsBucket> createBuckets(StringTermsBucket bucket) {
+        return new Buckets.Builder<StringTermsBucket>().array(List.of(bucket)).build();
+    }
+
+    @NotNull
+    private static Aggregate randomFilterAggregate(Integer docCount) {
+        return new Aggregate(new FilterAggregate.Builder().docCount(docCount).build());
+    }
+
     private static void mockOpenSearchClient() throws IOException {
         when(openSearchClient.search(any()))
             .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
@@ -308,13 +396,13 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     private static SearchResponse<NviCandidateIndexDocument> createSearchResponse(
-        List<NviCandidateIndexDocument> documents, int total, String aggregateName, int docCount) {
+        List<NviCandidateIndexDocument> documents, String aggregateName, Aggregate aggregate) {
         return new Builder<NviCandidateIndexDocument>()
                    .hits(constructHitsMetadata(documents))
                    .took(10)
                    .timedOut(false)
-                   .shards(new ShardStatistics.Builder().failed(0).successful(1).total(total).build())
-                   .aggregations(aggregateName, new Aggregate(new FilterAggregate.Builder().docCount(docCount).build()))
+                   .shards(new ShardStatistics.Builder().failed(0).successful(1).total(10).build())
+                   .aggregations(aggregateName, aggregate)
                    .build();
     }
 
