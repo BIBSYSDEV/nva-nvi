@@ -62,6 +62,7 @@ import org.opensearch.client.opensearch._types.ShardStatistics;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Buckets;
 import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
+import org.opensearch.client.opensearch._types.aggregations.GlobalAggregate;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
@@ -347,6 +348,28 @@ public class SearchNviCandidatesHandlerTest {
         assertThat(logAppender.getMessages(),
                    containsString("Aggregation type organizationApprovalStatuses requested for "
                                   + "topLevelCristinOrg " + TOP_LEVEL_CRISTIN_ORG));
+    }
+
+    @Test
+    void shouldUseDefaultSerializationWhenFormatterFormatsUnsupportedAggregationVariant() throws IOException {
+        var aggregateName = randomString();
+        when(openSearchClient.search(any()))
+            .thenReturn(createSearchResponse(List.of(), aggregateName, getGlobalAggregate()));
+        handler.handleRequest(emptyRequest(), output, context);
+        var response =
+            GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedResult = objectMapper.readValue(response.getBody(), TYPE_REF);
+        var aggregations = paginatedResult.getAggregations();
+        var actualAggregate = aggregations.get(aggregateName);
+        var expectedFilterAggregation = """
+            {
+              "docCount" : 1
+            }""";
+        assertEquals(expectedFilterAggregation, objectMapper.writeValueAsString(actualAggregate));
+    }
+
+    private static Aggregate getGlobalAggregate() {
+        return new GlobalAggregate.Builder().docCount(1).build()._toAggregate();
     }
 
     private static Aggregate nestedAggregate() {
