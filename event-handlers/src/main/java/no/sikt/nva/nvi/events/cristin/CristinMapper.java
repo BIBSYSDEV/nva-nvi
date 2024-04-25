@@ -37,7 +37,7 @@ import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
-public class CristinMapper {
+public final class CristinMapper {
 
     public static final String API_HOST = new Environment().readEnv("API_HOST");
     public static final String PERSISTED_RESOURCES_BUCKET = new Environment().readEnv("EXPANDED_RESOURCES_BUCKET");
