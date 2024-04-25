@@ -67,8 +67,10 @@ public final class AggregationFormatter {
 
     private static ObjectNode replaceDocCount(JsonNode jsonNode) {
         var object = (ObjectNode) jsonNode;
-        object.set(DOC_COUNT, jsonNode.get("doc_count"));
-        object.remove("doc_count");
+        if (jsonNode.has("doc_count")) {
+            object.set(DOC_COUNT, jsonNode.get("doc_count"));
+            object.remove("doc_count");
+        }
         return object;
     }
 }
