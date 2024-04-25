@@ -494,11 +494,11 @@ public class OpenSearchClientTest {
         var searchParameters = defaultSearchParameters().withAggregationType(aggregation).build();
         var searchResponse = openSearchClient.search(searchParameters);
         var actualAggregate = searchResponse.aggregations().get(aggregation);
-        assertEquals(Kind.Nested, actualAggregate._kind());
         var actualOrganizationAggregation = ((NestedAggregate) actualAggregate._get()).aggregations()
-                                                .get("organizations");
-        assertEquals(Kind.Sterms, actualOrganizationAggregation._kind());
-        var actualOrgBuckets = ((StringTermsAggregate) actualOrganizationAggregation._get()).buckets();
+                                                .get(SIKT_INSTITUTION_ID.toString());
+        var filterAggregate = ((FilterAggregate) actualOrganizationAggregation._get()).aggregations()
+                                  .get("organizations");
+        var actualOrgBuckets = ((StringTermsAggregate) filterAggregate._get()).buckets();
         assertExpectedOrganizationAggregationForEachStatus(actualOrgBuckets);
     }
 
