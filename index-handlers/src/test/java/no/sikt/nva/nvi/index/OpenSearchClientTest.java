@@ -20,9 +20,11 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -497,6 +499,25 @@ public class OpenSearchClientTest {
         assertEquals(Kind.Sterms, actualOrganizationAggregation._kind());
         var actualOrgBuckets = ((StringTermsAggregate) actualOrganizationAggregation._get()).buckets();
         assertExpectedOrganizationAggregationForEachStatus(actualOrgBuckets);
+    }
+
+    @Test
+    void organizationAggregationShouldNotContainAggregationsForOtherTopLevelOrgs()
+        throws IOException, InterruptedException {
+        addDocumentsToIndex(documentFromString("document_organization_aggregation_collaboration.json"));
+        var aggregation = SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
+        var searchParameters =
+            defaultSearchParameters().withTopLevelCristinOrg(SIKT_INSTITUTION_ID)
+                .withAggregationType(aggregation)
+                .build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        var actualAggregate = searchResponse.aggregations().get(aggregation);
+        var actualOrganizationAggregation = ((NestedAggregate) actualAggregate._get()).aggregations()
+                                                .get("organizations");
+        var actualOrgBuckets = ((StringTermsAggregate) actualOrganizationAggregation._get()).buckets();
+        var orgIds = actualOrgBuckets.array().stream().map(StringTermsBucket::key).toList();
+        assertThat(orgIds, containsInAnyOrder(SIKT_INSTITUTION_ID.toString()));
+        assertThat(orgIds, not(containsInAnyOrder(NTNU_INSTITUTION_ID.toString())));
     }
 
     private static void assertExpectedOrganizationAggregationForEachStatus(
