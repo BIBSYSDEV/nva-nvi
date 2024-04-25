@@ -78,7 +78,7 @@ public final class Aggregations {
 
         return new Aggregation.Builder()
                    .nested(nestedAggregation(APPROVALS))
-                   .aggregations(Map.of(topLevelCristinOrg, filterAggregation))
+                   .aggregations(isNull(topLevelCristinOrg) ? Map.of() : Map.of(topLevelCristinOrg, filterAggregation))
                    .build();
     }
 
