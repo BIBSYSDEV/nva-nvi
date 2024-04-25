@@ -11,15 +11,21 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.fasterxml.jackson.databind.MappingIterator;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.events.cristin.CristinNviReport.Builder;
 import no.unit.nva.commons.json.JsonUtils;
+import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.Test;
 
@@ -33,12 +39,13 @@ class CristinMapperTest {
     private static final int CALCULATION_PRECISION = 10;
     private static final int SCALE = 4;
     private static final String CRISTIN_PERSON_IDENTIFIER = randomString();
+    private static final CristinMapper cristinMapper = CristinMapper.withDepartmentTransfers(readCristinDepartments());
 
     @Test
     void shouldThrowNullPointerExceptionWhenQualityCodeIsMissing() {
         var empty = emptyScientificResource();
         var report = CristinNviReport.builder().withScientificResources(List.of(empty)).build();
-        assertThrows(NullPointerException.class, () -> CristinMapper.toDbCandidate(report));
+        assertThrows(NullPointerException.class, () -> cristinMapper.toDbCandidate(report));
     }
 
     @Test
@@ -49,7 +56,7 @@ class CristinMapperTest {
         var scientificResource = scientificResourceWithCreators(creators);
         var cristinLocale = cristinLocaleWithInstitutionIdentifier(institutionIdentifier);
         var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
-        var dbCandidate = CristinMapper.toDbCandidate(report.build());
+        var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
         var institutionId = dbCandidate.points().get(0).institutionId();
         var expectedInstitutionId = constructExpectedInstitutionId(cristinLocale);
@@ -69,7 +76,7 @@ class CristinMapperTest {
         var scientificResource = scientificResourceWithCreators(creators);
         var cristinLocale = cristinLocaleWithInstitutionIdentifier(INSTITUTION_IDENTIFIER);
         var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
-        var dbCandidate = CristinMapper.toDbCandidate(report.build());
+        var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
         var expectedBasePoints = new BigDecimal(BASE_POINTS_CRISTIN_ENTRY).setScale(SCALE, RoundingMode.HALF_UP);
         assertEquals(dbCandidate.basePoints(), expectedBasePoints);
@@ -82,7 +89,7 @@ class CristinMapperTest {
         var scientificResource = scientificResourceWithCreators(creators);
         var cristinLocale = cristinLocaleWithInstitutionIdentifier(INSTITUTION_IDENTIFIER);
         var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
-        var dbCandidate = CristinMapper.toDbCandidate(report.build());
+        var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
         var expectedCollaborationFactor = new BigDecimal(INTERNATIONAL_COLLABORATION_FACTOR_CRISTIN_ENTRY).setScale(
             SCALE, RoundingMode.HALF_UP);
@@ -99,7 +106,7 @@ class CristinMapperTest {
         var scientificResource = scientificResourceWithCreators(creators);
         var cristinLocale = cristinLocaleWithInstitutionIdentifier(INSTITUTION_IDENTIFIER);
         var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
-        var dbCandidate = CristinMapper.toDbCandidate(report.build());
+        var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
         var expectedCollaborationFactor = new BigDecimal(NO_INTERNATIONAL_COLLABORATION_FACTOR_CRISTIN_ENTRY).setScale(
             SCALE, RoundingMode.HALF_UP);
@@ -120,7 +127,7 @@ class CristinMapperTest {
         var secondLocale = cristinLocaleWithInstitutionIdentifier(secondInstitution);
         var report = cristinReportFromCristinLocalesAndScientificResource(List.of(firstLocale, secondLocale),
                                                                           scientificResource);
-        var dbCandidate = CristinMapper.toDbCandidate(report);
+        var dbCandidate = cristinMapper.toDbCandidate(report);
 
         var expectedTotalPoints = POINTS_PER_CONTRIBUTOR.add(POINTS_PER_CONTRIBUTOR,
                                                              new MathContext(CALCULATION_PRECISION,
@@ -145,7 +152,7 @@ class CristinMapperTest {
             """;
 
         var nviReport = nviReportWithInstanceTypeAndReference("AcademicArticle", academicArticleReference);
-        var dbCandidate = CristinMapper.toDbCandidate(nviReport);
+        var dbCandidate = cristinMapper.toDbCandidate(nviReport);
 
         var expectedChannelId = URI.create(
             "https://api.dev.nva.aws.unit.no/publication-channels-v2/journal/6A227640-F250-4909-9F6B-16782393FC15"
@@ -172,7 +179,7 @@ class CristinMapperTest {
             """;
 
         var nviReport = nviReportWithInstanceTypeAndReference("AcademicLiteratureReview", academicArticleReference);
-        var dbCandidate = CristinMapper.toDbCandidate(nviReport);
+        var dbCandidate = cristinMapper.toDbCandidate(nviReport);
 
         var expectedChannelId = URI.create(
             "https://api.test.nva.aws.unit.no/publication-channels-v2/journal/2D37D55B-90DF-413F-8585-85A970411E34"
@@ -208,7 +215,7 @@ class CristinMapperTest {
             """;
 
         var nviReport = nviReportWithInstanceTypeAndReference("AcademicMonograph", academicArticleReference);
-        var dbCandidate = CristinMapper.toDbCandidate(nviReport);
+        var dbCandidate = cristinMapper.toDbCandidate(nviReport);
 
         var expectedChannelId = URI.create(
             "https://api.test.nva.aws.unit.no/publication-channels-v2/series/69CFBB82-5064-402D-843F-B27B246FB7DE"
@@ -238,7 +245,7 @@ class CristinMapperTest {
                 }
             """;
         var nviReport = nviReportWithInstanceTypeAndReference("AcademicMonograph", academicArticleReference);
-        var dbCandidate = CristinMapper.toDbCandidate(nviReport);
+        var dbCandidate = cristinMapper.toDbCandidate(nviReport);
 
         var expectedChannelId = URI.create(
             "https://api.test.nva.aws.unit.no/publication-channels-v2/publisher/7BB46297-D894-4A65-B113-6462C58DE20A"
@@ -287,7 +294,7 @@ class CristinMapperTest {
             """;
 
         var nviReport = nviReportWithInstanceTypeAndReference("AcademicChapter", academicArticleReference);
-        var dbCandidate = CristinMapper.toDbCandidate(nviReport);
+        var dbCandidate = cristinMapper.toDbCandidate(nviReport);
 
         var expectedChannelId = URI.create(
             "https://api.test.nva.aws.unit.no/publication-channels-v2/series/69CFBB82-5064-402D-843F-B27B246FB7DE"
@@ -331,7 +338,7 @@ class CristinMapperTest {
                                                 """;
 
         var nviReport = nviReportWithInstanceTypeAndReference("AcademicChapter", academicArticleReference);
-        var dbCandidate = CristinMapper.toDbCandidate(nviReport);
+        var dbCandidate = cristinMapper.toDbCandidate(nviReport);
 
         var expectedChannelId = URI.create(
             "https://api.test.nva.aws.unit.no/publication-channels-v2/publisher/7BB46297-D894-4A65-B113-6462C58DE20A"
@@ -359,7 +366,7 @@ class CristinMapperTest {
             """;
 
         var nviReport = nviReportWithInstanceTypeAndReference("AcademicChapter", academicArticleReference);
-        var dbCandidate = CristinMapper.toDbCandidate(nviReport);
+        var dbCandidate = cristinMapper.toDbCandidate(nviReport);
 
         assertNull(dbCandidate.channelId());
         assertNull(dbCandidate.channelType());
@@ -381,7 +388,7 @@ class CristinMapperTest {
             """;
 
         var nviReport = nviReportWithInstanceTypeAndReference("UnsupportedType", academicArticleReference);
-        var dbCandidate = CristinMapper.toDbCandidate(nviReport);
+        var dbCandidate = cristinMapper.toDbCandidate(nviReport);
 
         assertNull(dbCandidate.channelId());
         assertNull(dbCandidate.channelType());
@@ -393,7 +400,7 @@ class CristinMapperTest {
         var scientificResource = scientificResourceWithCreators(List.of(creator));
         var cristinLocale = cristinLocaleWithInstitutionIdentifier(INSTITUTION_IDENTIFIER);
         var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
-        var dbCandidate = CristinMapper.toDbCandidate(report.build());
+        var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
         var pointsPerAffiliation = dbCandidate.points().get(0)
                                        .creatorAffiliationPoints().get(0);
@@ -409,7 +416,7 @@ class CristinMapperTest {
         var scientificResource = scientificResourceWithCreators(List.of(firstCreator, secondCreator));
         var cristinLocale = cristinLocaleWithInstitutionIdentifier(INSTITUTION_IDENTIFIER);
         var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
-        var dbCandidate = CristinMapper.toDbCandidate(report.build());
+        var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
         var institutionPoints = dbCandidate.points().get(0);
         var expectedSingleCreatorPoints = POINTS_PER_CONTRIBUTOR.setScale(SCALE, RoundingMode.HALF_UP);
@@ -419,6 +426,24 @@ class CristinMapperTest {
             assertThat(creatorPoints.creatorId().toString(), containsString(CRISTIN_PERSON_IDENTIFIER));
             }
         );
+    }
+
+    @Test
+    void shouldLookUpInTransferredCristinDepartmentsWhenNoApprovalForScientificPerson() {
+        var creator = scientificPersonAtInstitutionWithPoints("305", POINTS_PER_CONTRIBUTOR);
+        var scientificResource = scientificResourceWithCreators(List.of(creator));
+        var cristinLocale = cristinLocaleWithInstitutionIdentifier("2057");
+        var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
+        var dbCandidate = cristinMapper.toDbCandidate(report.build());
+
+        var institutionPointsId = dbCandidate.points().get(0).institutionId().toString();
+        var affiliationForInstitutionPoints =
+            dbCandidate.points().get(0).creatorAffiliationPoints().get(0).affiliationId().toString();
+
+        assertThat(institutionPointsId, containsString("2057"));
+        assertThat(affiliationForInstitutionPoints, containsString("305"));
+
+
     }
 
     private static CristinNviReport nviReportWithInstanceTypeAndReference(String instanceType, String reference) {
@@ -510,5 +535,20 @@ class CristinMapperTest {
 
     private ScientificResource emptyScientificResource() {
         return ScientificResource.build().build();
+    }
+
+    private static List<CristinDepartmentTransfer> readCristinDepartments() {
+        try {
+            MappingIterator<CristinDepartmentTransfer> iterator =
+                new CsvMapper()
+                    .readerFor(CristinDepartmentTransfer.class)
+                    .with(CsvSchema.emptySchema().withHeader())
+                    .readValues(new StringReader(IoUtils.stringFromResources(
+                        Path.of("cristin_transfer_departments.csv"))));
+
+            return iterator.readAll();
+        } catch (Exception e) {
+            throw new RuntimeException();
+        }
     }
 }
