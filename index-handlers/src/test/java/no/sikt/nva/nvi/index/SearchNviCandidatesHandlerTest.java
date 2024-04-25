@@ -229,6 +229,25 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
+    void shouldUseCamelCaseOnDocCount() throws IOException {
+        var documents = generateNumberOfIndexDocuments(1);
+        var aggregationName = "someAggregation";
+        when(openSearchClient.search(any()))
+            .thenReturn(createSearchResponse(documents, aggregationName, randomFilterAggregate(1)));
+        handler.handleRequest(emptyRequest(), output, context);
+        var response =
+            GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedResult = objectMapper.readValue(response.getBody(), TYPE_REF);
+        var aggregations = paginatedResult.getAggregations();
+        var actualFilterAggregation = aggregations.get(aggregationName);
+        var expectedFilterAggregation = """
+            {
+              "docCount" : 1
+            }""";
+        assertEquals(expectedFilterAggregation, objectMapper.writeValueAsString(actualFilterAggregation));
+    }
+
+    @Test
     void shouldReturnPaginatedSearchResultWithNestedAggregations() throws IOException {
         var documents = generateNumberOfIndexDocuments(3);
         var aggregationName = "someNestedAggregation";
