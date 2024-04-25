@@ -11,6 +11,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
@@ -115,15 +116,15 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     }
 
     private List<CristinDepartmentTransfer> readCristinDepartments() {
-        try {
+        try (StringReader reader = new StringReader(CRISTIN_DEPARTMENT_TRANSFERS_STRING)) {
             MappingIterator<CristinDepartmentTransfer> iterator =
                 new CsvMapper()
                     .readerFor(CristinDepartmentTransfer.class)
                     .with(CsvSchema.emptySchema().withHeader())
-                    .readValues(CRISTIN_DEPARTMENT_TRANSFERS_STRING);
+                    .readValues(reader);
             return iterator.readAll();
         } catch (Exception e) {
-            throw new RuntimeException();
+            throw new RuntimeException(e);
         }
     }
 }

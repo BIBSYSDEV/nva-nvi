@@ -296,16 +296,14 @@ public final class CristinMapper {
     }
 
     private URI getTopLevelOrganization(ScientificPerson scientificPerson, List<CristinLocale> institutions) {
-        var list = institutions.stream()
-                             .filter(cristinLocale -> cristinLocale.getInstitutionIdentifier()
-                                                          .equals(scientificPerson.getInstitutionIdentifier()))
+        return institutions.stream()
+                             .filter(cristinLocale -> hasSameInstitutionIdentifier(scientificPerson, cristinLocale))
                              .map(CristinMapper::constructInstitutionId)
-                             .toList();
-        if (!list.isEmpty()) {
-            return list.get(0);
-        } else {
-            return extractInstitutionIdentifierForTransferredInstitution(scientificPerson, institutions);
-        }
+                             .findFirst().orElseGet(() -> extractInstitutionIdentifierForTransferredInstitution(scientificPerson, institutions));
+    }
+
+    private static boolean hasSameInstitutionIdentifier(ScientificPerson scientificPerson, CristinLocale cristinLocale) {
+        return cristinLocale.getInstitutionIdentifier().equals(scientificPerson.getInstitutionIdentifier());
     }
 
     private URI extractInstitutionIdentifierForTransferredInstitution(ScientificPerson scientificPerson,
