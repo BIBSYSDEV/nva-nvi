@@ -55,7 +55,6 @@ import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.hamcrest.Matchers;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
@@ -63,6 +62,7 @@ import org.opensearch.client.opensearch._types.ShardStatistics;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Buckets;
 import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
+import org.opensearch.client.opensearch._types.aggregations.GlobalAggregate;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
@@ -262,12 +262,15 @@ public class SearchNviCandidatesHandlerTest {
         var expectedNestedAggregation = """
             {
               "docCount" : 3,
-              "organizations" : {
-                "someOrgId" : {
-                  "docCount" : 3,
-                  "status" : {
-                    "Pending" : {
-                      "docCount" : 2
+              "someTopLevelOrgId" : {
+                "docCount" : 3,
+                "organizations" : {
+                  "someOrgId" : {
+                    "docCount" : 3,
+                    "status" : {
+                      "Pending" : {
+                        "docCount" : 2
+                      }
                     }
                   }
                 }
@@ -347,6 +350,28 @@ public class SearchNviCandidatesHandlerTest {
                                   + "topLevelCristinOrg " + TOP_LEVEL_CRISTIN_ORG));
     }
 
+    @Test
+    void shouldUseDefaultSerializationWhenFormatterFormatsUnsupportedAggregationVariant() throws IOException {
+        var aggregateName = randomString();
+        when(openSearchClient.search(any()))
+            .thenReturn(createSearchResponse(List.of(), aggregateName, getGlobalAggregate()));
+        handler.handleRequest(emptyRequest(), output, context);
+        var response =
+            GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedResult = objectMapper.readValue(response.getBody(), TYPE_REF);
+        var aggregations = paginatedResult.getAggregations();
+        var actualAggregate = aggregations.get(aggregateName);
+        var expectedFilterAggregation = """
+            {
+              "docCount" : 1
+            }""";
+        assertEquals(expectedFilterAggregation, objectMapper.writeValueAsString(actualAggregate));
+    }
+
+    private static Aggregate getGlobalAggregate() {
+        return new GlobalAggregate.Builder().docCount(1).build()._toAggregate();
+    }
+
     private static Aggregate nestedAggregate() {
         var pendingBucket = getStringTermsBucket("Pending", Map.of(), 2);
         var statusBuckets = createBuckets(pendingBucket);
@@ -354,9 +379,16 @@ public class SearchNviCandidatesHandlerTest {
         var orgBucket = getStringTermsBucket("someOrgId", Map.of("status", statusAggregation), 3);
         var orgBuckets = createBuckets(orgBucket);
         var orgAggregation = createTermsAggregateWithBuckets(orgBuckets);
+        var filterAggregate = getFilterAggregate(3, Map.of("organizations", orgAggregation));
         return new NestedAggregate.Builder().docCount(randomInteger())
-                   .aggregations("organizations", orgAggregation)
+                   .aggregations("someTopLevelOrgId", filterAggregate)
                    .docCount(3)
+                   .build()._toAggregate();
+    }
+
+    private static Aggregate getFilterAggregate(int docCount, Map<String, Aggregate> aggregations) {
+        return new FilterAggregate.Builder().docCount(docCount)
+                   .aggregations(aggregations)
                    .build()._toAggregate();
     }
 
@@ -377,9 +409,8 @@ public class SearchNviCandidatesHandlerTest {
         return new Buckets.Builder<StringTermsBucket>().array(List.of(bucket)).build();
     }
 
-    @NotNull
     private static Aggregate randomFilterAggregate(Integer docCount) {
-        return new Aggregate(new FilterAggregate.Builder().docCount(docCount).build());
+        return getFilterAggregate(docCount, Map.of());
     }
 
     private static void mockOpenSearchClient() throws IOException {
