@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.utils;
 
 import static java.util.Objects.nonNull;
 import java.util.Arrays;
+import java.util.Map;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
@@ -54,6 +55,13 @@ public final class AggregationFunctions {
     public static Aggregation filterAggregation(Query filterQuery) {
         return new Aggregation.Builder()
                    .filter(filterQuery)
+                   .build();
+    }
+
+    public static Aggregation filterAggregation(Query filterQuery, Map<String, Aggregation> aggregations) {
+        return new Aggregation.Builder()
+                   .filter(filterQuery)
+                   .aggregations(aggregations)
                    .build();
     }
 

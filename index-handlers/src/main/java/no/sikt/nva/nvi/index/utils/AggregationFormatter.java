@@ -8,6 +8,7 @@ import java.util.Map;
 import no.unit.nva.commons.json.JsonUtils;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
@@ -32,6 +33,8 @@ public final class AggregationFormatter {
             addAggregations(aggregateNode, nestedAggregate.docCount(), nestedAggregate.aggregations());
         } else if (aggregateVariant instanceof StringTermsAggregate stringTermsAggregate) {
             addBucketNodes(aggregateNode, stringTermsAggregate);
+        } else if (aggregateVariant instanceof FilterAggregate filterAggregate) {
+            addAggregations(aggregateNode, filterAggregate.docCount(), filterAggregate.aggregations());
         } else {
             return serialize(aggregate);
         }

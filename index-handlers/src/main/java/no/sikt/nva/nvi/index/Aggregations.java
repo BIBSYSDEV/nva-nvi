@@ -55,32 +55,35 @@ public final class Aggregations {
         return mustMatch(rangeFromQuery(NUMBER_OF_APPROVALS, MULTIPLE));
     }
 
-    public static Query statusQuery(String customer, ApprovalStatus status) {
-        final var query = mustMatch(statusForInstitution(customer, status));
+    public static Query statusQuery(String topLevelCristinOrg, ApprovalStatus status) {
+        final var query = mustMatch(statusForInstitution(topLevelCristinOrg, status));
         return nestedQuery(APPROVALS, query);
     }
 
-    public static Query assignmentsQuery(String username, String customer) {
-        final var query = mustMatch(assigneeForInstitution(customer, username));
+    public static Query assignmentsQuery(String username, String topLevelCristinOrg) {
+        final var query = mustMatch(assigneeForInstitution(topLevelCristinOrg, username));
         return nestedQuery(APPROVALS, query
         );
     }
 
-    public static Aggregation organizationApprovalStatusAggregations() {
+    public static Aggregation organizationApprovalStatusAggregations(String topLevelCristinOrg) {
         var statusAggregation = termsAggregation(APPROVALS, APPROVAL_STATUS)._toAggregation();
         var organizationAggregation = new Aggregation.Builder()
                                           .terms(termsAggregation(APPROVALS, INVOLVED_ORGS))
                                           .aggregations(Map.of(STATUS_AGGREGATION, statusAggregation))
                                           .build();
+        var filterAggregation = filterAggregation(
+            mustMatch(approvalInstitutionIdQuery(topLevelCristinOrg)),
+            Map.of(APPROVAL_ORGANIZATIONS_AGGREGATION, organizationAggregation));
 
         return new Aggregation.Builder()
                    .nested(nestedAggregation(APPROVALS))
-                   .aggregations(Map.of(APPROVAL_ORGANIZATIONS_AGGREGATION, organizationAggregation))
+                   .aggregations(isNull(topLevelCristinOrg) ? Map.of() : Map.of(topLevelCristinOrg, filterAggregation))
                    .build();
     }
 
-    public static Aggregation totalCountAggregation(String customer) {
-        final var fieldValueQuery = approvalInstitutionIdQuery(customer);
+    public static Aggregation totalCountAggregation(String topLevelCristinOrg) {
+        final var fieldValueQuery = approvalInstitutionIdQuery(topLevelCristinOrg);
         final var query = mustMatch(fieldValueQuery);
         return filterAggregation(mustMatch(nestedQuery(APPROVALS, query)));
     }
@@ -89,34 +92,34 @@ public final class Aggregations {
         return filterAggregation(mustMatch(statusQuery(topLevelCristinOrg, status)));
     }
 
-    public static Aggregation completedAggregation(String customer) {
+    public static Aggregation completedAggregation(String topLevelCristinOrg) {
         final var queries = new Query[]{
-            approvalInstitutionIdQuery(customer),
+            approvalInstitutionIdQuery(topLevelCristinOrg),
             mustNotMatch(PENDING.getValue(), APPROVAL_STATUS_PATH),
             mustNotMatch(NEW.getValue(), APPROVAL_STATUS_PATH)};
         var notPendingQuery = nestedQuery(APPROVALS, mustMatch(queries));
         return filterAggregation(mustMatch(notPendingQuery));
     }
 
-    public static Aggregation assignmentsAggregation(String username, String customer) {
-        return filterAggregation(mustMatch(assignmentsQuery(username, customer)));
+    public static Aggregation assignmentsAggregation(String username, String topLevelCristinOrg) {
+        return filterAggregation(mustMatch(assignmentsQuery(username, topLevelCristinOrg)));
     }
 
-    public static Aggregation finalizedCollaborationAggregation(String customer, ApprovalStatus status) {
-        return filterAggregation(mustMatch(statusQuery(customer, status), containsPendingStatusQuery(),
+    public static Aggregation finalizedCollaborationAggregation(String topLevelCristinOrg, ApprovalStatus status) {
+        return filterAggregation(mustMatch(statusQuery(topLevelCristinOrg, status), containsPendingStatusQuery(),
                                            multipleApprovalsQuery()));
     }
 
-    public static Aggregation collaborationAggregation(String customer, ApprovalStatus status) {
-        return filterAggregation(mustMatch(statusQuery(customer, status), multipleApprovalsQuery()));
+    public static Aggregation collaborationAggregation(String topLevelCristinOrg, ApprovalStatus status) {
+        return filterAggregation(mustMatch(statusQuery(topLevelCristinOrg, status), multipleApprovalsQuery()));
     }
 
     private static Query statusQuery(ApprovalStatus approvalStatus) {
         return fieldValueQuery(APPROVAL_STATUS_PATH, approvalStatus.getValue());
     }
 
-    private static Query approvalInstitutionIdQuery(String customer) {
-        return fieldValueQuery(INSTITUTION_ID_PATH, customer);
+    private static Query approvalInstitutionIdQuery(String topLevelCristinOrg) {
+        return fieldValueQuery(INSTITUTION_ID_PATH, topLevelCristinOrg);
     }
 
     private static Query[] assigneeForInstitution(String institutionId, String username) {
