@@ -41,8 +41,9 @@ public final class SearchConstants {
     public static final String JSON_PATH_DELIMITER = ".";
     public static final String JSON_PATH_CONTRIBUTORS = String.join(JSON_PATH_DELIMITER, PUBLICATION_DETAILS,
                                                                     CONTRIBUTORS);
-    public static final TypeMapping MAPPINGS = new TypeMapping.Builder().properties(mappingProperties()).build();
     public static final String INVOLVED_ORGS = "involvedOrganizations";
+    public static final String GLOBAL_APPROVAL_STATUS = "globalApprovalStatus";
+    public static final TypeMapping MAPPINGS = new TypeMapping.Builder().properties(mappingProperties()).build();
 
     private SearchConstants() {
 
@@ -69,7 +70,8 @@ public final class SearchConstants {
 
     private static Map<String, Property> mappingProperties() {
         return Map.of(JSON_PATH_CONTRIBUTORS, nestedProperty(contributorsProperties()),
-                      APPROVALS, nestedProperty(approvalProperties())
+                      APPROVALS, nestedProperty(approvalProperties()),
+                      GLOBAL_APPROVAL_STATUS, keywordProperty()
         );
     }
 
