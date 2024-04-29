@@ -21,6 +21,13 @@ public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations) 
         return nviAffiliations.stream().anyMatch(affiliation -> affiliation.isPartOf(institutionId));
     }
 
+    public List<URI> getAffiliationsPartOf(URI institutionId) {
+        return nviAffiliations.stream()
+                   .filter(affiliation -> affiliation.isPartOf(institutionId))
+                   .map(NviOrganization::id)
+                   .collect(Collectors.toList());
+    }
+
     public static final class Builder {
 
         private URI id;
