@@ -24,7 +24,7 @@ import java.util.Map;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.search.SearchAggregation;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
-import org.opensearch.client.opensearch._types.aggregations.Aggregation.Builder;
+import org.opensearch.client.opensearch._types.aggregations.ReverseNestedAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 public final class Aggregations {
@@ -127,22 +127,20 @@ public final class Aggregations {
     }
 
     private static Aggregation disputeAggregation(String topLevelCristinOrg) {
-        var approvals = new Aggregation.Builder()
-                            .nested(nestedAggregation(APPROVALS))
-                            .build();
+        var globalStatus = termsAggregation(GLOBAL_APPROVAL_STATUS)._toAggregation();
+        var organizationAggregation = new Aggregation.Builder()
+                                          .terms(termsAggregation(APPROVALS, INVOLVED_ORGS))
+                                          .aggregations(Map.of("globalStatus", globalStatus))
+                                          .build();
+        var filterAggregation = filterAggregation(
+            mustMatch(approvalInstitutionIdQuery(topLevelCristinOrg)),
+            Map.of(APPROVAL_ORGANIZATIONS_AGGREGATION, organizationAggregation));
 
-        var involvedOrgs = new Builder()
-                               .terms(termsAggregation(APPROVALS, INVOLVED_ORGS))
-                               .aggregations(Map.of("involvedOrgs", approvals))
-                               .build();
-
-        var filterTopLevel = new Aggregation.Builder()
-                                 .filter(mustMatch(approvalInstitutionIdQuery(topLevelCristinOrg)))
-                                 .aggregations("involvedOrgs", involvedOrgs)
-                                 .build();
-
-        return filterAggregation(mustMatch(fieldValueQuery(GLOBAL_APPROVAL_STATUS, "Dispute")),
-                                 Map.of("filterTopLevel", filterTopLevel));
+        return new Aggregation.Builder()
+                   .nested(nestedAggregation(APPROVALS))
+                   .aggregations(Map.of(topLevelCristinOrg, filterAggregation,
+                                        "reversed", new ReverseNestedAggregation.Builder().build()._toAggregation()))
+                   .build();
     }
 
     private static Query statusQuery(ApprovalStatus approvalStatus) {
