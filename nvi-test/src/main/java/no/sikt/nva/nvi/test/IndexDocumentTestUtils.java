@@ -86,10 +86,13 @@ public final class IndexDocumentTestUtils {
     }
 
     private static Set<URI> extractInvolvedOrganizations(Approval approval, Candidate candidate) {
-        return candidate.getInstitutionPoints(approval.getInstitutionId())
-                   .map(no.sikt.nva.nvi.common.service.model.InstitutionPoints::creatorAffiliationPoints)
-                   .map(IndexDocumentTestUtils::getAffiliationsWithPoints)
-                   .orElse(Set.of());
+        var creatorAffiliations = candidate.getInstitutionPoints(approval.getInstitutionId())
+                                      .map(
+                                          no.sikt.nva.nvi.common.service.model.InstitutionPoints::creatorAffiliationPoints)
+                                      .map(IndexDocumentTestUtils::getAffiliationsWithPoints)
+                                      .orElse(Set.of());
+        creatorAffiliations.add(approval.getInstitutionId());
+        return creatorAffiliations;
     }
 
     private static Set<URI> getAffiliationsWithPoints(List<CreatorAffiliationPoints> creatorAffiliationPoints) {
