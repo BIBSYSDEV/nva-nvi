@@ -88,6 +88,7 @@ import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
+import org.opensearch.client.opensearch._types.aggregations.SumAggregate;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.testcontainers.OpensearchContainer;
 
@@ -516,7 +517,7 @@ public class OpenSearchClientTest {
         var actualOrganizationAggregation = ((NestedAggregate) actualAggregate._get()).aggregations()
                                                 .get(SIKT_INSTITUTION_ID.toString());
         var filterAggregate = ((FilterAggregate) actualOrganizationAggregation._get()).aggregations()
-                                 .get("organizations");
+                                  .get("organizations");
         var actualOrgBuckets = ((StringTermsAggregate) filterAggregate._get()).buckets();
         var orgIds = actualOrgBuckets.array().stream().map(StringTermsBucket::key).toList();
         assertThat(orgIds, containsInAnyOrder(SIKT_INSTITUTION_ID.toString()));
@@ -526,21 +527,40 @@ public class OpenSearchClientTest {
     private static void assertExpectedOrganizationAggregationForEachStatus(
         Buckets<StringTermsBucket> actualStatusBuckets) {
         actualStatusBuckets.array().forEach(bucket -> {
-            var key = bucket.key();
-            var statusAggregation = bucket.aggregations().get("status");
-            if (key.equals(SIKT_INSTITUTION_ID.toString())) {
-                var expectedKeys = List.of(NEW.getValue(), PENDING.getValue());
-                assertExpectedSubAggregations(statusAggregation, expectedKeys);
-            } else if (key.equals(SIKT_LEVEL_2_ID)) {
-                var expectedKeys = List.of(NEW.getValue(), PENDING.getValue());
-                assertExpectedSubAggregations(statusAggregation, expectedKeys);
-            } else if (key.equals(SIKT_LEVEL_3_ID)) {
-                var expectedKeys = List.of(PENDING.getValue());
-                assertExpectedSubAggregations(statusAggregation, expectedKeys);
-            } else {
-                throw new RuntimeException("Unexpected key: " + key);
-            }
+            assertExpectedStatusAggregations(bucket);
+            assertExpectedPointAggregations(bucket);
         });
+    }
+
+    private static void assertExpectedPointAggregations(StringTermsBucket bucket) {
+        var key = bucket.key();
+        var pointAggregation = (SumAggregate) bucket.aggregations().get("points")._get();
+        if (key.equals(SIKT_INSTITUTION_ID.toString())) {
+            assertEquals(4.0, pointAggregation.value());
+        } else if (key.equals(SIKT_LEVEL_2_ID)) {
+            assertEquals(4.0, pointAggregation.value());
+        } else if (key.equals(SIKT_LEVEL_3_ID)) {
+            assertEquals(3.0, pointAggregation.value());
+        } else {
+            throw new RuntimeException("Unexpected key: " + key);
+        }
+    }
+
+    private static void assertExpectedStatusAggregations(StringTermsBucket bucket) {
+        var key = bucket.key();
+        var statusAggregation = bucket.aggregations().get("status");
+        if (key.equals(SIKT_INSTITUTION_ID.toString())) {
+            var expectedKeys = List.of(NEW.getValue(), PENDING.getValue());
+            assertExpectedSubAggregations(statusAggregation, expectedKeys);
+        } else if (key.equals(SIKT_LEVEL_2_ID)) {
+            var expectedKeys = List.of(NEW.getValue(), PENDING.getValue());
+            assertExpectedSubAggregations(statusAggregation, expectedKeys);
+        } else if (key.equals(SIKT_LEVEL_3_ID)) {
+            var expectedKeys = List.of(PENDING.getValue());
+            assertExpectedSubAggregations(statusAggregation, expectedKeys);
+        } else {
+            throw new RuntimeException("Unexpected key: " + key);
+        }
     }
 
     private static void assertExpectedSubAggregations(Aggregate subAggregation, List<String> expectedKeys) {

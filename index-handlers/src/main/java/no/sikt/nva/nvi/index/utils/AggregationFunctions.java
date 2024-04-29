@@ -7,6 +7,7 @@ import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
+import org.opensearch.client.opensearch._types.aggregations.SumAggregation;
 import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
@@ -87,6 +88,10 @@ public final class AggregationFunctions {
         return new NestedAggregation.Builder()
                    .path(joinWithDelimiter(paths))
                    .build();
+    }
+
+    public static Aggregation sumAggregation(String... paths) {
+        return new SumAggregation.Builder().field(joinWithDelimiter(paths)).build()._toAggregation();
     }
 
     private static Query matchAllQuery() {
