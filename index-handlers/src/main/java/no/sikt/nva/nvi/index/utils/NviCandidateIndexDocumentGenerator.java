@@ -111,10 +111,13 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private static Set<URI> extractInvolvedOrganizations(Candidate candidate, Approval approval) {
-        return candidate.getInstitutionPoints(approval.getInstitutionId())
-                   .map(no.sikt.nva.nvi.common.service.model.InstitutionPoints::creatorAffiliationPoints)
-                   .map(NviCandidateIndexDocumentGenerator::getAffiliationsWithPoints)
-                   .orElse(Set.of());
+        var creatorAffiliations = candidate.getInstitutionPoints(approval.getInstitutionId())
+                                      .map(
+                                          no.sikt.nva.nvi.common.service.model.InstitutionPoints::creatorAffiliationPoints)
+                                      .map(NviCandidateIndexDocumentGenerator::getAffiliationsWithPoints)
+                                      .orElse(Set.of());
+        creatorAffiliations.add(approval.getInstitutionId());
+        return creatorAffiliations;
     }
 
     private static Set<URI> getAffiliationsWithPoints(List<CreatorAffiliationPoints> creatorAffiliationPoints) {
