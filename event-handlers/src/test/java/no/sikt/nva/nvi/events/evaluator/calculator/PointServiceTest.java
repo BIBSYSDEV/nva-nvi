@@ -256,8 +256,7 @@ class PointServiceTest {
 
     @Test
     void shouldCalculatePointsForCreatorAffiliations() {
-        var creatorShareCount = 2;
-        var parameters = new PointParameters("AcademicArticle", "Journal", "LevelOne", false, creatorShareCount,
+        var parameters = new PointParameters("AcademicArticle", "Journal", "LevelOne", false, 2,
                                              asBigDecimal("1"), null,
                                              asBigDecimal("1"));
         var creator1 = randomUri();
@@ -270,15 +269,9 @@ class PointServiceTest {
         var creator1Affiliations = List.of(someSubUnitId);
         var creator2Affiliations = List.of(someSubUnitId, someOtherSubUnitId);
         var expandedResource = createExpandedResourceWithManyCreators(parameters, creator1, creator2,
-                                                                      creator1Affiliations,
-                                                                      creator2Affiliations);
-        var nviCreators = List.of(creatorWithAffiliations(creator1,
-                                                          List.of(createNviOrganization(someSubUnitId, institutionId))),
-                                  creatorWithAffiliations(creator2,
-                                                          List.of(
-                                                              createNviOrganization(someSubUnitId, institutionId),
-                                                              createNviOrganization(someOtherSubUnitId,
-                                                                                    institutionId))));
+                                                                      creator1Affiliations, creator2Affiliations);
+        var nviCreators = setupNviCreators(creator1, creator2, creator1Affiliations, creator2Affiliations,
+                                           institutionId);
         var pointCalculation = pointService.calculatePoints(expandedResource,
                                                             nviCreators);
         assertThat(getActualAffiliationPoints(pointCalculation, institutionId, someSubUnitId, creator1),
@@ -289,13 +282,19 @@ class PointServiceTest {
                    is(equalTo(BigDecimal.valueOf(0.2500).setScale(RESULT_SCALE, ROUNDING_MODE))));
     }
 
-    private static List<VerifiedNviCreator> setupNviCreators(URI creator1, URI someSubUnitId, URI institutionId,
-                                                             URI creator2) {
-        return List.of(creatorWithAffiliations(creator1,
-                                               List.of(createNviOrganization(someSubUnitId, institutionId))),
-                       creatorWithAffiliations(creator2,
-                                               List.of(
-                                                   createNviOrganization(someSubUnitId, institutionId))));
+    private static List<VerifiedNviCreator> setupNviCreators(URI creator1,
+                                                             URI creator2,
+                                                             List<URI> creator1Affiliations,
+                                                             List<URI> creator2Affiliations,
+                                                             URI institutionId) {
+        return List.of(creatorWithAffiliations(creator1, getNviOrganizationList(creator1Affiliations, institutionId)),
+                       creatorWithAffiliations(creator2, getNviOrganizationList(creator2Affiliations, institutionId)));
+    }
+
+    private static List<NviOrganization> getNviOrganizationList(List<URI> affiliations, URI institutionId) {
+        return affiliations.stream()
+                   .map(affiliation -> createNviOrganization(affiliation, institutionId))
+                   .toList();
     }
 
     private static BigDecimal getActualAffiliationPoints(PointCalculation pointCalculation, URI institutionId,

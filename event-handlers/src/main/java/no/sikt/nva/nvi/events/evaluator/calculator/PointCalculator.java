@@ -75,11 +75,10 @@ public class PointCalculator {
     }
 
     private static BigDecimal divide(long divisor, BigDecimal dividend) {
-        return dividend.divide(BigDecimal.valueOf(divisor), MATH_CONTEXT)
-                   .setScale(RESULT_SCALE, RoundingMode.HALF_UP);
+        return dividend.divide(BigDecimal.valueOf(divisor), MATH_CONTEXT).setScale(RESULT_SCALE, RoundingMode.HALF_UP);
     }
 
-    private static Map<URI, Long> countInstitutionCreatorShares(List<VerifiedNviCreator> nviCreators) {
+    private static Map<URI, Long> countNumberOfCreatorsForInstitutions(List<VerifiedNviCreator> nviCreators) {
         return nviCreators.stream()
                    .flatMap(verifiedNviCreator -> verifiedNviCreator.nviAffiliations().stream())
                    .map(NviOrganization::topLevelOrganization)
@@ -97,8 +96,8 @@ public class PointCalculator {
 
     private Stream<CreatorAffiliationPoints> calculatePointsForAffiliation(Entry<URI, List<URI>> nviCreator,
                                                                            BigDecimal institutionPoints,
-                                                                           Long institutionShareCount) {
-        var pointsForCreator = divide(institutionShareCount, institutionPoints);
+                                                                           Long institutionCreatorCount) {
+        var pointsForCreator = divide(institutionCreatorCount, institutionPoints);
         int numberOfAffiliations = nviCreator.getValue().size();
         var pointsForAffiliation = divide(numberOfAffiliations, pointsForCreator);
         return nviCreator.getValue().stream()
@@ -106,24 +105,24 @@ public class PointCalculator {
                                                                       pointsForAffiliation));
     }
 
-    private InstitutionPoints calculateInstitutionPoints(Entry<URI, Long> institutionCreatorShareCount) {
-        var institutionContributorFraction = divideInstitutionShareOnTotalShares(
-            institutionCreatorShareCount.getValue());
+    private InstitutionPoints calculateInstitutionPoints(Entry<URI, Long> institutionCreatorCount) {
+        var institutionContributorFraction = divideInstitutionShareOnTotalShares(institutionCreatorCount.getValue());
         var institutionPoints = executeNviFormula(institutionContributorFraction);
-        return new InstitutionPoints(institutionCreatorShareCount.getKey(), institutionPoints,
-                                     calculateAffiliationPoints(institutionCreatorShareCount, institutionPoints));
+        return new InstitutionPoints(institutionCreatorCount.getKey(), institutionPoints,
+                                     calculateAffiliationPoints(institutionCreatorCount, institutionPoints));
     }
 
-    private List<CreatorAffiliationPoints> calculateAffiliationPoints(Entry<URI, Long> institutionCreatorShareCount, BigDecimal institutionPoints) {
-        var institutionId = institutionCreatorShareCount.getKey();
-        var institutionShareCount = institutionCreatorShareCount.getValue();
+    private List<CreatorAffiliationPoints> calculateAffiliationPoints(Entry<URI, Long> institutionCreatorCount,
+                                                                      BigDecimal institutionPoints) {
+        var institutionId = institutionCreatorCount.getKey();
         return nviCreators.stream()
                    .filter(creator -> creator.isAffiliatedWith(institutionId))
                    .collect(Collectors.toMap(VerifiedNviCreator::id,
                                              creator -> creator.getAffiliationsPartOf(institutionId)))
                    .entrySet()
                    .stream()
-                   .flatMap(entry -> calculatePointsForAffiliation(entry, institutionPoints, institutionShareCount))
+                   .flatMap(entry -> calculatePointsForAffiliation(entry, institutionPoints,
+                                                                   institutionCreatorCount.getValue()))
                    .toList();
     }
 
@@ -140,8 +139,8 @@ public class PointCalculator {
     }
 
     private List<InstitutionPoints> calculatePointsForAllInstitutions() {
-        var institutionCreatorShareCount = countInstitutionCreatorShares(nviCreators);
-        return institutionCreatorShareCount.entrySet()
+        var institutionCreatorCount = countNumberOfCreatorsForInstitutions(nviCreators);
+        return institutionCreatorCount.entrySet()
                    .stream()
                    .map(this::calculateInstitutionPoints)
                    .toList();
