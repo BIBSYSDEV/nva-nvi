@@ -98,7 +98,7 @@ public class PointCalculator {
                                                                                   BigDecimal institutionPoints,
                                                                                   Long institutionCreatorCount) {
         var pointsForCreator = divide(institutionCreatorCount, institutionPoints);
-        int numberOfAffiliations = nviCreator.getValue().size();
+        var numberOfAffiliations = nviCreator.getValue().size();
         var pointsForAffiliation = divide(numberOfAffiliations, pointsForCreator);
         return nviCreator.getValue().stream()
                    .map(affiliationId -> new CreatorAffiliationPoints(affiliationId, nviCreator.getKey(),
