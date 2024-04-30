@@ -282,11 +282,11 @@ class PointServiceTest {
         var pointCalculation = pointService.calculatePoints(expandedResource,
                                                             nviCreators);
         assertThat(getActualAffiliationPoints(pointCalculation, institutionId, someSubUnitId, creator1),
-                   is(equalTo(BigDecimal.valueOf(0.5))));
+                   is(equalTo(BigDecimal.valueOf(0.5000).setScale(RESULT_SCALE, ROUNDING_MODE))));
         assertThat(getActualAffiliationPoints(pointCalculation, institutionId, someSubUnitId, creator2),
-                   is(equalTo(BigDecimal.valueOf(0.2500))));
+                   is(equalTo(BigDecimal.valueOf(0.2500).setScale(RESULT_SCALE, ROUNDING_MODE))));
         assertThat(getActualAffiliationPoints(pointCalculation, institutionId, someOtherSubUnitId, creator2),
-                   is(equalTo(BigDecimal.valueOf(0.2500))));
+                   is(equalTo(BigDecimal.valueOf(0.2500).setScale(RESULT_SCALE, ROUNDING_MODE))));
     }
 
     private static List<VerifiedNviCreator> setupNviCreators(URI creator1, URI someSubUnitId, URI institutionId,

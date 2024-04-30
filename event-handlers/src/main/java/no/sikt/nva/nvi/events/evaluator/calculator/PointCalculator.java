@@ -74,9 +74,8 @@ public class PointCalculator {
                    .reduce(ZERO, BigDecimal::add);
     }
 
-    private static BigDecimal dividePointsOnCreatorShareCount(long numberOfAffiliations,
-                                                              BigDecimal institutionPoints) {
-        return institutionPoints.divide(BigDecimal.valueOf(numberOfAffiliations), MATH_CONTEXT)
+    private static BigDecimal divide(long divisor, BigDecimal dividend) {
+        return dividend.divide(BigDecimal.valueOf(divisor), MATH_CONTEXT)
                    .setScale(RESULT_SCALE, RoundingMode.HALF_UP);
     }
 
@@ -96,41 +95,36 @@ public class PointCalculator {
                    .count();
     }
 
-    private Stream<CreatorAffiliationPoints> calculatePointsForAffiliation(URI institutionId,
-                                                                           Entry<URI, List<URI>> nviCreator,
-                                                                           BigDecimal institutionPoints) {
-        var numberOfAffiliations = countCreatorAffiliations(institutionId);
+    private Stream<CreatorAffiliationPoints> calculatePointsForAffiliation(Entry<URI, List<URI>> nviCreator,
+                                                                           BigDecimal institutionPoints,
+                                                                           Long institutionShareCount) {
+        var pointsForCreator = divide(institutionShareCount, institutionPoints);
+        int numberOfAffiliations = nviCreator.getValue().size();
+        var pointsForAffiliation = divide(numberOfAffiliations, pointsForCreator);
         return nviCreator.getValue().stream()
                    .map(affiliationId -> new CreatorAffiliationPoints(affiliationId, nviCreator.getKey(),
-                                                                      dividePointsOnCreatorShareCount(
-                                                                          numberOfAffiliations, institutionPoints)));
+                                                                      pointsForAffiliation));
     }
 
     private InstitutionPoints calculateInstitutionPoints(Entry<URI, Long> institutionCreatorShareCount) {
         var institutionContributorFraction = divideInstitutionShareOnTotalShares(
             institutionCreatorShareCount.getValue());
         var institutionPoints = executeNviFormula(institutionContributorFraction);
-        var institutionId = institutionCreatorShareCount.getKey();
-        return new InstitutionPoints(institutionId, institutionPoints,
-                                     calculateAffiliationPoints(institutionId, institutionPoints));
+        return new InstitutionPoints(institutionCreatorShareCount.getKey(), institutionPoints,
+                                     calculateAffiliationPoints(institutionCreatorShareCount, institutionPoints));
     }
 
-    private List<CreatorAffiliationPoints> calculateAffiliationPoints(URI institutionId, BigDecimal institutionPoints) {
+    private List<CreatorAffiliationPoints> calculateAffiliationPoints(Entry<URI, Long> institutionCreatorShareCount, BigDecimal institutionPoints) {
+        var institutionId = institutionCreatorShareCount.getKey();
+        var institutionShareCount = institutionCreatorShareCount.getValue();
         return nviCreators.stream()
                    .filter(creator -> creator.isAffiliatedWith(institutionId))
                    .collect(Collectors.toMap(VerifiedNviCreator::id,
                                              creator -> creator.getAffiliationsPartOf(institutionId)))
                    .entrySet()
                    .stream()
-                   .flatMap(entry -> calculatePointsForAffiliation(institutionId, entry, institutionPoints))
+                   .flatMap(entry -> calculatePointsForAffiliation(entry, institutionPoints, institutionShareCount))
                    .toList();
-    }
-
-    private long countCreatorAffiliations(URI institutionId) {
-        return nviCreators.stream()
-                   .flatMap(creator -> creator.nviAffiliations().stream())
-                   .filter(affiliation -> affiliation.isPartOf(institutionId))
-                   .count();
     }
 
     private BigDecimal executeNviFormula(BigDecimal institutionContributorFraction) {
