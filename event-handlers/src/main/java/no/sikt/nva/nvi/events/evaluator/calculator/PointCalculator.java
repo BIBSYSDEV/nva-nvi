@@ -94,9 +94,9 @@ public class PointCalculator {
                    .count();
     }
 
-    private Stream<CreatorAffiliationPoints> calculatePointsForAffiliation(Entry<URI, List<URI>> nviCreator,
-                                                                           BigDecimal institutionPoints,
-                                                                           Long institutionCreatorCount) {
+    private static Stream<CreatorAffiliationPoints> calculatePointsForAffiliation(Entry<URI, List<URI>> nviCreator,
+                                                                                  BigDecimal institutionPoints,
+                                                                                  Long institutionCreatorCount) {
         var pointsForCreator = divide(institutionCreatorCount, institutionPoints);
         int numberOfAffiliations = nviCreator.getValue().size();
         var pointsForAffiliation = divide(numberOfAffiliations, pointsForCreator);
