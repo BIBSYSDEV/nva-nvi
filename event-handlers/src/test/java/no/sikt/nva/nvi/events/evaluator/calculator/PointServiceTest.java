@@ -263,21 +263,30 @@ class PointServiceTest {
         var creator1 = randomUri();
         var creator2 = randomUri();
         var someSubUnitId = randomUri();
+        var someOtherSubUnitId = randomUri();
         var institutionId = randomUri();
         mockOrganizationResponseForAffiliation(institutionId, someSubUnitId, uriRetriever);
-        var affiliations = List.of(someSubUnitId);
-        var expandedResource = createExpandedResourceWithManyCreators(parameters, creator1, creator2, affiliations,
-                                                                      affiliations);
-        var nviCreators = setupNviCreators(creator1, someSubUnitId, institutionId, creator2);
+        mockOrganizationResponseForAffiliation(institutionId, someOtherSubUnitId, uriRetriever);
+        var creator1Affiliations = List.of(someSubUnitId);
+        var creator2Affiliations = List.of(someSubUnitId, someOtherSubUnitId);
+        var expandedResource = createExpandedResourceWithManyCreators(parameters, creator1, creator2,
+                                                                      creator1Affiliations,
+                                                                      creator2Affiliations);
+        var nviCreators = List.of(creatorWithAffiliations(creator1,
+                                                          List.of(createNviOrganization(someSubUnitId, institutionId))),
+                                  creatorWithAffiliations(creator2,
+                                                          List.of(
+                                                              createNviOrganization(someSubUnitId, institutionId),
+                                                              createNviOrganization(someOtherSubUnitId,
+                                                                                    institutionId))));
         var pointCalculation = pointService.calculatePoints(expandedResource,
                                                             nviCreators);
-        var expectedPointsForAffiliation = parameters.institution1Points()
-                                               .divide(BigDecimal.valueOf(creatorShareCount), ROUNDING_MODE)
-                                               .setScale(RESULT_SCALE, ROUNDING_MODE);
         assertThat(getActualAffiliationPoints(pointCalculation, institutionId, someSubUnitId, creator1),
-                   is(equalTo(expectedPointsForAffiliation)));
+                   is(equalTo(BigDecimal.valueOf(0.5))));
         assertThat(getActualAffiliationPoints(pointCalculation, institutionId, someSubUnitId, creator2),
-                   is(equalTo(expectedPointsForAffiliation)));
+                   is(equalTo(BigDecimal.valueOf(0.2500))));
+        assertThat(getActualAffiliationPoints(pointCalculation, institutionId, someOtherSubUnitId, creator2),
+                   is(equalTo(BigDecimal.valueOf(0.2500))));
     }
 
     private static List<VerifiedNviCreator> setupNviCreators(URI creator1, URI someSubUnitId, URI institutionId,
