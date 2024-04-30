@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.test;
 
+import static java.util.Collections.emptySet;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.EN_FIELD;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_LABEL;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_NORWEGIAN_LABEL;
@@ -90,7 +91,7 @@ public final class IndexDocumentTestUtils {
                                       .map(
                                           no.sikt.nva.nvi.common.service.model.InstitutionPoints::creatorAffiliationPoints)
                                       .map(IndexDocumentTestUtils::getAffiliationsWithPoints)
-                                      .orElse(Set.of());
+                                      .orElse(emptySet());
         creatorAffiliations.add(approval.getInstitutionId());
         return creatorAffiliations;
     }
