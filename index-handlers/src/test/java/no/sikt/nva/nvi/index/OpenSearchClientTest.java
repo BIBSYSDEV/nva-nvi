@@ -53,6 +53,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.aws.CandidateQuery.QueryFilterType;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.model.document.Approval;
@@ -675,7 +676,8 @@ public class OpenSearchClientTest {
     }
 
     private static Approval randomApprovalWithCustomerAndAssignee(URI affiliation, String assignee) {
-        return new Approval(affiliation, Map.of(), randomStatus(), randomInstitutionPoints(), Set.of(), assignee);
+        return new Approval(affiliation, Map.of(), randomStatus(), randomInstitutionPoints(), Set.of(), assignee,
+                            randomGlobalApprovalStatus());
     }
 
     private static List<Approval> randomApprovalList() {
@@ -683,7 +685,8 @@ public class OpenSearchClientTest {
     }
 
     private static Approval randomApproval() {
-        return new Approval(randomUri(), Map.of(), randomStatus(), randomInstitutionPoints(), Set.of(), null);
+        return new Approval(randomUri(), Map.of(), randomStatus(), randomInstitutionPoints(), Set.of(), null,
+                            randomGlobalApprovalStatus());
     }
 
     private static InstitutionPoints randomInstitutionPoints() {
@@ -699,6 +702,10 @@ public class OpenSearchClientTest {
         var size = values.size();
         var random = new Random();
         return values.get(random.nextInt(size));
+    }
+
+    private static GlobalApprovalStatus randomGlobalApprovalStatus() {
+        return randomElement(GlobalApprovalStatus.values());
     }
 
     private static PublicationDetails randomPublicationDetails() {

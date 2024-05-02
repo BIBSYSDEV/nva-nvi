@@ -77,6 +77,7 @@ public final class IndexDocumentTestUtils {
                    .withInvolvedOrganizations(extractInvolvedOrganizations(approval, candidate))
                    .withLabels(Map.of(EN_FIELD, HARDCODED_ENGLISH_LABEL, NB_FIELD,
                                       HARDCODED_NORWEGIAN_LABEL))
+                   .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
                    .build();
     }
 
