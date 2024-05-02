@@ -17,6 +17,17 @@ public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations) 
                    .collect(Collectors.toList());
     }
 
+    public boolean isAffiliatedWith(URI institutionId) {
+        return nviAffiliations.stream().anyMatch(affiliation -> affiliation.isPartOf(institutionId));
+    }
+
+    public List<URI> getAffiliationsPartOf(URI institutionId) {
+        return nviAffiliations.stream()
+                   .filter(affiliation -> affiliation.isPartOf(institutionId))
+                   .map(NviOrganization::id)
+                   .collect(Collectors.toList());
+    }
+
     public static final class Builder {
 
         private URI id;
@@ -50,6 +61,10 @@ public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations) 
         @Override
         public NviOrganization topLevelOrganization() {
             return Objects.isNull(topLevelOrganization) ? this : topLevelOrganization;
+        }
+
+        public boolean isPartOf(URI institutionId) {
+            return topLevelOrganization().id().equals(institutionId);
         }
 
         public static final class Builder {

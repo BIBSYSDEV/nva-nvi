@@ -74,38 +74,11 @@ public class PointCalculator {
                    .reduce(ZERO, BigDecimal::add);
     }
 
-    private static Stream<CreatorAffiliationPoints> calculatePointsForAffiliation(Long institutionCreatorShareCount,
-                                                                                  Entry<URI, List<URI>> nviCreator,
-                                                                                  BigDecimal institutionPoints) {
-        return nviCreator.getValue().stream()
-                   .map(affiliationId -> new CreatorAffiliationPoints(affiliationId, nviCreator.getKey(),
-                                                                      dividePointsOnCreatorShareCount(
-                                                                          institutionCreatorShareCount,
-                                                                          institutionPoints)));
+    private static BigDecimal divide(long divisor, BigDecimal dividend) {
+        return dividend.divide(BigDecimal.valueOf(divisor), MATH_CONTEXT).setScale(RESULT_SCALE, RoundingMode.HALF_UP);
     }
 
-    private static BigDecimal dividePointsOnCreatorShareCount(Long institutionCreatorShareCount,
-                                                              BigDecimal institutionPoints) {
-        return institutionPoints.divide(BigDecimal.valueOf(institutionCreatorShareCount), MATH_CONTEXT)
-                   .setScale(RESULT_SCALE, RoundingMode.HALF_UP);
-    }
-
-    private static List<URI> mapToAffiliations(URI institutionId, VerifiedNviCreator creator) {
-        return creator.nviAffiliations().stream()
-                   .filter(affiliation -> isPartOf(affiliation, institutionId))
-                   .map(NviOrganization::id)
-                   .toList();
-    }
-
-    private static boolean isAffiliated(URI institutionId, VerifiedNviCreator creator) {
-        return creator.nviAffiliations().stream().anyMatch(affiliation -> isPartOf(affiliation, institutionId));
-    }
-
-    private static boolean isPartOf(NviOrganization affiliation, URI institutionId) {
-        return affiliation.topLevelOrganization().id().equals(institutionId);
-    }
-
-    private static Map<URI, Long> countInstitutionCreatorShares(List<VerifiedNviCreator> nviCreators) {
+    private static Map<URI, Long> countNumberOfCreatorsForInstitutions(List<VerifiedNviCreator> nviCreators) {
         return nviCreators.stream()
                    .flatMap(verifiedNviCreator -> verifiedNviCreator.nviAffiliations().stream())
                    .map(NviOrganization::topLevelOrganization)
@@ -117,33 +90,39 @@ public class PointCalculator {
 
     private static Long countCreators(URI institutionId, List<VerifiedNviCreator> nviCreators) {
         return nviCreators.stream()
-                   .flatMap(creator -> creator.nviAffiliations().stream())
-                   .filter(affiliation -> isPartOf(affiliation, institutionId))
+                   .filter(creator -> creator.isAffiliatedWith(institutionId))
                    .count();
     }
 
-    private InstitutionPoints calculateInstitutionPoints(Entry<URI, Long> institutionCreatorShareCount) {
-        var institutionContributorFraction = divideInstitutionShareOnTotalShares(
-            institutionCreatorShareCount.getValue());
-        var institutionPoints = executeNviFormula(institutionContributorFraction);
-        return new InstitutionPoints(institutionCreatorShareCount.getKey(),
-                                     institutionPoints,
-                                     calculateAffiliationPoints(institutionCreatorShareCount.getKey(),
-                                                                institutionCreatorShareCount.getValue(),
-                                                                institutionPoints));
+    private static Stream<CreatorAffiliationPoints> calculatePointsForAffiliation(Entry<URI, List<URI>> nviCreator,
+                                                                                  BigDecimal institutionPoints,
+                                                                                  Long institutionCreatorCount) {
+        var pointsForCreator = divide(institutionCreatorCount, institutionPoints);
+        var numberOfAffiliations = nviCreator.getValue().size();
+        var pointsForAffiliation = divide(numberOfAffiliations, pointsForCreator);
+        return nviCreator.getValue().stream()
+                   .map(affiliationId -> new CreatorAffiliationPoints(affiliationId, nviCreator.getKey(),
+                                                                      pointsForAffiliation));
     }
 
-    private List<CreatorAffiliationPoints> calculateAffiliationPoints(URI institutionId,
-                                                                      Long institutionCreatorShareCount,
+    private InstitutionPoints calculateInstitutionPoints(Entry<URI, Long> institutionCreatorCount) {
+        var institutionContributorFraction = divideInstitutionShareOnTotalShares(institutionCreatorCount.getValue());
+        var institutionPoints = executeNviFormula(institutionContributorFraction);
+        return new InstitutionPoints(institutionCreatorCount.getKey(), institutionPoints,
+                                     calculateAffiliationPoints(institutionCreatorCount, institutionPoints));
+    }
+
+    private List<CreatorAffiliationPoints> calculateAffiliationPoints(Entry<URI, Long> institutionCreatorCount,
                                                                       BigDecimal institutionPoints) {
+        var institutionId = institutionCreatorCount.getKey();
         return nviCreators.stream()
-                   .filter(creator -> isAffiliated(institutionId, creator))
-                   .collect(Collectors.toMap(VerifiedNviCreator::id, creator -> mapToAffiliations(institutionId,
-                                                                                                  creator)))
+                   .filter(creator -> creator.isAffiliatedWith(institutionId))
+                   .collect(Collectors.toMap(VerifiedNviCreator::id,
+                                             creator -> creator.getAffiliationsPartOf(institutionId)))
                    .entrySet()
                    .stream()
-                   .flatMap(
-                       entry -> calculatePointsForAffiliation(institutionCreatorShareCount, entry, institutionPoints))
+                   .flatMap(entry -> calculatePointsForAffiliation(entry, institutionPoints,
+                                                                   institutionCreatorCount.getValue()))
                    .toList();
     }
 
@@ -160,8 +139,8 @@ public class PointCalculator {
     }
 
     private List<InstitutionPoints> calculatePointsForAllInstitutions() {
-        var institutionCreatorShareCount = countInstitutionCreatorShares(nviCreators);
-        return institutionCreatorShareCount.entrySet()
+        var institutionCreatorCount = countNumberOfCreatorsForInstitutions(nviCreators);
+        return institutionCreatorCount.entrySet()
                    .stream()
                    .map(this::calculateInstitutionPoints)
                    .toList();

@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static java.util.Collections.emptySet;
 import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.PART_OF_PROPERTY;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
@@ -111,10 +112,13 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private static Set<URI> extractInvolvedOrganizations(Candidate candidate, Approval approval) {
-        return candidate.getInstitutionPoints(approval.getInstitutionId())
-                   .map(no.sikt.nva.nvi.common.service.model.InstitutionPoints::creatorAffiliationPoints)
-                   .map(NviCandidateIndexDocumentGenerator::getAffiliationsWithPoints)
-                   .orElse(Set.of());
+        var creatorAffiliations = candidate.getInstitutionPoints(approval.getInstitutionId())
+                                      .map(
+                                          no.sikt.nva.nvi.common.service.model.InstitutionPoints::creatorAffiliationPoints)
+                                      .map(NviCandidateIndexDocumentGenerator::getAffiliationsWithPoints)
+                                      .orElse(emptySet());
+        creatorAffiliations.add(approval.getInstitutionId());
+        return creatorAffiliations;
     }
 
     private static Set<URI> getAffiliationsWithPoints(List<CreatorAffiliationPoints> creatorAffiliationPoints) {

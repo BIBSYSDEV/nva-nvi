@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.test;
 
+import static java.util.Collections.emptySet;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.EN_FIELD;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_LABEL;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_NORWEGIAN_LABEL;
@@ -86,10 +87,13 @@ public final class IndexDocumentTestUtils {
     }
 
     private static Set<URI> extractInvolvedOrganizations(Approval approval, Candidate candidate) {
-        return candidate.getInstitutionPoints(approval.getInstitutionId())
-                   .map(no.sikt.nva.nvi.common.service.model.InstitutionPoints::creatorAffiliationPoints)
-                   .map(IndexDocumentTestUtils::getAffiliationsWithPoints)
-                   .orElse(Set.of());
+        var creatorAffiliations = candidate.getInstitutionPoints(approval.getInstitutionId())
+                                      .map(
+                                          no.sikt.nva.nvi.common.service.model.InstitutionPoints::creatorAffiliationPoints)
+                                      .map(IndexDocumentTestUtils::getAffiliationsWithPoints)
+                                      .orElse(emptySet());
+        creatorAffiliations.add(approval.getInstitutionId());
+        return creatorAffiliations;
     }
 
     private static Set<URI> getAffiliationsWithPoints(List<CreatorAffiliationPoints> creatorAffiliationPoints) {

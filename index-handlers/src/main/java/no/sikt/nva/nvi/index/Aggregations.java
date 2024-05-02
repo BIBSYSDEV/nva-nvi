@@ -11,14 +11,17 @@ import static no.sikt.nva.nvi.index.utils.AggregationFunctions.mustNotMatch;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.nestedAggregation;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.nestedQuery;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.rangeFromQuery;
+import static no.sikt.nva.nvi.index.utils.AggregationFunctions.sumAggregation;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.termsAggregation;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.GLOBAL_APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_POINTS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INVOLVED_ORGS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NUMBER_OF_APPROVALS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.POINTS;
 import java.util.HashMap;
 import java.util.Map;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
@@ -33,6 +36,7 @@ public final class Aggregations {
     public static final String INSTITUTION_ID_PATH = joinWithDelimiter(APPROVALS, INSTITUTION_ID);
     public static final String ASSIGNEE_PATH = joinWithDelimiter(APPROVALS, ASSIGNEE);
     public static final String DISPUTE_AGGREGATION = "dispute";
+    public static final String POINTS_AGGREGATION = "points";
     private static final int MULTIPLE = 2;
     private static final String ALL_AGGREGATIONS = "all";
     private static final String APPROVAL_ORGANIZATIONS_AGGREGATION = "organizations";
@@ -70,11 +74,20 @@ public final class Aggregations {
     }
 
     public static Aggregation organizationApprovalStatusAggregations(String topLevelCristinOrg) {
+        var statusAggregation = termsAggregation(APPROVALS, APPROVAL_STATUS)._toAggregation();
+        var pointAggregation = sumAggregation(APPROVALS, POINTS, INSTITUTION_POINTS);
+        var organizationAggregation = new Aggregation.Builder()
+                                          .terms(termsAggregation(APPROVALS, INVOLVED_ORGS))
+                                          .aggregations(Map.of(STATUS_AGGREGATION, statusAggregation,
+                                                               POINTS_AGGREGATION, pointAggregation))
+                                          .build();
+        var filterAggregation = filterAggregation(
+            mustMatch(approvalInstitutionIdQuery(topLevelCristinOrg)),
+            Map.of(APPROVAL_ORGANIZATIONS_AGGREGATION, organizationAggregation));
 
         return new Aggregation.Builder()
-                   .filter(mustMatch(approvalInstitutionIdQuery(topLevelCristinOrg)))
-                   .aggregations(Map.of(STATUS_AGGREGATION, approvalStatusAggregation(topLevelCristinOrg),
-                                        DISPUTE_AGGREGATION, disputeAggregation(topLevelCristinOrg)))
+                   .nested(nestedAggregation(APPROVALS))
+                   .aggregations(isNull(topLevelCristinOrg) ? Map.of() : Map.of(topLevelCristinOrg, filterAggregation))
                    .build();
     }
 
@@ -108,39 +121,6 @@ public final class Aggregations {
 
     public static Aggregation collaborationAggregation(String topLevelCristinOrg, ApprovalStatus status) {
         return filterAggregation(mustMatch(statusQuery(topLevelCristinOrg, status), multipleApprovalsQuery()));
-    }
-
-    private static Aggregation approvalStatusAggregation(String topLevelCristinOrg) {
-        var statusAggregation = termsAggregation(APPROVALS, APPROVAL_STATUS)._toAggregation();
-        var organizationAggregation = new Aggregation.Builder()
-                                          .terms(termsAggregation(APPROVALS, INVOLVED_ORGS))
-                                          .aggregations(Map.of(STATUS_AGGREGATION, statusAggregation))
-                                          .build();
-        var filterAggregation = filterAggregation(
-            mustMatch(approvalInstitutionIdQuery(topLevelCristinOrg)),
-            Map.of(APPROVAL_ORGANIZATIONS_AGGREGATION, organizationAggregation));
-
-        return new Aggregation.Builder()
-                   .nested(nestedAggregation(APPROVALS))
-                   .aggregations(isNull(topLevelCristinOrg) ? Map.of() : Map.of(topLevelCristinOrg, filterAggregation))
-                   .build();
-    }
-
-    private static Aggregation disputeAggregation(String topLevelCristinOrg) {
-        var globalStatus = termsAggregation(GLOBAL_APPROVAL_STATUS)._toAggregation();
-        var organizationAggregation = new Aggregation.Builder()
-                                          .terms(termsAggregation(APPROVALS, INVOLVED_ORGS))
-                                          .aggregations(Map.of("globalStatus", globalStatus))
-                                          .build();
-        var filterAggregation = filterAggregation(
-            mustMatch(approvalInstitutionIdQuery(topLevelCristinOrg)),
-            Map.of(APPROVAL_ORGANIZATIONS_AGGREGATION, organizationAggregation));
-
-        return new Aggregation.Builder()
-                   .nested(nestedAggregation(APPROVALS))
-                   .aggregations(Map.of(topLevelCristinOrg, filterAggregation,
-                                        "reversed", new ReverseNestedAggregation.Builder().build()._toAggregation()))
-                   .build();
     }
 
     private static Query statusQuery(ApprovalStatus approvalStatus) {
