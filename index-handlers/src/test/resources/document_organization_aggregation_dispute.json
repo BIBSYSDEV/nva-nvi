@@ -41,7 +41,8 @@
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.0.0",
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"
       ],
-      "approvalStatus": "Rejected"
+      "approvalStatus": "Rejected",
+      "globalApprovalStatus": "Dispute"
     },
     {
       "type": "Approval",
@@ -50,7 +51,8 @@
       "involvedOrganizations": [
         "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0"
       ],
-      "approvalStatus": "Approved"
+      "approvalStatus": "Approved",
+      "globalApprovalStatus": "Dispute"
     }
   ]
 }

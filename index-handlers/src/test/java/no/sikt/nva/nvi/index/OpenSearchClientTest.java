@@ -503,7 +503,7 @@ public class OpenSearchClientTest {
         var filterAggregate = ((FilterAggregate) actualOrganizationAggregation._get()).aggregations()
                                   .get("organizations");
         var actualOrgBuckets = ((StringTermsAggregate) filterAggregate._get()).buckets();
-        assertExpectedOrganizationAggregationForEachStatus(actualOrgBuckets);
+        assertExpectedOrganizationAggregations(actualOrgBuckets);
     }
 
     @Test
@@ -527,13 +527,12 @@ public class OpenSearchClientTest {
         assertThat(orgIds, not(containsInAnyOrder(NTNU_INSTITUTION_ID.toString())));
     }
 
-    private static void assertExpectedOrganizationAggregationForEachStatus(
+    private static void assertExpectedOrganizationAggregations(
         Buckets<StringTermsBucket> actualStatusBuckets) {
         actualStatusBuckets.array().forEach(bucket -> {
             assertExpectedStatusAggregations(bucket);
             assertExpectedPointAggregations(bucket);
             assertExpectedDisputeAggregations(bucket);
-
         });
     }
 
@@ -552,19 +551,25 @@ public class OpenSearchClientTest {
     }
 
     private static void assertExpectedDisputeAggregations(StringTermsBucket bucket) {
-        var disputeAggregation = bucket.aggregations().get("dispute");
-        var expectedKey = List.of("Dispute");
-        assertExpectedSubAggregations(disputeAggregation, expectedKey);
+        var disputeAggregation = (FilterAggregate) bucket.aggregations().get("dispute")._get();
+        var key = bucket.key();
+        if (key.equals(SIKT_INSTITUTION_ID.toString()) || key.equals(SIKT_LEVEL_2_ID)) {
+            assertEquals(1, disputeAggregation.docCount());
+        } else if (key.equals(SIKT_LEVEL_3_ID)) {
+            assertEquals(0, disputeAggregation.docCount());
+        } else {
+            throw new RuntimeException("Unexpected key: " + key);
+        }
     }
 
     private static void assertExpectedStatusAggregations(StringTermsBucket bucket) {
         var key = bucket.key();
         var statusAggregation = bucket.aggregations().get("status");
         if (key.equals(SIKT_INSTITUTION_ID.toString())) {
-            var expectedKeys = List.of(NEW.getValue(), PENDING.getValue());
+            var expectedKeys = List.of(NEW.getValue(), PENDING.getValue(), REJECTED.getValue());
             assertExpectedSubAggregations(statusAggregation, expectedKeys);
         } else if (key.equals(SIKT_LEVEL_2_ID)) {
-            var expectedKeys = List.of(NEW.getValue(), PENDING.getValue());
+            var expectedKeys = List.of(NEW.getValue(), PENDING.getValue(), REJECTED.getValue());
             assertExpectedSubAggregations(statusAggregation, expectedKeys);
         } else if (key.equals(SIKT_LEVEL_3_ID)) {
             var expectedKeys = List.of(PENDING.getValue());
