@@ -181,6 +181,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withPoints(getInstitutionPoints(approval, candidate))
                    .withInvolvedOrganizations(extractInvolvedOrganizations(candidate, approval))
                    .withAssignee(extractAssignee(approval))
+                   .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
                    .build();
     }
 
