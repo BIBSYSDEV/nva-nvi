@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
+import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.APPROVED_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.APPROVED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.ASSIGNMENTS_AGG;
@@ -492,6 +493,7 @@ public class OpenSearchClientTest {
     void shouldReturnOrganizationAggregationWithSubAggregations() throws IOException, InterruptedException {
         addDocumentsToIndex(documentFromString("document_organization_aggregation_pending.json"));
         addDocumentsToIndex(documentFromString("document_organization_aggregation_new.json"));
+        addDocumentsToIndex(documentFromString("document_organization_aggregation_dispute.json"));
         var aggregation = SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
         var searchParameters = defaultSearchParameters().withAggregationType(aggregation).build();
         var searchResponse = openSearchClient.search(searchParameters);
@@ -501,7 +503,7 @@ public class OpenSearchClientTest {
         var filterAggregate = ((FilterAggregate) actualOrganizationAggregation._get()).aggregations()
                                   .get("organizations");
         var actualOrgBuckets = ((StringTermsAggregate) filterAggregate._get()).buckets();
-        assertExpectedOrganizationAggregationForEachStatus(actualOrgBuckets);
+        assertExpectedOrganizationAggregations(actualOrgBuckets);
     }
 
     @Test
@@ -525,11 +527,12 @@ public class OpenSearchClientTest {
         assertThat(orgIds, not(containsInAnyOrder(NTNU_INSTITUTION_ID.toString())));
     }
 
-    private static void assertExpectedOrganizationAggregationForEachStatus(
+    private static void assertExpectedOrganizationAggregations(
         Buckets<StringTermsBucket> actualStatusBuckets) {
         actualStatusBuckets.array().forEach(bucket -> {
             assertExpectedStatusAggregations(bucket);
             assertExpectedPointAggregations(bucket);
+            assertExpectedDisputeAggregations(bucket);
         });
     }
 
@@ -547,14 +550,26 @@ public class OpenSearchClientTest {
         }
     }
 
+    private static void assertExpectedDisputeAggregations(StringTermsBucket bucket) {
+        var disputeAggregation = (FilterAggregate) bucket.aggregations().get("dispute")._get();
+        var key = bucket.key();
+        if (key.equals(SIKT_INSTITUTION_ID.toString()) || key.equals(SIKT_LEVEL_2_ID)) {
+            assertEquals(1, disputeAggregation.docCount());
+        } else if (key.equals(SIKT_LEVEL_3_ID)) {
+            assertEquals(0, disputeAggregation.docCount());
+        } else {
+            throw new RuntimeException("Unexpected key: " + key);
+        }
+    }
+
     private static void assertExpectedStatusAggregations(StringTermsBucket bucket) {
         var key = bucket.key();
         var statusAggregation = bucket.aggregations().get("status");
         if (key.equals(SIKT_INSTITUTION_ID.toString())) {
-            var expectedKeys = List.of(NEW.getValue(), PENDING.getValue());
+            var expectedKeys = List.of(NEW.getValue(), PENDING.getValue(), REJECTED.getValue());
             assertExpectedSubAggregations(statusAggregation, expectedKeys);
         } else if (key.equals(SIKT_LEVEL_2_ID)) {
-            var expectedKeys = List.of(NEW.getValue(), PENDING.getValue());
+            var expectedKeys = List.of(NEW.getValue(), PENDING.getValue(), REJECTED.getValue());
             assertExpectedSubAggregations(statusAggregation, expectedKeys);
         } else if (key.equals(SIKT_LEVEL_3_ID)) {
             var expectedKeys = List.of(PENDING.getValue());

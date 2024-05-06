@@ -16,6 +16,7 @@ import static no.sikt.nva.nvi.index.utils.AggregationFunctions.termsAggregation;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.GLOBAL_APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_POINTS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INVOLVED_ORGS;
@@ -33,7 +34,9 @@ public final class Aggregations {
     public static final String APPROVAL_STATUS_PATH = joinWithDelimiter(APPROVALS, APPROVAL_STATUS);
     public static final String INSTITUTION_ID_PATH = joinWithDelimiter(APPROVALS, INSTITUTION_ID);
     public static final String ASSIGNEE_PATH = joinWithDelimiter(APPROVALS, ASSIGNEE);
+    public static final String DISPUTE_AGGREGATION = "dispute";
     public static final String POINTS_AGGREGATION = "points";
+    public static final String DISPUTE = "Dispute";
     private static final int MULTIPLE = 2;
     private static final String ALL_AGGREGATIONS = "all";
     private static final String APPROVAL_ORGANIZATIONS_AGGREGATION = "organizations";
@@ -73,10 +76,12 @@ public final class Aggregations {
     public static Aggregation organizationApprovalStatusAggregations(String topLevelCristinOrg) {
         var statusAggregation = termsAggregation(APPROVALS, APPROVAL_STATUS)._toAggregation();
         var pointAggregation = sumAggregation(APPROVALS, POINTS, INSTITUTION_POINTS);
+        var disputeAggregation = filterStatusDisputeAggregation();
         var organizationAggregation = new Aggregation.Builder()
                                           .terms(termsAggregation(APPROVALS, INVOLVED_ORGS))
                                           .aggregations(Map.of(STATUS_AGGREGATION, statusAggregation,
-                                                               POINTS_AGGREGATION, pointAggregation))
+                                                               POINTS_AGGREGATION, pointAggregation,
+                                                               DISPUTE_AGGREGATION, disputeAggregation))
                                           .build();
         var filterAggregation = filterAggregation(
             mustMatch(approvalInstitutionIdQuery(topLevelCristinOrg)),
@@ -118,6 +123,12 @@ public final class Aggregations {
 
     public static Aggregation collaborationAggregation(String topLevelCristinOrg, ApprovalStatus status) {
         return filterAggregation(mustMatch(statusQuery(topLevelCristinOrg, status), multipleApprovalsQuery()));
+    }
+
+    private static Aggregation filterStatusDisputeAggregation() {
+        return filterAggregation(mustMatch(fieldValueQuery(joinWithDelimiter(APPROVALS,
+                                                                             GLOBAL_APPROVAL_STATUS),
+                                                           DISPUTE)));
     }
 
     private static Query statusQuery(ApprovalStatus approvalStatus) {

@@ -42,10 +42,11 @@ public final class SearchConstants {
     public static final String JSON_PATH_DELIMITER = ".";
     public static final String JSON_PATH_CONTRIBUTORS = String.join(JSON_PATH_DELIMITER, PUBLICATION_DETAILS,
                                                                     CONTRIBUTORS);
-    public static final TypeMapping MAPPINGS = new TypeMapping.Builder().properties(mappingProperties()).build();
     public static final String INVOLVED_ORGS = "involvedOrganizations";
+    public static final String GLOBAL_APPROVAL_STATUS = "globalApprovalStatus";
     public static final String POINTS = "points";
     public static final String INSTITUTION_POINTS = "institutionPoints";
+    public static final TypeMapping MAPPINGS = new TypeMapping.Builder().properties(mappingProperties()).build();
 
     private SearchConstants() {
 
@@ -93,7 +94,8 @@ public final class SearchConstants {
                       INSTITUTION_ID, keywordProperty(),
                       INVOLVED_ORGS, keywordProperty(),
                       APPROVAL_STATUS, keywordProperty(),
-                      POINTS, nestedProperty(pointsProperties())
+                      POINTS, nestedProperty(pointsProperties()),
+                      GLOBAL_APPROVAL_STATUS, keywordProperty()
         );
     }
 
