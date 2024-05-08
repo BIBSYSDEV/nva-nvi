@@ -7,6 +7,7 @@ import no.sikt.nva.nvi.index.aws.CandidateQuery;
 import no.sikt.nva.nvi.index.aws.CandidateQuery.QueryFilterType;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import nva.commons.core.Environment;
+import org.opensearch.client.opensearch._types.mapping.DoubleNumberProperty;
 import org.opensearch.client.opensearch._types.mapping.KeywordProperty;
 import org.opensearch.client.opensearch._types.mapping.NestedProperty.Builder;
 import org.opensearch.client.opensearch._types.mapping.Property;
@@ -41,8 +42,11 @@ public final class SearchConstants {
     public static final String JSON_PATH_DELIMITER = ".";
     public static final String JSON_PATH_CONTRIBUTORS = String.join(JSON_PATH_DELIMITER, PUBLICATION_DETAILS,
                                                                     CONTRIBUTORS);
-    public static final TypeMapping MAPPINGS = new TypeMapping.Builder().properties(mappingProperties()).build();
     public static final String INVOLVED_ORGS = "involvedOrganizations";
+    public static final String GLOBAL_APPROVAL_STATUS = "globalApprovalStatus";
+    public static final String POINTS = "points";
+    public static final String INSTITUTION_POINTS = "institutionPoints";
+    public static final TypeMapping MAPPINGS = new TypeMapping.Builder().properties(mappingProperties()).build();
 
     private SearchConstants() {
 
@@ -89,8 +93,14 @@ public final class SearchConstants {
         return Map.of(ASSIGNEE, textPropertyWithNestedKeyword(),
                       INSTITUTION_ID, keywordProperty(),
                       INVOLVED_ORGS, keywordProperty(),
-                      APPROVAL_STATUS, keywordProperty()
+                      APPROVAL_STATUS, keywordProperty(),
+                      POINTS, nestedProperty(pointsProperties()),
+                      GLOBAL_APPROVAL_STATUS, keywordProperty()
         );
+    }
+
+    private static Map<String, Property> pointsProperties() {
+        return Map.of(INSTITUTION_POINTS, new DoubleNumberProperty.Builder().build()._toProperty());
     }
 
     private static Map<String, Property> contributorsProperties() {

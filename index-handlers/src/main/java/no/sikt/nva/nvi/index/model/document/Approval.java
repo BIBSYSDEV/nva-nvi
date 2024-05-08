@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.Map;
 import java.util.Set;
+import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -19,7 +20,8 @@ public record Approval(URI institutionId,
                        ApprovalStatus approvalStatus,
                        InstitutionPoints points,
                        Set<URI> involvedOrganizations,
-                       String assignee) {
+                       String assignee,
+                       GlobalApprovalStatus globalApprovalStatus) {
 
     public static Builder builder() {
         return new Builder();
@@ -33,6 +35,7 @@ public record Approval(URI institutionId,
         private InstitutionPoints points;
         private Set<URI> involvedOrganizations;
         private String assignee;
+        private GlobalApprovalStatus globalApprovalStatus;
 
         private Builder() {
         }
@@ -67,8 +70,14 @@ public record Approval(URI institutionId,
             return this;
         }
 
+        public Builder withGlobalApprovalStatus(GlobalApprovalStatus globalApprovalStatus) {
+            this.globalApprovalStatus = globalApprovalStatus;
+            return this;
+        }
+
         public Approval build() {
-            return new Approval(institutionId, labels, approvalStatus, points, involvedOrganizations, assignee);
+            return new Approval(institutionId, labels, approvalStatus, points, involvedOrganizations, assignee,
+                                globalApprovalStatus);
         }
     }
 }
