@@ -442,8 +442,19 @@ class CristinMapperTest {
 
         assertThat(institutionPointsId, containsString("2057"));
         assertThat(affiliationForInstitutionPoints, containsString("305"));
+    }
 
+    @Test
+    void shouldCreatePointsWithCreatorActualInstitutionWhenMissingApprovalForCreatorsTopLevelOrganization() {
+        var creator = scientificPersonAtInstitutionWithPoints(randomString(), POINTS_PER_CONTRIBUTOR);
+        var scientificResource = scientificResourceWithCreators(List.of(creator));
+        var cristinLocale = cristinLocaleWithInstitutionIdentifier(randomString());
+        var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
+        var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
+        var point = dbCandidate.points().get(0);
+
+        assertEquals(point.institutionId(), point.creatorAffiliationPoints().get(0).affiliationId());
     }
 
     private static CristinNviReport nviReportWithInstanceTypeAndReference(String instanceType, String reference) {

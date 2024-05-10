@@ -11,7 +11,7 @@ public class CristinConversionException extends RuntimeException {
     }
 
     public static CristinConversionException fromFailure(Failure<?> failure) {
-        var message = failure.getException().getMessage();
+        var message = failure.getException();
         return new CristinConversionException(String.format("%s %s", EXCEPTION_MESSAGE, message));
     }
 }
