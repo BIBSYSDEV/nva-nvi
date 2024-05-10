@@ -317,7 +317,7 @@ public final class CristinMapper {
                                               .equals(matchingTransferInstitutionIdentifier))
                    .findFirst()
                    .map(CristinMapper::constructInstitutionId)
-                   .orElseThrow();
+                   .orElse(constructCristinOrganizationId(scientificPerson));
     }
 
     private String getMatchingTransfer(ScientificPerson scientificPerson, List<String> approvalsInstitutions) {
@@ -329,7 +329,7 @@ public final class CristinMapper {
                                                          departmentTransfer.getToInstitutionIdentifier())))
                    .findAny()
                    .map(CristinDepartmentTransfer::getToInstitutionIdentifier)
-                   .orElseThrow();
+                   .orElse(null);
     }
 
     @JacocoGenerated
