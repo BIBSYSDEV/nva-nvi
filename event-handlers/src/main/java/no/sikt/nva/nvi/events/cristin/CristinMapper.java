@@ -233,12 +233,16 @@ public final class CristinMapper {
 
     private List<DbInstitutionPoints> calculatePoints(CristinNviReport cristinNviReport) {
         var institutions = cristinNviReport.cristinLocales();
-        return getCreators(cristinNviReport).stream()
-                   .filter(CristinMapper::hasInstitutionPoints)
-                   .collect(collectToInstitutionOfPoints(institutions))
-                   .stream()
-                   .map(CristinMapper::toDbInstitutionPoints)
-                   .collect(Collectors.toList());
+        if (institutions.isEmpty()) {
+            return List.of();
+        } else {
+            return getCreators(cristinNviReport).stream()
+                       .filter(CristinMapper::hasInstitutionPoints)
+                       .collect(collectToInstitutionOfPoints(institutions))
+                       .stream()
+                       .map(CristinMapper::toDbInstitutionPoints)
+                       .collect(Collectors.toList());
+        }
     }
 
     private static boolean hasInstitutionPoints(ScientificPerson scientificPerson) {
@@ -329,7 +333,7 @@ public final class CristinMapper {
                                                          departmentTransfer.getToInstitutionIdentifier())))
                    .findAny()
                    .map(CristinDepartmentTransfer::getToInstitutionIdentifier)
-                   .orElseThrow();
+                   .orElse(null);
     }
 
     @JacocoGenerated
