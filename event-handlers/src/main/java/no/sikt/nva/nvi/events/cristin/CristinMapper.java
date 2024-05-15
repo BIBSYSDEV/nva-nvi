@@ -333,7 +333,7 @@ public final class CristinMapper {
                                                          departmentTransfer.getToInstitutionIdentifier())))
                    .findAny()
                    .map(CristinDepartmentTransfer::getToInstitutionIdentifier)
-                   .orElse(null);
+                   .orElseThrow();
     }
 
     @JacocoGenerated
