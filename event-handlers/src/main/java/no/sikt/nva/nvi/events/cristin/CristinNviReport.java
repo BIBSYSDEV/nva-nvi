@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.cristin;
 
+import static java.util.Objects.nonNull;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -17,6 +18,10 @@ public record CristinNviReport(String publicationIdentifier,
                                PublicationDate publicationDate,
                                String instanceType,
                                JsonNode reference) implements JsonSerializable {
+
+    public List<CristinLocale> cristinLocales() {
+        return nonNull(cristinLocales) ? cristinLocales : List.of();
+    }
 
     public static Builder builder() {
         return new Builder();

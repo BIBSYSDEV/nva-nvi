@@ -1,11 +1,14 @@
 package no.sikt.nva.nvi.events.cristin;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.AFFILIATION_DELIMITER;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyIterable;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -446,6 +449,16 @@ class CristinMapperTest {
 
     }
 
+    @Test
+    void shouldCreateCandidateWithoutPointsWhenApprovalsAreMissing() {
+        var creator = scientificPersonAtInstitutionWithPoints("305", POINTS_PER_CONTRIBUTOR);
+        var scientificResource = scientificResourceWithCreators(List.of(creator));
+        var report = cristinReportFromCristinLocalesAndScientificResource((CristinLocale) null, scientificResource);
+        var dbCandidate = cristinMapper.toDbCandidate(report.build());
+
+        assertThat(dbCandidate.points(), is(emptyIterable()));
+    }
+
     private static CristinNviReport nviReportWithInstanceTypeAndReference(String instanceType, String reference) {
         var institutionIdentifier = randomString();
         var creators = List.of(scientificPersonAtInstitutionWithPoints(institutionIdentifier, POINTS_PER_CONTRIBUTOR),
@@ -467,7 +480,7 @@ class CristinMapperTest {
                    .withYearReported(randomString())
                    .withInstanceType(randomString())
                    .withPublicationDate(new PublicationDate(randomString(), randomString(), randomString()))
-                   .withCristinLocales(List.of(cristinLocales))
+                   .withCristinLocales(nonNull(cristinLocales) ? List.of(cristinLocales) : List.of())
                    .withReference(attempt(() -> JsonUtils.dtoObjectMapper.readTree("{}")).orElseThrow())
                    .withInstanceType(randomString())
                    .withScientificResources(List.of(scientificResource));
