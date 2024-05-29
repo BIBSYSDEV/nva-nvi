@@ -113,7 +113,8 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
     }
 
     private User fetchUser(String assignee) {
-        return attempt(() -> constructFetchUserUri(assignee)).map(uri -> uriRetriever.getRawContent(uri, CONTENT_TYPE))
+        return attempt(() -> constructFetchUserUri(assignee))
+                   .map(uri -> uriRetriever.getRawContent(uri, CONTENT_TYPE))
                    .map(Optional::orElseThrow)
                    .map(UpsertAssigneeHandler::toUser)
                    .orElseThrow();

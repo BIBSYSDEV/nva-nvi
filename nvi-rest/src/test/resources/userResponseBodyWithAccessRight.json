@@ -3,19 +3,27 @@
     {
       "rolename": "Creator",
       "accessRights": [
-        "MANAGE_OWN_PROJECTS"
+        "MANAGE_RESOURCES_STANDARD"
       ],
       "type": "Role"
     },
     {
       "rolename": "App-admin",
       "accessRights": [
+        "ACT_AS",
+        "MANAGE_CUSTOMERS",
+        "MANAGE_EXTERNAL_CLIENTS",
         "MANAGE_NVI",
-        "MANAGE_NVI_CANDIDATES",
-        "ADMINISTRATE_APPLICATION",
-        "PROCESS_IMPORT_CANDIDATE"
+        "MANAGE_IMPORT"
       ],
       "type": "Role"
+    },
+    {
+      "rolename": "Nvi-Curator",
+      "accessRights": [
+        "MANAGE_NVI_CANDIDATES",
+        "MANAGE_RESOURCES_STANDARD"
+      ]
     }
   ]
 }
