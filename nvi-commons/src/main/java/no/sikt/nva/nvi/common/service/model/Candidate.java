@@ -258,7 +258,7 @@ public final class Candidate {
                    .withId(getId())
                    .withContext(CONTEXT_URI)
                    .withIdentifier(identifier)
-                   .withPublicationId(publicationDetails.publicationId())
+                   .withPublicationId(getPublicationId())
                    .withApprovals(mapToApprovalDtos())
                    .withNotes(mapToNoteDtos())
                    .withPeriod(mapToPeriodStatusDto())

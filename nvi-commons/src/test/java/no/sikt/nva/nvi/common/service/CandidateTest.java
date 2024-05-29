@@ -234,7 +234,7 @@ class CandidateTest extends LocalDynamoTest {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
         var candidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
-        var fetchedCandidate = Candidate.fetchByPublicationId(() -> candidate.getPublicationDetails().publicationId(),
+        var fetchedCandidate = Candidate.fetchByPublicationId(candidate::getPublicationId,
                                                               candidateRepository,
                                                               periodRepository);
         assertThat(fetchedCandidate.getIdentifier(), is(equalTo(candidate.getIdentifier())));
@@ -354,7 +354,7 @@ class CandidateTest extends LocalDynamoTest {
         var candidate = Candidate.upsert(createRequest, candidateRepository, periodRepository).orElseThrow();
         assertEquals(candidate.getPublicationDetails().publicationBucketUri(), publicationBucketUri);
         assertEquals(candidate.isApplicable(), isApplicable);
-        assertEquals(candidate.getPublicationDetails().publicationId(), publicationId);
+        assertEquals(candidate.getPublicationId(), publicationId);
         assertEquals(candidate.getTotalPoints(), setScaleAndRoundingMode(totalPoints));
         assertEquals(setScaleAndRoundingMode(candidate.getPointValueForInstitution(institutionId)), institutionPoints);
         assertEquals(candidate.getInstitutionPointsMap().get(institutionId), institutionPoints);
@@ -377,7 +377,7 @@ class CandidateTest extends LocalDynamoTest {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
         var tempCandidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
                                 .orElseThrow();
-        var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationDetails().publicationId());
+        var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
         var candidateBO = Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
         var fetchedCandidate = Candidate.fetch(candidateBO::getIdentifier, candidateRepository,
                                                periodRepository);
@@ -389,7 +389,7 @@ class CandidateTest extends LocalDynamoTest {
         var nonApplicableCandidate = nonApplicableCandidate();
 
         var updatedApplicableCandidate = Candidate.upsert(
-            createUpsertCandidateRequest(nonApplicableCandidate.getPublicationDetails().publicationId()),
+            createUpsertCandidateRequest(nonApplicableCandidate.getPublicationId()),
             candidateRepository,
             periodRepository).orElseThrow();
 
@@ -455,8 +455,7 @@ class CandidateTest extends LocalDynamoTest {
         var candidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
                             .orElseThrow();
         var nonCandidate = Candidate.updateNonCandidate(
-            createUpsertNonCandidateRequest(candidate.getPublicationDetails()
-                                                .publicationId()),
+            createUpsertNonCandidateRequest(candidate.getPublicationId()),
             candidateRepository).orElseThrow();
         assertFalse(nonCandidate.isApplicable());
 
@@ -484,8 +483,7 @@ class CandidateTest extends LocalDynamoTest {
             new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
 
         var creators = Map.of(creatorId, List.of(arguments.institutionIds));
-        var newUpsertRequest = getUpsertCandidateRequest(arguments, creators,
-                                                         candidate.getPublicationDetails().publicationId());
+        var newUpsertRequest = getUpsertCandidateRequest(arguments, creators, candidate.getPublicationId());
 
         var updatedCandidate = Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository)
                                    .orElseThrow();
@@ -610,7 +608,7 @@ class CandidateTest extends LocalDynamoTest {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
         var tempCandidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
                                 .orElseThrow();
-        var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationDetails().publicationId());
+        var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
         var candidateBO = Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
         return Candidate.fetch(candidateBO::getIdentifier, candidateRepository,
                                periodRepository);

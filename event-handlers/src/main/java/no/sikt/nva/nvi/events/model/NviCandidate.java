@@ -40,7 +40,7 @@ public record NviCandidate(URI publicationId,
         var details = candidate.getPublicationDetails();
 
         return NviCandidate.builder()
-                   .withPublicationId(details.publicationId())
+                   .withPublicationId(candidate.getPublicationId())
                    .withPublicationBucketUri(details.publicationBucketUri())
                    .withInstanceType(details.type())
                    .withDate(toPublicationDate(details.publicationDate()))

@@ -59,7 +59,7 @@ public final class IndexDocumentTestUtils {
     public static PublicationDetails expandPublicationDetails(Candidate candidate, JsonNode expandedResource) {
         return PublicationDetails.builder()
                    .withType(ExpandedResourceGenerator.extractType(expandedResource))
-                   .withId(candidate.getPublicationDetails().publicationId().toString())
+                   .withId(candidate.getPublicationId().toString())
                    .withTitle(ExpandedResourceGenerator.extractTitle(expandedResource))
                    .withPublicationDate(mapToPublicationDate(candidate.getPublicationDetails().publicationDate()))
                    .withContributors(

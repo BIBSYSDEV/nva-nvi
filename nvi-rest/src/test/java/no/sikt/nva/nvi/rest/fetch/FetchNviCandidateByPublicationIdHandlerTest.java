@@ -65,7 +65,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
     void shouldReturnNotFoundWhenCandidateExistsButNotApplicable() throws IOException {
         var institutionId = randomUri();
         var nonApplicableCandidate = setUpNonApplicableCandidate(institutionId);
-        var request = requestWithAccessRight(nonApplicableCandidate.getPublicationDetails().publicationId());
+        var request = requestWithAccessRight(nonApplicableCandidate.getPublicationId());
         handler.handleRequest(request, output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
 
@@ -78,7 +78,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
         var candidate =
             Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
-        var request = requestWithAccessRight(candidate.getPublicationDetails().publicationId());
+        var request = requestWithAccessRight(candidate.getPublicationId());
 
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -105,7 +105,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
         var candidate =
             Candidate.upsert(createUpsertCandidateRequest(randomUri()), candidateRepository, periodRepository)
                 .orElseThrow();
-        var request = requestWithAccessRight(candidate.getPublicationDetails().publicationId());
+        var request = requestWithAccessRight(candidate.getPublicationId());
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var actualResponse = response.getBodyObject(CandidateDto.class);
@@ -129,7 +129,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
             Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         return Candidate.updateNonCandidate(
-            createUpsertNonCandidateRequest(candidate.getPublicationDetails().publicationId()),
+            createUpsertNonCandidateRequest(candidate.getPublicationId()),
             candidateRepository).orElseThrow();
     }
 

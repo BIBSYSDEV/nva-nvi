@@ -32,7 +32,7 @@ public final class ExpandedResourceGenerator {
     public static JsonNode createExpandedResource(Candidate candidate, List<URI> nonNviContributorAffiliationIds) {
         var root = objectMapper.createObjectNode();
 
-        root.put("id", candidate.getPublicationDetails().publicationId().toString());
+        root.put("id", candidate.getPublicationId().toString());
 
         var entityDescription = objectMapper.createObjectNode();
 
