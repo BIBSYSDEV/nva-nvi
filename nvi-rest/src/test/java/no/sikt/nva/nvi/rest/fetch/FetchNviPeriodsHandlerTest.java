@@ -44,7 +44,7 @@ public class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldThrowUnauthorizedWhenMissingAccessRights() throws IOException {
-        handler.handleRequest(createRequestWithAccessRight(AccessRight.USER), output, context);
+        handler.handleRequest(createRequestWithAccessRight(AccessRight.MANAGE_PUBLISHING_REQUESTS), output, context);
         var response = GatewayResponse.fromOutputStream(output, NviPeriodsResponse.class);
 
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
