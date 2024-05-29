@@ -13,7 +13,6 @@ import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
-import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
@@ -58,8 +57,10 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
 
     @Override
     public Void handleRequest(SQSEvent input, Context context) {
-        var evaluatedPublication = evaluateCandidacy(extractPersistedResourceMessage(input));
-        evaluatedPublication.ifPresent(result -> sendEvent(input, result));
+        attempt(() -> {
+            evaluateCandidacy(extractPersistedResourceMessage(input)).ifPresent(this::sendEvent);
+            return null;
+        }).orElseThrow(failure -> handleFailure(input, failure));
         return null;
     }
 
@@ -69,7 +70,7 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
                                                  env.readEnv(BACKEND_CLIENT_SECRET_NAME));
     }
 
-    private static RuntimeException handleFailure(SQSEvent input, Failure<NviSendMessageResponse> failure) {
+    private static RuntimeException handleFailure(SQSEvent input, Failure<?> failure) {
         LOGGER.error(String.format(FAILURE_MESSAGE, input.toString(), failure.getException(),
                                    failure.getException().getMessage()));
         return new RuntimeException(failure.getException());
@@ -79,13 +80,9 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
         return attempt(() -> dtoObjectMapper.readValue(body, PersistedResourceMessage.class)).orElseThrow();
     }
 
-    private void sendEvent(SQSEvent input, CandidateEvaluatedMessage result) {
-        attempt(() -> sendEvent(result)).orElseThrow(failure -> handleFailure(input, failure));
-    }
-
-    private NviSendMessageResponse sendEvent(CandidateEvaluatedMessage candidateEvaluatedMessage) {
+    private void sendEvent(CandidateEvaluatedMessage candidateEvaluatedMessage) {
         var messageBody = attempt(() -> dtoObjectMapper.writeValueAsString(candidateEvaluatedMessage)).orElseThrow();
-        return queueClient.sendMessage(messageBody, queueUrl);
+        queueClient.sendMessage(messageBody, queueUrl);
     }
 
     private PersistedResourceMessage extractPersistedResourceMessage(SQSEvent input) {
