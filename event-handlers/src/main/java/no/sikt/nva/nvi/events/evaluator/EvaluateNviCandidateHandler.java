@@ -7,6 +7,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -31,39 +32,34 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
     private static final String EVALUATED_CANDIDATE_QUEUE_URL = "CANDIDATE_QUEUE_URL";
     private static final String BACKEND_CLIENT_AUTH_URL = "BACKEND_CLIENT_AUTH_URL";
     private static final String BACKEND_CLIENT_SECRET_NAME = "BACKEND_CLIENT_SECRET_NAME";
-    private static final String EVALUATION_MESSAGE = "Nvi candidacy has been evaluated for publication: {}. Type: {}";
     private static final String FAILURE_MESSAGE = "Failure while calculating NVI Candidate: %s, ex: %s, msg: %s";
     private final EvaluatorService evaluatorService;
     private final QueueClient queueClient;
     private final String queueUrl;
-    private final CandidateRepository candidateRepository;
-    private final PeriodRepository periodRepository;
 
     @JacocoGenerated
     public EvaluateNviCandidateHandler() {
         this(new EvaluatorService(new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")),
                                   new CandidateCalculator(authorizedUriRetriever(new Environment()),
                                                           new UriRetriever()),
-                                  new PointService(new OrganizationRetriever(new UriRetriever()))),
-             new CandidateRepository(defaultDynamoClient()), new PeriodRepository(defaultDynamoClient()),
+                                  new PointService(new OrganizationRetriever(new UriRetriever())),
+                                  new CandidateRepository(defaultDynamoClient()),
+                                  new PeriodRepository(defaultDynamoClient())),
              new NviQueueClient(), new Environment());
     }
 
     public EvaluateNviCandidateHandler(EvaluatorService evaluatorService,
-                                       CandidateRepository candidateRepository, PeriodRepository periodRepository,
                                        QueueClient queueClient,
                                        Environment environment) {
         this.evaluatorService = evaluatorService;
         this.queueClient = queueClient;
         this.queueUrl = environment.readEnv(EVALUATED_CANDIDATE_QUEUE_URL);
-        this.candidateRepository = candidateRepository;
-        this.periodRepository = periodRepository;
     }
 
     @Override
     public Void handleRequest(SQSEvent input, Context context) {
-        attempt(() -> sendEvent(evaluateCandidacy(extractPersistedResourceMessage(input)))).orElseThrow(
-            failure -> handleFailure(input, failure));
+        var evaluatedPublication = evaluateCandidacy(extractPersistedResourceMessage(input));
+        evaluatedPublication.ifPresent(result -> sendEvent(input, result));
         return null;
     }
 
@@ -83,6 +79,10 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
         return attempt(() -> dtoObjectMapper.readValue(body, PersistedResourceMessage.class)).orElseThrow();
     }
 
+    private void sendEvent(SQSEvent input, CandidateEvaluatedMessage result) {
+        attempt(() -> sendEvent(result)).orElseThrow(failure -> handleFailure(input, failure));
+    }
+
     private NviSendMessageResponse sendEvent(CandidateEvaluatedMessage candidateEvaluatedMessage) {
         var messageBody = attempt(() -> dtoObjectMapper.writeValueAsString(candidateEvaluatedMessage)).orElseThrow();
         return queueClient.sendMessage(messageBody, queueUrl);
@@ -96,10 +96,7 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
         return input.getRecords().stream().findFirst().orElseThrow();
     }
 
-    private CandidateEvaluatedMessage evaluateCandidacy(PersistedResourceMessage message) {
-        var evaluatedCandidate = evaluatorService.evaluateCandidacy(message.resourceFileUri());
-        LOGGER.info(EVALUATION_MESSAGE, evaluatedCandidate.candidate().publicationId(),
-                    evaluatedCandidate.candidate().getClass().getSimpleName());
-        return evaluatedCandidate;
+    private Optional<CandidateEvaluatedMessage> evaluateCandidacy(PersistedResourceMessage message) {
+        return evaluatorService.evaluateCandidacy(message.resourceFileUri());
     }
 }

@@ -15,6 +15,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.StorageReader;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
+import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
@@ -25,23 +30,36 @@ import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EvaluatorService {
 
+    private final Logger logger = LoggerFactory.getLogger(EvaluatorService.class);
     private final StorageReader<URI> storageReader;
     private final CandidateCalculator candidateCalculator;
     private final PointService pointService;
+    private final CandidateRepository candidateRepository;
+    private final PeriodRepository periodRepository;
 
     public EvaluatorService(StorageReader<URI> storageReader, CandidateCalculator candidateCalculator,
-                            PointService pointService) {
+                            PointService pointService, CandidateRepository candidateRepository,
+                            PeriodRepository periodRepository) {
         this.storageReader = storageReader;
         this.candidateCalculator = candidateCalculator;
         this.pointService = pointService;
+        this.candidateRepository = candidateRepository;
+        this.periodRepository = periodRepository;
     }
 
-    public CandidateEvaluatedMessage evaluateCandidacy(URI publicationBucketUri) {
+    public Optional<CandidateEvaluatedMessage> evaluateCandidacy(URI publicationBucketUri) {
         var publication = extractBodyFromContent(storageReader.read(publicationBucketUri));
         var publicationId = extractPublicationId(publication);
+        if (existsAsCandidateInClosedPeriod(publicationId)) {
+            logger.info("Skipping evaluation. Publication with id {} already exists as candidate in closed period.",
+                        publicationId);
+            return Optional.empty();
+        }
         var verifiedCreatorsWithNviInstitutions = candidateCalculator.getVerifiedCreatorsWithNviInstitutionsIfExists(
             publication);
         if (!verifiedCreatorsWithNviInstitutions.isEmpty()) {
@@ -51,9 +69,11 @@ public class EvaluatorService {
                                                      pointCalculation,
                                                      publicationId,
                                                      publicationBucketUri);
-            return constructMessage(nviCandidate);
+            logger.info("Evaluated publication with id {} as NviCandidate.", publicationId);
+            return Optional.of(constructMessage(nviCandidate));
         } else {
-            return constructMessage(new NonNviCandidate(publicationId));
+            logger.info("Evaluated publication with id {} as NonNviCandidate.", publicationId);
+            return Optional.of(constructMessage(new NonNviCandidate(publicationId)));
         }
     }
 
@@ -107,6 +127,16 @@ public class EvaluatorService {
 
         return Optional.of(new PublicationDate(day.textValue(), month.textValue(), year.textValue()))
                    .orElse(new PublicationDate(null, null, year.textValue()));
+    }
+
+    private boolean existsAsCandidateInClosedPeriod(URI publicationId) {
+        try {
+            var existingCandidate = Candidate.fetchByPublicationId(() -> publicationId, candidateRepository,
+                                                                   periodRepository);
+            return Status.CLOSED_PERIOD.equals(existingCandidate.getPeriod().status());
+        } catch (CandidateNotFoundException notFoundException) {
+            return false;
+        }
     }
 
     private CandidateEvaluatedMessage constructMessage(CandidateType candidateType) {
