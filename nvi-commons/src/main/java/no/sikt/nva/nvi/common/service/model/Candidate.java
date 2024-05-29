@@ -326,6 +326,10 @@ public final class Candidate {
                && Objects.equals(reportStatus, candidate.reportStatus);
     }
 
+    public URI getPublicationId() {
+        return publicationDetails.publicationId();
+    }
+
     private static boolean isNotExistingCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
         return !isExistingCandidate(request.publicationId(), repository);
     }

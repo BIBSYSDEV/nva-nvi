@@ -24,6 +24,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NviCandidate;
@@ -85,7 +87,11 @@ public class EvaluateNviCandidateWithCristinDataTest {
         var pointCalculator = new PointService(organizationRetriever);
         var evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator);
         queueClient = new FakeSqsClient();
-        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
+        handler = new EvaluateNviCandidateHandler(evaluatorService,
+                                                  mock(CandidateRepository.class),
+                                                  mock(PeriodRepository.class),
+                                                  queueClient,
+                                                  env);
     }
 
     @Test

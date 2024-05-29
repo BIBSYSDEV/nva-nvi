@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.evaluator;
 
+import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -8,6 +9,8 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
@@ -33,6 +36,8 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
     private final EvaluatorService evaluatorService;
     private final QueueClient queueClient;
     private final String queueUrl;
+    private final CandidateRepository candidateRepository;
+    private final PeriodRepository periodRepository;
 
     @JacocoGenerated
     public EvaluateNviCandidateHandler() {
@@ -40,15 +45,19 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
                                   new CandidateCalculator(authorizedUriRetriever(new Environment()),
                                                           new UriRetriever()),
                                   new PointService(new OrganizationRetriever(new UriRetriever()))),
+             new CandidateRepository(defaultDynamoClient()), new PeriodRepository(defaultDynamoClient()),
              new NviQueueClient(), new Environment());
     }
 
     public EvaluateNviCandidateHandler(EvaluatorService evaluatorService,
+                                       CandidateRepository candidateRepository, PeriodRepository periodRepository,
                                        QueueClient queueClient,
                                        Environment environment) {
         this.evaluatorService = evaluatorService;
         this.queueClient = queueClient;
         this.queueUrl = environment.readEnv(EVALUATED_CANDIDATE_QUEUE_URL);
+        this.candidateRepository = candidateRepository;
+        this.periodRepository = periodRepository;
     }
 
     @Override
