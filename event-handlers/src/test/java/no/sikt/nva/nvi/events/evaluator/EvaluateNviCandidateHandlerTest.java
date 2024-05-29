@@ -32,6 +32,7 @@ import java.net.URLEncoder;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -113,6 +114,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     private PeriodRepository periodRepository;
     private Environment env;
     private EvaluatorService evaluatorService;
+    private S3StorageReader storageReader;
 
     @BeforeEach
     void setUp() {
@@ -125,7 +127,16 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         authorizedBackendUriRetriever = mock(AuthorizedBackendUriRetriever.class);
         queueClient = new FakeSqsClient();
         s3Driver = new S3Driver(s3Client, BUCKET_NAME);
-        evaluatorService = setUpEvaluatorService(s3Client);
+        var dynamoDbClient = initializeTestDatabase();
+        uriRetriever = mock(UriRetriever.class);
+        storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
+        periodRepository = new PeriodRepository(dynamoDbClient);
+        var calculator = new CandidateCalculator(authorizedBackendUriRetriever, uriRetriever);
+        var organizationRetriever = new OrganizationRetriever(uriRetriever);
+        var pointCalculator = new PointService(organizationRetriever);
+        candidateRepository = new CandidateRepository(dynamoDbClient);
+        evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator, candidateRepository,
+                                                periodRepository);
         handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
     }
 
@@ -144,9 +155,10 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldNotEvaluateExistingCandidateInClosedPeriod() throws IOException {
-        var year = 2022;
+        var year = LocalDateTime.now().getYear();
         var event = createEvent(new PersistedResourceMessage(setUpCandidate(year)));
         periodRepository = no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod(year);
+        setupEvaluatorService(periodRepository);
         handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
         handler.handleRequest(event, context);
         assertEquals(0, queueClient.getSentMessages().size());
@@ -155,10 +167,11 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldEvaluateExistingCandidateInOpenPeriod() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var year = 2022;
+        var year = LocalDateTime.now().getYear();
         var resourceFileUri = setUpCandidate(year);
         var event = createEvent(new PersistedResourceMessage(resourceFileUri));
         periodRepository = no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod(year);
+        setupEvaluatorService(periodRepository);
         handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
         handler.handleRequest(event, context);
         var candidate = (NviCandidate) getMessageBody().candidate();
@@ -501,6 +514,14 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                          .sum();
     }
 
+    private void setupEvaluatorService(PeriodRepository periodRepository) {
+        var calculator = new CandidateCalculator(authorizedBackendUriRetriever, uriRetriever);
+        var organizationRetriever = new OrganizationRetriever(uriRetriever);
+        var pointCalculator = new PointService(organizationRetriever);
+        evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator, candidateRepository,
+                                                periodRepository);
+    }
+
     private URI setUpCandidate(int year) throws IOException {
         var candidateInClosedPeriod = Candidate.upsert(
             no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest(year), candidateRepository,
@@ -515,18 +536,6 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         notFoundResponse = createResponse(404, StringUtils.EMPTY_STRING);
         badResponse = createResponse(500, StringUtils.EMPTY_STRING);
         okResponse = createResponse(200, CUSTOMER_API_NVI_RESPONSE);
-    }
-
-    private EvaluatorService setUpEvaluatorService(FakeS3Client s3Client) {
-        uriRetriever = mock(UriRetriever.class);
-        var calculator = new CandidateCalculator(authorizedBackendUriRetriever, uriRetriever);
-        var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
-        var organizationRetriever = new OrganizationRetriever(uriRetriever);
-        var pointCalculator = new PointService(organizationRetriever);
-        var dynamoDbClient = initializeTestDatabase();
-        candidateRepository = new CandidateRepository(dynamoDbClient);
-        periodRepository = new PeriodRepository(dynamoDbClient);
-        return new EvaluatorService(storageReader, calculator, pointCalculator, candidateRepository, periodRepository);
     }
 
     private CandidateEvaluatedMessage getMessageBody() {
