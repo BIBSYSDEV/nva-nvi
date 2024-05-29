@@ -156,10 +156,11 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldNotEvaluateExistingCandidateInClosedPeriod() throws IOException {
         var year = LocalDateTime.now().getYear();
-        var event = createEvent(new PersistedResourceMessage(setUpCandidate(year)));
+        var resourceFileUri = setUpCandidate(year);
         periodRepository = no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod(year);
         setupEvaluatorService(periodRepository);
         handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
+        var event = createEvent(new PersistedResourceMessage(resourceFileUri));
         handler.handleRequest(event, context);
         assertEquals(0, queueClient.getSentMessages().size());
     }
@@ -169,10 +170,10 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var year = LocalDateTime.now().getYear();
         var resourceFileUri = setUpCandidate(year);
-        var event = createEvent(new PersistedResourceMessage(resourceFileUri));
         periodRepository = no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod(year);
         setupEvaluatorService(periodRepository);
         handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
+        var event = createEvent(new PersistedResourceMessage(resourceFileUri));
         handler.handleRequest(event, context);
         var candidate = (NviCandidate) getMessageBody().candidate();
         assertThat(candidate.publicationBucketUri(), is(equalTo(resourceFileUri)));
