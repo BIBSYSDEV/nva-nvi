@@ -85,13 +85,10 @@ public class EvaluateNviCandidateWithCristinDataTest {
         var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
         var organizationRetriever = new OrganizationRetriever(uriRetriever);
         var pointCalculator = new PointService(organizationRetriever);
-        var evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator);
+        var evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator, mock(CandidateRepository.class),
+                                                    mock(PeriodRepository.class));
         queueClient = new FakeSqsClient();
-        handler = new EvaluateNviCandidateHandler(evaluatorService,
-                                                  mock(CandidateRepository.class),
-                                                  mock(PeriodRepository.class),
-                                                  queueClient,
-                                                  env);
+        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
     }
 
     @Test

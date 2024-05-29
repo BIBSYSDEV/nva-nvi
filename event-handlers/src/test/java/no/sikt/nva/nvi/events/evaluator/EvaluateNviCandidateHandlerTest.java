@@ -126,11 +126,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         queueClient = new FakeSqsClient();
         s3Driver = new S3Driver(s3Client, BUCKET_NAME);
         evaluatorService = setUpEvaluatorService(s3Client);
-        var dynamoDbClient = initializeTestDatabase();
-        candidateRepository = new CandidateRepository(dynamoDbClient);
-        periodRepository = new PeriodRepository(dynamoDbClient);
-        handler = new EvaluateNviCandidateHandler(evaluatorService, candidateRepository, periodRepository, queueClient,
-                                                  env);
+        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
     }
 
     @Test
@@ -147,14 +143,25 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldNotEvaluateReportedCandidate() throws IOException {
+    void shouldNotEvaluateExistingCandidateInClosedPeriod() throws IOException {
         var year = 2022;
-        var event = createEvent(new PersistedResourceMessage(setUpCandidateInClosedPeriod(year)));
+        var event = createEvent(new PersistedResourceMessage(setUpCandidate(year)));
         periodRepository = no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod(year);
-        handler = new EvaluateNviCandidateHandler(evaluatorService, candidateRepository, periodRepository, queueClient,
-                                                  env);
+        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
         handler.handleRequest(event, context);
         assertEquals(0, queueClient.getSentMessages().size());
+    }
+
+    @Test
+    void shouldEvaluateExistingCandidateInOpenPeriod() throws IOException {
+        var year = 2022;
+        var resourceFileUri = setUpCandidate(year);
+        var event = createEvent(new PersistedResourceMessage(resourceFileUri));
+        periodRepository = no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod(year);
+        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
+        handler.handleRequest(event, context);
+        var candidate = (NviCandidate) getMessageBody().candidate();
+        assertThat(candidate.publicationBucketUri(), is(equalTo(resourceFileUri)));
     }
 
     @Test
@@ -493,7 +500,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                          .sum();
     }
 
-    private URI setUpCandidateInClosedPeriod(int year) throws IOException {
+    private URI setUpCandidate(int year) throws IOException {
         var candidateInClosedPeriod = Candidate.upsert(
             no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest(year), candidateRepository,
             periodRepository).orElseThrow();
@@ -515,7 +522,10 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
         var organizationRetriever = new OrganizationRetriever(uriRetriever);
         var pointCalculator = new PointService(organizationRetriever);
-        return new EvaluatorService(storageReader, calculator, pointCalculator);
+        var dynamoDbClient = initializeTestDatabase();
+        candidateRepository = new CandidateRepository(dynamoDbClient);
+        periodRepository = new PeriodRepository(dynamoDbClient);
+        return new EvaluatorService(storageReader, calculator, pointCalculator, candidateRepository, periodRepository);
     }
 
     private CandidateEvaluatedMessage getMessageBody() {
