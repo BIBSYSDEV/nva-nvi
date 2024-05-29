@@ -154,6 +154,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldEvaluateExistingCandidateInOpenPeriod() throws IOException {
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var year = 2022;
         var resourceFileUri = setUpCandidate(year);
         var event = createEvent(new PersistedResourceMessage(resourceFileUri));
