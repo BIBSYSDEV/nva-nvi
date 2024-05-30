@@ -104,10 +104,13 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private static NviOrganization buildNviOrganization(URI id, Stream<String> rdfNodes) {
-        var partOfIdentifiers = rdfNodes.map(NviCandidateIndexDocumentGenerator::getLastPathElement).toList();
+        var partOf = rdfNodes.map(URI::create).toList();
+        var partOfIdentifiers = partOf.stream().map(UriWrapper::fromUri).map(UriWrapper::getLastPathElement)
+                                    .collect(Collectors.toList());
         return NviOrganization.builder()
                    .withId(id)
                    .withPartOf(partOfIdentifiers)
+                   .withPartOfIds(partOf)
                    .build();
     }
 

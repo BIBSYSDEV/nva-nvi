@@ -22,13 +22,11 @@ public record NviContributor(@JsonProperty("id") String id,
     }
 
     public List<URI> organizationsPartOf(URI topLevelOrg) {
-        var topLevelOrgIdentifier = UriWrapper.fromUri(topLevelOrg).getLastPathElement();
         return affiliations.stream()
                    .filter(organization -> organization instanceof NviOrganization)
                    .map(organizationType -> (NviOrganization) organizationType)
-                   .filter(organization -> organization.partOf().contains(topLevelOrgIdentifier))
-                   .flatMap(nviOrganization -> nviOrganization.partOf().stream())
-                   .map(identifier -> URI.create("https://api.nvi.no/organizations/" + identifier))//TODO: FIX THIS
+                   .filter(organization -> organization.partOfIds().contains(topLevelOrg))
+                   .flatMap(nviOrganization -> nviOrganization.partOfIds().stream())
                    .toList();
     }
 
