@@ -3,7 +3,10 @@ package no.sikt.nva.nvi.index.model.document;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.net.URI;
 import java.util.List;
+import no.unit.nva.auth.uriretriever.UriRetriever;
+import nva.commons.core.paths.UriWrapper;
 
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -11,10 +14,22 @@ public record NviContributor(@JsonProperty("id") String id,
                              @JsonProperty("name") String name,
                              @JsonProperty("orcid") String orcid,
                              @JsonProperty("role") String role,
-                             @JsonProperty("affiliations") List<OrganizationType> affiliations) implements ContributorType {
+                             @JsonProperty("affiliations") List<OrganizationType> affiliations)
+    implements ContributorType {
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    public List<URI> organizationsPartOf(URI topLevelOrg) {
+        var topLevelOrgIdentifier = UriWrapper.fromUri(topLevelOrg).getLastPathElement();
+        return affiliations.stream()
+                   .filter(organization -> organization instanceof NviOrganization)
+                   .map(organizationType -> (NviOrganization) organizationType)
+                   .filter(organization -> organization.partOf().contains(topLevelOrgIdentifier))
+                   .flatMap(nviOrganization -> nviOrganization.partOf().stream())
+                   .map(identifier -> URI.create("https://api.nvi.no/organizations/" + identifier))//TODO: FIX THIS
+                   .toList();
     }
 
     public static final class Builder {
