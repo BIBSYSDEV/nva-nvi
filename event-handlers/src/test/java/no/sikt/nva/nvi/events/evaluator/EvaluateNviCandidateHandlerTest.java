@@ -4,7 +4,6 @@ import static java.math.BigDecimal.ONE;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createResponse;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.mockOrganizationResponseForAffiliation;
-import static no.sikt.nva.nvi.events.evaluator.model.InstanceType.ACADEMIC_ARTICLE;
 import static no.sikt.nva.nvi.events.evaluator.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
 import static no.sikt.nva.nvi.events.evaluator.model.InstanceType.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.JOURNAL;
@@ -32,11 +31,16 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
@@ -50,6 +54,7 @@ import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.test.FakeSqsClient;
+import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -65,7 +70,7 @@ import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class EvaluateNviCandidateHandlerTest {
+class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
 
     public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     public static final PublicationDate HARDCODED_PUBLICATION_DATE = new PublicationDate(null, null, "2023");
@@ -84,6 +89,9 @@ class EvaluateNviCandidateHandlerTest {
     private static final String ACADEMIC_ARTICLE_PATH = "evaluator/candidate_academicArticle.json";
     private static final URI HARDCODED_PUBLICATION_ID = URI.create(
         "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d");
+    private static final String ACADEMIC_ARTICLE = IoUtils.stringFromResources(Path.of(ACADEMIC_ARTICLE_PATH))
+                                                       .replace("__REPLACE_WITH_PUBLICATION_ID__",
+                                                                HARDCODED_PUBLICATION_ID.toString());
     private static final String ERROR_COULD_NOT_FETCH_CRISTIN_ORG = "Could not fetch Cristin organization for: ";
     private static final String COULD_NOT_FETCH_CUSTOMER_MESSAGE = "Could not fetch customer for: ";
     private static final URI CRISTIN_NVI_ORG_TOP_LEVEL_ID = URI.create(
@@ -102,28 +110,33 @@ class EvaluateNviCandidateHandlerTest {
     private AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
     private UriRetriever uriRetriever;
     private FakeSqsClient queueClient;
+    private CandidateRepository candidateRepository;
+    private PeriodRepository periodRepository;
+    private Environment env;
+    private EvaluatorService evaluatorService;
+    private S3StorageReader storageReader;
 
     @BeforeEach
     void setUp() {
-        var env = mock(Environment.class);
+        env = mock(Environment.class);
         when(env.readEnv("CANDIDATE_QUEUE_URL")).thenReturn("My test candidate queue url");
         when(env.readEnv("CANDIDATE_DLQ_URL")).thenReturn("My test candidate dlq url");
-        notFoundResponse = createResponse(404, StringUtils.EMPTY_STRING);
-        badResponse = createResponse(500, StringUtils.EMPTY_STRING);
-        okResponse = createResponse(200, CUSTOMER_API_NVI_RESPONSE);
+        setupHttpResponses();
+        mockSecretManager();
         var s3Client = new FakeS3Client();
-        s3Driver = new S3Driver(s3Client, BUCKET_NAME);
-        var secretsManagerClient = new FakeSecretsManagerClient();
-        var credentials = new BackendClientCredentials("id", "secret");
-        secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
         authorizedBackendUriRetriever = mock(AuthorizedBackendUriRetriever.class);
+        queueClient = new FakeSqsClient();
+        s3Driver = new S3Driver(s3Client, BUCKET_NAME);
+        var dynamoDbClient = initializeTestDatabase();
         uriRetriever = mock(UriRetriever.class);
+        storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
+        periodRepository = new PeriodRepository(dynamoDbClient);
         var calculator = new CandidateCalculator(authorizedBackendUriRetriever, uriRetriever);
-        var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
         var organizationRetriever = new OrganizationRetriever(uriRetriever);
         var pointCalculator = new PointService(organizationRetriever);
-        var evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator);
-        queueClient = new FakeSqsClient();
+        candidateRepository = new CandidateRepository(dynamoDbClient);
+        evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator, candidateRepository,
+                                                periodRepository);
         handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
     }
 
@@ -138,6 +151,32 @@ class EvaluateNviCandidateHandlerTest {
         handler.handleRequest(event, context);
         var candidate = (NviCandidate) getMessageBody().candidate();
         assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
+    }
+
+    @Test
+    void shouldNotEvaluateExistingCandidateInClosedPeriod() throws IOException {
+        var year = LocalDateTime.now().getYear();
+        var resourceFileUri = setUpCandidate(year);
+        periodRepository = no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod(year);
+        setupEvaluatorService(periodRepository);
+        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
+        var event = createEvent(new PersistedResourceMessage(resourceFileUri));
+        handler.handleRequest(event, context);
+        assertEquals(0, queueClient.getSentMessages().size());
+    }
+
+    @Test
+    void shouldEvaluateExistingCandidateInOpenPeriod() throws IOException {
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+        var year = LocalDateTime.now().getYear();
+        var resourceFileUri = setUpCandidate(year);
+        periodRepository = no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod(year);
+        setupEvaluatorService(periodRepository);
+        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
+        var event = createEvent(new PersistedResourceMessage(resourceFileUri));
+        handler.handleRequest(event, context);
+        var candidate = (NviCandidate) getMessageBody().candidate();
+        assertThat(candidate.publicationBucketUri(), is(equalTo(resourceFileUri)));
     }
 
     @Test
@@ -173,13 +212,12 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldCreateNewCandidateEventOnValidAcademicArticle() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var content = IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH);
-        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), content);
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();
         var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_ARTICLE.getValue(),
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(InstanceType.ACADEMIC_ARTICLE.getValue(),
                                                                    expectedPoints,
                                                                    fileUri, JOURNAL,
                                                                    ONE, expectedPoints);
@@ -238,8 +276,7 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldCalculatePointsOnValidAcademicArticle() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var content = IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH);
-        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), content);
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();
@@ -252,8 +289,7 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldCreateInstitutionApprovalsForTopLevelInstitutions() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var content = IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH);
-        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), content);
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();
@@ -371,8 +407,7 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldCreateNonCandidateEventWhenZeroNviInstitutions() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(notFoundResponse);
-        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
-                                          IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
@@ -382,8 +417,7 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldThrowExceptionWhenProblemsFetchingCristinOrganization() throws IOException {
         when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(badResponse));
-        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
-                                          IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         var appender = LogUtils.getTestingAppenderForRootLogger();
         assertThrows(RuntimeException.class, () -> handler.handleRequest(event, context));
@@ -393,8 +427,7 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldThrowExceptionWhenProblemsFetchingCustomer() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(badResponse);
-        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
-                                          IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         var appender = LogUtils.getTestingAppenderForRootLogger();
         assertThrows(RuntimeException.class, () -> handler.handleRequest(event, context));
@@ -404,8 +437,7 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldCreateNewCandidateEventWhenAffiliationAreNviInstitutions() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH),
-                                          IoUtils.inputStreamFromResources(ACADEMIC_ARTICLE_PATH));
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
         var candidate = (NviCandidate) getMessageBody().candidate();
@@ -425,6 +457,12 @@ class EvaluateNviCandidateHandlerTest {
     @Test
     void shouldReadDlqAndRetryAfterGivenTime() {
 
+    }
+
+    private static void mockSecretManager() {
+        var secretsManagerClient = new FakeSecretsManagerClient();
+        var credentials = new BackendClientCredentials("id", "secret");
+        secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
     }
 
     private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(String instanceType,
@@ -475,6 +513,30 @@ class EvaluateNviCandidateHandlerTest {
         return (int) nviCreators.stream()
                          .mapToLong(creator -> creator.nviAffiliations().size())
                          .sum();
+    }
+
+    private void setupEvaluatorService(PeriodRepository periodRepository) {
+        var calculator = new CandidateCalculator(authorizedBackendUriRetriever, uriRetriever);
+        var organizationRetriever = new OrganizationRetriever(uriRetriever);
+        var pointCalculator = new PointService(organizationRetriever);
+        evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator, candidateRepository,
+                                                periodRepository);
+    }
+
+    private URI setUpCandidate(int year) throws IOException {
+        var candidateInClosedPeriod = Candidate.upsert(
+            no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest(year), candidateRepository,
+            periodRepository).orElseThrow();
+        var content = IoUtils.stringFromResources(Path.of(ACADEMIC_ARTICLE_PATH))
+                          .replace("__REPLACE_WITH_PUBLICATION_ID__",
+                                   candidateInClosedPeriod.getPublicationId().toString());
+        return s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), content);
+    }
+
+    private void setupHttpResponses() {
+        notFoundResponse = createResponse(404, StringUtils.EMPTY_STRING);
+        badResponse = createResponse(500, StringUtils.EMPTY_STRING);
+        okResponse = createResponse(200, CUSTOMER_API_NVI_RESPONSE);
     }
 
     private CandidateEvaluatedMessage getMessageBody() {

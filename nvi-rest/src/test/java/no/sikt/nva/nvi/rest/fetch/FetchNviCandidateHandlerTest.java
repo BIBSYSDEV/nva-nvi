@@ -181,7 +181,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
             Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
                 .orElseThrow();
         return Candidate.updateNonCandidate(
-            createUpsertNonCandidateRequest(candidate.getPublicationDetails().publicationId()),
+            createUpsertNonCandidateRequest(candidate.getPublicationId()),
             candidateRepository).orElseThrow();
     }
 

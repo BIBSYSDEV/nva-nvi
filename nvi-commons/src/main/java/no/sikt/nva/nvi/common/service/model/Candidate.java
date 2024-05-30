@@ -258,7 +258,7 @@ public final class Candidate {
                    .withId(getId())
                    .withContext(CONTEXT_URI)
                    .withIdentifier(identifier)
-                   .withPublicationId(publicationDetails.publicationId())
+                   .withPublicationId(getPublicationId())
                    .withApprovals(mapToApprovalDtos())
                    .withNotes(mapToNoteDtos())
                    .withPeriod(mapToPeriodStatusDto())
@@ -324,6 +324,10 @@ public final class Candidate {
                && Objects.equals(collaborationFactor, candidate.collaborationFactor)
                && Objects.equals(createdDate, candidate.createdDate)
                && Objects.equals(reportStatus, candidate.reportStatus);
+    }
+
+    public URI getPublicationId() {
+        return publicationDetails.publicationId();
     }
 
     private static boolean isNotExistingCandidate(UpsertCandidateRequest request, CandidateRepository repository) {

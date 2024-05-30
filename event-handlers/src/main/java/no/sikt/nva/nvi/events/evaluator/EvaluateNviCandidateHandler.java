@@ -1,15 +1,18 @@
 package no.sikt.nva.nvi.events.evaluator;
 
+import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
-import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
@@ -28,7 +31,6 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
     private static final String EVALUATED_CANDIDATE_QUEUE_URL = "CANDIDATE_QUEUE_URL";
     private static final String BACKEND_CLIENT_AUTH_URL = "BACKEND_CLIENT_AUTH_URL";
     private static final String BACKEND_CLIENT_SECRET_NAME = "BACKEND_CLIENT_SECRET_NAME";
-    private static final String EVALUATION_MESSAGE = "Nvi candidacy has been evaluated for publication: {}. Type: {}";
     private static final String FAILURE_MESSAGE = "Failure while calculating NVI Candidate: %s, ex: %s, msg: %s";
     private final EvaluatorService evaluatorService;
     private final QueueClient queueClient;
@@ -39,7 +41,9 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
         this(new EvaluatorService(new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")),
                                   new CandidateCalculator(authorizedUriRetriever(new Environment()),
                                                           new UriRetriever()),
-                                  new PointService(new OrganizationRetriever(new UriRetriever()))),
+                                  new PointService(new OrganizationRetriever(new UriRetriever())),
+                                  new CandidateRepository(defaultDynamoClient()),
+                                  new PeriodRepository(defaultDynamoClient())),
              new NviQueueClient(), new Environment());
     }
 
@@ -53,8 +57,10 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
 
     @Override
     public Void handleRequest(SQSEvent input, Context context) {
-        attempt(() -> sendEvent(evaluateCandidacy(extractPersistedResourceMessage(input)))).orElseThrow(
-            failure -> handleFailure(input, failure));
+        attempt(() -> {
+            evaluateCandidacy(extractPersistedResourceMessage(input)).ifPresent(this::sendEvent);
+            return null;
+        }).orElseThrow(failure -> handleFailure(input, failure));
         return null;
     }
 
@@ -64,7 +70,7 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
                                                  env.readEnv(BACKEND_CLIENT_SECRET_NAME));
     }
 
-    private static RuntimeException handleFailure(SQSEvent input, Failure<NviSendMessageResponse> failure) {
+    private static RuntimeException handleFailure(SQSEvent input, Failure<?> failure) {
         LOGGER.error(String.format(FAILURE_MESSAGE, input.toString(), failure.getException(),
                                    failure.getException().getMessage()));
         return new RuntimeException(failure.getException());
@@ -74,9 +80,9 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
         return attempt(() -> dtoObjectMapper.readValue(body, PersistedResourceMessage.class)).orElseThrow();
     }
 
-    private NviSendMessageResponse sendEvent(CandidateEvaluatedMessage candidateEvaluatedMessage) {
+    private void sendEvent(CandidateEvaluatedMessage candidateEvaluatedMessage) {
         var messageBody = attempt(() -> dtoObjectMapper.writeValueAsString(candidateEvaluatedMessage)).orElseThrow();
-        return queueClient.sendMessage(messageBody, queueUrl);
+        queueClient.sendMessage(messageBody, queueUrl);
     }
 
     private PersistedResourceMessage extractPersistedResourceMessage(SQSEvent input) {
@@ -87,10 +93,7 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
         return input.getRecords().stream().findFirst().orElseThrow();
     }
 
-    private CandidateEvaluatedMessage evaluateCandidacy(PersistedResourceMessage message) {
-        var evaluatedCandidate = evaluatorService.evaluateCandidacy(message.resourceFileUri());
-        LOGGER.info(EVALUATION_MESSAGE, evaluatedCandidate.candidate().publicationId(),
-                    evaluatedCandidate.candidate().getClass().getSimpleName());
-        return evaluatedCandidate;
+    private Optional<CandidateEvaluatedMessage> evaluateCandidacy(PersistedResourceMessage message) {
+        return evaluatorService.evaluateCandidacy(message.resourceFileUri());
     }
 }
