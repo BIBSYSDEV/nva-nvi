@@ -1,25 +1,25 @@
 [versions]
-junit = { strictly = '5.8.2' }
-nva = { strictly = '1.36.10' }
-jackson = { strictly = '2.15.2' }
-mockito = { strictly = '4.5.1' }
+junit = { strictly = '5.10.2' }
+nva = { strictly = '1.39.3' }
+jackson = { strictly = '2.16.1' }
+mockito = { strictly = '5.10.0' }
 hamcrest = { strictly = '2.2' }
 zalando = { strictly = '0.27.1' }
-awsLambdaJavaCore = { strictly = '1.2.2' }
+awsLambdaJavaCore = { strictly = '1.2.3' }
 awsLambdaEvents = { strictly = '3.11.4' }
-log4j = { strictly = '2.22.0' }
-slf4j = { strictly = '2.0.9' }
+log4j = { strictly = '2.23.0' }
+slf4j = { require = '2.0.12' }
 awslog4j2 = { strictly = '1.5.1' }
-wiremock = { strictly = "3.0.2" }
+wiremock = { strictly = "3.4.1" }
 commons-validator-version = { strictly = '1.7' }
-awsSdk = { strictly = '1.12.544' }
-awsSdk2 = { strictly = '2.20.141' }
-jena = { strictly = '4.7.0' }
+awsSdk = { strictly = '1.12.668' }
+awsSdk2 = { strictly = '2.24.12' }
+jena = { strictly = '4.9.0'}
 openSearchRestClient = { strictly = '2.9.0' }
 openSearchJava = { strictly = '2.6.0' }
-com-auth0-jwt = { strictly = '3.18.3' }
-guava = { strictly = '32.1.2-jre' }
-dynamoDbLocal = { strictly = '1.19.0' }
+com-auth0-jwt = { strictly = '4.4.0' }
+guava = { require = '32.1.2-jre' }
+dynamoDbLocal = { strictly = '2.0.0' }
 
 [libraries]
 junit-jupiter-api = { group = 'org.junit.jupiter', name = 'junit-jupiter-api', version.ref = 'junit' }

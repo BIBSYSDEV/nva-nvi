@@ -3,15 +3,18 @@
     {
       "rolename": "Creator",
       "accessRights": [
-        "MANAGE_OWN_PROJECTS"
+        "MANAGE_RESOURCES_STANDARD"
       ],
       "type": "Role"
     },
     {
       "rolename": "App-admin",
       "accessRights": [
-        "ADMINISTRATE_APPLICATION",
-        "PROCESS_IMPORT_CANDIDATE"
+        "ACT_AS",
+        "MANAGE_CUSTOMERS",
+        "MANAGE_EXTERNAL_CLIENTS",
+        "MANAGE_NVI",
+        "MANAGE_IMPORT"
       ],
       "type": "Role"
     }
