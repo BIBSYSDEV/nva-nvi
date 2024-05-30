@@ -135,7 +135,6 @@ public final class NviCandidateIndexDocumentGenerator {
                                       .filter(contributorType -> contributorType instanceof NviContributor)
                                       .map(contributorType -> (NviContributor) contributorType)
                                       .flatMap(contributor -> contributor.organizationsPartOf(topLevelOrg).stream())
-                                      .map(OrganizationType::id)
                                       .collect(Collectors.toCollection(HashSet::new));
         creatorAffiliations.add(topLevelOrg);
         return creatorAffiliations;
