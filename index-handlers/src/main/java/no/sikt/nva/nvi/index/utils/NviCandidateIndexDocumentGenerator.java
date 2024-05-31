@@ -52,7 +52,6 @@ import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.unit.nva.auth.uriretriever.UriRetriever;
-import nva.commons.core.paths.UriWrapper;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.NodeIterator;
 import org.apache.jena.rdf.model.RDFNode;
@@ -105,17 +104,10 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static NviOrganization buildNviOrganization(URI id, Stream<String> rdfNodes) {
         var partOf = rdfNodes.map(URI::create).toList();
-        var partOfIdentifiers = partOf.stream().map(UriWrapper::fromUri).map(UriWrapper::getLastPathElement)
-                                    .collect(Collectors.toList());
         return NviOrganization.builder()
                    .withId(id)
-                   .withPartOf(partOfIdentifiers)
-                   .withPartOfIds(partOf)
+                   .withPartOf(partOf)
                    .build();
-    }
-
-    private static String getLastPathElement(String uri) {
-        return UriWrapper.fromUri(uri).getLastPathElement();
     }
 
     private static NodeIterator listPropertyPartOfObjects(Model model) {
@@ -133,14 +125,11 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static Set<URI> extractInvolvedOrganizations(Approval approval,
                                                          List<ContributorType> expandedContributors) {
-        var topLevelOrg = approval.getInstitutionId();
-        var creatorAffiliations = expandedContributors.stream()
-                                      .filter(contributorType -> contributorType instanceof NviContributor)
-                                      .map(contributorType -> (NviContributor) contributorType)
-                                      .flatMap(contributor -> contributor.organizationsPartOf(topLevelOrg).stream())
-                                      .collect(Collectors.toCollection(HashSet::new));
-        creatorAffiliations.add(topLevelOrg);
-        return creatorAffiliations;
+        return expandedContributors.stream()
+                   .filter(contributorType -> contributorType instanceof NviContributor)
+                   .map(contributorType -> (NviContributor) contributorType)
+                   .flatMap(contributor -> contributor.organizationsPartOf(approval.getInstitutionId()).stream())
+                   .collect(Collectors.toCollection(HashSet::new));
     }
 
     private PublicationDetails expandPublicationDetails(JsonNode expandedResource, List<ContributorType> contributors) {
@@ -161,8 +150,7 @@ public final class NviCandidateIndexDocumentGenerator {
                                                                                 Candidate candidate,
                                                                                 List<ContributorType> expandedContributors) {
         return streamValues(candidate.getApprovals()).map(
-                approval -> toApproval(resource, approval, candidate, expandedContributors))
-                   .toList();
+                approval -> toApproval(resource, approval, candidate, expandedContributors)).toList();
     }
 
     private Map<String, String> extractLabels(JsonNode resource, Approval approval) {

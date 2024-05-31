@@ -33,12 +33,11 @@ import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import nva.commons.core.paths.UnixPath;
 
 public final class IndexDocumentTestUtils {
-    public static final String HARD_CODED_TOP_LEVEL_ORG = "hardCodedPartOf";
-    public static final String HARD_CODED_MEDIUM_LEVEL_ORG = "hardCodedMediumLevelOrg";
-    public static final URI HARD_CODED_PART_OF_MEDIUM_LEVEL = URI.create(
-        "https://example.org/organization/" + HARD_CODED_MEDIUM_LEVEL_ORG);
-    public static final URI HARD_CODED_PART_OF_TOP_LEVEL = URI.create(
-        "https://example.org/organization/" + HARD_CODED_TOP_LEVEL_ORG);
+
+    public static final URI HARD_CODED_MEDIUM_LEVEL_ORG = URI.create(
+        "https://example.org/organization/hardCodedMediumLevelOrg");
+    public static final URI HARD_CODED_TOP_LEVEL_ORG = URI.create(
+        "https://example.org/organization/hardCodedPartOf");
     public static final URI NVI_CONTEXT = URI.create("https://bibsysdev.github.io/src/nvi-context.json");
     public static final String NVI_CANDIDATES_FOLDER = "nvi-candidates";
     public static final String GZIP_ENDING = ".gz";
@@ -93,20 +92,11 @@ public final class IndexDocumentTestUtils {
 
     private static Set<URI> extractInvolvedOrganizations(Approval approval,
                                                          List<ContributorType> expandedContributors) {
-        var topLevelOrg = approval.getInstitutionId();
-        var creatorAffiliations = expandedContributors.stream()
-                                      .filter(contributorType -> contributorType instanceof NviContributor)
-                                      .map(contributorType -> (NviContributor) contributorType)
-                                      .flatMap(contributor -> contributor.organizationsPartOf(topLevelOrg).stream())
-                                      .collect(Collectors.toCollection(HashSet::new));
-        creatorAffiliations.add(topLevelOrg);
-        return creatorAffiliations;
-    }
-
-    private static Set<URI> getAffiliationsWithPoints(List<CreatorAffiliationPoints> creatorAffiliationPoints) {
-        return creatorAffiliationPoints.stream()
-                   .map(CreatorAffiliationPoints::affiliationId)
-                   .collect(Collectors.toSet());
+        return expandedContributors.stream()
+                   .filter(contributorType -> contributorType instanceof NviContributor)
+                   .map(contributorType -> (NviContributor) contributorType)
+                   .flatMap(contributor -> contributor.organizationsPartOf(approval.getInstitutionId()).stream())
+                   .collect(Collectors.toCollection(HashSet::new));
     }
 
     private static ApprovalStatus getApprovalStatus(Approval approval) {
@@ -200,7 +190,7 @@ public final class IndexDocumentTestUtils {
     private static OrganizationType generateNviOrganization(URI id) {
         return NviOrganization.builder()
                    .withId(id)
-                   .withPartOf(List.of(HARD_CODED_TOP_LEVEL_ORG, HARD_CODED_MEDIUM_LEVEL_ORG))
+                   .withPartOf(List.of(HARD_CODED_MEDIUM_LEVEL_ORG, HARD_CODED_TOP_LEVEL_ORG))
                    .build();
     }
 }

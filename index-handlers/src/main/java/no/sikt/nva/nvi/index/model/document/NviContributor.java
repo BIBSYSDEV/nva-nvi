@@ -4,9 +4,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import no.unit.nva.auth.uriretriever.UriRetriever;
-import nva.commons.core.paths.UriWrapper;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -22,12 +25,24 @@ public record NviContributor(@JsonProperty("id") String id,
     }
 
     public List<URI> organizationsPartOf(URI topLevelOrg) {
+        var partOfIds = affiliationsPartOf(topLevelOrg)
+                            .flatMap(nviOrganization -> nviOrganization.partOf().stream())
+                            .collect(Collectors.toCollection(ArrayList::new));
+        partOfIds.addAll(affiliationsIdsPartOf(topLevelOrg));
+        return partOfIds;
+    }
+
+    public List<URI> affiliationsIdsPartOf(URI topLevelOrg) {
+        return affiliationsPartOf(topLevelOrg)
+                   .map(NviOrganization::id)
+                   .toList();
+    }
+
+    private Stream<NviOrganization> affiliationsPartOf(URI topLevelOrg) {
         return affiliations.stream()
                    .filter(organization -> organization instanceof NviOrganization)
                    .map(organizationType -> (NviOrganization) organizationType)
-                   .filter(organization -> organization.partOfIds().contains(topLevelOrg))
-                   .flatMap(nviOrganization -> nviOrganization.partOfIds().stream())
-                   .toList();
+                   .filter(organization -> organization.partOf().contains(topLevelOrg));
     }
 
     public static final class Builder {

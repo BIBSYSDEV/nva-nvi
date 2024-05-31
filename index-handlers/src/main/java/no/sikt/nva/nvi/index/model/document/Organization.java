@@ -12,7 +12,7 @@ import java.util.List;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonTypeName("Organization")
 public record Organization(URI id,
-                           List<String> partOf) implements OrganizationType {
+                           List<URI> partOf) implements OrganizationType {
 
     public static Builder builder() {
         return new Builder();
@@ -21,7 +21,7 @@ public record Organization(URI id,
     public static final class Builder {
 
         private URI id;
-        private List<String> partOf;
+        private List<URI> partOf;
 
         private Builder() {
         }
@@ -31,7 +31,7 @@ public record Organization(URI id,
             return this;
         }
 
-        public Builder withPartOf(List<String> partOf) {
+        public Builder withPartOf(List<URI> partOf) {
             this.partOf = partOf;
             return this;
         }

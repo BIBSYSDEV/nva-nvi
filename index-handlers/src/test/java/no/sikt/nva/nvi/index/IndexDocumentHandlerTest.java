@@ -7,8 +7,8 @@ import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_L
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_NORWEGIAN_LABEL;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.createExpandedResource;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.GZIP_ENDING;
-import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.HARD_CODED_PART_OF_MEDIUM_LEVEL;
-import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.HARD_CODED_PART_OF_TOP_LEVEL;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.HARD_CODED_MEDIUM_LEVEL_ORG;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.HARD_CODED_TOP_LEVEL_ORG;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.NVI_CANDIDATES_FOLDER;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandApprovals;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandPublicationDetails;
@@ -107,7 +107,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldBuildIndexDocumentAndPersistInS3WhenReceivingSqsEvent() {
-        var candidate = randomApplicableCandidate(HARD_CODED_PART_OF_TOP_LEVEL, randomUri());
+        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
             candidate).indexDocument();
         var event = createEvent(candidate.getIdentifier());
@@ -134,7 +134,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldFetchOrganizationLabelsFromCristinApiWhenExpandedResourceIsMissingTopLevelOrganization() {
-        var candidate = randomApplicableCandidate(HARD_CODED_PART_OF_TOP_LEVEL, randomUri());
+        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
         var expandedResource = createExpandedResource(candidate);
         setupResourceMissingTopLevelOrganizationsInS3(expandedResource, candidate);
         var expectedIndexDocument = IndexDocumentWithConsumptionAttributes.from(
@@ -292,7 +292,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldNotFailForWholeBatchWhenFailingToFetchOneCandidate() {
-        var candidateToSucceed = randomApplicableCandidate(HARD_CODED_PART_OF_TOP_LEVEL, randomUri());
+        var candidateToSucceed = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
             candidateToSucceed);
         var event = createEvent(List.of(UUID.randomUUID(), candidateToSucceed.getIdentifier()));
@@ -304,7 +304,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldNotFailForWholeBatchWhenFailingParseOneEventRecord() {
-        var candidateToSucceed = randomApplicableCandidate(HARD_CODED_PART_OF_TOP_LEVEL, randomUri());
+        var candidateToSucceed = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
             candidateToSucceed);
         var event = createEventWithOneInvalidRecord(candidateToSucceed.getIdentifier());
@@ -385,9 +385,9 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     private static ObjectNode orgWithThreeLevels(URI affiliationId) {
         var lowLevel = generateOrganizationNode(affiliationId.toString());
         var partOfArrayNode = dtoObjectMapper.createArrayNode();
-        var mediumLevel = generateOrganizationNode(HARD_CODED_PART_OF_MEDIUM_LEVEL.toString());
+        var mediumLevel = generateOrganizationNode(HARD_CODED_MEDIUM_LEVEL_ORG.toString());
         var mediumLevelPartOfArrayNode = dtoObjectMapper.createArrayNode();
-        var topLevel = generateOrganizationNode(HARD_CODED_PART_OF_TOP_LEVEL.toString());
+        var topLevel = generateOrganizationNode(HARD_CODED_TOP_LEVEL_ORG.toString());
         mediumLevelPartOfArrayNode.add(topLevel);
         mediumLevel.set("partOf", mediumLevelPartOfArrayNode);
         partOfArrayNode.add(mediumLevel);

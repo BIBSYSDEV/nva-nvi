@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index.model.document;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -14,8 +13,7 @@ import java.util.List;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonTypeName("Organization")
 public record NviOrganization(@JsonProperty("id") URI id,
-                              @JsonProperty("partOf") List<String> partOf,
-                              @JsonIgnore List<URI> partOfIds) implements OrganizationType {
+                              @JsonProperty("partOf") List<URI> partOf) implements OrganizationType {
 
     public static Builder builder() {
         return new Builder();
@@ -24,8 +22,7 @@ public record NviOrganization(@JsonProperty("id") URI id,
     public static final class Builder {
 
         private URI id;
-        private List<String> partOf;
-        List<URI> partOfIds;
+        private List<URI> partOf;
 
         private Builder() {
         }
@@ -35,18 +32,13 @@ public record NviOrganization(@JsonProperty("id") URI id,
             return this;
         }
 
-        public Builder withPartOf(List<String> partOf) {
+        public Builder withPartOf(List<URI> partOf) {
             this.partOf = partOf;
             return this;
         }
 
-        public Builder withPartOfIds(List<URI> partOfIds) {
-            this.partOfIds = partOfIds;
-            return this;
-        }
-
         public NviOrganization build() {
-            return new NviOrganization(id, partOf, partOfIds);
+            return new NviOrganization(id, partOf);
         }
     }
 }
