@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @JsonSerialize
@@ -22,21 +21,26 @@ public record NviContributor(@JsonProperty("id") String id,
         return new Builder();
     }
 
-    public List<URI> organizationsPartOf(URI topLevelOrg) {
-        var partOfIds = affiliationsPartOf(topLevelOrg)
-                            .flatMap(nviOrganization -> nviOrganization.partOf().stream())
-                            .collect(Collectors.toCollection(ArrayList::new));
-        partOfIds.addAll(affiliationsIdsPartOf(topLevelOrg));
-        return partOfIds;
+    public List<URI> getOrganizationsPartOf(URI topLevelOrg) {
+        var organizationsPartOfTopLevelOrg = new ArrayList<URI>();
+        organizationsPartOfTopLevelOrg.addAll(getOrganizationsAboveAffiliationInOrgHierarchy(topLevelOrg));
+        organizationsPartOfTopLevelOrg.addAll(getAffiliationsIdsPartOf(topLevelOrg));
+        return organizationsPartOfTopLevelOrg.stream().toList();
     }
 
-    private List<URI> affiliationsIdsPartOf(URI topLevelOrg) {
-        return affiliationsPartOf(topLevelOrg)
+    private List<URI> getOrganizationsAboveAffiliationInOrgHierarchy(URI topLevelOrg) {
+        return getAffiliationsPartOf(topLevelOrg)
+                   .flatMap(nviOrganization -> nviOrganization.partOf().stream())
+                   .toList();
+    }
+
+    private List<URI> getAffiliationsIdsPartOf(URI topLevelOrg) {
+        return getAffiliationsPartOf(topLevelOrg)
                    .map(NviOrganization::id)
                    .toList();
     }
 
-    private Stream<NviOrganization> affiliationsPartOf(URI topLevelOrg) {
+    private Stream<NviOrganization> getAffiliationsPartOf(URI topLevelOrg) {
         return affiliations.stream()
                    .filter(organization -> organization instanceof NviOrganization)
                    .map(organizationType -> (NviOrganization) organizationType)

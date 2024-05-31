@@ -134,7 +134,7 @@ public final class NviCandidateIndexDocumentGenerator {
         return expandedContributors.stream()
                    .filter(contributorType -> contributorType instanceof NviContributor)
                    .map(contributorType -> (NviContributor) contributorType)
-                   .flatMap(contributor -> contributor.organizationsPartOf(approval.getInstitutionId()).stream())
+                   .flatMap(contributor -> contributor.getOrganizationsPartOf(approval.getInstitutionId()).stream())
                    .collect(Collectors.toCollection(HashSet::new));
     }
 
