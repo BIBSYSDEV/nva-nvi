@@ -6,10 +6,8 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
-import nva.commons.core.JacocoGenerated;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
