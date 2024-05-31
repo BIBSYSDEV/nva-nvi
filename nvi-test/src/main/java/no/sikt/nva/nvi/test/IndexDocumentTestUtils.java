@@ -92,8 +92,8 @@ public final class IndexDocumentTestUtils {
     private static Set<URI> extractInvolvedOrganizations(Approval approval,
                                                          List<ContributorType> expandedContributors) {
         return expandedContributors.stream()
-                   .filter(contributorType -> contributorType instanceof NviContributor)
-                   .map(contributorType -> (NviContributor) contributorType)
+                   .filter(NviContributor.class::isInstance)
+                   .map(NviContributor.class::cast)
                    .flatMap(contributor -> contributor.getOrganizationsPartOf(approval.getInstitutionId()).stream())
                    .collect(Collectors.toCollection(HashSet::new));
     }
