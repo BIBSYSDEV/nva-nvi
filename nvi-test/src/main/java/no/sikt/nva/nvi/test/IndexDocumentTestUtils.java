@@ -8,7 +8,6 @@ import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractAffiliations
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.net.URI;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -95,7 +94,7 @@ public final class IndexDocumentTestUtils {
                    .filter(NviContributor.class::isInstance)
                    .map(NviContributor.class::cast)
                    .flatMap(contributor -> contributor.getOrganizationsPartOf(approval.getInstitutionId()).stream())
-                   .collect(Collectors.toCollection(HashSet::new));
+                   .collect(Collectors.toSet());
     }
 
     private static ApprovalStatus getApprovalStatus(Approval approval) {
