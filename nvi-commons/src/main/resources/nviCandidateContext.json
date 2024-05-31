@@ -30,12 +30,9 @@
     "modifiedDate": {
       "@type": "xsd:dateTime"
     },
-    "partOf": {
-      "@container": "@set",
-      "@context": {
-        "@base": "__REPLACE_WITH_API_DOMAIN__/cristin/organization"
-      },
-      "@type": "@id"
+    "involvedOrganizations": {
+      "@id": "involvedOrganization",
+      "@container": "@set"
     }
   }
 }
