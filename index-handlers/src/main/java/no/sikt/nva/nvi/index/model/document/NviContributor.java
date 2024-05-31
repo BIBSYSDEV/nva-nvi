@@ -30,7 +30,7 @@ public record NviContributor(@JsonProperty("id") String id,
         return partOfIds;
     }
 
-    public List<URI> affiliationsIdsPartOf(URI topLevelOrg) {
+    private List<URI> affiliationsIdsPartOf(URI topLevelOrg) {
         return affiliationsPartOf(topLevelOrg)
                    .map(NviOrganization::id)
                    .toList();

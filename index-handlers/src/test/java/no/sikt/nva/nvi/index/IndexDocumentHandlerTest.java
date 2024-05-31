@@ -7,7 +7,7 @@ import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_L
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_NORWEGIAN_LABEL;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.createExpandedResource;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.GZIP_ENDING;
-import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.HARD_CODED_MEDIUM_LEVEL_ORG;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.HARD_CODED_INTERMEDIATE_ORGANIZATION;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.HARD_CODED_TOP_LEVEL_ORG;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.NVI_CANDIDATES_FOLDER;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandApprovals;
@@ -385,12 +385,12 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     private static ObjectNode orgWithThreeLevels(URI affiliationId) {
         var lowLevel = generateOrganizationNode(affiliationId.toString());
         var partOfArrayNode = dtoObjectMapper.createArrayNode();
-        var mediumLevel = generateOrganizationNode(HARD_CODED_MEDIUM_LEVEL_ORG.toString());
-        var mediumLevelPartOfArrayNode = dtoObjectMapper.createArrayNode();
+        var intermediateLevel = generateOrganizationNode(HARD_CODED_INTERMEDIATE_ORGANIZATION.toString());
+        var intermediateLevelPartOfArrayNode = dtoObjectMapper.createArrayNode();
         var topLevel = generateOrganizationNode(HARD_CODED_TOP_LEVEL_ORG.toString());
-        mediumLevelPartOfArrayNode.add(topLevel);
-        mediumLevel.set("partOf", mediumLevelPartOfArrayNode);
-        partOfArrayNode.add(mediumLevel);
+        intermediateLevelPartOfArrayNode.add(topLevel);
+        intermediateLevel.set("partOf", intermediateLevelPartOfArrayNode);
+        partOfArrayNode.add(intermediateLevel);
         lowLevel.set("partOf", partOfArrayNode);
         return lowLevel;
     }

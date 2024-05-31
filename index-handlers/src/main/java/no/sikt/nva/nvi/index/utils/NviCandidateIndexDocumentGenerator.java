@@ -70,8 +70,14 @@ public final class NviCandidateIndexDocumentGenerator {
 
     public NviCandidateIndexDocument generateDocument(JsonNode expandedResource, Candidate candidate) {
         var expandedContributors = expandContributors(expandedResource, candidate);
-        var expandedPublicationDetails = expandPublicationDetails(expandedResource, expandedContributors);
         var approvals = createApprovals(expandedResource, candidate, expandedContributors);
+        var expandedPublicationDetails = expandPublicationDetails(expandedResource, expandedContributors);
+        return buildDocument(candidate, approvals, expandedPublicationDetails);
+    }
+
+    private static NviCandidateIndexDocument buildDocument(Candidate candidate,
+                                                           List<no.sikt.nva.nvi.index.model.document.Approval> approvals,
+                                                           PublicationDetails expandedPublicationDetails) {
         return NviCandidateIndexDocument.builder()
                    .withId(candidate.getId())
                    .withContext(Candidate.getContextUri())
@@ -150,7 +156,7 @@ public final class NviCandidateIndexDocumentGenerator {
                                                                                 Candidate candidate,
                                                                                 List<ContributorType> expandedContributors) {
         return streamValues(candidate.getApprovals()).map(
-                approval -> toApproval(resource, approval, candidate, expandedContributors)).toList();
+            approval -> toApproval(resource, approval, candidate, expandedContributors)).toList();
     }
 
     private Map<String, String> extractLabels(JsonNode resource, Approval approval) {
@@ -164,7 +170,7 @@ public final class NviCandidateIndexDocumentGenerator {
     private no.sikt.nva.nvi.common.model.Organization fetchOrganization(URI institutionId) {
         return getRawContentFromUriCached(institutionId)
                    .map(NviCandidateIndexDocumentGenerator::toOrganization)
-                   .orElseThrow(() -> logFailingAffiliationHttpRequest(institutionId.toString()));
+                   .orElseThrow();
     }
 
     private no.sikt.nva.nvi.index.model.document.Approval toApproval(JsonNode resource, Approval approval,
@@ -292,11 +298,6 @@ public final class NviCandidateIndexDocumentGenerator {
         rawContentFromUri.ifPresent(content -> this.temporaryCache.put(id, content));
 
         return rawContentFromUri;
-    }
-
-    private RuntimeException logFailingAffiliationHttpRequest(String id) {
-        LOGGER.error("Failure while retrieving affiliation. Uri: {}", id);
-        return new RuntimeException("Failure while retrieving affiliation");
     }
 
     private Optional<String> getRawContentFromUri(URI uri) {

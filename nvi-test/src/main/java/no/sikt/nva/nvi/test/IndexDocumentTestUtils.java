@@ -33,8 +33,8 @@ import nva.commons.core.paths.UnixPath;
 
 public final class IndexDocumentTestUtils {
 
-    public static final URI HARD_CODED_MEDIUM_LEVEL_ORG = URI.create(
-        "https://example.org/organization/hardCodedMediumLevelOrg");
+    public static final URI HARD_CODED_INTERMEDIATE_ORGANIZATION = URI.create(
+        "https://example.org/organization/hardCodedIntermediateOrg");
     public static final URI HARD_CODED_TOP_LEVEL_ORG = URI.create(
         "https://example.org/organization/hardCodedPartOf");
     public static final URI NVI_CONTEXT = URI.create("https://bibsysdev.github.io/src/nvi-context.json");
@@ -189,7 +189,7 @@ public final class IndexDocumentTestUtils {
     private static OrganizationType generateNviOrganization(URI id) {
         return NviOrganization.builder()
                    .withId(id)
-                   .withPartOf(List.of(HARD_CODED_MEDIUM_LEVEL_ORG, HARD_CODED_TOP_LEVEL_ORG))
+                   .withPartOf(List.of(HARD_CODED_INTERMEDIATE_ORGANIZATION, HARD_CODED_TOP_LEVEL_ORG))
                    .build();
     }
 }
