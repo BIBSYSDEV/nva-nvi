@@ -19,7 +19,7 @@
         "affiliations" : [ {
           "type": "Organization",
           "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0",
-          "partOf": ["194.0.0.0"]
+          "partOf": ["https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0"]
         } ],
         "role" : "Creator"
       }

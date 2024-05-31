@@ -7,7 +7,8 @@ import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_L
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_NORWEGIAN_LABEL;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.createExpandedResource;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.GZIP_ENDING;
-import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.HARD_CODED_PART_OF;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.HARD_CODED_INTERMEDIATE_ORGANIZATION;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.HARD_CODED_TOP_LEVEL_ORG;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.NVI_CANDIDATES_FOLDER;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandApprovals;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandPublicationDetails;
@@ -106,7 +107,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldBuildIndexDocumentAndPersistInS3WhenReceivingSqsEvent() {
-        var candidate = randomApplicableCandidate(HARD_CODED_PART_OF, randomUri());
+        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
             candidate).indexDocument();
         var event = createEvent(candidate.getIdentifier());
@@ -133,7 +134,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldFetchOrganizationLabelsFromCristinApiWhenExpandedResourceIsMissingTopLevelOrganization() {
-        var candidate = randomApplicableCandidate(HARD_CODED_PART_OF, randomUri());
+        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
         var expandedResource = createExpandedResource(candidate);
         setupResourceMissingTopLevelOrganizationsInS3(expandedResource, candidate);
         var expectedIndexDocument = IndexDocumentWithConsumptionAttributes.from(
@@ -291,7 +292,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldNotFailForWholeBatchWhenFailingToFetchOneCandidate() {
-        var candidateToSucceed = randomApplicableCandidate(HARD_CODED_PART_OF, randomUri());
+        var candidateToSucceed = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
             candidateToSucceed);
         var event = createEvent(List.of(UUID.randomUUID(), candidateToSucceed.getIdentifier()));
@@ -303,7 +304,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldNotFailForWholeBatchWhenFailingParseOneEventRecord() {
-        var candidateToSucceed = randomApplicableCandidate(HARD_CODED_PART_OF, randomUri());
+        var candidateToSucceed = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
             candidateToSucceed);
         var event = createEventWithOneInvalidRecord(candidateToSucceed.getIdentifier());
@@ -381,6 +382,19 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
                    .getLastPathElement();
     }
 
+    private static ObjectNode orgWithThreeLevels(URI affiliationId) {
+        var lowLevel = generateOrganizationNode(affiliationId.toString());
+        var partOfArrayNode = dtoObjectMapper.createArrayNode();
+        var intermediateLevel = generateOrganizationNode(HARD_CODED_INTERMEDIATE_ORGANIZATION.toString());
+        var intermediateLevelPartOfArrayNode = dtoObjectMapper.createArrayNode();
+        var topLevel = generateOrganizationNode(HARD_CODED_TOP_LEVEL_ORG.toString());
+        intermediateLevelPartOfArrayNode.add(topLevel);
+        intermediateLevel.set("partOf", intermediateLevelPartOfArrayNode);
+        partOfArrayNode.add(intermediateLevel);
+        lowLevel.set("partOf", partOfArrayNode);
+        return lowLevel;
+    }
+
     private ConsumptionAttributes setUpExistingResourceWithNonNviCreatorAffiliations(Candidate candidate) {
         var expandedResource = createExpandedResource(candidate, List.of(randomUri()));
         var resourceIndexDocument = createResourceIndexDocument(expandedResource);
@@ -439,18 +453,9 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     private void mockOrganizationResponse(URI affiliationId) {
-        var httpResponse = generateResponse(affiliationId);
+        var httpResponse = Optional.of(createResponse(
+            attempt(() -> dtoObjectMapper.writeValueAsString(orgWithThreeLevels(affiliationId))).orElseThrow()));
         when(uriRetriever.fetchResponse(eq(affiliationId), eq(MEDIA_TYPE_JSON_V2))).thenReturn(httpResponse);
-    }
-
-    private Optional<HttpResponse<String>> generateResponse(URI affiliation) {
-        var affiliationOrganizationNode = generateOrganizationNode(affiliation.toString());
-        var partOfArrayNode = dtoObjectMapper.createArrayNode();
-        var partOfOrganizationNode = generateOrganizationNode(HARD_CODED_PART_OF.toString());
-        partOfArrayNode.add(partOfOrganizationNode);
-        affiliationOrganizationNode.set("partOf", partOfArrayNode);
-        return Optional.of(createResponse(
-            attempt(() -> dtoObjectMapper.writeValueAsString(affiliationOrganizationNode)).orElseThrow()));
     }
 
     private IndexDocumentWithConsumptionAttributes setUpExistingResourceInS3AndGenerateExpectedDocument(
@@ -481,14 +486,15 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     private NviCandidateIndexDocument createExpectedNviIndexDocument(JsonNode expandedResource, Candidate candidate) {
+        var expandedPublicationDetails = expandPublicationDetails(candidate, expandedResource);
         return NviCandidateIndexDocument.builder()
                    .withContext(Candidate.getContextUri())
                    .withId(candidate.getId())
                    .withIsApplicable(candidate.isApplicable())
                    .withIdentifier(candidate.getIdentifier())
-                   .withApprovals(expandApprovals(candidate))
+                   .withApprovals(expandApprovals(candidate, expandedPublicationDetails.contributors()))
                    .withPoints(candidate.getTotalPoints())
-                   .withPublicationDetails(expandPublicationDetails(candidate, expandedResource))
+                   .withPublicationDetails(expandedPublicationDetails)
                    .withNumberOfApprovals(candidate.getApprovals().size())
                    .withCreatorShareCount(candidate.getCreatorShareCount())
                    .withReported(candidate.isReported())

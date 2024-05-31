@@ -16,7 +16,7 @@
         "affiliations" : [ {
           "type": "Organization",
           "id": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.1",
-          "partOf": ["20754.0.0.0"]
+          "partOf": ["https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"]
         } ],
         "role" : "Editor"
       } ]

@@ -69,8 +69,7 @@ public final class Candidate {
     public static final URI CONTEXT_URI = UriWrapper.fromHost(API_DOMAIN)
                                               .addChild(BASE_PATH, "context")
                                               .getUri();
-    private static final String CONTEXT = stringFromResources(Path.of("nviCandidateContext.json"))
-                                              .replace("__REPLACE_WITH_API_DOMAIN__", API_DOMAIN);
+    private static final String CONTEXT = stringFromResources(Path.of("nviCandidateContext.json"));
     private static final String CANDIDATE_PATH = "candidate";
     private static final String PERIOD_CLOSED_MESSAGE = "Period is closed, perform actions on candidate is forbidden!";
     private static final String PERIOD_NOT_OPENED_MESSAGE = "Period is not opened yet, perform actions on candidate is"
@@ -580,8 +579,6 @@ public final class Candidate {
                    .periodYear(null)
                    .build();
     }
-
-
 
     private void setUserAsAssigneeIfApprovalIsUnassigned(String username, URI institutionId) {
         approvals.computeIfPresent(institutionId, (uri, approval) -> updateAssigneeIfUnassigned(username, approval));

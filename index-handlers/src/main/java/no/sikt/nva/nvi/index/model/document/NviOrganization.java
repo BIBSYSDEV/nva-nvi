@@ -13,7 +13,7 @@ import java.util.List;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonTypeName("Organization")
 public record NviOrganization(@JsonProperty("id") URI id,
-                              @JsonProperty("partOf") List<String> partOf) implements OrganizationType {
+                              @JsonProperty("partOf") List<URI> partOf) implements OrganizationType {
 
     public static Builder builder() {
         return new Builder();
@@ -22,7 +22,7 @@ public record NviOrganization(@JsonProperty("id") URI id,
     public static final class Builder {
 
         private URI id;
-        private List<String> partOf;
+        private List<URI> partOf;
 
         private Builder() {
         }
@@ -32,7 +32,7 @@ public record NviOrganization(@JsonProperty("id") URI id,
             return this;
         }
 
-        public Builder withPartOf(List<String> partOf) {
+        public Builder withPartOf(List<URI> partOf) {
             this.partOf = partOf;
             return this;
         }

@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
-import nva.commons.core.paths.UriWrapper;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
@@ -153,26 +152,17 @@ public class CandidateQuery {
     }
 
     private static Query contributorQueryIncludingSubUnits(List<String> organizations) {
-        var institutionIdentifiers = extractIdentifiers(organizations);
         return nestedQuery(jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS),
                            QueryBuilders.bool().must(
                                matchAtLeastOne(
                                    termsQuery(organizations,
                                               jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, ID)),
-                                   termsQuery(institutionIdentifiers,
+                                   termsQuery(organizations,
                                               jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, PART_OF))
                                ),
                                matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, ROLE))
                            ).build()._toQuery()
         );
-    }
-
-    private static List<String> extractIdentifiers(List<String> organizations) {
-        return organizations.stream().map(CandidateQuery::getLastPathElement).toList();
-    }
-
-    private static String getLastPathElement(String organization) {
-        return UriWrapper.fromUri(organization).getLastPathElement();
     }
 
     private static Query contributorQueryExcludingSubUnits(List<String> organizations) {

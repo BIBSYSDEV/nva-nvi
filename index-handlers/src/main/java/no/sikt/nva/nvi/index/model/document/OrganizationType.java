@@ -16,5 +16,5 @@ public sealed interface OrganizationType permits Organization, NviOrganization {
 
     URI id();
 
-    List<String> partOf();
+    List<URI> partOf();
 }
