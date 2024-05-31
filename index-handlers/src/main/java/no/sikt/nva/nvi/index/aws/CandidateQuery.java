@@ -153,13 +153,12 @@ public class CandidateQuery {
     }
 
     private static Query contributorQueryIncludingSubUnits(List<String> organizations) {
-        var institutionIdentifiers = extractIdentifiers(organizations);
         return nestedQuery(jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS),
                            QueryBuilders.bool().must(
                                matchAtLeastOne(
                                    termsQuery(organizations,
                                               jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, ID)),
-                                   termsQuery(institutionIdentifiers,
+                                   termsQuery(organizations,
                                               jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, PART_OF))
                                ),
                                matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, ROLE))

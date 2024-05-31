@@ -20,7 +20,7 @@
             "type": "NviOrganization",
             "id": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.0.0",
             "partOf": [
-              "20754.0.0.0"
+              "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"
             ]
           }
         ],
@@ -35,8 +35,8 @@
             "type": "NviOrganization",
             "id": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.1.0",
             "partOf": [
-              "20754.0.0.0",
-              "20754.1.0.0"
+              "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
+              "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.0.0"
             ]
           }
         ],
