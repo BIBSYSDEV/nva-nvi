@@ -101,10 +101,6 @@ public record NviCandidate(URI publicationId,
         }
     }
 
-    public record PublicationDate(String day, String month, String year) {
-
-    }
-
     public static final class Builder {
 
         private URI publicationId;

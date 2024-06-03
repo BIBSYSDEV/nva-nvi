@@ -1,7 +1,5 @@
 package no.sikt.nva.nvi.events.evaluator.calculator;
 
-import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
-import static no.sikt.nva.nvi.common.utils.GraphUtils.isNviCandidate;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_ID;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_VERIFICATION_STATUS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
@@ -35,9 +33,9 @@ import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CandidateCalculator {
+public class CreatorVerificationUtil {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CandidateCalculator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CreatorVerificationUtil.class);
     private static final String CREATOR = "Creator";
     private static final String CONTENT_TYPE = "application/json";
     private static final String COULD_NOT_FETCH_CUSTOMER_MESSAGE = "Could not fetch customer for: ";
@@ -48,18 +46,12 @@ public class CandidateCalculator {
     private final AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
     private final OrganizationRetriever organizationRetriever;
 
-    public CandidateCalculator(AuthorizedBackendUriRetriever authorizedBackendUriRetriever, UriRetriever uriRetriever) {
+    public CreatorVerificationUtil(AuthorizedBackendUriRetriever authorizedBackendUriRetriever, UriRetriever uriRetriever) {
         this.authorizedBackendUriRetriever = authorizedBackendUriRetriever;
         this.organizationRetriever = new OrganizationRetriever(uriRetriever);
     }
 
     public List<VerifiedNviCreator> getVerifiedCreatorsWithNviInstitutionsIfExists(JsonNode publication) {
-        var model = createModel(publication);
-
-        if (!isNviCandidate(model)) {
-            return Collections.emptyList();
-        }
-
         var verifiedCreatorsWithNviInstitutions = getVerifiedCreatorsWithNviInstitutions(publication);
 
         return verifiedCreatorsWithNviInstitutions.isEmpty()
@@ -101,7 +93,7 @@ public class CandidateCalculator {
     }
 
     private static boolean mapToNviInstitutionValue(HttpResponse<String> response) {
-        return attempt(response::body).map(CandidateCalculator::toCustomer)
+        return attempt(response::body).map(CreatorVerificationUtil::toCustomer)
                    .map(CustomerResponse::nviInstitution)
                    .orElse(failure -> false);
     }
@@ -124,10 +116,10 @@ public class CandidateCalculator {
 
     private List<VerifiedNviCreator> getVerifiedCreatorsWithNviInstitutions(JsonNode body) {
         return getJsonNodeStream(body, JSON_PTR_CONTRIBUTOR)
-                   .filter(CandidateCalculator::isVerified)
-                   .filter(CandidateCalculator::isCreator)
+                   .filter(CreatorVerificationUtil::isVerified)
+                   .filter(CreatorVerificationUtil::isCreator)
                    .map(this::toVerifiedNviCreator)
-                   .filter(CandidateCalculator::isAffiliatedWithNviOrganization)
+                   .filter(CreatorVerificationUtil::isAffiliatedWithNviOrganization)
                    .toList();
     }
 
@@ -144,7 +136,7 @@ public class CandidateCalculator {
                    .distinct()
                    .map(organizationRetriever::fetchOrganization)
                    .filter(this::topLevelOrgIsNviInstitution)
-                   .map(CandidateCalculator::toNviOrganization)
+                   .map(CreatorVerificationUtil::toNviOrganization)
                    .toList();
     }
 

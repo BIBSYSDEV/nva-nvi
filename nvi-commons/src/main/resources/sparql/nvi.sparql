@@ -9,9 +9,6 @@ ASK WHERE {
                nva:status nva:PUBLISHED ;
                (<>|!<>)+/nva:publicationInstance/rdf:type ?approvedType .
 
-  ?publicationDate a nva:PublicationDate ;
-                    nva:year ?year.
-
   OPTIONAL{
       SELECT ?scientificValue WHERE {
         VALUES ?channelType { nva:Publisher  nva:Series   nva:Journal }
@@ -28,5 +25,4 @@ ASK WHERE {
 
   VALUES ?validLevel {"LevelOne" "LevelTwo"}
   FILTER(?levelValue = ?validLevel)
-  FILTER(xsd:integer(?year) > 2021)
 }

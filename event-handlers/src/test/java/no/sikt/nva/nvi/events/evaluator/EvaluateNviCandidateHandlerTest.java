@@ -45,7 +45,7 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
+import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
 import no.sikt.nva.nvi.events.evaluator.model.Level;
 import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
@@ -133,7 +133,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         uriRetriever = mock(UriRetriever.class);
         storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
         periodRepository = new PeriodRepository(dynamoDbClient);
-        var calculator = new CandidateCalculator(authorizedBackendUriRetriever, uriRetriever);
+        var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, uriRetriever);
         var organizationRetriever = new OrganizationRetriever(uriRetriever);
         var pointCalculator = new PointService(organizationRetriever);
         candidateRepository = new CandidateRepository(dynamoDbClient);
@@ -363,8 +363,8 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         var currentYear = LocalDateTime.now().getYear();
         var previousYear = currentYear - 1;
         var yearBeforePreviousYear = previousYear - 1;
-        persistExistingPeriod(yearBeforePreviousYear, previousYear);
-        persistExistingPeriod(previousYear, currentYear);
+        persistPeriod(yearBeforePreviousYear, previousYear);
+        persistPeriod(previousYear, currentYear);
         var content = IoUtils.stringFromResources(Path.of(path)).replace("__REPLACE_YEAR__",
                                                                          String.valueOf(yearBeforePreviousYear));
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
@@ -524,7 +524,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                          .sum();
     }
 
-    private void persistExistingPeriod(int publishingYear, int reportingYear) {
+    private void persistPeriod(int publishingYear, int reportingYear) {
         periodRepository.save(DbNviPeriod.builder()
                                   .publishingYear(String.valueOf(publishingYear))
                                   .startDate(LocalDateTime.of(publishingYear, 4, 1, 0, 0, 0).toInstant(ZoneOffset.UTC))
@@ -534,7 +534,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     private void setupEvaluatorService(PeriodRepository periodRepository) {
-        var calculator = new CandidateCalculator(authorizedBackendUriRetriever, uriRetriever);
+        var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, uriRetriever);
         var organizationRetriever = new OrganizationRetriever(uriRetriever);
         var pointCalculator = new PointService(organizationRetriever);
         evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator, candidateRepository,
