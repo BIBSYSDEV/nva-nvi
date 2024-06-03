@@ -33,12 +33,14 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
@@ -355,9 +357,16 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldCreateNonCandidateWhenPublicationYearBefore2022() throws IOException {
-        var path = "evaluator/candidate_publicationDate_before_2022.json";
-        var content = IoUtils.inputStreamFromResources(path);
+    void shouldCreateNonCandidateWhenPublicationYearIsInIrrelevantPeriod() throws IOException {
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+        var path = "evaluator/candidate_publicationDate_replace_year.json";
+        var currentYear = LocalDateTime.now().getYear();
+        var previousYear = currentYear - 1;
+        var yearBeforePreviousYear = previousYear - 1;
+        persistExistingPeriod(yearBeforePreviousYear, previousYear);
+        persistExistingPeriod(previousYear, currentYear);
+        var content = IoUtils.stringFromResources(Path.of(path)).replace("__REPLACE_YEAR__",
+                                                                         String.valueOf(yearBeforePreviousYear));
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
@@ -513,6 +522,15 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         return (int) nviCreators.stream()
                          .mapToLong(creator -> creator.nviAffiliations().size())
                          .sum();
+    }
+
+    private void persistExistingPeriod(int publishingYear, int reportingYear) {
+        periodRepository.save(DbNviPeriod.builder()
+                                  .publishingYear(String.valueOf(publishingYear))
+                                  .startDate(LocalDateTime.of(publishingYear, 4, 1, 0, 0, 0).toInstant(ZoneOffset.UTC))
+                                  .reportingDate(
+                                      LocalDateTime.of(reportingYear, 3, 1, 0, 0, 0).toInstant(ZoneOffset.UTC))
+                                  .build());
     }
 
     private void setupEvaluatorService(PeriodRepository periodRepository) {
