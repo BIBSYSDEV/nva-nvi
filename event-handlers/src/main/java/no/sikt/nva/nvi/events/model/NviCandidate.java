@@ -79,9 +79,9 @@ public record NviCandidate(URI publicationId,
         return new NviCreator(creator.id(), creator.affiliations());
     }
 
-    private static NviCandidate.PublicationDate toPublicationDate(
+    private static PublicationDate toPublicationDate(
         no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate publicationDate) {
-        return new NviCandidate.PublicationDate(
+        return new PublicationDate(
             publicationDate.day(),
             publicationDate.month(),
             publicationDate.year());

@@ -13,6 +13,7 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
+import java.time.Year;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
