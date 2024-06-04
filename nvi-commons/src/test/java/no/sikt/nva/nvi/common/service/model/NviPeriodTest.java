@@ -13,10 +13,12 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.exceptions.MethodNotAllowedException;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +31,7 @@ class NviPeriodTest extends LocalDynamoTest {
     void setup() {
         localDynamo = initializeTestDatabase();
         periodRepository = new PeriodRepository(localDynamo);
-        setUpExtingPeriod();
+        setUpExistingPeriod();
     }
 
     @Test
@@ -40,6 +42,14 @@ class NviPeriodTest extends LocalDynamoTest {
                                      request.reportingDate(), request.createdBy(), null);
         var actual = NviPeriod.create(request, periodRepository);
         assertEquals(expected, actual);
+    }
+
+    @Test
+    void shouldThrowMethodNotAllowedExceptionWhenPeriodAlreadyExists() {
+        var createRequest = createRequest(YEAR + 1);
+        NviPeriod.create(createRequest, periodRepository);
+        var newCreateRequest = createRequest(YEAR + 1);
+        assertThrows(MethodNotAllowedException.class, () -> NviPeriod.create(createRequest, periodRepository));
     }
 
     @Test
@@ -165,7 +175,7 @@ class NviPeriodTest extends LocalDynamoTest {
                    .getUri();
     }
 
-    private void setUpExtingPeriod() {
+    private void setUpExistingPeriod() {
         periodRepository.save(DbNviPeriod.builder()
                                   .publishingYear(String.valueOf(YEAR))
                                   .startDate(LocalDateTime.of(YEAR, 4, 1, 0, 0).toInstant(ZoneOffset.UTC))
