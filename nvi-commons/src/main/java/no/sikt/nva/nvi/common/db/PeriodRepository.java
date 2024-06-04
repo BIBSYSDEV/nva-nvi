@@ -18,9 +18,6 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 public class PeriodRepository extends DynamoRepository {
 
     public static final String PERIOD = "PERIOD";
-    private static final String API_HOST = new Environment().readEnv("API_HOST");
-    public static final String SCIENTIFIC_INDEX_API_PATH = "scientific-index";
-    public static final String PERIOD_PATH = "period";
     protected final DynamoDbTable<NviPeriodDao> nviPeriodTable;
 
     public PeriodRepository(DynamoDbClient client) {
@@ -29,10 +26,9 @@ public class PeriodRepository extends DynamoRepository {
     }
 
     public DbNviPeriod save(DbNviPeriod nviPeriod) {
-        var periodWithId = nviPeriod.copy().id(createId(nviPeriod)).build();
         var nviPeriodDao = NviPeriodDao.builder()
                                .identifier(nviPeriod.publishingYear())
-                               .nviPeriod(periodWithId)
+                               .nviPeriod(nviPeriod)
                                .version(randomUUID().toString())
                                .build();
 
@@ -42,13 +38,7 @@ public class PeriodRepository extends DynamoRepository {
         return fetched.nviPeriod();
     }
 
-    private URI createId(DbNviPeriod nviPeriod) {
-        return UriWrapper.fromHost(API_HOST)
-                   .addChild(SCIENTIFIC_INDEX_API_PATH)
-                   .addChild(PERIOD_PATH)
-                   .addChild(nviPeriod.publishingYear())
-                   .getUri();
-    }
+
 
     public Optional<DbNviPeriod> findByPublishingYear(String publishingYear) {
         var queryObj = NviPeriodDao.builder()

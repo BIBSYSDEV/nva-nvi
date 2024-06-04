@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.common.service.model;
 
-import static no.sikt.nva.nvi.test.TestUtils.randomYear;
+import static java.time.temporal.ChronoUnit.DAYS;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -11,10 +11,8 @@ import java.time.LocalDateTime;
 import java.time.Year;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import nva.commons.core.Environment;
@@ -39,87 +37,88 @@ class NviPeriodTest extends LocalDynamoTest {
         var request = createRequest(YEAR + 1);
         var expectedId = constructExpectedId(request);
         var expected = new NviPeriod(expectedId, request.publishingYear(), request.startDate(),
-                                     request.reportingDate());
-        var actual = NviPeriod.upsert(request, periodRepository);
+                                     request.reportingDate(), request.createdBy(), null);
+        var actual = NviPeriod.create(request, periodRepository);
         assertEquals(expected, actual);
     }
 
     @Test
     void shouldThrowIllegalArgumentWhenPeriodMissedMandatoryValues() {
-        var createPeriodRequest = UpsertPeriodRequest.builder()
+        var createPeriodRequest = CreatePeriodRequest.builder()
                                       .withPublishingYear(YEAR + 1)
                                       .withCreatedBy(randomUserName())
-                                      .buildCreateRequest();
-        assertThrows(IllegalArgumentException.class, () -> NviPeriod.upsert(createPeriodRequest, periodRepository));
+                                      .build();
+        assertThrows(IllegalArgumentException.class, () -> NviPeriod.create(createPeriodRequest, periodRepository));
     }
 
     @Test
     void shouldUpdateNviPeriod() {
         var year = YEAR + 1;
         var originalRequest = createRequest(year, nowPlusDays(1), nowPlusDays(2));
-        var originalPeriod = NviPeriod.upsert(originalRequest, periodRepository);
+        var originalPeriod = NviPeriod.create(originalRequest, periodRepository);
         var updatedRequest = updateRequest(year, originalRequest.startDate(), nowPlusDays(3));
-        var updatedPeriod = NviPeriod.upsert(updatedRequest, periodRepository);
+        var updatedPeriod = NviPeriod.update(updatedRequest, periodRepository);
         assertNotEquals(updatedPeriod, originalPeriod);
     }
 
     @Test
-    void shouldNotAllowNviPeriodReportingDateInInPast() {
+    void shouldNotAllowNviPeriodReportingDateInInPastOnUpdate() {
         var year = YEAR + 1;
-        var originalRequest = createRequest(year, Instant.now(), nowPlusDays(1));
-        NviPeriod.upsert(originalRequest, periodRepository);
+        var originalRequest = createRequest(year, nowPlusDays(1), nowPlusDays(2));
+        NviPeriod.create(originalRequest, periodRepository);
         var updatedRequest = updateRequest(year, originalRequest.startDate(),
                                            ZonedDateTime.now().minusWeeks(10).toInstant());
-        assertThrows(IllegalArgumentException.class, () -> NviPeriod.upsert(updatedRequest, periodRepository));
+        assertThrows(IllegalArgumentException.class, () -> NviPeriod.update(updatedRequest, periodRepository));
     }
 
     @Test
-    void shouldNotAllowNviPeriodStartAfterReportingDate() {
+    void shouldNotAllowNviPeriodStartAfterReportingDateOnUpdate() {
         var year = YEAR + 1;
-        var originalRequest = createRequest(year, Instant.now(), nowPlusDays(1));
-        NviPeriod.upsert(originalRequest, periodRepository);
-        var updatedRequest = updateRequest(year, nowPlusDays(2), originalRequest.reportingDate());
-        assertThrows(IllegalArgumentException.class, () -> NviPeriod.upsert(updatedRequest, periodRepository));
+        var originalRequest = createRequest(year, nowPlusDays(1), nowPlusDays(2));
+        NviPeriod.create(originalRequest, periodRepository);
+        var updatedRequest = updateRequest(year, originalRequest.reportingDate().plus(1, DAYS),
+                                           originalRequest.reportingDate());
+        assertThrows(IllegalArgumentException.class, () -> NviPeriod.update(updatedRequest, periodRepository));
     }
 
     @Test
     void shouldReturnIllegalArgumentExceptionWhenPublishingYearHasInvalidLength() {
         var createRequest = createRequest(22);
-        assertThrows(IllegalArgumentException.class, () -> NviPeriod.upsert(createRequest, periodRepository));
+        assertThrows(IllegalArgumentException.class, () -> NviPeriod.create(createRequest, periodRepository));
     }
 
     @Test
     void shouldReturnIllegalArgumentExceptionWhenWhenStartDateHasAlreadyBeenReached() {
         var createRequest = createRequest(YEAR, Instant.now(), nowPlusDays(1));
-        assertThrows(IllegalArgumentException.class, () -> NviPeriod.upsert(createRequest, periodRepository));
+        assertThrows(IllegalArgumentException.class, () -> NviPeriod.create(createRequest, periodRepository));
     }
 
     @Test
     void shouldReturnIllegalArgumentWhenReportingDateIsBeforeNow() {
         var createRequest = createRequest(YEAR, nowPlusDays(1),
-                                          Instant.now().minus(1, ChronoUnit.DAYS));
-        assertThrows(IllegalArgumentException.class, () -> NviPeriod.upsert(createRequest, periodRepository));
+                                          Instant.now().minus(1, DAYS));
+        assertThrows(IllegalArgumentException.class, () -> NviPeriod.create(createRequest, periodRepository));
     }
 
     @Test
     void shouldReturnIllegalArgumentWhenStartDateIsAfterReportingDate() {
         var createRequest = createRequest(YEAR, nowPlusDays(10),
                                           nowPlusDays(9));
-        assertThrows(IllegalArgumentException.class, () -> NviPeriod.upsert(createRequest, periodRepository));
+        assertThrows(IllegalArgumentException.class, () -> NviPeriod.create(createRequest, periodRepository));
     }
 
     @Test
     void shouldReturnPeriodsOnlyWhenFetchingPeriods() {
-        NviPeriod.upsert(createRequest(Year.now().getValue(), nowPlusDays(10),
+        NviPeriod.create(createRequest(Year.now().getValue(), nowPlusDays(10),
                                        nowPlusOneYear()), periodRepository);
-        NviPeriod.upsert(createRequest(Year.now().getValue(), nowPlusDays(10),
+        NviPeriod.create(createRequest(Year.now().getValue() + 1, nowPlusDays(10),
                                        nowPlusOneYear()), periodRepository);
         assertEquals(2, NviPeriod.fetchAll(periodRepository).size());
     }
 
     @Test
     void shouldThrowPeriodNotFoundExceptionWhenPeriodDoesNotExist() {
-        assertThrows(PeriodNotFoundException.class, () -> new NviService(localDynamo).getPeriod(randomYear()));
+        assertThrows(PeriodNotFoundException.class, () -> NviPeriod.fetch("2022", periodRepository));
     }
 
     private static Username randomUserName() {
@@ -127,27 +126,29 @@ class NviPeriodTest extends LocalDynamoTest {
     }
 
     private static Instant nowPlusDays(int numberOfDays) {
-        return Instant.now().plus(numberOfDays, ChronoUnit.DAYS);
+        return Instant.now().plus(numberOfDays, DAYS);
     }
 
     private static Instant nowPlusOneYear() {
-        return Instant.now().plus(1, ChronoUnit.YEARS);
+        return Instant.now().plus(365, DAYS);
     }
 
     private static CreatePeriodRequest createRequest(int year, Instant startDate, Instant reportingDate) {
-        return UpsertPeriodRequest.builder()
+        return CreatePeriodRequest.builder()
                    .withPublishingYear(year)
                    .withStartDate(startDate)
                    .withReportingDate(reportingDate)
-                   .buildCreateRequest();
+                   .withCreatedBy(randomUserName())
+                   .build();
     }
 
     private static UpdatePeriodRequest updateRequest(int year, Instant startDate, Instant reportingDate) {
-        return UpsertPeriodRequest.builder()
+        return UpdatePeriodRequest.builder()
                    .withPublishingYear(year)
                    .withStartDate(startDate)
                    .withReportingDate(reportingDate)
-                   .buildUpdateRequest();
+                   .withModifiedBy(randomUserName())
+                   .build();
     }
 
     private static CreatePeriodRequest createRequest(int year) {
