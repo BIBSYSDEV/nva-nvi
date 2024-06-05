@@ -1,10 +1,15 @@
 package no.sikt.nva.nvi.rest.fetch;
 
+import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
+import no.sikt.nva.nvi.common.db.DynamoRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
+import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -16,35 +21,34 @@ import nva.commons.core.attempt.Failure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FetchNviPeriodHandler extends ApiGatewayHandler<Void, UpsertNviPeriodRequest> {
+public class FetchNviPeriodHandler extends ApiGatewayHandler<Void, NviPeriodDto> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FetchNviPeriodHandler.class);
     public static final String PERIOD_IDENTIFIER = "periodIdentifier";
     public static final String BAD_GATEWAY_EXCEPTION_MESSAGE = "Something went wrong! Contact application administrator.";
-    private final NviService nviService;
+    private final PeriodRepository periodRepository;
 
     @JacocoGenerated
     public FetchNviPeriodHandler() {
-        super(Void.class);
-        this.nviService = NviService.defaultNviService();
+        this(new PeriodRepository(defaultDynamoClient()));
     }
 
-    public FetchNviPeriodHandler(NviService nviService) {
+    public FetchNviPeriodHandler(PeriodRepository periodRepository) {
         super(Void.class);
-        this.nviService = nviService;
+        this.periodRepository = periodRepository;
     }
 
     @Override
-    protected UpsertNviPeriodRequest processInput(Void input, RequestInfo requestInfo, Context context)
+    protected NviPeriodDto processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
 
         return attempt(() -> requestInfo.getPathParameter(PERIOD_IDENTIFIER))
-                   .map(nviService::getPeriod)
-                   .map(UpsertNviPeriodRequest::fromNviPeriod)
+                   .map(period -> NviPeriod.fetch(period, periodRepository))
+                   .map(NviPeriod::toDto)
                    .orElseThrow(this::mapException);
     }
 
-    private <T> ApiGatewayException mapException(Failure<UpsertNviPeriodRequest> failure) {
+    private <T> ApiGatewayException mapException(Failure<NviPeriodDto> failure) {
         var exception = failure.getException();
         if (exception instanceof PeriodNotFoundException periodNotFoundException) {
             return new NotFoundException(periodNotFoundException.getMessage());
@@ -55,7 +59,7 @@ public class FetchNviPeriodHandler extends ApiGatewayHandler<Void, UpsertNviPeri
     }
 
     @Override
-    protected Integer getSuccessStatusCode(Void input, UpsertNviPeriodRequest output) {
+    protected Integer getSuccessStatusCode(Void input, NviPeriodDto output) {
         return HttpURLConnection.HTTP_OK;
     }
 }

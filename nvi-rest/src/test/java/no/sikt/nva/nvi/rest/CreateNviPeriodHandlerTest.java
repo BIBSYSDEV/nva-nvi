@@ -61,7 +61,7 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
     @Test
     void shouldCreateNviPeriod() throws IOException {
         var year = String.valueOf(ZonedDateTime.now().getYear());
-        var period = randomPeriod(year);
+        var period = upsertRequest(year);
         handler.handleRequest(createRequest(period), output, context);
         var persistedPeriod = NviPeriod.fetch(year, periodRepository);
         assertThat(period.publishingYear(), is(equalTo(persistedPeriod.getPublishingYear().toString())));
@@ -69,7 +69,7 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
 
     private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
         return new HandlerRequestBuilder<UpsertNviPeriodRequest>(JsonUtils.dtoObjectMapper)
-                   .withBody(randomPeriod(String.valueOf(ZonedDateTime.now().getYear()))).build();
+                   .withBody(upsertRequest(String.valueOf(ZonedDateTime.now().getYear()))).build();
     }
 
     private InputStream createRequest(UpsertNviPeriodRequest period) throws JsonProcessingException {
@@ -82,7 +82,7 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private UpsertNviPeriodRequest randomPeriod(String year) {
+    private UpsertNviPeriodRequest upsertRequest(String year) {
         return new UpsertNviPeriodRequest(year,
                                           ZonedDateTime.now().plusMonths(1).toInstant().toString(),
                                           ZonedDateTime.now().plusMonths(10).toInstant().toString());

@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest;
 
+import static no.sikt.nva.nvi.test.TestUtils.setupPersistedPeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -66,21 +67,12 @@ public class UpdateNviPeriodHandlerTest extends LocalDynamoTest {
     void shouldUpdateNviPeriodSuccessfully()
         throws IOException {
         var year = String.valueOf(ZonedDateTime.now().getYear());
-        var persistedPeriod = setupPersistedPeriod(year);
+        var persistedPeriod = setupPersistedPeriod(year, periodRepository);
         var updateRequest = updateRequest(year, persistedPeriod);
         handler.handleRequest(toInputStream(updateRequest), output, context);
         var updatedPeriod = NviPeriod.fetch(year, periodRepository);
 
         assertThat(persistedPeriod.getReportingDate(), is(not(equalTo(updatedPeriod.getReportingDate()))));
-    }
-
-    private NviPeriod setupPersistedPeriod(String year) {
-        return NviPeriod.create(CreatePeriodRequest.builder()
-                                    .withPublishingYear(Integer.parseInt(year))
-                                    .withStartDate(ZonedDateTime.now().plusMonths(1).toInstant())
-                                    .withReportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
-                                    .withCreatedBy(Username.fromString(randomString()))
-                                    .build(), periodRepository);
     }
 
     private UpsertNviPeriodRequest updateRequest(String year, NviPeriod persistedPeriod) {

@@ -48,8 +48,10 @@ import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
+import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
+import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
@@ -243,6 +245,15 @@ public final class TestUtils {
                    .publishingYear(publishingYear)
                    .createdBy(randomUsername())
                    .build();
+    }
+
+    public static NviPeriod setupPersistedPeriod(String year, PeriodRepository periodRepository) {
+        return NviPeriod.create(CreatePeriodRequest.builder()
+                                    .withPublishingYear(Integer.parseInt(year))
+                                    .withStartDate(ZonedDateTime.now().plusMonths(1).toInstant())
+                                    .withReportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
+                                    .withCreatedBy(no.sikt.nva.nvi.common.service.model.Username.fromString(randomString()))
+                                    .build(), periodRepository);
     }
 
     public static UpdateNonCandidateRequest createUpsertNonCandidateRequest(URI publicationId) {
