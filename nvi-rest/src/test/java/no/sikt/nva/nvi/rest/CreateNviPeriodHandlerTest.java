@@ -19,7 +19,6 @@ import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.rest.create.CreateNviPeriodHandler;
 import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
-import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -61,7 +60,7 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldReturnBadRequestWhenPeriodExists() throws IOException{
+    void shouldReturnBadRequestWhenPeriodExists() throws IOException {
         var year = String.valueOf(ZonedDateTime.now().getYear());
         setupPersistedPeriod(year, periodRepository);
         var period = upsertRequest(year);

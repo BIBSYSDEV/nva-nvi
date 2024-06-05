@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.sikt.nva.nvi.common.service.exception.PeriodAlreadyExistsException;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -129,7 +128,7 @@ class NviPeriodTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldReturnDto(){
+    void shouldReturnDto() {
         var request = createRequest(YEAR);
         var expectedId = constructExpectedId(request);
         var actual = NviPeriod.create(request, periodRepository).toDto();
