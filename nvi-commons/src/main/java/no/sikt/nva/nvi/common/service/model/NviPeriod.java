@@ -87,14 +87,6 @@ public class NviPeriod {
         return reportingDate;
     }
 
-    public Username getCreatedBy() {
-        return createdBy;
-    }
-
-    public Username getModifiedBy() {
-        return modifiedBy;
-    }
-
     @Override
     @JacocoGenerated
     public int hashCode() {
