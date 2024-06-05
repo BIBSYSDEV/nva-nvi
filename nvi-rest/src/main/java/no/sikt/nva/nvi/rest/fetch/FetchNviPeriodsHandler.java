@@ -6,7 +6,7 @@ import java.net.HttpURLConnection;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.model.NviPeriodDto;
+import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
 import no.sikt.nva.nvi.rest.model.NviPeriodsResponse;
 import no.sikt.nva.nvi.utils.RequestUtil;
 import nva.commons.apigateway.AccessRight;
@@ -46,9 +46,9 @@ public class FetchNviPeriodsHandler extends ApiGatewayHandler<Void, NviPeriodsRe
         return HttpURLConnection.HTTP_OK;
     }
 
-    private static List<NviPeriodDto> toPeriodDtoList(List<DbNviPeriod> dbNviPeriods) {
+    private static List<UpsertNviPeriodRequest> toPeriodDtoList(List<DbNviPeriod> dbNviPeriods) {
         return dbNviPeriods.stream()
-                   .map(NviPeriodDto::fromNviPeriod)
+                   .map(UpsertNviPeriodRequest::fromNviPeriod)
                    .toList();
     }
 

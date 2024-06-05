@@ -16,7 +16,7 @@ import java.net.HttpURLConnection;
 import java.time.ZonedDateTime;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.model.NviPeriodDto;
+import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
 import no.sikt.nva.nvi.rest.model.NviPeriodsResponse;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
@@ -81,7 +81,7 @@ public class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
 
     private InputStream createRequestWithAccessRight(AccessRight accessRight) throws JsonProcessingException {
         var customerId = randomUri();
-        return new HandlerRequestBuilder<NviPeriodDto>(JsonUtils.dtoObjectMapper)
+        return new HandlerRequestBuilder<UpsertNviPeriodRequest>(JsonUtils.dtoObjectMapper)
                    .withCurrentCustomer(customerId)
                    .withAccessRights(customerId, accessRight)
                    .withUserName(randomString())

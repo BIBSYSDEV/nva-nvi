@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.sikt.nva.nvi.common.service.exception.PeriodAlreadyExistsException;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.common.service.requests.CreatePeriodRequest;
@@ -70,6 +71,30 @@ public class NviPeriod {
                        String.format("Period for year %s does not exist!", publishingYear)));
     }
 
+    public URI getId() {
+        return id;
+    }
+
+    public Integer getPublishingYear() {
+        return publishingYear;
+    }
+
+    public Instant getStartDate() {
+        return startDate;
+    }
+
+    public Instant getReportingDate() {
+        return reportingDate;
+    }
+
+    public Username getCreatedBy() {
+        return createdBy;
+    }
+
+    public Username getModifiedBy() {
+        return modifiedBy;
+    }
+
     @Override
     @JacocoGenerated
     public int hashCode() {
@@ -90,6 +115,10 @@ public class NviPeriod {
                && Objects.equals(publishingYear, nviPeriod.publishingYear)
                && Objects.equals(startDate, nviPeriod.startDate)
                && Objects.equals(reportingDate, nviPeriod.reportingDate);
+    }
+
+    public NviPeriodDto toDto() {
+        return null;
     }
 
     private static boolean exists(PeriodRepository periodRepository, Integer publishingYear) {

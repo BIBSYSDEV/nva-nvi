@@ -24,7 +24,6 @@ public record UpdatePeriodRequest(Integer publishingYear, Instant startDate, Ins
         private Integer publishingYear;
         private Instant startDate;
         private Instant reportingDate;
-
         private Username modifiedBy;
 
         private Builder() {

@@ -13,9 +13,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.time.ZonedDateTime;
-import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.rest.create.CreateNviPeriodHandler;
-import no.sikt.nva.nvi.rest.model.NviPeriodDto;
+import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -30,14 +31,14 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
     private Context context;
     private ByteArrayOutputStream output;
     private CreateNviPeriodHandler handler;
-    private NviService nviService;
+    private PeriodRepository periodRepository;
 
     @BeforeEach
     void init() {
         output = new ByteArrayOutputStream();
         context = mock(Context.class);
-        nviService = new NviService((initializeTestDatabase()));
-        handler = new CreateNviPeriodHandler(nviService);
+        periodRepository = new PeriodRepository(initializeTestDatabase());
+        handler = new CreateNviPeriodHandler(periodRepository);
     }
 
     @Test
@@ -50,7 +51,7 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnBadRequestWhenInvalidReportingDate() throws IOException {
-        var period = new NviPeriodDto(randomUri(), "2023", null,"invalidValue");
+        var period = new UpsertNviPeriodRequest("2023", null, "invalidValue");
         handler.handleRequest(createRequest(period), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -62,18 +63,18 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
         var year = String.valueOf(ZonedDateTime.now().getYear());
         var period = randomPeriod(year);
         handler.handleRequest(createRequest(period), output, context);
-        var persistedPeriod = nviService.getPeriod(year);
-        assertThat(period.publishingYear(), is(equalTo(persistedPeriod.publishingYear())));
+        var persistedPeriod = NviPeriod.fetch(year, periodRepository);
+        assertThat(period.publishingYear(), is(equalTo(persistedPeriod.getPublishingYear().toString())));
     }
 
     private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
-        return new HandlerRequestBuilder<NviPeriodDto>(JsonUtils.dtoObjectMapper)
+        return new HandlerRequestBuilder<UpsertNviPeriodRequest>(JsonUtils.dtoObjectMapper)
                    .withBody(randomPeriod(String.valueOf(ZonedDateTime.now().getYear()))).build();
     }
 
-    private InputStream createRequest(NviPeriodDto period) throws JsonProcessingException {
+    private InputStream createRequest(UpsertNviPeriodRequest period) throws JsonProcessingException {
         var customerId = randomUri();
-        return new HandlerRequestBuilder<NviPeriodDto>(JsonUtils.dtoObjectMapper)
+        return new HandlerRequestBuilder<UpsertNviPeriodRequest>(JsonUtils.dtoObjectMapper)
                    .withBody(period)
                    .withCurrentCustomer(customerId)
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI)
@@ -81,10 +82,9 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private NviPeriodDto randomPeriod(String year) {
-        return new NviPeriodDto(randomUri(),
-                                year,
-                                ZonedDateTime.now().plusMonths(1).toInstant().toString(),
-                                ZonedDateTime.now().plusMonths(10).toInstant().toString());
+    private UpsertNviPeriodRequest randomPeriod(String year) {
+        return new UpsertNviPeriodRequest(year,
+                                          ZonedDateTime.now().plusMonths(1).toInstant().toString(),
+                                          ZonedDateTime.now().plusMonths(10).toInstant().toString());
     }
 }

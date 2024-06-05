@@ -15,7 +15,7 @@ import java.net.URI;
 import java.time.ZonedDateTime;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.model.NviPeriodDto;
+import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.stubs.FakeContext;
@@ -60,10 +60,11 @@ class FetchNviPeriodHandlerTest extends LocalDynamoTest {
         var periodYear = createPeriod(String.valueOf(ZonedDateTime.now().getYear()));
         nviService.createPeriod(periodYear);
         handler.handleRequest(createRequestForPeriod(periodYear.publishingYear()), output, context);
-        var response = GatewayResponse.fromOutputStream(output, NviPeriodDto.class);
+        var response = GatewayResponse.fromOutputStream(output, UpsertNviPeriodRequest.class);
 
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
-        assertThat(response.getBodyObject(NviPeriodDto.class), is(equalTo(NviPeriodDto.fromNviPeriod(periodYear))));
+        assertThat(response.getBodyObject(UpsertNviPeriodRequest.class), is(equalTo(
+            UpsertNviPeriodRequest.fromNviPeriod(periodYear))));
     }
 
     private static DbNviPeriod createPeriod(String publishingYear) {

@@ -5,7 +5,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import no.sikt.nva.nvi.common.service.NviService;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
-import no.sikt.nva.nvi.rest.model.NviPeriodDto;
+import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
@@ -16,7 +16,7 @@ import nva.commons.core.attempt.Failure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FetchNviPeriodHandler extends ApiGatewayHandler<Void, NviPeriodDto> {
+public class FetchNviPeriodHandler extends ApiGatewayHandler<Void, UpsertNviPeriodRequest> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FetchNviPeriodHandler.class);
     public static final String PERIOD_IDENTIFIER = "periodIdentifier";
@@ -35,16 +35,16 @@ public class FetchNviPeriodHandler extends ApiGatewayHandler<Void, NviPeriodDto>
     }
 
     @Override
-    protected NviPeriodDto processInput(Void input, RequestInfo requestInfo, Context context)
+    protected UpsertNviPeriodRequest processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
 
         return attempt(() -> requestInfo.getPathParameter(PERIOD_IDENTIFIER))
                    .map(nviService::getPeriod)
-                   .map(NviPeriodDto::fromNviPeriod)
+                   .map(UpsertNviPeriodRequest::fromNviPeriod)
                    .orElseThrow(this::mapException);
     }
 
-    private <T> ApiGatewayException mapException(Failure<NviPeriodDto> failure) {
+    private <T> ApiGatewayException mapException(Failure<UpsertNviPeriodRequest> failure) {
         var exception = failure.getException();
         if (exception instanceof PeriodNotFoundException periodNotFoundException) {
             return new NotFoundException(periodNotFoundException.getMessage());
@@ -55,7 +55,7 @@ public class FetchNviPeriodHandler extends ApiGatewayHandler<Void, NviPeriodDto>
     }
 
     @Override
-    protected Integer getSuccessStatusCode(Void input, NviPeriodDto output) {
+    protected Integer getSuccessStatusCode(Void input, UpsertNviPeriodRequest output) {
         return HttpURLConnection.HTTP_OK;
     }
 }

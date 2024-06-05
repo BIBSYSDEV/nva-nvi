@@ -32,7 +32,7 @@ import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.rest.model.ApprovalDto;
+import no.sikt.nva.nvi.rest.model.UpsertAssigneeRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.commons.json.JsonUtils;
@@ -192,9 +192,9 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
     private InputStream createRequest(Candidate candidate, String newAssignee) throws JsonProcessingException {
         var approvalToUpdate = candidate.toDto().approvals().get(0);
-        var requestBody = new ApprovalDto(newAssignee, approvalToUpdate.institutionId());
+        var requestBody = new UpsertAssigneeRequest(newAssignee, approvalToUpdate.institutionId());
         var customerId = randomUri();
-        return new HandlerRequestBuilder<ApprovalDto>(JsonUtils.dtoObjectMapper).withBody(randomAssigneeRequest())
+        return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper).withBody(randomAssigneeRequest())
                    .withCurrentCustomer(customerId)
                    .withTopLevelCristinOrgId(requestBody.institutionId())
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
@@ -208,9 +208,9 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         var approvalToUpdate =
             Candidate.upsert(createUpsertCandidateRequest(randomUri()), candidateRepository, periodRepository)
                 .orElseThrow().toDto().approvals().get(0);
-        var requestBody = new ApprovalDto(randomString(), approvalToUpdate.institutionId());
+        var requestBody = new UpsertAssigneeRequest(randomString(), approvalToUpdate.institutionId());
         var customerId = randomUri();
-        return new HandlerRequestBuilder<ApprovalDto>(JsonUtils.dtoObjectMapper).withBody(randomAssigneeRequest())
+        return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper).withBody(randomAssigneeRequest())
                    .withCurrentCustomer(customerId)
                    .withTopLevelCristinOrgId(requestBody.institutionId())
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
@@ -221,17 +221,17 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     }
 
     private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
-        return new HandlerRequestBuilder<ApprovalDto>(JsonUtils.dtoObjectMapper).withBody(randomAssigneeRequest())
+        return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper).withBody(randomAssigneeRequest())
                    .build();
     }
 
     private InputStream createRequestWithDifferentInstitution() throws JsonProcessingException {
-        return new HandlerRequestBuilder<ApprovalDto>(JsonUtils.dtoObjectMapper).withBody(randomAssigneeRequest())
+        return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper).withBody(randomAssigneeRequest())
                    .withCurrentCustomer(randomUri())
                    .build();
     }
 
-    private ApprovalDto randomAssigneeRequest() {
-        return new ApprovalDto(randomString(), randomUri());
+    private UpsertAssigneeRequest randomAssigneeRequest() {
+        return new UpsertAssigneeRequest(randomString(), randomUri());
     }
 }
