@@ -2,13 +2,10 @@ package no.sikt.nva.nvi.common.db;
 
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
-import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
-import nva.commons.core.Environment;
-import nva.commons.core.paths.UriWrapper;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.internal.conditional.BeginsWithConditional;
@@ -37,8 +34,6 @@ public class PeriodRepository extends DynamoRepository {
         var fetched = this.nviPeriodTable.getItem(nviPeriodDao);
         return fetched.nviPeriod();
     }
-
-
 
     public Optional<DbNviPeriod> findByPublishingYear(String publishingYear) {
         var queryObj = NviPeriodDao.builder()
