@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest;
 
+import static no.sikt.nva.nvi.test.TestUtils.setupPersistedPeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -18,6 +19,7 @@ import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.rest.create.CreateNviPeriodHandler;
 import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -55,6 +57,16 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
         handler.handleRequest(createRequest(period), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenPeriodExists() throws IOException{
+        var year = String.valueOf(ZonedDateTime.now().getYear());
+        setupPersistedPeriod(year, periodRepository);
+        var period = upsertRequest(year);
+        handler.handleRequest(createRequest(period), output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
     }
 
