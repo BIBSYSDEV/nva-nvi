@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.sikt.nva.nvi.common.service.exception.PeriodAlreadyExistsException;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -34,10 +35,12 @@ class NviPeriodTest extends LocalDynamoTest {
     void shouldCreateNviPeriod() {
         var request = createRequest(YEAR);
         var expectedId = constructExpectedId(request);
-        var expected = new NviPeriod(expectedId, request.publishingYear(), request.startDate(),
-                                     request.reportingDate(), request.createdBy(), null);
         var actual = NviPeriod.create(request, periodRepository);
-        assertEquals(expected, actual);
+        assertEquals(expectedId, actual.getId());
+        assertEquals(request.publishingYear(), actual.getPublishingYear());
+        assertEquals(request.startDate(), actual.getStartDate());
+        assertEquals(request.reportingDate(), actual.getReportingDate());
+        assertEquals(request.createdBy(), actual.getCreatedBy());
     }
 
     @Test
@@ -64,6 +67,7 @@ class NviPeriodTest extends LocalDynamoTest {
         var updatedRequest = updateRequest(YEAR, originalRequest.startDate(), nowPlusDays(3));
         var updatedPeriod = NviPeriod.update(updatedRequest, periodRepository);
         assertNotEquals(updatedPeriod, originalPeriod);
+        assertEquals(updatedRequest.modifiedBy(), updatedPeriod.getModifiedBy());
     }
 
     @Test
@@ -124,8 +128,19 @@ class NviPeriodTest extends LocalDynamoTest {
         assertThrows(PeriodNotFoundException.class, () -> NviPeriod.fetch("2022", periodRepository));
     }
 
+    @Test
+    void shouldReturnDto(){
+        var request = createRequest(YEAR);
+        var expectedId = constructExpectedId(request);
+        var actual = NviPeriod.create(request, periodRepository).toDto();
+        assertEquals(expectedId, actual.id());
+        assertEquals(request.publishingYear().toString(), actual.publishingYear());
+        assertEquals(request.startDate().toString(), actual.startDate());
+        assertEquals(request.reportingDate().toString(), actual.reportingDate());
+    }
+
     private static Username randomUserName() {
-        return new Username(randomString());
+        return Username.fromString(randomString());
     }
 
     private static Instant nowPlusDays(int numberOfDays) {

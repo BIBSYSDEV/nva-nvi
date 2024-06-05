@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.service;
+package no.sikt.nva.nvi.common.utils;
 
 import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.test.TestUtils.createNumberOfCandidatesForYear;
@@ -24,6 +24,7 @@ import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.utils.ApplicationConstants;
+import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,10 +1,10 @@
 package no.sikt.nva.nvi.events.batch;
 
-import static no.sikt.nva.nvi.common.service.BatchScanUtil.defaultNviService;
+import static no.sikt.nva.nvi.common.utils.BatchScanUtil.defaultNviService;
 import com.amazonaws.services.lambda.runtime.Context;
 import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.model.ListingResult;
-import no.sikt.nva.nvi.common.service.BatchScanUtil;
+import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
 import no.unit.nva.events.handlers.EventHandler;
 import no.unit.nva.events.models.AwsEventBridgeEvent;

@@ -28,7 +28,6 @@ public class NviPeriod {
     private final Instant reportingDate;
     private final Username createdBy;
     private final Username modifiedBy;
-
     protected NviPeriod(URI id, Integer publishingYear, Instant startDate, Instant reportingDate, Username createdBy,
                         Username modifiedBy) {
         this.id = id;
@@ -87,6 +86,14 @@ public class NviPeriod {
         return reportingDate;
     }
 
+    public Username getCreatedBy() {
+        return createdBy;
+    }
+
+    public Username getModifiedBy() {
+        return modifiedBy;
+    }
+
     @Override
     @JacocoGenerated
     public int hashCode() {
@@ -110,7 +117,7 @@ public class NviPeriod {
     }
 
     public NviPeriodDto toDto() {
-        return null;
+        return new NviPeriodDto(id, publishingYear.toString(), startDate.toString(), reportingDate.toString());
     }
 
     private static boolean exists(PeriodRepository periodRepository, Integer publishingYear) {
