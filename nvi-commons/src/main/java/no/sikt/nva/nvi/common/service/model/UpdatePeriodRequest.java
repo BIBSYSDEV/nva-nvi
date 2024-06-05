@@ -13,7 +13,7 @@ public record UpdatePeriodRequest(Integer publishingYear, Instant startDate, Ins
     }
 
     @Override
-    public void validate() throws IllegalArgumentException {
+    public void validate() {
         doesNotHaveNullValues(this);
         isBefore(startDate(), reportingDate());
         isNotBeforeCurrentTime(startDate());

@@ -10,5 +10,5 @@ public interface UpsertPeriodRequest {
 
     Instant reportingDate();
 
-    void validate() throws IllegalArgumentException;
+    void validate();
 }

@@ -28,6 +28,7 @@ public class NviPeriod {
     private final Instant reportingDate;
     private final Username createdBy;
     private final Username modifiedBy;
+
     protected NviPeriod(URI id, Integer publishingYear, Instant startDate, Instant reportingDate, Username createdBy,
                         Username modifiedBy) {
         this.id = id;
@@ -38,8 +39,7 @@ public class NviPeriod {
         this.modifiedBy = modifiedBy;
     }
 
-    public static NviPeriod create(CreatePeriodRequest request, PeriodRepository periodRepository)
-        throws IllegalArgumentException {
+    public static NviPeriod create(CreatePeriodRequest request, PeriodRepository periodRepository) {
         request.validate();
         if (exists(periodRepository, request.publishingYear())) {
             throw new PeriodAlreadyExistsException(String.format(PUBLISHING_YEAR_EXISTS, request.publishingYear()));
@@ -49,8 +49,7 @@ public class NviPeriod {
         return NviPeriod.fetch(publishingYear, periodRepository);
     }
 
-    public static NviPeriod update(UpdatePeriodRequest request, PeriodRepository periodRepository)
-        throws IllegalArgumentException {
+    public static NviPeriod update(UpdatePeriodRequest request, PeriodRepository periodRepository) {
         request.validate();
         var publishingYear = request.publishingYear().toString();
         var existingPeriod = fetch(publishingYear, periodRepository);

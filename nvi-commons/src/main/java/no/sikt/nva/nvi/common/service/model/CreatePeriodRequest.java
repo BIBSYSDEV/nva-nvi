@@ -17,7 +17,7 @@ public record CreatePeriodRequest(Integer publishingYear, Instant startDate, Ins
     }
 
     @Override
-    public void validate() throws IllegalArgumentException {
+    public void validate() {
         doesNotHaveNullValues(this);
         hasValidLength(publishingYear(), EXPECTED_LENGTH);
         isBefore(startDate(), reportingDate());
