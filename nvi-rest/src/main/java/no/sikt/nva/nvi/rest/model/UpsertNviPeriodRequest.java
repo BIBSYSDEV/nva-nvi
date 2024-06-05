@@ -7,7 +7,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
-import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest;
 import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
 
@@ -21,10 +20,6 @@ public record UpsertNviPeriodRequest(String publishingYear,
 
     public static final String INVALID_DATE_FORMAT = "Invalid date format!";
     public static final String NVI_PERIOD = "NviPeriod";
-
-    public static UpsertNviPeriodRequest fromNviPeriod(DbNviPeriod period) {
-        return null;
-    }
 
     public CreatePeriodRequest.Builder toCreatePeriodRequest() {
         return CreatePeriodRequest.builder()
