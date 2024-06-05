@@ -46,7 +46,7 @@ import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
-import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.common.service.BatchScanUtil;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
@@ -196,9 +196,9 @@ public final class TestUtils {
         return randomBigDecimal.setScale(scale, RoundingMode.HALF_UP);
     }
 
-    public static NviService nviServiceReturningOpenPeriod(DynamoDbClient client, int year) {
+    public static BatchScanUtil nviServiceReturningOpenPeriod(DynamoDbClient client, int year) {
         var nviPeriodRepository = mock(PeriodRepository.class);
-        var nviService = new NviService(nviPeriodRepository, new CandidateRepository(client));
+        var nviService = new BatchScanUtil(new CandidateRepository(client));
         var period = DbNviPeriod.builder()
                          .publishingYear(String.valueOf(year))
                          .startDate(Instant.now())
@@ -236,15 +236,6 @@ public final class TestUtils {
                          .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant()).build();
         when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
         return nviPeriodRepository;
-    }
-
-    public static DbNviPeriod createPeriod(String publishingYear) {
-        return DbNviPeriod.builder()
-                   .startDate(ZonedDateTime.now().plusMonths(1).toInstant())
-                   .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
-                   .publishingYear(publishingYear)
-                   .createdBy(randomUsername())
-                   .build();
     }
 
     public static NviPeriod setupPersistedPeriod(String year, PeriodRepository periodRepository) {

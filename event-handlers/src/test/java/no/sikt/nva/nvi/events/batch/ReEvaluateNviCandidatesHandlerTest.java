@@ -29,7 +29,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.ListingResult;
-import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.common.service.BatchScanUtil;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.model.ReEvaluateRequest;
 import no.sikt.nva.nvi.test.FakeSqsClient;
@@ -64,8 +64,7 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
         sqsClient = new FakeSqsClient();
         var localDynamoDbClient = initializeTestDatabase();
         candidateRepository = new CandidateRepository(localDynamoDbClient);
-        var periodRepository = new PeriodRepository(localDynamoDbClient);
-        var nviService = new NviService(periodRepository, candidateRepository);
+        var nviService = new BatchScanUtil(candidateRepository);
         this.eventBridgeClient = new FakeEventBridgeClient();
         handler = new ReEvaluateNviCandidatesHandler(nviService, sqsClient, environment, eventBridgeClient);
     }
@@ -80,7 +79,7 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
     void shouldInitializeWithDefaultPageSizeIfRequestedPageSizeIsBiggerThanMaxPageSize() {
         var year = randomYear();
         var pageSizeBiggerThanMaxPageSize = MAX_PAGE_SIZE + randomIntBetween(1, 100);
-        var mockedNviService = mock(NviService.class);
+        var mockedNviService = mock(BatchScanUtil.class);
         when(mockedNviService.fetchCandidatesByYear(year, false, DEFAULT_PAGE_SIZE, null))
             .thenReturn(new ListingResult<>(false, null, 0, List.of()));
         var handler = new ReEvaluateNviCandidatesHandler(mockedNviService, sqsClient, environment, eventBridgeClient);
