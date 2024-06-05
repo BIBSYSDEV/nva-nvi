@@ -25,7 +25,7 @@ public final class Validator {
         }
     }
 
-    public static void hasInvalidLength(Integer year, int length) {
+    public static void hasValidLength(Integer year, int length) {
         if (year.toString().length() != length) {
             throw new IllegalArgumentException("Provided period has invalid length! Expected length: " + length);
         }
@@ -37,7 +37,7 @@ public final class Validator {
         }
     }
 
-    public static void isPassedDate(Instant date) {
+    public static void isNotBeforeCurrentTime(Instant date) {
         if (date.isBefore(Instant.now())) {
             throw new IllegalArgumentException("Provided date is back in time!");
         }

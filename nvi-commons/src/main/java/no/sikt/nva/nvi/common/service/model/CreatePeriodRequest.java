@@ -1,9 +1,9 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import static no.sikt.nva.nvi.common.utils.Validator.doesNotHaveNullValues;
-import static no.sikt.nva.nvi.common.utils.Validator.hasInvalidLength;
+import static no.sikt.nva.nvi.common.utils.Validator.hasValidLength;
 import static no.sikt.nva.nvi.common.utils.Validator.isBefore;
-import static no.sikt.nva.nvi.common.utils.Validator.isPassedDate;
+import static no.sikt.nva.nvi.common.utils.Validator.isNotBeforeCurrentTime;
 import java.time.Instant;
 
 public record CreatePeriodRequest(Integer publishingYear, Instant startDate, Instant reportingDate,
@@ -19,10 +19,10 @@ public record CreatePeriodRequest(Integer publishingYear, Instant startDate, Ins
     @Override
     public void validate() throws IllegalArgumentException {
         doesNotHaveNullValues(this);
-        hasInvalidLength(publishingYear(), EXPECTED_LENGTH);
+        hasValidLength(publishingYear(), EXPECTED_LENGTH);
         isBefore(startDate(), reportingDate());
-        isPassedDate(startDate());
-        isPassedDate(reportingDate());
+        isNotBeforeCurrentTime(startDate());
+        isNotBeforeCurrentTime(reportingDate());
     }
 
     public static final class Builder {

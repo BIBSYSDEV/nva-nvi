@@ -8,35 +8,31 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.Year;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.exceptions.MethodNotAllowedException;
+import no.sikt.nva.nvi.common.service.exception.PeriodAlreadyExistsException;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class NviPeriodTest extends LocalDynamoTest {
 
-    private static final int YEAR = LocalDateTime.now().getYear();
+    private static final int YEAR = LocalDateTime.now().getYear() + 1;
     private PeriodRepository periodRepository;
 
     @BeforeEach
     void setup() {
         localDynamo = initializeTestDatabase();
         periodRepository = new PeriodRepository(localDynamo);
-        setUpExistingPeriod();
     }
 
     @Test
     void shouldCreateNviPeriod() {
-        var request = createRequest(YEAR + 1);
+        var request = createRequest(YEAR);
         var expectedId = constructExpectedId(request);
         var expected = new NviPeriod(expectedId, request.publishingYear(), request.startDate(),
                                      request.reportingDate(), request.createdBy(), null);
@@ -45,17 +41,17 @@ class NviPeriodTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldThrowMethodNotAllowedExceptionWhenPeriodAlreadyExists() {
-        var createRequest = createRequest(YEAR + 1);
+    void shouldThrowPeriodAlreadyExistsExceptionWhenPeriodAlreadyExists() {
+        var createRequest = createRequest(YEAR);
         NviPeriod.create(createRequest, periodRepository);
-        var newCreateRequest = createRequest(YEAR + 1);
-        assertThrows(MethodNotAllowedException.class, () -> NviPeriod.create(createRequest, periodRepository));
+        var newCreateRequest = createRequest(YEAR);
+        assertThrows(PeriodAlreadyExistsException.class, () -> NviPeriod.create(newCreateRequest, periodRepository));
     }
 
     @Test
     void shouldThrowIllegalArgumentWhenPeriodMissedMandatoryValues() {
         var createPeriodRequest = CreatePeriodRequest.builder()
-                                      .withPublishingYear(YEAR + 1)
+                                      .withPublishingYear(YEAR)
                                       .withCreatedBy(randomUserName())
                                       .build();
         assertThrows(IllegalArgumentException.class, () -> NviPeriod.create(createPeriodRequest, periodRepository));
@@ -63,30 +59,27 @@ class NviPeriodTest extends LocalDynamoTest {
 
     @Test
     void shouldUpdateNviPeriod() {
-        var year = YEAR + 1;
-        var originalRequest = createRequest(year, nowPlusDays(1), nowPlusDays(2));
+        var originalRequest = createRequest(YEAR, nowPlusDays(1), nowPlusDays(2));
         var originalPeriod = NviPeriod.create(originalRequest, periodRepository);
-        var updatedRequest = updateRequest(year, originalRequest.startDate(), nowPlusDays(3));
+        var updatedRequest = updateRequest(YEAR, originalRequest.startDate(), nowPlusDays(3));
         var updatedPeriod = NviPeriod.update(updatedRequest, periodRepository);
         assertNotEquals(updatedPeriod, originalPeriod);
     }
 
     @Test
     void shouldNotAllowNviPeriodReportingDateInInPastOnUpdate() {
-        var year = YEAR + 1;
-        var originalRequest = createRequest(year, nowPlusDays(1), nowPlusDays(2));
+        var originalRequest = createRequest(YEAR, nowPlusDays(1), nowPlusDays(2));
         NviPeriod.create(originalRequest, periodRepository);
-        var updatedRequest = updateRequest(year, originalRequest.startDate(),
+        var updatedRequest = updateRequest(YEAR, originalRequest.startDate(),
                                            ZonedDateTime.now().minusWeeks(10).toInstant());
         assertThrows(IllegalArgumentException.class, () -> NviPeriod.update(updatedRequest, periodRepository));
     }
 
     @Test
     void shouldNotAllowNviPeriodStartAfterReportingDateOnUpdate() {
-        var year = YEAR + 1;
-        var originalRequest = createRequest(year, nowPlusDays(1), nowPlusDays(2));
+        var originalRequest = createRequest(YEAR, nowPlusDays(1), nowPlusDays(2));
         NviPeriod.create(originalRequest, periodRepository);
-        var updatedRequest = updateRequest(year, originalRequest.reportingDate().plus(1, DAYS),
+        var updatedRequest = updateRequest(YEAR, originalRequest.reportingDate().plus(1, DAYS),
                                            originalRequest.reportingDate());
         assertThrows(IllegalArgumentException.class, () -> NviPeriod.update(updatedRequest, periodRepository));
     }
@@ -119,9 +112,9 @@ class NviPeriodTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnPeriodsOnlyWhenFetchingPeriods() {
-        NviPeriod.create(createRequest(Year.now().getValue(), nowPlusDays(10),
+        NviPeriod.create(createRequest(YEAR, nowPlusDays(10),
                                        nowPlusOneYear()), periodRepository);
-        NviPeriod.create(createRequest(Year.now().getValue() + 1, nowPlusDays(10),
+        NviPeriod.create(createRequest(YEAR + 1, nowPlusDays(10),
                                        nowPlusOneYear()), periodRepository);
         assertEquals(2, NviPeriod.fetchAll(periodRepository).size());
     }
@@ -173,13 +166,5 @@ class NviPeriodTest extends LocalDynamoTest {
                    .addChild("period")
                    .addChild(String.valueOf(createPeriodRequest.publishingYear()))
                    .getUri();
-    }
-
-    private void setUpExistingPeriod() {
-        periodRepository.save(DbNviPeriod.builder()
-                                  .publishingYear(String.valueOf(YEAR))
-                                  .startDate(LocalDateTime.of(YEAR, 4, 1, 0, 0).toInstant(ZoneOffset.UTC))
-                                  .reportingDate(LocalDateTime.of(YEAR + 1, 3, 31, 23, 59).toInstant(ZoneOffset.UTC))
-                                  .build());
     }
 }

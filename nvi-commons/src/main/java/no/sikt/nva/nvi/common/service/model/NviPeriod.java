@@ -1,11 +1,13 @@
 package no.sikt.nva.nvi.common.service.model;
 
+import static nva.commons.core.attempt.Try.attempt;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.exception.PeriodAlreadyExistsException;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.common.service.requests.CreatePeriodRequest;
 import no.sikt.nva.nvi.common.service.requests.UpdatePeriodRequest;
@@ -17,6 +19,7 @@ public class NviPeriod {
 
     public static final String SCIENTIFIC_INDEX_API_PATH = "scientific-index";
     public static final String PERIOD_PATH = "period";
+    public static final String PUBLISHING_YEAR_EXISTS = "Period with publishing year %s already exists!";
     private static final String API_HOST = new Environment().readEnv("API_HOST");
     private final URI id;
     private final Integer publishingYear;
@@ -38,6 +41,9 @@ public class NviPeriod {
     public static NviPeriod create(CreatePeriodRequest request, PeriodRepository periodRepository)
         throws IllegalArgumentException {
         request.validate();
+        if (exists(periodRepository, request.publishingYear())) {
+            throw new PeriodAlreadyExistsException(String.format(PUBLISHING_YEAR_EXISTS, request.publishingYear()));
+        }
         var publishingYear = request.publishingYear().toString();
         periodRepository.save(fromRequest(request, publishingYear).toDbObject());
         return NviPeriod.fetch(publishingYear, periodRepository);
@@ -84,6 +90,10 @@ public class NviPeriod {
                && Objects.equals(publishingYear, nviPeriod.publishingYear)
                && Objects.equals(startDate, nviPeriod.startDate)
                && Objects.equals(reportingDate, nviPeriod.reportingDate);
+    }
+
+    private static boolean exists(PeriodRepository periodRepository, Integer publishingYear) {
+        return attempt(() -> fetch(publishingYear.toString(), periodRepository)).isSuccess();
     }
 
     private static Builder builder() {
