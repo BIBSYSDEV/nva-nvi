@@ -1,28 +1,14 @@
 package no.sikt.nva.nvi.common.utils;
 
-import java.lang.reflect.Field;
+import static java.util.Objects.isNull;
 import java.time.Instant;
+import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
+import no.sikt.nva.nvi.common.service.requests.CreatePeriodRequest;
+import no.sikt.nva.nvi.common.service.requests.UpsertPeriodRequest;
 
 public final class Validator {
 
     private Validator() {
-    }
-
-    public static void doesNotHaveNullValues(Object object) {
-        var currentClass = object.getClass();
-        while (currentClass != null) {
-            for (Field field : currentClass.getDeclaredFields()) {
-                field.setAccessible(true);
-                try {
-                    if (field.get(object) == null) {
-                        throw new IllegalArgumentException("Field " + field.getName() + " can not be null!");
-                    }
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException("Error accessing field " + field.getName(), e);
-                }
-            }
-            currentClass = currentClass.getSuperclass();
-        }
     }
 
     public static void hasValidLength(Integer year, int length) {
@@ -40,6 +26,28 @@ public final class Validator {
     public static void isNotBeforeCurrentTime(Instant date) {
         if (date.isBefore(Instant.now())) {
             throw new IllegalArgumentException("Provided date is back in time!");
+        }
+    }
+
+    public static void doesNotHaveNullValues(UpsertPeriodRequest upsertPeriodRequest) {
+        if (isNull(upsertPeriodRequest.publishingYear())) {
+            throw new IllegalArgumentException("Publishing year can not be null!");
+        }
+        if (isNull(upsertPeriodRequest.startDate())) {
+            throw new IllegalArgumentException("Start date can not be null!");
+        }
+        if (isNull(upsertPeriodRequest.reportingDate())) {
+            throw new IllegalArgumentException("Reporting date can not be null!");
+        }
+        if (upsertPeriodRequest instanceof UpdatePeriodRequest updateRequest) {
+            if (isNull(updateRequest.modifiedBy())) {
+                throw new IllegalArgumentException("Modified by can not be null!");
+            }
+        }
+        if (upsertPeriodRequest instanceof CreatePeriodRequest createRequest) {
+            if (isNull(createRequest.createdBy())) {
+                throw new IllegalArgumentException("Created by can not be null!");
+            }
         }
     }
 }

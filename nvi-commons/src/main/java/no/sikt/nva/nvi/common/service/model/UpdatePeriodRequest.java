@@ -21,6 +21,7 @@ public record UpdatePeriodRequest(Integer publishingYear, Instant startDate, Ins
     }
 
     public static final class Builder {
+
         private Integer publishingYear;
         private Instant startDate;
         private Instant reportingDate;
