@@ -40,6 +40,7 @@ import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MultiMatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.Query.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
@@ -229,6 +230,7 @@ public class CandidateQuery {
                                                          containsPendingStatusQuery(),
                                                          multipleApprovalsQuery());
 
+            case DISPUTED_AGG -> null;
             case ASSIGNMENTS_AGG -> mustMatch(assignmentsQuery(username, topLevelCristinOrg));
         };
 
@@ -290,6 +292,7 @@ public class CandidateQuery {
         APPROVED_COLLABORATION_AGG("approvedCollaboration"),
         REJECTED_AGG("rejected"),
         REJECTED_COLLABORATION_AGG("rejectedCollaboration"),
+        DISPUTED_AGG("dispute"),
         ASSIGNMENTS_AGG("assignments"),
         EMPTY_FILTER("");
 

@@ -315,7 +315,8 @@ public class OpenSearchClientTest {
                             documentFromString("document_approved.json"),
                             documentFromString("document_approved_collaboration.json"),
                             documentFromString("document_rejected.json"),
-                            documentFromString("document_rejected_collaboration.json"));
+                            documentFromString("document_rejected_collaboration.json"),
+                            documentFromString("document_organization_aggregation_dispute.json"));
 
         var searchParameters =
             defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_ID)).withFilter(entry.getKey()).build();
@@ -443,7 +444,8 @@ public class OpenSearchClientTest {
                             documentFromString("document_approved.json"),
                             documentFromString("document_approved_collaboration.json"),
                             documentFromString("document_rejected.json"),
-                            documentFromString("document_rejected_collaboration.json"));
+                            documentFromString("document_rejected_collaboration.json"),
+                            documentFromString("document_organization_aggregation_dispute.json"));
 
         var searchParameters =
             defaultSearchParameters().withFilter(entry.getKey()).withAffiliations(List.of(NTNU_INSTITUTION_ID)).build();
@@ -750,9 +752,10 @@ public class OpenSearchClientTest {
         map.put(QueryFilterType.PENDING_COLLABORATION_AGG.getFilter(), 1);
         map.put(QueryFilterType.APPROVED_AGG.getFilter(), 2);
         map.put(QueryFilterType.APPROVED_COLLABORATION_AGG.getFilter(), 1);
-        map.put(QueryFilterType.REJECTED_AGG.getFilter(), 2);
+        map.put(QueryFilterType.REJECTED_AGG.getFilter(), 3);
         map.put(QueryFilterType.REJECTED_COLLABORATION_AGG.getFilter(), 1);
-        map.put(QueryFilterType.ASSIGNMENTS_AGG.getFilter(), 4);
+        map.put(QueryFilterType.ASSIGNMENTS_AGG.getFilter(), 5);
+        map.put(QueryFilterType.DISPUTED_AGG.getFilter(), 1);
         return map.entrySet().stream();
     }
 

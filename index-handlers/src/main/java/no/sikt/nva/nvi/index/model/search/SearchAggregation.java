@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.index.model.search;
 
-import static no.sikt.nva.nvi.index.Aggregations.DISPUTE;
 import static no.sikt.nva.nvi.index.Aggregations.collaborationAggregation;
 import static no.sikt.nva.nvi.index.Aggregations.completedAggregation;
 import static no.sikt.nva.nvi.index.Aggregations.disputeAggregation;
