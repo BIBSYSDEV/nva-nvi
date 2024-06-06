@@ -66,7 +66,7 @@ import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.Builder;
 import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
-import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
+import no.sikt.nva.nvi.events.model.PublicationDate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import nva.commons.core.Environment;

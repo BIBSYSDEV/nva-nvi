@@ -230,7 +230,7 @@
       ],
       "publicationDate": {
         "type": "PublicationDate",
-        "year": "2021"
+        "year": "__REPLACE_YEAR__"
       },
       "reference": {
         "type": "Reference",

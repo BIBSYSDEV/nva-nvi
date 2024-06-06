@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.rest.model.NviPeriodsResponse;
 import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -37,7 +38,7 @@ public class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
         output = new ByteArrayOutputStream();
         context = new FakeContext();
         periodRepository = new PeriodRepository(initializeTestDatabase());
-        handler = new FetchNviPeriodsHandler(periodRepository);
+        handler = new FetchNviPeriodsHandler(new NviPeriodService(periodRepository));
     }
 
     @Test

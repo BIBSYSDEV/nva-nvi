@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import static java.time.temporal.ChronoUnit.DAYS;
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.sikt.nva.nvi.test.TestUtils.randomUserName;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.exception.PeriodAlreadyExistsException;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -23,6 +24,7 @@ class NviPeriodTest extends LocalDynamoTest {
 
     private static final int YEAR = LocalDateTime.now().getYear() + 1;
     private PeriodRepository periodRepository;
+    private NviPeriodService nviPeriodService;
 
     @BeforeEach
     void setup() {
@@ -114,15 +116,6 @@ class NviPeriodTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldReturnPeriodsOnlyWhenFetchingPeriods() {
-        NviPeriod.create(createRequest(YEAR, nowPlusDays(10),
-                                       nowPlusOneYear()), periodRepository);
-        NviPeriod.create(createRequest(YEAR + 1, nowPlusDays(10),
-                                       nowPlusOneYear()), periodRepository);
-        assertEquals(2, NviPeriod.fetchAll(periodRepository).size());
-    }
-
-    @Test
     void shouldThrowPeriodNotFoundExceptionWhenPeriodDoesNotExist() {
         assertThrows(PeriodNotFoundException.class, () -> NviPeriod.fetch("2022", periodRepository));
     }
@@ -138,16 +131,8 @@ class NviPeriodTest extends LocalDynamoTest {
         assertEquals(request.reportingDate().toString(), actual.reportingDate());
     }
 
-    private static Username randomUserName() {
-        return Username.fromString(randomString());
-    }
-
     private static Instant nowPlusDays(int numberOfDays) {
         return Instant.now().plus(numberOfDays, DAYS);
-    }
-
-    private static Instant nowPlusOneYear() {
-        return Instant.now().plus(365, DAYS);
     }
 
     private static CreatePeriodRequest createRequest(int year, Instant startDate, Instant reportingDate) {

@@ -33,17 +33,19 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
+import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
 import no.sikt.nva.nvi.events.evaluator.model.Level;
 import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
@@ -51,8 +53,8 @@ import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
-import no.sikt.nva.nvi.events.model.NviCandidate.PublicationDate;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
+import no.sikt.nva.nvi.events.model.PublicationDate;
 import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
@@ -131,7 +133,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         uriRetriever = mock(UriRetriever.class);
         storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
         periodRepository = new PeriodRepository(dynamoDbClient);
-        var calculator = new CandidateCalculator(authorizedBackendUriRetriever, uriRetriever);
+        var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, uriRetriever);
         var organizationRetriever = new OrganizationRetriever(uriRetriever);
         var pointCalculator = new PointService(organizationRetriever);
         candidateRepository = new CandidateRepository(dynamoDbClient);
@@ -355,14 +357,19 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldCreateNonCandidateWhenPublicationYearBefore2022() throws IOException {
-        var path = "evaluator/candidate_publicationDate_before_2022.json";
-        var content = IoUtils.inputStreamFromResources(path);
+    void shouldNotEvaluatePublicationPublishedBeforeLatestClosedPeriod() throws IOException {
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+        var path = "evaluator/candidate_publicationDate_replace_year.json";
+        var previousYear = LocalDateTime.now().getYear() - 1;
+        var yearBeforePreviousYear = previousYear - 1;
+        persistPeriod(yearBeforePreviousYear);
+        persistPeriod(previousYear);
+        var content = IoUtils.stringFromResources(Path.of(path)).replace("__REPLACE_YEAR__",
+                                                                         String.valueOf(yearBeforePreviousYear));
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
-        var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
-        assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
+        assertEquals(0, queueClient.getSentMessages().size());
     }
 
     @Test
@@ -515,8 +522,17 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                          .sum();
     }
 
+    private void persistPeriod(int publishingYear) {
+        periodRepository.save(DbNviPeriod.builder()
+                                  .publishingYear(String.valueOf(publishingYear))
+                                  .startDate(LocalDateTime.of(publishingYear, 4, 1, 0, 0, 0).toInstant(ZoneOffset.UTC))
+                                  .reportingDate(
+                                      LocalDateTime.of(publishingYear + 1, 3, 1, 0, 0, 0).toInstant(ZoneOffset.UTC))
+                                  .build());
+    }
+
     private void setupEvaluatorService(PeriodRepository periodRepository) {
-        var calculator = new CandidateCalculator(authorizedBackendUriRetriever, uriRetriever);
+        var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, uriRetriever);
         var organizationRetriever = new OrganizationRetriever(uriRetriever);
         var pointCalculator = new PointService(organizationRetriever);
         evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator, candidateRepository,
