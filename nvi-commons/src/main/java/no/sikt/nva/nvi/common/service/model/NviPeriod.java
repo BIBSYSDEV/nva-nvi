@@ -40,33 +40,33 @@ public class NviPeriod {
     }
 
     public static NviPeriod create(CreatePeriodRequest request, PeriodRepository periodRepository) {
-        request.validate();
-        if (exists(periodRepository, request.publishingYear())) {
-            throw new PeriodAlreadyExistsException(String.format(PUBLISHING_YEAR_EXISTS, request.publishingYear()));
+        var period = NviPeriod.fromRequest(request);
+        if (period.exists(periodRepository)) {
+            throw new PeriodAlreadyExistsException(String.format(PUBLISHING_YEAR_EXISTS, period.getPublishingYear()));
         }
-        var publishingYear = request.publishingYear().toString();
-        periodRepository.save(fromRequest(request, publishingYear).toDbObject());
-        return NviPeriod.fetch(publishingYear, periodRepository);
+        period.persist(periodRepository);
+        return period.fetch(periodRepository);
     }
 
     public static NviPeriod update(UpdatePeriodRequest request, PeriodRepository periodRepository) {
-        request.validate();
-        var publishingYear = request.publishingYear().toString();
-        var existingPeriod = fetch(publishingYear, periodRepository);
-        var updatedPeriod = update(existingPeriod, request);
-        periodRepository.save(updatedPeriod.toDbObject());
-        return NviPeriod.fetch(publishingYear, periodRepository);
+        var period = NviPeriod.fetch(periodRepository, request.publishingYear());
+        period.fromRequest(request).persist(periodRepository);
+        return period.fetch(periodRepository);
     }
 
     public static List<NviPeriod> fetchAll(PeriodRepository periodRepository) {
         return periodRepository.getPeriods().stream().map(NviPeriod::fromDbObject).toList();
     }
 
-    public static NviPeriod fetch(String publishingYear, PeriodRepository periodRepository) {
-        return periodRepository.findByPublishingYear(publishingYear)
+    public static NviPeriod fetch(PeriodRepository periodRepository, Integer publishingYear) {
+        return periodRepository.findByPublishingYear(String.valueOf(publishingYear))
                    .map(NviPeriod::fromDbObject)
                    .orElseThrow(() -> PeriodNotFoundException.withMessage(
                        String.format("Period for year %s does not exist!", publishingYear)));
+    }
+
+    public NviPeriod fetch(PeriodRepository periodRepository) {
+        return fetch(periodRepository, publishingYear);
     }
 
     public URI getId() {
@@ -119,24 +119,13 @@ public class NviPeriod {
         return new NviPeriodDto(id, publishingYear.toString(), startDate.toString(), reportingDate.toString());
     }
 
-    private static boolean exists(PeriodRepository periodRepository, Integer publishingYear) {
-        return attempt(() -> fetch(publishingYear.toString(), periodRepository)).isSuccess();
-    }
-
     private static Builder builder() {
         return new Builder();
     }
 
-    private static NviPeriod update(NviPeriod existingPeriod, UpdatePeriodRequest request) {
-        return existingPeriod.copy()
-                   .withStartDate(request.startDate())
-                   .withReportingDate(request.reportingDate())
-                   .withModifiedBy(request.modifiedBy())
-                   .build();
-    }
-
-    private static NviPeriod fromRequest(CreatePeriodRequest request, String publishingYear) {
-        return new NviPeriod(constructId(publishingYear), request.publishingYear(),
+    private static NviPeriod fromRequest(CreatePeriodRequest request) {
+        request.validate();
+        return new NviPeriod(constructId(String.valueOf(request.publishingYear())), request.publishingYear(),
                              request.startDate(), request.reportingDate(), request.createdBy(), null);
     }
 
@@ -153,6 +142,27 @@ public class NviPeriod {
                    .addChild(PERIOD_PATH)
                    .addChild(publishingYear)
                    .getUri();
+    }
+
+    private NviPeriod fromRequest(UpdatePeriodRequest request) {
+        request.validate();
+        return this.update(request);
+    }
+
+    private NviPeriod update(UpdatePeriodRequest request) {
+        return this.copy()
+                   .withStartDate(request.startDate())
+                   .withReportingDate(request.reportingDate())
+                   .withModifiedBy(request.modifiedBy())
+                   .build();
+    }
+
+    private void persist(PeriodRepository periodRepository) {
+        periodRepository.save(this.toDbObject());
+    }
+
+    private boolean exists(PeriodRepository periodRepository) {
+        return attempt(() -> fetch(periodRepository)).isSuccess();
     }
 
     private Builder copy() {
