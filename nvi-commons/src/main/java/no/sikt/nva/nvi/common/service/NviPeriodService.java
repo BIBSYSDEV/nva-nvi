@@ -20,7 +20,7 @@ public class NviPeriodService {
     public Optional<Integer> fetchLatestClosedPeriodYear() {
         return periodRepository.getPeriods().stream()
                    .map(NviPeriod::fromDbObject)
-                   .filter(NviPeriod::isClosedPeriod)
+                   .filter(NviPeriod::isClosed)
                    .map(NviPeriod::getPublishingYear)
                    .reduce(Integer::max);
     }
