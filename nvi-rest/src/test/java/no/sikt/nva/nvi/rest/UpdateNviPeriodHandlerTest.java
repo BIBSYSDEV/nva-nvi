@@ -1,11 +1,12 @@
 package no.sikt.nva.nvi.rest;
 
+import static no.sikt.nva.nvi.test.TestUtils.setupPersistedPeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -14,9 +15,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.time.ZonedDateTime;
-import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
-import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.model.NviPeriodDto;
+import java.time.temporal.ChronoUnit;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.model.NviPeriod;
+import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
 import no.sikt.nva.nvi.rest.upsert.UpdateNviPeriodHandler;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
@@ -32,14 +34,14 @@ public class UpdateNviPeriodHandlerTest extends LocalDynamoTest {
     private Context context;
     private ByteArrayOutputStream output;
     private UpdateNviPeriodHandler handler;
-    private NviService nviService;
+    private PeriodRepository periodRepository;
 
     @BeforeEach
     void init() {
         output = new ByteArrayOutputStream();
         context = mock(Context.class);
-        nviService = new NviService((initializeTestDatabase()));
-        handler = new UpdateNviPeriodHandler(nviService);
+        periodRepository = new PeriodRepository((initializeTestDatabase()));
+        handler = new UpdateNviPeriodHandler(periodRepository);
     }
 
     @Test
@@ -53,8 +55,7 @@ public class UpdateNviPeriodHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnNotFoundWhenPeriodDoesNotExists()
         throws IOException {
-        var period = randomPeriod();
-        handler.handleRequest(createRequest(period), output, context);
+        handler.handleRequest(toInputStream(randomUpsertNviPeriodRequest()), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_NOT_FOUND)));
@@ -63,38 +64,40 @@ public class UpdateNviPeriodHandlerTest extends LocalDynamoTest {
     @Test
     void shouldUpdateNviPeriodSuccessfully()
         throws IOException {
-        var persistedPeriod = nviService.createPeriod(randomPeriod().toNviPeriod());
-        var newValue = updatedPeriod(persistedPeriod);
-        handler.handleRequest(createRequest(NviPeriodDto.fromNviPeriod(newValue)), output, context);
-        var updatedPeriod = nviService.getPeriod(persistedPeriod.publishingYear());
+        var year = String.valueOf(ZonedDateTime.now().getYear());
+        var persistedPeriod = setupPersistedPeriod(year, periodRepository);
+        var updateRequest = updateRequest(year, persistedPeriod);
+        handler.handleRequest(toInputStream(updateRequest), output, context);
+        var updatedPeriod = NviPeriod.fetch(year, periodRepository);
 
-        assertThat(persistedPeriod.reportingDate(), is(not(equalTo(updatedPeriod.reportingDate()))));
+        assertThat(persistedPeriod.getReportingDate(), is(not(equalTo(updatedPeriod.getReportingDate()))));
     }
 
-    private static DbNviPeriod updatedPeriod(DbNviPeriod persistedPeriod) {
-        return persistedPeriod.copy()
-                   .reportingDate(ZonedDateTime.now().plusMonths(4).toInstant())
-                   .build();
+    private UpsertNviPeriodRequest updateRequest(String year, NviPeriod persistedPeriod) {
+        return new UpsertNviPeriodRequest(year,
+                                          persistedPeriod.getStartDate().plus(1, ChronoUnit.DAYS).toString(),
+                                          persistedPeriod.getReportingDate().plus(1, ChronoUnit.DAYS).toString());
     }
 
-    private InputStream createRequest(NviPeriodDto period) throws JsonProcessingException {
+    private UpsertNviPeriodRequest randomUpsertNviPeriodRequest() {
+        return new UpsertNviPeriodRequest(String.valueOf(ZonedDateTime.now().getYear()),
+                                          ZonedDateTime.now().plusMonths(1).toInstant().toString(),
+                                          ZonedDateTime.now().plusMonths(10).toInstant().toString());
+    }
+
+    private InputStream toInputStream(UpsertNviPeriodRequest request) throws JsonProcessingException {
         var customerId = randomUri();
-        return new HandlerRequestBuilder<NviPeriodDto>(JsonUtils.dtoObjectMapper).withBody(randomPeriod())
+        return new HandlerRequestBuilder<UpsertNviPeriodRequest>(JsonUtils.dtoObjectMapper)
+                   .withBody(request)
                    .withCurrentCustomer(customerId)
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI)
                    .withUserName(randomString())
-                   .withBody(period)
                    .build();
     }
 
     private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
-        return new HandlerRequestBuilder<NviPeriodDto>(JsonUtils.dtoObjectMapper).withBody(randomPeriod()).build();
-    }
-
-    private NviPeriodDto randomPeriod() {
-        return new NviPeriodDto(randomUri(),
-                                String.valueOf(ZonedDateTime.now().getYear()),
-                                ZonedDateTime.now().plusMonths(1).toInstant().toString(),
-                                ZonedDateTime.now().plusMonths(10).toInstant().toString());
+        return new HandlerRequestBuilder<UpsertNviPeriodRequest>(JsonUtils.dtoObjectMapper)
+                   .withBody(randomUpsertNviPeriodRequest())
+                   .build();
     }
 }

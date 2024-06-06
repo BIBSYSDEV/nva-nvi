@@ -12,12 +12,12 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.DynamoRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
-import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.rest.model.ApprovalDto;
+import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.utils.ExceptionMapper;
+import no.sikt.nva.nvi.rest.model.UpsertAssigneeRequest;
 import no.sikt.nva.nvi.rest.model.User;
 import no.sikt.nva.nvi.rest.model.User.Role;
-import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.utils.RequestUtil;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.RawContentRetriever;
@@ -31,7 +31,7 @@ import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
-public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, CandidateDto> {
+public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeRequest, CandidateDto> {
 
     public static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
     public static final Environment ENVIRONMENT = new Environment();
@@ -47,7 +47,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
 
     @JacocoGenerated
     public UpsertAssigneeHandler() {
-        super(ApprovalDto.class);
+        super(UpsertAssigneeRequest.class);
         this.candidateRepository = new CandidateRepository(DynamoRepository.defaultDynamoClient());
         this.periodRepository = new PeriodRepository(DynamoRepository.defaultDynamoClient());
         this.uriRetriever = new AuthorizedBackendUriRetriever(BACKEND_CLIENT_AUTH_URL, BACKEND_CLIENT_SECRET_NAME);
@@ -55,14 +55,14 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
 
     public UpsertAssigneeHandler(CandidateRepository candidateRepository,
                                  PeriodRepository periodRepository, RawContentRetriever uriRetriever) {
-        super(ApprovalDto.class);
+        super(UpsertAssigneeRequest.class);
         this.candidateRepository = candidateRepository;
         this.periodRepository = periodRepository;
         this.uriRetriever = uriRetriever;
     }
 
     @Override
-    protected CandidateDto processInput(ApprovalDto input, RequestInfo requestInfo, Context context)
+    protected CandidateDto processInput(UpsertAssigneeRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         validateRequest(input, requestInfo);
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
@@ -75,11 +75,12 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
     }
 
     @Override
-    protected Integer getSuccessStatusCode(ApprovalDto input, CandidateDto output) {
+    protected Integer getSuccessStatusCode(UpsertAssigneeRequest input, CandidateDto output) {
         return HttpURLConnection.HTTP_OK;
     }
 
-    private static void hasSameCustomer(ApprovalDto input, RequestInfo requestInfo) throws UnauthorizedException {
+    private static void hasSameCustomer(UpsertAssigneeRequest input, RequestInfo requestInfo)
+        throws UnauthorizedException {
         if (!input.institutionId().equals(requestInfo.getTopLevelOrgCristinId().orElseThrow())) {
             throw new UnauthorizedException();
         }
@@ -89,7 +90,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<ApprovalDto, Candid
         return attempt(() -> JsonUtils.dtoObjectMapper.readValue(body, User.class)).orElseThrow();
     }
 
-    private void validateRequest(ApprovalDto input, RequestInfo requestInfo) throws UnauthorizedException {
+    private void validateRequest(UpsertAssigneeRequest input, RequestInfo requestInfo) throws UnauthorizedException {
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATES);
         hasSameCustomer(input, requestInfo);
         if (nonNull(input.assignee())) {

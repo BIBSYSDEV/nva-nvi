@@ -1,12 +1,12 @@
 package no.sikt.nva.nvi.rest.fetch;
 
+import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.util.List;
-import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
-import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.model.NviPeriodDto;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.rest.model.NviPeriodsResponse;
 import no.sikt.nva.nvi.utils.RequestUtil;
 import nva.commons.apigateway.AccessRight;
@@ -17,17 +17,16 @@ import nva.commons.core.JacocoGenerated;
 
 public class FetchNviPeriodsHandler extends ApiGatewayHandler<Void, NviPeriodsResponse> {
 
-    private final NviService nviService;
+    private final PeriodRepository periodRepository;
 
     @JacocoGenerated
     public FetchNviPeriodsHandler() {
-        super(Void.class);
-        this.nviService = NviService.defaultNviService();
+        this(new PeriodRepository(defaultDynamoClient()));
     }
 
-    public FetchNviPeriodsHandler(NviService nviService) {
+    public FetchNviPeriodsHandler(PeriodRepository periodRepository) {
         super(Void.class);
-        this.nviService = nviService;
+        this.periodRepository = periodRepository;
     }
 
     @Override
@@ -36,7 +35,7 @@ public class FetchNviPeriodsHandler extends ApiGatewayHandler<Void, NviPeriodsRe
 
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI);
 
-        return attempt(nviService::getPeriods)
+        return attempt(() -> NviPeriod.fetchAll(periodRepository))
                    .map(this::toNviPeriodsResponse)
                    .orElseThrow();
     }
@@ -46,13 +45,7 @@ public class FetchNviPeriodsHandler extends ApiGatewayHandler<Void, NviPeriodsRe
         return HttpURLConnection.HTTP_OK;
     }
 
-    private static List<NviPeriodDto> toPeriodDtoList(List<DbNviPeriod> dbNviPeriods) {
-        return dbNviPeriods.stream()
-                   .map(NviPeriodDto::fromNviPeriod)
-                   .toList();
-    }
-
-    private NviPeriodsResponse toNviPeriodsResponse(List<DbNviPeriod> dbNviPeriods) {
-        return new NviPeriodsResponse(toPeriodDtoList(dbNviPeriods));
+    private NviPeriodsResponse toNviPeriodsResponse(List<NviPeriod> nviPeriods) {
+        return new NviPeriodsResponse(nviPeriods.stream().map(NviPeriod::toDto).toList());
     }
 }

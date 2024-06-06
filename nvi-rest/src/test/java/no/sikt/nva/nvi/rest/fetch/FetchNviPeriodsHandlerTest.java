@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.rest.fetch;
 
-import static no.sikt.nva.nvi.test.TestUtils.randomUsername;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -13,12 +12,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.time.ZonedDateTime;
-import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
-import no.sikt.nva.nvi.common.service.NviService;
-import no.sikt.nva.nvi.rest.model.NviPeriodDto;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.rest.model.NviPeriodsResponse;
+import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -32,14 +30,14 @@ public class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
     private Context context;
     private ByteArrayOutputStream output;
     private FetchNviPeriodsHandler handler;
-    private NviService nviService;
+    private PeriodRepository periodRepository;
 
     @BeforeEach
     public void setUp() {
         output = new ByteArrayOutputStream();
         context = new FakeContext();
-        nviService = new NviService(initializeTestDatabase());
-        handler = new FetchNviPeriodsHandler(nviService);
+        periodRepository = new PeriodRepository(initializeTestDatabase());
+        handler = new FetchNviPeriodsHandler(periodRepository);
     }
 
     @Test
@@ -52,8 +50,8 @@ public class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnPeriodsWhenUserHasAccessRights() throws IOException {
-        nviService.createPeriod(periodWithPublishingYear(String.valueOf(ZonedDateTime.now().getYear())));
-        nviService.createPeriod(periodWithPublishingYear(String.valueOf(ZonedDateTime.now().plusYears(1).getYear())));
+        TestUtils.setupPersistedPeriod("2023", periodRepository);
+        TestUtils.setupPersistedPeriod("2024", periodRepository);
         handler.handleRequest(createRequestWithAccessRight(AccessRight.MANAGE_NVI), output, context);
         var response = GatewayResponse.fromOutputStream(output, NviPeriodsResponse.class);
 
@@ -70,18 +68,9 @@ public class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
         assertThat(response.getBodyObject(NviPeriodsResponse.class).periods(), hasSize(0));
     }
 
-    private static DbNviPeriod periodWithPublishingYear(String publishingYear) {
-        return DbNviPeriod.builder()
-                   .publishingYear(publishingYear)
-                   .startDate(ZonedDateTime.now().plusMonths(1).toInstant())
-                   .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
-                   .createdBy(randomUsername())
-                   .build();
-    }
-
     private InputStream createRequestWithAccessRight(AccessRight accessRight) throws JsonProcessingException {
         var customerId = randomUri();
-        return new HandlerRequestBuilder<NviPeriodDto>(JsonUtils.dtoObjectMapper)
+        return new HandlerRequestBuilder<UpsertNviPeriodRequest>(JsonUtils.dtoObjectMapper)
                    .withCurrentCustomer(customerId)
                    .withAccessRights(customerId, accessRight)
                    .withUserName(randomString())
