@@ -357,21 +357,19 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldCreateNonCandidateWhenPublicationYearIsInIrrelevantPeriod() throws IOException {
+    void shouldNotEvaluatePublicationPublishedBeforeLatestClosedPeriod() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var path = "evaluator/candidate_publicationDate_replace_year.json";
-        var currentYear = LocalDateTime.now().getYear();
-        var previousYear = currentYear - 1;
+        var previousYear = LocalDateTime.now().getYear() - 1;
         var yearBeforePreviousYear = previousYear - 1;
-        persistPeriod(yearBeforePreviousYear, previousYear);
-        persistPeriod(previousYear, currentYear);
+        persistPeriod(yearBeforePreviousYear);
+        persistPeriod(previousYear);
         var content = IoUtils.stringFromResources(Path.of(path)).replace("__REPLACE_YEAR__",
                                                                          String.valueOf(yearBeforePreviousYear));
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
-        var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
-        assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
+        assertEquals(0, queueClient.getSentMessages().size());
     }
 
     @Test
@@ -524,12 +522,12 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                          .sum();
     }
 
-    private void persistPeriod(int publishingYear, int reportingYear) {
+    private void persistPeriod(int publishingYear) {
         periodRepository.save(DbNviPeriod.builder()
                                   .publishingYear(String.valueOf(publishingYear))
                                   .startDate(LocalDateTime.of(publishingYear, 4, 1, 0, 0, 0).toInstant(ZoneOffset.UTC))
                                   .reportingDate(
-                                      LocalDateTime.of(reportingYear, 3, 1, 0, 0, 0).toInstant(ZoneOffset.UTC))
+                                      LocalDateTime.of(publishingYear + 1, 3, 1, 0, 0, 0).toInstant(ZoneOffset.UTC))
                                   .build());
     }
 

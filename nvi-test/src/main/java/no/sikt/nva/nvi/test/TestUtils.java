@@ -115,6 +115,10 @@ public final class TestUtils {
         return instanceTypes.get(RANDOM.nextInt(instanceTypes.size()));
     }
 
+    public static no.sikt.nva.nvi.common.service.model.Username randomUserName() {
+        return no.sikt.nva.nvi.common.service.model.Username.fromString(randomString());
+    }
+
     public static String randomInstanceTypeExcluding(String instanceType) {
         var instanceTypes = Arrays.stream(InstanceType.values())
                                 .filter(type -> !type.getValue().equals(instanceType)).toList();

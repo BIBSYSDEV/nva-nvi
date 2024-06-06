@@ -13,7 +13,6 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
-import java.time.Year;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -21,6 +20,7 @@ import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
+import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
@@ -45,6 +45,7 @@ public class EvaluatorService {
     private final PointService pointService;
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
+    private final NviPeriodService nviPeriodService;
 
     public EvaluatorService(StorageReader<URI> storageReader, CreatorVerificationUtil creatorVerificationUtil,
                             PointService pointService, CandidateRepository candidateRepository,
@@ -54,15 +55,17 @@ public class EvaluatorService {
         this.pointService = pointService;
         this.candidateRepository = candidateRepository;
         this.periodRepository = periodRepository;
+        this.nviPeriodService = new NviPeriodService(periodRepository);
     }
 
     public Optional<CandidateEvaluatedMessage> evaluateCandidacy(URI publicationBucketUri) {
         var publication = extractBodyFromContent(storageReader.read(publicationBucketUri));
         var publicationId = extractPublicationId(publication);
         var publicationDate = extractPublicationDate(publication);
-        if (isPublishedBeforeCurrentPeriod(publicationDate)) {
-            logger.info("Skipping evaluation. Publication with id {} is published before current period.",
-                        publicationId);
+        if (isPublishedBeforeOrSameAsLatestClosedPeriod(publicationDate)) {
+            logger.info("Skipping evaluation. Publication with id {} is published before or same as latest closed "
+                        + "period {}",
+                        publicationId, publicationDate.year());
             return Optional.empty();
         }
         if (existsAsCandidateInClosedPeriod(publicationId)) {
@@ -143,8 +146,11 @@ public class EvaluatorService {
                    .orElse(new PublicationDate(null, null, year.textValue()));
     }
 
-    private boolean isPublishedBeforeCurrentPeriod(PublicationDate publicationDate) {
-        return false;
+    private boolean isPublishedBeforeOrSameAsLatestClosedPeriod(PublicationDate publicationDate) {
+        var publishedYear = Integer.parseInt(publicationDate.year());
+        return nviPeriodService.fetchLatestClosedPeriodYear()
+                   .map(latestClosedPeriodYear -> publishedYear <= latestClosedPeriodYear)
+                   .orElse(false);
     }
 
     private Optional<CandidateEvaluatedMessage> createNonNviMessage(URI publicationId) {
