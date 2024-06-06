@@ -32,19 +32,15 @@ public final class Validator {
     public static void doesNotHaveNullValues(UpsertPeriodRequest upsertPeriodRequest) {
         if (isNull(upsertPeriodRequest.publishingYear())) {
             throw new IllegalArgumentException("Publishing year can not be null!");
-        }
-        if (isNull(upsertPeriodRequest.startDate())) {
+        } else if (isNull(upsertPeriodRequest.startDate())) {
             throw new IllegalArgumentException("Start date can not be null!");
-        }
-        if (isNull(upsertPeriodRequest.reportingDate())) {
+        } else if (isNull(upsertPeriodRequest.reportingDate())) {
             throw new IllegalArgumentException("Reporting date can not be null!");
-        }
-        if (upsertPeriodRequest instanceof UpdatePeriodRequest updateRequest) {
+        } else if (upsertPeriodRequest instanceof UpdatePeriodRequest updateRequest) {
             if (isNull(updateRequest.modifiedBy())) {
                 throw new IllegalArgumentException("Modified by can not be null!");
             }
-        }
-        if (upsertPeriodRequest instanceof CreatePeriodRequest createRequest) {
+        } else if (upsertPeriodRequest instanceof CreatePeriodRequest createRequest) {
             if (isNull(createRequest.createdBy())) {
                 throw new IllegalArgumentException("Created by can not be null!");
             }
