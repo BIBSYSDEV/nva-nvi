@@ -80,6 +80,7 @@ public class SearchNviCandidatesHandlerTest {
 
     public static final URI TOP_LEVEL_CRISTIN_ORG = URI.create(
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
+    public static final String QUERY_PARAM_ORDER_BY = "orderBy";
     private static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     private static final String QUERY_PARAM_FILTER = "filter";
     private static final String QUERY_PARAM_CATEGORY = "category";
@@ -211,6 +212,18 @@ public class SearchNviCandidatesHandlerTest {
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
         var actualId = paginatedSearchResult.getId().toString();
         assertThat(actualId, containsString(QUERY_AGGREGATION_TYPE + "=" + aggregationType));
+    }
+
+    @Test
+    void shouldReturnPaginatedSearchResultWithOrderByInIdIfGiven() throws IOException {
+        mockOpenSearchClient();
+        var orderByValue = "createdDate";
+        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of(QUERY_PARAM_ORDER_BY, orderByValue));
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
+        var actualId = paginatedSearchResult.getId().toString();
+        assertThat(actualId, containsString(QUERY_PARAM_ORDER_BY + "=" + orderByValue));
     }
 
     @Test
