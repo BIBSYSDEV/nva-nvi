@@ -15,6 +15,7 @@ public final class SearchQueryParameters {
     public static final String QUERY_SIZE_PARAM = "size";
     public static final String QUERY_OFFSET_PARAM = "offset";
     public static final String QUERY_PARAM_ORDER_BY = "orderBy";
+    public static final String QUERY_PARAM_SORT_ORDER = "sortOrder";
 
     private SearchQueryParameters() {
         // NO-OP

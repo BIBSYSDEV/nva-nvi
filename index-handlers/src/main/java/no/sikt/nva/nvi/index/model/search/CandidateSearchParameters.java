@@ -10,10 +10,12 @@ import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_EXCL
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_FILTER;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_ORDER_BY;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_SEARCH_TERM;
+import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_SORT_ORDER;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_TITLE;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_YEAR;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_SIZE_PARAM;
 import static no.sikt.nva.nvi.index.model.search.SearchResultParameters.DEFAULT_ORDER_BY_FIELD;
+import static no.sikt.nva.nvi.index.model.search.SearchResultParameters.DEFAULT_SORT_ORDER;
 import static nva.commons.apigateway.RestRequestHandler.COMMA;
 import java.net.URI;
 import java.time.ZonedDateTime;
@@ -78,7 +80,12 @@ public record CandidateSearchParameters(String searchTerm,
                    .withOffset(extractQueryParamOffsetOrDefault(requestInfo))
                    .withSize(extractQueryParamSizeOrDefault(requestInfo))
                    .withOrderBy(extractQueryParamOrderByOrDefault(requestInfo))
+                   .withSortOrder(extractQueryParamSortOrderOrDefault(requestInfo))
                    .build();
+    }
+
+    private static String extractQueryParamSortOrderOrDefault(RequestInfo requestInfo) {
+        return requestInfo.getQueryParameterOpt(QUERY_PARAM_SORT_ORDER).orElse(DEFAULT_SORT_ORDER);
     }
 
     private static String extractQueryParamOrderByOrDefault(RequestInfo requestInfo) {
