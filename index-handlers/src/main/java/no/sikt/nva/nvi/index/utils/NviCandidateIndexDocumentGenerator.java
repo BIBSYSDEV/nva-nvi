@@ -92,7 +92,8 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
                    .withCreatorShareCount(candidate.getCreatorShareCount())
                    .withInternationalCollaborationFactor(candidate.getCollaborationFactor())
-                   .withModifiedDate(candidate.getModifiedDate().toString())
+                   .withCreatedDate(candidate.getCreatedDate())
+                   .withModifiedDate(candidate.getModifiedDate())
                    .build();
     }
 
