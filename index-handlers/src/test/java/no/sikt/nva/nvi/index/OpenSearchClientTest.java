@@ -326,6 +326,19 @@ public class OpenSearchClientTest {
     }
 
     @Test
+    void shouldNotIncludeDisputesForOtherOrganizationsInDisputeQuery()
+        throws IOException, InterruptedException {
+        addDocumentsToIndex(documentFromString("document_organization_aggregation_dispute.json"),
+                            documentFromString("document_dispute_not_sikt.json"));
+
+        var searchParameters = defaultSearchParameters().withFilter(QueryFilterType.DISPUTED_AGG.getFilter()).build();
+
+        var searchResponse = openSearchClient.search(searchParameters);
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+
+    }
+
+    @Test
     void shouldReturnSingleDocumentWhenFilteringBySearchTerm() throws InterruptedException, IOException {
         var customer = randomUri();
         var searchTerm = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
