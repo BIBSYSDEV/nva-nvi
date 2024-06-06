@@ -227,6 +227,18 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
+    void shouldReturnPaginatedSearchResultWithSortOrderInIdIfGiven() throws IOException {
+        mockOpenSearchClient();
+        var sortOrderValue = "desc";
+        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of("sortOrder", sortOrderValue));
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
+        var actualId = paginatedSearchResult.getId().toString();
+        assertThat(actualId, containsString("sortOrder" + "=" + sortOrderValue));
+    }
+
+    @Test
     void shouldReturnPaginatedSearchResultWithFilterAggregations() throws IOException {
         var documents = generateNumberOfIndexDocuments(10);
         var aggregationName = randomString();
