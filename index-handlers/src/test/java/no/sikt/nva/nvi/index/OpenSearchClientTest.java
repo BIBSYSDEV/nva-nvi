@@ -44,6 +44,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -172,8 +173,22 @@ public class OpenSearchClientTest {
     }
 
     @Test
+    void shouldOrderResult() throws InterruptedException, IOException {
+        var createdFirst = documentWithCreatedDate(Instant.now());
+        var createdSecond = documentWithCreatedDate(Instant.now().plus(1, ChronoUnit.MINUTES));
+        addDocumentsToIndex(createdFirst, createdSecond);
+        var searchParameters =
+            defaultSearchParameters().withSearchResultParameters(SearchResultParameters.builder()
+                                                                     .withOrderBy("createdDate").build()).build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        var hits = searchResponse.hits().hits();
+        assertThat(hits.get(0).source().createdDate(), is(equalTo(createdSecond.createdDate())));
+        assertThat(hits.get(1).source().createdDate(), is(equalTo(createdFirst.createdDate())));
+    }
+
+    @Test
     void shouldDeleteIndexAndThrowExceptionWhenSearchingInNonExistentIndex() throws IOException, InterruptedException {
-        var document = singleNviCandidateIndexDocument();
+        var document = singleNviCandidateIndexDocument().build();
         addDocumentsToIndex(document);
         openSearchClient.deleteIndex();
         var searchParameters = defaultSearchParameters().build();
@@ -190,7 +205,7 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldRemoveDocumentFromIndex() throws InterruptedException, IOException {
-        var document = singleNviCandidateIndexDocument();
+        var document = singleNviCandidateIndexDocument().build();
         addDocumentsToIndex(document);
         openSearchClient.removeDocumentFromIndex(document.identifier());
         Thread.sleep(DELAY_ON_INDEX);
@@ -660,15 +675,14 @@ public class OpenSearchClientTest {
         return dtoObjectMapper.readValue(string, NviCandidateIndexDocument.class);
     }
 
-    private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
+    private static NviCandidateIndexDocument.Builder singleNviCandidateIndexDocument() {
         var approvals = randomApprovalList();
         return NviCandidateIndexDocument.builder()
                    .withIdentifier(UUID.randomUUID())
                    .withPublicationDetails(randomPublicationDetails())
                    .withApprovals(approvals)
                    .withNumberOfApprovals(approvals.size())
-                   .withPoints(randomBigDecimal())
-                   .build();
+                   .withPoints(randomBigDecimal());
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomer(URI customer,
@@ -713,7 +727,7 @@ public class OpenSearchClientTest {
     }
 
     private static Approval randomApproval() {
-        return new Approval(randomUri(), Map.of(), randomStatus(), randomInstitutionPoints(), Set.of(), null,
+        return new Approval(ORGANIZATION, Map.of(), randomStatus(), randomInstitutionPoints(), Set.of(), null,
                             randomGlobalApprovalStatus());
     }
 
@@ -738,7 +752,7 @@ public class OpenSearchClientTest {
 
     private static PublicationDetails randomPublicationDetails() {
         return new PublicationDetails(randomString(), randomString(), randomString(),
-                                      PublicationDate.builder().withYear(randomString()).build(),
+                                      PublicationDate.builder().withYear(YEAR).build(),
                                       List.of());
     }
 
@@ -792,6 +806,10 @@ public class OpenSearchClientTest {
         Random random = new Random();
         int index = random.nextInt(words.length);
         return words[index];
+    }
+
+    private NviCandidateIndexDocument documentWithCreatedDate(Instant createdDate) {
+        return singleNviCandidateIndexDocument().withCreatedDate(createdDate).build();
     }
 
     public static final class FakeCachedJwtProvider {
