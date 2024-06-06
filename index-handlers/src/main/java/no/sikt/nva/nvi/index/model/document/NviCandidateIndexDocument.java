@@ -31,8 +31,8 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         BigDecimal internationalCollaborationFactor,
                                         ReportingPeriod reportingPeriod,
                                         boolean reported,
-                                        Instant createdDate,
-                                        Instant modifiedDate) {
+                                        String createdDate,
+                                        String modifiedDate) {
 
     private static final String CONTEXT = "@context";
     private static final String NVI_CANDIDATE = "NviCandidate";
@@ -71,8 +71,8 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         private BigDecimal internationalCollaborationFactor;
         private ReportingPeriod reportingPeriod;
         private boolean reported;
-        private Instant createdDate;
-        private Instant modifiedDate;
+        private String createdDate;
+        private String modifiedDate;
 
         private Builder() {
         }
@@ -148,12 +148,12 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         }
 
         public Builder withCreatedDate(Instant createdDate) {
-            this.createdDate = createdDate;
+            this.createdDate = createdDate.toString();
             return this;
         }
 
         public Builder withModifiedDate(Instant modifiedDate) {
-            this.modifiedDate = modifiedDate;
+            this.modifiedDate = modifiedDate.toString();
             return this;
         }
 
