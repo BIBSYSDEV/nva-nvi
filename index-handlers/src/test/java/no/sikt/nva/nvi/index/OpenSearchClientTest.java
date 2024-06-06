@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.index.model.search.SearchAggregation.APPROVED_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.APPROVED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.ASSIGNMENTS_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.COMPLETED_AGGREGATION_AGG;
+import static no.sikt.nva.nvi.index.model.search.SearchAggregation.DISPUTED_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.NEW_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.NEW_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.PENDING_AGG;
@@ -211,11 +212,11 @@ public class OpenSearchClientTest {
                             documentFromString("document_approved.json"),
                             documentFromString("document_approved_collaboration.json"),
                             documentFromString("document_rejected.json"),
-                            documentFromString("document_rejected_collaboration.json"));
+                            documentFromString("document_rejected_collaboration.json"),
+                            documentFromString("document_organization_aggregation_dispute.json"));
 
-        var searchParameters = defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_ID)).build();
-        var searchResponse =
-            openSearchClient.search(searchParameters);
+        var searchParameters = defaultSearchParameters().build();
+        var searchResponse = openSearchClient.search(searchParameters);
         var docCount = getDocCount(searchResponse, entry.getKey());
 
         assertThat(docCount, is(equalTo(entry.getValue())));
@@ -732,11 +733,12 @@ public class OpenSearchClientTest {
         map.put(PENDING_COLLABORATION_AGG.getAggregationName(), 1);
         map.put(APPROVED_AGG.getAggregationName(), 2);
         map.put(APPROVED_COLLABORATION_AGG.getAggregationName(), 1);
-        map.put(REJECTED_AGG.getAggregationName(), 2);
+        map.put(REJECTED_AGG.getAggregationName(), 3);
         map.put(REJECTED_COLLABORATION_AGG.getAggregationName(), 1);
-        map.put(ASSIGNMENTS_AGG.getAggregationName(), 4);
-        map.put(COMPLETED_AGGREGATION_AGG.getAggregationName(), 4);
-        map.put(TOTAL_COUNT_AGGREGATION_AGG.getAggregationName(), 8);
+        map.put(DISPUTED_AGG.getAggregationName(), 1);
+        map.put(ASSIGNMENTS_AGG.getAggregationName(), 5);
+        map.put(COMPLETED_AGGREGATION_AGG.getAggregationName(), 5);
+        map.put(TOTAL_COUNT_AGGREGATION_AGG.getAggregationName(), 9);
         return map.entrySet().stream();
     }
 
