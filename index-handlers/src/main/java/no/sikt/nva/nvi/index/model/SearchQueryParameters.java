@@ -14,6 +14,7 @@ public final class SearchQueryParameters {
     public static final String QUERY_PARAM_ASSIGNEE = "assignee";
     public static final String QUERY_SIZE_PARAM = "size";
     public static final String QUERY_OFFSET_PARAM = "offset";
+    public static final String QUERY_PARAM_ORDER_BY = "orderBy";
 
     private SearchQueryParameters() {
         // NO-OP

@@ -1,9 +1,10 @@
 package no.sikt.nva.nvi.index.model.search;
 
-public record SearchResultParameters(int offset, int size) {
+public record SearchResultParameters(int offset, int size, String orderBy) {
 
     public static final int DEFAULT_SIZE = 10;
     public static final int DEFAULT_OFFSET = 0;
+    public static final String DEFAULT_ORDER_BY_FIELD = "createDate";
 
     public static Builder builder() {
         return new Builder();
@@ -13,6 +14,7 @@ public record SearchResultParameters(int offset, int size) {
 
         private int offset = DEFAULT_OFFSET;
         private int size = DEFAULT_SIZE;
+        private String orderBy = DEFAULT_ORDER_BY_FIELD;
 
         private Builder() {
         }
@@ -27,8 +29,13 @@ public record SearchResultParameters(int offset, int size) {
             return this;
         }
 
+        public Builder withOrderBy(String orderBy) {
+            this.orderBy = orderBy;
+            return this;
+        }
+
         public SearchResultParameters build() {
-            return new SearchResultParameters(offset, size);
+            return new SearchResultParameters(offset, size, orderBy);
         }
     }
 }

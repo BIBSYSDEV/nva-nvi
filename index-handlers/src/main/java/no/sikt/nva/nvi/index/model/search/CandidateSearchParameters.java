@@ -8,10 +8,12 @@ import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_CATE
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_CONTRIBUTOR;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_FILTER;
+import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_ORDER_BY;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_SEARCH_TERM;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_TITLE;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_YEAR;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_SIZE_PARAM;
+import static no.sikt.nva.nvi.index.model.search.SearchResultParameters.DEFAULT_ORDER_BY_FIELD;
 import static nva.commons.apigateway.RestRequestHandler.COMMA;
 import java.net.URI;
 import java.time.ZonedDateTime;
@@ -62,16 +64,25 @@ public record CandidateSearchParameters(String searchTerm,
                    .withContributor(extractQueryParamContributor(requestInfo))
                    .withAssignee(extractQueryParamAssignee(requestInfo))
                    .withAggregationType(aggregationType)
-                   .withSearchResultParameters(SearchResultParameters.builder()
-                                                   .withOffset(extractQueryParamOffsetOrDefault(requestInfo))
-                                                   .withSize(extractQueryParamSizeOrDefault(requestInfo))
-                                                   .build())
+                   .withSearchResultParameters(getResultParameters(requestInfo))
                    .withTopLevelCristinOrg(requestInfo.getTopLevelOrgCristinId().orElse(null))
                    .build();
     }
 
     public String topLevelOrgUriAsString() {
         return Optional.ofNullable(topLevelCristinOrg).map(URI::toString).orElse(null);
+    }
+
+    private static SearchResultParameters getResultParameters(RequestInfo requestInfo) {
+        return SearchResultParameters.builder()
+                   .withOffset(extractQueryParamOffsetOrDefault(requestInfo))
+                   .withSize(extractQueryParamSizeOrDefault(requestInfo))
+                   .withOrderBy(extractQueryParamOrderByOrDefault(requestInfo))
+                   .build();
+    }
+
+    private static String extractQueryParamOrderByOrDefault(RequestInfo requestInfo) {
+        return requestInfo.getQueryParameterOpt(QUERY_PARAM_ORDER_BY).orElse(DEFAULT_ORDER_BY_FIELD);
     }
 
     private static String extractQueryParamAggregationType(RequestInfo requestInfo) {
