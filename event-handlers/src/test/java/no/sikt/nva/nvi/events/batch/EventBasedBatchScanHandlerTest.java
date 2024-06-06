@@ -46,7 +46,7 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.ListingResult;
-import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -89,8 +89,8 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         var db = initializeTestDatabase();
         candidateRepository = new NviCandidateRepositoryHelper(db);
         periodRepository = new NviPeriodRepositoryHelper(db);
-        var nviService = new NviService(periodRepository, candidateRepository);
-        this.handler = new EventBasedBatchScanHandler(nviService, eventBridgeClient);
+        var batchScanUtil = new BatchScanUtil(candidateRepository);
+        this.handler = new EventBasedBatchScanHandler(batchScanUtil, eventBridgeClient);
     }
 
     @Test

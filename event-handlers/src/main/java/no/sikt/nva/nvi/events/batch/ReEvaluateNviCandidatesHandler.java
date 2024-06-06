@@ -13,7 +13,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.model.ReEvaluateRequest;
 import no.unit.nva.events.handlers.EventHandler;
@@ -41,7 +41,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
     private static final String PUT_EVENT_RESPONSE_MESSAGE = "Put event response: {}";
     private static final String MESSAGES_SENT_MESSAGE = "Sent {} messages to queue. Failures: {}";
     private final QueueClient queueClient;
-    private final NviService nviService;
+    private final BatchScanUtil batchScanUtil;
     private final String queueUrl;
     private final String eventBusName;
     private final String topic;
@@ -49,14 +49,14 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
 
     @JacocoGenerated
     public ReEvaluateNviCandidatesHandler() {
-        this(NviService.defaultNviService(), new NviQueueClient(), new Environment(), defaultEventBridgeClient());
+        this(BatchScanUtil.defaultNviService(), new NviQueueClient(), new Environment(), defaultEventBridgeClient());
     }
 
-    public ReEvaluateNviCandidatesHandler(NviService nviService,
+    public ReEvaluateNviCandidatesHandler(BatchScanUtil batchScanUtil,
                                           QueueClient queueClient,
                                           Environment environment, EventBridgeClient eventBridgeClient) {
         super(ReEvaluateRequest.class);
-        this.nviService = nviService;
+        this.batchScanUtil = batchScanUtil;
         this.queueClient = queueClient;
         this.queueUrl = environment.readEnv(PERSISTED_RESOURCE_QUEUE_URL);
         this.eventBusName = environment.readEnv(EVENT_BUS_NAME);
@@ -109,9 +109,9 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
 
     private ListingResult<CandidateDao> getListingResultWithNonReportedCandidates(ReEvaluateRequest input) {
         var includeReportedCandidates = false;
-        return nviService.fetchCandidatesByYear(input.year(),
-                                                includeReportedCandidates, input.pageSize(),
-                                                input.startMarker());
+        return batchScanUtil.fetchCandidatesByYear(input.year(),
+                                                   includeReportedCandidates, input.pageSize(),
+                                                   input.startMarker());
     }
 
     private Stream<List<URI>> splitIntoBatches(List<URI> fileUris) {

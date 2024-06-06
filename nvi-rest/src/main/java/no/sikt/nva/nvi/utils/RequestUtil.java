@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.utils;
 
-import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.service.model.Username;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.UnauthorizedException;

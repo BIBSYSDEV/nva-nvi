@@ -10,4 +10,8 @@ public record Username(String value) {
         }
         return new Username(username.value());
     }
+
+    public static Username fromString(String userName) {
+        return new Username(userName);
+    }
 }

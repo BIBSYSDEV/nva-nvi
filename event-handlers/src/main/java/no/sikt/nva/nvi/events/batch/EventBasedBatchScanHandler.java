@@ -1,10 +1,10 @@
 package no.sikt.nva.nvi.events.batch;
 
-import static no.sikt.nva.nvi.common.service.NviService.defaultNviService;
+import static no.sikt.nva.nvi.common.utils.BatchScanUtil.defaultNviService;
 import com.amazonaws.services.lambda.runtime.Context;
 import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.model.ListingResult;
-import no.sikt.nva.nvi.common.service.NviService;
+import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
 import no.unit.nva.events.handlers.EventHandler;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
@@ -21,7 +21,7 @@ public class EventBasedBatchScanHandler extends EventHandler<ScanDatabaseRequest
 
     private static final String DETAIL_TYPE = "NO_DETAIL_TYPE";
     private static final String EVENT_BUS_NAME = new Environment().readEnv("EVENT_BUS_NAME");
-    private final NviService nviService;
+    private final BatchScanUtil batchScanUtil;
     private final EventBridgeClient eventBridgeClient;
     private final Logger logger = LoggerFactory.getLogger(EventBasedBatchScanHandler.class);
 
@@ -30,9 +30,9 @@ public class EventBasedBatchScanHandler extends EventHandler<ScanDatabaseRequest
         this(defaultNviService(), defaultEventBridgeClient());
     }
 
-    public EventBasedBatchScanHandler(NviService nviService, EventBridgeClient eventBridgeClient) {
+    public EventBasedBatchScanHandler(BatchScanUtil batchScanUtil, EventBridgeClient eventBridgeClient) {
         super(ScanDatabaseRequest.class);
-        this.nviService = nviService;
+        this.batchScanUtil = batchScanUtil;
         this.eventBridgeClient = eventBridgeClient;
     }
 
@@ -41,7 +41,7 @@ public class EventBasedBatchScanHandler extends EventHandler<ScanDatabaseRequest
                                               Context context) {
         logger.info("Query starting point: {}", input.startMarker());
 
-        var batchResult = nviService.migrateAndUpdateVersion(input.pageSize(), input.startMarker(), input.types());
+        var batchResult = batchScanUtil.migrateAndUpdateVersion(input.pageSize(), input.startMarker(), input.types());
         logger.info("Batch result: {}", batchResult);
         if (batchResult.shouldContinueScan()) {
             sendEventToInvokeNewRefreshRowVersionExecution(input, context, batchResult);
