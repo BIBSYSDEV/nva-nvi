@@ -682,7 +682,7 @@ public class OpenSearchClientTest {
                    .withApprovals(List.of(randomApprovalWithCustomerAndAssignee(customer, assignee)))
                    .withNumberOfApprovals(1)
                    .withPoints(randomBigDecimal())
-                   .withModifiedDate(Instant.now().toString())
+                   .withModifiedDate(Instant.now())
                    .build();
     }
 

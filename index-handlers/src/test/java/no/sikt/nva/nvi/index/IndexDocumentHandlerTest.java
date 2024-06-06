@@ -501,7 +501,8 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
                    .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
                    .withPublicationTypeChannelLevelPoints(candidate.getBasePoints())
                    .withInternationalCollaborationFactor(candidate.getCollaborationFactor())
-                   .withModifiedDate(candidate.getModifiedDate().toString())
+                   .withCreatedDate(candidate.getCreatedDate())
+                   .withModifiedDate(candidate.getModifiedDate())
                    .withReportingPeriod(new ReportingPeriod(candidate.getPeriod().year()))
                    .build();
     }
