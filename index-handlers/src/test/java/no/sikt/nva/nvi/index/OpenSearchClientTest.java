@@ -326,7 +326,7 @@ public class OpenSearchClientTest {
     }
 
     @Test
-    void shouldNotIncludeDisputesForOtherOrganizationsInDisputeQuery()
+    void shouldNotIncludeDisputesForOtherOrganizationsInDisputeFilter()
         throws IOException, InterruptedException {
         addDocumentsToIndex(documentFromString("document_organization_aggregation_dispute.json"),
                             documentFromString("document_dispute_not_sikt.json"));
