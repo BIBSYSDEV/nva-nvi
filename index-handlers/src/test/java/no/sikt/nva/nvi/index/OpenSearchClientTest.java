@@ -179,6 +179,7 @@ public class OpenSearchClientTest {
         addDocumentsToIndex(createdFirst, createdSecond);
         var searchParameters =
             defaultSearchParameters().withSearchResultParameters(SearchResultParameters.builder()
+                                                                     .withSortOrder("desc")
                                                                      .withOrderBy("createdDate").build()).build();
         var searchResponse = openSearchClient.search(searchParameters);
         var hits = searchResponse.hits().hits();
