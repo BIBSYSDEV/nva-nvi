@@ -49,7 +49,7 @@ public class NviPeriod {
     }
 
     public static NviPeriod update(UpdatePeriodRequest request, PeriodRepository periodRepository) {
-        var period = NviPeriod.fetch(periodRepository, request.publishingYear());
+        var period = NviPeriod.fetch(request.publishingYear().toString(), periodRepository);
         period.fromRequest(request).persist(periodRepository);
         return period.fetch(periodRepository);
     }
@@ -58,15 +58,15 @@ public class NviPeriod {
         return periodRepository.getPeriods().stream().map(NviPeriod::fromDbObject).toList();
     }
 
-    public static NviPeriod fetch(PeriodRepository periodRepository, Integer publishingYear) {
-        return periodRepository.findByPublishingYear(String.valueOf(publishingYear))
+    public static NviPeriod fetch(String publishingYear, PeriodRepository periodRepository) {
+        return periodRepository.findByPublishingYear(publishingYear)
                    .map(NviPeriod::fromDbObject)
                    .orElseThrow(() -> PeriodNotFoundException.withMessage(
                        String.format("Period for year %s does not exist!", publishingYear)));
     }
 
-    public NviPeriod fetch(PeriodRepository periodRepository) {
-        return fetch(periodRepository, publishingYear);
+    private NviPeriod fetch(PeriodRepository periodRepository) {
+        return fetch(String.valueOf(publishingYear), periodRepository);
     }
 
     public URI getId() {

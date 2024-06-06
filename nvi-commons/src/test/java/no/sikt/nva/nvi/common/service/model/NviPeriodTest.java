@@ -124,7 +124,7 @@ class NviPeriodTest extends LocalDynamoTest {
 
     @Test
     void shouldThrowPeriodNotFoundExceptionWhenPeriodDoesNotExist() {
-        assertThrows(PeriodNotFoundException.class, () -> NviPeriod.fetch(periodRepository, 2022));
+        assertThrows(PeriodNotFoundException.class, () -> NviPeriod.fetch("2022", periodRepository));
     }
 
     @Test
