@@ -42,7 +42,6 @@ import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MultiMatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch._types.query_dsl.Query.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
@@ -113,7 +112,7 @@ public class CandidateQuery {
                            termQuery(status.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)));
     }
 
-    private static Query disputeQuery(String customer) {
+    private static Query disputeQuery() {
         return termQuery(GlobalApprovalStatus.DISPUTE.getValue(), jsonPathOf(GLOBAL_APPROVAL_STATUS));
     }
 
@@ -236,11 +235,15 @@ public class CandidateQuery {
                                                          containsPendingStatusQuery(),
                                                          multipleApprovalsQuery());
 
-            case DISPUTED_AGG -> mustMatch(disputeQuery(topLevelCristinOrg));
+            case DISPUTED_AGG -> mustMatch(disputeQuery(), institutionQuery(topLevelCristinOrg));
             case ASSIGNMENTS_AGG -> mustMatch(assignmentsQuery(username, topLevelCristinOrg));
         };
 
         return Optional.ofNullable(aggregation);
+    }
+
+    private Query institutionQuery(String topLevelCristinOrg) {
+        return nestedQuery(APPROVALS, termQuery(topLevelCristinOrg, jsonPathOf(APPROVALS, INSTITUTION_ID)));
     }
 
     private Optional<Query> createInstitutionQuery() {
