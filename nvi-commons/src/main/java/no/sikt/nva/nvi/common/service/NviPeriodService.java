@@ -1,7 +1,5 @@
 package no.sikt.nva.nvi.common.service;
 
-import java.time.Instant;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -22,17 +20,8 @@ public class NviPeriodService {
     public Optional<Integer> fetchLatestClosedPeriodYear() {
         return periodRepository.getPeriods().stream()
                    .map(NviPeriod::fromDbObject)
-                   .map(NviPeriod::getReportingDate)
-                   .filter(NviPeriodService::isBeforeNow)
-                   .map(NviPeriodService::getYear)
+                   .filter(NviPeriod::isClosedPeriod)
+                   .map(NviPeriod::getPublishingYear)
                    .reduce(Integer::max);
-    }
-
-    private static int getYear(Instant reportingDate) {
-        return reportingDate.atZone(ZoneId.systemDefault()).getYear();
-    }
-
-    private static boolean isBeforeNow(Instant reportingDate) {
-        return reportingDate.isBefore(Instant.now());
     }
 }

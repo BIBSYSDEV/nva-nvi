@@ -117,6 +117,10 @@ public class NviPeriod {
         return new NviPeriodDto(id, publishingYear.toString(), startDate.toString(), reportingDate.toString());
     }
 
+    public boolean isClosedPeriod() {
+        return reportingDate.isBefore(Instant.now());
+    }
+
     private static Builder builder() {
         return new Builder();
     }
