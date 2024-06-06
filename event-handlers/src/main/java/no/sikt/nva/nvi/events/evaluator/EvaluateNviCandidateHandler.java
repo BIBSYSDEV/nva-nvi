@@ -14,7 +14,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
+import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
@@ -39,8 +39,8 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
     @JacocoGenerated
     public EvaluateNviCandidateHandler() {
         this(new EvaluatorService(new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")),
-                                  new CandidateCalculator(authorizedUriRetriever(new Environment()),
-                                                          new UriRetriever()),
+                                  new CreatorVerificationUtil(authorizedUriRetriever(new Environment()),
+                                                              new UriRetriever()),
                                   new PointService(new OrganizationRetriever(new UriRetriever())),
                                   new CandidateRepository(defaultDynamoClient()),
                                   new PeriodRepository(defaultDynamoClient())),

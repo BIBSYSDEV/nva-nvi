@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -30,6 +31,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         BigDecimal internationalCollaborationFactor,
                                         ReportingPeriod reportingPeriod,
                                         boolean reported,
+                                        String createdDate,
                                         String modifiedDate) {
 
     private static final String CONTEXT = "@context";
@@ -69,6 +71,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         private BigDecimal internationalCollaborationFactor;
         private ReportingPeriod reportingPeriod;
         private boolean reported;
+        private String createdDate;
         private String modifiedDate;
 
         private Builder() {
@@ -144,8 +147,13 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             return this;
         }
 
-        public Builder withModifiedDate(String modifiedDate) {
-            this.modifiedDate = modifiedDate;
+        public Builder withCreatedDate(Instant createdDate) {
+            this.createdDate = createdDate.toString();
+            return this;
+        }
+
+        public Builder withModifiedDate(Instant modifiedDate) {
+            this.modifiedDate = modifiedDate.toString();
             return this;
         }
 
@@ -154,7 +162,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                                  approvals, numberOfApprovals, points,
                                                  publicationTypeChannelLevelPoints, globalApprovalStatus,
                                                  creatorShareCount, internationalCollaborationFactor, reportingPeriod,
-                                                 reported, modifiedDate);
+                                                 reported, createdDate, modifiedDate);
         }
     }
 }

@@ -26,7 +26,7 @@ import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.events.evaluator.calculator.CandidateCalculator;
+import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
@@ -81,7 +81,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
         secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
         authorizedBackendUriRetriever = mock(AuthorizedBackendUriRetriever.class);
         uriRetriever = mock(UriRetriever.class);
-        var calculator = new CandidateCalculator(authorizedBackendUriRetriever, uriRetriever);
+        var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, uriRetriever);
         var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
         var organizationRetriever = new OrganizationRetriever(uriRetriever);
         var pointCalculator = new PointService(organizationRetriever);

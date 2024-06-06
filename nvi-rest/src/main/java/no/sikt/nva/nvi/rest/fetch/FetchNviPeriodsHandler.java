@@ -6,6 +6,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.rest.model.NviPeriodsResponse;
 import no.sikt.nva.nvi.utils.RequestUtil;
@@ -17,16 +18,16 @@ import nva.commons.core.JacocoGenerated;
 
 public class FetchNviPeriodsHandler extends ApiGatewayHandler<Void, NviPeriodsResponse> {
 
-    private final PeriodRepository periodRepository;
+    private final NviPeriodService nviPeriodService;
 
     @JacocoGenerated
     public FetchNviPeriodsHandler() {
-        this(new PeriodRepository(defaultDynamoClient()));
+        this(new NviPeriodService(new PeriodRepository(defaultDynamoClient())));
     }
 
-    public FetchNviPeriodsHandler(PeriodRepository periodRepository) {
+    public FetchNviPeriodsHandler(NviPeriodService nviPeriodService) {
         super(Void.class);
-        this.periodRepository = periodRepository;
+        this.nviPeriodService = nviPeriodService;
     }
 
     @Override
@@ -35,7 +36,7 @@ public class FetchNviPeriodsHandler extends ApiGatewayHandler<Void, NviPeriodsRe
 
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI);
 
-        return attempt(() -> NviPeriod.fetchAll(periodRepository))
+        return attempt(nviPeriodService::fetchAll)
                    .map(this::toNviPeriodsResponse)
                    .orElseThrow();
     }

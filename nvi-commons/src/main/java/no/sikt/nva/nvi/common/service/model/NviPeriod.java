@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.common.service.model;
 import static nva.commons.core.attempt.Try.attempt;
 import java.net.URI;
 import java.time.Instant;
-import java.util.List;
 import java.util.Objects;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -54,15 +53,18 @@ public class NviPeriod {
         return period.fetch(periodRepository);
     }
 
-    public static List<NviPeriod> fetchAll(PeriodRepository periodRepository) {
-        return periodRepository.getPeriods().stream().map(NviPeriod::fromDbObject).toList();
-    }
-
     public static NviPeriod fetch(String publishingYear, PeriodRepository periodRepository) {
         return periodRepository.findByPublishingYear(publishingYear)
-                   .map(NviPeriod::fromDbObject)
+                   .map(NviPeriod::fromDbPeriod)
                    .orElseThrow(() -> PeriodNotFoundException.withMessage(
                        String.format("Period for year %s does not exist!", publishingYear)));
+    }
+
+    public static NviPeriod fromDbPeriod(DbNviPeriod dbNviPeriod) {
+        return new NviPeriod(dbNviPeriod.id(), Integer.parseInt(dbNviPeriod.publishingYear()),
+                             dbNviPeriod.startDate(), dbNviPeriod.reportingDate(),
+                             Username.fromUserName(dbNviPeriod.createdBy()),
+                             Username.fromUserName(dbNviPeriod.modifiedBy()));
     }
 
     public URI getId() {
@@ -115,6 +117,10 @@ public class NviPeriod {
         return new NviPeriodDto(id, publishingYear.toString(), startDate.toString(), reportingDate.toString());
     }
 
+    public boolean isClosed() {
+        return reportingDate.isBefore(Instant.now());
+    }
+
     private static Builder builder() {
         return new Builder();
     }
@@ -123,13 +129,6 @@ public class NviPeriod {
         request.validate();
         return new NviPeriod(constructId(String.valueOf(request.publishingYear())), request.publishingYear(),
                              request.startDate(), request.reportingDate(), request.createdBy(), null);
-    }
-
-    private static NviPeriod fromDbObject(DbNviPeriod dbNviPeriod) {
-        return new NviPeriod(dbNviPeriod.id(), Integer.parseInt(dbNviPeriod.publishingYear()),
-                             dbNviPeriod.startDate(), dbNviPeriod.reportingDate(),
-                             Username.fromUserName(dbNviPeriod.createdBy()),
-                             Username.fromUserName(dbNviPeriod.modifiedBy()));
     }
 
     private static URI constructId(String publishingYear) {
