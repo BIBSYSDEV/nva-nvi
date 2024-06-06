@@ -36,14 +36,12 @@ public final class Validator {
             throw new IllegalArgumentException("Start date can not be null!");
         } else if (isNull(upsertPeriodRequest.reportingDate())) {
             throw new IllegalArgumentException("Reporting date can not be null!");
-        } else if (upsertPeriodRequest instanceof UpdatePeriodRequest updateRequest) {
-            if (isNull(updateRequest.modifiedBy())) {
-                throw new IllegalArgumentException("Modified by can not be null!");
-            }
-        } else if (upsertPeriodRequest instanceof CreatePeriodRequest createRequest) {
-            if (isNull(createRequest.createdBy())) {
-                throw new IllegalArgumentException("Created by can not be null!");
-            }
+        } else if (upsertPeriodRequest instanceof UpdatePeriodRequest updateRequest && isNull(
+            updateRequest.modifiedBy())) {
+            throw new IllegalArgumentException("Modified by can not be null!");
+        } else if (upsertPeriodRequest instanceof CreatePeriodRequest createRequest && isNull(
+            createRequest.createdBy())) {
+            throw new IllegalArgumentException("Created by can not be null!");
         }
     }
 }
