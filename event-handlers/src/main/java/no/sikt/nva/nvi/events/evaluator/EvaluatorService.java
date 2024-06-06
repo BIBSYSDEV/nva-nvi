@@ -62,7 +62,7 @@ public class EvaluatorService {
         var publication = extractBodyFromContent(storageReader.read(publicationBucketUri));
         var publicationId = extractPublicationId(publication);
         var publicationDate = extractPublicationDate(publication);
-        if (isPublishedBeforeOrSameAsLatestClosedPeriod(publicationDate)) {
+        if (isPublishedBeforeOrInLatestClosedPeriod(publicationDate)) {
             logger.info("Skipping evaluation. Publication with id {} is published before or same as latest closed "
                         + "period {}",
                         publicationId, publicationDate.year());
@@ -146,7 +146,7 @@ public class EvaluatorService {
                    .orElse(new PublicationDate(null, null, year.textValue()));
     }
 
-    private boolean isPublishedBeforeOrSameAsLatestClosedPeriod(PublicationDate publicationDate) {
+    private boolean isPublishedBeforeOrInLatestClosedPeriod(PublicationDate publicationDate) {
         var publishedYear = Integer.parseInt(publicationDate.year());
         return nviPeriodService.fetchLatestClosedPeriodYear()
                    .map(latestClosedPeriodYear -> publishedYear <= latestClosedPeriodYear)
