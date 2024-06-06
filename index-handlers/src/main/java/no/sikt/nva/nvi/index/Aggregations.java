@@ -24,6 +24,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.NUMBER_OF_APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.POINTS;
 import java.util.HashMap;
 import java.util.Map;
+import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.search.SearchAggregation;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
@@ -125,6 +126,10 @@ public final class Aggregations {
         return filterAggregation(mustMatch(statusQuery(topLevelCristinOrg, status), multipleApprovalsQuery()));
     }
 
+    public static Aggregation disputeAggregation(String topLevelCristinOrg) {
+        return filterAggregation(mustMatch(globalStatusDisputeForInstitution(topLevelCristinOrg)));
+    }
+
     private static Aggregation filterStatusDisputeAggregation() {
         return filterAggregation(mustMatch(fieldValueQuery(joinWithDelimiter(APPROVALS,
                                                                              GLOBAL_APPROVAL_STATUS),
@@ -150,6 +155,13 @@ public final class Aggregations {
         return new Query[]{
             approvalInstitutionIdQuery(institutionId),
             statusQuery(status)
+        };
+    }
+
+    private static Query[] globalStatusDisputeForInstitution(String institutionId) {
+        return new Query[]{
+            approvalInstitutionIdQuery(institutionId),
+            fieldValueQuery(GLOBAL_APPROVAL_STATUS, GlobalApprovalStatus.DISPUTE.getValue())
         };
     }
 

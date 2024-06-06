@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.model.search;
 
 import static no.sikt.nva.nvi.index.Aggregations.collaborationAggregation;
 import static no.sikt.nva.nvi.index.Aggregations.completedAggregation;
+import static no.sikt.nva.nvi.index.Aggregations.disputeAggregation;
 import static no.sikt.nva.nvi.index.Aggregations.finalizedCollaborationAggregation;
 import static no.sikt.nva.nvi.index.Aggregations.organizationApprovalStatusAggregations;
 import static no.sikt.nva.nvi.index.Aggregations.statusAggregation;
@@ -30,13 +31,15 @@ public enum SearchAggregation {
     REJECTED_COLLABORATION_AGG("rejectedCollaboration",
                                (username, topLevelCristinOrg) -> finalizedCollaborationAggregation(
                                    topLevelCristinOrg, REJECTED)),
+    DISPUTED_AGG("dispute", (username, topLevelCristinOrg) -> disputeAggregation(topLevelCristinOrg)),
     ASSIGNMENTS_AGG("assignments", Aggregations::assignmentsAggregation),
     COMPLETED_AGGREGATION_AGG("completed",
                               (username, topLevelCristinOrg) -> completedAggregation(topLevelCristinOrg)),
     TOTAL_COUNT_AGGREGATION_AGG("totalCount",
                                 (username, topLevelCristinOrg) -> totalCountAggregation(topLevelCristinOrg)),
     ORGANIZATION_APPROVAL_STATUS_AGGREGATION("organizationApprovalStatuses",
-                                             (username, topLevelCristinOrg) -> organizationApprovalStatusAggregations(topLevelCristinOrg));
+                                             (username, topLevelCristinOrg) -> organizationApprovalStatusAggregations(
+                                                 topLevelCristinOrg));
 
     private final String aggregationName;
 
