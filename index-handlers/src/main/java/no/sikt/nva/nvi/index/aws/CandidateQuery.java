@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.CONTRIBUTORS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.GLOBAL_APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ID;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.KEYWORD;
@@ -30,6 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
@@ -108,6 +110,10 @@ public class CandidateQuery {
         return nestedQuery(APPROVALS,
                            termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)),
                            termQuery(status.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)));
+    }
+
+    private static Query disputeQuery() {
+        return termQuery(GlobalApprovalStatus.DISPUTE.getValue(), jsonPathOf(GLOBAL_APPROVAL_STATUS));
     }
 
     private static Query termQuery(String value, String field) {
@@ -229,10 +235,15 @@ public class CandidateQuery {
                                                          containsPendingStatusQuery(),
                                                          multipleApprovalsQuery());
 
+            case DISPUTED_AGG -> mustMatch(disputeQuery(), institutionQuery(topLevelCristinOrg));
             case ASSIGNMENTS_AGG -> mustMatch(assignmentsQuery(username, topLevelCristinOrg));
         };
 
         return Optional.ofNullable(aggregation);
+    }
+
+    private Query institutionQuery(String topLevelCristinOrg) {
+        return nestedQuery(APPROVALS, termQuery(topLevelCristinOrg, jsonPathOf(APPROVALS, INSTITUTION_ID)));
     }
 
     private Optional<Query> createInstitutionQuery() {
@@ -290,6 +301,7 @@ public class CandidateQuery {
         APPROVED_COLLABORATION_AGG("approvedCollaboration"),
         REJECTED_AGG("rejected"),
         REJECTED_COLLABORATION_AGG("rejectedCollaboration"),
+        DISPUTED_AGG("dispute"),
         ASSIGNMENTS_AGG("assignments"),
         EMPTY_FILTER("");
 

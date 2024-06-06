@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.index.model.search.SearchAggregation.APPROVED_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.APPROVED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.ASSIGNMENTS_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.COMPLETED_AGGREGATION_AGG;
+import static no.sikt.nva.nvi.index.model.search.SearchAggregation.DISPUTED_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.NEW_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.NEW_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.model.search.SearchAggregation.PENDING_AGG;
@@ -29,6 +30,7 @@ import static org.hamcrest.core.IsNot.not;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.auth0.jwt.interfaces.DecodedJWT;
@@ -211,11 +213,11 @@ public class OpenSearchClientTest {
                             documentFromString("document_approved.json"),
                             documentFromString("document_approved_collaboration.json"),
                             documentFromString("document_rejected.json"),
-                            documentFromString("document_rejected_collaboration.json"));
+                            documentFromString("document_rejected_collaboration.json"),
+                            documentFromString("document_organization_aggregation_dispute.json"));
 
-        var searchParameters = defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_ID)).build();
-        var searchResponse =
-            openSearchClient.search(searchParameters);
+        var searchParameters = defaultSearchParameters().build();
+        var searchResponse = openSearchClient.search(searchParameters);
         var docCount = getDocCount(searchResponse, entry.getKey());
 
         assertThat(docCount, is(equalTo(entry.getValue())));
@@ -314,13 +316,33 @@ public class OpenSearchClientTest {
                             documentFromString("document_approved.json"),
                             documentFromString("document_approved_collaboration.json"),
                             documentFromString("document_rejected.json"),
-                            documentFromString("document_rejected_collaboration.json"));
+                            documentFromString("document_rejected_collaboration.json"),
+                            documentFromString("document_organization_aggregation_dispute.json"));
 
         var searchParameters =
             defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_ID)).withFilter(entry.getKey()).build();
 
         var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));
+    }
+
+    @Test
+    void shouldNotIncludeDisputesForOtherOrganizationsInDisputeFilter()
+        throws IOException, InterruptedException {
+        addDocumentsToIndex(documentFromString("document_organization_aggregation_dispute.json"),
+                            documentFromString("document_dispute_not_sikt.json"));
+
+        var searchParameters = defaultSearchParameters().withFilter(QueryFilterType.DISPUTED_AGG.getFilter()).build();
+
+        var searchResponse = openSearchClient.search(searchParameters);
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+        assertTrue(searchResponse.hits()
+                       .hits()
+                       .get(0)
+                       .source()
+                       .approvals()
+                       .stream()
+                       .anyMatch(approval -> approval.institutionId().equals(searchParameters.topLevelCristinOrg())));
     }
 
     @Test
@@ -442,7 +464,8 @@ public class OpenSearchClientTest {
                             documentFromString("document_approved.json"),
                             documentFromString("document_approved_collaboration.json"),
                             documentFromString("document_rejected.json"),
-                            documentFromString("document_rejected_collaboration.json"));
+                            documentFromString("document_rejected_collaboration.json"),
+                            documentFromString("document_organization_aggregation_dispute.json"));
 
         var searchParameters =
             defaultSearchParameters().withFilter(entry.getKey()).withAffiliations(List.of(NTNU_INSTITUTION_ID)).build();
@@ -732,11 +755,12 @@ public class OpenSearchClientTest {
         map.put(PENDING_COLLABORATION_AGG.getAggregationName(), 1);
         map.put(APPROVED_AGG.getAggregationName(), 2);
         map.put(APPROVED_COLLABORATION_AGG.getAggregationName(), 1);
-        map.put(REJECTED_AGG.getAggregationName(), 2);
+        map.put(REJECTED_AGG.getAggregationName(), 3);
         map.put(REJECTED_COLLABORATION_AGG.getAggregationName(), 1);
-        map.put(ASSIGNMENTS_AGG.getAggregationName(), 4);
-        map.put(COMPLETED_AGGREGATION_AGG.getAggregationName(), 4);
-        map.put(TOTAL_COUNT_AGGREGATION_AGG.getAggregationName(), 8);
+        map.put(DISPUTED_AGG.getAggregationName(), 1);
+        map.put(ASSIGNMENTS_AGG.getAggregationName(), 5);
+        map.put(COMPLETED_AGGREGATION_AGG.getAggregationName(), 5);
+        map.put(TOTAL_COUNT_AGGREGATION_AGG.getAggregationName(), 9);
         return map.entrySet().stream();
     }
 
@@ -748,9 +772,10 @@ public class OpenSearchClientTest {
         map.put(QueryFilterType.PENDING_COLLABORATION_AGG.getFilter(), 1);
         map.put(QueryFilterType.APPROVED_AGG.getFilter(), 2);
         map.put(QueryFilterType.APPROVED_COLLABORATION_AGG.getFilter(), 1);
-        map.put(QueryFilterType.REJECTED_AGG.getFilter(), 2);
+        map.put(QueryFilterType.REJECTED_AGG.getFilter(), 3);
         map.put(QueryFilterType.REJECTED_COLLABORATION_AGG.getFilter(), 1);
-        map.put(QueryFilterType.ASSIGNMENTS_AGG.getFilter(), 4);
+        map.put(QueryFilterType.ASSIGNMENTS_AGG.getFilter(), 5);
+        map.put(QueryFilterType.DISPUTED_AGG.getFilter(), 1);
         return map.entrySet().stream();
     }
 
