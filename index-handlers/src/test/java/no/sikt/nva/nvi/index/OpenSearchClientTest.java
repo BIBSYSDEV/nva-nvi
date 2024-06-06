@@ -30,6 +30,7 @@ import static org.hamcrest.core.IsNot.not;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.auth0.jwt.interfaces.DecodedJWT;
@@ -335,7 +336,13 @@ public class OpenSearchClientTest {
 
         var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(1));
-
+        assertTrue(searchResponse.hits()
+                       .hits()
+                       .get(0)
+                       .source()
+                       .approvals()
+                       .stream()
+                       .anyMatch(approval -> approval.institutionId().equals(searchParameters.topLevelCristinOrg())));
     }
 
     @Test
