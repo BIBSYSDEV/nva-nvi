@@ -55,12 +55,12 @@ public class NviPeriod {
 
     public static NviPeriod fetch(String publishingYear, PeriodRepository periodRepository) {
         return periodRepository.findByPublishingYear(publishingYear)
-                   .map(NviPeriod::fromDbObject)
+                   .map(NviPeriod::fromDbPeriod)
                    .orElseThrow(() -> PeriodNotFoundException.withMessage(
                        String.format("Period for year %s does not exist!", publishingYear)));
     }
 
-    public static NviPeriod fromDbObject(DbNviPeriod dbNviPeriod) {
+    public static NviPeriod fromDbPeriod(DbNviPeriod dbNviPeriod) {
         return new NviPeriod(dbNviPeriod.id(), Integer.parseInt(dbNviPeriod.publishingYear()),
                              dbNviPeriod.startDate(), dbNviPeriod.reportingDate(),
                              Username.fromUserName(dbNviPeriod.createdBy()),

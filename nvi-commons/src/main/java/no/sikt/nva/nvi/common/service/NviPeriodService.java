@@ -14,12 +14,12 @@ public class NviPeriodService {
     }
 
     public List<NviPeriod> fetchAll() {
-        return periodRepository.getPeriods().stream().map(NviPeriod::fromDbObject).toList();
+        return periodRepository.getPeriods().stream().map(NviPeriod::fromDbPeriod).toList();
     }
 
     public Optional<Integer> fetchLatestClosedPeriodYear() {
         return periodRepository.getPeriods().stream()
-                   .map(NviPeriod::fromDbObject)
+                   .map(NviPeriod::fromDbPeriod)
                    .filter(NviPeriod::isClosed)
                    .map(NviPeriod::getPublishingYear)
                    .reduce(Integer::max);
