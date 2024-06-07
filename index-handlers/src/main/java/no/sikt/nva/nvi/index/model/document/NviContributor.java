@@ -25,6 +25,7 @@ public record NviContributor(@JsonProperty("id") String id,
         var organizationsPartOfTopLevelOrg = new ArrayList<URI>();
         organizationsPartOfTopLevelOrg.addAll(getOrganizationsAboveAffiliationInOrgHierarchy(topLevelOrg));
         organizationsPartOfTopLevelOrg.addAll(getAffiliationsIdsPartOf(topLevelOrg));
+        organizationsPartOfTopLevelOrg.add(topLevelOrg);
         return organizationsPartOfTopLevelOrg.stream().toList();
     }
 

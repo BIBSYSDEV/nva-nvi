@@ -118,6 +118,17 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void involvedOrganizationsShouldContainTopLevelAffiliation() {
+        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, HARD_CODED_TOP_LEVEL_ORG);
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
+        var event = createEvent(candidate.getIdentifier());
+        mockUriResponseForTopLevelAffiliation(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @Test
     void shouldBuildIndexDocumentWithReportedPeriodWhenCandidateIsReported() {
         //Using repository to create reported candidate because setting Candidate as reported is not implemented yet
         //TODO: Use Candidate.setReported when implemented
@@ -393,6 +404,23 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         partOfArrayNode.add(intermediateLevel);
         lowLevel.set("partOf", partOfArrayNode);
         return lowLevel;
+    }
+
+    private void mockUriResponseForTopLevelAffiliation(Candidate candidate) {
+        candidate.getPublicationDetails()
+            .creators()
+            .stream()
+            .flatMap(creator -> creator.affiliations().stream())
+            .forEach(this::mockTopLevelResponse);
+
+        candidate.getApprovals().keySet().forEach(this::mockTopLevelResponse);
+    }
+
+    private void mockTopLevelResponse(URI affiliationId) {
+        var httpResponse = Optional.of(createResponse(
+            attempt(() -> dtoObjectMapper.writeValueAsString(
+                generateOrganizationNode(affiliationId.toString()))).orElseThrow()));
+        when(uriRetriever.fetchResponse(eq(affiliationId), eq(MEDIA_TYPE_JSON_V2))).thenReturn(httpResponse);
     }
 
     private ConsumptionAttributes setUpExistingResourceWithNonNviCreatorAffiliations(Candidate candidate) {

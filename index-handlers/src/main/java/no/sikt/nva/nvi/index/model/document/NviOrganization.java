@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.model.document;
 
+import static java.util.Objects.isNull;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -17,6 +18,11 @@ public record NviOrganization(@JsonProperty("id") URI id,
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    @Override
+    public List<URI> partOf() {
+        return isNull(partOf) ? List.of() : partOf;
     }
 
     public static final class Builder {

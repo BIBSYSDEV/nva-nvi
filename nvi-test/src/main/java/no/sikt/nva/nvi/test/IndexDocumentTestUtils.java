@@ -8,6 +8,7 @@ import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractAffiliations
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -186,9 +187,22 @@ public final class IndexDocumentTestUtils {
     }
 
     private static OrganizationType generateNviOrganization(URI id) {
+        return id.equals(HARD_CODED_TOP_LEVEL_ORG)
+                   ? generateTopLevelNviOrg(id)
+                   : generateIntermediateLevelNviOrg(id);
+    }
+
+    private static NviOrganization generateIntermediateLevelNviOrg(URI id) {
         return NviOrganization.builder()
                    .withId(id)
                    .withPartOf(List.of(HARD_CODED_INTERMEDIATE_ORGANIZATION, HARD_CODED_TOP_LEVEL_ORG))
+                   .build();
+    }
+
+    private static NviOrganization generateTopLevelNviOrg(URI id) {
+        return NviOrganization.builder()
+                   .withId(id)
+                   .withPartOf(Collections.emptyList())
                    .build();
     }
 }
