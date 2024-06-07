@@ -113,6 +113,16 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
+    void shouldReturnBadRequestIfOrderByIsInvalid() throws IOException {
+        mockOpenSearchClient();
+        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of(QUERY_PARAM_ORDER_BY, "invalid"));
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+        assertThat(response.getBodyObject(Problem.class).getStatus().getStatusCode(),
+                   is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+    }
+
+    @Test
     void shouldReturnDocumentFromIndexWhenNoSearchIsSpecified() throws IOException {
         var expectedDocument = singleNviCandidateIndexDocument();
         when(openSearchClient.search(any())).thenReturn(createSearchResponse(expectedDocument));
@@ -498,6 +508,7 @@ public class SearchNviCandidatesHandlerTest {
         throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
                    .withTopLevelCristinOrgId(topLevelCristinOrgId)
+                   .withAccessRights(topLevelCristinOrgId, AccessRight.MANAGE_NVI_CANDIDATES)
                    .withUserName(randomString())
                    .withQueryParameters(queryParams)
                    .build();

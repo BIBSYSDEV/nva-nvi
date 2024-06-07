@@ -26,6 +26,7 @@ import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
+import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -62,7 +63,7 @@ public class SearchNviCandidatesHandler
     @Override
     protected PaginatedSearchResult<NviCandidateIndexDocument> processInput(Void input, RequestInfo requestInfo,
                                                                             Context context)
-        throws UnauthorizedException {
+        throws UnauthorizedException, BadRequestException {
         validateAccessRights(requestInfo);
         var candidateSearchParameters = CandidateSearchParameters.fromRequestInfo(requestInfo);
         logAggregationType(candidateSearchParameters);

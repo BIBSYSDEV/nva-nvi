@@ -14,7 +14,6 @@ import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_SORT
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_TITLE;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_YEAR;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_SIZE_PARAM;
-import static no.sikt.nva.nvi.index.model.search.SearchResultParameters.DEFAULT_ORDER_BY_FIELD;
 import static no.sikt.nva.nvi.index.model.search.SearchResultParameters.DEFAULT_SORT_ORDER;
 import static nva.commons.apigateway.RestRequestHandler.COMMA;
 import java.net.URI;
@@ -25,6 +24,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.apigateway.RequestInfo;
+import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.StringUtils;
 
@@ -52,7 +52,7 @@ public record CandidateSearchParameters(String searchTerm,
     }
 
     public static CandidateSearchParameters fromRequestInfo(RequestInfo requestInfo)
-        throws UnauthorizedException {
+        throws UnauthorizedException, BadRequestException {
         var aggregationType = extractQueryParamAggregationType(requestInfo);
         return CandidateSearchParameters.builder()
                    .withSearchTerm(extractQueryParamSearchTermOrDefault(requestInfo))
@@ -75,7 +75,7 @@ public record CandidateSearchParameters(String searchTerm,
         return Optional.ofNullable(topLevelCristinOrg).map(URI::toString).orElse(null);
     }
 
-    private static SearchResultParameters getResultParameters(RequestInfo requestInfo) {
+    private static SearchResultParameters getResultParameters(RequestInfo requestInfo) throws BadRequestException {
         return SearchResultParameters.builder()
                    .withOffset(extractQueryParamOffsetOrDefault(requestInfo))
                    .withSize(extractQueryParamSizeOrDefault(requestInfo))
@@ -88,8 +88,15 @@ public record CandidateSearchParameters(String searchTerm,
         return requestInfo.getQueryParameterOpt(QUERY_PARAM_SORT_ORDER).orElse(DEFAULT_SORT_ORDER);
     }
 
-    private static String extractQueryParamOrderByOrDefault(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameterOpt(QUERY_PARAM_ORDER_BY).orElse(DEFAULT_ORDER_BY_FIELD);
+    private static String extractQueryParamOrderByOrDefault(RequestInfo requestInfo) throws BadRequestException {
+        try {
+            return requestInfo.getQueryParameterOpt(QUERY_PARAM_ORDER_BY)
+                       .map(OrderByFields::parse)
+                       .map(OrderByFields::getValue)
+                       .orElse(OrderByFields.CREATED_DATE.getValue());
+        } catch (IllegalArgumentException exception) {
+            throw new BadRequestException(exception.getMessage());
+        }
     }
 
     private static String extractQueryParamAggregationType(RequestInfo requestInfo) {
