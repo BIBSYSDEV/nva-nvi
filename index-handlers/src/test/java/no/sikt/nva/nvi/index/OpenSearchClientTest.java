@@ -65,6 +65,7 @@ import no.sikt.nva.nvi.index.model.document.Organization;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
+import no.sikt.nva.nvi.index.model.search.OrderByFields;
 import no.sikt.nva.nvi.index.model.search.SearchAggregation;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.unit.nva.auth.CachedJwtProvider;
@@ -175,7 +176,8 @@ public class OpenSearchClientTest {
         var searchParameters =
             defaultSearchParameters().withSearchResultParameters(SearchResultParameters.builder()
                                                                      .withSortOrder(sortOrder)
-                                                                     .withOrderBy("createdDate").build()).build();
+                                                                     .withOrderBy(OrderByFields.CREATED_DATE.getValue())
+                                                                     .build()).build();
         var searchResponse = openSearchClient.search(searchParameters);
         var hits = searchResponse.hits().hits();
         var expectedFirst = sortOrder.equals("asc") ? createdFirst.createdDate() : createdSecond.createdDate();
