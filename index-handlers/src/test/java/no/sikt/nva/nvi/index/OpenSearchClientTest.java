@@ -83,6 +83,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -172,19 +173,22 @@ public class OpenSearchClientTest {
         assertThat(searchResponse.hits().hits().size(), is(equalTo(expectedNumberOfHitsReturned)));
     }
 
-    @Test
-    void shouldOrderResult() throws InterruptedException, IOException {
+    @ParameterizedTest
+    @ValueSource(strings = {"asc", "desc"})
+    void shouldOrderResult(String sortOrder) throws InterruptedException, IOException {
         var createdFirst = documentWithCreatedDate(Instant.now());
         var createdSecond = documentWithCreatedDate(Instant.now().plus(1, ChronoUnit.MINUTES));
         addDocumentsToIndex(createdFirst, createdSecond);
         var searchParameters =
             defaultSearchParameters().withSearchResultParameters(SearchResultParameters.builder()
-                                                                     .withSortOrder("desc")
+                                                                     .withSortOrder(sortOrder)
                                                                      .withOrderBy("createdDate").build()).build();
         var searchResponse = openSearchClient.search(searchParameters);
         var hits = searchResponse.hits().hits();
-        assertThat(hits.get(0).source().createdDate(), is(equalTo(createdSecond.createdDate())));
-        assertThat(hits.get(1).source().createdDate(), is(equalTo(createdFirst.createdDate())));
+        var expectedFirst = sortOrder.equals("asc") ? createdFirst.createdDate() : createdSecond.createdDate();
+        var expectedSecond = sortOrder.equals("asc") ? createdSecond.createdDate() : createdFirst.createdDate();
+        assertThat(hits.get(0).source().createdDate(), is(equalTo(expectedFirst)));
+        assertThat(hits.get(1).source().createdDate(), is(equalTo(expectedSecond)));
     }
 
     @Test
