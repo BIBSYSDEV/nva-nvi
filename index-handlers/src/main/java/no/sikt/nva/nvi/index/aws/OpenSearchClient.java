@@ -13,10 +13,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Clock;
 import java.util.UUID;
+import java.util.function.Function;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
 import no.sikt.nva.nvi.index.Aggregations;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
+import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.utils.SearchConstants;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CachedValueProvider;
@@ -27,7 +29,11 @@ import nva.commons.secrets.SecretsReader;
 import org.apache.http.HttpHost;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
+import org.opensearch.client.opensearch._types.FieldSort;
+import org.opensearch.client.opensearch._types.FieldSort.Builder;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.SortOptions;
+import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.DeleteResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
@@ -40,6 +46,7 @@ import org.opensearch.client.opensearch.indices.GetIndexRequest;
 import org.opensearch.client.transport.TransportOptions;
 import org.opensearch.client.transport.rest_client.RestClientOptions;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
+import org.opensearch.client.util.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -171,6 +178,22 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         return new CreateIndexRequest.Builder().mappings(MAPPINGS).index(NVI_CANDIDATES_INDEX).build();
     }
 
+    private static SortOptions getSortOptions(CandidateSearchParameters parameters) {
+        var resultParameters = parameters.searchResultParameters();
+        return new SortOptions.Builder()
+                   .field(FieldSort.of(fieldSortBuilderFunction(resultParameters)))
+                   .build();
+    }
+
+    private static Function<Builder, ObjectBuilder<FieldSort>> fieldSortBuilderFunction(
+        SearchResultParameters resultParameters) {
+        return builder -> builder.field(resultParameters.orderBy()).order(getSortOrder(resultParameters.sortOrder()));
+    }
+
+    private static SortOrder getSortOrder(String sortOrder) {
+        return SortOrder.Asc.jsonValue().equalsIgnoreCase(sortOrder) ? SortOrder.Asc : SortOrder.Desc;
+    }
+
     private TransportOptions getOptions() {
         return RestClientOptions.builder().addHeader(AUTHORIZATION, cachedJwtProvider.getValue().getToken()).build();
     }
@@ -183,9 +206,11 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     private SearchRequest constructSearchRequest(CandidateSearchParameters parameters) {
         var query = SearchConstants.constructQuery(parameters);
         var resultParameters = parameters.searchResultParameters();
+        var sortOptions = getSortOptions(parameters);
         return new SearchRequest.Builder()
                    .index(NVI_CANDIDATES_INDEX)
                    .query(query)
+                   .sort(sortOptions)
                    .aggregations(Aggregations.generateAggregations(parameters.aggregationType(),
                                                                    parameters.username(),
                                                                    parameters.topLevelOrgUriAsString()))

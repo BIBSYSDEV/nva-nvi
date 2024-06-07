@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_AGGREGATION_TYPE;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_SEARCH_TERM;
+import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_SORT_ORDER;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_TITLE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -43,6 +44,7 @@ import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
+import no.sikt.nva.nvi.index.model.search.OrderByFields;
 import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.commons.json.JsonUtils;
@@ -80,6 +82,7 @@ public class SearchNviCandidatesHandlerTest {
 
     public static final URI TOP_LEVEL_CRISTIN_ORG = URI.create(
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
+    public static final String QUERY_PARAM_ORDER_BY = "orderBy";
     private static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     private static final String QUERY_PARAM_FILTER = "filter";
     private static final String QUERY_PARAM_CATEGORY = "category";
@@ -109,6 +112,16 @@ public class SearchNviCandidatesHandlerTest {
 
         when(uriRetriever.getRawContent(any(), any())).thenReturn(
             Optional.of(IoUtils.stringFromResources(Path.of("20754.0.0.0.json"))));
+    }
+
+    @Test
+    void shouldReturnBadRequestIfOrderByIsInvalid() throws IOException {
+        mockOpenSearchClient();
+        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of(QUERY_PARAM_ORDER_BY, "invalid"));
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+        assertThat(response.getBodyObject(Problem.class).getStatus().getStatusCode(),
+                   is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
     }
 
     @Test
@@ -211,6 +224,30 @@ public class SearchNviCandidatesHandlerTest {
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
         var actualId = paginatedSearchResult.getId().toString();
         assertThat(actualId, containsString(QUERY_AGGREGATION_TYPE + "=" + aggregationType));
+    }
+
+    @Test
+    void shouldReturnPaginatedSearchResultWithOrderByInIdIfGiven() throws IOException {
+        mockOpenSearchClient();
+        var orderByValue = OrderByFields.CREATED_DATE.getValue();
+        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of(QUERY_PARAM_ORDER_BY, orderByValue));
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
+        var actualId = paginatedSearchResult.getId().toString();
+        assertThat(actualId, containsString(QUERY_PARAM_ORDER_BY + "=" + orderByValue));
+    }
+
+    @Test
+    void shouldReturnPaginatedSearchResultWithSortOrderInIdIfGiven() throws IOException {
+        mockOpenSearchClient();
+        var sortOrderValue = "desc";
+        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of(QUERY_PARAM_SORT_ORDER, sortOrderValue));
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+        var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
+        var actualId = paginatedSearchResult.getId().toString();
+        assertThat(actualId, containsString(QUERY_PARAM_SORT_ORDER + "=" + sortOrderValue));
     }
 
     @Test
@@ -473,6 +510,7 @@ public class SearchNviCandidatesHandlerTest {
         throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
                    .withTopLevelCristinOrgId(topLevelCristinOrgId)
+                   .withAccessRights(topLevelCristinOrgId, AccessRight.MANAGE_NVI_CANDIDATES)
                    .withUserName(randomString())
                    .withQueryParameters(queryParams)
                    .build();

@@ -20,7 +20,6 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -35,15 +34,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import jakarta.json.stream.JsonGenerator;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -68,6 +65,7 @@ import no.sikt.nva.nvi.index.model.document.Organization;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
+import no.sikt.nva.nvi.index.model.search.OrderByFields;
 import no.sikt.nva.nvi.index.model.search.SearchAggregation;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.unit.nva.auth.CachedJwtProvider;
@@ -82,8 +80,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.opensearch.client.RestClient;
-import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate.Kind;
@@ -98,8 +96,6 @@ import org.opensearch.testcontainers.OpensearchContainer;
 
 public class OpenSearchClientTest {
 
-    public static final String JSON_POINTER_FILTER = "/filter#";
-    public static final String JSON_POINTER_DOC_COUNT = "/doc_count";
     public static final int DELAY_ON_INDEX = 2000;
     public static final String YEAR = "2023";
     public static final String CATEGORY = "AcademicArticle";
@@ -151,10 +147,10 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldReturnDocumentsFromIndexAccordingToGivenOffsetAndSize() throws IOException {
-        int totalNumberOfDocuments = 12;
+        int totalNumberOfDocuments = 4;
         IntStream.range(0, totalNumberOfDocuments).forEach(i -> addDocumentToIndex());
-        int offset = 10;
-        int size = 10;
+        int offset = 2;
+        int size = 2;
         var searchParameters =
             CandidateSearchParameters.builder()
                 .withUsername(USERNAME)
@@ -171,9 +167,28 @@ public class OpenSearchClientTest {
         assertThat(searchResponse.hits().hits().size(), is(equalTo(expectedNumberOfHitsReturned)));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"asc", "desc"})
+    void shouldOrderResult(String sortOrder) throws InterruptedException, IOException {
+        var createdFirst = documentWithCreatedDate(Instant.now());
+        var createdSecond = documentWithCreatedDate(Instant.now().plus(1, ChronoUnit.MINUTES));
+        addDocumentsToIndex(createdFirst, createdSecond);
+        var searchParameters =
+            defaultSearchParameters().withSearchResultParameters(SearchResultParameters.builder()
+                                                                     .withSortOrder(sortOrder)
+                                                                     .withOrderBy(OrderByFields.CREATED_DATE.getValue())
+                                                                     .build()).build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        var hits = searchResponse.hits().hits();
+        var expectedFirst = sortOrder.equals("asc") ? createdFirst.createdDate() : createdSecond.createdDate();
+        var expectedSecond = sortOrder.equals("asc") ? createdSecond.createdDate() : createdFirst.createdDate();
+        assertThat(hits.get(0).source().createdDate(), is(equalTo(expectedFirst)));
+        assertThat(hits.get(1).source().createdDate(), is(equalTo(expectedSecond)));
+    }
+
     @Test
     void shouldDeleteIndexAndThrowExceptionWhenSearchingInNonExistentIndex() throws IOException, InterruptedException {
-        var document = singleNviCandidateIndexDocument();
+        var document = singleNviCandidateIndexDocument().build();
         addDocumentsToIndex(document);
         openSearchClient.deleteIndex();
         var searchParameters = defaultSearchParameters().build();
@@ -190,7 +205,7 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldRemoveDocumentFromIndex() throws InterruptedException, IOException {
-        var document = singleNviCandidateIndexDocument();
+        var document = singleNviCandidateIndexDocument().build();
         addDocumentsToIndex(document);
         openSearchClient.removeDocumentFromIndex(document.identifier());
         Thread.sleep(DELAY_ON_INDEX);
@@ -218,9 +233,8 @@ public class OpenSearchClientTest {
 
         var searchParameters = defaultSearchParameters().build();
         var searchResponse = openSearchClient.search(searchParameters);
-        var docCount = getDocCount(searchResponse, entry.getKey());
-
-        assertThat(docCount, is(equalTo(entry.getValue())));
+        var aggregation = searchResponse.aggregations().get(entry.getKey());
+        assertThat(getDocCount(aggregation), is(equalTo(entry.getValue())));
     }
 
     @Test
@@ -632,25 +646,6 @@ public class OpenSearchClientTest {
         return SearchResultParameters.builder().withOffset(offset).withSize(size).build();
     }
 
-    private static int getDocCount(SearchResponse<NviCandidateIndexDocument> response, String aggregationName) {
-        var aggregations = extractAggregations(response);
-        assert aggregations != null;
-        return aggregations.at(JSON_POINTER_FILTER + aggregationName + JSON_POINTER_DOC_COUNT).asInt();
-    }
-
-    private static JsonNode extractAggregations(SearchResponse<NviCandidateIndexDocument> searchResponse) {
-        var writer = new StringWriter();
-        var mapper = new JsonbJsonpMapper();
-
-        try (JsonGenerator generator = mapper.jsonProvider().createGenerator(writer)) {
-            mapper.serialize(searchResponse, generator);
-        }
-
-        var json = attempt(() -> dtoObjectMapper.readTree(writer.toString())).orElseThrow();
-
-        return json.get("aggregations");
-    }
-
     private static int extractTotalNumberOfHits(SearchResponse<NviCandidateIndexDocument> searchResponse) {
         return (int) searchResponse.hits().total().value();
     }
@@ -660,7 +655,7 @@ public class OpenSearchClientTest {
         return dtoObjectMapper.readValue(string, NviCandidateIndexDocument.class);
     }
 
-    private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {
+    private static NviCandidateIndexDocument.Builder singleNviCandidateIndexDocument() {
         var approvals = randomApprovalList();
         return NviCandidateIndexDocument.builder()
                    .withIdentifier(UUID.randomUUID())
@@ -668,7 +663,7 @@ public class OpenSearchClientTest {
                    .withApprovals(approvals)
                    .withNumberOfApprovals(approvals.size())
                    .withPoints(randomBigDecimal())
-                   .build();
+                   .withCreatedDate(Instant.now());
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomer(URI customer,
@@ -682,6 +677,7 @@ public class OpenSearchClientTest {
                    .withApprovals(List.of(randomApprovalWithCustomerAndAssignee(customer, assignee)))
                    .withNumberOfApprovals(1)
                    .withPoints(randomBigDecimal())
+                   .withCreatedDate(Instant.now())
                    .withModifiedDate(Instant.now())
                    .build();
     }
@@ -713,7 +709,7 @@ public class OpenSearchClientTest {
     }
 
     private static Approval randomApproval() {
-        return new Approval(randomUri(), Map.of(), randomStatus(), randomInstitutionPoints(), Set.of(), null,
+        return new Approval(ORGANIZATION, Map.of(), randomStatus(), randomInstitutionPoints(), Set.of(), null,
                             randomGlobalApprovalStatus());
     }
 
@@ -738,7 +734,7 @@ public class OpenSearchClientTest {
 
     private static PublicationDetails randomPublicationDetails() {
         return new PublicationDetails(randomString(), randomString(), randomString(),
-                                      PublicationDate.builder().withYear(randomString()).build(),
+                                      PublicationDate.builder().withYear(YEAR).build(),
                                       List.of());
     }
 
@@ -792,6 +788,17 @@ public class OpenSearchClientTest {
         Random random = new Random();
         int index = random.nextInt(words.length);
         return words[index];
+    }
+
+    private int getDocCount(Aggregate aggregation) {
+        if (aggregation._get() instanceof FilterAggregate filterAggregate) {
+            return (int) filterAggregate.docCount();
+        }
+        return 0;
+    }
+
+    private NviCandidateIndexDocument documentWithCreatedDate(Instant createdDate) {
+        return singleNviCandidateIndexDocument().withCreatedDate(createdDate).build();
     }
 
     public static final class FakeCachedJwtProvider {

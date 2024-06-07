@@ -8,7 +8,9 @@ import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_CATE
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_CONTRIBUTOR;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_FILTER;
+import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_ORDER_BY;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_SEARCH_TERM;
+import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_SORT_ORDER;
 import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_TITLE;
 import static nva.commons.apigateway.RestRequestHandler.COMMA;
 import java.net.URI;
@@ -67,6 +69,8 @@ public final class PaginatedResultConverter {
         putIfValueNotNull(queryParams, QUERY_PARAM_CONTRIBUTOR, parameters.contributor());
         putIfValueNotNull(queryParams, QUERY_PARAM_ASSIGNEE, parameters.assignee());
         putIfValueNotNull(queryParams, QUERY_AGGREGATION_TYPE, parameters.aggregationType());
+        putIfValueNotNull(queryParams, QUERY_PARAM_ORDER_BY, parameters.searchResultParameters().orderBy());
+        putIfValueNotNull(queryParams, QUERY_PARAM_SORT_ORDER, parameters.searchResultParameters().sortOrder());
         return queryParams;
     }
 

@@ -47,6 +47,7 @@ public final class SearchConstants {
     public static final String GLOBAL_APPROVAL_STATUS = "globalApprovalStatus";
     public static final String POINTS = "points";
     public static final String INSTITUTION_POINTS = "institutionPoints";
+    public static final String CREATED_DATE = "createdDate";
 
     private SearchConstants() {
 
@@ -73,6 +74,7 @@ public final class SearchConstants {
 
     private static Map<String, Property> mappingProperties() {
         return Map.of(GLOBAL_APPROVAL_STATUS, keywordProperty(),
+                      CREATED_DATE, keywordProperty(),
                       JSON_PATH_CONTRIBUTORS, nestedProperty(contributorsProperties()),
                       APPROVALS, nestedProperty(approvalProperties())
         );
