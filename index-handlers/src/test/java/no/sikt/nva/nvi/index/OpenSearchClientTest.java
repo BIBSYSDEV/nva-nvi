@@ -20,7 +20,6 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -35,10 +34,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import jakarta.json.stream.JsonGenerator;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -85,7 +81,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.opensearch.client.RestClient;
-import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate.Kind;
@@ -100,8 +95,6 @@ import org.opensearch.testcontainers.OpensearchContainer;
 
 public class OpenSearchClientTest {
 
-    public static final String JSON_POINTER_FILTER = "/filter#";
-    public static final String JSON_POINTER_DOC_COUNT = "/doc_count";
     public static final int DELAY_ON_INDEX = 2000;
     public static final String YEAR = "2023";
     public static final String CATEGORY = "AcademicArticle";
@@ -238,9 +231,8 @@ public class OpenSearchClientTest {
 
         var searchParameters = defaultSearchParameters().build();
         var searchResponse = openSearchClient.search(searchParameters);
-        var docCount = getDocCount(searchResponse, entry.getKey());
-
-        assertThat(docCount, is(equalTo(entry.getValue())));
+        var aggregation = searchResponse.aggregations().get(entry.getKey());
+        assertThat(getDocCount(aggregation), is(equalTo(entry.getValue())));
     }
 
     @Test
@@ -652,25 +644,6 @@ public class OpenSearchClientTest {
         return SearchResultParameters.builder().withOffset(offset).withSize(size).build();
     }
 
-    private static int getDocCount(SearchResponse<NviCandidateIndexDocument> response, String aggregationName) {
-        var aggregations = extractAggregations(response);
-        assert aggregations != null;
-        return aggregations.at(JSON_POINTER_FILTER + aggregationName + JSON_POINTER_DOC_COUNT).asInt();
-    }
-
-    private static JsonNode extractAggregations(SearchResponse<NviCandidateIndexDocument> searchResponse) {
-        var writer = new StringWriter();
-        var mapper = new JsonbJsonpMapper();
-
-        try (JsonGenerator generator = mapper.jsonProvider().createGenerator(writer)) {
-            mapper.serialize(searchResponse, generator);
-        }
-
-        var json = attempt(() -> dtoObjectMapper.readTree(writer.toString())).orElseThrow();
-
-        return json.get("aggregations");
-    }
-
     private static int extractTotalNumberOfHits(SearchResponse<NviCandidateIndexDocument> searchResponse) {
         return (int) searchResponse.hits().total().value();
     }
@@ -813,6 +786,13 @@ public class OpenSearchClientTest {
         Random random = new Random();
         int index = random.nextInt(words.length);
         return words[index];
+    }
+
+    private int getDocCount(Aggregate aggregation) {
+        if (aggregation._get() instanceof FilterAggregate filterAggregate) {
+            return (int) filterAggregate.docCount();
+        }
+        return 0;
     }
 
     private NviCandidateIndexDocument documentWithCreatedDate(Instant createdDate) {
