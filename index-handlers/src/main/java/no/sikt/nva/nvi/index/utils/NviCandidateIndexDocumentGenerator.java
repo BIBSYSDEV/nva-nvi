@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -131,11 +132,14 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static Set<URI> extractInvolvedOrganizations(Approval approval,
                                                          List<ContributorType> expandedContributors) {
-        return expandedContributors.stream()
-                   .filter(NviContributor.class::isInstance)
-                   .map(NviContributor.class::cast)
-                   .flatMap(contributor -> contributor.getOrganizationsPartOf(approval.getInstitutionId()).stream())
-                   .collect(Collectors.toSet());
+        var affiliatedOrganizations = expandedContributors.stream()
+                                          .filter(NviContributor.class::isInstance)
+                                          .map(NviContributor.class::cast)
+                                          .flatMap(contributor -> contributor.getOrganizationsPartOf(
+                                              approval.getInstitutionId()).stream())
+                                          .collect(Collectors.toCollection(HashSet::new));
+        affiliatedOrganizations.add(approval.getInstitutionId());
+        return affiliatedOrganizations;
     }
 
     private PublicationDetails expandPublicationDetails(JsonNode expandedResource, List<ContributorType> contributors) {

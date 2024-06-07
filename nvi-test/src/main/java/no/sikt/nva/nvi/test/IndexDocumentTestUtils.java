@@ -8,6 +8,7 @@ import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractAffiliations
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -205,6 +206,7 @@ public final class IndexDocumentTestUtils {
     private static NviOrganization generateTopLevelNviOrg(URI id) {
         return NviOrganization.builder()
                    .withId(id)
+                   .withPartOf(Collections.emptyList())
                    .build();
     }
 }
