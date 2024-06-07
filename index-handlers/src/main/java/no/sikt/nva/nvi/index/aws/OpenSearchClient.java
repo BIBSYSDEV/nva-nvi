@@ -188,8 +188,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
 
     private static Function<Builder, ObjectBuilder<FieldSort>> fieldSOrtBuilderFunction(
         SearchResultParameters resultParameters) {
-        return builder -> builder.field(resultParameters.orderBy())
-                              .order(getSortOrder(resultParameters.sortOrder()));
+        return builder -> builder.field(resultParameters.orderBy()).order(getSortOrder(resultParameters.sortOrder()));
     }
 
     private static SortOrder getSortOrder(String sortOrder) {
