@@ -153,10 +153,10 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldReturnDocumentsFromIndexAccordingToGivenOffsetAndSize() throws IOException {
-        int totalNumberOfDocuments = 12;
+        int totalNumberOfDocuments = 4;
         IntStream.range(0, totalNumberOfDocuments).forEach(i -> addDocumentToIndex());
-        int offset = 10;
-        int size = 10;
+        int offset = 2;
+        int size = 2;
         var searchParameters =
             CandidateSearchParameters.builder()
                 .withUsername(USERNAME)
@@ -687,7 +687,8 @@ public class OpenSearchClientTest {
                    .withPublicationDetails(randomPublicationDetails())
                    .withApprovals(approvals)
                    .withNumberOfApprovals(approvals.size())
-                   .withPoints(randomBigDecimal());
+                   .withPoints(randomBigDecimal())
+                   .withCreatedDate(Instant.now());
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomer(URI customer,
@@ -701,6 +702,7 @@ public class OpenSearchClientTest {
                    .withApprovals(List.of(randomApprovalWithCustomerAndAssignee(customer, assignee)))
                    .withNumberOfApprovals(1)
                    .withPoints(randomBigDecimal())
+                   .withCreatedDate(Instant.now())
                    .withModifiedDate(Instant.now())
                    .build();
     }

@@ -4,7 +4,7 @@ public record SearchResultParameters(int offset, int size, String orderBy, Strin
 
     public static final int DEFAULT_SIZE = 10;
     public static final int DEFAULT_OFFSET = 0;
-    public static final String DEFAULT_ORDER_BY_FIELD = "createDate";
+    public static final String DEFAULT_ORDER_BY_FIELD = "createdDate";
     public static final String DEFAULT_SORT_ORDER = "desc";
 
     public static Builder builder() {
