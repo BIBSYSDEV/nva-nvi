@@ -273,6 +273,21 @@ paths:
           schema:
             type: string
           description: Filters values based on assignee
+        - in: query
+          name: orderBy
+          schema:
+            type: string
+            description: Order by field
+            enum:
+              - createdDate
+        - in: query
+          name: sortOrder
+          schema:
+            type: string
+            description: Order direction
+            enum:
+              - asc
+              - desc
       security:
         - CognitoUserPool: [
           'https://api.nva.unit.no/scopes/backend',
