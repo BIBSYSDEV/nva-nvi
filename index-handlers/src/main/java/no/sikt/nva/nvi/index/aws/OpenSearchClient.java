@@ -53,7 +53,6 @@ import org.slf4j.LoggerFactory;
 @JacocoGenerated
 public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument> {
 
-    public static final String ASC = "asc";
     private static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchClient.class);
     private static final String ERROR_MSG_CREATE_INDEX = "Error while creating index: " + NVI_CANDIDATES_INDEX;
@@ -192,7 +191,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     private static SortOrder getSortOrder(String sortOrder) {
-        return ASC.equalsIgnoreCase(sortOrder) ? SortOrder.Asc : SortOrder.Desc;
+        return SortOrder.Asc.jsonValue().equalsIgnoreCase(sortOrder) ? SortOrder.Asc : SortOrder.Desc;
     }
 
     private TransportOptions getOptions() {
