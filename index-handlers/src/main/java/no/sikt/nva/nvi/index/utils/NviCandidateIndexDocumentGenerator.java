@@ -138,8 +138,12 @@ public final class NviCandidateIndexDocumentGenerator {
                                           .flatMap(contributor -> contributor.getOrganizationsPartOf(
                                               approval.getInstitutionId()).stream())
                                           .collect(Collectors.toCollection(HashSet::new));
-        affiliatedOrganizations.add(approval.getInstitutionId());
+        addTopLevelAffiliations(affiliatedOrganizations, approval.getInstitutionId());
         return affiliatedOrganizations;
+    }
+
+    private static void addTopLevelAffiliations(HashSet<URI> affiliatedOrganizations, URI institutionId) {
+        affiliatedOrganizations.add(institutionId);
     }
 
     private PublicationDetails expandPublicationDetails(JsonNode expandedResource, List<ContributorType> contributors) {
