@@ -192,7 +192,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     private static SortOrder getSortOrder(String sortOrder) {
-        return sortOrder.equalsIgnoreCase(ASC) ? SortOrder.Asc : SortOrder.Desc;
+        return ASC.equalsIgnoreCase(sortOrder) ? SortOrder.Asc : SortOrder.Desc;
     }
 
     private TransportOptions getOptions() {
