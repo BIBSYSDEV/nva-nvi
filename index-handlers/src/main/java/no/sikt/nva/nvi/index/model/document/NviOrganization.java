@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.List;
+import nva.commons.core.paths.UriWrapper;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -18,6 +19,11 @@ public record NviOrganization(@JsonProperty("id") URI id,
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    @JsonProperty("identifier")
+    public String getIdentifier() {
+        return UriWrapper.fromUri(id).getLastPathElement();
     }
 
     @Override
