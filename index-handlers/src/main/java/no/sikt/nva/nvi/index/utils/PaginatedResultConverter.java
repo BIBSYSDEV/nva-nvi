@@ -17,7 +17,6 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
@@ -61,7 +60,7 @@ public final class PaginatedResultConverter {
     private static Map<String, String> getQueryParameters(CandidateSearchParameters parameters) {
         var queryParams = new HashMap<String, String>();
         putIfValueNotNull(queryParams, QUERY_PARAM_SEARCH_TERM, parameters.searchTerm());
-        putAffiliationsIfNotNullOrEmpty(queryParams, QUERY_PARAM_AFFILIATIONS, parameters.affiliations());
+        putAffiliationsIfNotNullOrEmpty(queryParams, QUERY_PARAM_AFFILIATIONS, parameters.affiliationIdentifiers());
         putIfTrue(queryParams, QUERY_PARAM_EXCLUDE_SUB_UNITS, parameters.excludeSubUnits());
         putIfValueNotEmpty(queryParams, QUERY_PARAM_FILTER, parameters.filter());
         putIfValueNotNull(queryParams, QUERY_PARAM_CATEGORY, parameters.category());
@@ -80,9 +79,10 @@ public final class PaginatedResultConverter {
         }
     }
 
-    private static void putAffiliationsIfNotNullOrEmpty(Map<String, String> map, String key, List<URI> affiliations) {
-        if (nonNull(affiliations) && !affiliations.isEmpty()) {
-            map.put(key, affiliations.stream().map(URI::toString).collect(Collectors.joining(COMMA)));
+    private static void putAffiliationsIfNotNullOrEmpty(Map<String, String> map, String key,
+                                                        List<String> affiliationIdentifiers) {
+        if (nonNull(affiliationIdentifiers) && !affiliationIdentifiers.isEmpty()) {
+            map.put(key, String.join(COMMA, affiliationIdentifiers));
         }
     }
 

@@ -67,7 +67,7 @@ public class CandidateQuery {
 
     public CandidateQuery(CandidateQueryParameters params) {
         this.searchTerm = params.searchTerm;
-        this.affiliations = params.affiliations.stream().map(URI::toString).toList();
+        this.affiliations = params.affiliationIdentifiers;
         this.excludeSubUnits = params.excludeSubUnits;
         this.filter = params.filter;
         this.username = params.username;
@@ -326,7 +326,7 @@ public class CandidateQuery {
 
     public static class Builder {
 
-        private List<URI> institutions;
+        private List<String> organizationIdentifiers;
         private boolean excludeSubUnits;
         private QueryFilterType filter;
         private String username;
@@ -342,8 +342,8 @@ public class CandidateQuery {
             // No-args constructor.
         }
 
-        public Builder withInstitutions(List<URI> institutions) {
-            this.institutions = institutions;
+        public Builder withInstitutions(List<String> organizationIdentifiers) {
+            this.organizationIdentifiers = organizationIdentifiers;
             return this;
         }
 
@@ -401,7 +401,7 @@ public class CandidateQuery {
             CandidateQueryParameters params = new CandidateQueryParameters();
 
             params.searchTerm = this.searchTerm;
-            params.affiliations = this.institutions;
+            params.affiliationIdentifiers = this.organizationIdentifiers;
             params.excludeSubUnits = this.excludeSubUnits;
             params.filter = this.filter;
             params.username = this.username;
@@ -419,7 +419,7 @@ public class CandidateQuery {
     public static class CandidateQueryParameters {
 
         public String searchTerm;
-        public List<URI> affiliations;
+        public List<String> affiliationIdentifiers;
         public boolean excludeSubUnits;
         public QueryFilterType filter;
         public String username;

@@ -17,7 +17,7 @@ public record Contributor(@JsonProperty("id") String id,
                           @JsonProperty("name") String name,
                           @JsonProperty("orcid") String orcid,
                           @JsonProperty("role") String role,
-                          @JsonProperty("affiliations") List<OrganizationType> affiliations)
+                          @JsonProperty("affiliationIdentifiers") List<OrganizationType> affiliations)
     implements ContributorType {
 
     public static Builder builder() {

@@ -30,6 +30,7 @@ import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.paths.UriWrapper;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.NodeIterator;
 import org.apache.jena.rdf.model.RDFNode;
@@ -40,7 +41,7 @@ public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
     private static final String USER_IS_NOT_ALLOWED_TO_SEARCH_FOR_AFFILIATIONS_S
-        = "User is not allowed to search for affiliations: %s";
+        = "User is not allowed to search for affiliationIdentifiers: %s";
     private static final String COMMA_AND_SPACE = ", ";
     private final Logger logger = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
@@ -81,21 +82,19 @@ public class SearchNviCandidatesHandler
         return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI);
     }
 
-    private static List<URI> getAffiliations(RequestInfo requestInfo, URI topLevelOrg) {
+    private static List<String> getAffiliations(RequestInfo requestInfo, URI topLevelOrg) {
         return Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
-                   .orElse(List.of(topLevelOrg));
+                   .orElse(List.of(UriWrapper.fromUri(topLevelOrg).getLastPathElement()));
     }
 
-    private static List<URI> extractQueryParamAffiliations(RequestInfo requestInfo) {
+    private static List<String> extractQueryParamAffiliations(RequestInfo requestInfo) {
         return requestInfo.getQueryParameterOpt(QUERY_PARAM_AFFILIATIONS)
-                   .map(SearchNviCandidatesHandler::toListOfUris)
+                   .map(SearchNviCandidatesHandler::toListOfIdentifiers)
                    .orElse(null);
     }
 
-    private static List<URI> toListOfUris(String uriListAsString) {
-        return Arrays.stream(uriListAsString.split(COMMA))
-                   .map(URI::create)
-                   .collect(Collectors.toList());
+    private static List<String> toListOfIdentifiers(String identifierListAsString) {
+        return Arrays.stream(identifierListAsString.split(COMMA)).collect(Collectors.toList());
     }
 
     @JacocoGenerated
@@ -124,6 +123,10 @@ public class SearchNviCandidatesHandler
         return model.listObjectsOfProperty(model.createProperty(HAS_PART_PROPERTY));
     }
 
+    private static Stream<String> toStreamOfIdentifiers(Stream<URI> uriStream) {
+        return uriStream.map(uri -> UriWrapper.fromUri(uri).getLastPathElement());
+    }
+
     private void logAggregationType(CandidateSearchParameters candidateSearchParameters) {
         logger.info("Aggregation type {} requested for topLevelCristinOrg {}",
                     candidateSearchParameters.aggregationType(),
@@ -138,7 +141,7 @@ public class SearchNviCandidatesHandler
         }
     }
 
-    private void assertUserIsAllowedToSearchAffiliations(List<URI> affiliations, URI topLevelOrg)
+    private void assertUserIsAllowedToSearchAffiliations(List<String> affiliations, URI topLevelOrg)
         throws UnauthorizedException {
         var allowed = attempt(() -> this.uriRetriever.getRawContent(topLevelOrg, APPLICATION_JSON)).map(
                 Optional::orElseThrow)
@@ -147,6 +150,7 @@ public class SearchNviCandidatesHandler
                           .map(SearchNviCandidatesHandler::toStreamOfRfdNodes)
                           .map(node -> concat(topLevelOrg, node))
                           .map(SearchNviCandidatesHandler::toUris)
+                          .map(SearchNviCandidatesHandler::toStreamOfIdentifiers)
                           .orElseThrow()
                           .collect(Collectors.toSet());
 

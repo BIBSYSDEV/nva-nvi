@@ -31,7 +31,7 @@ public final class SearchConstants {
     public static final String PUBLICATION_DETAILS = "publicationDetails";
     public static final String CONTRIBUTORS = "contributors";
     public static final String NAME = "name";
-    public static final String AFFILIATIONS = "affiliations";
+    public static final String AFFILIATIONS = "affiliationIdentifiers";
     public static final String PART_OF = "partOf";
     public static final String ROLE = "role";
     public static final String NVI_CANDIDATES_INDEX = "nvi-candidates";
@@ -58,7 +58,7 @@ public final class SearchConstants {
                              .orElseThrow(() -> new IllegalStateException("unknown filter " + params.filter()));
         return new CandidateQuery.Builder()
                    .withSearchTerm(params.searchTerm())
-                   .withInstitutions(Optional.ofNullable(params.affiliations()).orElse(List.of()))
+                   .withInstitutions(Optional.ofNullable(params.affiliationIdentifiers()).orElse(List.of()))
                    .withExcludeSubUnits(params.excludeSubUnits())
                    .withFilter(filterType)
                    .withUsername(params.username())
