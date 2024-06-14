@@ -57,6 +57,7 @@ import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.hamcrest.Matchers;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
@@ -516,6 +517,14 @@ public class SearchNviCandidatesHandlerTest {
                    .build();
     }
 
+    @NotNull
+    private static String toCommaSeperatedStringList(List<URI> institutions) {
+        return String.join(COMMA, institutions.stream()
+                                      .map(UriWrapper::fromUri)
+                                      .map(UriWrapper::getLastPathElement)
+                                      .toList());
+    }
+
     private URI constructBasePath() {
         return UriWrapper.fromHost(API_HOST).addChild(CUSTOM_DOMAIN_BASE_PATH).addChild(CANDIDATE_PATH).getUri();
     }
@@ -558,10 +567,7 @@ public class SearchNviCandidatesHandlerTest {
                                                          String category,
                                                          String title)
         throws JsonProcessingException {
-        return createRequest(randomUri(), Map.of(QUERY_PARAM_AFFILIATIONS, String.join(COMMA,
-                                                                                       institutions.stream()
-                                                                                           .map(URI::toString)
-                                                                                           .toList()),
+        return createRequest(randomUri(), Map.of(QUERY_PARAM_AFFILIATIONS, toCommaSeperatedStringList(institutions),
                                                  QUERY_PARAM_EXCLUDE_SUB_UNITS, "true",
                                                  QUERY_PARAM_FILTER, filter,
                                                  QUERY_PARAM_CATEGORY, category,
@@ -571,10 +577,8 @@ public class SearchNviCandidatesHandlerTest {
 
     private InputStream requestWithInstitutionsAndTopLevelCristinOrgId(List<URI> institutions, URI cristinId)
         throws JsonProcessingException {
-        return createRequest(cristinId, Map.of(QUERY_PARAM_AFFILIATIONS,
-                                               String.join(",", institutions.stream().map(URI::toString).toList()),
-                                               QUERY_PARAM_EXCLUDE_SUB_UNITS,
-                                               "true"));
+        return createRequest(cristinId, Map.of(QUERY_PARAM_AFFILIATIONS, toCommaSeperatedStringList(institutions),
+                                               QUERY_PARAM_EXCLUDE_SUB_UNITS, "true"));
     }
 
     private InputStream requestWithoutQueryParameters() throws JsonProcessingException {
