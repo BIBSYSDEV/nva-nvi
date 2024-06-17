@@ -12,13 +12,14 @@
     },
     "contributors": [
       {
-        "type": "Contributor",
+        "type": "NviContributor",
         "id": "https://api.dev.nva.aws.unit.no/cristin/person/1136326",
         "name": "Kir Truhacev",
         "affiliations" : [ {
-          "type": "Organization",
+          "type": "NviOrganization",
           "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0",
-          "partOf": ["https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0"]
+          "identifier": "194.0.0.0",
+          "partOf": []
         } ],
         "role" : "Creator"
       }

@@ -10,11 +10,11 @@
         "year": "2023"
       },
       "contributors" : [ {
-        "type": "Contributor",
+        "type": "NviContributor",
         "id" : "https://api.dev.nva.aws.unit.no/cristin/person/1306838",
         "name" : "Anette Olli Siiri",
         "affiliations" : [ {
-          "type": "Organization",
+          "type": "NviOrganization",
           "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0",
           "identifier": "194.0.0.0",
           "partOf": []

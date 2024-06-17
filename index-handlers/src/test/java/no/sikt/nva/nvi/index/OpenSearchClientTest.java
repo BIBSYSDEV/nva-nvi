@@ -57,11 +57,11 @@ import no.sikt.nva.nvi.index.aws.CandidateQuery.QueryFilterType;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.model.document.Approval;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
-import no.sikt.nva.nvi.index.model.document.Contributor;
 import no.sikt.nva.nvi.index.model.document.InstitutionPoints;
 import no.sikt.nva.nvi.index.model.document.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.index.model.document.Organization;
+import no.sikt.nva.nvi.index.model.document.NviContributor;
+import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
@@ -493,9 +493,7 @@ public class OpenSearchClientTest {
             defaultSearchParameters().withFilter(entry.getKey())
                 .withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER))
                 .build();
-        var searchResponse =
-            openSearchClient.search(searchParameters);
-
+        var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));
     }
 
@@ -706,8 +704,8 @@ public class OpenSearchClientTest {
         var publicationDate = year != null
                                   ? PublicationDate.builder().withYear(year).build()
                                   : PublicationDate.builder().withYear(YEAR).build();
-        var contributorBuilder = Contributor.builder().withRole("Creator")
-                                     .withAffiliations(List.of(Organization.builder().withId(affiliation).build()));
+        var contributorBuilder = NviContributor.builder().withRole("Creator")
+                                     .withAffiliations(List.of(NviOrganization.builder().withId(affiliation).build()));
         if (contributor != null) {
             contributorBuilder.withName(contributor);
         }

@@ -53,7 +53,7 @@ class PointServiceTest {
     private static final String ID = "id";
     private static final String LEVEL = "scientificValue";
     private static final JsonNode HARDCODED_JOURNAL_REFERENCE = createJournalReference("AcademicArticle", "LevelOne");
-    private static final String AFFILIATIONS = "affiliationIdentifiers";
+    private static final String AFFILIATIONS = "affiliations";
     private static final String IDENTITY = "identity";
     private static final String VERIFICATION_STATUS = "verificationStatus";
     private static final String CONTRIBUTORS = "contributors";

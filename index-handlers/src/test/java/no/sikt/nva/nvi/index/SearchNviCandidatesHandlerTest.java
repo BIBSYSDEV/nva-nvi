@@ -84,7 +84,7 @@ public class SearchNviCandidatesHandlerTest {
     public static final URI TOP_LEVEL_CRISTIN_ORG = URI.create(
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     public static final String QUERY_PARAM_ORDER_BY = "orderBy";
-    private static final String QUERY_PARAM_AFFILIATIONS = "affiliationIdentifiers";
+    private static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     private static final String QUERY_PARAM_FILTER = "filter";
     private static final String QUERY_PARAM_CATEGORY = "category";
     private static final Environment ENVIRONMENT = new Environment();
