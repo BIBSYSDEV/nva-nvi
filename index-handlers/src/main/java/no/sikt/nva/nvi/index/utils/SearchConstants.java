@@ -31,7 +31,7 @@ public final class SearchConstants {
     public static final String PUBLICATION_DETAILS = "publicationDetails";
     public static final String CONTRIBUTORS = "contributors";
     public static final String NAME = "name";
-    public static final String AFFILIATIONS = "affiliationIdentifiers";
+    public static final String AFFILIATIONS = "affiliations";
     public static final String PART_OF = "partOf";
     public static final String ROLE = "role";
     public static final String NVI_CANDIDATES_INDEX = "nvi-candidates";
@@ -42,12 +42,14 @@ public final class SearchConstants {
     public static final String JSON_PATH_DELIMITER = ".";
     public static final String JSON_PATH_CONTRIBUTORS = String.join(JSON_PATH_DELIMITER, PUBLICATION_DETAILS,
                                                                     CONTRIBUTORS);
-    public static final TypeMapping MAPPINGS = new TypeMapping.Builder().properties(mappingProperties()).build();
     public static final String INVOLVED_ORGS = "involvedOrganizations";
     public static final String GLOBAL_APPROVAL_STATUS = "globalApprovalStatus";
     public static final String POINTS = "points";
     public static final String INSTITUTION_POINTS = "institutionPoints";
     public static final String CREATED_DATE = "createdDate";
+    public static final String IDENTIFIER = "identifier";
+    public static final String PART_OF_IDENTIFIERS = "partOfIdentifiers";
+    public static final TypeMapping MAPPINGS = new TypeMapping.Builder().properties(mappingProperties()).build();
 
     private SearchConstants() {
 
@@ -58,7 +60,7 @@ public final class SearchConstants {
                              .orElseThrow(() -> new IllegalStateException("unknown filter " + params.filter()));
         return new CandidateQuery.Builder()
                    .withSearchTerm(params.searchTerm())
-                   .withInstitutions(Optional.ofNullable(params.affiliationIdentifiers()).orElse(List.of()))
+                   .withAffiliationIdentifiers(Optional.ofNullable(params.affiliationIdentifiers()).orElse(List.of()))
                    .withExcludeSubUnits(params.excludeSubUnits())
                    .withFilter(filterType)
                    .withUsername(params.username())
@@ -115,7 +117,8 @@ public final class SearchConstants {
     }
 
     private static Map<String, Property> affiliationsProperties() {
-        return Map.of(ID, keywordProperty(), PART_OF, keywordProperty());
+        return Map.of(ID, keywordProperty(), IDENTIFIER, keywordProperty(), PART_OF, keywordProperty(),
+                      PART_OF_IDENTIFIERS, keywordProperty());
     }
 
     private static Property keywordProperty() {

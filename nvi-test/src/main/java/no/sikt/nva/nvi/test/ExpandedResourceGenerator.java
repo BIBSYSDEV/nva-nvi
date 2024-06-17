@@ -75,7 +75,7 @@ public final class ExpandedResourceGenerator {
     }
 
     public static List<URI> extractAffiliations(JsonNode contributorNode) {
-        return JsonUtils.streamNode(contributorNode.at("/affiliationIdentifiers"))
+        return JsonUtils.streamNode(contributorNode.at("/affiliations"))
                    .map(affiliationNode -> affiliationNode.at("/id"))
                    .map(JsonNode::asText)
                    .map(URI::create)
@@ -163,7 +163,7 @@ public final class ExpandedResourceGenerator {
 
         var affiliations = createAndPopulateAffiliationsNode(affiliationsUris);
 
-        contributorNode.set("affiliationIdentifiers", affiliations);
+        contributorNode.set("affiliations", affiliations);
 
         var role = objectMapper.createObjectNode();
         role.put("type", randomString());

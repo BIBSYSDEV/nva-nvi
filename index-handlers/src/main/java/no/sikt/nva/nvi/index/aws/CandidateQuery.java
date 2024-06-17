@@ -12,12 +12,12 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.CONTRIBUTORS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.GLOBAL_APPROVAL_STATUS;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.ID;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.IDENTIFIER;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.KEYWORD;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NAME;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NUMBER_OF_APPROVALS;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.PART_OF;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.PART_OF_IDENTIFIERS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DATE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DETAILS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ROLE;
@@ -25,7 +25,6 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.TITLE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.TYPE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.YEAR;
 import com.fasterxml.jackson.annotation.JsonValue;
-import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -162,9 +161,10 @@ public class CandidateQuery {
                            QueryBuilders.bool().must(
                                matchAtLeastOne(
                                    termsQuery(organizations,
-                                              jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, ID)),
+                                              jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, IDENTIFIER)),
                                    termsQuery(organizations,
-                                              jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, PART_OF))
+                                              jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS,
+                                                         PART_OF_IDENTIFIERS))
                                ),
                                matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, ROLE))
                            ).build()._toQuery()
@@ -175,7 +175,7 @@ public class CandidateQuery {
         return nestedQuery(jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS),
                            QueryBuilders.bool().must(
                                termsQuery(organizations,
-                                          jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, ID)),
+                                          jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, IDENTIFIER)),
                                matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, ROLE))
                            ).build()._toQuery()
         );
@@ -326,7 +326,7 @@ public class CandidateQuery {
 
     public static class Builder {
 
-        private List<String> organizationIdentifiers;
+        private List<String> affiliationIdentifiers;
         private boolean excludeSubUnits;
         private QueryFilterType filter;
         private String username;
@@ -342,8 +342,8 @@ public class CandidateQuery {
             // No-args constructor.
         }
 
-        public Builder withInstitutions(List<String> organizationIdentifiers) {
-            this.organizationIdentifiers = organizationIdentifiers;
+        public Builder withAffiliationIdentifiers(List<String> affiliationIdentifiers) {
+            this.affiliationIdentifiers = affiliationIdentifiers;
             return this;
         }
 
@@ -401,7 +401,7 @@ public class CandidateQuery {
             CandidateQueryParameters params = new CandidateQueryParameters();
 
             params.searchTerm = this.searchTerm;
-            params.affiliationIdentifiers = this.organizationIdentifiers;
+            params.affiliationIdentifiers = this.affiliationIdentifiers;
             params.excludeSubUnits = this.excludeSubUnits;
             params.filter = this.filter;
             params.username = this.username;

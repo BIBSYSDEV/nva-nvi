@@ -41,7 +41,7 @@ public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
     private static final String USER_IS_NOT_ALLOWED_TO_SEARCH_FOR_AFFILIATIONS_S
-        = "User is not allowed to search for affiliationIdentifiers: %s";
+        = "User is not allowed to search for affiliations: %s";
     private static final String COMMA_AND_SPACE = ", ";
     private final Logger logger = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;

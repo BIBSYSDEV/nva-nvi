@@ -8,7 +8,7 @@ public final class SearchQueryParameters {
     public static final String QUERY_PARAM_TITLE = "title";
     public static final String QUERY_PARAM_SEARCH_TERM = "query";
     public static final String QUERY_PARAM_YEAR = "year";
-    public static final String QUERY_PARAM_AFFILIATIONS = "affiliationIdentifiers";
+    public static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     public static final String QUERY_PARAM_CATEGORY = "category";
     public static final String QUERY_PARAM_CONTRIBUTOR = "contributor";
     public static final String QUERY_PARAM_ASSIGNEE = "assignee";
