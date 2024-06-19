@@ -32,21 +32,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
-class FetchReportHandlerTest {
+class FetchInstitutionStatusAggregationHandlerTest {
 
     private static final String INSTITUTION_ID = "institutionId";
     private static final String YEAR = "year";
     private static final int CURRENT_YEAR = Year.now().getValue();
     private static final Context CONTEXT = mock(Context.class);
     private ByteArrayOutputStream output;
-    private FetchReportHandler handler;
+    private FetchInstitutionStatusAggregationHandler handler;
     private OpenSearchClient openSearchClient;
 
     @BeforeEach
     public void setUp() {
         output = new ByteArrayOutputStream();
         openSearchClient = mock(OpenSearchClient.class);
-        handler = new FetchReportHandler(openSearchClient);
+        handler = new FetchInstitutionStatusAggregationHandler(openSearchClient);
     }
 
     @Test

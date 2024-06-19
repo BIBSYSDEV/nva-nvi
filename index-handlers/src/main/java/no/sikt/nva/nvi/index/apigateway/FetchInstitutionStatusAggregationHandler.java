@@ -20,18 +20,18 @@ import nva.commons.apigateway.exceptions.ForbiddenException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
 
-public class FetchReportHandler extends ApiGatewayHandler<Void, String> {
+public class FetchInstitutionStatusAggregationHandler extends ApiGatewayHandler<Void, String> {
 
     public static final String PATH_PARAM_YEAR = "year";
     private static final String INSTITUTION_ID = "institutionId";
     private final OpenSearchClient openSearchClient;
 
     @JacocoGenerated
-    public FetchReportHandler() {
+    public FetchInstitutionStatusAggregationHandler() {
         this(OpenSearchClient.defaultOpenSearchClient());
     }
 
-    public FetchReportHandler(OpenSearchClient openSearchClient) {
+    public FetchInstitutionStatusAggregationHandler(OpenSearchClient openSearchClient) {
         super(Void.class);
         this.openSearchClient = openSearchClient;
     }
