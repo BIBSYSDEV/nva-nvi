@@ -37,9 +37,9 @@ public final class Aggregations {
     public static final String DISPUTE_AGGREGATION = "dispute";
     public static final String POINTS_AGGREGATION = "points";
     public static final String DISPUTE = "Dispute";
+    public static final String APPROVAL_ORGANIZATIONS_AGGREGATION = "organizations";
     private static final int MULTIPLE = 2;
     private static final String ALL_AGGREGATIONS = "all";
-    private static final String APPROVAL_ORGANIZATIONS_AGGREGATION = "organizations";
     private static final String STATUS_AGGREGATION = "status";
 
     private Aggregations() {
