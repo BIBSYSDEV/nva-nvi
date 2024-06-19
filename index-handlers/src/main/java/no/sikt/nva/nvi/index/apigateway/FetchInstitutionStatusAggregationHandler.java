@@ -15,7 +15,6 @@ import no.sikt.nva.nvi.index.utils.AggregationFormatter;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
-import nva.commons.apigateway.exceptions.ForbiddenException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
@@ -53,7 +52,7 @@ public class FetchInstitutionStatusAggregationHandler extends ApiGatewayHandler<
 
     private static String format(Aggregate aggregate, URI topLevelOrg) {
         return AggregationFormatter.format(Map.of(AGGREGATION, aggregate))
-                   .at((DELIMITER + AGGREGATION))
+                   .at(DELIMITER + AGGREGATION)
                    .get(topLevelOrg.toString())
                    .at(DELIMITER + APPROVAL_ORGANIZATIONS_AGGREGATION)
                    .toPrettyString();
