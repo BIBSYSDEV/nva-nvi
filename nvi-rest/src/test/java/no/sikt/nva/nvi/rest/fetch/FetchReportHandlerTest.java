@@ -5,7 +5,6 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.ANY_APPLICATION_TYPE;
 import static com.google.common.net.MediaType.MICROSOFT_EXCEL;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
-import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -33,7 +32,6 @@ import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.rest.model.ReportRow;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
@@ -74,24 +72,19 @@ class FetchReportHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnUnauthorizedWhenUserDoesNotHaveSufficientAccessRight() throws IOException {
-        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()),
-                                         candidateRepository, periodRepository).orElseThrow();
-        var year = Year.now().getValue();
         var institutionId = randomUri();
-        var request = createRequestWithoutAccessRight(candidate.getIdentifier(), institutionId, institutionId, year)
+        var request = createRequestWithoutAccessRight(UUID.randomUUID(), institutionId, institutionId,
+                                                      Year.now().getValue())
                           .build();
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
-
         assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
     }
 
     @Test
     void shouldReturnForbiddenWhenUserDoesNotBelongToSameInstitutionAsRequestedInstitution()
         throws IOException {
-        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()),
-                                         candidateRepository, periodRepository).orElseThrow();
-        var request = createRequest(candidate.getIdentifier(), randomUri(), randomUri(), CURRENT_YEAR,
+        var request = createRequest(UUID.randomUUID(), randomUri(), randomUri(), CURRENT_YEAR,
                                     MANAGE_NVI_CANDIDATES).build();
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -161,8 +154,8 @@ class FetchReportHandlerTest extends LocalDynamoTest {
     }
 
     private static HandlerRequestBuilder<InputStream> createRequestWithoutAccessRight(UUID candidateIdentifier,
-                                                                    URI userTopLevelCristinInstitution,
-                                                                    URI institutionId, int year) {
+                                                                                      URI userTopLevelCristinInstitution,
+                                                                                      URI institutionId, int year) {
         var customerId = randomUri();
         return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
                    .withCurrentCustomer(customerId)
