@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.index.apigateway;
 
-import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -19,11 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Year;
 import java.util.Map;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.index.apigateway.FetchReportHandler;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
-import no.sikt.nva.nvi.test.TestUtils;
+import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
@@ -31,27 +26,22 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-class FetchReportHandlerTest extends LocalDynamoTest {
+class FetchReportHandlerTest {
 
     public static final String CANDIDATE_IDENTIFIER = "CANDIDATE_IDENTIFIER";
     private static final String INSTITUTION_ID = "institutionId";
     private static final String YEAR = "year";
     private static final int CURRENT_YEAR = Year.now().getValue();
     private static final Context CONTEXT = mock(Context.class);
-    private final DynamoDbClient localDynamo = initializeTestDatabase();
     private ByteArrayOutputStream output;
     private FetchReportHandler handler;
-    private CandidateRepository candidateRepository;
-    private PeriodRepository periodRepository;
 
     @BeforeEach
     public void setUp() {
         output = new ByteArrayOutputStream();
-        candidateRepository = new CandidateRepository(localDynamo);
-        periodRepository = periodRepositoryReturningOpenedPeriod(TestUtils.CURRENT_YEAR);
-        handler = new FetchReportHandler(candidateRepository, periodRepository);
+        var mockOpenSearchClient = mock(OpenSearchClient.class);
+        handler = new FetchReportHandler(mockOpenSearchClient);
     }
 
     @Test
