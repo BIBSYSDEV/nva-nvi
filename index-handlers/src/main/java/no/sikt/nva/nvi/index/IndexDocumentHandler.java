@@ -36,8 +36,8 @@ import org.slf4j.LoggerFactory;
 
 public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
-    public static final String INDEX_DLQ = "INDEX_DLQ";
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler.class);
+    private static final String INDEX_DLQ = "INDEX_DLQ";
     private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
     private static final String QUEUE_URL = "PERSISTED_INDEX_DOCUMENT_QUEUE_URL";
     private static final String IDENTIFIER = "identifier";

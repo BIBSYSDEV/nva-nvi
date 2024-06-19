@@ -13,6 +13,7 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.unit.nva.auth.uriretriever.UriRetriever;
+import no.unit.nva.commons.json.JsonSerializable;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -32,7 +33,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         ReportingPeriod reportingPeriod,
                                         boolean reported,
                                         String createdDate,
-                                        String modifiedDate) {
+                                        String modifiedDate) implements JsonSerializable {
 
     private static final String CONTEXT = "@context";
     private static final String NVI_CANDIDATE = "NviCandidate";

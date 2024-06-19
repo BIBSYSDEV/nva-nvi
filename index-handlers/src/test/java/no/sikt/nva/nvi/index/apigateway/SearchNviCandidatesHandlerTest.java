@@ -59,6 +59,7 @@ import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.hamcrest.Matchers;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
@@ -339,7 +340,7 @@ public class SearchNviCandidatesHandlerTest {
     void shouldReturnForbiddenWhenTryingToSearchForAffiliationOutsideOfCustomersCristinIdScope() throws IOException {
         when(openSearchClient.search(any()))
             .thenThrow(RuntimeException.class);
-        var searchedAffiliation = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/0.0.0.0");
+        var searchedAffiliation = "0.0.0.0";
 
         var request = requestWithInstitutionsAndTopLevelCristinOrgId(List.of(searchedAffiliation),
                                                                      TOP_LEVEL_CRISTIN_ORG);
@@ -349,7 +350,7 @@ public class SearchNviCandidatesHandlerTest {
         assertThat(Objects.requireNonNull(response.getBodyObject(Problem.class).getStatus()).getStatusCode(),
                    is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
         assertThat(Objects.requireNonNull(response.getBodyObject(Problem.class).getDetail()),
-                   containsString(searchedAffiliation.toString()));
+                   containsString(searchedAffiliation));
     }
 
     @Test
@@ -424,6 +425,11 @@ public class SearchNviCandidatesHandlerTest {
                    .build();
     }
 
+    @NotNull
+    private static String toCommaSeperatedStringList(List<String> institutions) {
+        return String.join(COMMA, institutions);
+    }
+
     private URI constructBasePath() {
         return UriWrapper.fromHost(API_HOST).addChild(CUSTOM_DOMAIN_BASE_PATH).addChild(CANDIDATE_PATH).getUri();
     }
@@ -432,15 +438,15 @@ public class SearchNviCandidatesHandlerTest {
         return IntStream.range(0, number).boxed().map(i -> singleNviCandidateIndexDocument()).toList();
     }
 
-    private URI randomSiktSubUnit() {
+    private String randomSiktSubUnit() {
         return randomElement(
             List.of(
-                URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.0.0"),
-                URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.2.0.0"),
-                URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.3.0.0"),
-                URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.4.0.0"),
-                URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.5.0.0"),
-                URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.6.0.0")
+                "20754.1.0.0",
+                "20754.2.0.0",
+                "20754.3.0.0",
+                "20754.4.0.0",
+                "20754.5.0.0",
+                "20754.6.0.0"
             )
         );
     }
@@ -462,27 +468,26 @@ public class SearchNviCandidatesHandlerTest {
                    .build();
     }
 
-    private InputStream requestWithInstitutionsAndFilter(String searchTerm, List<URI> institutions, String filter,
+    private InputStream requestWithInstitutionsAndFilter(String searchTerm, List<String> affiliationIdentifiers,
+                                                         String filter,
                                                          String category,
                                                          String title)
         throws JsonProcessingException {
-        return createRequest(randomUri(), Map.of(QUERY_PARAM_AFFILIATIONS, String.join(COMMA,
-                                                                                       institutions.stream()
-                                                                                           .map(URI::toString)
-                                                                                           .toList()),
-                                                 QUERY_PARAM_EXCLUDE_SUB_UNITS, "true",
-                                                 QUERY_PARAM_FILTER, filter,
-                                                 QUERY_PARAM_CATEGORY, category,
-                                                 QUERY_PARAM_TITLE, title,
-                                                 QUERY_PARAM_SEARCH_TERM, searchTerm));
+        return createRequest(randomUri(),
+                             Map.of(QUERY_PARAM_AFFILIATIONS, toCommaSeperatedStringList(affiliationIdentifiers),
+                                    QUERY_PARAM_EXCLUDE_SUB_UNITS, "true",
+                                    QUERY_PARAM_FILTER, filter,
+                                    QUERY_PARAM_CATEGORY, category,
+                                    QUERY_PARAM_TITLE, title,
+                                    QUERY_PARAM_SEARCH_TERM, searchTerm));
     }
 
-    private InputStream requestWithInstitutionsAndTopLevelCristinOrgId(List<URI> institutions, URI cristinId)
+    private InputStream requestWithInstitutionsAndTopLevelCristinOrgId(List<String> affiliationIdentifiers,
+                                                                       URI cristinId)
         throws JsonProcessingException {
-        return createRequest(cristinId, Map.of(QUERY_PARAM_AFFILIATIONS,
-                                               String.join(",", institutions.stream().map(URI::toString).toList()),
-                                               QUERY_PARAM_EXCLUDE_SUB_UNITS,
-                                               "true"));
+        return createRequest(cristinId,
+                             Map.of(QUERY_PARAM_AFFILIATIONS, toCommaSeperatedStringList(affiliationIdentifiers),
+                                    QUERY_PARAM_EXCLUDE_SUB_UNITS, "true"));
     }
 
     private InputStream requestWithoutQueryParameters() throws JsonProcessingException {
@@ -502,7 +507,7 @@ public class SearchNviCandidatesHandlerTest {
 
         @Override
         public boolean matches(CandidateSearchParameters other) {
-            return other.affiliations().equals(source.affiliations());
+            return other.affiliationIdentifiers().equals(source.affiliationIdentifiers());
         }
     }
 }
