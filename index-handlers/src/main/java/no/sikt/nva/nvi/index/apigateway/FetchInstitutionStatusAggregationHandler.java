@@ -41,7 +41,7 @@ public class FetchInstitutionStatusAggregationHandler extends ApiGatewayHandler<
     protected String processInput(Void input, RequestInfo requestInfo, Context context) throws ApiGatewayException {
         var topLevelOrg = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         var year = requestInfo.getPathParameter(PATH_PARAM_YEAR);
-        validateRequest(topLevelOrg, requestInfo);
+        validateRequest(requestInfo);
         var result = getAggregate(year, topLevelOrg);
         return format(result, topLevelOrg);
     }
@@ -59,16 +59,8 @@ public class FetchInstitutionStatusAggregationHandler extends ApiGatewayHandler<
                    .toPrettyString();
     }
 
-    private static void validateRequest(URI requestedInstitution, RequestInfo requestInfo)
-        throws UnauthorizedException, ForbiddenException {
+    private static void validateRequest(RequestInfo requestInfo) throws UnauthorizedException {
         hasAccessRight(requestInfo, MANAGE_NVI_CANDIDATES);
-        hasSameCustomer(requestInfo, requestedInstitution);
-    }
-
-    private static void hasSameCustomer(RequestInfo requestInfo, URI requestedInstitution) throws ForbiddenException {
-        if (!requestedInstitution.equals(requestInfo.getTopLevelOrgCristinId().orElseThrow())) {
-            throw new ForbiddenException();
-        }
     }
 
     private Aggregate getAggregate(String year, URI requestedInstitution) {

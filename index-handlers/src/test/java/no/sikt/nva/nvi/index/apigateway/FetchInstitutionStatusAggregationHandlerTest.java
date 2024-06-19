@@ -60,16 +60,6 @@ class FetchInstitutionStatusAggregationHandlerTest {
     }
 
     @Test
-    void shouldReturnForbiddenWhenUserDoesNotBelongToSameInstitutionAsRequestedInstitution()
-        throws IOException {
-        var request = createRequest(randomUri(), randomUri(), CURRENT_YEAR, MANAGE_NVI_CANDIDATES).build();
-        handler.handleRequest(request, output, CONTEXT);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
-
-        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_FORBIDDEN)));
-    }
-
-    @Test
     void shouldReturnOrganizationApprovalStatusAggregation() throws IOException {
         var institutionId = randomUri();
         var request = createRequest(institutionId, institutionId, CURRENT_YEAR, MANAGE_NVI_CANDIDATES).build();
