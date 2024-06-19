@@ -80,6 +80,11 @@ class FetchReportHandlerTest extends LocalDynamoTest {
 
     }
 
+    @Test
+    void shouldReturnOrganizationApprovalStatusAggregation() {
+
+    }
+
     private static HandlerRequestBuilder<InputStream> createRequest(UUID candidateIdentifier,
                                                                     URI userTopLevelCristinInstitution,
                                                                     URI institutionId, int year,
