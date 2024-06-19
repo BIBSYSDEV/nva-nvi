@@ -57,11 +57,11 @@ import no.sikt.nva.nvi.index.aws.CandidateQuery.QueryFilterType;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.model.document.Approval;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
-import no.sikt.nva.nvi.index.model.document.Contributor;
 import no.sikt.nva.nvi.index.model.document.InstitutionPoints;
 import no.sikt.nva.nvi.index.model.document.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.index.model.document.Organization;
+import no.sikt.nva.nvi.index.model.document.NviContributor;
+import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
@@ -71,6 +71,7 @@ import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
 import nva.commons.core.ioutils.IoUtils;
+import nva.commons.core.paths.UriWrapper;
 import org.apache.http.HttpHost;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
@@ -102,8 +103,10 @@ public class OpenSearchClientTest {
     public static final String UNEXISTING_FILTER = "unexisting-filter";
     public static final URI NTNU_INSTITUTION_ID
         = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
+    public static final String NTNU_INSTITUTION_IDENTIFIER = "194.0.0.0";
     public static final URI SIKT_INSTITUTION_ID
         = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
+    public static final String SIKT_INSTITUTION_IDENTIFIER = "20754.0.0.0";
     public static final int SCALE = 4;
     public static final String SIKT_LEVEL_2_ID = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.0.0";
     public static final String SIKT_LEVEL_3_ID = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.1.0";
@@ -154,7 +157,7 @@ public class OpenSearchClientTest {
         var searchParameters =
             CandidateSearchParameters.builder()
                 .withUsername(USERNAME)
-                .withAffiliations(List.of(ORGANIZATION))
+                .withAffiliations(List.of(getLastPathElement(ORGANIZATION)))
                 .withTopLevelCristinOrg(ORGANIZATION)
                 .withYear(YEAR)
                 .withSearchResultParameters(getSearchResultParameters(offset, size))
@@ -267,7 +270,7 @@ public class OpenSearchClientTest {
                             documentFromString("document_with_contributor_from_sikt_but_not_creator.json")
         );
 
-        var searchParameters = defaultSearchParameters().withAffiliations(List.of(SIKT_INSTITUTION_ID)).build();
+        var searchParameters = defaultSearchParameters().withAffiliations(List.of(SIKT_INSTITUTION_IDENTIFIER)).build();
         var searchResponse =
             openSearchClient.search(searchParameters);
 
@@ -280,7 +283,7 @@ public class OpenSearchClientTest {
         addDocumentsToIndex(documentFromString("document_with_contributor_from_ntnu_subunit.json")
         );
 
-        var searchParameters = defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_ID)).build();
+        var searchParameters = defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER)).build();
         var searchResponse =
             openSearchClient.search(searchParameters);
 
@@ -296,7 +299,7 @@ public class OpenSearchClientTest {
                             documentFromString("document_with_contributor_from_sikt_but_not_creator.json")
         );
 
-        var searchParameters = defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_ID)).build();
+        var searchParameters = defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER)).build();
         var searchResponse =
             openSearchClient.search(searchParameters);
 
@@ -312,7 +315,9 @@ public class OpenSearchClientTest {
         addDocumentsToIndex(subUnitDoc, topLevelDoc);
 
         var searchParameters =
-            defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_ID)).withExcludeSubUnits(true).build();
+            defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER))
+                .withExcludeSubUnits(true)
+                .build();
         var searchResponse =
             openSearchClient.search(searchParameters);
 
@@ -334,7 +339,9 @@ public class OpenSearchClientTest {
                             documentFromString("document_organization_aggregation_dispute.json"));
 
         var searchParameters =
-            defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_ID)).withFilter(entry.getKey()).build();
+            defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER))
+                .withFilter(entry.getKey())
+                .build();
 
         var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));
@@ -370,7 +377,7 @@ public class OpenSearchClientTest {
             customer, randomString(), randomString(), randomString(), randomString()));
 
         var searchParameters =
-            defaultSearchParameters().withAffiliations(List.of(customer))
+            defaultSearchParameters().withAffiliations(List.of(getLastPathElement(customer)))
                 .withSearchTerm(getRandomWord(searchTerm))
                 .withYear(YEAR)
                 .build();
@@ -393,7 +400,8 @@ public class OpenSearchClientTest {
                                                                         randomString(), randomString(),
                                                                         randomString()));
 
-        var searchParameters = defaultSearchParameters().withAffiliations(List.of(customer)).withYear(year).build();
+        var searchParameters =
+            defaultSearchParameters().withAffiliations(List.of(getLastPathElement(customer))).withYear(year).build();
 
         var searchResponse =
             openSearchClient.search(searchParameters);
@@ -413,7 +421,7 @@ public class OpenSearchClientTest {
                                                                         randomString()));
 
         var searchParameters =
-            defaultSearchParameters().withAffiliations(List.of(customer))
+            defaultSearchParameters().withAffiliations(List.of(getLastPathElement(customer)))
                 .withTitle(getRandomWord(title))
                 .withYear(YEAR)
                 .build();
@@ -435,7 +443,7 @@ public class OpenSearchClientTest {
             customer, randomString(), randomString(), randomString(), randomString()));
 
         var searchParameters =
-            defaultSearchParameters().withAffiliations(List.of(customer))
+            defaultSearchParameters().withAffiliations(List.of(getLastPathElement(customer)))
                 .withContributor(getRandomWord(contributor))
                 .withYear(YEAR)
                 .build();
@@ -456,7 +464,7 @@ public class OpenSearchClientTest {
             customer, randomString(), randomString(), randomString(), randomString()));
 
         var searchParameters =
-            defaultSearchParameters().withAffiliations(List.of(customer))
+            defaultSearchParameters().withAffiliations(List.of(getLastPathElement(customer)))
                 .withAssignee(getRandomWord(assignee))
                 .withYear(YEAR)
                 .build();
@@ -482,10 +490,10 @@ public class OpenSearchClientTest {
                             documentFromString("document_organization_aggregation_dispute.json"));
 
         var searchParameters =
-            defaultSearchParameters().withFilter(entry.getKey()).withAffiliations(List.of(NTNU_INSTITUTION_ID)).build();
-        var searchResponse =
-            openSearchClient.search(searchParameters);
-
+            defaultSearchParameters().withFilter(entry.getKey())
+                .withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER))
+                .build();
+        var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));
     }
 
@@ -495,7 +503,9 @@ public class OpenSearchClientTest {
                             documentFromString("document_pending_category_degree_bachelor.json"));
 
         var searchParameters =
-            defaultSearchParameters().withCategory(CATEGORY).withAffiliations(List.of(NTNU_INSTITUTION_ID)).build();
+            defaultSearchParameters().withCategory(CATEGORY)
+                .withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER))
+                .build();
 
         var searchResponse =
             openSearchClient.search(searchParameters);
@@ -562,6 +572,11 @@ public class OpenSearchClientTest {
         var orgIds = actualOrgBuckets.array().stream().map(StringTermsBucket::key).toList();
         assertThat(orgIds, containsInAnyOrder(SIKT_INSTITUTION_ID.toString()));
         assertThat(orgIds, not(containsInAnyOrder(NTNU_INSTITUTION_ID.toString())));
+    }
+
+    @NotNull
+    private static String getLastPathElement(URI customer) {
+        return UriWrapper.fromUri(customer).getLastPathElement();
     }
 
     private static void assertExpectedOrganizationAggregations(
@@ -689,8 +704,8 @@ public class OpenSearchClientTest {
         var publicationDate = year != null
                                   ? PublicationDate.builder().withYear(year).build()
                                   : PublicationDate.builder().withYear(YEAR).build();
-        var contributorBuilder = Contributor.builder().withRole("Creator")
-                                     .withAffiliations(List.of(Organization.builder().withId(affiliation).build()));
+        var contributorBuilder = NviContributor.builder().withRole("Creator")
+                                     .withAffiliations(List.of(NviOrganization.builder().withId(affiliation).build()));
         if (contributor != null) {
             contributorBuilder.withName(contributor);
         }

@@ -27,9 +27,10 @@ import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.StringUtils;
+import nva.commons.core.paths.UriWrapper;
 
 public record CandidateSearchParameters(String searchTerm,
-                                        List<URI> affiliations,
+                                        List<String> affiliationIdentifiers,
                                         boolean excludeSubUnits,
                                         String filter,
                                         String username,
@@ -113,14 +114,18 @@ public record CandidateSearchParameters(String searchTerm,
                    .orElse(DEFAULT_OFFSET_SIZE);
     }
 
-    private static List<URI> extractQueryParamAffiliations(RequestInfo requestInfo) {
+    private static List<String> extractQueryParamAffiliations(RequestInfo requestInfo) {
         return requestInfo.getQueryParameterOpt(QUERY_PARAM_AFFILIATIONS)
-                   .map(CandidateSearchParameters::splitStringToUris)
-                   .orElse(requestInfo.getTopLevelOrgCristinId().map(List::of).orElse(List.of()));
+                   .map(CandidateSearchParameters::splitStringToIdentifiers)
+                   .orElse(requestInfo.getTopLevelOrgCristinId()
+                               .map(UriWrapper::fromUri)
+                               .map(UriWrapper::getLastPathElement)
+                               .map(List::of)
+                               .orElse(List.of()));
     }
 
-    private static List<URI> splitStringToUris(String uriListAsString) {
-        return Arrays.stream(uriListAsString.split(COMMA)).map(URI::create).collect(Collectors.toList());
+    private static List<String> splitStringToIdentifiers(String identifierListAsString) {
+        return Arrays.stream(identifierListAsString.split(COMMA)).collect(Collectors.toList());
     }
 
     private static boolean extractQueryParamExcludeSubUnitsOrDefault(RequestInfo requestInfo) {
@@ -160,7 +165,7 @@ public record CandidateSearchParameters(String searchTerm,
     public static final class Builder {
 
         private String searchTerm;
-        private List<URI> affiliations;
+        private List<String> affiliations;
         private boolean excludeSubUnits;
         private String filter;
         private String username;
@@ -181,7 +186,7 @@ public record CandidateSearchParameters(String searchTerm,
             return this;
         }
 
-        public Builder withAffiliations(List<URI> affiliations) {
+        public Builder withAffiliations(List<String> affiliations) {
             this.affiliations = affiliations;
             return this;
         }
