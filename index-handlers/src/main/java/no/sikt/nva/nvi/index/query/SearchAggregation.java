@@ -1,19 +1,18 @@
-package no.sikt.nva.nvi.index.model.search;
+package no.sikt.nva.nvi.index.query;
 
-import static no.sikt.nva.nvi.index.Aggregations.collaborationAggregation;
-import static no.sikt.nva.nvi.index.Aggregations.completedAggregation;
-import static no.sikt.nva.nvi.index.Aggregations.disputeAggregation;
-import static no.sikt.nva.nvi.index.Aggregations.finalizedCollaborationAggregation;
-import static no.sikt.nva.nvi.index.Aggregations.organizationApprovalStatusAggregations;
-import static no.sikt.nva.nvi.index.Aggregations.statusAggregation;
-import static no.sikt.nva.nvi.index.Aggregations.totalCountAggregation;
+import static no.sikt.nva.nvi.index.query.Aggregations.collaborationAggregation;
+import static no.sikt.nva.nvi.index.query.Aggregations.completedAggregation;
+import static no.sikt.nva.nvi.index.query.Aggregations.disputeAggregation;
+import static no.sikt.nva.nvi.index.query.Aggregations.finalizedCollaborationAggregation;
+import static no.sikt.nva.nvi.index.query.Aggregations.organizationApprovalStatusAggregations;
+import static no.sikt.nva.nvi.index.query.Aggregations.statusAggregation;
+import static no.sikt.nva.nvi.index.query.Aggregations.totalCountAggregation;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
 import java.util.Arrays;
 import java.util.function.BiFunction;
-import no.sikt.nva.nvi.index.Aggregations;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 
 public enum SearchAggregation {

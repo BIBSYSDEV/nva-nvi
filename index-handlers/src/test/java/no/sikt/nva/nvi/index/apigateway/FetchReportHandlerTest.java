@@ -1,6 +1,5 @@
-package no.sikt.nva.nvi.rest.fetch;
+package no.sikt.nva.nvi.index.apigateway;
 
-import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -22,6 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.index.apigateway.FetchReportHandler;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -35,6 +35,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 class FetchReportHandlerTest extends LocalDynamoTest {
 
+    public static final String CANDIDATE_IDENTIFIER = "CANDIDATE_IDENTIFIER";
     private static final String INSTITUTION_ID = "institutionId";
     private static final String YEAR = "year";
     private static final int CURRENT_YEAR = Year.now().getValue();

@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.model;
+package no.sikt.nva.nvi.index.model.search;
 
 public final class SearchQueryParameters {
 

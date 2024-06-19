@@ -23,6 +23,7 @@ import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
+import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.PersistedResource;
 import no.unit.nva.auth.uriretriever.UriRetriever;

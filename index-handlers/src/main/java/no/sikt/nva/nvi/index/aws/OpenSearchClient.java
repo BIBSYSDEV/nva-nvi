@@ -15,7 +15,7 @@ import java.time.Clock;
 import java.util.UUID;
 import java.util.function.Function;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
-import no.sikt.nva.nvi.index.Aggregations;
+import no.sikt.nva.nvi.index.query.Aggregations;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;

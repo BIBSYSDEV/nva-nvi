@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.aws;
+package no.sikt.nva.nvi.index.query;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;

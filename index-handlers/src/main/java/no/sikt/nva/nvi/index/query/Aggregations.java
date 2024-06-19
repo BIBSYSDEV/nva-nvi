@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index;
+package no.sikt.nva.nvi.index.query;
 
 import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
-import no.sikt.nva.nvi.index.model.search.SearchAggregation;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
