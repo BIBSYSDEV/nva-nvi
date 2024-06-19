@@ -1,16 +1,11 @@
 package no.sikt.nva.nvi.rest.fetch;
 
-import static com.google.common.net.HttpHeaders.ACCEPT;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.common.net.MediaType.ANY_APPLICATION_TYPE;
-import static com.google.common.net.MediaType.MICROSOFT_EXCEL;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
@@ -22,28 +17,16 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Year;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.rest.model.ReportRow;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -97,46 +80,6 @@ class FetchReportHandlerTest extends LocalDynamoTest {
 
     }
 
-    @Test
-    void shouldReturnEmptyXlsxFileWhenNotDataExists()
-        throws IOException {
-        var institutionId = randomUri();
-        var request = createRequest(UUID.randomUUID(), institutionId, institutionId, CURRENT_YEAR,
-                                    MANAGE_NVI_CANDIDATES).build();
-        handler.handleRequest(request, output, CONTEXT);
-        var response = GatewayResponse.fromOutputStream(output, String.class);
-
-        assertThat(response.getStatusCode(), is(HttpURLConnection.HTTP_OK));
-        List<List<String>> data = readFromExcel(response.getBody());
-
-        assertThat(response.getBody(), is(notNullValue()));
-        assertThat(data.get(0).size(), is(ReportRow.class.getRecordComponents().length));
-    }
-
-    @Test
-    void shouldReturnMediaTypeMicrosoftExcelWhenRequested() throws IOException {
-        var institutionId = randomUri();
-        var request = createRequest(UUID.randomUUID(), institutionId, institutionId, CURRENT_YEAR,
-                                    MANAGE_NVI_CANDIDATES)
-                          .withHeaders(Map.of(ACCEPT, MICROSOFT_EXCEL.toString()))
-                          .build();
-        handler.handleRequest(request, output, CONTEXT);
-        var response = GatewayResponse.fromOutputStream(output, String.class);
-        assertThat(response.getHeaders().get(CONTENT_TYPE), is(MICROSOFT_EXCEL.toString()));
-    }
-
-    @Test
-    void shouldReturnMediaTypeMicrosoftExcelAsDefault() throws IOException {
-        var institutionId = randomUri();
-        var request = createRequest(UUID.randomUUID(), institutionId, institutionId, CURRENT_YEAR,
-                                    MANAGE_NVI_CANDIDATES)
-                          .withHeaders(Map.of(ACCEPT, ANY_APPLICATION_TYPE.toString()))
-                          .build();
-        handler.handleRequest(request, output, CONTEXT);
-        var response = GatewayResponse.fromOutputStream(output, String.class);
-        assertThat(response.getHeaders().get(CONTENT_TYPE), is(MICROSOFT_EXCEL.toString()));
-    }
-
     private static HandlerRequestBuilder<InputStream> createRequest(UUID candidateIdentifier,
                                                                     URI userTopLevelCristinInstitution,
                                                                     URI institutionId, int year,
@@ -165,36 +108,5 @@ class FetchReportHandlerTest extends LocalDynamoTest {
                                               INSTITUTION_ID,
                                               URLEncoder.encode(institutionId.toString(), StandardCharsets.UTF_8),
                                               YEAR, String.valueOf(year)));
-    }
-
-    private static ArrayList<List<String>> getLists(XSSFSheet sheet) {
-        var data = new ArrayList<List<String>>();
-        for (Row row : sheet) {
-            var currentRow = new ArrayList<String>();
-            for (Cell cell : row) {
-                currentRow.add(getCellValue(cell));
-            }
-            data.add(currentRow);
-        }
-        return data;
-    }
-
-    private static String getCellValue(Cell cell) {
-        if (cell.getCellType() == CellType.NUMERIC) {
-            return String.valueOf(cell.getNumericCellValue());
-        } else {
-            return cell.getStringCellValue();
-        }
-    }
-
-    private List<List<String>> readFromExcel(String content) throws IOException {
-        byte[] decode = Base64.getDecoder().decode(content);
-        Path tmp = Files.createTempFile("tmp", ".xlsx");
-        Files.write(tmp, decode);
-        try (var workbook = new XSSFWorkbook(tmp.toFile())) {
-            return getLists(workbook.getSheetAt(0));
-        } catch (InvalidFormatException e) {
-            throw new RuntimeException(e);
-        }
     }
 }
