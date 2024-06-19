@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.apigateway;
+package no.sikt.nva.nvi.index.apigateway.utils;
 
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;

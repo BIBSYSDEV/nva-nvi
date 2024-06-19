@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.index.apigateway;
 
-import static no.sikt.nva.nvi.index.apigateway.AggregateResponseTestUtil.organizationApprovalStatusAggregate;
-import static no.sikt.nva.nvi.index.apigateway.MockOpenSearchUtil.createSearchResponse;
+import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.organizationApprovalStatusAggregate;
+import static no.sikt.nva.nvi.index.apigateway.utils.MockOpenSearchUtil.createSearchResponse;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -126,10 +126,11 @@ class FetchReportHandlerTest {
     private void mockOpenSearchClientResponse(URI institutionId) throws IOException {
         var searchParameters = CandidateSearchParameters.builder()
                                    .withTopLevelCristinOrg(institutionId)
+                                   .withYear(String.valueOf(CURRENT_YEAR))
                                    .withAggregationType(ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName())
                                    .build();
         var searchResponse = createSearchResponse(ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName(),
-                                                  organizationApprovalStatusAggregate());
+                                                  organizationApprovalStatusAggregate(institutionId.toString()));
         when(openSearchClient.search(searchParameters)).thenReturn(searchResponse);
     }
 }

@@ -1,9 +1,9 @@
 package no.sikt.nva.nvi.index.apigateway;
 
-import static no.sikt.nva.nvi.index.apigateway.AggregateResponseTestUtil.getGlobalAggregate;
-import static no.sikt.nva.nvi.index.apigateway.AggregateResponseTestUtil.organizationApprovalStatusAggregate;
-import static no.sikt.nva.nvi.index.apigateway.AggregateResponseTestUtil.randomFilterAggregate;
-import static no.sikt.nva.nvi.index.apigateway.MockOpenSearchUtil.createSearchResponse;
+import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.getGlobalAggregate;
+import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.organizationApprovalStatusAggregate;
+import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.randomFilterAggregate;
+import static no.sikt.nva.nvi.index.apigateway.utils.MockOpenSearchUtil.createSearchResponse;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_AGGREGATION_TYPE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SEARCH_TERM;
@@ -277,7 +277,8 @@ public class SearchNviCandidatesHandlerTest {
         var documents = generateNumberOfIndexDocuments(3);
         var aggregationName = "someNestedAggregation";
         when(openSearchClient.search(any()))
-            .thenReturn(createSearchResponse(documents, aggregationName, organizationApprovalStatusAggregate()));
+            .thenReturn(createSearchResponse(documents, aggregationName, organizationApprovalStatusAggregate(
+                "someTopLevelOrgId")));
         handler.handleRequest(emptyRequest(), output, context);
         var response =
             GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);

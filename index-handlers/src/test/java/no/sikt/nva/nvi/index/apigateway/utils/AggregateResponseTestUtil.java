@@ -1,6 +1,7 @@
-package no.sikt.nva.nvi.index.apigateway;
+package no.sikt.nva.nvi.index.apigateway.utils;
 
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
@@ -13,7 +14,7 @@ import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 
 public class AggregateResponseTestUtil {
 
-    public static Aggregate organizationApprovalStatusAggregate() {
+    public static Aggregate organizationApprovalStatusAggregate(String topLevelOrg) {
         var pendingBucket = getStringTermsBucket("Pending", Map.of(), 2);
         var statusBuckets = createBuckets(pendingBucket);
         var statusAggregation = createTermsAggregateWithBuckets(statusBuckets);
@@ -22,7 +23,7 @@ public class AggregateResponseTestUtil {
         var orgAggregation = createTermsAggregateWithBuckets(orgBuckets);
         var filterAggregate = getFilterAggregate(3, Map.of("organizations", orgAggregation));
         return new NestedAggregate.Builder().docCount(randomInteger())
-                   .aggregations("someTopLevelOrgId", filterAggregate)
+                   .aggregations(topLevelOrg, filterAggregate)
                    .docCount(3)
                    .build()._toAggregate();
     }
