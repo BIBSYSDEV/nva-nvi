@@ -729,6 +729,8 @@ components:
                     type: string
                   affiliations:
                     type: array
+                    items:
+                      type: string
         approvals:
           type: array
           items:
