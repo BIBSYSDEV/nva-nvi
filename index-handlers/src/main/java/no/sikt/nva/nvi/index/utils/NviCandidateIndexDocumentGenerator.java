@@ -97,9 +97,9 @@ public final class NviCandidateIndexDocumentGenerator {
                    .build();
     }
 
-    private static no.sikt.nva.nvi.common.model.Organization toOrganization(String response) {
+    private static no.sikt.nva.nvi.common.client.model.Organization toOrganization(String response) {
         return attempt(
-            () -> dtoObjectMapper.readValue(response, no.sikt.nva.nvi.common.model.Organization.class)).orElseThrow();
+            () -> dtoObjectMapper.readValue(response, no.sikt.nva.nvi.common.client.model.Organization.class)).orElseThrow();
     }
 
     private static InstitutionPoints getInstitutionPoints(Approval approval, Candidate candidate) {
@@ -167,7 +167,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .labels();
     }
 
-    private no.sikt.nva.nvi.common.model.Organization fetchOrganization(URI institutionId) {
+    private no.sikt.nva.nvi.common.client.model.Organization fetchOrganization(URI institutionId) {
         return getRawContentFromUriCached(institutionId)
                    .map(NviCandidateIndexDocumentGenerator::toOrganization)
                    .orElseThrow();
@@ -191,20 +191,20 @@ public final class NviCandidateIndexDocumentGenerator {
         return Optional.of(approval).map(Approval::getAssignee).map(Username::value).orElse(null);
     }
 
-    private List<no.sikt.nva.nvi.common.model.Organization> extractTopLevelOrganizations(JsonNode resource) {
+    private List<no.sikt.nva.nvi.common.client.model.Organization> extractTopLevelOrganizations(JsonNode resource) {
         var topLevelOrganizations = resource.at("/topLevelOrganizations");
         return topLevelOrganizations.isMissingNode()
                    ? Collections.emptyList()
                    : mapToOrganizations((ArrayNode) topLevelOrganizations);
     }
 
-    private List<no.sikt.nva.nvi.common.model.Organization> mapToOrganizations(ArrayNode topLevelOrgs) {
+    private List<no.sikt.nva.nvi.common.client.model.Organization> mapToOrganizations(ArrayNode topLevelOrgs) {
         return streamNode(topLevelOrgs).map(this::createOrganization).toList();
     }
 
-    private no.sikt.nva.nvi.common.model.Organization createOrganization(JsonNode jsonNode) {
+    private no.sikt.nva.nvi.common.client.model.Organization createOrganization(JsonNode jsonNode) {
         return attempt(() -> dtoObjectMapper.readValue(jsonNode.toString(),
-                                                       no.sikt.nva.nvi.common.model.Organization.class)).orElseThrow();
+                                                       no.sikt.nva.nvi.common.client.model.Organization.class)).orElseThrow();
     }
 
     private List<ContributorType> expandContributors(JsonNode resource, Candidate candidate) {

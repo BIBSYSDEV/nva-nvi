@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.model;
+package no.sikt.nva.nvi.common.client.model;
 
 import static java.util.Objects.nonNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;

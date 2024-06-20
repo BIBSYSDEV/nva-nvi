@@ -17,7 +17,7 @@ import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.model.Organization;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.events.models.AwsEventBridgeDetail;

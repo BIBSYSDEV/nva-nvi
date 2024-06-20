@@ -6,7 +6,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.model.Organization;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -5,7 +5,8 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.List;
 import java.util.Map;
-import no.sikt.nva.nvi.common.model.Organization.Builder;
+import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.client.model.Organization.Builder;
 import org.junit.jupiter.api.Test;
 
 class OrganizationTest {
