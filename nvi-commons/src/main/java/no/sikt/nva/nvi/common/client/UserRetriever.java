@@ -13,14 +13,15 @@ import org.slf4j.LoggerFactory;
 public class UserRetriever {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UserRetriever.class);
-    private static final String USERS_PATH = "users";
     private static final String APPLICATION_JSON = "application/json";
+    private static final String USERS_ROLES_PATH = "users-roles";
+    private static final String USERS_PATH = "users";
     private final AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
-    private final String identityServiceHost;
+    private final String apiHost;
 
-    public UserRetriever(AuthorizedBackendUriRetriever authorizedBackendUriRetriever, String identityServiceHost) {
+    public UserRetriever(AuthorizedBackendUriRetriever authorizedBackendUriRetriever, String apiHost) {
         this.authorizedBackendUriRetriever = authorizedBackendUriRetriever;
-        this.identityServiceHost = identityServiceHost;
+        this.apiHost = apiHost;
     }
 
     public User fetchUser(String userName) {
@@ -47,8 +48,8 @@ public class UserRetriever {
     }
 
     private URI toIdentityServiceUri(String userName) {
-        return UriWrapper.fromHost(identityServiceHost)
-                   .addChild(USERS_PATH)
+        return UriWrapper.fromHost(apiHost)
+                   .addChild(USERS_ROLES_PATH, USERS_PATH)
                    .addChild(userName)
                    .getUri();
     }

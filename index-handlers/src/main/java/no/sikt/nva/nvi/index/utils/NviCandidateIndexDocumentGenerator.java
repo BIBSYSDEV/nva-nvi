@@ -301,7 +301,7 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private Optional<String> getRawContentFromUri(URI uri) {
-        return attempt(() -> organizationRetriever.fetchOrganization(uri).asJsonString()).toOptional();
+        return attempt(() -> organizationRetriever.fetchOrganization(uri).toJsonString()).toOptional();
     }
 
     private String extractId(JsonNode resource) {

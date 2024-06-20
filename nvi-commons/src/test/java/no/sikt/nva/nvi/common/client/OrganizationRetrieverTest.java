@@ -59,7 +59,7 @@ class OrganizationRetrieverTest {
     }
 
     private void mockUriRetriever(Organization expectedOrganization) throws JsonProcessingException {
-        var response = createResponse(expectedOrganization.asJsonString());
+        var response = createResponse(expectedOrganization.toJsonString());
         when(uriRetriever.fetchResponse(eq(expectedOrganization.id()), any()))
             .thenReturn(Optional.of(response));
     }

@@ -29,7 +29,7 @@ class OrganizationTest {
     @Test
     void shouldSerializeAndDeserializeWithoutLossOfData() throws Exception {
         var organization = randomOrganizationWithPartOf(randomOrganization().build());
-        var json = organization.asJsonString();
+        var json = organization.toJsonString();
         var actualOrganization = Organization.from(json);
         assertEquals(organization, actualOrganization);
     }

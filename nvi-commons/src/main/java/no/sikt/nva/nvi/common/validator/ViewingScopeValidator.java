@@ -13,8 +13,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.UserRetriever;
-import nva.commons.apigateway.RequestInfo;
-import nva.commons.apigateway.exceptions.UnauthorizedException;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.NodeIterator;
 import org.apache.jena.rdf.model.RDFNode;
@@ -31,9 +29,8 @@ public class ViewingScopeValidator {
         this.organizationRetriever = organizationRetriever;
     }
 
-    public boolean userIsAllowedToAccess(RequestInfo requestInfo, List<URI> organizations)
-        throws UnauthorizedException {
-        var viewingScope = fetchViewingScope(requestInfo);
+    public boolean userIsAllowedToAccess(String userName, List<URI> organizations) {
+        var viewingScope = fetchViewingScope(userName);
         var allowed = Sets.union(viewingScope, getSubUnits(viewingScope));
         var illegal = Sets.difference(new HashSet<>(organizations), allowed);
         return illegal.isEmpty();
@@ -55,8 +52,8 @@ public class ViewingScopeValidator {
         return stream.map(URI::create);
     }
 
-    private Set<URI> fetchViewingScope(RequestInfo requestInfo) throws UnauthorizedException {
-        return userRetriever.fetchUser(requestInfo.getUserName())
+    private Set<URI> fetchViewingScope(String userName) {
+        return userRetriever.fetchUser(userName)
                    .viewingScope()
                    .getIncludedUnitUris();
     }
@@ -69,7 +66,7 @@ public class ViewingScopeValidator {
 
     private Set<URI> getSubUnits(URI unit) {
         return attempt(() -> organizationRetriever.fetchOrganization(unit))
-                   .map(str -> createModel(dtoObjectMapper.readTree(str.asJsonString())))
+                   .map(org -> createModel(dtoObjectMapper.readTree(org.toJsonString())))
                    .map(ViewingScopeValidator::getObjectsOfPropertyHasPart)
                    .map(ViewingScopeValidator::toStreamOfRfdNodes)
                    .map(node -> concat(unit, node))

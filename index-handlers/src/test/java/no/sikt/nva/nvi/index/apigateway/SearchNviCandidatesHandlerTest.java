@@ -336,7 +336,7 @@ public class SearchNviCandidatesHandlerTest {
 
     @Test
     void shouldReturnForbiddenWhenTryingToSearchForAffiliationOutsideOfCustomersCristinIdScope()
-        throws IOException, UnauthorizedException {
+        throws IOException {
         var forbiddenAffiliation = "0.0.0.0";
         var orgUris = List.of(toCristinOrgUri(forbiddenAffiliation));
         when(viewingScopeValidator.userIsAllowedToAccess(any(), eq(orgUris))).thenReturn(false);

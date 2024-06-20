@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
-    public static final String ENV_IDENTITY_SERVICE_URL = "IDENTITY_SERVICE_URL";
+    public static final String ENV_IDENTITY_SERVICE_HOST = "IDENTITY_SERVICE_URL";
     public static final String CRISTIN_PATH = "cristin";
     public static final String ORGANIZATION_PATH = "organization";
     private final Logger logger = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
@@ -77,7 +77,7 @@ public class SearchNviCandidatesHandler
     private static ViewingScopeValidator defaultViewingScopeValidator(Environment environment) {
         return new ViewingScopeValidator(
             new UserRetriever(defaultAuthorizedUriRetriever(environment),
-                              environment.readEnv(ENV_IDENTITY_SERVICE_URL)),
+                              environment.readEnv(ENV_IDENTITY_SERVICE_HOST)),
             new OrganizationRetriever(new UriRetriever()));
     }
 
@@ -138,7 +138,7 @@ public class SearchNviCandidatesHandler
 
     private boolean userIsNotAllowedToView(RequestInfo requestInfo, List<URI> requestedOrganizations)
         throws UnauthorizedException {
-        return !viewingScopeValidator.userIsAllowedToAccess(requestInfo, requestedOrganizations);
+        return !viewingScopeValidator.userIsAllowedToAccess(requestInfo.getUserName(), requestedOrganizations);
     }
 
     private List<URI> toOrganizationUris(List<String> affiliationIdentifiers) {
