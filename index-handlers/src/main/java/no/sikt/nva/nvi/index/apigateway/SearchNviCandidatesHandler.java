@@ -1,10 +1,10 @@
-package no.sikt.nva.nvi.index;
+package no.sikt.nva.nvi.index.apigateway;
 
 import static no.sikt.nva.nvi.common.utils.GraphUtils.APPLICATION_JSON;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.HAS_PART_PROPERTY;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
 import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient;
-import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_AFFILIATIONS;
+import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_AFFILIATIONS;
 import static no.sikt.nva.nvi.index.utils.PaginatedResultConverter.toPaginatedResult;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;

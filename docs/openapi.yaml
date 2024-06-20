@@ -603,13 +603,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-  /report/{institutionId}:
+  /institution-report/{year}:
     get:
-      description: 'Get NVI report for a given institution'
+      description: 'Get NVI report for a given year'
       parameters:
         - in: path
-          name: institutionId
-          description: The identifier of a top level organization in Cristin proxy. This must be a UTF-8 encoded URI
+          name: year
+          description: The year of the nvi period
           required: true
           schema:
             type: string
@@ -621,7 +621,7 @@ paths:
         ]
       x-amazon-apigateway-integration:
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchInstitutionStatusAggregationHandler.Arn}:live/invocations
         responses: { }
         httpMethod: POST
         type: AWS_PROXY
@@ -629,12 +629,11 @@ paths:
         '200':
           description: "OK"
           content:
-            application/vnd.ms-excel:
+            application/json:
               schema:
-                type: string
-                format: binary
-        '404':
-          description: "Candidate not found"
+                $ref: "#/components/schemas/NviInstitutionReportResponse"
+        '401':
+          description: "Unauthorized"
           content:
             application/json:
               schema:
@@ -773,6 +772,86 @@ components:
               type: string
             startDate:
               type: string
+
+    NviInstitutionReportResponse:
+      type: object
+      description: OpenSearch aggregation
+      example: {
+        "someOrgId": {
+          "docCount": 8,
+          "dispute": {
+            "docCount": 2
+          },
+          "points": {
+            "value": 7.6865
+          },
+          "status": {
+            "New": {
+              "docCount": 5
+            },
+            "Approved": {
+              "docCount": 2
+            },
+            "Rejected": {
+              "docCount": 1
+            }
+          }
+        },
+        "someOtherOrgId": {
+          "docCount": 8,
+          "dispute": {
+            "docCount": 2
+          },
+          "points": {
+            "value": 7.6865
+          },
+          "status": {
+            "New": {
+              "docCount": 5
+            },
+            "Approved": {
+              "docCount": 2
+            },
+            "Rejected": {
+              "docCount": 1
+            }
+          }
+        }
+      }
+      properties:
+        institutionId:
+          type: object
+          properties:
+            docCount:
+              type: integer
+            dispute:
+              type: object
+              properties:
+                docCount:
+                  type: integer
+            points:
+              type: object
+              properties:
+                value:
+                  type: number
+            status:
+              type: object
+              properties:
+                New:
+                  type: object
+                  properties:
+                    docCount:
+                      type: integer
+                Approved:
+                  type: object
+                  properties:
+                    docCount:
+                      type: integer
+                Rejected:
+                  type: object
+                  properties:
+                    docCount:
+                      type: integer
     ApprovalStatus:
       type: object
       properties:

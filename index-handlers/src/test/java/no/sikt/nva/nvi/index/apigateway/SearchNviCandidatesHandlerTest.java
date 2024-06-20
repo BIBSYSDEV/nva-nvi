@@ -1,11 +1,14 @@
-package no.sikt.nva.nvi.index;
+package no.sikt.nva.nvi.index.apigateway;
 
-import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_AGGREGATION_TYPE;
-import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_EXCLUDE_SUB_UNITS;
-import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_SEARCH_TERM;
-import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_SORT_ORDER;
-import static no.sikt.nva.nvi.index.model.SearchQueryParameters.QUERY_PARAM_TITLE;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
+import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.getGlobalAggregate;
+import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.organizationApprovalStatusAggregate;
+import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.randomFilterAggregate;
+import static no.sikt.nva.nvi.index.apigateway.utils.MockOpenSearchUtil.createSearchResponse;
+import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_AGGREGATION_TYPE;
+import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_EXCLUDE_SUB_UNITS;
+import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SEARCH_TERM;
+import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SORT_ORDER;
+import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_TITLE;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
@@ -36,7 +39,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
@@ -61,20 +63,6 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
-import org.opensearch.client.opensearch._types.ShardStatistics;
-import org.opensearch.client.opensearch._types.aggregations.Aggregate;
-import org.opensearch.client.opensearch._types.aggregations.Buckets;
-import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
-import org.opensearch.client.opensearch._types.aggregations.GlobalAggregate;
-import org.opensearch.client.opensearch._types.aggregations.NestedAggregate;
-import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
-import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
-import org.opensearch.client.opensearch.core.SearchResponse;
-import org.opensearch.client.opensearch.core.SearchResponse.Builder;
-import org.opensearch.client.opensearch.core.search.Hit;
-import org.opensearch.client.opensearch.core.search.HitsMetadata;
-import org.opensearch.client.opensearch.core.search.TotalHits;
-import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.zalando.problem.Problem;
 
@@ -290,7 +278,8 @@ public class SearchNviCandidatesHandlerTest {
         var documents = generateNumberOfIndexDocuments(3);
         var aggregationName = "someNestedAggregation";
         when(openSearchClient.search(any()))
-            .thenReturn(createSearchResponse(documents, aggregationName, nestedAggregate()));
+            .thenReturn(createSearchResponse(documents, aggregationName, organizationApprovalStatusAggregate(
+                "someTopLevelOrgId")));
         handler.handleRequest(emptyRequest(), output, context);
         var response =
             GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
@@ -406,90 +395,9 @@ public class SearchNviCandidatesHandlerTest {
         assertEquals(expectedFilterAggregation, objectMapper.writeValueAsString(actualAggregate));
     }
 
-    private static Aggregate getGlobalAggregate() {
-        return new GlobalAggregate.Builder().docCount(1).build()._toAggregate();
-    }
-
-    private static Aggregate nestedAggregate() {
-        var pendingBucket = getStringTermsBucket("Pending", Map.of(), 2);
-        var statusBuckets = createBuckets(pendingBucket);
-        var statusAggregation = createTermsAggregateWithBuckets(statusBuckets);
-        var orgBucket = getStringTermsBucket("someOrgId", Map.of("status", statusAggregation), 3);
-        var orgBuckets = createBuckets(orgBucket);
-        var orgAggregation = createTermsAggregateWithBuckets(orgBuckets);
-        var filterAggregate = getFilterAggregate(3, Map.of("organizations", orgAggregation));
-        return new NestedAggregate.Builder().docCount(randomInteger())
-                   .aggregations("someTopLevelOrgId", filterAggregate)
-                   .docCount(3)
-                   .build()._toAggregate();
-    }
-
-    private static Aggregate getFilterAggregate(int docCount, Map<String, Aggregate> aggregations) {
-        return new FilterAggregate.Builder().docCount(docCount)
-                   .aggregations(aggregations)
-                   .build()._toAggregate();
-    }
-
-    private static Aggregate createTermsAggregateWithBuckets(Buckets<StringTermsBucket> buckets) {
-        return new StringTermsAggregate.Builder().buckets(buckets).sumOtherDocCount(2).build()._toAggregate();
-    }
-
-    private static StringTermsBucket getStringTermsBucket(String key, Map<String, Aggregate> aggregateMap,
-                                                          int docCount) {
-        return new StringTermsBucket.Builder()
-                   .key(key)
-                   .aggregations(aggregateMap)
-                   .docCount(docCount)
-                   .build();
-    }
-
-    private static Buckets<StringTermsBucket> createBuckets(StringTermsBucket bucket) {
-        return new Buckets.Builder<StringTermsBucket>().array(List.of(bucket)).build();
-    }
-
-    private static Aggregate randomFilterAggregate(Integer docCount) {
-        return getFilterAggregate(docCount, Map.of());
-    }
-
     private static void mockOpenSearchClient() throws IOException {
         when(openSearchClient.search(any()))
             .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
-    }
-
-    private static SearchResponse<NviCandidateIndexDocument> createSearchResponse(NviCandidateIndexDocument document) {
-        return new Builder<NviCandidateIndexDocument>().hits(constructHitsMetadata(List.of(document)))
-                   .took(10)
-                   .timedOut(false)
-                   .shards(new ShardStatistics.Builder().failed(0).successful(1).total(1).build())
-                   .build();
-    }
-
-    private static SearchResponse<NviCandidateIndexDocument> createSearchResponse(
-        List<NviCandidateIndexDocument> documents, String aggregateName, Aggregate aggregate) {
-        return new Builder<NviCandidateIndexDocument>()
-                   .hits(constructHitsMetadata(documents))
-                   .took(10)
-                   .timedOut(false)
-                   .shards(new ShardStatistics.Builder().failed(0).successful(1).total(10).build())
-                   .aggregations(aggregateName, aggregate)
-                   .build();
-    }
-
-    private static HitsMetadata<NviCandidateIndexDocument> constructHitsMetadata(
-        List<NviCandidateIndexDocument> document) {
-        return new HitsMetadata.Builder<NviCandidateIndexDocument>()
-                   .total(new TotalHits.Builder().value(10).relation(TotalHitsRelation.Eq).build())
-                   .hits(document.stream().map(SearchNviCandidatesHandlerTest::toHit).collect(Collectors.toList()))
-                   .total(new TotalHits.Builder().relation(TotalHitsRelation.Eq).value(1).build())
-                   .build();
-    }
-
-    private static Hit<NviCandidateIndexDocument> toHit(NviCandidateIndexDocument document) {
-        return new Hit.Builder<NviCandidateIndexDocument>()
-                   .id(randomString())
-                   .index(NVI_CANDIDATES_INDEX)
-                   .source(document)
-                   .build();
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocument() {

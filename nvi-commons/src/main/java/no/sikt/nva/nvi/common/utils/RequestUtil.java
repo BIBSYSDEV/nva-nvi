@@ -1,12 +1,10 @@
-package no.sikt.nva.nvi.utils;
+package no.sikt.nva.nvi.common.utils;
 
 import no.sikt.nva.nvi.common.service.model.Username;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
-import nva.commons.core.JacocoGenerated;
 
-@JacocoGenerated
 public final class RequestUtil {
 
     private RequestUtil() {

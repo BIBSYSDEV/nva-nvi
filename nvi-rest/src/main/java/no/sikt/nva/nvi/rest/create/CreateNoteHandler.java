@@ -14,7 +14,7 @@ import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
-import no.sikt.nva.nvi.utils.RequestUtil;
+import no.sikt.nva.nvi.common.utils.RequestUtil;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;

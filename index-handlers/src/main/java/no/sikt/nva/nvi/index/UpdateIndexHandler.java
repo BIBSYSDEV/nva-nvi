@@ -16,6 +16,7 @@ import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import nva.commons.core.Environment;

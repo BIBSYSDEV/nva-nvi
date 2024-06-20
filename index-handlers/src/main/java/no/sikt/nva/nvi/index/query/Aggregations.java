@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index;
+package no.sikt.nva.nvi.index.query;
 
 import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
-import no.sikt.nva.nvi.index.model.search.SearchAggregation;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
@@ -38,9 +37,9 @@ public final class Aggregations {
     public static final String DISPUTE_AGGREGATION = "dispute";
     public static final String POINTS_AGGREGATION = "points";
     public static final String DISPUTE = "Dispute";
+    public static final String APPROVAL_ORGANIZATIONS_AGGREGATION = "organizations";
     private static final int MULTIPLE = 2;
     private static final String ALL_AGGREGATIONS = "all";
-    private static final String APPROVAL_ORGANIZATIONS_AGGREGATION = "organizations";
     private static final String STATUS_AGGREGATION = "status";
 
     private Aggregations() {

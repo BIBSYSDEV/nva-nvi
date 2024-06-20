@@ -46,6 +46,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
+import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;

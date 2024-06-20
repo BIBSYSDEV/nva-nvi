@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index;
+package no.sikt.nva.nvi.index.model;
 
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;

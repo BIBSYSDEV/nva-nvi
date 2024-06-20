@@ -274,8 +274,8 @@ Resources:
     Properties:
       VisibilityTimeout: 60
       RedrivePolicy:
-          deadLetterTargetArn: !GetAtt IndexDocumentDLQ.Arn
-          maxReceiveCount: 5
+        deadLetterTargetArn: !GetAtt IndexDocumentDLQ.Arn
+        maxReceiveCount: 5
   RemoveDocumentFromIndexQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -1156,11 +1156,11 @@ Resources:
             Method: delete
             RestApiId: !Ref ScientificIndexApi
 
-  FetchReportHandler:
+  FetchInstitutionStatusAggregationHandler:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: nvi-rest
-      Handler: no.sikt.nva.nvi.rest.fetch.FetchReportHandler::handleRequest
+      Handler: no.sikt.nva.nvi.index.apigateway.FetchInstitutionStatusAggregationHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
       MemorySize: 1536
@@ -1174,7 +1174,7 @@ Resources:
         GetEvent:
           Type: Api
           Properties:
-            Path: /report/{institutionId}
+            Path: /institution-report/{year}
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
@@ -1270,7 +1270,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.index.SearchNviCandidatesHandler::handleRequest
+      Handler: no.sikt.nva.nvi.index.apigateway.SearchNviCandidatesHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
       MemorySize: 1536
