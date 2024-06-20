@@ -50,7 +50,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
     }
 
     @Test
-    void shouldReturnUnauthorizedWhenUserDoesNotHaveSufficientAccessRight() throws IOException {
+    void shouldReturnUnauthorizedWhenUserDoesNotHaveRequiredAccessRight() throws IOException {
         var institutionId = randomUri();
         var request = createRequestWithoutAccessRight(institutionId, institutionId, CURRENT_YEAR)
                           .build();
@@ -79,11 +79,6 @@ class FetchInstitutionStatusAggregationHandlerTest {
         var response = GatewayResponse.fromOutputStream(output, String.class);
         assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_OK)));
         assertEquals(expectedNestedAggregation, response.getBody());
-    }
-
-    @Test
-    void shouldReturnNotFoundIfInstitutionDoesntExist() {
-
     }
 
     private static HandlerRequestBuilder<InputStream> createRequest(URI userTopLevelCristinInstitution,
