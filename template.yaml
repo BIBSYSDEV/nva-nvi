@@ -1159,7 +1159,7 @@ Resources:
   FetchInstitutionStatusAggregationHandler:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: nvi-rest
+      CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.apigateway.FetchInstitutionStatusAggregationHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 600
