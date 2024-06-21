@@ -35,7 +35,7 @@ public class ViewingScopeValidator {
         return illegal.isEmpty();
     }
 
-    private static HashSet<URI> difference(HashSet<URI> allowed, List<URI> requested) {
+    private static Set<URI> difference(Set<URI> allowed, List<URI> requested) {
         var difference = new HashSet<>(requested);
         difference.removeAll(allowed);
         return difference;
@@ -57,7 +57,7 @@ public class ViewingScopeValidator {
         return stream.map(URI::create);
     }
 
-    private HashSet<URI> getAllowedUnits(Set<URI> viewingScope) {
+    private Set<URI> getAllowedUnits(Set<URI> viewingScope) {
         var allowed = new HashSet<URI>();
         allowed.addAll(viewingScope);
         allowed.addAll(getSubUnits(viewingScope));
