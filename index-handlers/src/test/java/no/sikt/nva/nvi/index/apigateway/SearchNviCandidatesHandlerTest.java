@@ -23,7 +23,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -90,15 +89,13 @@ public class SearchNviCandidatesHandlerTest {
     private static SearchNviCandidatesHandler handler;
     private static ByteArrayOutputStream output;
     private final Context context = mock(Context.class);
-    private ViewingScopeValidator viewingScopeValidator;
 
     @BeforeEach
-    void init() throws UnauthorizedException {
+    void init() {
         output = new ByteArrayOutputStream();
         openSearchClient = mock(OpenSearchClient.class);
-        viewingScopeValidator = mock(ViewingScopeValidator.class);
+        var viewingScopeValidator = new FakeViewingScopeValidator(true);
         handler = new SearchNviCandidatesHandler(openSearchClient, viewingScopeValidator, ENVIRONMENT);
-        when(viewingScopeValidator.userIsAllowedToAccess(any(), any())).thenReturn(true);
     }
 
     @Test
@@ -338,8 +335,8 @@ public class SearchNviCandidatesHandlerTest {
     void shouldReturnForbiddenWhenTryingToSearchForAffiliationOutsideOfCustomersCristinIdScope()
         throws IOException {
         var forbiddenAffiliation = "0.0.0.0";
-        var orgUris = List.of(toCristinOrgUri(forbiddenAffiliation));
-        when(viewingScopeValidator.userIsAllowedToAccess(any(), eq(orgUris))).thenReturn(false);
+        var validatorReturningFalse = new FakeViewingScopeValidator(false);
+        handler = new SearchNviCandidatesHandler(openSearchClient, validatorReturningFalse, ENVIRONMENT);
 
         var request = requestWithInstitutionsAndTopLevelCristinOrgId(List.of(forbiddenAffiliation),
                                                                      TOP_LEVEL_CRISTIN_ORG);
@@ -392,13 +389,6 @@ public class SearchNviCandidatesHandlerTest {
               "docCount" : 1
             }""";
         assertEquals(expectedFilterAggregation, objectMapper.writeValueAsString(actualAggregate));
-    }
-
-    private static URI toCristinOrgUri(String forbiddenAffiliation) {
-        return UriWrapper.fromHost(API_HOST)
-                   .addChild("cristin", "organization")
-                   .addChild(forbiddenAffiliation)
-                   .getUri();
     }
 
     private static void mockOpenSearchClient() throws IOException {

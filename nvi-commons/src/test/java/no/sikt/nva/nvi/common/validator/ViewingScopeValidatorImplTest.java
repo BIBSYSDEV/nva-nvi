@@ -19,18 +19,18 @@ import no.sikt.nva.nvi.common.client.model.User.ViewingScope;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class ViewingScopeValidatorTest {
+class ViewingScopeValidatorImplTest {
 
     private static final String SOME_USERNAME = "username";
     private OrganizationRetriever organizationRetriever;
     private UserRetriever userRetriever;
-    private ViewingScopeValidator viewingScopeValidator;
+    private ViewingScopeValidatorImpl viewingScopeValidator;
 
     @BeforeEach
     void setUp() {
         organizationRetriever = mock(OrganizationRetriever.class);
         userRetriever = mock(UserRetriever.class);
-        viewingScopeValidator = new ViewingScopeValidator(userRetriever, organizationRetriever);
+        viewingScopeValidator = new ViewingScopeValidatorImpl(userRetriever, organizationRetriever);
     }
 
     @Test

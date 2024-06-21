@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.UserRetriever;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
+import no.sikt.nva.nvi.common.validator.ViewingScopeValidatorImpl;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
@@ -74,8 +75,8 @@ public class SearchNviCandidatesHandler
     }
 
     @JacocoGenerated
-    private static ViewingScopeValidator defaultViewingScopeValidator(Environment environment) {
-        return new ViewingScopeValidator(
+    private static ViewingScopeValidatorImpl defaultViewingScopeValidator(Environment environment) {
+        return new ViewingScopeValidatorImpl(
             new UserRetriever(defaultAuthorizedUriRetriever(environment), environment.readEnv(API_HOST)),
             new OrganizationRetriever(new UriRetriever()));
     }
