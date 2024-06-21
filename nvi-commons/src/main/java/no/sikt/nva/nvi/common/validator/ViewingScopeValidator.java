@@ -4,7 +4,6 @@ import static no.sikt.nva.nvi.common.utils.GraphUtils.HAS_PART_PROPERTY;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
-import com.github.jsonldjava.shaded.com.google.common.collect.Sets;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.List;
@@ -29,11 +28,17 @@ public class ViewingScopeValidator {
         this.organizationRetriever = organizationRetriever;
     }
 
-    public boolean userIsAllowedToAccess(String userName, List<URI> organizations) {
+    public boolean userIsAllowedToAccess(String userName, List<URI> requestedOrganizations) {
         var viewingScope = fetchViewingScope(userName);
-        var allowed = Sets.union(viewingScope, getSubUnits(viewingScope));
-        var illegal = Sets.difference(new HashSet<>(organizations), allowed);
+        var allowed = getAllowedUnits(viewingScope);
+        var illegal = difference(allowed, requestedOrganizations);
         return illegal.isEmpty();
+    }
+
+    private static HashSet<URI> difference(HashSet<URI> allowed, List<URI> requested) {
+        var difference = new HashSet<>(requested);
+        difference.removeAll(allowed);
+        return difference;
     }
 
     private static Stream<String> concat(URI topLevelOrg, Stream<String> stringStream) {
@@ -50,6 +55,13 @@ public class ViewingScopeValidator {
 
     private static Stream<URI> toUris(Stream<String> stream) {
         return stream.map(URI::create);
+    }
+
+    private HashSet<URI> getAllowedUnits(Set<URI> viewingScope) {
+        var allowed = new HashSet<URI>();
+        allowed.addAll(viewingScope);
+        allowed.addAll(getSubUnits(viewingScope));
+        return allowed;
     }
 
     private Set<URI> fetchViewingScope(String userName) {
