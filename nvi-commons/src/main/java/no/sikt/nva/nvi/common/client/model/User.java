@@ -9,8 +9,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import no.unit.nva.commons.json.JsonSerializable;
 
-public record User(@JsonProperty("username") String username,
-                   @JsonProperty("viewingScope") ViewingScope viewingScope) implements JsonSerializable {
+public record User(@JsonProperty("viewingScope") ViewingScope viewingScope) implements JsonSerializable {
 
     public static User from(String jsonString) {
         return attempt(() -> dtoObjectMapper.readValue(jsonString, User.class)).orElseThrow();

@@ -16,7 +16,7 @@ public record Organization(@JsonProperty(ID) URI id,
                            @JsonProperty(HAS_PART) List<Organization> hasPart,
                            @JsonProperty(LABELS) Map<String, String> labels,
                            @JsonProperty(TYPE) String type,
-                           @JsonProperty(CONTEXT) String context)
+                           @JsonProperty(CONTEXT) Object context)
     implements JsonSerializable {
 
     public static final String HAS_PART = "hasPart";
@@ -61,7 +61,7 @@ public record Organization(@JsonProperty(ID) URI id,
         private List<Organization> hasPart;
         private Map<String, String> labels;
         private String type;
-        private String context;
+        private Object context;
 
         private Builder() {
         }
@@ -91,7 +91,7 @@ public record Organization(@JsonProperty(ID) URI id,
             return this;
         }
 
-        public Builder withContext(String context) {
+        public Builder withContext(Object context) {
             this.context = context;
             return this;
         }

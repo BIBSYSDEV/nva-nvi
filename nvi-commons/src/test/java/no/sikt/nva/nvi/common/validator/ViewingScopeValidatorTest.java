@@ -1,10 +1,13 @@
 package no.sikt.nva.nvi.common.validator;
 
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
@@ -64,13 +67,41 @@ class ViewingScopeValidatorTest {
         return defaultBuilder(orgId).withHasPart(List.of(createOrg(subOrgId))).build();
     }
 
-    private static Builder defaultBuilder(URI orgId) {
+    private static Builder defaultBuilder(URI organizationId) {
         return Organization.builder()
-                   .withId(orgId)
-                   .withContext("https://bibsysdev.github.io/src/organization-context.json");
+                   .withId(organizationId)
+                   .withContext(getOrganizationContext());
     }
 
     private static User userWithViewingScope(URI allowedOrg) {
-        return new User("userName", new ViewingScope(List.of(allowedOrg.toString())));
+        return new User(new ViewingScope(List.of(allowedOrg.toString())));
+    }
+
+    private static JsonNode getOrganizationContext() {
+        var context = """
+            {
+              "@vocab": "https://bibsysdev.github.io/src/organization-ontology.ttl#",
+              "Organization": "https://nva.sikt.no/ontology/publication#Organization",
+              "id": "@id",
+              "type": "@type",
+              "name": {
+                "@id": "https://nva.sikt.no/ontology/publication#name",
+                "@container": "@language"
+              },
+              "hasPart": {
+                "@id": "https://nva.sikt.no/ontology/publication#hasPart",
+                "@container": "@set"
+              },
+              "labels": {
+                "@id": "https://nva.sikt.no/ontology/publication#label",
+                "@container": "@language"
+              },
+              "partOf": {
+                "@id": "https://nva.sikt.no/ontology/publication#partOf",
+                "@container": "@set"
+              }
+            }
+            """;
+        return attempt(() -> dtoObjectMapper.readTree(context)).orElseThrow();
     }
 }
