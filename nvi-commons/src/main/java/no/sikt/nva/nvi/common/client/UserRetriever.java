@@ -14,12 +14,14 @@ public class UserRetriever {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UserRetriever.class);
     private static final String APPLICATION_JSON = "application/json";
+    private static final String USERS_ROLES_PATH = "users-roles";
+    private static final String USERS_PATH = "users";
     private final AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
-    private final String identityApiBaseUri;
+    private final String apiHost;
 
-    public UserRetriever(AuthorizedBackendUriRetriever authorizedBackendUriRetriever, String identityApiBaseUri) {
+    public UserRetriever(AuthorizedBackendUriRetriever authorizedBackendUriRetriever, String apiHost) {
         this.authorizedBackendUriRetriever = authorizedBackendUriRetriever;
-        this.identityApiBaseUri = identityApiBaseUri;
+        this.apiHost = apiHost;
     }
 
     public User fetchUser(String userName) {
@@ -46,6 +48,9 @@ public class UserRetriever {
     }
 
     private URI createUri(String userName) {
-        return UriWrapper.fromUri(identityApiBaseUri).addChild(userName).getUri();
+        return UriWrapper.fromUri(apiHost)
+                   .addChild(USERS_ROLES_PATH, USERS_PATH)
+                   .addChild(userName)
+                   .getUri();
     }
 }

@@ -14,21 +14,21 @@ import org.junit.jupiter.api.Test;
 
 class UserRetrieverTest {
 
-    public static final String IDENTITY_API_BASE_URI = "https://example.com/users";
+    public static final String API_HOST = "https://example.com";
     AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
     UserRetriever userRetriever;
 
     @BeforeEach
     void setUp() {
         authorizedBackendUriRetriever = mock(AuthorizedBackendUriRetriever.class);
-        userRetriever = new UserRetriever(authorizedBackendUriRetriever, IDENTITY_API_BASE_URI);
+        userRetriever = new UserRetriever(authorizedBackendUriRetriever, API_HOST);
     }
 
     @Test
     void shouldFetchUser() {
         var userName = "userName";
         var includedUnit = "https://api.dev.nva.aws.unit.no/customer/123";
-        var expectedUri = UriWrapper.fromUri(IDENTITY_API_BASE_URI).addChild(userName).getUri();
+        var expectedUri = UriWrapper.fromUri(API_HOST).addChild("users-roles", "users").addChild(userName).getUri();
         mockAuthorizedBackendUriRetriever(expectedUri, includedUnit);
         var actualUser = userRetriever.fetchUser(userName);
         assertEquals(includedUnit, actualUser.viewingScope().includedUnits().get(0));
