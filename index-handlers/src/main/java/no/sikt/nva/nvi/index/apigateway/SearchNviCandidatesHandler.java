@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
-    public static final String ENV_IDENTITY_SERVICE_HOST = "IDENTITY_SERVICE_URL";
+    public static final String ENV_IDENTITY_API_BASE_URI = "IDENTITY_API_BASE_URI";
     public static final String CRISTIN_PATH = "cristin";
     public static final String ORGANIZATION_PATH = "organization";
     private final Logger logger = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
@@ -77,7 +77,7 @@ public class SearchNviCandidatesHandler
     private static ViewingScopeValidator defaultViewingScopeValidator(Environment environment) {
         return new ViewingScopeValidator(
             new UserRetriever(defaultAuthorizedUriRetriever(environment),
-                              environment.readEnv(ENV_IDENTITY_SERVICE_HOST)),
+                              environment.readEnv(ENV_IDENTITY_API_BASE_URI)),
             new OrganizationRetriever(new UriRetriever()));
     }
 

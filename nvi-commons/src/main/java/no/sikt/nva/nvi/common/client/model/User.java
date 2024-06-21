@@ -11,7 +11,7 @@ import no.unit.nva.commons.json.JsonSerializable;
 
 public record User(@JsonProperty("viewingScope") ViewingScope viewingScope) implements JsonSerializable {
 
-    public static User from(String jsonString) {
+    public static User fromJson(String jsonString) {
         return attempt(() -> dtoObjectMapper.readValue(jsonString, User.class)).orElseThrow();
     }
 
