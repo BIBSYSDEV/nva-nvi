@@ -49,10 +49,10 @@ class ViewingScopeValidatorTest {
 
     @Test
     void shouldReturnTrueIfUserIsAllowedToAccessRequestedOrgsSubOrg() {
-        var topLevelOrg = URI.create("https://www.example.com/org");
+        var org = URI.create("https://www.example.com/org");
         var subOrg = URI.create("https://www.example.com/subOrg");
-        when(userRetriever.fetchUser(SOME_USERNAME)).thenReturn(userWithViewingScope(topLevelOrg));
-        when(organizationRetriever.fetchOrganization(topLevelOrg)).thenReturn(createOrgWithSubOrg(topLevelOrg, subOrg));
+        when(userRetriever.fetchUser(SOME_USERNAME)).thenReturn(userWithViewingScope(org));
+        when(organizationRetriever.fetchOrganization(org)).thenReturn(createOrgWithSubOrg(org, subOrg));
         assertTrue(viewingScopeValidator.userIsAllowedToAccess(SOME_USERNAME, List.of(subOrg)));
     }
 
@@ -67,30 +67,7 @@ class ViewingScopeValidatorTest {
     private static Builder defaultBuilder(URI orgId) {
         return Organization.builder()
                    .withId(orgId)
-                   .withContext("""
-                                    {
-                                         "@vocab": "https://bibsysdev.github.io/src/organization-ontology.ttl#",
-                                         "Organization": "https://nva.sikt.no/ontology/publication#Organization",
-                                         "id": "@id",
-                                         "type": "@type",
-                                         "name": {
-                                           "@id": "https://nva.sikt.no/ontology/publication#name",
-                                           "@container": "@language"
-                                         },
-                                         "hasPart": {
-                                           "@id": "https://nva.sikt.no/ontology/publication#hasPart",
-                                           "@container": "@set"
-                                         },
-                                         "labels": {
-                                           "@id": "https://nva.sikt.no/ontology/publication#label",
-                                           "@container": "@language"
-                                         },
-                                         "partOf": {
-                                           "@id": "https://nva.sikt.no/ontology/publication#partOf",
-                                           "@container": "@set"
-                                         }
-                                    }
-                                    """);
+                   .withContext("https://bibsysdev.github.io/src/organization-context.json");
     }
 
     private static User userWithViewingScope(URI allowedOrg) {
