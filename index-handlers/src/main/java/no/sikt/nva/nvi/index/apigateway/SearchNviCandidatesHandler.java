@@ -17,7 +17,6 @@ import no.sikt.nva.nvi.common.validator.ViewingScopeValidatorImpl;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.clients.IdentityServiceClient;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
@@ -105,12 +104,6 @@ public class SearchNviCandidatesHandler
 
     private static List<String> toListOfIdentifiers(String identifierListAsString) {
         return Arrays.stream(identifierListAsString.split(COMMA)).collect(Collectors.toList());
-    }
-
-    @JacocoGenerated
-    private static AuthorizedBackendUriRetriever defaultAuthorizedUriRetriever(Environment environment) {
-        return new AuthorizedBackendUriRetriever(environment.readEnv("BACKEND_CLIENT_AUTH_URL"),
-                                                 environment.readEnv("BACKEND_CLIENT_SECRET_NAME"));
     }
 
     private static boolean userIsNotNviAdmin(RequestInfo requestInfo) {
