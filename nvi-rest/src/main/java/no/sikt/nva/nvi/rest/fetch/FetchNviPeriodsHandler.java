@@ -31,11 +31,13 @@ public class FetchNviPeriodsHandler extends ApiGatewayHandler<Void, NviPeriodsRe
     }
 
     @Override
+    protected void validateRequest(Void input, RequestInfo requestInfo, Context context) throws ApiGatewayException {
+        RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI);
+    }
+
+    @Override
     protected NviPeriodsResponse processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-
-        RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI);
-
         return attempt(nviPeriodService::fetchAll)
                    .map(this::toNviPeriodsResponse)
                    .orElseThrow();

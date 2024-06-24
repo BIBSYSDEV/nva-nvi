@@ -34,11 +34,14 @@ public class CreateNviPeriodHandler extends ApiGatewayHandler<UpsertNviPeriodReq
     }
 
     @Override
+    protected void validateRequest(UpsertNviPeriodRequest input, RequestInfo requestInfo, Context context)
+        throws ApiGatewayException {
+        RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI);
+    }
+
+    @Override
     protected NviPeriodDto processInput(UpsertNviPeriodRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-
-        RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI);
-
         return attempt(input::toCreatePeriodRequest)
                    .map(builder -> builder.withCreatedBy(getUsername(requestInfo)))
                    .map(Builder::build)
