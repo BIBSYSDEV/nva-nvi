@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.model;
+package no.sikt.nva.nvi.common.client.model;
 
 import static java.util.Objects.nonNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -13,11 +13,13 @@ import nva.commons.core.SingletonCollector;
 
 public record Organization(@JsonProperty(ID) URI id,
                            @JsonProperty(PART_OF) List<Organization> partOf,
+                           @JsonProperty(HAS_PART) List<Organization> hasPart,
                            @JsonProperty(LABELS) Map<String, String> labels,
                            @JsonProperty(TYPE) String type,
-                           @JsonProperty(CONTEXT) String context)
+                           @JsonProperty(CONTEXT) Object context)
     implements JsonSerializable {
 
+    public static final String HAS_PART = "hasPart";
     private static final String ID = "id";
     private static final String PART_OF = "partOf";
     private static final String LABELS = "labels";
@@ -48,10 +50,6 @@ public record Organization(@JsonProperty(ID) URI id,
         return this;
     }
 
-    public String asJsonString() throws JsonProcessingException {
-        return dtoObjectMapper.writeValueAsString(this);
-    }
-
     private static boolean hasPartOf(Organization org) {
         return nonNull(org.partOf()) && !org.partOf().isEmpty();
     }
@@ -60,9 +58,10 @@ public record Organization(@JsonProperty(ID) URI id,
 
         private URI id;
         private List<Organization> partOf;
+        private List<Organization> hasPart;
         private Map<String, String> labels;
         private String type;
-        private String context;
+        private Object context;
 
         private Builder() {
         }
@@ -77,6 +76,11 @@ public record Organization(@JsonProperty(ID) URI id,
             return this;
         }
 
+        public Builder withHasPart(List<Organization> hasPart) {
+            this.hasPart = hasPart;
+            return this;
+        }
+
         public Builder withLabels(Map<String, String> labels) {
             this.labels = labels;
             return this;
@@ -87,13 +91,13 @@ public record Organization(@JsonProperty(ID) URI id,
             return this;
         }
 
-        public Builder withContext(String context) {
+        public Builder withContext(Object context) {
             this.context = context;
             return this;
         }
 
         public Organization build() {
-            return new Organization(id, partOf, labels, type, context);
+            return new Organization(id, partOf, hasPart, labels, type, context);
         }
     }
 }

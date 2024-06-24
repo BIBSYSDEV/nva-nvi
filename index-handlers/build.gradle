@@ -10,6 +10,7 @@ dependencies {
     implementation libs.nva.commons.auth
     implementation libs.nva.commons.apigateway
     implementation libs.nva.commons.pagination
+    implementation libs.nva.commons.clients
     implementation libs.nva.s3
 
     implementation libs.aws.lambda.java.core

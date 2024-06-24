@@ -33,11 +33,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
@@ -48,14 +46,12 @@ import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.OrderByFields;
 import no.sikt.nva.nvi.test.TestUtils;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
-import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.hamcrest.Matchers;
@@ -96,11 +92,8 @@ public class SearchNviCandidatesHandlerTest {
     void init() {
         output = new ByteArrayOutputStream();
         openSearchClient = mock(OpenSearchClient.class);
-        AuthorizedBackendUriRetriever uriRetriever = mock(AuthorizedBackendUriRetriever.class);
-        handler = new SearchNviCandidatesHandler(openSearchClient, uriRetriever);
-
-        when(uriRetriever.getRawContent(any(), any())).thenReturn(
-            Optional.of(IoUtils.stringFromResources(Path.of("20754.0.0.0.json"))));
+        var viewingScopeValidator = new FakeViewingScopeValidator(true);
+        handler = new SearchNviCandidatesHandler(openSearchClient, viewingScopeValidator, ENVIRONMENT);
     }
 
     @Test
@@ -337,12 +330,13 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
-    void shouldReturnForbiddenWhenTryingToSearchForAffiliationOutsideOfCustomersCristinIdScope() throws IOException {
-        when(openSearchClient.search(any()))
-            .thenThrow(RuntimeException.class);
-        var searchedAffiliation = "0.0.0.0";
+    void shouldReturnForbiddenWhenTryingToSearchForAffiliationOutsideOfCustomersCristinIdScope()
+        throws IOException {
+        var forbiddenAffiliation = "0.0.0.0";
+        var validatorReturningFalse = new FakeViewingScopeValidator(false);
+        handler = new SearchNviCandidatesHandler(openSearchClient, validatorReturningFalse, ENVIRONMENT);
 
-        var request = requestWithInstitutionsAndTopLevelCristinOrgId(List.of(searchedAffiliation),
+        var request = requestWithInstitutionsAndTopLevelCristinOrgId(List.of(forbiddenAffiliation),
                                                                      TOP_LEVEL_CRISTIN_ORG);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -350,7 +344,7 @@ public class SearchNviCandidatesHandlerTest {
         assertThat(Objects.requireNonNull(response.getBodyObject(Problem.class).getStatus()).getStatusCode(),
                    is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
         assertThat(Objects.requireNonNull(response.getBodyObject(Problem.class).getDetail()),
-                   containsString(searchedAffiliation));
+                   containsString("User is not allowed to view requested organizations"));
     }
 
     @Test

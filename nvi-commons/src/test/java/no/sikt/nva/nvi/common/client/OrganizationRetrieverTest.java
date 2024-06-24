@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.client;
 
+import static no.sikt.nva.nvi.common.client.MockHttpResponseUtil.createResponse;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -7,13 +8,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.model.Organization;
-import no.sikt.nva.nvi.common.model.Organization.Builder;
+import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.client.model.Organization.Builder;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test;
 class OrganizationRetrieverTest {
 
     private UriRetriever uriRetriever;
-
     private OrganizationRetriever organizationRetriever;
 
     @BeforeEach
@@ -31,7 +30,7 @@ class OrganizationRetrieverTest {
     }
 
     @Test
-    void shouldFetchOrganization() throws JsonProcessingException {
+    void shouldFetchOrganization() {
         var expectedOrganization = randomOrganizationWithPartOf();
         mockUriRetriever(expectedOrganization);
         var actualOrganization = organizationRetriever.fetchOrganization(expectedOrganization.id());
@@ -50,16 +49,8 @@ class OrganizationRetrieverTest {
         return randomOrganization().withPartOf(List.of(randomOrganization().build())).build();
     }
 
-    @SuppressWarnings("unchecked")
-    private static HttpResponse<String> createResponse(String body) {
-        var response = (HttpResponse<String>) mock(HttpResponse.class);
-        when(response.statusCode()).thenReturn(200);
-        when(response.body()).thenReturn(body);
-        return response;
-    }
-
-    private void mockUriRetriever(Organization expectedOrganization) throws JsonProcessingException {
-        var response = createResponse(expectedOrganization.asJsonString());
+    private void mockUriRetriever(Organization expectedOrganization) {
+        var response = createResponse(expectedOrganization.toJsonString());
         when(uriRetriever.fetchResponse(eq(expectedOrganization.id()), any()))
             .thenReturn(Optional.of(response));
     }

@@ -40,6 +40,7 @@ nva-commons-auth = { group = 'com.github.bibsysdev', name = 'auth', version.ref 
 nva-commons-apigateway = { group = 'com.github.bibsysdev', name = 'apigateway', version.ref = 'nva' }
 nva-commons-pagination = { group = 'com.github.bibsysdev', name = 'pagination', version.ref = 'nva' }
 nva-commons-secrets = { group = 'com.github.bibsysdev', name = 'secrets', version.ref = 'nva' }
+nva-commons-clients = { group = 'com.github.bibsysdev', name = 'clients', version.ref = 'nva' }
 nva-eventhandlers = { group = 'com.github.bibsysdev', name = 'eventhandlers', version.ref = 'nva' }
 
 aws-sdk2-eventbridge = { group = 'software.amazon.awssdk', name = 'eventbridge', version.ref = 'awsSdk2' }

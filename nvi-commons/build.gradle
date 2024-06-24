@@ -8,6 +8,7 @@ dependencies {
     implementation libs.nva.core
     implementation libs.nva.json
     implementation libs.nva.commons.auth
+    implementation libs.nva.commons.clients
     implementation libs.nva.s3
     implementation libs.aws.sdk2.apache.client
     implementation libs.aws.sdk2.s3
@@ -33,4 +34,5 @@ test {
     environment("SEARCH_INFRASTRUCTURE_AUTH_URI", "localhost")
     environment("SEARCH_INFRASTRUCTURE_API_URI", "localhost")
     environment("NVI_TABLE_NAME", "some-table")
+    environment("BACKEND_CLIENT_AUTH_URL", "example.org/auth")
 }
