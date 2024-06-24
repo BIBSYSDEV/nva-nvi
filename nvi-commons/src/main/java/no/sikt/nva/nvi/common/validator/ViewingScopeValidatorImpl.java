@@ -11,20 +11,20 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
-import no.sikt.nva.nvi.common.client.UserRetriever;
+import no.unit.nva.clients.IdentityServiceClient;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.NodeIterator;
 import org.apache.jena.rdf.model.RDFNode;
 
 public class ViewingScopeValidatorImpl implements ViewingScopeValidator {
 
-    private final UserRetriever userRetriever;
+    private final IdentityServiceClient identityServiceClient;
     private final OrganizationRetriever organizationRetriever;
 
-    public ViewingScopeValidatorImpl(UserRetriever userRetriever,
+    public ViewingScopeValidatorImpl(IdentityServiceClient identityServiceClient,
                                      OrganizationRetriever organizationRetriever) {
 
-        this.userRetriever = userRetriever;
+        this.identityServiceClient = identityServiceClient;
         this.organizationRetriever = organizationRetriever;
     }
 
@@ -66,9 +66,8 @@ public class ViewingScopeValidatorImpl implements ViewingScopeValidator {
     }
 
     private Set<URI> fetchViewingScope(String userName) {
-        return userRetriever.fetchUser(userName)
-                   .viewingScope()
-                   .getIncludedUnitUris();
+        var user = attempt(() -> identityServiceClient.getUser(userName)).orElseThrow();
+        return new HashSet<>(user.viewingScope().includedUnits());
     }
 
     private Set<URI> getSubUnits(Set<URI> viewingScope) {

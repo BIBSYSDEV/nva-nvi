@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
-import no.sikt.nva.nvi.common.client.UserRetriever;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidatorImpl;
 import no.sikt.nva.nvi.index.aws.SearchClient;
@@ -20,6 +19,7 @@ import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.UriRetriever;
+import no.unit.nva.clients.IdentityServiceClient;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
@@ -36,9 +36,8 @@ import org.slf4j.LoggerFactory;
 public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
-    public static final String API_HOST = "API_HOST";
-    public static final String CRISTIN_PATH = "cristin";
-    public static final String ORGANIZATION_PATH = "organization";
+    private static final String CRISTIN_PATH = "cristin";
+    private static final String ORGANIZATION_PATH = "organization";
     private final Logger logger = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
     private final ViewingScopeValidator viewingScopeValidator;
@@ -46,7 +45,7 @@ public class SearchNviCandidatesHandler
 
     @JacocoGenerated
     public SearchNviCandidatesHandler() {
-        this(defaultOpenSearchClient(), defaultViewingScopeValidator(new Environment()), new Environment());
+        this(defaultOpenSearchClient(), defaultViewingScopeValidator(), new Environment());
     }
 
     public SearchNviCandidatesHandler(SearchClient<NviCandidateIndexDocument> openSearchClient,
@@ -80,10 +79,9 @@ public class SearchNviCandidatesHandler
     }
 
     @JacocoGenerated
-    private static ViewingScopeValidatorImpl defaultViewingScopeValidator(Environment environment) {
-        return new ViewingScopeValidatorImpl(
-            new UserRetriever(defaultAuthorizedUriRetriever(environment), environment.readEnv(API_HOST)),
-            new OrganizationRetriever(new UriRetriever()));
+    private static ViewingScopeValidatorImpl defaultViewingScopeValidator() {
+        return new ViewingScopeValidatorImpl(IdentityServiceClient.prepare(),
+                                             new OrganizationRetriever(new UriRetriever()));
     }
 
     private static boolean userIsNviAdmin(RequestInfo requestInfo) {

@@ -11,11 +11,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
-import no.sikt.nva.nvi.common.client.UserRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.client.model.Organization.Builder;
-import no.sikt.nva.nvi.common.client.model.User;
-import no.sikt.nva.nvi.common.client.model.User.ViewingScope;
+import no.unit.nva.clients.GetUserResponse;
+import no.unit.nva.clients.GetUserResponse.ViewingScope;
+import no.unit.nva.clients.IdentityServiceClient;
+import nva.commons.apigateway.exceptions.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -23,38 +24,38 @@ class ViewingScopeValidatorImplTest {
 
     private static final String SOME_USERNAME = "username";
     private OrganizationRetriever organizationRetriever;
-    private UserRetriever userRetriever;
+    private IdentityServiceClient identityServiceClient;
     private ViewingScopeValidatorImpl viewingScopeValidator;
 
     @BeforeEach
     void setUp() {
         organizationRetriever = mock(OrganizationRetriever.class);
-        userRetriever = mock(UserRetriever.class);
-        viewingScopeValidator = new ViewingScopeValidatorImpl(userRetriever, organizationRetriever);
+        identityServiceClient = mock(IdentityServiceClient.class);
+        viewingScopeValidator = new ViewingScopeValidatorImpl(identityServiceClient, organizationRetriever);
     }
 
     @Test
-    void shouldReturnFalseIfUserIsNotAllowedToAccessRequestedOrgs() {
+    void shouldReturnFalseIfUserIsNotAllowedToAccessRequestedOrgs() throws NotFoundException {
         var allowedOrg = randomUri();
-        when(userRetriever.fetchUser(SOME_USERNAME)).thenReturn(userWithViewingScope(allowedOrg));
+        when(identityServiceClient.getUser(SOME_USERNAME)).thenReturn(userWithViewingScope(allowedOrg));
         when(organizationRetriever.fetchOrganization(allowedOrg)).thenReturn(createOrg(allowedOrg));
         var someOtherOrg = randomUri();
         assertFalse(viewingScopeValidator.userIsAllowedToAccess(SOME_USERNAME, List.of(someOtherOrg)));
     }
 
     @Test
-    void shouldReturnTrueIfUserIsAllowedToAccessRequestedOrgs() {
+    void shouldReturnTrueIfUserIsAllowedToAccessRequestedOrgs() throws NotFoundException {
         var allowedOrg = randomUri();
-        when(userRetriever.fetchUser(SOME_USERNAME)).thenReturn(userWithViewingScope(allowedOrg));
+        when(identityServiceClient.getUser(SOME_USERNAME)).thenReturn(userWithViewingScope(allowedOrg));
         when(organizationRetriever.fetchOrganization(allowedOrg)).thenReturn(createOrg(allowedOrg));
         assertTrue(viewingScopeValidator.userIsAllowedToAccess(SOME_USERNAME, List.of(allowedOrg)));
     }
 
     @Test
-    void shouldReturnTrueIfUserIsAllowedToAccessRequestedOrgsSubOrg() {
+    void shouldReturnTrueIfUserIsAllowedToAccessRequestedOrgsSubOrg() throws NotFoundException {
         var org = URI.create("https://www.example.com/org");
         var subOrg = URI.create("https://www.example.com/subOrg");
-        when(userRetriever.fetchUser(SOME_USERNAME)).thenReturn(userWithViewingScope(org));
+        when(identityServiceClient.getUser(SOME_USERNAME)).thenReturn(userWithViewingScope(org));
         when(organizationRetriever.fetchOrganization(org)).thenReturn(createOrgWithSubOrg(org, subOrg));
         assertTrue(viewingScopeValidator.userIsAllowedToAccess(SOME_USERNAME, List.of(subOrg)));
     }
@@ -73,8 +74,12 @@ class ViewingScopeValidatorImplTest {
                    .withContext(getOrganizationContext());
     }
 
-    private static User userWithViewingScope(URI allowedOrg) {
-        return new User(new ViewingScope(List.of(allowedOrg.toString())));
+    private static GetUserResponse userWithViewingScope(URI allowedOrg) {
+        return GetUserResponse.builder()
+                   .withViewingScope(ViewingScope.builder()
+                                         .withIncludedUnits(List.of(allowedOrg))
+                                         .build())
+                   .build();
     }
 
     private static JsonNode getOrganizationContext() {
