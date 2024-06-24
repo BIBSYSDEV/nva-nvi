@@ -40,10 +40,15 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
     }
 
     @Override
-    protected CandidateDto processInput(NviNoteRequest input, RequestInfo requestInfo, Context context)
+    protected void validateRequest(NviNoteRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATES);
         validate(input);
+    }
+
+    @Override
+    protected CandidateDto processInput(NviNoteRequest input, RequestInfo requestInfo, Context context)
+        throws ApiGatewayException {
         var username = RequestUtil.getUsername(requestInfo);
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
         var institutionId = requestInfo.getTopLevelOrgCristinId().orElseThrow();

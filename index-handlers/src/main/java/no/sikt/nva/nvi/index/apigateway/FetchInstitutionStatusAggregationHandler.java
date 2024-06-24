@@ -37,10 +37,14 @@ public class FetchInstitutionStatusAggregationHandler extends ApiGatewayHandler<
     }
 
     @Override
+    protected void validateRequest(Void unused, RequestInfo requestInfo, Context context) throws ApiGatewayException {
+        validateRequest(requestInfo);
+    }
+
+    @Override
     protected String processInput(Void input, RequestInfo requestInfo, Context context) throws ApiGatewayException {
         var topLevelOrg = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         var year = requestInfo.getPathParameter(PATH_PARAM_YEAR);
-        validateRequest(requestInfo);
         var result = getAggregate(year, topLevelOrg);
         return format(result, topLevelOrg);
     }

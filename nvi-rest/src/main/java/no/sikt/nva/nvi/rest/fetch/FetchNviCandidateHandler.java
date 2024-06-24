@@ -37,9 +37,13 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
     }
 
     @Override
+    protected void validateRequest(Void unused, RequestInfo requestInfo, Context context) throws ApiGatewayException {
+        validateAccessRight(requestInfo);
+    }
+
+    @Override
     protected CandidateDto processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-        validateAccessRight(requestInfo);
         var topLevelCristinOrg = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER)).map(UUID::fromString)
                    .map(identifier -> Candidate.fetch(() -> identifier, candidateRepository, periodRepository))

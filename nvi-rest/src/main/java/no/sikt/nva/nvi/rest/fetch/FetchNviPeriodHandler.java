@@ -36,9 +36,13 @@ public class FetchNviPeriodHandler extends ApiGatewayHandler<Void, NviPeriodDto>
     }
 
     @Override
+    protected void validateRequest(Void input, RequestInfo requestInfo, Context context) throws ApiGatewayException {
+
+    }
+
+    @Override
     protected NviPeriodDto processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-
         return attempt(() -> requestInfo.getPathParameter(PERIOD_IDENTIFIER))
                    .map(period -> NviPeriod.fetch(period, periodRepository))
                    .map(NviPeriod::toDto)

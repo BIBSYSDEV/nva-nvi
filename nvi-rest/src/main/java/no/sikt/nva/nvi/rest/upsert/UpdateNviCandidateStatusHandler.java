@@ -37,9 +37,14 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
     }
 
     @Override
-    protected CandidateDto processInput(NviStatusRequest input, RequestInfo requestInfo, Context context)
+    protected void validateRequest(NviStatusRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         validateRequest(input, requestInfo);
+    }
+
+    @Override
+    protected CandidateDto processInput(NviStatusRequest input, RequestInfo requestInfo, Context context)
+        throws ApiGatewayException {
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
         var username = requestInfo.getUserName();
 
