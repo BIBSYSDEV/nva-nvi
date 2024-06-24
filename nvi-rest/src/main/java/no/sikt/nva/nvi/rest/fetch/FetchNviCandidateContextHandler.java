@@ -32,6 +32,11 @@ public class FetchNviCandidateContextHandler extends ApiGatewayHandler<Void, Str
     }
 
     @Override
+    protected void validateRequest(Void unused, RequestInfo requestInfo, Context context) throws ApiGatewayException {
+
+    }
+
+    @Override
     protected String processInput(Void input, RequestInfo requestInfo, Context context) throws ApiGatewayException {
         return generateContextString();
     }

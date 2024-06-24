@@ -37,6 +37,11 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
     }
 
     @Override
+    protected void validateRequest(Void unused, RequestInfo requestInfo, Context context) throws ApiGatewayException {
+
+    }
+
+    @Override
     protected CandidateDto processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         return attempt(() -> getPublicationId(requestInfo))

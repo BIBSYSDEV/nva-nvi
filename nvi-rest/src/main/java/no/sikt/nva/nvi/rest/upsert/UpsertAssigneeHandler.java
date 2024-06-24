@@ -62,9 +62,14 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
     }
 
     @Override
+    protected void validateRequest(UpsertAssigneeRequest input, RequestInfo requestInfo,
+                                   Context context) throws ApiGatewayException {
+        validateRequest(input, requestInfo);
+    }
+
+    @Override
     protected CandidateDto processInput(UpsertAssigneeRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-        validateRequest(input, requestInfo);
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
         var institutionId = input.institutionId();
         var assignee = input.assignee();
