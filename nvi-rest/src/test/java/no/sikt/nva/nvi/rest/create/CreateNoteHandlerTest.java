@@ -64,7 +64,9 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnUnauthorizedWhenMissingAccessRights() throws IOException {
-        handler.handleRequest(createRequestWithoutAccessRights(randomNote()), output, context);
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()), candidateRepository,
+                                         periodRepository).orElseThrow();
+        handler.handleRequest(requestWithoutAccessRights(candidate.getIdentifier(), randomNote()), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -84,9 +86,11 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnBadRequestIfCreateNoteRequestIsInvalid() throws IOException {
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()), candidateRepository,
+                                         periodRepository).orElseThrow();
         var invalidRequestBody = JsonUtils.dtoObjectMapper.writeValueAsString(
             Map.of("someInvalidInputField", randomString()));
-        var request = createRequest(UUID.randomUUID(), invalidRequestBody, randomString());
+        var request = createRequest(candidate.getIdentifier(), invalidRequestBody, randomString());
 
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -212,7 +216,10 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         return new NviNoteRequest(randomString());
     }
 
-    private InputStream createRequestWithoutAccessRights(NviNoteRequest request) throws JsonProcessingException {
-        return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper).withBody(request).build();
+    private InputStream requestWithoutAccessRights(UUID candidateIdentifier, NviNoteRequest request)
+        throws JsonProcessingException {
+        return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper)
+                   .withPathParameters(Map.of("candidateIdentifier", candidateIdentifier.toString()))
+                   .withBody(request).build();
     }
 }
