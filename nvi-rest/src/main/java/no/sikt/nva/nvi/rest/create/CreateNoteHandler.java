@@ -15,6 +15,8 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
+import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
+import no.sikt.nva.nvi.common.validator.ViewingScopeValidatorImpl;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -27,16 +29,20 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
     public static final String INVALID_REQUEST_ERROR = "Request body must contain text field.";
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
+    private final ViewingScopeValidator viewingScopeValidator;
 
     @JacocoGenerated
     public CreateNoteHandler() {
-        this(new CandidateRepository(defaultDynamoClient()), new PeriodRepository(defaultDynamoClient()));
+        this(new CandidateRepository(defaultDynamoClient()), new PeriodRepository(defaultDynamoClient()),
+             defaultViewingScopeValidator());
     }
 
-    public CreateNoteHandler(CandidateRepository candidateRepository, PeriodRepository periodRepository) {
+    public CreateNoteHandler(CandidateRepository candidateRepository, PeriodRepository periodRepository,
+                             ViewingScopeValidator viewingScopeValidator) {
         super(NviNoteRequest.class);
         this.candidateRepository = candidateRepository;
         this.periodRepository = periodRepository;
+        this.viewingScopeValidator = viewingScopeValidator;
     }
 
     @Override
@@ -63,6 +69,10 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
     @Override
     protected Integer getSuccessStatusCode(NviNoteRequest input, CandidateDto output) {
         return HttpURLConnection.HTTP_OK;
+    }
+
+    private static ViewingScopeValidatorImpl defaultViewingScopeValidator() {
+        return null;
     }
 
     private Candidate checkIfApplicable(Candidate candidate) {
