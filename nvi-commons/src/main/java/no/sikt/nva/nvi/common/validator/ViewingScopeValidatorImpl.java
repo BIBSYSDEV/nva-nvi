@@ -29,11 +29,16 @@ public class ViewingScopeValidatorImpl implements ViewingScopeValidator {
     }
 
     @Override
-    public boolean userIsAllowedToAccess(String userName, List<URI> requestedOrganizations) {
+    public boolean userIsAllowedToAccessAll(String userName, List<URI> organizations) {
         var viewingScope = fetchViewingScope(userName);
         var allowed = getAllowedUnits(viewingScope);
-        var illegal = difference(allowed, requestedOrganizations);
+        var illegal = difference(allowed, organizations);
         return illegal.isEmpty();
+    }
+
+    @Override
+    public boolean userIsAllowedToAccessOneOf(String userName, List<URI> organizations) {
+        return false;
     }
 
     private static Set<URI> difference(Set<URI> allowed, List<URI> requested) {
