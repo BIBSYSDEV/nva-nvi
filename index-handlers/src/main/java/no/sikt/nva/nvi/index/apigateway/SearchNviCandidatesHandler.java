@@ -134,7 +134,7 @@ public class SearchNviCandidatesHandler
 
     private boolean userIsNotAllowedToView(RequestInfo requestInfo, List<URI> requestedOrganizations)
         throws UnauthorizedException {
-        return !viewingScopeValidator.userIsAllowedToAccess(requestInfo.getUserName(), requestedOrganizations);
+        return !viewingScopeValidator.userIsAllowedToAccessAll(requestInfo.getUserName(), requestedOrganizations);
     }
 
     private List<URI> toOrganizationUris(List<String> affiliationIdentifiers) {

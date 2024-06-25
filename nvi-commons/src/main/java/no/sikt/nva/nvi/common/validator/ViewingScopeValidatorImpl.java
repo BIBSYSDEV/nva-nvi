@@ -29,17 +29,16 @@ public class ViewingScopeValidatorImpl implements ViewingScopeValidator {
     }
 
     @Override
-    public boolean userIsAllowedToAccess(String userName, List<URI> requestedOrganizations) {
+    public boolean userIsAllowedToAccessAll(String userName, List<URI> organizations) {
         var viewingScope = fetchViewingScope(userName);
-        var allowed = getAllowedUnits(viewingScope);
-        var illegal = difference(allowed, requestedOrganizations);
-        return illegal.isEmpty();
+        return getAllowedUnits(viewingScope).containsAll(organizations);
     }
 
-    private static Set<URI> difference(Set<URI> allowed, List<URI> requested) {
-        var difference = new HashSet<>(requested);
-        difference.removeAll(allowed);
-        return difference;
+    @Override
+    public boolean userIsAllowedToAccessOneOf(String userName, List<URI> organizations) {
+        var viewingScope = fetchViewingScope(userName);
+        var allowed = getAllowedUnits(viewingScope);
+        return organizations.stream().anyMatch(allowed::contains);
     }
 
     private static Stream<String> concat(URI topLevelOrg, Stream<String> stringStream) {
