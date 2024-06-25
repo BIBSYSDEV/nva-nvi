@@ -76,7 +76,7 @@ class ViewingScopeValidatorImplTest {
         when(identityServiceClient.getUser(SOME_USERNAME)).thenReturn(userWithViewingScope(org));
         when(organizationRetriever.fetchOrganization(org)).thenReturn(createOrgWithSubOrg(org, subOrg));
         var someOtherOrg = randomUri();
-        assertTrue(viewingScopeValidator.userIsAllowedToAccessAll(SOME_USERNAME, List.of(subOrg, someOtherOrg)));
+        assertTrue(viewingScopeValidator.userIsAllowedToAccessOneOf(SOME_USERNAME, List.of(subOrg, someOtherOrg)));
     }
 
     private static Organization createOrg(URI orgId) {
