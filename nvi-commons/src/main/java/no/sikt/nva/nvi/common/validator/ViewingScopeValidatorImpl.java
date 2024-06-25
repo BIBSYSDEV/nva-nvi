@@ -38,7 +38,9 @@ public class ViewingScopeValidatorImpl implements ViewingScopeValidator {
 
     @Override
     public boolean userIsAllowedToAccessOneOf(String userName, List<URI> organizations) {
-        return false;
+        var viewingScope = fetchViewingScope(userName);
+        var allowed = getAllowedUnits(viewingScope);
+        return organizations.stream().anyMatch(allowed::contains);
     }
 
     private static Set<URI> difference(Set<URI> allowed, List<URI> requested) {
