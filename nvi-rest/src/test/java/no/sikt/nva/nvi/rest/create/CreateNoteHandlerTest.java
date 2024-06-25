@@ -72,9 +72,11 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()), candidateRepository,
+                                         periodRepository).orElseThrow();
+        var request = createRequest(candidate.getIdentifier(), new NviNoteRequest("The note"), randomString());
         viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
         handler = new CreateNoteHandler(candidateRepository, periodRepository, viewingScopeValidatorReturningFalse);
-        var request = createRequest(UUID.randomUUID(), randomString(), randomString());
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -128,7 +130,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         var nonCandidate = Candidate.updateNonCandidate(
             createUpsertNonCandidateRequest(candidateBO.getPublicationId()),
             candidateRepository).orElseThrow();
-        var request = createRequest(nonCandidate.getIdentifier(), randomNote(), randomString());
+        var request = createRequest(nonCandidate.getIdentifier(), randomNote().toJsonString(), randomString());
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 

@@ -329,6 +329,10 @@ public final class Candidate {
         return publicationDetails.publicationId();
     }
 
+    public List<URI> getNviCreatorAffiliations() {
+        return publicationDetails.getNviCreatorAffiliations();
+    }
+
     private static boolean isNotExistingCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
         return !isExistingCandidate(request.publicationId(), repository);
     }
