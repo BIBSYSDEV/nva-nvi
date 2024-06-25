@@ -31,9 +31,7 @@ public class ViewingScopeValidatorImpl implements ViewingScopeValidator {
     @Override
     public boolean userIsAllowedToAccessAll(String userName, List<URI> organizations) {
         var viewingScope = fetchViewingScope(userName);
-        var allowed = getAllowedUnits(viewingScope);
-        var illegal = difference(allowed, organizations);
-        return illegal.isEmpty();
+        return getAllowedUnits(viewingScope).containsAll(organizations);
     }
 
     @Override
@@ -41,12 +39,6 @@ public class ViewingScopeValidatorImpl implements ViewingScopeValidator {
         var viewingScope = fetchViewingScope(userName);
         var allowed = getAllowedUnits(viewingScope);
         return organizations.stream().anyMatch(allowed::contains);
-    }
-
-    private static Set<URI> difference(Set<URI> allowed, List<URI> requested) {
-        var difference = new HashSet<>(requested);
-        difference.removeAll(allowed);
-        return difference;
     }
 
     private static Stream<String> concat(URI topLevelOrg, Stream<String> stringStream) {
