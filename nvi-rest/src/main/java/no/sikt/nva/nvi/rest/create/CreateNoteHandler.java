@@ -10,6 +10,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.exceptions.NotApplicableException;
@@ -20,6 +21,8 @@ import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidatorImpl;
+import no.unit.nva.auth.uriretriever.UriRetriever;
+import no.unit.nva.clients.IdentityServiceClient;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -76,8 +79,10 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         return HttpURLConnection.HTTP_OK;
     }
 
+    @JacocoGenerated
     private static ViewingScopeValidatorImpl defaultViewingScopeValidator() {
-        return null;
+        return new ViewingScopeValidatorImpl(IdentityServiceClient.prepare(),
+                                             new OrganizationRetriever(new UriRetriever()));
     }
 
     private void validateViewingScope(RequestInfo requestInfo) throws UnauthorizedException {
