@@ -540,6 +540,18 @@ class CandidateTest extends LocalDynamoTest {
         assertThat(id, is(not(nullValue())));
     }
 
+    @Test
+    void shouldReturnCreatorAffiliations() {
+        var creator1affiliation = randomUri();
+        var creator2affiliation = randomUri();
+        var creator1 = DbCreator.builder().creatorId(randomUri()).affiliations(List.of(creator1affiliation)).build();
+        var creator2 = DbCreator.builder().creatorId(randomUri()).affiliations(List.of(creator2affiliation)).build();
+        var dao = candidateRepository.create(randomCandidate().copy().creators(List.of(creator1, creator2)).build(),
+                                             List.of(randomApproval()));
+        var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+        assertEquals(List.of(creator1affiliation, creator2affiliation), candidate.getNviCreatorAffiliations());
+    }
+
     private static InstitutionPoints createInstitutionPoints(URI institutionId, BigDecimal institutionPoints,
                                                              URI creatorId) {
         return new InstitutionPoints(institutionId, institutionPoints,
