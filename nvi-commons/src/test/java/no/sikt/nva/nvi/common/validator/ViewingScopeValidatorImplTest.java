@@ -70,8 +70,13 @@ class ViewingScopeValidatorImplTest {
     }
 
     @Test
-    void shouldReturnTrueWhenUserIsAllowedToAccessOneOfOrgsSubOrg() {
-
+    void shouldReturnTrueWhenUserIsAllowedToAccessOneOfOrgsSubOrg() throws NotFoundException {
+        var org = URI.create("https://www.example.com/org");
+        var subOrg = URI.create("https://www.example.com/subOrg");
+        when(identityServiceClient.getUser(SOME_USERNAME)).thenReturn(userWithViewingScope(org));
+        when(organizationRetriever.fetchOrganization(org)).thenReturn(createOrgWithSubOrg(org, subOrg));
+        var someOtherOrg = randomUri();
+        assertTrue(viewingScopeValidator.userIsAllowedToAccessAll(SOME_USERNAME, List.of(subOrg, someOtherOrg)));
     }
 
     private static Organization createOrg(URI orgId) {
