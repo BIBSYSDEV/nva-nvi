@@ -13,7 +13,12 @@ public class FakeViewingScopeValidator implements ViewingScopeValidator {
     }
 
     @Override
-    public boolean userIsAllowedToAccess(String userName, List<URI> requestedOrganizations) {
+    public boolean userIsAllowedToAccessAll(String userName, List<URI> organizations) {
+        return returnValue;
+    }
+
+    @Override
+    public boolean userIsAllowedToAccessOneOf(String userName, List<URI> organizations) {
         return returnValue;
     }
 }

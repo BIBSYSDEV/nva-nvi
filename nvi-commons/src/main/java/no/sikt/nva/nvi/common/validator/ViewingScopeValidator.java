@@ -5,5 +5,6 @@ import java.util.List;
 
 public interface ViewingScopeValidator {
 
-    boolean userIsAllowedToAccess(String userName, List<URI> requestedOrganizations);
+    boolean userIsAllowedToAccessAll(String userName, List<URI> organizations);
+    boolean userIsAllowedToAccessOneOf(String userName, List<URI> organizations);
 }

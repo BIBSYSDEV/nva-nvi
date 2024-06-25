@@ -35,29 +35,48 @@ class ViewingScopeValidatorImplTest {
     }
 
     @Test
-    void shouldReturnFalseIfUserIsNotAllowedToAccessRequestedOrgs() throws NotFoundException {
+    void shouldReturnFalseWhenUserIsNotAllowedToAccessAllOrgs() throws NotFoundException {
         var allowedOrg = randomUri();
         when(identityServiceClient.getUser(SOME_USERNAME)).thenReturn(userWithViewingScope(allowedOrg));
         when(organizationRetriever.fetchOrganization(allowedOrg)).thenReturn(createOrg(allowedOrg));
         var someOtherOrg = randomUri();
-        assertFalse(viewingScopeValidator.userIsAllowedToAccess(SOME_USERNAME, List.of(someOtherOrg)));
+        assertFalse(viewingScopeValidator.userIsAllowedToAccessAll(SOME_USERNAME, List.of(allowedOrg, someOtherOrg)));
     }
 
     @Test
-    void shouldReturnTrueIfUserIsAllowedToAccessRequestedOrgs() throws NotFoundException {
+    void shouldReturnTrueWhenUserIsAllowedToAccessAllOrgs() throws NotFoundException {
         var allowedOrg = randomUri();
         when(identityServiceClient.getUser(SOME_USERNAME)).thenReturn(userWithViewingScope(allowedOrg));
         when(organizationRetriever.fetchOrganization(allowedOrg)).thenReturn(createOrg(allowedOrg));
-        assertTrue(viewingScopeValidator.userIsAllowedToAccess(SOME_USERNAME, List.of(allowedOrg)));
+        assertTrue(viewingScopeValidator.userIsAllowedToAccessAll(SOME_USERNAME, List.of(allowedOrg)));
     }
 
     @Test
-    void shouldReturnTrueIfUserIsAllowedToAccessRequestedOrgsSubOrg() throws NotFoundException {
+    void shouldReturnTrueWhenUserIsAllowedToAccessOrgsSubOrg() throws NotFoundException {
         var org = URI.create("https://www.example.com/org");
         var subOrg = URI.create("https://www.example.com/subOrg");
         when(identityServiceClient.getUser(SOME_USERNAME)).thenReturn(userWithViewingScope(org));
         when(organizationRetriever.fetchOrganization(org)).thenReturn(createOrgWithSubOrg(org, subOrg));
-        assertTrue(viewingScopeValidator.userIsAllowedToAccess(SOME_USERNAME, List.of(subOrg)));
+        assertTrue(viewingScopeValidator.userIsAllowedToAccessAll(SOME_USERNAME, List.of(subOrg)));
+    }
+
+    @Test
+    void shouldReturnTrueWhenUserIsAllowedToAccessOneOfOrgs() throws NotFoundException {
+        var allowedOrg = randomUri();
+        when(identityServiceClient.getUser(SOME_USERNAME)).thenReturn(userWithViewingScope(allowedOrg));
+        when(organizationRetriever.fetchOrganization(allowedOrg)).thenReturn(createOrg(allowedOrg));
+        var someOtherOrg = randomUri();
+        assertTrue(viewingScopeValidator.userIsAllowedToAccessOneOf(SOME_USERNAME, List.of(allowedOrg, someOtherOrg)));
+    }
+
+    @Test
+    void shouldReturnTrueWhenUserIsAllowedToAccessOneOfOrgsSubOrg() throws NotFoundException {
+        var org = URI.create("https://www.example.com/org");
+        var subOrg = URI.create("https://www.example.com/subOrg");
+        when(identityServiceClient.getUser(SOME_USERNAME)).thenReturn(userWithViewingScope(org));
+        when(organizationRetriever.fetchOrganization(org)).thenReturn(createOrgWithSubOrg(org, subOrg));
+        var someOtherOrg = randomUri();
+        assertTrue(viewingScopeValidator.userIsAllowedToAccessOneOf(SOME_USERNAME, List.of(subOrg, someOtherOrg)));
     }
 
     private static Organization createOrg(URI orgId) {
