@@ -5,8 +5,6 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.util.UUID;
-import no.sikt.nva.nvi.rest.ViewingScopeHandler;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.DynamoRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -16,9 +14,7 @@ import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
-import no.sikt.nva.nvi.common.validator.ViewingScopeValidatorImpl;
-import no.unit.nva.auth.uriretriever.UriRetriever;
-import no.unit.nva.clients.IdentityServiceClient;
+import no.sikt.nva.nvi.rest.ViewingScopeHandler;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -35,7 +31,8 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto> imp
     @JacocoGenerated
     public RemoveNoteHandler() {
         this(new CandidateRepository(DynamoRepository.defaultDynamoClient()),
-             new PeriodRepository(DynamoRepository.defaultDynamoClient()), defaultViewingScopeValidator());
+             new PeriodRepository(DynamoRepository.defaultDynamoClient()),
+             ViewingScopeHandler.defaultViewingScopeValidator());
     }
 
     public RemoveNoteHandler(CandidateRepository candidateRepository, PeriodRepository periodRepository,
@@ -67,11 +64,5 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto> imp
     @Override
     protected Integer getSuccessStatusCode(Void input, CandidateDto output) {
         return HttpURLConnection.HTTP_OK;
-    }
-
-    @JacocoGenerated
-    private static ViewingScopeValidatorImpl defaultViewingScopeValidator() {
-        return new ViewingScopeValidatorImpl(IdentityServiceClient.prepare(),
-                                             new OrganizationRetriever(new UriRetriever()));
     }
 }

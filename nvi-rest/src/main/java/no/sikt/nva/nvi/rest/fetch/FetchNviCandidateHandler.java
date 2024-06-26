@@ -5,8 +5,6 @@ import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.UUID;
-import no.sikt.nva.nvi.rest.ViewingScopeHandler;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -15,9 +13,7 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
-import no.sikt.nva.nvi.common.validator.ViewingScopeValidatorImpl;
-import no.unit.nva.auth.uriretriever.UriRetriever;
-import no.unit.nva.clients.IdentityServiceClient;
+import no.sikt.nva.nvi.rest.ViewingScopeHandler;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -35,7 +31,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
     @JacocoGenerated
     public FetchNviCandidateHandler() {
         this(new CandidateRepository(defaultDynamoClient()), new PeriodRepository(defaultDynamoClient()),
-             defaultViewingScopeValidator());
+             ViewingScopeHandler.defaultViewingScopeValidator());
     }
 
     public FetchNviCandidateHandler(CandidateRepository candidateRepository, PeriodRepository periodRepository,
@@ -81,12 +77,6 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
 
     private static boolean isNviCurator(RequestInfo requestInfo) {
         return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI_CANDIDATES);
-    }
-
-    @JacocoGenerated
-    private static ViewingScopeValidatorImpl defaultViewingScopeValidator() {
-        return new ViewingScopeValidatorImpl(IdentityServiceClient.prepare(),
-                                             new OrganizationRetriever(new UriRetriever()));
     }
 
     private Candidate checkIfApplicable(Candidate candidate) {

@@ -31,6 +31,7 @@ import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -57,6 +58,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     private ByteArrayOutputStream output;
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
+    private FakeViewingScopeValidator viewingScopeValidator;
 
     public static Stream<Arguments> approvalStatusProvider() {
         return Stream.of(Arguments.of(ApprovalStatus.PENDING, ApprovalStatus.APPROVED),
@@ -73,7 +75,8 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         context = mock(Context.class);
         candidateRepository = new CandidateRepository(localDynamo);
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-        handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository);
+        viewingScopeValidator = new FakeViewingScopeValidator(true);
+        handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository, viewingScopeValidator);
     }
 
     @Test
@@ -81,6 +84,20 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         handler.handleRequest(createRequestWithoutAccessRights(randomStatusRequest()), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
+        assertThat(response.getStatusCode(), is(CoreMatchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
+        var institutionId = randomUri();
+        var candidate =
+            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+                .orElseThrow();
+        var request = createRequest(candidate.getIdentifier(), institutionId, ApprovalStatus.APPROVED);
+        viewingScopeValidator = new FakeViewingScopeValidator(false);
+        handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository, viewingScopeValidator);
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
         assertThat(response.getStatusCode(), is(CoreMatchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
     }
 
@@ -100,7 +117,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldReturnConflictWhenUpdatingStatusAndReportingPeriodIsClosed() throws IOException {
         candidateRepository = new CandidateRepository(localDynamo);
         periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
-        handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository);
+        handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository, viewingScopeValidator);
         var institutionId = randomUri();
         var candidate =
             Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
@@ -116,7 +133,7 @@ public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldReturnConflictWhenUpdatingStatusAndNotOpenedPeriod() throws IOException {
         candidateRepository = new CandidateRepository(localDynamo);
         periodRepository = periodRepositoryReturningNotOpenedPeriod(CURRENT_YEAR);
-        handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository);
+        handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository, viewingScopeValidator);
         var institutionId = randomUri();
         var candidate =
             Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
