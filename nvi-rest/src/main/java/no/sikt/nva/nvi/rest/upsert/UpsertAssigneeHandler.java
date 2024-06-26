@@ -16,6 +16,8 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
+import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
+import no.sikt.nva.nvi.rest.ViewingScopeHandler;
 import no.sikt.nva.nvi.rest.model.UpsertAssigneeRequest;
 import no.sikt.nva.nvi.rest.model.User;
 import no.sikt.nva.nvi.rest.model.User.Role;
@@ -31,7 +33,8 @@ import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
-public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeRequest, CandidateDto> {
+public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeRequest, CandidateDto>
+    implements ViewingScopeHandler {
 
     public static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
     public static final Environment ENVIRONMENT = new Environment();
@@ -44,21 +47,24 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
     private final RawContentRetriever uriRetriever;
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
+    private final ViewingScopeValidator viewingScopeValidator;
 
     @JacocoGenerated
     public UpsertAssigneeHandler() {
-        super(UpsertAssigneeRequest.class);
-        this.candidateRepository = new CandidateRepository(DynamoRepository.defaultDynamoClient());
-        this.periodRepository = new PeriodRepository(DynamoRepository.defaultDynamoClient());
-        this.uriRetriever = new AuthorizedBackendUriRetriever(BACKEND_CLIENT_AUTH_URL, BACKEND_CLIENT_SECRET_NAME);
+        this(new CandidateRepository(DynamoRepository.defaultDynamoClient()),
+             new PeriodRepository(DynamoRepository.defaultDynamoClient()),
+             new AuthorizedBackendUriRetriever(BACKEND_CLIENT_AUTH_URL, BACKEND_CLIENT_SECRET_NAME),
+             ViewingScopeHandler.defaultViewingScopeValidator());
     }
 
     public UpsertAssigneeHandler(CandidateRepository candidateRepository,
-                                 PeriodRepository periodRepository, RawContentRetriever uriRetriever) {
+                                 PeriodRepository periodRepository, RawContentRetriever uriRetriever,
+                                 ViewingScopeValidator viewingScopeValidator) {
         super(UpsertAssigneeRequest.class);
         this.candidateRepository = candidateRepository;
         this.periodRepository = periodRepository;
         this.uriRetriever = uriRetriever;
+        this.viewingScopeValidator = viewingScopeValidator;
     }
 
     @Override
@@ -74,6 +80,8 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
         var institutionId = input.institutionId();
         var assignee = input.assignee();
         return attempt(() -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
+                   .map(candidate -> validateViewingScope(viewingScopeValidator, RequestUtil.getUsername(requestInfo),
+                                                          candidate))
                    .map(candidate -> candidate.updateApproval(new UpdateAssigneeRequest(institutionId, assignee)))
                    .map(Candidate::toDto)
                    .orElseThrow(ExceptionMapper::map);

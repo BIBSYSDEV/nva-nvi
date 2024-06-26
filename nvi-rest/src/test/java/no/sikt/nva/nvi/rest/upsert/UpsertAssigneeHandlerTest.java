@@ -33,6 +33,7 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.rest.model.UpsertAssigneeRequest;
+import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.commons.json.JsonUtils;
@@ -40,6 +41,7 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.ioutils.IoUtils;
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
@@ -53,6 +55,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
     private AuthorizedBackendUriRetriever uriRetriever;
+    private FakeViewingScopeValidator viewingScopeValidator;
 
     @BeforeEach
     void init() {
@@ -61,7 +64,8 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         candidateRepository = new CandidateRepository(initializeTestDatabase());
         periodRepository = periodRepositoryReturningOpenedPeriod(YEAR);
         uriRetriever = mock(AuthorizedBackendUriRetriever.class);
-        handler = new UpsertAssigneeHandler(candidateRepository, periodRepository, uriRetriever);
+        viewingScopeValidator = new FakeViewingScopeValidator(true);
+        handler = new UpsertAssigneeHandler(candidateRepository, periodRepository, uriRetriever, viewingScopeValidator);
     }
 
     @Test
@@ -94,6 +98,19 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
+        mockUserApiResponse("userResponseBodyWithAccessRight.json");
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()),
+                                         candidateRepository, periodRepository).orElseThrow();
+        var assignee = randomString();
+        viewingScopeValidator = new FakeViewingScopeValidator(false);
+        handler = new UpsertAssigneeHandler(candidateRepository, periodRepository, uriRetriever, viewingScopeValidator);
+        handler.handleRequest(createRequest(candidate, assignee), output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+        assertThat(response.getStatusCode(), is(CoreMatchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    }
+
+    @Test
     void shouldReturnNotFoundWhenCandidateDoesNotExist() throws IOException {
         mockUserApiResponse("userResponseBodyWithAccessRight.json");
         handler.handleRequest(createRequestWithNonExistingCandidate(), output, context);
@@ -110,7 +127,8 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
                                          periodRepository).orElseThrow();
         var assignee = randomString();
         var periodRepository = periodRepositoryReturningClosedPeriod(YEAR);
-        var handler = new UpsertAssigneeHandler(candidateRepository, periodRepository, uriRetriever);
+        var handler = new UpsertAssigneeHandler(candidateRepository, periodRepository, uriRetriever,
+                                                viewingScopeValidator);
         handler.handleRequest(createRequest(candidate, assignee), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -125,7 +143,8 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
                                          periodRepository).orElseThrow();
         var assignee = randomString();
         var periodRepository = periodRepositoryReturningNotOpenedPeriod(YEAR);
-        var handler = new UpsertAssigneeHandler(candidateRepository, periodRepository, uriRetriever);
+        var handler = new UpsertAssigneeHandler(candidateRepository, periodRepository, uriRetriever,
+                                                viewingScopeValidator);
         handler.handleRequest(createRequest(candidate, assignee), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -194,7 +213,8 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         var approvalToUpdate = candidate.toDto().approvals().get(0);
         var requestBody = new UpsertAssigneeRequest(newAssignee, approvalToUpdate.institutionId());
         var customerId = randomUri();
-        return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper).withBody(randomAssigneeRequest())
+        return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper).withBody(
+                randomAssigneeRequest())
                    .withCurrentCustomer(customerId)
                    .withTopLevelCristinOrgId(requestBody.institutionId())
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
@@ -210,7 +230,8 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
                 .orElseThrow().toDto().approvals().get(0);
         var requestBody = new UpsertAssigneeRequest(randomString(), approvalToUpdate.institutionId());
         var customerId = randomUri();
-        return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper).withBody(randomAssigneeRequest())
+        return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper).withBody(
+                randomAssigneeRequest())
                    .withCurrentCustomer(customerId)
                    .withTopLevelCristinOrgId(requestBody.institutionId())
                    .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
@@ -221,12 +242,14 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     }
 
     private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
-        return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper).withBody(randomAssigneeRequest())
+        return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper).withBody(
+                randomAssigneeRequest())
                    .build();
     }
 
     private InputStream createRequestWithDifferentInstitution() throws JsonProcessingException {
-        return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper).withBody(randomAssigneeRequest())
+        return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper).withBody(
+                randomAssigneeRequest())
                    .withCurrentCustomer(randomUri())
                    .build();
     }
