@@ -25,9 +25,10 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
-import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.rest.create.NviNoteRequest;
+import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -54,7 +55,7 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
         localDynamo = initializeTestDatabase();
         candidateRepository = new CandidateRepository(localDynamo);
         periodRepository = periodRepositoryReturningOpenedPeriod(YEAR);
-        handler = new RemoveNoteHandler(candidateRepository, periodRepository);
+        handler = new RemoveNoteHandler(candidateRepository, periodRepository, new FakeViewingScopeValidator(true));
     }
 
     @Test
@@ -64,6 +65,20 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
             output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
+        var candidate = createCandidate();
+        var user = randomUsername();
+        var candidateWithNote = createNote(candidate, user);
+        var noteId = candidateWithNote.toDto().notes().get(0).identifier();
+        var request = createRequest(candidate.getIdentifier(), noteId, user.value()).build();
+        var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
+        handler = new RemoveNoteHandler(candidateRepository, periodRepository, viewingScopeValidatorReturningFalse);
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
     }
 
@@ -107,7 +122,8 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
         candidate.createNote(new CreateNoteRequest(randomString(), user, randomUri()));
         var noteId = candidate.toDto().notes().get(0).identifier();
         var request = createRequest(candidate.getIdentifier(), noteId, user).build();
-        handler = new RemoveNoteHandler(candidateRepository, periodRepositoryReturningClosedPeriod(YEAR));
+        handler = new RemoveNoteHandler(candidateRepository, periodRepositoryReturningClosedPeriod(YEAR),
+                                        new FakeViewingScopeValidator(true));
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 

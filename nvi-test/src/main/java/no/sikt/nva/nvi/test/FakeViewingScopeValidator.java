@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.apigateway;
+package no.sikt.nva.nvi.test;
 
 import java.net.URI;
 import java.util.List;

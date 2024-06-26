@@ -15,6 +15,13 @@ public record PublicationDetails(URI publicationId,
                                  URI publicationChannelId,
                                  String level) {
 
+    public List<URI> getNviCreatorAffiliations() {
+        return creators.stream()
+                   .map(Creator::affiliations)
+                   .flatMap(List::stream)
+                   .toList();
+    }
+
     public record PublicationDate(String year, String month, String day) {
 
     }

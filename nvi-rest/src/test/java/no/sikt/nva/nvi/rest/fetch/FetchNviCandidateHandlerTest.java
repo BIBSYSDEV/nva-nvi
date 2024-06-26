@@ -11,6 +11,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,6 +31,7 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -56,7 +58,8 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
         output = new ByteArrayOutputStream();
         candidateRepository = new CandidateRepository(localDynamo);
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-        handler = new FetchNviCandidateHandler(candidateRepository, periodRepository);
+        handler = new FetchNviCandidateHandler(candidateRepository, periodRepository,
+                                               new FakeViewingScopeValidator(true));
     }
 
     @Test
@@ -80,15 +83,18 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldReturnUnauthorizedWhenUserDoesNotBelongToSameInstitutionAsAnyOfCandidateApprovalInstitutions()
-        throws IOException {
-        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()),
-                                         candidateRepository, periodRepository).orElseThrow();
-        var request = createRequest(candidate.getIdentifier(), randomUri(), MANAGE_NVI_CANDIDATES);
+    void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
+        var institutionId = randomUri();
+        var candidate =
+            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+                .orElseThrow();
+        var request = createRequest(candidate.getIdentifier(), institutionId, MANAGE_NVI_CANDIDATES);
+        var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
+        handler = new FetchNviCandidateHandler(candidateRepository, periodRepository,
+                                               viewingScopeValidatorReturningFalse);
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
-
-        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
     }
 
     @Test
