@@ -17,6 +17,7 @@ import no.sikt.nva.nvi.common.exceptions.NotApplicableException;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.Username;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
@@ -55,7 +56,6 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
     @Override
     protected void validateRequest(NviNoteRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-        validateViewingScope(requestInfo);
         hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATES);
         validate(input);
     }
@@ -68,6 +68,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         var institutionId = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         return attempt(() -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
                    .map(this::checkIfApplicable)
+                   .map(candidate -> validateViewingScope(username, candidate))
                    .map(candidate -> candidate.createNote(new CreateNoteRequest(input.text(), username.value(),
                                                                                 institutionId)))
                    .map(Candidate::toDto)
@@ -85,13 +86,11 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
                                              new OrganizationRetriever(new UriRetriever()));
     }
 
-    private void validateViewingScope(RequestInfo requestInfo) throws UnauthorizedException {
-        var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
-        var organizations = Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository)
-                                .getNviCreatorAffiliations();
-        if (isNotAllowedToAccessOneOfOrganizations(requestInfo.getUserName(), organizations)) {
+    private Candidate validateViewingScope(Username username, Candidate candidate) throws UnauthorizedException {
+        if (isNotAllowedToAccessOneOfOrganizations(username.value(), candidate.getNviCreatorAffiliations())) {
             throw new UnauthorizedException();
         }
+        return candidate;
     }
 
     private boolean isNotAllowedToAccessOneOfOrganizations(String userName, List<URI> organizations) {

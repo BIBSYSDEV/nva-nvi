@@ -64,9 +64,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnUnauthorizedWhenMissingAccessRights() throws IOException {
-        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()), candidateRepository,
-                                         periodRepository).orElseThrow();
-        handler.handleRequest(requestWithoutAccessRights(candidate.getIdentifier(), randomNote()), output, context);
+        handler.handleRequest(requestWithoutAccessRights(UUID.randomUUID(), randomNote()), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
         assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -86,11 +84,9 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnBadRequestIfCreateNoteRequestIsInvalid() throws IOException {
-        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()), candidateRepository,
-                                         periodRepository).orElseThrow();
         var invalidRequestBody = JsonUtils.dtoObjectMapper.writeValueAsString(
             Map.of("someInvalidInputField", randomString()));
-        var request = createRequest(candidate.getIdentifier(), invalidRequestBody, randomString());
+        var request = createRequest(UUID.randomUUID(), invalidRequestBody, randomString());
 
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
