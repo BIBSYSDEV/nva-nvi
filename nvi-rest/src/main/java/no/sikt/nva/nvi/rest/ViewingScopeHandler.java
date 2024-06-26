@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common;
+package no.sikt.nva.nvi.rest;
 
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.Username;
