@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.ViewingScopeHandler;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -12,6 +13,7 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
+import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidatorImpl;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -23,7 +25,7 @@ import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
 
-public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateDto> {
+public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateDto> implements ViewingScopeHandler {
 
     public static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
     private final CandidateRepository candidateRepository;
@@ -55,7 +57,8 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
         return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER)).map(UUID::fromString)
                    .map(identifier -> Candidate.fetch(() -> identifier, candidateRepository, periodRepository))
                    .map(this::checkIfApplicable)
-                   .map(candidate -> validateViewingScope(candidate, requestInfo))
+                   .map(candidate -> validateViewingScope(viewingScopeValidator, RequestUtil.getUsername(requestInfo),
+                                                          candidate))
                    .map(Candidate::toDto)
                    .orElseThrow(ExceptionMapper::map);
     }
@@ -84,17 +87,6 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
     private static ViewingScopeValidatorImpl defaultViewingScopeValidator() {
         return new ViewingScopeValidatorImpl(IdentityServiceClient.prepare(),
                                              new OrganizationRetriever(new UriRetriever()));
-    }
-
-    private Candidate validateViewingScope(Candidate candidate, RequestInfo requestInfo) throws UnauthorizedException {
-        if (isNotAllowedToAccessOneOfOrganizations(requestInfo.getUserName(), candidate)) {
-            throw new UnauthorizedException();
-        }
-        return candidate;
-    }
-
-    private boolean isNotAllowedToAccessOneOfOrganizations(String userName, Candidate candidate) {
-        return !viewingScopeValidator.userIsAllowedToAccessOneOf(userName, candidate.getNviCreatorAffiliations());
     }
 
     private Candidate checkIfApplicable(Candidate candidate) {

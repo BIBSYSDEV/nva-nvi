@@ -4,16 +4,14 @@ import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDEN
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
-import java.net.URI;
-import java.util.List;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.ViewingScopeHandler;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.DynamoRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.Username;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
@@ -25,10 +23,9 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
-import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
 
-public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto> {
+public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto> implements ViewingScopeHandler {
 
     public static final String PARAM_NOTE_IDENTIFIER = "noteIdentifier";
     private final CandidateRepository candidateRepository;
@@ -61,7 +58,7 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto> {
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
         var noteIdentifier = UUID.fromString(requestInfo.getPathParameter(PARAM_NOTE_IDENTIFIER));
         return attempt(() -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
-                   .map(candidate -> validateViewingScope(username, candidate))
+                   .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
                    .map(candidate -> candidate.deleteNote(new DeleteNoteRequest(noteIdentifier, username.value())))
                    .map(Candidate::toDto)
                    .orElseThrow(ExceptionMapper::map);
@@ -76,16 +73,5 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto> {
     private static ViewingScopeValidatorImpl defaultViewingScopeValidator() {
         return new ViewingScopeValidatorImpl(IdentityServiceClient.prepare(),
                                              new OrganizationRetriever(new UriRetriever()));
-    }
-
-    private Candidate validateViewingScope(Username username, Candidate candidate) throws UnauthorizedException {
-        if (isNotAllowedToAccessOneOfOrganizations(username.value(), candidate.getNviCreatorAffiliations())) {
-            throw new UnauthorizedException();
-        }
-        return candidate;
-    }
-
-    private boolean isNotAllowedToAccessOneOfOrganizations(String userName, List<URI> organizations) {
-        return !viewingScopeValidator.userIsAllowedToAccessOneOf(userName, organizations);
     }
 }
