@@ -222,8 +222,8 @@ paths:
 
   /candidate:
     get:
-      description: Search for scientific index candidates
-      summary: Search for scientific index candidates
+      description: Search for NVI candidates
+      summary: Search for candidates
       operationId: searchNviCandidate
       parameters:
         - in: query
@@ -327,8 +327,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}:
     get:
-      description: Get scientific index candidate
-      summary: Get scientific index candidate
+      description: Get NVI candidate
+      summary: Get candidate
       operationId: getNviCandidate
       parameters:
         - in: path
@@ -370,7 +370,7 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/publication/{candidatePublicationId+}:
     get:
-      description: Get scientific index candidate by publication identifier
+      description: Get NVI candidate by publication identifier
       summary: Get candidate by publication identifier
       operationId: getNviCandidateByPublicationIdentifier
       parameters:
