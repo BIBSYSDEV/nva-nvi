@@ -10,7 +10,9 @@ x-amazon-apigateway-request-validators:
 paths:
   /context:
     get:
-      description: 'Get json ld context for NVI'
+      description: Get JSON-LD context for NVI
+      summary: Get JSON-LD context
+      operationId: getNviContext
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviCandidateContextHandler.Arn}:live/invocations
@@ -41,13 +43,15 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /period:
     post:
+      description: Create NVI period
+      summary: Create period
+      operationId: createNviPeriod
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/NviPeriod'
-      description: 'Create nvi period'
       security:
         - CognitoUserPool: [
           'https://api.nva.unit.no/scopes/backend',
@@ -87,7 +91,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
     get:
-      description: 'Get Nvi Periods'
+      description: List NVI periods
+      summary: List periods
+      operationId: listNviPeriods
       security:
         - CognitoUserPool: [
           'https://api.nva.unit.no/scopes/backend',
@@ -121,13 +127,15 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
     put:
+      description: Update NVI period
+      summary: Update period
+      operationId: updateNviPeriod
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/NviPeriod'
-      description: 'Update nvi period'
       security:
         - CognitoUserPool: [
           'https://api.nva.unit.no/scopes/backend',
@@ -175,7 +183,9 @@ paths:
 
   /period/{periodIdentifier}:
     get:
-      description: 'Get Nvi Period'
+      description: Get NVI period
+      summary: Get period
+      operationId: getNviPeriod
       parameters:
         - in: path
           name: periodIdentifier
@@ -212,7 +222,9 @@ paths:
 
   /candidate:
     get:
-      description: 'Search for scientific index candidates'
+      description: Search for scientific index candidates
+      summary: Search for scientific index candidates
+      operationId: searchNviCandidate
       parameters:
         - in: query
           name: query
@@ -315,7 +327,9 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}:
     get:
-      description: 'Get scientific index candidate'
+      description: Get scientific index candidate
+      summary: Get scientific index candidate
+      operationId: getNviCandidate
       parameters:
         - in: path
           name: candidateIdentifier
@@ -356,7 +370,9 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/publication/{candidatePublicationId+}:
     get:
-      description: 'Get scientific index candidate by publication identifier'
+      description: Get scientific index candidate by publication identifier
+      summary: Get candidate by publication identifier
+      operationId: getNviCandidateByPublicationIdentifier
       parameters:
         - in: path
           name: candidatePublicationId+
@@ -391,6 +407,9 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}/status:
     put:
+      description: Update Candidate Approval Status
+      summary: Update Candidate Approval Status
+      operationId: updateNviCandidateApprovalStatus
       parameters:
         - in: path
           name: candidateIdentifier
@@ -404,7 +423,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ApprovalStatusRequest'
-      description: 'Update Candidate Approval Status '
       security:
         - CognitoUserPool: [
           'https://api.nva.unit.no/scopes/backend',
@@ -445,6 +463,9 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}/assignee:
     put:
+      description: Update Candidate Assignee
+      summary: Update Candidate Assignee
+      operationId: updateNviCandidateAssignee
       parameters:
         - in: path
           name: candidateIdentifier
@@ -458,7 +479,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AssigneeRequest'
-      description: 'Update Candidate Assignee'
       security:
         - CognitoUserPool: [
           'https://api.nva.unit.no/scopes/backend',
@@ -499,6 +519,9 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}/note:
     post:
+      description: Create note on NVI candidate
+      summary: Create note on candidate
+      operationId: createNviCandidateNotes
       parameters:
         - in: path
           name: candidateIdentifier
@@ -552,6 +575,9 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}/note/{noteIdentifier}:
     delete:
+      description: Delete note on NVI candidate
+      summary: Delete note
+      operationId: deleteNviCandidateNote
       parameters:
         - in: path
           name: candidateIdentifier
@@ -605,7 +631,9 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /institution-report/{year}:
     get:
-      description: 'Get NVI report for a given year'
+      description: Get NVI report for a given year
+      summary: Get NVI report for year
+      operationId: getNviReportByYear
       parameters:
         - in: path
           name: year
