@@ -121,7 +121,9 @@ public final class CristinMapper {
     }
 
     public List<DbApprovalStatus> toApprovals(CristinNviReport cristinNviReport) {
-        return cristinNviReport.cristinLocales().stream().map(CristinMapper::toApproval).toList();
+        return cristinNviReport.cristinLocales().stream()
+                   .filter(cristinLocale -> nonNull(cristinLocale.getInstitutionIdentifier()))
+                   .map(CristinMapper::toApproval).toList();
     }
 
     private static BigDecimal sumPoints(List<DbInstitutionPoints> points) {
@@ -307,7 +309,11 @@ public final class CristinMapper {
     }
 
     private static boolean hasSameInstitutionIdentifier(ScientificPerson scientificPerson, CristinLocale cristinLocale) {
-        return cristinLocale.getInstitutionIdentifier().equals(scientificPerson.getInstitutionIdentifier());
+        if (nonNull(cristinLocale.getInstitutionIdentifier())) {
+            return cristinLocale.getInstitutionIdentifier().equals(scientificPerson.getInstitutionIdentifier());
+        } else {
+            return false;
+        }
     }
 
     private URI extractInstitutionIdentifierForTransferredInstitution(ScientificPerson scientificPerson,
