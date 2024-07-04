@@ -459,6 +459,17 @@ class CristinMapperTest {
         assertThat(dbCandidate.points(), is(emptyIterable()));
     }
 
+    @Test
+    void shouldNotCreateApprovalWhenApprovalIsMissingInstitutionIdentifier() {
+        var creator = scientificPersonAtInstitutionWithPoints(INSTITUTION_IDENTIFIER, POINTS_PER_CONTRIBUTOR);
+        var scientificResource = scientificResourceWithCreators(List.of(creator));
+        var cristinLocale = cristinLocaleWithInstitutionIdentifier(null);
+        var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
+        var approvals = cristinMapper.toApprovals(report.build());
+
+        assertThat(approvals, is(emptyIterable()));
+    }
+
     private static CristinNviReport nviReportWithInstanceTypeAndReference(String instanceType, String reference) {
         var institutionIdentifier = randomString();
         var creators = List.of(scientificPersonAtInstitutionWithPoints(institutionIdentifier, POINTS_PER_CONTRIBUTOR),
