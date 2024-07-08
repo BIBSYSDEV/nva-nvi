@@ -154,10 +154,10 @@ public final class NviCandidateIndexDocumentGenerator {
                    .filter(organization -> isOrgWithInstitutionId(organization, approval.getInstitutionId()))
                    .findFirst()
                    .map(org -> org.at(JSON_PTR_LABELS))
-                   .flatMap(NviCandidateIndexDocumentGenerator::getStringStringMap);
+                   .flatMap(NviCandidateIndexDocumentGenerator::readAsStringMap);
     }
 
-    private static Optional<Map<String, String>> getStringStringMap(JsonNode node) {
+    private static Optional<Map<String, String>> readAsStringMap(JsonNode node) {
         return attempt(() -> dtoObjectMapper.readValue(node.toString(), TYPE_REF)).toOptional();
     }
 
