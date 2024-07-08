@@ -159,6 +159,20 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldFetchOrganizationLabelsFromCristinApiWhenTopLevelOrgNodeIsInvalid() {
+        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
+        var expandedResource = createExpandedResource(candidate);
+        setupResourceWithInvalidObjectInS3(expandedResource, candidate);
+        var expectedIndexDocument = IndexDocumentWithConsumptionAttributes.from(
+            createExpectedNviIndexDocument(expandedResource, candidate)).indexDocument();
+        var event = createEvent(candidate.getIdentifier());
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @Test
     void shouldBuildIndexDocumentWithConsumptionAttributes() {
         var candidate = randomApplicableCandidate();
         var expectedConsumptionAttributes = setUpExistingResourceInS3AndGenerateExpectedDocument(
@@ -437,6 +451,15 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     private void setupResourceMissingTopLevelOrganizationsInS3(JsonNode expandedResource, Candidate candidate) {
         var expandedResourceWithoutTopLevelOrganization = removeTopLevelOrganization((ObjectNode) expandedResource);
         insertResourceInS3(createResourceIndexDocument(expandedResourceWithoutTopLevelOrganization), UnixPath.of(
+            extractResourceIdentifier(candidate)));
+    }
+
+    private void setupResourceWithInvalidObjectInS3(JsonNode expandedResource, Candidate candidate) {
+        var invalidObject = objectMapper.createObjectNode();
+        invalidObject.put("invalidKey", "invalidValue");
+        ((ObjectNode) expandedResource).remove("topLevelOrganizations");
+        ((ObjectNode) expandedResource).set("topLevelOrganizations", invalidObject);
+        insertResourceInS3(createResourceIndexDocument(expandedResource), UnixPath.of(
             extractResourceIdentifier(candidate)));
     }
 

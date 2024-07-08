@@ -34,6 +34,8 @@ public final class JsonPointers {
     public static final String JSON_PTR_NAME = "/name";
     public static final String JSON_PTR_ORCID = "/orcid";
     public static final String JSON_PTR_BODY = "/body";
+    public static final String JSON_PTR_TOP_LEVEL_ORGANIZATIONS = "/topLevelOrganizations";
+    public static final String JSON_PTR_LABELS = "/labels";
 
     private JsonPointers() {
     }
