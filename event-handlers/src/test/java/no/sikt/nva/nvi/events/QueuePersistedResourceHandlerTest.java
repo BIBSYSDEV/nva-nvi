@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.events;
 
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createS3Event;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,12 +10,15 @@ import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import no.sikt.nva.nvi.test.FakeSqsClient;
+import java.net.URI;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
+import no.sikt.nva.nvi.test.FakeSqsClient;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class QueuePersistedResourceHandlerTest {
 
@@ -42,9 +44,19 @@ public class QueuePersistedResourceHandlerTest {
         assertThat(appender.getMessages(), containsString("Invalid EventReference, missing uri"));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"s3://persisted-resources-884807050265/tickets/123.gz",
+        "https://example.com/someOtherThing/123"})
+    void shouldNotQueueResourcesThatAreNotPublications(String uri) throws IOException {
+        var ticketEvent = createS3Event(URI.create(uri));
+        handler.handleRequest(ticketEvent, output, context);
+        var sentMessages = sqsClient.getSentMessages();
+        assertEquals(0, sentMessages.size());
+    }
+
     @Test
     void shouldQueuePersistedResourceToEvaluatePublicationQueueWhenValidEventReferenceReceived() throws IOException {
-        var fileUri = randomUri();
+        var fileUri = URI.create("s3://persisted-resources-884807050265/resources/123.gz");
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();

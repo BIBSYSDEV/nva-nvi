@@ -1,6 +1,6 @@
 [versions]
 junit = { strictly = '5.10.2' }
-nva = { strictly = '1.40.2' }
+nva = { strictly = '1.40.6' }
 jackson = { strictly = '2.16.1' }
 mockito = { strictly = '5.10.0' }
 hamcrest = { strictly = '2.2' }
