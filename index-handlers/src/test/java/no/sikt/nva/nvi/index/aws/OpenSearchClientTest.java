@@ -765,7 +765,7 @@ public class OpenSearchClientTest {
         map.put(PENDING_COLLABORATION_AGG.getAggregationName(), 1);
         map.put(APPROVED_AGG.getAggregationName(), 2);
         map.put(APPROVED_COLLABORATION_AGG.getAggregationName(), 1);
-        map.put(REJECTED_AGG.getAggregationName(), 3);
+        map.put(REJECTED_AGG.getAggregationName(), 2);
         map.put(REJECTED_COLLABORATION_AGG.getAggregationName(), 1);
         map.put(DISPUTED_AGG.getAggregationName(), 1);
         map.put(ASSIGNMENTS_AGG.getAggregationName(), 5);
@@ -782,7 +782,7 @@ public class OpenSearchClientTest {
         map.put(QueryFilterType.PENDING_COLLABORATION_AGG.getFilter(), 1);
         map.put(QueryFilterType.APPROVED_AGG.getFilter(), 2);
         map.put(QueryFilterType.APPROVED_COLLABORATION_AGG.getFilter(), 1);
-        map.put(QueryFilterType.REJECTED_AGG.getFilter(), 3);
+        map.put(QueryFilterType.REJECTED_AGG.getFilter(), 2);
         map.put(QueryFilterType.REJECTED_COLLABORATION_AGG.getFilter(), 1);
         map.put(QueryFilterType.ASSIGNMENTS_AGG.getFilter(), 5);
         map.put(QueryFilterType.DISPUTED_AGG.getFilter(), 1);
