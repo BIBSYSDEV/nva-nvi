@@ -1,8 +1,17 @@
 package no.sikt.nva.nvi.index.utils;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.GLOBAL_APPROVAL_STATUS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.NUMBER_OF_APPROVALS;
 import java.util.Arrays;
 import java.util.List;
+import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
+import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
@@ -17,6 +26,9 @@ import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQueryField;
 
 public final class QueryFunctions {
+
+    private static final CharSequence JSON_PATH_DELIMITER = ".";
+    private static final int MULTIPLE = 2;
 
     private QueryFunctions() {
     }
@@ -83,11 +95,44 @@ public final class QueryFunctions {
                    .build()._toQuery();
     }
 
+    public static Query containsPendingStatusQuery() {
+        return nestedQuery(APPROVALS, fieldValueQuery(jsonPathOf(APPROVALS, APPROVAL_STATUS), PENDING.getValue()));
+    }
+
+    public static Query statusQuery(String customer, ApprovalStatus status) {
+        return mustMatch(nestedQuery(APPROVALS,
+                                     fieldValueQuery(jsonPathOf(APPROVALS, INSTITUTION_ID), customer),
+                                     fieldValueQuery(jsonPathOf(APPROVALS, APPROVAL_STATUS), status.getValue())),
+                         isNotDisputeQuery());
+    }
+
+    public static Query isNotDisputeQuery() {
+        return mustNotMatch(disputeQuery());
+    }
+
+    public static Query disputeQuery() {
+        return fieldValueQuery(jsonPathOf(GLOBAL_APPROVAL_STATUS), GlobalApprovalStatus.DISPUTE.getValue());
+    }
+
+    public static Query multipleApprovalsQuery() {
+        return mustMatch(rangeFromQuery(NUMBER_OF_APPROVALS, MULTIPLE));
+    }
+
+    public static Query assignmentsQuery(String username, String customer) {
+        return nestedQuery(APPROVALS,
+                           fieldValueQuery(jsonPathOf(APPROVALS, INSTITUTION_ID), customer),
+                           fieldValueQuery(jsonPathOf(APPROVALS, ASSIGNEE), username));
+    }
+
     private static Query matchAllQuery() {
         return new MatchAllQuery.Builder().build()._toQuery();
     }
 
     private static FieldValue getFieldValue(String value) {
         return new FieldValue.Builder().stringValue(value).build();
+    }
+
+    private static String jsonPathOf(String... args) {
+        return String.join(JSON_PATH_DELIMITER, args);
     }
 }

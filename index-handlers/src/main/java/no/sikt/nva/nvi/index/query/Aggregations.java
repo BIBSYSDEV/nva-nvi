@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index.query;
 
 import static java.util.Objects.isNull;
-import static no.sikt.nva.nvi.index.utils.QueryFunctions.*;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.filterAggregation;
@@ -9,14 +8,21 @@ import static no.sikt.nva.nvi.index.utils.AggregationFunctions.joinWithDelimiter
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.nestedAggregation;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.sumAggregation;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.termsAggregation;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.assignmentsQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.containsPendingStatusQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.fieldValueQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.isNotDisputeQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.multipleApprovalsQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustMatch;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustNotMatch;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.nestedQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.statusQuery;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.GLOBAL_APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_POINTS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INVOLVED_ORGS;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.NUMBER_OF_APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.POINTS;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,12 +35,10 @@ public final class Aggregations {
 
     public static final String APPROVAL_STATUS_PATH = joinWithDelimiter(APPROVALS, APPROVAL_STATUS);
     public static final String INSTITUTION_ID_PATH = joinWithDelimiter(APPROVALS, INSTITUTION_ID);
-    public static final String ASSIGNEE_PATH = joinWithDelimiter(APPROVALS, ASSIGNEE);
     public static final String DISPUTE_AGGREGATION = "dispute";
     public static final String POINTS_AGGREGATION = "points";
     public static final String DISPUTE = "Dispute";
     public static final String APPROVAL_ORGANIZATIONS_AGGREGATION = "organizations";
-    private static final int MULTIPLE = 2;
     private static final String ALL_AGGREGATIONS = "all";
     private static final String STATUS_AGGREGATION = "status";
 
@@ -46,27 +50,6 @@ public final class Aggregations {
         return aggregationTypeIsNotSpecified(aggregationType)
                    ? generateAllAggregationTypes(username, topLevelCristinOrg)
                    : generateSingleAggregation(aggregationType, username, topLevelCristinOrg);
-    }
-
-    public static Query containsPendingStatusQuery() {
-        final var queries = statusQuery(PENDING);
-        final var query = mustMatch(queries);
-        return nestedQuery(APPROVALS, query);
-    }
-
-    public static Query multipleApprovalsQuery() {
-        return mustMatch(rangeFromQuery(NUMBER_OF_APPROVALS, MULTIPLE));
-    }
-
-    public static Query statusQuery(String topLevelCristinOrg, ApprovalStatus status) {
-        final var query = mustMatch(statusForInstitution(topLevelCristinOrg, status));
-        return nestedQuery(APPROVALS, query);
-    }
-
-    public static Query assignmentsQuery(String username, String topLevelCristinOrg) {
-        final var query = mustMatch(assigneeForInstitution(topLevelCristinOrg, username));
-        return nestedQuery(APPROVALS, query
-        );
     }
 
     public static Aggregation organizationApprovalStatusAggregations(String topLevelCristinOrg) {
@@ -96,7 +79,8 @@ public final class Aggregations {
     }
 
     public static Aggregation statusAggregation(String topLevelCristinOrg, ApprovalStatus status) {
-        return filterAggregation(mustMatch(statusQuery(topLevelCristinOrg, status), isNotDisputeQuery()));
+        return filterAggregation(mustMatch(statusQuery(topLevelCristinOrg, status),
+                                           isNotDisputeQuery()));
     }
 
     public static Aggregation completedAggregation(String topLevelCristinOrg) {
@@ -126,36 +110,14 @@ public final class Aggregations {
         return filterAggregation(mustMatch(globalStatusDisputeForInstitution(topLevelCristinOrg)));
     }
 
-    private static Query isNotDisputeQuery() {
-        return mustNotMatch(DISPUTE, GLOBAL_APPROVAL_STATUS);
-    }
-
     private static Aggregation filterStatusDisputeAggregation() {
         return filterAggregation(mustMatch(fieldValueQuery(joinWithDelimiter(APPROVALS,
                                                                              GLOBAL_APPROVAL_STATUS),
                                                            DISPUTE)));
     }
 
-    private static Query statusQuery(ApprovalStatus approvalStatus) {
-        return fieldValueQuery(APPROVAL_STATUS_PATH, approvalStatus.getValue());
-    }
-
     private static Query approvalInstitutionIdQuery(String topLevelCristinOrg) {
         return fieldValueQuery(INSTITUTION_ID_PATH, topLevelCristinOrg);
-    }
-
-    private static Query[] assigneeForInstitution(String institutionId, String username) {
-        return new Query[]{
-            approvalInstitutionIdQuery(institutionId),
-            fieldValueQuery(ASSIGNEE_PATH, username)
-        };
-    }
-
-    private static Query[] statusForInstitution(String institutionId, ApprovalStatus status) {
-        return new Query[]{
-            approvalInstitutionIdQuery(institutionId),
-            statusQuery(status)
-        };
     }
 
     private static Query[] globalStatusDisputeForInstitution(String institutionId) {

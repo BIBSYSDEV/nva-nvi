@@ -6,23 +6,25 @@ import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.assignmentsQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.containsPendingStatusQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.disputeQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.fieldValueQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.matchAtLeastOne;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.matchQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.multipleApprovalsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustMatch;
-import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustNotMatch;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.nestedQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.statusQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.termsQuery;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.AFFILIATIONS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.CONTRIBUTORS;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.GLOBAL_APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.IDENTIFIER;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.KEYWORD;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NAME;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.NUMBER_OF_APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PART_OF_IDENTIFIERS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DATE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DETAILS;
@@ -36,20 +38,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
-import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
-import org.opensearch.client.json.JsonData;
-import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.query_dsl.MatchPhraseQuery;
-import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MultiMatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
-import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 
 public class CandidateQuery {
 
-    private static final int MULTIPLE = 2;
     private static final CharSequence JSON_PATH_DELIMITER = ".";
     private static final String CREATOR_ROLE = "Creator";
     private final List<String> affiliations;
@@ -82,47 +77,8 @@ public class CandidateQuery {
         return mustMatch(specificMatch().toArray(Query[]::new));
     }
 
-    private static Query multipleApprovalsQuery() {
-        return mustMatch(rangeFromQuery(NUMBER_OF_APPROVALS, MULTIPLE));
-    }
-
-    private static Query statusQuery(String customer, ApprovalStatus status) {
-        return mustMatch(nestedQuery(APPROVALS,
-                                     fieldValueQuery(jsonPathOf(APPROVALS, INSTITUTION_ID), customer),
-                                     fieldValueQuery(jsonPathOf(APPROVALS, APPROVAL_STATUS), status.getValue())),
-                                     isNotDisputeQuery());
-    }
-
-    private static Query isNotDisputeQuery() {
-        return mustNotMatch(disputeQuery());
-    }
-
-    private static Query disputeQuery() {
-        return fieldValueQuery(jsonPathOf(GLOBAL_APPROVAL_STATUS), GlobalApprovalStatus.DISPUTE.getValue());
-    }
-
     private static String jsonPathOf(String... args) {
         return String.join(JSON_PATH_DELIMITER, args);
-    }
-
-    private static Query rangeFromQuery(String field, int greaterThanOrEqualTo) {
-        return new RangeQuery.Builder().field(field).gte(JsonData.of(greaterThanOrEqualTo)).build()._toQuery();
-    }
-
-    private static Query containsPendingStatusQuery() {
-        return nestedQuery(APPROVALS, fieldValueQuery(jsonPathOf(APPROVALS, APPROVAL_STATUS), PENDING.getValue()));
-    }
-
-    private static Query assignmentsQuery(String username, String customer) {
-        return nestedQuery(APPROVALS,
-                           fieldValueQuery(jsonPathOf(APPROVALS, INSTITUTION_ID), customer),
-                           fieldValueQuery(jsonPathOf(APPROVALS, ASSIGNEE), username));
-    }
-
-    private static Query matchQuery(String value, String field) {
-        return new MatchQuery.Builder().field(field)
-                   .query(new FieldValue.Builder().stringValue(value).build())
-                   .build()._toQuery();
     }
 
     private static Query contributorQueryIncludingSubUnits(List<String> organizations) {
