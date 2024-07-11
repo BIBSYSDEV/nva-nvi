@@ -1,16 +1,12 @@
 package no.sikt.nva.nvi.index.query;
 
 import static java.util.Objects.isNull;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.*;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
-import static no.sikt.nva.nvi.index.utils.AggregationFunctions.fieldValueQuery;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.filterAggregation;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.joinWithDelimiter;
-import static no.sikt.nva.nvi.index.utils.AggregationFunctions.mustMatch;
-import static no.sikt.nva.nvi.index.utils.AggregationFunctions.mustNotMatch;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.nestedAggregation;
-import static no.sikt.nva.nvi.index.utils.AggregationFunctions.nestedQuery;
-import static no.sikt.nva.nvi.index.utils.AggregationFunctions.rangeFromQuery;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.sumAggregation;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.termsAggregation;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
@@ -100,7 +96,7 @@ public final class Aggregations {
     }
 
     public static Aggregation statusAggregation(String topLevelCristinOrg, ApprovalStatus status) {
-        return filterAggregation(mustMatch(statusQuery(topLevelCristinOrg, status)));
+        return filterAggregation(mustMatch(statusQuery(topLevelCristinOrg, status), isNotDisputeQuery()));
     }
 
     public static Aggregation completedAggregation(String topLevelCristinOrg) {
@@ -122,11 +118,16 @@ public final class Aggregations {
     }
 
     public static Aggregation collaborationAggregation(String topLevelCristinOrg, ApprovalStatus status) {
-        return filterAggregation(mustMatch(statusQuery(topLevelCristinOrg, status), multipleApprovalsQuery()));
+        return filterAggregation(
+            mustMatch(statusQuery(topLevelCristinOrg, status), multipleApprovalsQuery(), isNotDisputeQuery()));
     }
 
     public static Aggregation disputeAggregation(String topLevelCristinOrg) {
         return filterAggregation(mustMatch(globalStatusDisputeForInstitution(topLevelCristinOrg)));
+    }
+
+    private static Query isNotDisputeQuery() {
+        return mustNotMatch(DISPUTE, GLOBAL_APPROVAL_STATUS);
     }
 
     private static Aggregation filterStatusDisputeAggregation() {

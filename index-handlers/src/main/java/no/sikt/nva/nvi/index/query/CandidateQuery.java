@@ -6,6 +6,12 @@ import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.fieldValueQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.matchAtLeastOne;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustMatch;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustNotMatch;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.nestedQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.termsQuery;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.AFFILIATIONS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
@@ -34,18 +40,12 @@ import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
-import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
-import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchPhraseQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MultiMatchQuery;
-import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
-import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
-import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
-import org.opensearch.client.opensearch._types.query_dsl.TermsQueryField;
 
 public class CandidateQuery {
 
@@ -78,50 +78,27 @@ public class CandidateQuery {
         this.assignee = params.assignee;
     }
 
-    public static Query matchAtLeastOne(Query... queries) {
-        return new Query.Builder()
-                   .bool(new BoolQuery.Builder().should(Arrays.stream(queries).toList()).build())
-                   .build();
-    }
-
     public Query toQuery() {
         return mustMatch(specificMatch().toArray(Query[]::new));
-    }
-
-    private static Query mustMatch(Query... queries) {
-        return new Query.Builder()
-                   .bool(new BoolQuery.Builder().must(Arrays.stream(queries).toList()).build())
-                   .build();
     }
 
     private static Query multipleApprovalsQuery() {
         return mustMatch(rangeFromQuery(NUMBER_OF_APPROVALS, MULTIPLE));
     }
 
-    private static Query nestedQuery(String path, Query... queries) {
-        return new NestedQuery.Builder()
-                   .path(path)
-                   .query(mustMatch(queries))
-                   .build()._toQuery();
+    private static Query statusQuery(String customer, ApprovalStatus status) {
+        return mustMatch(nestedQuery(APPROVALS,
+                                     fieldValueQuery(jsonPathOf(APPROVALS, INSTITUTION_ID), customer),
+                                     fieldValueQuery(jsonPathOf(APPROVALS, APPROVAL_STATUS), status.getValue())),
+                                     isNotDisputeQuery());
     }
 
-    private static Query statusQuery(String customer, ApprovalStatus status) {
-        return nestedQuery(APPROVALS,
-                           termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)),
-                           termQuery(status.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)));
+    private static Query isNotDisputeQuery() {
+        return mustNotMatch(disputeQuery());
     }
 
     private static Query disputeQuery() {
-        return termQuery(GlobalApprovalStatus.DISPUTE.getValue(), jsonPathOf(GLOBAL_APPROVAL_STATUS));
-    }
-
-    private static Query termQuery(String value, String field) {
-        return nonNull(value)
-                   ? new TermQuery.Builder()
-                         .value(new FieldValue.Builder().stringValue(value).build())
-                         .field(field)
-                         .build()._toQuery()
-                   : new MatchAllQuery.Builder().build()._toQuery();
+        return fieldValueQuery(jsonPathOf(GLOBAL_APPROVAL_STATUS), GlobalApprovalStatus.DISPUTE.getValue());
     }
 
     private static String jsonPathOf(String... args) {
@@ -133,21 +110,13 @@ public class CandidateQuery {
     }
 
     private static Query containsPendingStatusQuery() {
-        return nestedQuery(APPROVALS, termQuery(PENDING.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)));
+        return nestedQuery(APPROVALS, fieldValueQuery(jsonPathOf(APPROVALS, APPROVAL_STATUS), PENDING.getValue()));
     }
 
     private static Query assignmentsQuery(String username, String customer) {
         return nestedQuery(APPROVALS,
-                           termQuery(customer, jsonPathOf(APPROVALS, INSTITUTION_ID)),
-                           termQuery(username, jsonPathOf(APPROVALS, ASSIGNEE)));
-    }
-
-    private static Query termsQuery(List<String> values, String field) {
-        var termsFields = values.stream().map(FieldValue::of).toList();
-        return new TermsQuery.Builder()
-                   .field(field)
-                   .terms(new TermsQueryField.Builder().value(termsFields).build())
-                   .build()._toQuery();
+                           fieldValueQuery(jsonPathOf(APPROVALS, INSTITUTION_ID), customer),
+                           fieldValueQuery(jsonPathOf(APPROVALS, ASSIGNEE), username));
     }
 
     private static Query matchQuery(String value, String field) {
@@ -182,13 +151,13 @@ public class CandidateQuery {
     }
 
     private static Query yearQuery(String year) {
-        return termQuery(nonNull(year) ? year : String.valueOf(ZonedDateTime.now().getYear()),
-                         jsonPathOf(PUBLICATION_DETAILS, PUBLICATION_DATE, YEAR, KEYWORD));
+        return fieldValueQuery(jsonPathOf(PUBLICATION_DETAILS, PUBLICATION_DATE, YEAR, KEYWORD),
+                               nonNull(year) ? year : String.valueOf(ZonedDateTime.now().getYear()));
     }
 
-    private static Query categoryQuery(String category) {
-        return Optional.ofNullable(category)
-                   .map(c -> termQuery(c, jsonPathOf(PUBLICATION_DETAILS, TYPE, KEYWORD)))
+    private static Query categoryQuery(String optionalCategory) {
+        return Optional.ofNullable(optionalCategory)
+                   .map(category -> fieldValueQuery(jsonPathOf(PUBLICATION_DETAILS, TYPE, KEYWORD), category))
                    .orElse(null);
     }
 
@@ -243,7 +212,7 @@ public class CandidateQuery {
     }
 
     private Query institutionQuery(String topLevelCristinOrg) {
-        return nestedQuery(APPROVALS, termQuery(topLevelCristinOrg, jsonPathOf(APPROVALS, INSTITUTION_ID)));
+        return nestedQuery(APPROVALS, fieldValueQuery(jsonPathOf(APPROVALS, INSTITUTION_ID), topLevelCristinOrg));
     }
 
     private Optional<Query> createInstitutionQuery() {
