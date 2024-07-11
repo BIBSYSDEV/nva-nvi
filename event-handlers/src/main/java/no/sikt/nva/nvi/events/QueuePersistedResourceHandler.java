@@ -17,8 +17,9 @@ import org.slf4j.LoggerFactory;
 
 public class QueuePersistedResourceHandler extends DestinationsEventBridgeEventHandler<EventReference, Void> {
 
-    public static final String QUEUE_PERSISTED_RESOURCE_QUEUE_URL = "PERSISTED_RESOURCE_QUEUE_URL";
+    public static final String PERSISTED_RESOURCES_PUBLICATION_FOLDER = "resources";
     private static final Logger LOGGER = LoggerFactory.getLogger(QueuePersistedResourceHandler.class);
+    private static final String QUEUE_PERSISTED_RESOURCE_QUEUE_URL = "PERSISTED_RESOURCE_QUEUE_URL";
     private static final String ERROR_MSG = "Invalid EventReference, missing uri: %s";
     private final QueueClient queueClient;
     private final String queueUrl;
@@ -39,8 +40,15 @@ public class QueuePersistedResourceHandler extends DestinationsEventBridgeEventH
     protected Void processInputPayload(EventReference input,
                                        AwsEventBridgeEvent<AwsEventBridgeDetail<EventReference>> event,
                                        Context context) {
-        queuePersistedResource(createMessageBody(input));
+        validateInput(input);
+        if (isPublication(input)) {
+            queuePersistedResource(createMessageBody(input));
+        }
         return null;
+    }
+
+    private static boolean isPublication(EventReference input) {
+        return input.getUri().getPath().contains(PERSISTED_RESOURCES_PUBLICATION_FOLDER);
     }
 
     private static void validateInput(EventReference input) {
@@ -55,7 +63,6 @@ public class QueuePersistedResourceHandler extends DestinationsEventBridgeEventH
     }
 
     private String createMessageBody(EventReference input) {
-        validateInput(input);
         return attempt(
             () -> objectMapper.writeValueAsString(new PersistedResourceMessage(input.getUri()))).orElseThrow();
     }
