@@ -11,8 +11,9 @@ import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import no.sikt.nva.nvi.test.FakeSqsClient;
+import java.net.URI;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
+import no.sikt.nva.nvi.test.FakeSqsClient;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,8 +44,16 @@ public class QueuePersistedResourceHandlerTest {
     }
 
     @Test
+    void shouldNotQueueResourcesThatAreNotPublications() throws IOException {
+        var invalidEvent = createS3Event(URI.create("s3://persisted-resources-884807050265/tickets/123.gz"));
+        handler.handleRequest(invalidEvent, output, context);
+        var sentMessages = sqsClient.getSentMessages();
+        assertEquals(0, sentMessages.size());
+    }
+
+    @Test
     void shouldQueuePersistedResourceToEvaluatePublicationQueueWhenValidEventReferenceReceived() throws IOException {
-        var fileUri = randomUri();
+        var fileUri = URI.create("s3://persisted-resources-884807050265/resources/123.gz");
         var event = createS3Event(fileUri);
         handler.handleRequest(event, output, context);
         var sentMessages = sqsClient.getSentMessages();
