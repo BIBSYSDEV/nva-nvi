@@ -84,6 +84,7 @@ public class SearchNviCandidatesHandlerTest {
     private static final TypeReference<PaginatedSearchResult<NviCandidateIndexDocument>> TYPE_REF =
         new TypeReference<>() {
         };
+    public static final String QUERY_ENCODED_COMMA = "%2C";
     private static SearchClient<NviCandidateIndexDocument> openSearchClient;
     private static SearchNviCandidatesHandler handler;
     private static ByteArrayOutputStream output;
@@ -191,7 +192,7 @@ public class SearchNviCandidatesHandlerTest {
         assertThat(actualId, containsString(QUERY_PARAM_SEARCH_TERM + "=" + randomSearchTerm));
         var expectedInstitutionQuery = QUERY_PARAM_AFFILIATIONS
                                        + "=" + randomInstitutions.get(0)
-                                       + "," + randomInstitutions.get(1);
+                                       + QUERY_ENCODED_COMMA + randomInstitutions.get(1);
         var expectedExcludeQuery = QUERY_PARAM_EXCLUDE_SUB_UNITS + "=true";
         assertThat(actualId, containsString(expectedInstitutionQuery));
         assertThat(actualId, containsString(expectedExcludeQuery));
