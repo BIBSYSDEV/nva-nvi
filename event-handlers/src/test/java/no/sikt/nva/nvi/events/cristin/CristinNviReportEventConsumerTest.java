@@ -137,14 +137,13 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
     }
 
     private Creator constructExpectedCreator(CristinNviReport cristinNviReport) {
-        var creatorIdentifier =
-            cristinNviReport.scientificResources().get(0).getCreators().get(0).getCristinPersonIdentifier();
+        var creatorIdentifier = cristinNviReport.getCreators().get(0).getCristinPersonIdentifier();
         var creatorId = UriWrapper.fromHost(API_HOST)
                 .addChild("cristin")
                 .addChild("person")
                 .addChild(creatorIdentifier)
                 .getUri();
-        var affiliations = cristinNviReport.scientificResources().get(0).getCreators().stream()
+        var affiliations = cristinNviReport.getCreators().stream()
                                .map(ScientificPerson::getOrganization)
                                .map(this::toOrganizationId)
                                .distinct().toList();

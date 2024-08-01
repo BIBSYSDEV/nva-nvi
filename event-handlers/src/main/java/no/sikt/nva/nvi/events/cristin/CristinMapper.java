@@ -25,7 +25,6 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
@@ -35,6 +34,7 @@ import no.sikt.nva.nvi.events.cristin.InstitutionPoints.CreatorPoints;
 import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.StringUtils;
 import nva.commons.core.paths.UriWrapper;
 
 public final class CristinMapper {
@@ -72,6 +72,9 @@ public final class CristinMapper {
     public static final String PUBLICATION_CONTEXT_ID_JSON_POINTER = "/publicationContext/id";
     public static final String PUBLICATION_CONTEXT_TYPE_JSON_POINTER = "/publicationContext/type";
     private static final String INTERNATIONAL_COLLABORATION_FACTOR = "1.3";
+    public static final String KREFTREG = "KREFTREG";
+    public static final String FHI_CRISTIN_ORG_NUMBER = "7502";
+    public static final String FHI_CRISTIN_IDENTIFIER = "7502.0.0.0";
 
     private final List<CristinDepartmentTransfer> departmentTransfers;
 
@@ -92,7 +95,7 @@ public final class CristinMapper {
                    .publicationBucketUri(constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
                    .publicationDate(constructPublicationDate(cristinNviReport.publicationDate()))
                    .instanceType(cristinNviReport.instanceType())
-                   .level(extractLevel(cristinNviReport))
+                   .level(cristinNviReport.getLevel())
                    .reportStatus(ReportStatus.REPORTED)
                    .applicable(true)
                    .createdDate(now)
@@ -111,7 +114,7 @@ public final class CristinMapper {
     }
 
     public static List<DbCreator> extractCreators(CristinNviReport cristinNviReport) {
-        return getCreators(cristinNviReport).stream()
+        return cristinNviReport.getCreators().stream()
                    .filter(CristinMapper::hasInstitutionPoints)
                    .collect(groupByCristinIdentifierAndMapToAffiliationId())
                    .entrySet()
@@ -122,8 +125,13 @@ public final class CristinMapper {
 
     public List<DbApprovalStatus> toApprovals(CristinNviReport cristinNviReport) {
         return cristinNviReport.cristinLocales().stream()
-                   .filter(cristinLocale -> nonNull(cristinLocale.getInstitutionIdentifier()))
+                   .filter(cristinLocale -> nonNull(cristinLocale.getInstitutionIdentifier()) || isKreftReg(cristinLocale))
                    .map(CristinMapper::toApproval).toList();
+    }
+
+    private static Boolean isKreftReg(CristinLocale cristinLocale) {
+        return Optional.ofNullable(cristinLocale.getOwnerCode())
+                   .map(KREFTREG::equals).orElse(false);
     }
 
     private static BigDecimal sumPoints(List<DbInstitutionPoints> points) {
@@ -196,9 +204,7 @@ public final class CristinMapper {
     }
 
     private static boolean isInternationalCollaboration(CristinNviReport cristinNviReport) {
-        return cristinNviReport.scientificResources()
-                   .get(0)
-                   .getCreators()
+        return cristinNviReport.getCreators()
                    .stream()
                    .map(ScientificPerson::getCollaborationFactor)
                    .filter(Objects::nonNull)
@@ -208,9 +214,7 @@ public final class CristinMapper {
     }
 
     private static BigDecimal extractCollaborationFactor(CristinNviReport cristinNviReport) {
-        return cristinNviReport.scientificResources()
-                   .get(0)
-                   .getCreators()
+        return cristinNviReport.getCreators()
                    .stream()
                    .map(ScientificPerson::getCollaborationFactor)
                    .filter(Objects::nonNull)
@@ -221,9 +225,7 @@ public final class CristinMapper {
     }
 
     private static BigDecimal extractBasePoints(CristinNviReport cristinNviReport) {
-        return cristinNviReport.scientificResources()
-                   .get(0)
-                   .getCreators()
+        return cristinNviReport.getCreators()
                    .stream()
                    .map(ScientificPerson::getPublicationTypeLevelPoints)
                    .filter(Objects::nonNull)
@@ -238,7 +240,7 @@ public final class CristinMapper {
         if (institutions.isEmpty()) {
             return List.of();
         } else {
-            return getCreators(cristinNviReport).stream()
+            return cristinNviReport.getCreators().stream()
                        .filter(CristinMapper::hasInstitutionPoints)
                        .collect(collectToInstitutionOfPoints(institutions))
                        .stream()
@@ -266,10 +268,6 @@ public final class CristinMapper {
     private static DbCreatorAffiliationPoints getDbCreatorAffiliationPoints(CreatorPoints creatorPoints) {
         return new DbCreatorAffiliationPoints(creatorPoints.creatorId(), creatorPoints.affiliationId(),
                                               creatorPoints.points());
-    }
-
-    private static List<ScientificPerson> getCreators(CristinNviReport cristinNviReport) {
-        return cristinNviReport.scientificResources().get(0).getCreators();
     }
 
     private Collector<ScientificPerson, ?, List<InstitutionPoints>> collectToInstitutionOfPoints(
@@ -318,28 +316,47 @@ public final class CristinMapper {
 
     private URI extractInstitutionIdentifierForTransferredInstitution(ScientificPerson scientificPerson,
                                                                       List<CristinLocale> institutions) {
-        var approvalsInstitutions = institutions.stream()
-                                        .map(CristinLocale::getInstitutionIdentifier)
-                                        .collect(Collectors.toList());
-        var matchingTransferInstitutionIdentifier = getMatchingTransfer(scientificPerson, approvalsInstitutions);
+        var matchingTransferInstitutionIdentifier = getMatchingTransfer(scientificPerson, institutions);
         return institutions.stream()
-                   .filter(institution -> institution.getInstitutionIdentifier()
-                                              .equals(matchingTransferInstitutionIdentifier))
+                   .filter(institution -> nonNull(institution.getInstitutionIdentifier()) ?
+                   institution.getInstitutionIdentifier().equals(matchingTransferInstitutionIdentifier) : institution.getOwnerCode().equals(KREFTREG))
                    .findFirst()
                    .map(CristinMapper::constructInstitutionId)
                    .orElseThrow();
     }
 
-    private String getMatchingTransfer(ScientificPerson scientificPerson, List<String> approvalsInstitutions) {
+    private String getMatchingTransfer(ScientificPerson scientificPerson, List<CristinLocale> approvalsInstitutions) {
         return departmentTransfers.stream()
                    .filter(departmentTransfer -> scientificPerson.getInstitutionIdentifier()
                                                      .equals(departmentTransfer.getFromInstitutionIdentifier()))
-                   .filter(departmentTransfer -> approvalsInstitutions.stream()
-                                                     .anyMatch(value -> value.equals(
-                                                         departmentTransfer.getToInstitutionIdentifier())))
+                   .filter(departmentTransfer -> hasMatchingInstitution(approvalsInstitutions, departmentTransfer))
                    .findAny()
                    .map(CristinDepartmentTransfer::getToInstitutionIdentifier)
-                   .orElseThrow();
+                   .orElseThrow(() -> new RuntimeException(String.format("%s%s", "No transfer for creator from organizations: ",
+                                                                         scientificPerson.getInstitutionIdentifier())));
+    }
+
+    private static boolean hasMatchingInstitution(List<CristinLocale> approvedInstitutions,
+                                                  CristinDepartmentTransfer departmentTransfer) {
+        return approvedInstitutions.stream()
+                   .anyMatch(institution -> isMatchingInstitution(departmentTransfer, institution));
+    }
+
+    private static boolean isMatchingInstitution(CristinDepartmentTransfer departmentTransfer,
+                                                 CristinLocale institution) {
+        return Optional.ofNullable(institution.getInstitutionIdentifier())
+                   .map(identifier -> identifier.equals(departmentTransfer.getToInstitutionIdentifier()))
+                   .or(() -> isMatchingOwnerCode(institution, departmentTransfer))
+                   .orElse(false);
+    }
+
+    private static Optional<Boolean> isMatchingOwnerCode(CristinLocale institution,
+                                                         CristinDepartmentTransfer departmentTransfer) {
+        if (institution.getOwnerCode().equals(KREFTREG)) {
+            return Optional.of(FHI_CRISTIN_ORG_NUMBER.equals(departmentTransfer.getToInstitutionIdentifier()));
+        } else {
+            return Optional.of(false);
+        }
     }
 
     @JacocoGenerated
@@ -370,14 +387,6 @@ public final class CristinMapper {
                    .addChild(ORGANIZATION)
                    .addChild(scientificPerson.getOrganization())
                    .getUri();
-    }
-
-    private static DbLevel extractLevel(CristinNviReport cristinNviReport) {
-        return Optional.ofNullable(cristinNviReport.scientificResources())
-                   .map(list -> list.get(0))
-                   .map(ScientificResource::getQualityCode)
-                   .map(DbLevel::fromDeprecatedValue)
-                   .orElseThrow();
     }
 
     private static DbApprovalStatus toApproval(CristinLocale cristinLocale) {
@@ -428,13 +437,20 @@ public final class CristinMapper {
     }
 
     private static String constructInstitutionIdentifier(CristinLocale cristinLocale) {
-        return cristinLocale.getInstitutionIdentifier()
-               + AFFILIATION_DELIMITER
-               + cristinLocale.getDepartmentIdentifier()
-               + AFFILIATION_DELIMITER
-               + cristinLocale.getSubDepartmentIdentifier()
-               + AFFILIATION_DELIMITER
-               + cristinLocale.getGroupIdentifier();
+        if (nonNull(cristinLocale.getInstitutionIdentifier())) {
+            return cristinLocale.getInstitutionIdentifier()
+                   + AFFILIATION_DELIMITER
+                   + cristinLocale.getDepartmentIdentifier()
+                   + AFFILIATION_DELIMITER
+                   + cristinLocale.getSubDepartmentIdentifier()
+                   + AFFILIATION_DELIMITER
+                   + cristinLocale.getGroupIdentifier();
+        }
+        if (KREFTREG.equals(cristinLocale.getOwnerCode())) {
+            return FHI_CRISTIN_IDENTIFIER;
+        } else {
+            return StringUtils.EMPTY_STRING;
+        }
     }
 
     private static DbPublicationDate constructPublicationDate(PublicationDate publicationDate) {
