@@ -1428,6 +1428,7 @@ Resources:
     Properties:
       AlarmName: NVI Persisting Candidate Failed
       AlarmDescription: If this alarm is triggered, then check sqs messages on UpsertCandidateDLQ. Persisting NVI candidate to database has failed.
+      MetricName: ApproximateNumberOfMessagesVisible
       Namespace: AWS/SQS
       Statistic: Sum
       Dimensions:
@@ -1499,6 +1500,7 @@ Resources:
     Properties:
       AlarmName: NVI Creating IndexDocument Failed
       AlarmDescription: If this alarm is triggered, then check sqs messages on IndexDocumentDLQ. Creating index document for NVI candidate has failed.
+      MetricName: ApproximateNumberOfMessagesVisible
       Namespace: AWS/SQS
       Statistic: Sum
       Dimensions:
