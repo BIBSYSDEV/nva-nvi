@@ -1372,7 +1372,8 @@ Resources:
   BatchScanDLQAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=BatchScanDLQ
+      AlarmName: NVI BatchScan Failed
+      AlarmDescription: If this alarm is triggered, then check sqs messages on BatchScanDLQ. Batch scan of database has failed.
       MetricName: ApproximateNumberOfMessagesVisible
       Namespace: AWS/SQS
       Statistic: Sum
@@ -1389,7 +1390,8 @@ Resources:
   NewCandidateDLQAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=NewCandidateDLQ
+      AlarmName: NVI Evaluating Candidate Failed
+      AlarmDescription: If this alarm is triggered, then check sqs messages on NewCandidateDLQ. Evaluating NVI candidate has failed.
       MetricName: ApproximateNumberOfMessagesVisible
       Namespace: AWS/SQS
       Statistic: Sum
@@ -1406,7 +1408,8 @@ Resources:
   UpdateIndexDLQAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=UpdateIndexDLQ
+      AlarmName: NVI Indexing Document Failed
+      AlarmDescription: If this alarm is triggered, then check sqs messages on UpdateIndexDLQ. Updating index for NVI candidate has failed.
       MetricName: ApproximateNumberOfMessagesVisible
       Namespace: AWS/SQS
       Statistic: Sum
@@ -1423,8 +1426,8 @@ Resources:
   UpsertCandidateDLQAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=UpsertCandidateDLQ
-      MetricName: ApproximateNumberOfMessagesVisible
+      AlarmName: NVI Persisting Candidate Failed
+      AlarmDescription: If this alarm is triggered, then check sqs messages on UpsertCandidateDLQ. Persisting NVI candidate to database has failed.
       Namespace: AWS/SQS
       Statistic: Sum
       Dimensions:
@@ -1440,7 +1443,8 @@ Resources:
   DataEntryUpdateDLQAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=DataEntryUpdateDLQ
+      AlarmName: NVI DataEntry Update Failed
+      AlarmDescription: If this alarm is triggered, then check sqs messages on DataEntryUpdateDLQ. Proceeding event has failed.
       MetricName: ApproximateNumberOfMessagesVisible
       Namespace: AWS/SQS
       Statistic: Sum
@@ -1457,7 +1461,8 @@ Resources:
   IndexDLQAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=IndexDLQ
+      AlarmName: NVI IndexDLQ threshold exceeded
+      AlarmDescription: If this alarm is triggered, then check sqs messages on IndexDLQ. Indexing NVI candidate has failed.
       MetricName: ApproximateNumberOfMessagesVisible
       Namespace: AWS/SQS
       Statistic: Sum
@@ -1474,7 +1479,8 @@ Resources:
   DynamoDbEventToQueueDLQAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=DynamoDbEventToQueueDLQ
+      AlarmName: NVI DynamoDB Event Failed
+      AlarmDescription: If this alarm is triggered, then check sqs messages on DynamoDbEventToQueueDLQ. Proceeding DynamoDB event has failed.
       MetricName: ApproximateNumberOfMessagesVisible
       Namespace: AWS/SQS
       Statistic: Sum
@@ -1491,8 +1497,8 @@ Resources:
   IndexDocumentDLQAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: AWS/SQS ApproximateNumberOfMessagesVisible QueueName=IndexDocumentDLQ
-      MetricName: ApproximateNumberOfMessagesVisible
+      AlarmName: NVI Creating IndexDocument Failed
+      AlarmDescription: If this alarm is triggered, then check sqs messages on IndexDocumentDLQ. Creating index document for NVI candidate has failed.
       Namespace: AWS/SQS
       Statistic: Sum
       Dimensions:
