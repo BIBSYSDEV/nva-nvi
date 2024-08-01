@@ -319,7 +319,7 @@ public final class CristinMapper {
         var matchingTransferInstitutionIdentifier = getMatchingTransfer(scientificPerson, institutions);
         return institutions.stream()
                    .filter(institution -> nonNull(institution.getInstitutionIdentifier()) ?
-                   institution.getInstitutionIdentifier().equals(matchingTransferInstitutionIdentifier) : institution.getOwnerCode().equals(KREFTREG))
+                   institution.getInstitutionIdentifier().equals(matchingTransferInstitutionIdentifier) : KREFTREG.equals(institution.getOwnerCode()))
                    .findFirst()
                    .map(CristinMapper::constructInstitutionId)
                    .orElseThrow();
@@ -346,17 +346,14 @@ public final class CristinMapper {
                                                  CristinLocale institution) {
         return Optional.ofNullable(institution.getInstitutionIdentifier())
                    .map(identifier -> identifier.equals(departmentTransfer.getToInstitutionIdentifier()))
-                   .or(() -> isMatchingOwnerCode(institution, departmentTransfer))
+                   .or(() -> Optional.of(isMatchingOwnerCode(institution, departmentTransfer)))
                    .orElse(false);
     }
 
-    private static Optional<Boolean> isMatchingOwnerCode(CristinLocale institution,
+    private static boolean isMatchingOwnerCode(CristinLocale institution,
                                                          CristinDepartmentTransfer departmentTransfer) {
-        if (institution.getOwnerCode().equals(KREFTREG)) {
-            return Optional.of(FHI_CRISTIN_ORG_NUMBER.equals(departmentTransfer.getToInstitutionIdentifier()));
-        } else {
-            return Optional.of(false);
-        }
+        return KREFTREG.equals(institution.getOwnerCode())
+               && FHI_CRISTIN_ORG_NUMBER.equals(departmentTransfer.getToInstitutionIdentifier());
     }
 
     @JacocoGenerated
