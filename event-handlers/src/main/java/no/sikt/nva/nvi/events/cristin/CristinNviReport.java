@@ -2,9 +2,11 @@ package no.sikt.nva.nvi.events.cristin;
 
 import static java.util.Objects.nonNull;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.unit.nva.commons.json.JsonSerializable;
 
@@ -21,6 +23,24 @@ public record CristinNviReport(String publicationIdentifier,
 
     public List<CristinLocale> cristinLocales() {
         return nonNull(cristinLocales) ? cristinLocales : List.of();
+    }
+
+    @JsonIgnore
+    public DbLevel getLevel() {
+        return scientificResources().stream()
+                   .map(ScientificResource::getQualityCode)
+                   .map(DbLevel::fromDeprecatedValue)
+                   .findFirst().orElseThrow();
+    }
+
+    public List<ScientificResource> scientificResources() {
+        return nonNull(scientificResources) ? scientificResources : List.of();
+    }
+
+    public List<ScientificPerson> getCreators() {
+        return scientificResources().stream()
+                          .flatMap(resource -> resource.getCreators().stream())
+                          .toList();
     }
 
     public static Builder builder() {

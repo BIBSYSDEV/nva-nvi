@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.cristin;
 
+import static java.util.Objects.nonNull;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
@@ -25,7 +26,7 @@ public final class ScientificResource {
 
     @JacocoGenerated
     public List<ScientificPerson> getCreators() {
-        return creators;
+        return nonNull(creators) ? creators : List.of();
     }
 
     public String getQualityCode() {

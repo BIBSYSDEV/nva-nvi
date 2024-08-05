@@ -3,12 +3,14 @@ package no.sikt.nva.nvi.events.cristin;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.AFFILIATION_DELIMITER;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
+import static no.sikt.nva.nvi.events.cristin.CristinMapper.FHI_CRISTIN_IDENTIFIER;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -467,6 +469,31 @@ class CristinMapperTest {
         var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
         var approvals = cristinMapper.toApprovals(report.build());
 
+        assertThrows(RuntimeException.class, () -> cristinMapper.toDbCandidate(report.build()));
+        assertThat(approvals, is(emptyIterable()));
+    }
+
+    @Test
+    void shouldMapToFhiWhenCristinLocaleIsMissingInstitutionIdentifierButOwnerCodeIsKreftreg() {
+        var creator = scientificPersonAtInstitutionWithPoints("5737", POINTS_PER_CONTRIBUTOR);
+        var scientificResource = scientificResourceWithCreators(List.of(creator));
+        var cristinLocale = cristinLocaleWithInstitutionIdentifierAndOwnerCode(null, "KREFTREG");
+        var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
+        var approvals = cristinMapper.toApprovals(report.build());
+        assertDoesNotThrow(() -> cristinMapper.toDbCandidate(report.build()));
+
+        assertThat(approvals.get(0).institutionId().toString(), containsString(FHI_CRISTIN_IDENTIFIER));
+    }
+
+    @Test
+    void shouldNotCreateApprovalWhenMissingInstitutionIdentifierAndInstitutionOwnerCodeIsNotKreftReg() {
+        var creator = scientificPersonAtInstitutionWithPoints("5737", POINTS_PER_CONTRIBUTOR);
+        var scientificResource = scientificResourceWithCreators(List.of(creator));
+        var cristinLocale = cristinLocaleWithInstitutionIdentifierAndOwnerCode(null, randomString());
+        var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
+        var approvals = cristinMapper.toApprovals(report.build());
+
+        assertThrows(RuntimeException.class, () -> cristinMapper.toDbCandidate(report.build()));
         assertThat(approvals, is(emptyIterable()));
     }
 
@@ -516,6 +543,18 @@ class CristinMapperTest {
                    .withDepartmentIdentifier(randomString())
                    .withGroupIdentifier(randomString())
                    .withInstitutionIdentifier(institutionIdentifier)
+                   .build();
+    }
+
+    private static CristinLocale cristinLocaleWithInstitutionIdentifierAndOwnerCode(String institutionIdentifier,
+                                                                                    String ownerCode) {
+        return CristinLocale.builder()
+                   .withDepartmentIdentifier(randomString())
+                   .withSubDepartmentIdentifier(randomString())
+                   .withDepartmentIdentifier(randomString())
+                   .withGroupIdentifier(randomString())
+                   .withInstitutionIdentifier(institutionIdentifier)
+                   .withOwnerCode(ownerCode)
                    .build();
     }
 
