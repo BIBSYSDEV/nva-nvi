@@ -19,6 +19,7 @@ import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -45,6 +46,7 @@ public final class PointService {
     public PointCalculation calculatePoints(JsonNode publication,
                                             List<VerifiedNviCreator> nviCreators) {
         var instanceType = extractInstanceType(publication);
+        massiveHackToFixObjectsWithMultipleTypes(publication);
         var channel = extractChannel(instanceType, publication);
         var isInternationalCollaboration = isInternationalCollaboration(publication);
         var creatorShareCount = countCreatorShares(publication);
@@ -151,6 +153,22 @@ public final class PointService {
 
     private static Stream<JsonNode> getJsonNodeStream(JsonNode jsonNode, String jsonPtr) {
         return StreamSupport.stream(jsonNode.at(jsonPtr).spliterator(), false);
+    }
+
+    @Deprecated
+    private static void massiveHackToFixObjectsWithMultipleTypes(JsonNode jsonNode) {
+        var series = jsonNode.at(JSON_PTR_SERIES);
+        if (!series.isMissingNode() && series.at("/type").isArray()) {
+            var seriesObject = (ObjectNode) series;
+            seriesObject.remove("type");
+            seriesObject.put("type", "Series");
+        }
+        var chapterSeries = jsonNode.at(JSON_PTR_CHAPTER_SERIES);
+        if (!chapterSeries.isMissingNode() && chapterSeries.at("/type").isArray()) {
+            var chapterSeriesObject = (ObjectNode) chapterSeries;
+            chapterSeriesObject.remove("type");
+            chapterSeriesObject.put("type", "Series");
+        }
     }
 
     private int countCreatorShares(JsonNode jsonNode) {
