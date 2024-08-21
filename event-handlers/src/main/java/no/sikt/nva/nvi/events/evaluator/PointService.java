@@ -14,6 +14,7 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLISHER;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ROLE_TYPE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_SCIENTIFIC_VALUE;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TYPE;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -37,6 +38,8 @@ public final class PointService {
 
     private static final String COUNTRY_CODE_NORWAY = "NO";
     private static final String ROLE_CREATOR = "Creator";
+    private static final String TYPE = "type";
+    private static final String TYPE_SERIES = "Series";
     private final OrganizationRetriever organizationRetriever;
 
     public PointService(OrganizationRetriever organizationRetriever) {
@@ -158,16 +161,16 @@ public final class PointService {
     @Deprecated
     private static void massiveHackToFixObjectsWithMultipleTypes(JsonNode jsonNode) {
         var series = jsonNode.at(JSON_PTR_SERIES);
-        if (!series.isMissingNode() && series.at("/type").isArray()) {
+        if (!series.isMissingNode() && series.at(JSON_PTR_TYPE).isArray()) {
             var seriesObject = (ObjectNode) series;
-            seriesObject.remove("type");
-            seriesObject.put("type", "Series");
+            seriesObject.remove(TYPE);
+            seriesObject.put(TYPE, TYPE_SERIES);
         }
         var chapterSeries = jsonNode.at(JSON_PTR_CHAPTER_SERIES);
-        if (!chapterSeries.isMissingNode() && chapterSeries.at("/type").isArray()) {
+        if (!chapterSeries.isMissingNode() && chapterSeries.at(JSON_PTR_TYPE).isArray()) {
             var chapterSeriesObject = (ObjectNode) chapterSeries;
-            chapterSeriesObject.remove("type");
-            chapterSeriesObject.put("type", "Series");
+            chapterSeriesObject.remove(TYPE);
+            chapterSeriesObject.put(TYPE, TYPE_SERIES);
         }
     }
 
