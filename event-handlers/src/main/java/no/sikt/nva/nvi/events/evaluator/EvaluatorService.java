@@ -13,6 +13,7 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
+import java.time.Year;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -62,6 +63,10 @@ public class EvaluatorService {
         var publication = extractBodyFromContent(storageReader.read(publicationBucketUri));
         var publicationId = extractPublicationId(publication);
         var publicationDate = extractPublicationDate(publication);
+        if (hasInvalidPublicationYear(publicationDate)) {
+            logger.info("Invalid year format. " + NON_NVI_CANDIDATE_MESSAGE, publicationId);
+            return createNonNviMessage(publicationId);
+        }
         if (isPublishedBeforeOrInLatestClosedPeriod(publicationDate)) {
             logger.info("Skipping evaluation. Publication with id {} is published before or same as latest closed "
                         + "period {}",
@@ -146,11 +151,20 @@ public class EvaluatorService {
                    .orElse(new PublicationDate(null, null, year.textValue()));
     }
 
+    private boolean hasInvalidPublicationYear(PublicationDate publicationDate) {
+        return attempt(() -> Year.parse(publicationDate.year())).isFailure();
+    }
+
     private boolean isPublishedBeforeOrInLatestClosedPeriod(PublicationDate publicationDate) {
-        var publishedYear = Integer.parseInt(publicationDate.year());
+        var publishedYear = Year.parse(publicationDate.year());
         return nviPeriodService.fetchLatestClosedPeriodYear()
-                   .map(latestClosedPeriodYear -> publishedYear <= latestClosedPeriodYear)
+                   .map(Year::of)
+                   .map(latestClosedPeriodYear -> isBeforeOrEqualTo(publishedYear, latestClosedPeriodYear))
                    .orElse(false);
+    }
+
+    private static boolean isBeforeOrEqualTo(Year publishedYear, Year latestClosedPeriodYear) {
+        return publishedYear.isBefore(latestClosedPeriodYear) || publishedYear.equals(latestClosedPeriodYear);
     }
 
     private Optional<CandidateEvaluatedMessage> createNonNviMessage(URI publicationId) {
