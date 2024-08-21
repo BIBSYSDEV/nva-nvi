@@ -64,7 +64,7 @@ public class EvaluatorService {
         var publicationId = extractPublicationId(publication);
         var publicationDate = extractPublicationDate(publication);
         if (hasInvalidPublicationYear(publicationDate)) {
-            logger.info("Invalid year format. " + NON_NVI_CANDIDATE_MESSAGE, publicationId);
+            logger.info("Invalid year format. Evaluated publication with id {} as NonNviCandidate.", publicationId);
             return createNonNviMessage(publicationId);
         }
         if (isPublishedBeforeOrInLatestClosedPeriod(publicationDate)) {
@@ -151,6 +151,10 @@ public class EvaluatorService {
                    .orElse(new PublicationDate(null, null, year.textValue()));
     }
 
+    private static boolean isBeforeOrEqualTo(Year publishedYear, Year latestClosedPeriodYear) {
+        return publishedYear.isBefore(latestClosedPeriodYear) || publishedYear.equals(latestClosedPeriodYear);
+    }
+
     private boolean hasInvalidPublicationYear(PublicationDate publicationDate) {
         return attempt(() -> Year.parse(publicationDate.year())).isFailure();
     }
@@ -161,10 +165,6 @@ public class EvaluatorService {
                    .map(Year::of)
                    .map(latestClosedPeriodYear -> isBeforeOrEqualTo(publishedYear, latestClosedPeriodYear))
                    .orElse(false);
-    }
-
-    private static boolean isBeforeOrEqualTo(Year publishedYear, Year latestClosedPeriodYear) {
-        return publishedYear.isBefore(latestClosedPeriodYear) || publishedYear.equals(latestClosedPeriodYear);
     }
 
     private Optional<CandidateEvaluatedMessage> createNonNviMessage(URI publicationId) {
