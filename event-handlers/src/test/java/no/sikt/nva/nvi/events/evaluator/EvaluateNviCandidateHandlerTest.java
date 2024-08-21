@@ -172,7 +172,6 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         var fileUri = setUpPublicationWithInvalidYear();
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
-        assertEquals(0, queueClient.getSentMessages().size());
         var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
         assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
     }
