@@ -168,6 +168,16 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldCreateNonCandidateEventOnPublicationWithInvalidYear() throws IOException {
+        var fileUri = setUpPublicationWithInvalidYear();
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        handler.handleRequest(event, context);
+        assertEquals(0, queueClient.getSentMessages().size());
+        var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
+        assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
+    }
+
+    @Test
     void shouldEvaluateExistingCandidateInOpenPeriod() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var year = LocalDateTime.now().getYear();
@@ -520,6 +530,13 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         return (int) nviCreators.stream()
                          .mapToLong(creator -> creator.nviAffiliations().size())
                          .sum();
+    }
+
+    private URI setUpPublicationWithInvalidYear() throws IOException {
+        var path = "evaluator/candidate_publicationDate_replace_year.json";
+        var invalidYear = "1948-1997";
+        var content = IoUtils.stringFromResources(Path.of(path)).replace("__REPLACE_YEAR__", invalidYear);
+        return s3Driver.insertFile(UnixPath.of(path), content);
     }
 
     private void persistPeriod(int publishingYear) {
