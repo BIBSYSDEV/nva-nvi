@@ -64,7 +64,7 @@ public class EvaluatorService {
         var publicationId = extractPublicationId(publication);
         var publicationDate = extractPublicationDate(publication);
         if (hasInvalidPublicationYear(publicationDate)) {
-            logger.info("Skipping evaluation due to invalid year format {}. Publication id {}",
+            logger.warn("Skipping evaluation due to invalid year format {}. Publication id {}",
                         publicationDate.year(), publicationId);
             return Optional.empty();
         }
