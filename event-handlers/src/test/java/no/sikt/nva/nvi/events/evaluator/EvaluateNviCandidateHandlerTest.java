@@ -19,6 +19,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -164,6 +165,19 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
         var event = createEvent(new PersistedResourceMessage(resourceFileUri));
         handler.handleRequest(event, context);
+        assertEquals(0, queueClient.getSentMessages().size());
+    }
+
+    @Test
+    void shouldSkipEvaluationAndLogWarningOnPublicationWithInvalidYear() throws IOException {
+        var invalidYear = "1948-1997";
+        var fileUri = setUpPublicationWithInvalidYear(invalidYear);
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        final var logAppender = LogUtils.getTestingAppender(EvaluatorService.class);
+        handler.handleRequest(event, context);
+        var expectedLogMessage = String.format("Skipping evaluation due to invalid year format %s. Publication id %s",
+                                               invalidYear, HARDCODED_PUBLICATION_ID);
+        assertTrue(logAppender.getMessages().contains(expectedLogMessage));
         assertEquals(0, queueClient.getSentMessages().size());
     }
 
@@ -538,6 +552,12 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         return (int) nviCreators.stream()
                          .mapToLong(creator -> creator.nviAffiliations().size())
                          .sum();
+    }
+
+    private URI setUpPublicationWithInvalidYear(String year) throws IOException {
+        var path = "evaluator/candidate_publicationDate_replace_year.json";
+        var content = IoUtils.stringFromResources(Path.of(path)).replace("__REPLACE_YEAR__", year);
+        return s3Driver.insertFile(UnixPath.of(path), content);
     }
 
     private void persistPeriod(int publishingYear) {
