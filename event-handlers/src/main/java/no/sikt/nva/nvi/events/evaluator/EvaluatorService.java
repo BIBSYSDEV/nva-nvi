@@ -64,8 +64,9 @@ public class EvaluatorService {
         var publicationId = extractPublicationId(publication);
         var publicationDate = extractPublicationDate(publication);
         if (hasInvalidPublicationYear(publicationDate)) {
-            logger.info("Invalid year format. Evaluated publication with id {} as NonNviCandidate.", publicationId);
-            return createNonNviMessage(publicationId);
+            logger.info("Skipping evaluation due to invalid year format {}. Publication id {}",
+                        publicationDate.year(), publicationId);
+            return Optional.empty();
         }
         if (isPublishedBeforeOrInLatestClosedPeriod(publicationDate)) {
             logger.info("Skipping evaluation. Publication with id {} is published before or same as latest closed "
