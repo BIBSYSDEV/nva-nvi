@@ -145,11 +145,12 @@ public class CreatorVerificationUtil {
     }
 
     private boolean isNviInstitution(URI institutionId) {
-        var response = getResponse(createCustomerApiUri(institutionId.toString()));
+        var customerApiUri = createCustomerApiUri(institutionId.toString());
+        var response = getResponse(customerApiUri);
         if (isSuccessOrNotFound(response)) {
             return mapToNviInstitutionValue(response);
         }
-        LOGGER.error(COULD_NOT_FETCH_CUSTOMER_MESSAGE + institutionId + ". Response code: {}", response.statusCode());
+        LOGGER.error(COULD_NOT_FETCH_CUSTOMER_MESSAGE + customerApiUri + ". Response code: {}", response.statusCode());
         throw new RuntimeException(COULD_NOT_FETCH_CUSTOMER_MESSAGE + institutionId);
     }
 
