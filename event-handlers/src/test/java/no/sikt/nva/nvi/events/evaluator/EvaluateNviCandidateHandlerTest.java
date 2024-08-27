@@ -484,6 +484,24 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    @Deprecated
+    void shouldHandleJournalWithMultipleTypes() throws IOException {
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+        var path = "evaluator/candidate_academicArticle_journal_multiple_types.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        handler.handleRequest(event, context);
+        var messageBody = getMessageBody();
+        var expectedPoints = ONE.setScale(SCALE, ROUNDING_MODE);
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(InstanceType.ACADEMIC_ARTICLE.getValue(),
+                                                                   expectedPoints,
+                                                                   fileUri, JOURNAL,
+                                                                   BigDecimal.valueOf(1), expectedPoints);
+        assertEquals(expectedEvaluatedMessage, messageBody);
+    }
+
+    @Test
     void shouldCreateDlqWhenUnableToConnectToResources() {
 
     }
