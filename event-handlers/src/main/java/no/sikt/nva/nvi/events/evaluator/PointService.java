@@ -40,6 +40,7 @@ public final class PointService {
     private static final String ROLE_CREATOR = "Creator";
     private static final String TYPE = "type";
     private static final String TYPE_SERIES = "Series";
+    public static final String TYPE_JOURNAL = "Journal";
     private final OrganizationRetriever organizationRetriever;
 
     public PointService(OrganizationRetriever organizationRetriever) {
@@ -160,6 +161,20 @@ public final class PointService {
 
     @Deprecated
     private static void massiveHackToFixObjectsWithMultipleTypes(JsonNode jsonNode) {
+        fixSeriesType(jsonNode);
+        fixJournalType(jsonNode);
+    }
+
+    private static void fixJournalType(JsonNode jsonNode) {
+        var journal = jsonNode.at(JSON_PTR_PUBLICATION_CONTEXT);
+        if (!journal.isMissingNode() && journal.at(JSON_PTR_TYPE).isArray()) {
+            var journalObject = (ObjectNode) journal;
+            journalObject.remove(TYPE);
+            journalObject.put(TYPE, TYPE_JOURNAL);
+        }
+    }
+
+    private static void fixSeriesType(JsonNode jsonNode) {
         var series = jsonNode.at(JSON_PTR_SERIES);
         if (!series.isMissingNode() && series.at(JSON_PTR_TYPE).isArray()) {
             var seriesObject = (ObjectNode) series;

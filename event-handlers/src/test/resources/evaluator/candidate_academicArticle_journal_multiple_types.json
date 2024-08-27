@@ -263,7 +263,7 @@
         "type": "Reference",
         "doi": "https://doi.org/10.1007/978-1-0716-3437-0_28",
         "publicationContext": {
-          "id": "https://api.dev.nva.aws.unit.no/publication-channels-v2/series/CF531965-0D31-48F1-BC40-3C22EB1D711C/2023",
+          "id": "https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023",
           "type": [
             "Series",
             "Journal"
