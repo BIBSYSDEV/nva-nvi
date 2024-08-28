@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -65,9 +66,7 @@ public class FetchInstitutionReportHandlerTest {
     @Test
     void shouldReturnEmptyXlsxFile()
         throws IOException {
-        var institutionId = randomUri();
-        var request = createRequest(institutionId, CURRENT_YEAR, MANAGE_NVI_CANDIDATES).build();
-        handler.handleRequest(request, output, CONTEXT);
+        handler.handleRequest(validRequest(MICROSOFT_EXCEL.toString()), output, CONTEXT);
         var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
         var actual = new Excel(new XSSFWorkbook(new ByteArrayInputStream(decodedResponse)));
         var expected = Excel.fromJava(new ArrayList<>(), new ArrayList<>());
@@ -80,10 +79,7 @@ public class FetchInstitutionReportHandlerTest {
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     })
     void shouldReturnMediaTypeMicrosoftExcelWhenRequested(String mediaType) throws IOException {
-        var institutionId = randomUri();
-        var request = createRequest(institutionId, CURRENT_YEAR, MANAGE_NVI_CANDIDATES)
-                          .withHeaders(Map.of(ACCEPT, mediaType))
-                          .build();
+        var request = validRequest(mediaType);
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, String.class);
         assertThat(response.getHeaders().get(CONTENT_TYPE), is(mediaType));
@@ -95,10 +91,7 @@ public class FetchInstitutionReportHandlerTest {
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     })
     void shouldReturnBase64EncodedOutputStreamWhenContentTypeIsExcel(String mediaType) throws IOException {
-        var institutionId = randomUri();
-        var request = createRequest(institutionId, CURRENT_YEAR, MANAGE_NVI_CANDIDATES)
-                          .withHeaders(Map.of(ACCEPT, mediaType))
-                          .build();
+        var request = validRequest(mediaType);
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, String.class);
         assertEquals(200, response.getStatusCode());
@@ -107,17 +100,22 @@ public class FetchInstitutionReportHandlerTest {
 
     @Test
     void shouldReturnMediaTypeMicrosoftExcelAsDefault() throws IOException {
-        var institutionId = randomUri();
-        var request = createRequest(institutionId, CURRENT_YEAR, MANAGE_NVI_CANDIDATES)
-                          .withHeaders(Map.of(ACCEPT, ANY_APPLICATION_TYPE.toString()))
-                          .build();
+        var request = validRequest(ANY_APPLICATION_TYPE.toString());
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, String.class);
         assertThat(response.getHeaders().get(CONTENT_TYPE), is(MICROSOFT_EXCEL.toString()));
     }
 
-    private static HandlerRequestBuilder<InputStream> createRequest(
-        URI userTopLevelCristinInstitution, int year, AccessRight accessRight) {
+    private static InputStream validRequest(String mediaType) throws JsonProcessingException {
+        var institutionId = randomUri();
+        return createRequest(institutionId, CURRENT_YEAR, MANAGE_NVI_CANDIDATES)
+                   .withHeaders(Map.of(ACCEPT, mediaType))
+                   .build();
+    }
+
+    private static HandlerRequestBuilder<InputStream> createRequest(URI userTopLevelCristinInstitution,
+                                                                    int year,
+                                                                    AccessRight accessRight) {
         var customerId = randomUri();
         return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
                    .withCurrentCustomer(customerId)
