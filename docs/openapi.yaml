@@ -633,7 +633,7 @@ paths:
     get:
       description: Get organization approval aggregations for a given year
       summary: Get requesting users organization approval aggregations for a given year
-      operationId: getNviReportByYear
+      operationId: getNviOrganizationAggregationsByYear
       parameters:
         - in: path
           name: year
