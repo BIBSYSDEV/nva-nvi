@@ -12,6 +12,8 @@ import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayInputStream;
@@ -85,6 +87,22 @@ public class FetchInstitutionReportTest {
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, String.class);
         assertThat(response.getHeaders().get(CONTENT_TYPE), is(mediaType));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    })
+    void shouldReturnBase64EncodedOutputStreamWhenContentTypeIsExcel(String mediaType) throws IOException {
+        var institutionId = randomUri();
+        var request = createRequest(institutionId, CURRENT_YEAR, MANAGE_NVI_CANDIDATES)
+                          .withHeaders(Map.of(ACCEPT, mediaType))
+                          .build();
+        handler.handleRequest(request, output, CONTEXT);
+        var response = GatewayResponse.fromOutputStream(output, String.class);
+        assertEquals(200, response.getStatusCode());
+        assertTrue(response.getIsBase64Encoded());
     }
 
     @Test
