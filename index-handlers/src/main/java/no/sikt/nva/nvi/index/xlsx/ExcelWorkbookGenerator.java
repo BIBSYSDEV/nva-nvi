@@ -9,11 +9,18 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-public record ExcelWorkbookGenerator(List<String> headers, List<List<String>> data) {
+public final class ExcelWorkbookGenerator {
 
     private static final Encoder ENCODER = Base64.getEncoder();
     private static final int FIRST_SHEET_INDEX = 0;
     private static final int FIRST_ROW_INDEX = 0;
+    private final List<String> headers;
+    private final List<List<String>> data;
+
+    public ExcelWorkbookGenerator(List<String> headers, List<List<String>> data) {
+        this.headers = headers;
+        this.data = data;
+    }
 
     public String toBase64EncodedString() {
         return ENCODER.encodeToString(this.toXSSFWorkbookByteArray());
