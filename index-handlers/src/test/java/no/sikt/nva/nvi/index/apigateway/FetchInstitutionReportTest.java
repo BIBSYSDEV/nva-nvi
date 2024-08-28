@@ -4,27 +4,36 @@ import static com.google.common.net.HttpHeaders.ACCEPT;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.ANY_APPLICATION_TYPE;
 import static com.google.common.net.MediaType.MICROSOFT_EXCEL;
+import static no.sikt.nva.nvi.index.apigateway.utils.ExcelAsserter.assertEqualsInAnyOrder;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
+import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.time.Year;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Map;
+import no.sikt.nva.nvi.index.xlsx.Excel;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.zalando.problem.Problem;
 
 public class FetchInstitutionReportTest {
@@ -52,14 +61,30 @@ public class FetchInstitutionReportTest {
     }
 
     @Test
-    void shouldReturnMediaTypeMicrosoftExcelWhenRequested() throws IOException {
+    void shouldReturnEmptyXlsxFile()
+        throws IOException {
+        var institutionId = randomUri();
+        var request = createRequest(institutionId, CURRENT_YEAR, MANAGE_NVI_CANDIDATES).build();
+        handler.handleRequest(request, output, CONTEXT);
+        var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
+        var actual = new Excel(new XSSFWorkbook(new ByteArrayInputStream(decodedResponse)));
+        var expected = Excel.fromJava(new ArrayList<>(), new ArrayList<>());
+        assertEqualsInAnyOrder(expected, actual);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    })
+    void shouldReturnMediaTypeMicrosoftExcelWhenRequested(String mediaType) throws IOException {
         var institutionId = randomUri();
         var request = createRequest(institutionId, CURRENT_YEAR, MANAGE_NVI_CANDIDATES)
-                          .withHeaders(Map.of(ACCEPT, MICROSOFT_EXCEL.toString()))
+                          .withHeaders(Map.of(ACCEPT, mediaType))
                           .build();
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, String.class);
-        assertThat(response.getHeaders().get(CONTENT_TYPE), is(MICROSOFT_EXCEL.toString()));
+        assertThat(response.getHeaders().get(CONTENT_TYPE), is(mediaType));
     }
 
     @Test
