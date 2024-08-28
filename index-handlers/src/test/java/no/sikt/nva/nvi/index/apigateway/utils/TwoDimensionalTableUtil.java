@@ -11,9 +11,13 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class TwoDimensionalTableUtil {
 
+    private static final int FIRST_SHEET_INDEX = 0;
+    private static final int FIRST_ROW_INDEX = 0;
+    private static final int FIRST_DATA_ROW_INDEX = 1;
+
     public static TwoDimensionalTable inputStreamToTwoDimensionalTable(InputStream inputStream) {
         try (var workbook = new XSSFWorkbook(inputStream)) {
-            var sheet = workbook.getSheetAt(0);
+            var sheet = workbook.getSheetAt(FIRST_SHEET_INDEX);
             var headers = extractHeaders(sheet);
             var data = extractData(sheet);
             return new TwoDimensionalTable(headers, data);
@@ -24,7 +28,7 @@ public class TwoDimensionalTableUtil {
 
     private static List<List<String>> extractData(XSSFSheet sheet) {
         var data = new ArrayList<List<String>>();
-        for (var rowCounter = 1; rowCounter <= sheet.getLastRowNum(); rowCounter++) {
+        for (var rowCounter = FIRST_DATA_ROW_INDEX; rowCounter <= sheet.getLastRowNum(); rowCounter++) {
             var row = sheet.getRow(rowCounter);
             data.add(extractRow(row));
         }
@@ -32,7 +36,7 @@ public class TwoDimensionalTableUtil {
     }
 
     private static List<String> extractHeaders(XSSFSheet sheet) {
-        var headerRow = sheet.getRow(0);
+        var headerRow = sheet.getRow(FIRST_ROW_INDEX);
         return extractRow(headerRow);
     }
 
