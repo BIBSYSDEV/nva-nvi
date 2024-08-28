@@ -4,6 +4,7 @@ import static com.google.common.net.HttpHeaders.ACCEPT;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.ANY_APPLICATION_TYPE;
 import static com.google.common.net.MediaType.MICROSOFT_EXCEL;
+import static no.sikt.nva.nvi.index.apigateway.utils.TwoDimensionalTableUtil.inputStreamToTwoDimensionalTable;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -25,15 +26,11 @@ import java.net.URI;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.index.xlsx.TwoDimensionalTable;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
-import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -108,28 +105,6 @@ public class FetchInstitutionReportHandlerTest {
         assertThat(response.getHeaders().get(CONTENT_TYPE), is(MICROSOFT_EXCEL.toString()));
     }
 
-    private static List<List<String>> extractData(XSSFSheet sheet) {
-        var data = new ArrayList<List<String>>();
-        for (var rowCounter = 1; rowCounter <= sheet.getLastRowNum(); rowCounter++) {
-            var row = sheet.getRow(rowCounter);
-            data.add(extractRow(row));
-        }
-        return data;
-    }
-
-    private static List<String> extractHeaders(XSSFSheet sheet) {
-        var headerRow = sheet.getRow(0);
-        return extractRow(headerRow);
-    }
-
-    private static List<String> extractRow(XSSFRow headerRow) {
-        var headers = new ArrayList<String>();
-        for (var cellCounter = 0; cellCounter < headerRow.getLastCellNum(); cellCounter++) {
-            headers.add(headerRow.getCell(cellCounter).getStringCellValue());
-        }
-        return headers;
-    }
-
     private static InputStream validRequest(String mediaType) throws JsonProcessingException {
         var institutionId = randomUri();
         return createRequest(institutionId, CURRENT_YEAR, MANAGE_NVI_CANDIDATES)
@@ -147,16 +122,5 @@ public class FetchInstitutionReportHandlerTest {
                    .withTopLevelCristinOrgId(userTopLevelCristinInstitution)
                    .withUserName(randomString())
                    .withPathParameters(Map.of(YEAR, String.valueOf(year)));
-    }
-
-    private TwoDimensionalTable inputStreamToTwoDimensionalTable(InputStream inputStream) {
-        try (var workbook = new XSSFWorkbook(inputStream)) {
-            var sheet = workbook.getSheetAt(0);
-            var headers = extractHeaders(sheet);
-            var data = extractData(sheet);
-            return new TwoDimensionalTable(headers, data);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 }
