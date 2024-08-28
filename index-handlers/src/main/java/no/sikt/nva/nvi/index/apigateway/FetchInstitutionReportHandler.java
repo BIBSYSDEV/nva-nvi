@@ -30,6 +30,7 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
 
     @Override
     protected String processInput(Void unused, RequestInfo requestInfo, Context context) throws ApiGatewayException {
+        setIsBase64Encoded(true);
         return null;
     }
 
