@@ -3,6 +3,8 @@ package no.sikt.nva.nvi.index.xlsx;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Base64;
+import java.util.Base64.Encoder;
 import java.util.List;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -10,12 +12,15 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public record Excel(Workbook workbook) {
 
+    private static final Encoder ENCODER = Base64.getEncoder();
+
     public static Excel fromJava(List<String> headers, List<List<String>> data) {
         var excel = new Excel(createWorkbookWithOneSheet());
         excel.addHeaders(headers);
         excel.addData(data);
         return excel;
     }
+
     public void addData(List<List<String>> data) {
         var sheet = workbook.getSheetAt(0);
         for (List<String> cells : data) {
@@ -32,6 +37,10 @@ public record Excel(Workbook workbook) {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public String toBase64EncodedString() {
+        return ENCODER.encodeToString(this.toBytes());
     }
 
     private static void addCells(Row row, List<String> cells) {

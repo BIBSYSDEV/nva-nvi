@@ -3,7 +3,9 @@ package no.sikt.nva.nvi.index.apigateway;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.google.common.net.MediaType;
 import java.net.HttpURLConnection;
+import java.util.ArrayList;
 import java.util.List;
+import no.sikt.nva.nvi.index.xlsx.Excel;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -31,7 +33,8 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
     @Override
     protected String processInput(Void unused, RequestInfo requestInfo, Context context) throws ApiGatewayException {
         setIsBase64Encoded(true);
-        return null;
+        var emptyExcelFile = Excel.fromJava(new ArrayList<>(), new ArrayList<>());
+        return emptyExcelFile.toBase64EncodedString();
     }
 
     @Override
