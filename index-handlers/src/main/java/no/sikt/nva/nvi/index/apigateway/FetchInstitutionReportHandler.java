@@ -5,7 +5,7 @@ import com.google.common.net.MediaType;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.List;
-import no.sikt.nva.nvi.index.xlsx.Excel;
+import no.sikt.nva.nvi.index.xlsx.TwoDimensionalTable;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -33,8 +33,8 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
     @Override
     protected String processInput(Void unused, RequestInfo requestInfo, Context context) throws ApiGatewayException {
         setIsBase64Encoded(true);
-        var emptyExcelFile = Excel.fromJava(new ArrayList<>(), new ArrayList<>());
-        return emptyExcelFile.toBase64EncodedString();
+        var emptyTable = new TwoDimensionalTable(new ArrayList<>(), new ArrayList<>());
+        return emptyTable.toXSSFWorkbookAsBase64EncodedString();
     }
 
     @Override
