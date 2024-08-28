@@ -1188,6 +1188,23 @@ Resources:
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
+  FetchInstitutionReportHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.apigateway.FetchInstitutionReportHandler::handleRequest
+      MemorySize: 1536
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /institution-approval-report/{year}
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+
   CreateNviPeriodHandler:
     Type: AWS::Serverless::Function
     Properties:

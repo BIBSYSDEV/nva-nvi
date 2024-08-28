@@ -38,7 +38,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.zalando.problem.Problem;
 
-public class FetchInstitutionReportTest {
+public class FetchInstitutionReportHandlerTest {
 
     private static final String YEAR = "year";
     private static final int CURRENT_YEAR = Year.now().getValue();
