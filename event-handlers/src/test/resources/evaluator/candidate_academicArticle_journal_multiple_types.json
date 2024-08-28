@@ -1,0 +1,342 @@
+{
+  "body": {
+    "type": "Publication",
+    "publicationContextUris": [],
+    "@context": {
+      "@vocab": "https://nva.sikt.no/ontology/publication#",
+      "hasPart": "https://bibsysdev.github.io/src/organization-ontology.ttl#hasPart",
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "DIRHEALTH": "https://nva.sikt.no/ontology/approvals-body#DIRHEALTH",
+      "NMA": "https://nva.sikt.no/ontology/approvals-body#NMA",
+      "NARA": "https://nva.sikt.no/ontology/approvals-body#NARA",
+      "REK": "https://nva.sikt.no/ontology/approvals-body#REK",
+      "ShortFilm": "https://nva.sikt.no/ontology/publication#ShortFilm",
+      "SerialFilmProduction": "https://nva.sikt.no/ontology/publication#SerialFilmProduction",
+      "Film": "https://nva.sikt.no/ontology/publication#Film",
+      "InteractiveFilm": "https://nva.sikt.no/ontology/publication#InteractiveFilm",
+      "AugmentedVirtualRealityFilm": "https://nva.sikt.no/ontology/publication#AugmentedVirtualRealityFilm",
+      "approvedBy": {
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/approvals-body#"
+        },
+        "@type": "@vocab"
+      },
+      "activeFrom": {
+        "@type": "xsd:dateTime"
+      },
+      "activeTo": {
+        "@type": "xsd:dateTime"
+      },
+      "additionalIdentifiers": {
+        "@container": "@set",
+        "@id": "additionalIdentifier"
+      },
+      "affiliations": {
+        "@container": "@set",
+        "@id": "affiliation"
+      },
+      "alternativeTitles": {
+        "@container": "@language",
+        "@id": "alternativeTitle"
+      },
+      "approvals": {
+        "@container": "@set",
+        "@id": "approval"
+      },
+      "approvalStatus": {
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/publication#"
+        },
+        "@type": "@vocab"
+      },
+      "architectureOutput": {
+        "@container": "@set",
+        "@id": "architectureOutput"
+      },
+      "associatedArtifacts": {
+        "@container": "@set",
+        "@id": "associatedArtifact"
+      },
+      "compliesWith": {
+        "@container": "@set",
+        "@id": "compliesWith"
+      },
+      "concertProgramme": {
+        "@container": "@set",
+        "@id": "concertProgramme"
+      },
+      "contributors": {
+        "@container": "@set",
+        "@id": "contributor"
+      },
+      "createdDate": {
+        "@type": "xsd:dateTime"
+      },
+      "doi": {
+        "@type": "@id"
+      },
+      "embargoDate": {
+        "@type": "xsd:dateTime"
+      },
+      "from": {
+        "@type": "xsd:dateTime"
+      },
+      "fundings": {
+        "@container": "@set",
+        "@id": "funding"
+      },
+      "handle": {
+        "@type": "@id"
+      },
+      "id": "@id",
+      "indexedDate": {
+        "@type": "xsd:dateTime"
+      },
+      "isbnList": {
+        "@container": "@set",
+        "@id": "isbn"
+      },
+      "labels": {
+        "@container": "@language",
+        "@id": "label"
+      },
+      "language": {
+        "@type": "@id"
+      },
+      "link": {
+        "@type": "@id"
+      },
+      "manifestations": {
+        "@container": "@set",
+        "@id": "manifestation"
+      },
+      "metadataSource": {
+        "@type": "@id"
+      },
+      "modifiedDate": {
+        "@type": "xsd:dateTime"
+      },
+      "musicalWorks": {
+        "@container": "@set",
+        "@id": "musicalWork"
+      },
+      "nameType": {
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/publication#"
+        },
+        "@type": "@vocab"
+      },
+      "outputs": {
+        "@container": "@set",
+        "@id": "output"
+      },
+      "ownerAffiliation": {
+        "@type": "@id"
+      },
+      "projects": {
+        "@container": "@set",
+        "@id": "project"
+      },
+      "publishedDate": {
+        "@type": "xsd:dateTime"
+      },
+      "referencedBy": {
+        "@container": "@set",
+        "@id": "referencedBy"
+      },
+      "related": {
+        "@container": "@set",
+        "@id": "related"
+      },
+      "status": {
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/publication#"
+        },
+        "@type": "@vocab"
+      },
+      "subjects": {
+        "@container": "@set",
+        "@id": "subject",
+        "@type": "@id"
+      },
+      "tags": {
+        "@container": "@set",
+        "@id": "tag"
+      },
+      "to": {
+        "@type": "xsd:dateTime"
+      },
+      "trackList": {
+        "@container": "@set",
+        "@id": "trackList"
+      },
+      "type": "@type",
+      "venues": {
+        "@container": "@set",
+        "@id": "venue"
+      },
+      "nviType": {
+        "@type": "@vocab",
+        "@context": {
+          "@vocab": "https://nva.sikt.no/ontology/publication#"
+        }
+      },
+      "NviCandidate": "https://nva.sikt.no/ontology/publication#NviCandidate",
+      "NonNviCandidate": "https://nva.sikt.no/ontology/publication#NonNviCandidate",
+      "publicationContextUris": {
+        "@container": "@set"
+      }
+    },
+    "id": "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d",
+    "additionalIdentifiers": [
+      {
+        "type": "AdditionalIdentifier",
+        "sourceName": "SCOPUS",
+        "value": "2-s2.0-85168836119"
+      },
+      {
+        "type": "AdditionalIdentifier",
+        "sourceName": "Cristin",
+        "value": "2232916"
+      },
+      {
+        "type": "AdditionalIdentifier",
+        "sourceName": "Scopus",
+        "value": "2-s2.0-85168836119"
+      }
+    ],
+    "contributorOrganizations": [
+      "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0",
+      "https://api.dev.nva.aws.unit.no/cristin/organization/68400000.0.0.0",
+      "https://api.dev.nva.aws.unit.no/cristin/organization/14400237.0.0.0"
+    ],
+    "createdDate": "2023-01-23T00:00:00Z",
+    "curatingInstitutions": [
+      "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0"
+    ],
+    "entityDescription": {
+      "type": "EntityDescription",
+      "alternativeAbstracts": {},
+      "contributors": [
+        {
+          "type": "Contributor",
+          "affiliations": [
+            {
+              "id": "https://www.example.org/9e3de71b-0ecb-4464-b9f1-2f92b974839c",
+              "type": "Organization"
+            }
+          ],
+          "identity": {
+            "type": "Identity",
+            "id": "https://api.dev.nva.aws.unit.no/cristin/person/123456",
+            "verificationStatus": "Verified"
+          },
+          "role": {
+            "type": "RoleOther"
+          }
+        },
+        {
+          "type": "Contributor",
+          "affiliations": [
+            {
+              "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0",
+              "type": "Organization"
+            }
+          ],
+          "identity": {
+            "id": "https://api.dev.nva.aws.unit.no/cristin/person/997998",
+            "type": "Identity",
+            "verificationStatus": "Verified"
+          },
+          "role": {
+            "type": "Creator"
+          }
+        }
+      ],
+      "language": "http://lexvo.org/id/iso639-3/eng",
+      "mainTitle": "Some academic article",
+      "publicationDate": {
+        "type": "PublicationDate",
+        "year": "2023"
+      },
+      "reference": {
+        "type": "Reference",
+        "doi": "https://doi.org/10.1007/978-1-0716-3437-0_28",
+        "publicationContext": {
+          "id": "https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023",
+          "type": [
+            "Series",
+            "Journal"
+          ],
+          "identifier": "CF531965-0D31-48F1-BC40-3C22EB1D711C",
+          "name": "Methods in molecular biology",
+          "onlineIssn": "1940-6029",
+          "printIssn": "1064-3745",
+          "sameAs": "https://kanalregister.hkdir.no/publiseringskanaler/KanalTidsskriftInfo?pid=CF531965-0D31-48F1-BC40-3C22EB1D711C",
+          "scientificValue": "LevelOne",
+          "year": "2023"
+        },
+        "publicationInstance": {
+          "type": "AcademicArticle",
+          "pages": {
+            "type": "Range",
+            "begin": "407",
+            "end": "429"
+          },
+          "volume": "2713"
+        }
+      }
+    },
+    "identifier": "019054cf4718-054dacfc-a59f-4451-954b-68cc0ded1732",
+    "importDetail": {
+      "type": "ImportDetail",
+      "importDate": "2023-06-26T13:49:48.696628908Z",
+      "importSource": {
+        "type": "ImportSource"
+      }
+    },
+    "modelVersion": "0.23.2",
+    "modifiedDate": "2023-01-23T00:00:00Z",
+    "publishedDate": "2023-01-23T00:00:00Z",
+    "publisher": {
+      "id": "https://api.dev.nva.aws.unit.no/customer/bb3d0c0c-5065-4623-9b98-5810983c2478",
+      "type": "Organization"
+    },
+    "resourceOwner": {
+      "owner": "ntnu@194.0.0.0",
+      "ownerAffiliation": "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0"
+    },
+    "status": "PUBLISHED",
+    "topLevelOrganizations": [
+      {
+        "id": "https://api.dev.nva.aws.unit.no/cristin/organization/14400237.0.0.0",
+        "type": "Organization",
+        "countryCode": "DE",
+        "labels": {
+          "nb": "Rheinische Friedrich-Wilhelms-Universität Bonn",
+          "en": "University of Bonn"
+        }
+      },
+      {
+        "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0",
+        "type": "Organization",
+        "countryCode": "NO",
+        "labels": {
+          "nn": "Noregs teknisk-naturvitskaplege universitet",
+          "nb": "Norges teknisk-naturvitenskapelige universitet",
+          "en": "Norwegian University of Science and Technology"
+        }
+      },
+      {
+        "id": "https://api.dev.nva.aws.unit.no/cristin/organization/68400000.0.0.0",
+        "type": "Organization",
+        "countryCode": "US",
+        "labels": {
+          "nb": "USA",
+          "en": "USA"
+        }
+      }
+    ],
+    "filesStatus": "noFiles"
+  }
+}
