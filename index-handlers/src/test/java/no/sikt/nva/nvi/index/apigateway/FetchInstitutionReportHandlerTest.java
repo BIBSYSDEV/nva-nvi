@@ -4,7 +4,7 @@ import static com.google.common.net.HttpHeaders.ACCEPT;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.ANY_APPLICATION_TYPE;
 import static com.google.common.net.MediaType.MICROSOFT_EXCEL;
-import static no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil.ExcelWorkbookGenerator;
+import static no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil.fromInputStream;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -67,7 +67,7 @@ public class FetchInstitutionReportHandlerTest {
         throws IOException {
         handler.handleRequest(validRequest(MICROSOFT_EXCEL.toString()), output, CONTEXT);
         var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
-        var actual = ExcelWorkbookGenerator(new ByteArrayInputStream(decodedResponse));
+        var actual = fromInputStream(new ByteArrayInputStream(decodedResponse));
         var expected = new ExcelWorkbookGenerator(List.of("header"), List.of(List.of("value")));
         assertEquals(expected, actual);
     }

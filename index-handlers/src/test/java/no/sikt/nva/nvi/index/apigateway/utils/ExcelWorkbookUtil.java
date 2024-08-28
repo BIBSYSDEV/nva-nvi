@@ -15,7 +15,7 @@ public class ExcelWorkbookUtil {
     private static final int FIRST_ROW_INDEX = 0;
     private static final int FIRST_DATA_ROW_INDEX = 1;
 
-    public static ExcelWorkbookGenerator ExcelWorkbookGenerator(InputStream inputStream) {
+    public static ExcelWorkbookGenerator fromInputStream(InputStream inputStream) {
         try (var workbook = new XSSFWorkbook(inputStream)) {
             var sheet = workbook.getSheetAt(FIRST_SHEET_INDEX);
             var headers = extractHeaders(sheet);
