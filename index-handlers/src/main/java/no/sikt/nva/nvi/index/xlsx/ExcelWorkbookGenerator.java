@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.Base64.Encoder;
 import java.util.List;
+import java.util.Objects;
+import nva.commons.core.JacocoGenerated;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -24,6 +26,25 @@ public final class ExcelWorkbookGenerator {
 
     public String toBase64EncodedString() {
         return ENCODER.encodeToString(this.toXSSFWorkbookByteArray());
+    }
+
+    @Override
+    @JacocoGenerated
+    public int hashCode() {
+        return Objects.hash(headers, data);
+    }
+
+    @Override
+    @JacocoGenerated
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        ExcelWorkbookGenerator that = (ExcelWorkbookGenerator) o;
+        return Objects.equals(headers, that.headers) && Objects.equals(data, that.data);
     }
 
     private static void addCells(Row row, List<String> cells) {
