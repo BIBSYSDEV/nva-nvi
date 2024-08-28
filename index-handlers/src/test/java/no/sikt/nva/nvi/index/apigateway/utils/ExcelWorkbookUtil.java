@@ -4,23 +4,23 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import no.sikt.nva.nvi.index.xlsx.TwoDimensionalTable;
+import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-public class TwoDimensionalTableUtil {
+public class ExcelWorkbookUtil {
 
     private static final int FIRST_SHEET_INDEX = 0;
     private static final int FIRST_ROW_INDEX = 0;
     private static final int FIRST_DATA_ROW_INDEX = 1;
 
-    public static TwoDimensionalTable inputStreamToTwoDimensionalTable(InputStream inputStream) {
+    public static ExcelWorkbookGenerator ExcelWorkbookGenerator(InputStream inputStream) {
         try (var workbook = new XSSFWorkbook(inputStream)) {
             var sheet = workbook.getSheetAt(FIRST_SHEET_INDEX);
             var headers = extractHeaders(sheet);
             var data = extractData(sheet);
-            return new TwoDimensionalTable(headers, data);
+            return new ExcelWorkbookGenerator(headers, data);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

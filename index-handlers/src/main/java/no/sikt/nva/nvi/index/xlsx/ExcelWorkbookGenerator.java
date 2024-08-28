@@ -9,13 +9,13 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-public record TwoDimensionalTable(List<String> headers, List<List<String>> data) {
+public record ExcelWorkbookGenerator(List<String> headers, List<List<String>> data) {
 
     private static final Encoder ENCODER = Base64.getEncoder();
     private static final int FIRST_SHEET_INDEX = 0;
     private static final int FIRST_ROW_INDEX = 0;
 
-    public String toXSSFWorkbookAsBase64EncodedString() {
+    public String toBase64EncodedString() {
         return ENCODER.encodeToString(this.toXSSFWorkbookByteArray());
     }
 
