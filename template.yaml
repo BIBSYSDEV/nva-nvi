@@ -1197,6 +1197,9 @@ Resources:
       AutoPublishAlias: live
       SnapStart:
         ApplyOn: PublishedVersions
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: !Ref AllowedOrigins
       Events:
         GetEvent:
           Type: Api
