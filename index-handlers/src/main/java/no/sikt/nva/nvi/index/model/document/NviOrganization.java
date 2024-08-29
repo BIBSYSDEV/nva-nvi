@@ -19,6 +19,7 @@ public record NviOrganization(@JsonProperty("id") URI id,
                               @JsonProperty("partOf") List<URI> partOf,
                               @JsonProperty("partOfIdentifiers") List<String> partOfIdentifiers)
     implements OrganizationType {
+    private static final String IDENTIFIER_DELIMITER = ".";
 
     public static Builder builder() {
         return new Builder();
@@ -27,6 +28,29 @@ public record NviOrganization(@JsonProperty("id") URI id,
     @Override
     public List<URI> partOf() {
         return isNull(partOf) ? List.of() : partOf;
+    }
+
+    public String getInstitutionIdentifier() {
+        var identifier = identifier();
+        return identifier.substring(0, identifier.indexOf(IDENTIFIER_DELIMITER));
+    }
+
+    public String getFacultyIdentifier() {
+        var identifier = identifier();
+        var subUnitOne = identifier.substring(identifier.indexOf(IDENTIFIER_DELIMITER) + 1);
+        return subUnitOne.substring(0, identifier.indexOf(IDENTIFIER_DELIMITER) - 1);
+    }
+
+    public String getDepartmentIdentifier() {
+        var identifier = identifier();
+        var subUnitOne = identifier.substring(identifier.indexOf(IDENTIFIER_DELIMITER) + 1);
+        var subUnitTwo = subUnitOne.substring(subUnitOne.indexOf(IDENTIFIER_DELIMITER) + 1);
+        return subUnitTwo.substring(0, identifier.indexOf(IDENTIFIER_DELIMITER) - 1);
+    }
+
+    public String getGroupIdentifier() {
+        var identifier = identifier();
+        return identifier.substring(identifier.lastIndexOf(IDENTIFIER_DELIMITER) + 1);
     }
 
     public static final class Builder {

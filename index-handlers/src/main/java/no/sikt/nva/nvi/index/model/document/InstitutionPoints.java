@@ -24,6 +24,10 @@ public record InstitutionPoints(URI institutionId,
                                          .toList());
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     @JsonSerialize
     @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
@@ -36,6 +40,70 @@ public record InstitutionPoints(URI institutionId,
             return new CreatorAffiliationPoints(creatorAffiliationPoints.nviCreator(),
                                                 creatorAffiliationPoints.affiliationId(),
                                                 creatorAffiliationPoints.points());
+        }
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        public static final class Builder {
+
+            private URI nviCreator;
+            private URI affiliationId;
+
+            private BigDecimal points;
+
+            private Builder() {
+            }
+
+            public Builder withNviCreator(URI nviCreator) {
+                this.nviCreator = nviCreator;
+                return this;
+            }
+
+            public Builder withAffiliationId(URI affiliationId) {
+                this.affiliationId = affiliationId;
+                return this;
+            }
+
+            public Builder withPoints(BigDecimal points) {
+                this.points = points;
+                return this;
+            }
+
+            public CreatorAffiliationPoints build() {
+                return new CreatorAffiliationPoints(nviCreator, affiliationId, points);
+            }
+        }
+    }
+
+    public static final class Builder {
+
+        private URI institutionId;
+        private BigDecimal institutionPoints;
+
+        private List<CreatorAffiliationPoints> creatorAffiliationPoints;
+
+        private Builder() {
+        }
+
+        public Builder withInstitutionId(URI institutionId) {
+            this.institutionId = institutionId;
+            return this;
+        }
+
+        public Builder withInstitutionPoints(BigDecimal institutionPoints) {
+            this.institutionPoints = institutionPoints;
+            return this;
+        }
+
+        public Builder withCreatorAffiliationPoints(List<CreatorAffiliationPoints> creatorAffiliationPoints) {
+            this.creatorAffiliationPoints = creatorAffiliationPoints;
+            return this;
+        }
+
+        public InstitutionPoints build() {
+            return new InstitutionPoints(institutionId, institutionPoints, creatorAffiliationPoints);
         }
     }
 }

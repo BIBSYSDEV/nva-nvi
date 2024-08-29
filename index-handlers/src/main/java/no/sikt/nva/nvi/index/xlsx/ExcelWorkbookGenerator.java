@@ -47,6 +47,14 @@ public final class ExcelWorkbookGenerator {
         return Objects.equals(headers, that.headers) && Objects.equals(data, that.data);
     }
 
+    @Override
+    public String toString() {
+        return "ExcelWorkbookGenerator{" +
+               "headers=" + headers +
+               ", data=" + data +
+               '}';
+    }
+
     private static void addCells(Row row, List<String> cells) {
         for (var subCounter = 0; subCounter < cells.size(); subCounter++) {
             var currentCell = row.createCell(subCounter);

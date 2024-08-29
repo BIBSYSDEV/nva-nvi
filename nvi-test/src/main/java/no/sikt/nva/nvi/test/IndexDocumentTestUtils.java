@@ -5,31 +5,44 @@ import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_L
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_NORWEGIAN_LABEL;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.NB_FIELD;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractAffiliations;
+import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
+import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.net.URI;
+import java.time.Instant;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.Contributor;
 import no.sikt.nva.nvi.index.model.document.ContributorType;
 import no.sikt.nva.nvi.index.model.document.InstitutionPoints;
+import no.sikt.nva.nvi.index.model.document.InstitutionPoints.CreatorAffiliationPoints;
+import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.document.Organization;
 import no.sikt.nva.nvi.index.model.document.OrganizationType;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
+import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import nva.commons.core.paths.UnixPath;
+import nva.commons.core.paths.UriWrapper;
 
 public final class IndexDocumentTestUtils {
 
@@ -65,6 +78,29 @@ public final class IndexDocumentTestUtils {
                    .withPublicationDate(mapToPublicationDate(candidate.getPublicationDetails().publicationDate()))
                    .withContributors(
                        mapToContributors(ExpandedResourceGenerator.extractContributors(expandedResource), candidate))
+                   .build();
+    }
+
+    public static NviCandidateIndexDocument randomIndexDocument(int year, URI institutionId) {
+        var publicationDetails = randomPublicationDetails(institutionId);
+        var approvals = createApprovals(institutionId, publicationDetails.contributors());
+        return NviCandidateIndexDocument.builder()
+                   .withContext(Candidate.getContextUri())
+                   .withId(randomUri())
+                   .withIsApplicable(true)
+                   .withIdentifier(UUID.randomUUID())
+                   .withApprovals(approvals)
+                   .withPoints(randomBigDecimal())
+                   .withPublicationDetails(publicationDetails)
+                   .withNumberOfApprovals(approvals.size())
+                   .withCreatorShareCount(randomIntBetween(1, 10))
+                   .withReported(true)
+                   .withGlobalApprovalStatus(randomElement(GlobalApprovalStatus.values()))
+                   .withPublicationTypeChannelLevelPoints(randomBigDecimal())
+                   .withInternationalCollaborationFactor(randomBigDecimal())
+                   .withCreatedDate(Instant.now())
+                   .withModifiedDate(Instant.now())
+                   .withReportingPeriod(new ReportingPeriod(String.valueOf(year)))
                    .build();
     }
 
@@ -203,6 +239,83 @@ public final class IndexDocumentTestUtils {
         return NviOrganization.builder()
                    .withId(id)
                    .withPartOf(Collections.emptyList())
+                   .build();
+    }
+
+    private static PublicationDetails randomPublicationDetails(URI institutionId) {
+        return PublicationDetails.builder()
+                   .withType(randomString())
+                   .withId(randomUri().toString())
+                   .withTitle(randomString())
+                   .withPublicationDate(randomPublicationDate())
+                   .withContributors(List.of(randomContributor(institutionId)))
+                   .build();
+    }
+
+    private static NviContributor randomContributor(URI institutionId) {
+        return NviContributor.builder()
+                   .withId(randomUri().toString())
+                   .withName(randomString())
+                   .withOrcid(randomString())
+                   .withRole(randomString())
+                   .withAffiliations(List.of(randomNviAffiliation(institutionId)))
+                   .build();
+    }
+
+    private static NviOrganization randomNviAffiliation(URI institutionId) {
+        return NviOrganization.builder()
+                   .withId(randomCristinOrgUri())
+                   .withPartOf(List.of(institutionId))
+                   .build();
+    }
+
+    public static URI randomCristinOrgUri() {
+        var cristinIdentifier = randomIntBetween(0, 99) + "." + randomIntBetween(0, 99) + "." + randomIntBetween(0, 99)
+                                + "." + randomIntBetween(0, 99);
+        return UriWrapper.fromUri(randomUri()).addChild(cristinIdentifier).getUri();
+    }
+
+    private static PublicationDate randomPublicationDate() {
+        return new PublicationDate(randomString(), randomString(), randomString());
+    }
+
+    private static List<no.sikt.nva.nvi.index.model.document.Approval> createApprovals(URI uri,
+                                                                                       List<ContributorType> contributors) {
+        return contributors.stream()
+                   .filter(NviContributor.class::isInstance)
+                   .map(NviContributor.class::cast)
+                   .map(contributor -> createApproval(uri, contributor, randomElement(GlobalApprovalStatus.values())))
+                   .toList();
+    }
+
+    private static no.sikt.nva.nvi.index.model.document.Approval createApproval(URI institutionId,
+                                                                                NviContributor contributor,
+                                                                                GlobalApprovalStatus globalApprovalStatus) {
+        return no.sikt.nva.nvi.index.model.document.Approval.builder()
+                   .withInstitutionId(institutionId)
+                   .withApprovalStatus(ApprovalStatus.NEW)
+                   .withAssignee(randomString())
+                   .withPoints(generateInstitutionPoints(contributor, institutionId))
+                   .withInvolvedOrganizations(new HashSet<>(contributor.getOrganizationsPartOf(institutionId)))
+                   .withLabels(Map.of(EN_FIELD, HARDCODED_ENGLISH_LABEL, NB_FIELD,
+                                      HARDCODED_NORWEGIAN_LABEL))
+                   .withGlobalApprovalStatus(globalApprovalStatus)
+                   .build();
+    }
+
+    private static InstitutionPoints generateInstitutionPoints(NviContributor contributor, URI institutionId) {
+        return InstitutionPoints.builder()
+                   .withInstitutionId(institutionId)
+                   .withInstitutionPoints(randomBigDecimal())
+                   .withCreatorAffiliationPoints(List.of(generateCreatorAffiliationPoints(contributor)))
+                   .build();
+    }
+
+    private static CreatorAffiliationPoints generateCreatorAffiliationPoints(NviContributor contributor) {
+        return CreatorAffiliationPoints.builder()
+                   .withNviCreator(URI.create(contributor.id()))
+                   .withAffiliationId(randomUri())
+                   .withPoints(randomBigDecimal())
                    .build();
     }
 }

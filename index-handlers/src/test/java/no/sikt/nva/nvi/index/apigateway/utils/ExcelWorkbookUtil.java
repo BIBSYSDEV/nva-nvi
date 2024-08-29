@@ -1,7 +1,10 @@
 package no.sikt.nva.nvi.index.apigateway.utils;
 
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
@@ -22,6 +25,17 @@ public class ExcelWorkbookUtil {
             var data = extractData(sheet);
             return new ExcelWorkbookGenerator(headers, data);
         } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static ExcelWorkbookGenerator fromCsvString(String csvString) {
+        try (CSVReader csvReader = new CSVReader(new StringReader(csvString))) {
+            var headers = csvReader.readNext();
+            var rows = csvReader.readAll().stream().map(List::of).toList();
+
+            return new ExcelWorkbookGenerator(List.of(headers), rows);
+        } catch (CsvException | IOException e) {
             throw new RuntimeException(e);
         }
     }
