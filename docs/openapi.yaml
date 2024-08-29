@@ -631,9 +631,9 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /institution-report/{year}:
     get:
-      description: Get NVI report for a given year
-      summary: Get NVI report for year
-      operationId: getNviReportByYear
+      description: Get organization approval aggregations for a given year
+      summary: Get requesting users organization approval aggregations for a given year
+      operationId: getNviOrganizationAggregationsByYear
       parameters:
         - in: path
           name: year
@@ -660,6 +660,52 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NviInstitutionReportResponse"
+        '401':
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '500':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /institution-approval-report/{year}:
+    get:
+      description: Get NVI report for a given year
+      summary: Get requesting users top level organizations NVI report for given year
+      operationId: getNviReportByYear
+      parameters:
+        - in: path
+          name: year
+          description: The year of the nvi period
+          required: true
+          schema:
+            type: string
+      security:
+        - CognitoUserPool: [
+          'https://api.nva.unit.no/scopes/backend',
+          'https://api.nva.unit.no/scopes/frontend',
+          'aws.cognito.signin.user.admin',
+        ]
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchInstitutionReportHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/vnd.ms-excel:
+              schema:
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                format: binary
         '401':
           description: "Unauthorized"
           content:
