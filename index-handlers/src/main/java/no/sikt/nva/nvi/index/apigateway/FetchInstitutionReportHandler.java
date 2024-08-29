@@ -19,6 +19,8 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
 
     @Override
     protected List<MediaType> listSupportedMediaTypes() {
+        // The first media type in the list is the default media type if the client does not specify a media type
+        // See RestRequestHandler#defaultResponseContentTypeWhenNotSpecifiedByClientRequest
         return List.of(MediaType.OOXML_SHEET, MediaType.MICROSOFT_EXCEL);
     }
 
