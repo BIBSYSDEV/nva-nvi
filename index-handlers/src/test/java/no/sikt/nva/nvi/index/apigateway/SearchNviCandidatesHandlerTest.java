@@ -15,6 +15,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.RestRequestHandler.COMMA;
+import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -66,6 +67,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
+import org.mockito.stubbing.OngoingStubbing;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.zalando.problem.Problem;
 
@@ -110,7 +112,9 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldReturnBadRequestIfOrderByIsInvalid() throws IOException {
         mockOpenSearchClient();
-        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of(QUERY_PARAM_ORDER_BY, "invalid"));
+        var userName = randomString();
+        mockIdentityService(userName);
+        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of(QUERY_PARAM_ORDER_BY, "invalid"), userName);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
         assertThat(response.getBodyObject(Problem.class).getStatus().getStatusCode(),
@@ -121,7 +125,9 @@ public class SearchNviCandidatesHandlerTest {
     void shouldReturnDocumentFromIndexWhenNoSearchIsSpecified() throws IOException {
         var expectedDocument = singleNviCandidateIndexDocument();
         when(openSearchClient.search(any())).thenReturn(createSearchResponse(expectedDocument));
-        handler.handleRequest(emptyRequest(), output, context);
+        var userName = randomString();
+        mockIdentityService(userName);
+        handler.handleRequest(requestWithoutQueryParameters(userName), output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedResult = objectMapper.readValue(response.getBody(), TYPE_REF);
         assertThat(paginatedResult.getHits(), hasSize(1));
@@ -131,7 +137,9 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldReturnPaginatedSearchResultWithDefaultOffsetAndSizeIfNotGiven() throws IOException {
         mockOpenSearchClient();
-        handler.handleRequest(requestWithoutQueryParameters(), output, context);
+        var userName = randomString();
+        mockIdentityService(userName);
+        handler.handleRequest(requestWithoutQueryParameters(userName), output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
         var actualId = paginatedSearchResult.getId().toString();
@@ -144,7 +152,9 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldReturnPaginatedSearchResultWithCorrectBaseUriInId() throws IOException {
         mockOpenSearchClient();
-        handler.handleRequest(requestWithoutQueryParameters(), output, context);
+        var userName = randomString();
+        mockIdentityService(userName);
+        handler.handleRequest(requestWithoutQueryParameters(userName), output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
 
@@ -157,7 +167,9 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldReturnPaginatedSearchResultWithoutQueryParamFilterInIdIfNotGiven() throws IOException {
         mockOpenSearchClient();
-        handler.handleRequest(requestWithoutQueryParameters(), output, context);
+        var userName = randomString();
+        mockIdentityService(userName);
+        handler.handleRequest(requestWithoutQueryParameters(userName), output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
 
@@ -169,7 +181,9 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldReturnPaginatedSearchResultWithoutQueryParamCategoryNotGiven() throws IOException {
         mockOpenSearchClient();
-        handler.handleRequest(requestWithoutQueryParameters(), output, context);
+        var userName = randomString();
+        mockIdentityService(userName);
+        handler.handleRequest(requestWithoutQueryParameters(userName), output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
 
@@ -186,9 +200,11 @@ public class SearchNviCandidatesHandlerTest {
         var randomTitle = randomString();
         var randomSearchTerm = randomString();
         var randomInstitutions = List.of(randomSiktSubUnit(), randomSiktSubUnit());
+        var userName = randomString();
+        mockIdentityService(userName);
         handler.handleRequest(
             requestWithInstitutionsAndFilter(randomSearchTerm, randomInstitutions, randomFilter, randomCategory,
-                                             randomTitle),
+                                             randomTitle, userName),
             output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
@@ -211,7 +227,10 @@ public class SearchNviCandidatesHandlerTest {
     void shouldReturnPaginatedSearchResultWithAggregationTypeInIdIfGiven() throws IOException {
         mockOpenSearchClient();
         var aggregationType = "organizationApprovalStatuses";
-        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of(QUERY_AGGREGATION_TYPE, aggregationType));
+        var userName = randomString();
+        mockIdentityService(userName);
+        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of(QUERY_AGGREGATION_TYPE, aggregationType),
+                                    userName);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
@@ -222,8 +241,10 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldReturnPaginatedSearchResultWithOrderByInIdIfGiven() throws IOException {
         mockOpenSearchClient();
+        var userName = randomString();
+        mockIdentityService(userName);
         var orderByValue = OrderByFields.CREATED_DATE.getValue();
-        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of(QUERY_PARAM_ORDER_BY, orderByValue));
+        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of(QUERY_PARAM_ORDER_BY, orderByValue), userName);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
@@ -235,7 +256,9 @@ public class SearchNviCandidatesHandlerTest {
     void shouldReturnPaginatedSearchResultWithSortOrderInIdIfGiven() throws IOException {
         mockOpenSearchClient();
         var sortOrderValue = "desc";
-        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of(QUERY_PARAM_SORT_ORDER, sortOrderValue));
+        var userName = randomString();
+        mockIdentityService(userName);
+        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of(QUERY_PARAM_SORT_ORDER, sortOrderValue), userName);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
@@ -248,9 +271,11 @@ public class SearchNviCandidatesHandlerTest {
         var documents = generateNumberOfIndexDocuments(10);
         var aggregationName = randomString();
         var docCount = randomInteger();
+        var userName = randomString();
+        mockIdentityService(userName);
         when(openSearchClient.search(any()))
             .thenReturn(createSearchResponse(documents, aggregationName, randomFilterAggregate(docCount)));
-        handler.handleRequest(emptyRequest(), output, context);
+        handler.handleRequest(requestWithoutQueryParameters(userName), output, context);
         var response =
             GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedResult = objectMapper.readValue(response.getBody(), TYPE_REF);
@@ -262,9 +287,11 @@ public class SearchNviCandidatesHandlerTest {
     void shouldUseCamelCaseOnDocCount() throws IOException {
         var documents = generateNumberOfIndexDocuments(1);
         var aggregationName = "someAggregation";
+        var userName = randomString();
+        mockIdentityService(userName);
         when(openSearchClient.search(any()))
             .thenReturn(createSearchResponse(documents, aggregationName, randomFilterAggregate(1)));
-        handler.handleRequest(emptyRequest(), output, context);
+        handler.handleRequest(requestWithoutQueryParameters(userName), output, context);
         var response =
             GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedResult = objectMapper.readValue(response.getBody(), TYPE_REF);
@@ -280,11 +307,13 @@ public class SearchNviCandidatesHandlerTest {
     @Test
     void shouldReturnPaginatedSearchResultWithNestedAggregations() throws IOException {
         var documents = generateNumberOfIndexDocuments(3);
+        var userName = randomString();
+        mockIdentityService(userName);
         var aggregationName = "someNestedAggregation";
         when(openSearchClient.search(any()))
             .thenReturn(createSearchResponse(documents, aggregationName, organizationApprovalStatusAggregate(
                 "someTopLevelOrgId")));
-        handler.handleRequest(emptyRequest(), output, context);
+        handler.handleRequest(requestWithoutQueryParameters(userName), output, context);
         var response =
             GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedResult = objectMapper.readValue(response.getBody(), TYPE_REF);
@@ -314,7 +343,7 @@ public class SearchNviCandidatesHandlerTest {
     void shouldThrowExceptionWhenSearchFails() throws IOException {
         when(openSearchClient.search(any()))
             .thenThrow(RuntimeException.class);
-        handler.handleRequest(emptyRequest(), output, context);
+        handler.handleRequest(requestWithoutQueryParameters(randomString()), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
         assertThat(Objects.requireNonNull(response.getBodyObject(Problem.class).getStatus()).getStatusCode(),
@@ -373,22 +402,13 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
-    void shouldLogAggregationTypeAndOrganization() throws IOException {
-        var aggregationType = "organizationApprovalStatuses";
-        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of(QUERY_AGGREGATION_TYPE, aggregationType));
-        final var logAppender = LogUtils.getTestingAppender(SearchNviCandidatesHandler.class);
-        handler.handleRequest(request, output, context);
-        assertThat(logAppender.getMessages(),
-                   containsString("Aggregation type organizationApprovalStatuses requested for "
-                                  + "topLevelCristinOrg " + TOP_LEVEL_CRISTIN_ORG));
-    }
-
-    @Test
     void shouldUseDefaultSerializationWhenFormatterFormatsUnsupportedAggregationVariant() throws IOException {
         var aggregateName = randomString();
         when(openSearchClient.search(any()))
             .thenReturn(createSearchResponse(List.of(), aggregateName, getGlobalAggregate()));
-        handler.handleRequest(emptyRequest(), output, context);
+        var userName = randomString();
+        mockIdentityService(userName);
+        handler.handleRequest(requestWithoutQueryParameters(userName), output, context);
         var response =
             GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
         var paginatedResult = objectMapper.readValue(response.getBody(), TYPE_REF);
@@ -459,14 +479,14 @@ public class SearchNviCandidatesHandlerTest {
                    .build();
     }
 
-    private static InputStream createRequest(URI topLevelCristinOrgId, Map<String, String> queryParams)
-        throws JsonProcessingException {
-        return createRequest(topLevelCristinOrgId, queryParams, randomString());
-    }
-
     @NotNull
     private static String toCommaSeperatedStringList(List<String> institutions) {
         return String.join(COMMA, institutions);
+    }
+
+    private OngoingStubbing<GetUserResponse> mockIdentityService(String userName) {
+        return attempt(() -> when(identityServiceClient.getUser(eq(userName))).thenReturn(
+            buildGetUserResponse(List.of(TOP_LEVEL_CRISTIN_ORG)))).orElseThrow();
     }
 
     private URI constructBasePath() {
@@ -490,10 +510,10 @@ public class SearchNviCandidatesHandlerTest {
         );
     }
 
-    private InputStream emptyRequest() throws JsonProcessingException {
+    private InputStream requestWithoutQueryParameters(String userName) throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
-                   .withTopLevelCristinOrgId(randomUri())
-                   .withUserName(randomString())
+                   .withTopLevelCristinOrgId(TOP_LEVEL_CRISTIN_ORG)
+                   .withUserName(userName)
                    .build();
     }
 
@@ -507,18 +527,20 @@ public class SearchNviCandidatesHandlerTest {
                    .build();
     }
 
-    private InputStream requestWithInstitutionsAndFilter(String searchTerm, List<String> affiliationIdentifiers,
+    private InputStream requestWithInstitutionsAndFilter(String searchTerm,
+                                                         List<String> affiliationIdentifiers,
                                                          String filter,
                                                          String category,
-                                                         String title)
+                                                         String title,
+                                                         String userName)
         throws JsonProcessingException {
-        return createRequest(randomUri(),
+        return createRequest(TOP_LEVEL_CRISTIN_ORG,
                              Map.of(QUERY_PARAM_AFFILIATIONS, toCommaSeperatedStringList(affiliationIdentifiers),
                                     QUERY_PARAM_EXCLUDE_SUB_UNITS, "true",
                                     QUERY_PARAM_FILTER, filter,
                                     QUERY_PARAM_CATEGORY, category,
                                     QUERY_PARAM_TITLE, title,
-                                    QUERY_PARAM_SEARCH_TERM, searchTerm));
+                                    QUERY_PARAM_SEARCH_TERM, searchTerm), userName);
     }
 
     private InputStream requestWithInstitutionsAndTopLevelCristinOrgId(List<String> affiliationIdentifiers,
@@ -526,14 +548,7 @@ public class SearchNviCandidatesHandlerTest {
         throws JsonProcessingException {
         return createRequest(cristinId,
                              Map.of(QUERY_PARAM_AFFILIATIONS, toCommaSeperatedStringList(affiliationIdentifiers),
-                                    QUERY_PARAM_EXCLUDE_SUB_UNITS, "true"));
-    }
-
-    private InputStream requestWithoutQueryParameters() throws JsonProcessingException {
-        return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
-                   .withTopLevelCristinOrgId(randomUri())
-                   .withUserName(randomString())
-                   .build();
+                                    QUERY_PARAM_EXCLUDE_SUB_UNITS, "true"), randomString());
     }
 
     public static class CandidateSearchParamsAffiliationMatcher implements ArgumentMatcher<CandidateSearchParameters> {

@@ -109,7 +109,13 @@ public class SearchNviCandidatesHandler
 
     private List<String> getQueryParamAffiliationsOrViewingScope(RequestInfo requestInfo)
         throws UnauthorizedException {
-        return extractQueryParamAffiliations(requestInfo).orElse(getAffiliationsFromViewingScope(requestInfo));
+        return extractQueryParamAffiliations(requestInfo).orElse(getDefaultAffiliations(requestInfo));
+    }
+
+    private List<String> getDefaultAffiliations(RequestInfo requestInfo) throws UnauthorizedException {
+        return userIsNviAdmin(requestInfo)
+                   ? List.of()
+                   : getAffiliationsFromViewingScope(requestInfo);
     }
 
     private List<String> getAffiliationsFromViewingScope(RequestInfo requestInfo) throws UnauthorizedException {
