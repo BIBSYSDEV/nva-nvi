@@ -313,16 +313,16 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
-    void shouldReturnResultsWithUserTopLevelOrgAsDefaultAffiliationIfNotSet() throws IOException {
-        var searchedAffiliations = List.of(randomSiktSubUnit(), randomSiktSubUnit());
+    void shouldReturnResultsWithUsersViewingScopeAsDefaultAffiliationIfNotSet() throws IOException {
+        var usersViewingScope = List.of(randomSiktSubUnit(), randomSiktSubUnit());
 
         var matcher =
             new CandidateSearchParamsAffiliationMatcher(CandidateSearchParameters.builder()
-                                                            .withAffiliations(searchedAffiliations).build());
+                                                            .withAffiliations(usersViewingScope).build());
         when(openSearchClient.search(argThat(matcher)))
             .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
 
-        var request = requestWithInstitutionsAndTopLevelCristinOrgId(searchedAffiliations, TOP_LEVEL_CRISTIN_ORG);
+        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of());
         handler.handleRequest(request, output, context);
 
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
