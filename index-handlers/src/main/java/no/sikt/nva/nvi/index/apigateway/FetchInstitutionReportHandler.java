@@ -19,7 +19,7 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
 
     @Override
     protected List<MediaType> listSupportedMediaTypes() {
-        return List.of(MediaType.MICROSOFT_EXCEL, MediaType.OOXML_SHEET);
+        return List.of(MediaType.OOXML_SHEET, MediaType.MICROSOFT_EXCEL);
     }
 
     @Override
