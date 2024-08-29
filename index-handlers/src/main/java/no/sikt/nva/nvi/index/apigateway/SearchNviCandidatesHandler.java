@@ -8,8 +8,10 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
@@ -40,19 +42,23 @@ public class SearchNviCandidatesHandler
     private final Logger logger = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
     private final SearchClient<NviCandidateIndexDocument> openSearchClient;
     private final ViewingScopeValidator viewingScopeValidator;
+    private final IdentityServiceClient identityServiceClient;
     private final String apiHost;
 
     @JacocoGenerated
     public SearchNviCandidatesHandler() {
-        this(defaultOpenSearchClient(), defaultViewingScopeValidator(), new Environment());
+        this(defaultOpenSearchClient(), defaultViewingScopeValidator(), IdentityServiceClient.prepare(),
+             new Environment());
     }
 
     public SearchNviCandidatesHandler(SearchClient<NviCandidateIndexDocument> openSearchClient,
                                       ViewingScopeValidator viewingScopeValidator,
+                                      IdentityServiceClient identityServiceClient,
                                       Environment environment) {
         super(Void.class);
         this.openSearchClient = openSearchClient;
         this.viewingScopeValidator = viewingScopeValidator;
+        this.identityServiceClient = identityServiceClient;
         this.apiHost = environment.readEnv("API_HOST");
     }
 
@@ -65,7 +71,8 @@ public class SearchNviCandidatesHandler
     protected PaginatedSearchResult<NviCandidateIndexDocument> processInput(Void input, RequestInfo requestInfo,
                                                                             Context context)
         throws UnauthorizedException, BadRequestException {
-        var candidateSearchParameters = CandidateSearchParameters.fromRequestInfo(requestInfo);
+        var affiliations = getQueryParamAffiliationsOrViewingScope(requestInfo);
+        var candidateSearchParameters = CandidateSearchParameters.fromRequestInfo(requestInfo, affiliations);
         logAggregationType(candidateSearchParameters);
         return attempt(() -> openSearchClient.search(candidateSearchParameters))
                    .map(searchResponse -> toPaginatedResult(searchResponse, candidateSearchParameters))
@@ -87,19 +94,9 @@ public class SearchNviCandidatesHandler
         return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI);
     }
 
-    private static List<String> extractAffiliations(RequestInfo requestInfo) {
-        return Optional.ofNullable(extractQueryParamAffiliations(requestInfo))
-                   .orElse(List.of(getTopLevelOrg(requestInfo).getLastPathElement()));
-    }
-
-    private static UriWrapper getTopLevelOrg(RequestInfo requestInfo) {
-        return UriWrapper.fromUri(requestInfo.getTopLevelOrgCristinId().orElseThrow());
-    }
-
-    private static List<String> extractQueryParamAffiliations(RequestInfo requestInfo) {
+    private static Optional<List<String>> extractQueryParamAffiliations(RequestInfo requestInfo) {
         return requestInfo.getQueryParameterOpt(QUERY_PARAM_AFFILIATIONS)
-                   .map(SearchNviCandidatesHandler::toListOfIdentifiers)
-                   .orElse(null);
+                   .map(SearchNviCandidatesHandler::toListOfIdentifiers);
     }
 
     private static List<String> toListOfIdentifiers(String identifierListAsString) {
@@ -108,6 +105,23 @@ public class SearchNviCandidatesHandler
 
     private static boolean userIsNotNviAdmin(RequestInfo requestInfo) {
         return !userIsNviAdmin(requestInfo);
+    }
+
+    private List<String> getQueryParamAffiliationsOrViewingScope(RequestInfo requestInfo)
+        throws UnauthorizedException {
+        return extractQueryParamAffiliations(requestInfo).orElse(getAffiliationsFromViewingScope(requestInfo));
+    }
+
+    private List<String> getAffiliationsFromViewingScope(RequestInfo requestInfo) throws UnauthorizedException {
+        return fetchViewingScope(requestInfo.getUserName()).stream()
+                   .map(UriWrapper::fromUri)
+                   .map(UriWrapper::getLastPathElement)
+                   .collect(Collectors.toList());
+    }
+
+    private Set<URI> fetchViewingScope(String userName) {
+        var user = attempt(() -> identityServiceClient.getUser(userName)).orElseThrow();
+        return new HashSet<>(user.viewingScope().includedUnits());
     }
 
     private URI toCristinOrgUri(String identifier) {
@@ -125,7 +139,9 @@ public class SearchNviCandidatesHandler
 
     private void validateAccessRights(RequestInfo requestInfo) throws UnauthorizedException {
         if (userIsNotNviAdmin(requestInfo)) {
-            var requestedOrganizations = toOrganizationUris(extractAffiliations(requestInfo));
+            var requestedOrganizations = extractQueryParamAffiliations(requestInfo)
+                                             .map(this::toOrganizationUris)
+                                             .orElse(List.of());
             if (userIsNotAllowedToView(requestInfo, requestedOrganizations)) {
                 throw new UnauthorizedException("User is not allowed to view requested organizations");
             }

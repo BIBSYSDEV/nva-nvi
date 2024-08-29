@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -33,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -47,11 +49,15 @@ import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.OrderByFields;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.test.TestUtils;
+import no.unit.nva.clients.GetUserResponse;
+import no.unit.nva.clients.GetUserResponse.ViewingScope;
+import no.unit.nva.clients.IdentityServiceClient;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
+import nva.commons.apigateway.exceptions.NotFoundException;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
@@ -69,6 +75,7 @@ public class SearchNviCandidatesHandlerTest {
     public static final URI TOP_LEVEL_CRISTIN_ORG = URI.create(
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     public static final String QUERY_PARAM_ORDER_BY = "orderBy";
+    public static final String QUERY_ENCODED_COMMA = "%2C";
     private static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
     private static final String QUERY_PARAM_FILTER = "filter";
     private static final String QUERY_PARAM_CATEGORY = "category";
@@ -84,18 +91,20 @@ public class SearchNviCandidatesHandlerTest {
     private static final TypeReference<PaginatedSearchResult<NviCandidateIndexDocument>> TYPE_REF =
         new TypeReference<>() {
         };
-    public static final String QUERY_ENCODED_COMMA = "%2C";
     private static SearchClient<NviCandidateIndexDocument> openSearchClient;
     private static SearchNviCandidatesHandler handler;
     private static ByteArrayOutputStream output;
     private final Context context = mock(Context.class);
+    private IdentityServiceClient identityServiceClient;
 
     @BeforeEach
     void init() {
         output = new ByteArrayOutputStream();
         openSearchClient = mock(OpenSearchClient.class);
         var viewingScopeValidator = new FakeViewingScopeValidator(true);
-        handler = new SearchNviCandidatesHandler(openSearchClient, viewingScopeValidator, ENVIRONMENT);
+        identityServiceClient = mock(IdentityServiceClient.class);
+        handler = new SearchNviCandidatesHandler(openSearchClient, viewingScopeValidator, identityServiceClient,
+                                                 ENVIRONMENT);
     }
 
     @Test
@@ -313,16 +322,16 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
-    void shouldReturnResultsWithUsersViewingScopeAsDefaultAffiliationIfNotSet() throws IOException {
-        var usersViewingScope = List.of(randomSiktSubUnit(), randomSiktSubUnit());
+    void shouldReturnResultsWithUsersViewingScopeAsDefaultAffiliationIfNotSet() throws IOException, NotFoundException {
+        var userName = randomString();
+        var usersViewingScope = List.of(randomSiktSubUnit());
+        var viewingScopeIncludedUnits = generateRandomUrisWithLastPathElements(usersViewingScope);
 
-        var matcher =
-            new CandidateSearchParamsAffiliationMatcher(CandidateSearchParameters.builder()
-                                                            .withAffiliations(usersViewingScope).build());
-        when(openSearchClient.search(argThat(matcher)))
-            .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
+        when(identityServiceClient.getUser(eq(userName))).thenReturn(buildGetUserResponse(viewingScopeIncludedUnits));
+        mockOpenSearchClientWithParameterMatchingViewingScope(usersViewingScope);
+        var noQueryParameters = new HashMap<String, String>();
+        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, noQueryParameters, userName);
 
-        var request = createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of());
         handler.handleRequest(request, output, context);
 
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -336,7 +345,8 @@ public class SearchNviCandidatesHandlerTest {
         throws IOException {
         var forbiddenAffiliation = "0.0.0.0";
         var validatorReturningFalse = new FakeViewingScopeValidator(false);
-        handler = new SearchNviCandidatesHandler(openSearchClient, validatorReturningFalse, ENVIRONMENT);
+        handler = new SearchNviCandidatesHandler(openSearchClient, validatorReturningFalse, identityServiceClient,
+                                                 ENVIRONMENT);
 
         var request = requestWithInstitutionsAndTopLevelCristinOrgId(List.of(forbiddenAffiliation),
                                                                      TOP_LEVEL_CRISTIN_ORG);
@@ -391,6 +401,34 @@ public class SearchNviCandidatesHandlerTest {
         assertEquals(expectedFilterAggregation, objectMapper.writeValueAsString(actualAggregate));
     }
 
+    private static void mockOpenSearchClientWithParameterMatchingViewingScope(List<String> usersViewingScope)
+        throws IOException {
+        var matcher = new CandidateSearchParamsAffiliationMatcher(CandidateSearchParameters.builder()
+                                                                      .withAffiliations(usersViewingScope).build());
+        when(openSearchClient.search(argThat(matcher)))
+            .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
+    }
+
+    private static GetUserResponse buildGetUserResponse(List<URI> usersViewingScopeIncludedUnits) {
+        return GetUserResponse.builder()
+                   .withViewingScope(buildViewingScope(usersViewingScopeIncludedUnits))
+                   .build();
+    }
+
+    private static ViewingScope buildViewingScope(List<URI> includedUnits) {
+        return ViewingScope.builder().withIncludedUnits(includedUnits).build();
+    }
+
+    private static List<URI> generateRandomUrisWithLastPathElements(List<String> lastPathElements) {
+        return lastPathElements.stream()
+                   .map(SearchNviCandidatesHandlerTest::randomUriWithLastPathElement)
+                   .toList();
+    }
+
+    private static URI randomUriWithLastPathElement(String element) {
+        return UriWrapper.fromUri(randomUri()).addChild(element).getUri();
+    }
+
     private static void mockOpenSearchClient() throws IOException {
         when(openSearchClient.search(any()))
             .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
@@ -411,14 +449,19 @@ public class SearchNviCandidatesHandlerTest {
                                       PublicationDate.builder().withYear(randomString()).build(), List.of());
     }
 
-    private static InputStream createRequest(URI topLevelCristinOrgId, Map<String, String> queryParams)
+    private static InputStream createRequest(URI topLevelCristinOrgId, Map<String, String> queryParams, String userName)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
                    .withTopLevelCristinOrgId(topLevelCristinOrgId)
                    .withAccessRights(topLevelCristinOrgId, AccessRight.MANAGE_NVI_CANDIDATES)
-                   .withUserName(randomString())
+                   .withUserName(userName)
                    .withQueryParameters(queryParams)
                    .build();
+    }
+
+    private static InputStream createRequest(URI topLevelCristinOrgId, Map<String, String> queryParams)
+        throws JsonProcessingException {
+        return createRequest(topLevelCristinOrgId, queryParams, randomString());
     }
 
     @NotNull
