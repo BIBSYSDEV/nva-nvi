@@ -1189,8 +1189,6 @@ Resources:
       AutoPublishAlias: live
       SnapStart:
         ApplyOn: PublishedVersions
-      Policies:
-        - !GetAtt ReadSearchInfrastructureSecretsPolicy.Arn
       Environment:
         Variables:
           ALLOWED_ORIGIN: !Ref AllowedOrigins
@@ -1211,6 +1209,8 @@ Resources:
       AutoPublishAlias: live
       SnapStart:
         ApplyOn: PublishedVersions
+      Policies:
+        - !GetAtt ReadSearchInfrastructureSecretsPolicy.Arn
       Events:
         GetEvent:
           Type: Api
