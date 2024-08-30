@@ -162,17 +162,19 @@ public class FetchInstitutionReportHandlerTest {
         handler.handleRequest(request, output, CONTEXT);
 
         var expectedSearchParameters = CandidateSearchParameters.builder()
-                                                         .withYear(year)
-                                                         .withTopLevelCristinOrg(topLevelCristinOrg)
-                                                         .build();
+                                           .withYear(year)
+                                           .withTopLevelCristinOrg(topLevelCristinOrg)
+                                           .build();
         verify(openSearchClient).search(eq(expectedSearchParameters));
     }
 
     @ParameterizedTest
     @MethodSource("listSupportedMediaTypes")
     void shouldReturnRequestedContentType(String mediaType) throws IOException {
-        var request = requestWithMediaType(mediaType, randomUri());
-        handler.handleRequest(request, output, CONTEXT);
+        var topLevelCristinOrg = randomCristinOrgUri();
+        mockCandidatesInOpenSearch(topLevelCristinOrg);
+
+        handler.handleRequest(requestWithMediaType(mediaType, topLevelCristinOrg), output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, String.class);
         assertThat(response.getHeaders().get(CONTENT_TYPE), is(mediaType));
     }
@@ -180,8 +182,10 @@ public class FetchInstitutionReportHandlerTest {
     @ParameterizedTest
     @MethodSource("listSupportedMediaTypes")
     void shouldReturnBase64EncodedOutputStream(String mediaType) throws IOException {
-        var request = requestWithMediaType(mediaType, randomUri());
-        handler.handleRequest(request, output, CONTEXT);
+        var topLevelCristinOrg = randomCristinOrgUri();
+        mockCandidatesInOpenSearch(topLevelCristinOrg);
+
+        handler.handleRequest(requestWithMediaType(mediaType, topLevelCristinOrg), output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, String.class);
         assertEquals(200, response.getStatusCode());
         assertTrue(response.getIsBase64Encoded());
@@ -189,8 +193,11 @@ public class FetchInstitutionReportHandlerTest {
 
     @Test
     void shouldReturnMediaTypeOpenXmlOfficeDocumentAsDefault() throws IOException {
-        var request = requestWithMediaType(ANY_APPLICATION_TYPE.toString(), randomUri());
-        handler.handleRequest(request, output, CONTEXT);
+        var topLevelCristinOrg = randomCristinOrgUri();
+        mockCandidatesInOpenSearch(topLevelCristinOrg);
+
+        handler.handleRequest(requestWithMediaType(ANY_APPLICATION_TYPE.toString(), topLevelCristinOrg), output,
+                              CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, String.class);
         assertThat(response.getHeaders().get(CONTENT_TYPE), is(OOXML_SHEET.toString()));
     }
