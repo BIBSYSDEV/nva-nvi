@@ -1210,7 +1210,7 @@ Resources:
       SnapStart:
         ApplyOn: PublishedVersions
       Policies:
-        - !GetAtt ReadSearchInfrastructureSecretsPolicy.Arn
+        - !GetAtt ReadSearchInfrastructureSecretsPolicy.PolicyArn
       Events:
         GetEvent:
           Type: Api
