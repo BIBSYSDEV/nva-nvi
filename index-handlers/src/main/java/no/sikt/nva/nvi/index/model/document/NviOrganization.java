@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.model.document;
 
 import static java.util.Objects.isNull;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -30,17 +31,20 @@ public record NviOrganization(@JsonProperty("id") URI id,
         return isNull(partOf) ? List.of() : partOf;
     }
 
+    @JsonIgnore
     public String getInstitutionIdentifier() {
         var identifier = identifier();
         return identifier.substring(0, identifier.indexOf(IDENTIFIER_DELIMITER));
     }
 
+    @JsonIgnore
     public String getFacultyIdentifier() {
         var identifier = identifier();
         var subUnitOne = identifier.substring(identifier.indexOf(IDENTIFIER_DELIMITER) + 1);
         return subUnitOne.substring(0, identifier.indexOf(IDENTIFIER_DELIMITER) - 1);
     }
 
+    @JsonIgnore
     public String getDepartmentIdentifier() {
         var identifier = identifier();
         var subUnitOne = identifier.substring(identifier.indexOf(IDENTIFIER_DELIMITER) + 1);
@@ -48,6 +52,7 @@ public record NviOrganization(@JsonProperty("id") URI id,
         return subUnitTwo.substring(0, identifier.indexOf(IDENTIFIER_DELIMITER) - 1);
     }
 
+    @JsonIgnore
     public String getGroupIdentifier() {
         var identifier = identifier();
         return identifier.substring(identifier.lastIndexOf(IDENTIFIER_DELIMITER) + 1);

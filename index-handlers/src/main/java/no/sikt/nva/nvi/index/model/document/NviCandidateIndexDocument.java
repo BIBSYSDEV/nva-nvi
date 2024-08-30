@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.model.document;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -51,6 +52,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         return new Builder();
     }
 
+    @JsonIgnore
     public Approval getApprovalForInstitution(URI institutionId) {
         return approvals.stream()
                    .filter(approval -> approval.institutionId().equals(institutionId))
@@ -58,32 +60,39 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                    .orElseThrow();
     }
 
+    @JsonIgnore
     public BigDecimal getPointsForContributorAffiliation(URI topLevelCristinOrg,
                                                          NviContributor nviContributor,
                                                          NviOrganization affiliation) {
         return getApprovalForInstitution(topLevelCristinOrg).getPointsForAffiliation(nviContributor, affiliation);
     }
 
+    @JsonIgnore
     public String getReportingPeriodYear() {
         return reportingPeriod.year();
     }
 
+    @JsonIgnore
     public String getPublicationIdentifier() {
         return UriWrapper.fromUri(publicationDetails.id()).getLastPathElement();
     }
 
+    @JsonIgnore
     public String getPublicationDateYear() {
         return publicationDetails.publicationDate().year();
     }
 
+    @JsonIgnore
     public String getPublicationInstanceType() {
         return publicationDetails.type();
     }
 
+    @JsonIgnore
     public String getPublicationTitle() {
         return publicationDetails.title();
     }
 
+    @JsonIgnore
     public ApprovalStatus getApprovalStatusForInstitution(URI topLevelCristinOrg) {
         return getApprovalForInstitution(topLevelCristinOrg).approvalStatus();
     }
