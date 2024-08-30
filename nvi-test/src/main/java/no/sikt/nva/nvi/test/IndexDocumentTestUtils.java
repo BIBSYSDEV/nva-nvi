@@ -106,8 +106,10 @@ public final class IndexDocumentTestUtils {
     }
 
     public static URI randomCristinOrgUri() {
-        var cristinIdentifier = randomIntBetween(0, 99) + "." + randomIntBetween(0, 99) + "." + randomIntBetween(0, 99)
-                                + "." + randomIntBetween(0, 99);
+        var cristinIdentifier = randomIntBetween(100000, 200000) + "."
+                                + randomIntBetween(0, 99) + "."
+                                + randomIntBetween(0, 99) + "."
+                                + randomIntBetween(0, 99);
         return UriWrapper.fromUri(randomUri()).addChild(cristinIdentifier).getUri();
     }
 

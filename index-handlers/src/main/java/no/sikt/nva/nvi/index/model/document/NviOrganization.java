@@ -20,7 +20,12 @@ public record NviOrganization(@JsonProperty("id") URI id,
                               @JsonProperty("partOf") List<URI> partOf,
                               @JsonProperty("partOfIdentifiers") List<String> partOfIdentifiers)
     implements OrganizationType {
-    private static final String IDENTIFIER_DELIMITER = ".";
+
+    private static final int INDEX_INSTITUTION_IDENTIFIER = 0;
+    private static final int INDEX_FACULTY_IDENTIFIER = 1;
+    private static final int INDEX_DEPARTMENT_IDENTIFIER = 2;
+    private static final int INDEX_GROUP_IDENTIFIER = 3;
+    private static final String IDENTIFIER_DELIMITER = "\\.";
 
     public static Builder builder() {
         return new Builder();
@@ -33,29 +38,22 @@ public record NviOrganization(@JsonProperty("id") URI id,
 
     @JsonIgnore
     public String getInstitutionIdentifier() {
-        var identifier = identifier();
-        return identifier.substring(0, identifier.indexOf(IDENTIFIER_DELIMITER));
+        return identifier.split(IDENTIFIER_DELIMITER)[INDEX_INSTITUTION_IDENTIFIER];
     }
 
     @JsonIgnore
     public String getFacultyIdentifier() {
-        var identifier = identifier();
-        var subUnitOne = identifier.substring(identifier.indexOf(IDENTIFIER_DELIMITER) + 1);
-        return subUnitOne.substring(0, identifier.indexOf(IDENTIFIER_DELIMITER) - 1);
+        return identifier.split(IDENTIFIER_DELIMITER)[INDEX_FACULTY_IDENTIFIER];
     }
 
     @JsonIgnore
     public String getDepartmentIdentifier() {
-        var identifier = identifier();
-        var subUnitOne = identifier.substring(identifier.indexOf(IDENTIFIER_DELIMITER) + 1);
-        var subUnitTwo = subUnitOne.substring(subUnitOne.indexOf(IDENTIFIER_DELIMITER) + 1);
-        return subUnitTwo.substring(0, identifier.indexOf(IDENTIFIER_DELIMITER) - 1);
+        return identifier.split(IDENTIFIER_DELIMITER)[INDEX_DEPARTMENT_IDENTIFIER];
     }
 
     @JsonIgnore
     public String getGroupIdentifier() {
-        var identifier = identifier();
-        return identifier.substring(identifier.lastIndexOf(IDENTIFIER_DELIMITER) + 1);
+        return identifier.split(IDENTIFIER_DELIMITER)[INDEX_GROUP_IDENTIFIER];
     }
 
     public static final class Builder {
