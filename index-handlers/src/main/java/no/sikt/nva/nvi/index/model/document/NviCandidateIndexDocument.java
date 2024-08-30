@@ -9,11 +9,13 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.commons.json.JsonSerializable;
+import nva.commons.core.paths.UriWrapper;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -54,6 +56,36 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                    .filter(approval -> approval.institutionId().equals(institutionId))
                    .findAny()
                    .orElseThrow();
+    }
+
+    public BigDecimal getPointsForContributorAffiliation(URI topLevelCristinOrg,
+                                                         NviContributor nviContributor,
+                                                         NviOrganization affiliation) {
+        return getApprovalForInstitution(topLevelCristinOrg).getPointsForAffiliation(nviContributor, affiliation);
+    }
+
+    public String getReportingPeriodYear() {
+        return reportingPeriod.year();
+    }
+
+    public String getPublicationIdentifier() {
+        return UriWrapper.fromUri(publicationDetails.id()).getLastPathElement();
+    }
+
+    public String getPublicationDateYear() {
+        return publicationDetails.publicationDate().year();
+    }
+
+    public String getPublicationInstanceType() {
+        return publicationDetails.type();
+    }
+
+    public String getPublicationTitle() {
+        return publicationDetails.title();
+    }
+
+    public ApprovalStatus getApprovalStatusForInstitution(URI topLevelCristinOrg) {
+        return getApprovalForInstitution(topLevelCristinOrg).approvalStatus();
     }
 
     public static final class Builder {

@@ -60,7 +60,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public final class TestUtils {
 
-    public static final int SCALE = 10;
+    public static final int SCALE = 4;
     public static final BigDecimal MIN_BIG_DECIMAL = BigDecimal.ZERO;
     public static final BigDecimal MAX_BIG_DECIMAL = BigDecimal.TEN;
     public static final int CURRENT_YEAR = Year.now().getValue();

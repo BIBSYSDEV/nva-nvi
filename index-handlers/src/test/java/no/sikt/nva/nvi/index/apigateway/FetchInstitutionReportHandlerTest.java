@@ -35,8 +35,10 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
+import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
@@ -45,7 +47,6 @@ import no.sikt.nva.nvi.test.IndexDocumentTestUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
-import nva.commons.core.paths.UriWrapper;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -202,11 +203,11 @@ public class FetchInstitutionReportHandlerTest {
     private List<String> getExpectedRow(NviCandidateIndexDocument document, NviContributor nviContributor,
                                         NviOrganization affiliation, URI topLevelCristinOrg) {
         var expectedRow = new ArrayList<String>();
-        expectedRow.add(document.reportingPeriod().year());
-        expectedRow.add(document.publicationDetails().id());
-        expectedRow.add(document.publicationDetails().publicationDate().year());
-        expectedRow.add(document.getApprovalForInstitution(topLevelCristinOrg).toString());
-        expectedRow.add(document.publicationDetails().type());
+        expectedRow.add(document.getReportingPeriodYear());
+        expectedRow.add(document.getPublicationIdentifier());
+        expectedRow.add(document.getPublicationDateYear());
+        expectedRow.add(getExpectedApprovalStatus(document.getApprovalStatusForInstitution(topLevelCristinOrg)));
+        expectedRow.add(document.getPublicationInstanceType());
         expectedRow.add(nviContributor.id());
         expectedRow.add(affiliation.getInstitutionIdentifier());
         expectedRow.add(affiliation.getFacultyIdentifier());
@@ -214,9 +215,31 @@ public class FetchInstitutionReportHandlerTest {
         expectedRow.add(affiliation.getGroupIdentifier());
         expectedRow.add(nviContributor.name());
         expectedRow.add(nviContributor.name());
-        expectedRow.add(document.publicationDetails().title());
-        expectedRow.add(document.globalApprovalStatus().toString());
+        expectedRow.add(document.getPublicationTitle());
+        expectedRow.add(getExpectedGlobalApprovalStatus(document.globalApprovalStatus()));
+        expectedRow.add(document.publicationTypeChannelLevelPoints().toString());
+        expectedRow.add(document.internationalCollaborationFactor().toString());
+        expectedRow.add(String.valueOf(document.creatorShareCount()));
+        expectedRow.add(
+            document.getPointsForContributorAffiliation(topLevelCristinOrg, nviContributor, affiliation).toString());
         return expectedRow;
+    }
+
+    private String getExpectedGlobalApprovalStatus(GlobalApprovalStatus globalApprovalStatus) {
+        return switch (globalApprovalStatus) {
+            case PENDING -> "?";
+            case APPROVED -> "J";
+            case REJECTED -> "N";
+            case DISPUTE -> "T";
+        };
+    }
+
+    private String getExpectedApprovalStatus(ApprovalStatus approvalStatus) {
+        return switch (approvalStatus) {
+            case APPROVED -> "J";
+            case REJECTED -> "N";
+            case NEW, PENDING -> "?";
+        };
     }
 
     private List<NviCandidateIndexDocument> mockCandidatesInOpenSearch(URI topLevelCristinOrg) throws IOException {

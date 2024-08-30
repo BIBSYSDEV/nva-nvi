@@ -2,11 +2,14 @@ package no.sikt.nva.nvi.index.xlsx;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.Base64;
 import java.util.Base64.Encoder;
 import java.util.List;
 import java.util.Objects;
 import nva.commons.core.JacocoGenerated;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -48,11 +51,19 @@ public final class ExcelWorkbookGenerator {
     }
 
     @Override
+    @JacocoGenerated
     public String toString() {
-        return "ExcelWorkbookGenerator{" +
-               "headers=" + headers +
-               ", data=" + data +
-               '}';
+        //Easier to read as csv while testing
+        var stringWriter = new StringWriter();
+        var csvFormat = CSVFormat.DEFAULT.builder().setHeader(headers.toArray(new String[0])).build();
+        try (CSVPrinter csvPrinter = new CSVPrinter(stringWriter, csvFormat)) {
+            for (List<String> row : data) {
+                csvPrinter.printRecord(row);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return stringWriter.toString();
     }
 
     private static void addCells(Row row, List<String> cells) {

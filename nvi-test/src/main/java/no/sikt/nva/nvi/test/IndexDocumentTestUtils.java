@@ -104,6 +104,12 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
+    public static URI randomCristinOrgUri() {
+        var cristinIdentifier = randomIntBetween(0, 99) + "." + randomIntBetween(0, 99) + "." + randomIntBetween(0, 99)
+                                + "." + randomIntBetween(0, 99);
+        return UriWrapper.fromUri(randomUri()).addChild(cristinIdentifier).getUri();
+    }
+
     private static no.sikt.nva.nvi.index.model.document.Approval toApproval(Approval approval, Candidate candidate,
                                                                             List<ContributorType> contributors) {
         var assignee = approval.getAssignee();
@@ -269,12 +275,6 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    public static URI randomCristinOrgUri() {
-        var cristinIdentifier = randomIntBetween(0, 99) + "." + randomIntBetween(0, 99) + "." + randomIntBetween(0, 99)
-                                + "." + randomIntBetween(0, 99);
-        return UriWrapper.fromUri(randomUri()).addChild(cristinIdentifier).getUri();
-    }
-
     private static PublicationDate randomPublicationDate() {
         return new PublicationDate(randomString(), randomString(), randomString());
     }
@@ -307,14 +307,23 @@ public final class IndexDocumentTestUtils {
         return InstitutionPoints.builder()
                    .withInstitutionId(institutionId)
                    .withInstitutionPoints(randomBigDecimal())
-                   .withCreatorAffiliationPoints(List.of(generateCreatorAffiliationPoints(contributor)))
+                   .withCreatorAffiliationPoints(generateListOfCreatorAffiliationPoints(contributor))
                    .build();
     }
 
-    private static CreatorAffiliationPoints generateCreatorAffiliationPoints(NviContributor contributor) {
+    private static List<CreatorAffiliationPoints> generateListOfCreatorAffiliationPoints(NviContributor contributor) {
+        return contributor.affiliations().stream()
+                   .filter(NviOrganization.class::isInstance)
+                   .map(NviOrganization.class::cast)
+                   .map(affiliation -> generateCreatorAffiliationPoints(contributor, affiliation))
+                   .toList();
+    }
+
+    private static CreatorAffiliationPoints generateCreatorAffiliationPoints(NviContributor contributor,
+                                                                             NviOrganization affiliation) {
         return CreatorAffiliationPoints.builder()
                    .withNviCreator(URI.create(contributor.id()))
-                   .withAffiliationId(randomUri())
+                   .withAffiliationId(affiliation.id())
                    .withPoints(randomBigDecimal())
                    .build();
     }
