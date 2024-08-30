@@ -65,32 +65,32 @@ public class InstitutionReportGenerator {
                    .stream()
                    .filter(NviOrganization.class::isInstance)
                    .map(NviOrganization.class::cast)
-                   .map(affiliation -> getExpectedRow(candidate, nviContributor, affiliation));
+                   .map(affiliation -> generateRow(candidate, nviContributor, affiliation));
     }
 
-    private List<String> getExpectedRow(NviCandidateIndexDocument candidate, NviContributor nviContributor,
-                                        NviOrganization affiliation) {
-        var expectedRow = new ArrayList<String>();
-        expectedRow.add(candidate.getReportingPeriodYear());
-        expectedRow.add(candidate.getPublicationIdentifier());
-        expectedRow.add(candidate.getPublicationDateYear());
-        expectedRow.add(getApprovalStatus(candidate));
-        expectedRow.add(candidate.getPublicationInstanceType());
-        expectedRow.add(nviContributor.id());
-        expectedRow.add(affiliation.getInstitutionIdentifier());
-        expectedRow.add(affiliation.getFacultyIdentifier());
-        expectedRow.add(affiliation.getDepartmentIdentifier());
-        expectedRow.add(affiliation.getGroupIdentifier());
-        expectedRow.add(nviContributor.name());
-        expectedRow.add(nviContributor.name());
-        expectedRow.add(candidate.getPublicationTitle());
-        expectedRow.add(getGlobalApprovalStatus(candidate));
-        expectedRow.add(candidate.publicationTypeChannelLevelPoints().toString());
-        expectedRow.add(candidate.internationalCollaborationFactor().toString());
-        expectedRow.add(String.valueOf(candidate.creatorShareCount()));
-        expectedRow.add(
+    private List<String> generateRow(NviCandidateIndexDocument candidate, NviContributor nviContributor,
+                                     NviOrganization affiliation) {
+        var row = new ArrayList<String>();
+        row.add(candidate.getReportingPeriodYear());
+        row.add(candidate.getPublicationIdentifier());
+        row.add(candidate.getPublicationDateYear());
+        row.add(getApprovalStatus(candidate));
+        row.add(candidate.getPublicationInstanceType());
+        row.add(nviContributor.id());
+        row.add(affiliation.getInstitutionIdentifier());
+        row.add(affiliation.getFacultyIdentifier());
+        row.add(affiliation.getDepartmentIdentifier());
+        row.add(affiliation.getGroupIdentifier());
+        row.add(nviContributor.name());
+        row.add(nviContributor.name());
+        row.add(candidate.getPublicationTitle());
+        row.add(getGlobalApprovalStatus(candidate));
+        row.add(candidate.publicationTypeChannelLevelPoints().toString());
+        row.add(candidate.internationalCollaborationFactor().toString());
+        row.add(String.valueOf(candidate.creatorShareCount()));
+        row.add(
             candidate.getPointsForContributorAffiliation(topLevelOrganization, nviContributor, affiliation).toString());
-        return expectedRow;
+        return row;
     }
 
     private String getGlobalApprovalStatus(NviCandidateIndexDocument candidate) {
