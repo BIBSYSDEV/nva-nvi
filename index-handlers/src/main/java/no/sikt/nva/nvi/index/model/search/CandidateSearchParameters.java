@@ -52,12 +52,12 @@ public record CandidateSearchParameters(String searchTerm,
         return new Builder();
     }
 
-    public static CandidateSearchParameters fromRequestInfo(RequestInfo requestInfo)
+    public static CandidateSearchParameters fromRequestInfo(RequestInfo requestInfo, List<String> affiliationIdentifiers)
         throws UnauthorizedException, BadRequestException {
         var aggregationType = extractQueryParamAggregationType(requestInfo);
         return CandidateSearchParameters.builder()
                    .withSearchTerm(extractQueryParamSearchTermOrDefault(requestInfo))
-                   .withAffiliations(extractQueryParamAffiliations(requestInfo))
+                   .withAffiliations(affiliationIdentifiers)
                    .withExcludeSubUnits(extractQueryParamExcludeSubUnitsOrDefault(requestInfo))
                    .withFilter(extractQueryParamFilterOrDefault(requestInfo))
                    .withUsername(requestInfo.getUserName())
@@ -112,20 +112,6 @@ public record CandidateSearchParameters(String searchTerm,
         return requestInfo.getQueryParameterOpt(QUERY_OFFSET_PARAM)
                    .map(Integer::parseInt)
                    .orElse(DEFAULT_OFFSET_SIZE);
-    }
-
-    private static List<String> extractQueryParamAffiliations(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameterOpt(QUERY_PARAM_AFFILIATIONS)
-                   .map(CandidateSearchParameters::splitStringToIdentifiers)
-                   .orElse(requestInfo.getTopLevelOrgCristinId()
-                               .map(UriWrapper::fromUri)
-                               .map(UriWrapper::getLastPathElement)
-                               .map(List::of)
-                               .orElse(List.of()));
-    }
-
-    private static List<String> splitStringToIdentifiers(String identifierListAsString) {
-        return Arrays.stream(identifierListAsString.split(COMMA)).collect(Collectors.toList());
     }
 
     private static boolean extractQueryParamExcludeSubUnitsOrDefault(RequestInfo requestInfo) {
