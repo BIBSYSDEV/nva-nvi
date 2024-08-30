@@ -35,7 +35,7 @@ public record Approval(URI institutionId,
                    .filter(isEqual(affiliation))
                    .filter(isNviContributor(nviContributor))
                    .map(CreatorAffiliationPoints::points)
-                   .findAny()
+                   .findFirst()
                    .orElseThrow();
     }
 

@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeaders.INSTITUTION_REPORT_HEADERS;
 import static nva.commons.core.attempt.Try.attempt;
 import java.net.URI;
@@ -12,10 +13,13 @@ import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
+import nva.commons.core.attempt.Failure;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.slf4j.Logger;
 
 public class InstitutionReportGenerator {
 
+    private static final Logger logger = org.slf4j.LoggerFactory.getLogger(InstitutionReportGenerator.class);
     private static final String REPORT_REJECTED_VALUE = "N";
     private static final String REPORT_PENDING_VALUE = "?";
     private static final String REPORT_APPROVED_VALUE = "J";
@@ -55,8 +59,16 @@ public class InstitutionReportGenerator {
     }
 
     private Stream<List<String>> generateReportRowForEachContributorAffiliation(NviCandidateIndexDocument candidate) {
-        return candidate.getNviContributors().stream()
-                   .flatMap(nviContributor -> generateRowsForContributorAffiliations(candidate, nviContributor));
+        return attempt(() -> candidate.getNviContributors().stream()
+                                 .flatMap(nviContributor -> generateRowsForContributorAffiliations(candidate,
+                                                                                                   nviContributor)))
+                   .orElseThrow(failure -> logFailure(failure, candidate));
+    }
+
+    private RuntimeException logFailure(Failure<Stream<List<String>>> failure, NviCandidateIndexDocument candidate) {
+        var exception = failure.getException();
+        logger.error("Failed to generate report for candidate: {}. Error {}", candidate.id(), getStackTrace(exception));
+        return new RuntimeException(exception);
     }
 
     private Stream<List<String>> generateRowsForContributorAffiliations(NviCandidateIndexDocument candidate,
