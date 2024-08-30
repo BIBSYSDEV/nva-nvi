@@ -5,7 +5,24 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.ANY_APPLICATION_TYPE;
 import static com.google.common.net.MediaType.MICROSOFT_EXCEL;
 import static com.google.common.net.MediaType.OOXML_SHEET;
-import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.getExpectedHeaders;
+import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.AUTHOR_SHARE_COUNT;
+import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.CONTRIBUTOR_IDENTIFIER;
+import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.DEPARTMENT_ID;
+import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.FACULTY_ID;
+import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.FIRST_NAME;
+import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.GLOBAL_STATUS;
+import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.GROUP_ID;
+import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.INSTITUTION_APPROVAL_STATUS;
+import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.INSTITUTION_ID;
+import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.INTERNATIONAL_COLLABORATION_FACTOR;
+import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.LAST_NAME;
+import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.POINTS_FOR_AFFILIATION;
+import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.PUBLICATION_CHANNEL_LEVEL_POINTS;
+import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.PUBLICATION_IDENTIFIER;
+import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.PUBLICATION_INSTANCE;
+import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.PUBLICATION_TITLE;
+import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.PUBLISHED_YEAR;
+import static no.sikt.nva.nvi.index.apigateway.NviInstitutionStatusHeader.REPORTING_YEAR;
 import static no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil.fromInputStream;
 import static no.sikt.nva.nvi.index.apigateway.utils.MockOpenSearchUtil.createSearchResponse;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomCristinOrgUri;
@@ -69,11 +86,32 @@ public class FetchInstitutionReportHandlerTest {
                          Arguments.of(OOXML_SHEET.toString()));
     }
 
+    public static List<String> getExpectedHeaders() {
+        return List.of(REPORTING_YEAR.getValue(),
+                       PUBLICATION_IDENTIFIER.getValue(),
+                       PUBLISHED_YEAR.getValue(),
+                       INSTITUTION_APPROVAL_STATUS.getValue(),
+                       PUBLICATION_INSTANCE.getValue(),
+                       CONTRIBUTOR_IDENTIFIER.getValue(),
+                       INSTITUTION_ID.getValue(),
+                       FACULTY_ID.getValue(),
+                       DEPARTMENT_ID.getValue(),
+                       GROUP_ID.getValue(),
+                       LAST_NAME.getValue(),
+                       FIRST_NAME.getValue(),
+                       PUBLICATION_TITLE.getValue(),
+                       GLOBAL_STATUS.getValue(),
+                       PUBLICATION_CHANNEL_LEVEL_POINTS.getValue(),
+                       INTERNATIONAL_COLLABORATION_FACTOR.getValue(),
+                       AUTHOR_SHARE_COUNT.getValue(),
+                       POINTS_FOR_AFFILIATION.getValue());
+    }
+
     @BeforeEach
     public void setUp() {
         output = new ByteArrayOutputStream();
-        handler = new FetchInstitutionReportHandler();
         openSearchClient = mock(OpenSearchClient.class);
+        handler = new FetchInstitutionReportHandler(openSearchClient);
     }
 
     @Test

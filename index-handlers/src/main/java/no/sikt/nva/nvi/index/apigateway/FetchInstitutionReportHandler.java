@@ -6,18 +6,32 @@ import com.google.common.net.MediaType;
 import java.net.HttpURLConnection;
 import java.time.Year;
 import java.util.List;
-import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
+import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.aws.SearchClient;
+import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
+import nva.commons.core.JacocoGenerated;
+import org.slf4j.Logger;
 
 public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, String> {
 
+    private static final Logger logger = org.slf4j.LoggerFactory.getLogger(FetchInstitutionReportHandler.class);
+    private static final String PATH_PARAMETER_YEAR = "year";
+    private final SearchClient<NviCandidateIndexDocument> searchClient;
+
+    @JacocoGenerated
     public FetchInstitutionReportHandler() {
+        this(OpenSearchClient.defaultOpenSearchClient());
+    }
+
+    public FetchInstitutionReportHandler(SearchClient<NviCandidateIndexDocument> searchClient) {
         super(Void.class);
+        this.searchClient = searchClient;
     }
 
     @Override
@@ -40,8 +54,11 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
     @Override
     protected String processInput(Void unused, RequestInfo requestInfo, Context context) throws ApiGatewayException {
         setIsBase64Encoded(true);
-        return new ExcelWorkbookGenerator(List.of("header"),
-                                          List.of(List.of("value"))).toBase64EncodedString();
+        var year = requestInfo.getPathParameter(PATH_PARAMETER_YEAR);
+        var institutionId = requestInfo.getTopLevelOrgCristinId().orElseThrow();
+        logger.info("Generating report for institution {} for year {}", institutionId, year);
+        return new InstitutionReportGenerator(searchClient, year, institutionId).generateReport()
+                   .toBase64EncodedString();
     }
 
     @Override
@@ -50,6 +67,6 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
     }
 
     private static boolean isInvalidPathParameterYear(RequestInfo requestInfo) {
-        return attempt(() -> Year.of(Integer.parseInt(requestInfo.getPathParameter("year")))).isFailure();
+        return attempt(() -> Year.of(Integer.parseInt(requestInfo.getPathParameter(PATH_PARAMETER_YEAR)))).isFailure();
     }
 }
