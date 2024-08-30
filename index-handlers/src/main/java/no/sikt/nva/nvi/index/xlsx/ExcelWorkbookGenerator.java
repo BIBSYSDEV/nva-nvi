@@ -2,14 +2,11 @@ package no.sikt.nva.nvi.index.xlsx;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.Base64;
 import java.util.Base64.Encoder;
 import java.util.List;
 import java.util.Objects;
 import nva.commons.core.JacocoGenerated;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
