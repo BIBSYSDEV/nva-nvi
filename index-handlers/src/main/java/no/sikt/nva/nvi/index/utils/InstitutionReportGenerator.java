@@ -55,9 +55,7 @@ public class InstitutionReportGenerator {
     }
 
     private Stream<List<String>> generateReportRowForEachContributorAffiliation(NviCandidateIndexDocument candidate) {
-        return candidate.publicationDetails().contributors().stream()
-                   .filter(NviContributor.class::isInstance)
-                   .map(NviContributor.class::cast)
+        return candidate.getNviContributors().stream()
                    .flatMap(nviContributor -> generateRowsForContributorAffiliations(candidate, nviContributor));
     }
 

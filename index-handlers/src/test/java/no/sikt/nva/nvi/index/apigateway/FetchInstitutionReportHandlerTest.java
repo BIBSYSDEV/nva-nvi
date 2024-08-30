@@ -84,32 +84,6 @@ public class FetchInstitutionReportHandlerTest {
     private ByteArrayOutputStream output;
     private FetchInstitutionReportHandler handler;
 
-    public static Stream<Arguments> listSupportedMediaTypes() {
-        return Stream.of(Arguments.of(MICROSOFT_EXCEL.toString()),
-                         Arguments.of(OOXML_SHEET.toString()));
-    }
-
-    public static List<String> getExpectedHeaders() {
-        return List.of(REPORTING_YEAR.getValue(),
-                       PUBLICATION_IDENTIFIER.getValue(),
-                       PUBLISHED_YEAR.getValue(),
-                       INSTITUTION_APPROVAL_STATUS.getValue(),
-                       PUBLICATION_INSTANCE.getValue(),
-                       CONTRIBUTOR_IDENTIFIER.getValue(),
-                       INSTITUTION_ID.getValue(),
-                       FACULTY_ID.getValue(),
-                       DEPARTMENT_ID.getValue(),
-                       GROUP_ID.getValue(),
-                       LAST_NAME.getValue(),
-                       FIRST_NAME.getValue(),
-                       PUBLICATION_TITLE.getValue(),
-                       GLOBAL_STATUS.getValue(),
-                       PUBLICATION_CHANNEL_LEVEL_POINTS.getValue(),
-                       INTERNATIONAL_COLLABORATION_FACTOR.getValue(),
-                       AUTHOR_SHARE_COUNT.getValue(),
-                       POINTS_FOR_AFFILIATION.getValue());
-    }
-
     @BeforeEach
     public void setUp() {
         output = new ByteArrayOutputStream();
@@ -202,6 +176,32 @@ public class FetchInstitutionReportHandlerTest {
         assertThat(response.getHeaders().get(CONTENT_TYPE), is(OOXML_SHEET.toString()));
     }
 
+    private static Stream<Arguments> listSupportedMediaTypes() {
+        return Stream.of(Arguments.of(MICROSOFT_EXCEL.toString()),
+                         Arguments.of(OOXML_SHEET.toString()));
+    }
+
+    private static List<String> getExpectedHeaders() {
+        return List.of(REPORTING_YEAR.getValue(),
+                       PUBLICATION_IDENTIFIER.getValue(),
+                       PUBLISHED_YEAR.getValue(),
+                       INSTITUTION_APPROVAL_STATUS.getValue(),
+                       PUBLICATION_INSTANCE.getValue(),
+                       CONTRIBUTOR_IDENTIFIER.getValue(),
+                       INSTITUTION_ID.getValue(),
+                       FACULTY_ID.getValue(),
+                       DEPARTMENT_ID.getValue(),
+                       GROUP_ID.getValue(),
+                       LAST_NAME.getValue(),
+                       FIRST_NAME.getValue(),
+                       PUBLICATION_TITLE.getValue(),
+                       GLOBAL_STATUS.getValue(),
+                       PUBLICATION_CHANNEL_LEVEL_POINTS.getValue(),
+                       INTERNATIONAL_COLLABORATION_FACTOR.getValue(),
+                       AUTHOR_SHARE_COUNT.getValue(),
+                       POINTS_FOR_AFFILIATION.getValue());
+    }
+
     private static InputStream requestWithInvalidYearParam() throws JsonProcessingException {
         var invalidYear = "someInvalidYear";
         return createRequest(randomUri(), MANAGE_NVI_CANDIDATES, randomUri(), Map.of())
@@ -244,9 +244,7 @@ public class FetchInstitutionReportHandlerTest {
     }
 
     private Stream<List<String>> getExpectedRows(NviCandidateIndexDocument document, URI topLevelCristinOrg) {
-        return document.publicationDetails().contributors().stream()
-                   .filter(NviContributor.class::isInstance)
-                   .map(NviContributor.class::cast)
+        return document.getNviContributors().stream()
                    .map(nviContributor -> getExpectedRowsForContributorAffiliations(document, topLevelCristinOrg,
                                                                                     nviContributor))
                    .flatMap(List::stream);

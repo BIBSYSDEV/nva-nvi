@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.model.document;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
@@ -15,6 +16,14 @@ public record PublicationDetails(@JsonProperty("id") String id,
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    @JsonIgnore
+    public List<NviContributor> nviContributors() {
+        return contributors.stream()
+                   .filter(NviContributor.class::isInstance)
+                   .map(NviContributor.class::cast)
+                   .toList();
     }
 
     public static final class Builder {

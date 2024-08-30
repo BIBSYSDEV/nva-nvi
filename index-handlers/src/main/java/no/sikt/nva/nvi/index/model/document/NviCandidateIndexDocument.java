@@ -17,6 +17,7 @@ import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.core.paths.UriWrapper;
+import org.apache.jena.graph.Graph;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -95,6 +96,11 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
     @JsonIgnore
     public ApprovalStatus getApprovalStatusForInstitution(URI topLevelCristinOrg) {
         return getApprovalForInstitution(topLevelCristinOrg).approvalStatus();
+    }
+
+    @JsonIgnore
+    public List<NviContributor> getNviContributors() {
+        return publicationDetails.nviContributors();
     }
 
     public static final class Builder {
