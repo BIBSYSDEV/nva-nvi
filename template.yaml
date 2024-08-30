@@ -1212,6 +1212,7 @@ Resources:
       Environment:
         Variables:
           ALLOWED_ORIGIN: !Ref AllowedOrigins
+          COGNITO_HOST: !Ref CognitoAuthorizationUri
       Policies:
         - !GetAtt ReadSearchInfrastructureSecretsPolicy.PolicyArn
       Events:
