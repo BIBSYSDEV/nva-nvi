@@ -620,7 +620,7 @@ Resources:
       Queues:
         - !Ref DeletePersistedIndexDocumentQueue
 
-  ReadBackendClientSecretsPolicy:
+  ReadSearchInfrastructureSecretsPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
       PolicyDocument:
@@ -630,7 +630,7 @@ Resources:
             Action:
               - secretsmanager:GetSecretValue
             Resource:
-              - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:BackendCognitoClientCredentials-*"
+              - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:SearchInfrastructureCredentials-*"
 
   #============================= API ===============================================================
   ScientificIndexApi:
@@ -1190,7 +1190,7 @@ Resources:
       SnapStart:
         ApplyOn: PublishedVersions
       Policies:
-        - !GetAtt ReadBackendClientSecretsPolicy.Arn
+        - !GetAtt ReadSearchInfrastructureSecretsPolicy.Arn
       Environment:
         Variables:
           ALLOWED_ORIGIN: !Ref AllowedOrigins
