@@ -81,8 +81,8 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    public static NviCandidateIndexDocument randomIndexDocument(int year, URI institutionId) {
-        var publicationDetails = randomPublicationDetails(institutionId);
+    public static NviCandidateIndexDocument randomIndexDocumentWith(int year, URI institutionId) {
+        var publicationDetails = publicationDetailsWithNviContributorsAffiliatedWith(institutionId);
         var approvals = createApprovals(institutionId, publicationDetails.contributors());
         return NviCandidateIndexDocument.builder()
                    .withContext(Candidate.getContextUri())
@@ -248,7 +248,7 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static PublicationDetails randomPublicationDetails(URI institutionId) {
+    private static PublicationDetails publicationDetailsWithNviContributorsAffiliatedWith(URI institutionId) {
         return PublicationDetails.builder()
                    .withType(randomString())
                    .withId(randomUri().toString())

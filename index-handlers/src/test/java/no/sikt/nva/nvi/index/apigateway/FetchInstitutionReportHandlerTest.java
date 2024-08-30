@@ -306,7 +306,7 @@ public class FetchInstitutionReportHandlerTest {
     }
 
     private List<NviCandidateIndexDocument> mockCandidatesInOpenSearch(URI topLevelCristinOrg) throws IOException {
-        var indexDocument = IndexDocumentTestUtils.randomIndexDocument(CURRENT_YEAR, topLevelCristinOrg);
+        var indexDocument = IndexDocumentTestUtils.randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
         when(openSearchClient.search(any())).thenReturn(createSearchResponse(indexDocument));
         return List.of(indexDocument);
     }
