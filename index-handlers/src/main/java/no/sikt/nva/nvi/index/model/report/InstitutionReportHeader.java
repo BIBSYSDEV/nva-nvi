@@ -1,6 +1,6 @@
-package no.sikt.nva.nvi.index.apigateway;
+package no.sikt.nva.nvi.index.model.report;
 
-public enum NviInstitutionStatusHeader {
+public enum InstitutionReportHeader {
     REPORTING_YEAR("ARSTALL"),
     PUBLICATION_IDENTIFIER("NVAID"),
     PUBLISHED_YEAR("ARSTALL_REG"),
@@ -22,7 +22,7 @@ public enum NviInstitutionStatusHeader {
 
     private final String value;
 
-    NviInstitutionStatusHeader(String value) {
+    InstitutionReportHeader(String value) {
         this.value = value;
     }
 
