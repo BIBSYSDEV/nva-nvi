@@ -5,6 +5,8 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.ANY_APPLICATION_TYPE;
 import static com.google.common.net.MediaType.MICROSOFT_EXCEL;
 import static com.google.common.net.MediaType.OOXML_SHEET;
+import static no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil.fromInputStream;
+import static no.sikt.nva.nvi.index.apigateway.utils.MockOpenSearchUtil.createSearchResponse;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.AUTHOR_SHARE_COUNT;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_IDENTIFIER;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.DEPARTMENT_ID;
@@ -23,8 +25,6 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICA
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_TITLE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLISHED_YEAR;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTING_YEAR;
-import static no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil.fromInputStream;
-import static no.sikt.nva.nvi.index.apigateway.utils.MockOpenSearchUtil.createSearchResponse;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomCristinOrgUri;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -36,7 +36,9 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -59,6 +61,7 @@ import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
+import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
 import no.sikt.nva.nvi.test.IndexDocumentTestUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -148,6 +151,21 @@ public class FetchInstitutionReportHandlerTest {
         var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
         var actual = fromInputStream(new ByteArrayInputStream(decodedResponse));
         assertEquals(expected, actual);
+    }
+
+    @Test
+    void shouldPerformSearchForGivenInstitutionAndYear() throws IOException {
+        var topLevelCristinOrg = randomCristinOrgUri();
+        var year = "2021";
+        var request = createRequest(topLevelCristinOrg, MANAGE_NVI_CANDIDATES, topLevelCristinOrg,
+                                    Map.of(YEAR, year)).build();
+        handler.handleRequest(request, output, CONTEXT);
+
+        var expectedSearchParameters = CandidateSearchParameters.builder()
+                                                         .withYear(year)
+                                                         .withTopLevelCristinOrg(topLevelCristinOrg)
+                                                         .build();
+        verify(openSearchClient).search(eq(expectedSearchParameters));
     }
 
     @ParameterizedTest
