@@ -53,17 +53,10 @@ public final class ExcelWorkbookGenerator {
     @Override
     @JacocoGenerated
     public String toString() {
-        //Easier to read as csv while testing
-        var stringWriter = new StringWriter();
-        var csvFormat = CSVFormat.DEFAULT.builder().setHeader(headers.toArray(new String[0])).build();
-        try (CSVPrinter csvPrinter = new CSVPrinter(stringWriter, csvFormat)) {
-            for (List<String> row : data) {
-                csvPrinter.printRecord(row);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return stringWriter.toString();
+        return "ExcelWorkbookGenerator{"
+               + "headers=" + headers
+               + ", data=" + data
+               + '}';
     }
 
     private static void addCells(Row row, List<String> cells) {
