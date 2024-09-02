@@ -36,6 +36,11 @@ public record NviContributor(@JsonProperty("id") String id,
                    .toList();
     }
 
+    public Stream<NviOrganization> getAffiliationsPartOf(URI topLevelOrg) {
+        return nviAffiliations().stream()
+                   .filter(organization -> organization.partOf().contains(topLevelOrg));
+    }
+
     private List<URI> getOrganizationsAboveAffiliationInOrgHierarchy(URI topLevelOrg) {
         return getAffiliationsPartOf(topLevelOrg)
                    .flatMap(nviOrganization -> nviOrganization.partOf().stream())
@@ -46,11 +51,6 @@ public record NviContributor(@JsonProperty("id") String id,
         return getAffiliationsPartOf(topLevelOrg)
                    .map(NviOrganization::id)
                    .toList();
-    }
-
-    private Stream<NviOrganization> getAffiliationsPartOf(URI topLevelOrg) {
-        return nviAffiliations().stream()
-                   .filter(organization -> organization.partOf().contains(topLevelOrg));
     }
 
     public static final class Builder {

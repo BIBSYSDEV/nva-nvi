@@ -81,7 +81,7 @@ public class InstitutionReportGenerator {
 
     private Stream<List<String>> generateRowsForContributorAffiliations(NviCandidateIndexDocument candidate,
                                                                         NviContributor nviContributor) {
-        return nviContributor.nviAffiliations().stream()
+        return nviContributor.getAffiliationsPartOf(topLevelOrganization)
                    .map(affiliation -> generateRow(candidate, nviContributor, affiliation));
     }
 
