@@ -42,7 +42,7 @@ public class InstitutionReportGenerator {
     }
 
     private Stream<List<String>> generateDataRows(NviCandidateIndexDocument candidate) {
-        return generateReportRowForCandidate(candidate).stream();
+        return generateReportRowsForCandidate(candidate).stream();
     }
 
     private List<NviCandidateIndexDocument> fetchNviCandidates() {
@@ -61,15 +61,15 @@ public class InstitutionReportGenerator {
                    .build();
     }
 
-    private List<List<String>> generateReportRowForCandidate(NviCandidateIndexDocument candidate) {
-        return attempt(() -> generateReportRowForEachContributorAffiliation(candidate)).map(Stream::toList)
+    private List<List<String>> generateReportRowsForCandidate(NviCandidateIndexDocument candidate) {
+        return attempt(() -> generateReportRowsForContributorAffiliations(candidate)).map(Stream::toList)
                    .orElseThrow(failure -> {
                        logFailure(failure.getException(), candidate);
                        return (RuntimeException) failure.getException();
                    });
     }
 
-    private Stream<List<String>> generateReportRowForEachContributorAffiliation(NviCandidateIndexDocument candidate) {
+    private Stream<List<String>> generateReportRowsForContributorAffiliations(NviCandidateIndexDocument candidate) {
         return candidate.getNviContributors().stream()
                    .flatMap(nviContributor -> generateRowsForContributorAffiliations(candidate, nviContributor));
     }
