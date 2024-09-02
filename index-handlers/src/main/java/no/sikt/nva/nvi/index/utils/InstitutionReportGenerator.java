@@ -13,7 +13,6 @@ import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
-import nva.commons.core.attempt.Failure;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 
@@ -38,8 +37,12 @@ public class InstitutionReportGenerator {
 
     public ExcelWorkbookGenerator generateReport() {
         var nviCandidates = fetchNviCandidates();
-        var data = nviCandidates.stream().flatMap(this::generateReportRowForEachContributorAffiliation).toList();
+        var data = nviCandidates.stream().flatMap(this::generateDataRows).toList();
         return new ExcelWorkbookGenerator(INSTITUTION_REPORT_HEADERS, data);
+    }
+
+    private Stream<List<String>> generateDataRows(NviCandidateIndexDocument candidate) {
+        return generateReportRowForCandidate(candidate).stream();
     }
 
     private List<NviCandidateIndexDocument> fetchNviCandidates() {
@@ -58,25 +61,27 @@ public class InstitutionReportGenerator {
                    .build();
     }
 
-    private Stream<List<String>> generateReportRowForEachContributorAffiliation(NviCandidateIndexDocument candidate) {
-        return attempt(() -> candidate.getNviContributors().stream()
-                                 .flatMap(nviContributor -> generateRowsForContributorAffiliations(candidate,
-                                                                                                   nviContributor)))
-                   .orElseThrow(failure -> logFailure(failure, candidate));
+    private List<List<String>> generateReportRowForCandidate(NviCandidateIndexDocument candidate) {
+        return attempt(() -> generateReportRowForEachContributorAffiliation(candidate)).map(Stream::toList)
+                   .orElseThrow(failure -> {
+                       logFailure(failure.getException(), candidate);
+                       return (RuntimeException) failure.getException();
+                   });
     }
 
-    private RuntimeException logFailure(Failure<Stream<List<String>>> failure, NviCandidateIndexDocument candidate) {
-        var exception = failure.getException();
-        logger.error("Failed to generate report for candidate: {}. Error {}", candidate.id(), getStackTrace(exception));
-        return new RuntimeException(exception);
+    private Stream<List<String>> generateReportRowForEachContributorAffiliation(NviCandidateIndexDocument candidate) {
+        return candidate.getNviContributors().stream()
+                   .flatMap(nviContributor -> generateRowsForContributorAffiliations(candidate, nviContributor));
+    }
+
+    private void logFailure(Exception exception, NviCandidateIndexDocument candidate) {
+        logger.error("Failed to generate report lines for candidate: {}. Error {}", candidate.id(),
+                     getStackTrace(exception));
     }
 
     private Stream<List<String>> generateRowsForContributorAffiliations(NviCandidateIndexDocument candidate,
                                                                         NviContributor nviContributor) {
-        return nviContributor.affiliations()
-                   .stream()
-                   .filter(NviOrganization.class::isInstance)
-                   .map(NviOrganization.class::cast)
+        return nviContributor.nviAffiliations().stream()
                    .map(affiliation -> generateRow(candidate, nviContributor, affiliation));
     }
 

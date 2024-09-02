@@ -25,6 +25,7 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICA
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_TITLE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLISHED_YEAR;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTING_YEAR;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentMissingCreatorAffiliationPoints;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomCristinOrgUri;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -62,11 +63,13 @@ import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
+import no.sikt.nva.nvi.index.utils.InstitutionReportGenerator;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
 import no.sikt.nva.nvi.test.IndexDocumentTestUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
+import nva.commons.logutils.LogUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -140,6 +143,17 @@ public class FetchInstitutionReportHandlerTest {
                                            .withTopLevelCristinOrg(topLevelCristinOrg)
                                            .build();
         verify(openSearchClient).search(eq(expectedSearchParameters));
+    }
+
+    @Test
+    void shouldLogCandidateIdOnFailure() throws IOException {
+        var topLevelCristinOrg = randomCristinOrgUri();
+        var indexDocument = indexDocumentMissingCreatorAffiliationPoints(CURRENT_YEAR, topLevelCristinOrg);
+        when(openSearchClient.search(any())).thenReturn(createSearchResponse(indexDocument));
+        var appender = LogUtils.getTestingAppender(InstitutionReportGenerator.class);
+        handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output,
+                              CONTEXT);
+        assertTrue(appender.getMessages().contains(indexDocument.id().toString()));
     }
 
     @ParameterizedTest
