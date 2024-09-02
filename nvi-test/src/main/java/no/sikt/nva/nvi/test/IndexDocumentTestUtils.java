@@ -279,15 +279,24 @@ public final class IndexDocumentTestUtils {
     }
 
     private static NviContributor randomContributor(URI institutionId) {
+        var topLevelIdentifier = UriWrapper.fromUri(institutionId).getLastPathElement().split(DELIMITER)[0];
+        var id = cristinOrgUriWithTopLevel(topLevelIdentifier);
         return NviContributor.builder()
                    .withId(randomUri().toString())
                    .withName(randomString())
                    .withOrcid(randomString())
                    .withRole(randomString())
-                   .withAffiliations(List.of(randomNviAffiliation(institutionId),
-                                             randomNviAffiliation(institutionId),
-                                             randomNviAffiliation(randomUri()),
-                                             randomNonNviAffiliation()))
+                   .withAffiliations(List.of(
+                       randomSubUnitNviAffiliation(institutionId),
+                       nviOrganization(institutionId),
+                       nviOrganization(randomUri()),
+                       randomNonNviAffiliation()))
+                   .build();
+    }
+
+    private static NviOrganization nviOrganization(URI id) {
+        return NviOrganization.builder()
+                   .withId(id)
                    .build();
     }
 
@@ -298,7 +307,7 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static NviOrganization randomNviAffiliation(URI institutionId) {
+    private static NviOrganization randomSubUnitNviAffiliation(URI institutionId) {
         var topLevelIdentifier = UriWrapper.fromUri(institutionId).getLastPathElement().split(DELIMITER)[0];
         var id = cristinOrgUriWithTopLevel(topLevelIdentifier);
         return NviOrganization.builder()

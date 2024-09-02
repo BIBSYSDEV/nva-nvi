@@ -259,6 +259,10 @@ public class FetchInstitutionReportHandlerTest {
                    .withPathParameters(pathParameters);
     }
 
+    private static boolean isPartOfOrEqualToTopLevelOrganization(URI topLevelCristinOrg, NviOrganization affiliation) {
+        return affiliation.partOf().contains(topLevelCristinOrg) || affiliation.id().equals(topLevelCristinOrg);
+    }
+
     private ExcelWorkbookGenerator getExpectedReport(List<NviCandidateIndexDocument> candidatesInIndex,
                                                      URI topLevelCristinOrg) {
         var headers = getExpectedHeaders();
@@ -284,7 +288,7 @@ public class FetchInstitutionReportHandlerTest {
                                                                          URI topLevelCristinOrg,
                                                                          NviContributor nviContributor) {
         return nviContributor.nviAffiliations().stream()
-                   .filter(affiliation -> affiliation.partOf().contains(topLevelCristinOrg))
+                   .filter(affiliation -> isPartOfOrEqualToTopLevelOrganization(topLevelCristinOrg, affiliation))
                    .map(affiliation -> getExpectedRow(document, nviContributor, affiliation, topLevelCristinOrg))
                    .toList();
     }
