@@ -5,6 +5,7 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.ANY_APPLICATION_TYPE;
 import static com.google.common.net.MediaType.MICROSOFT_EXCEL;
 import static com.google.common.net.MediaType.OOXML_SHEET;
+import static no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil.extractLinesInInstitutionIdentifierColumn;
 import static no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil.fromInputStream;
 import static no.sikt.nva.nvi.index.apigateway.utils.MockOpenSearchUtil.createSearchResponse;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.AUTHOR_SHARE_COUNT;
@@ -52,6 +53,7 @@ import java.net.URI;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -143,6 +145,20 @@ public class FetchInstitutionReportHandlerTest {
                                            .withTopLevelCristinOrg(topLevelCristinOrg)
                                            .build();
         verify(openSearchClient).search(eq(expectedSearchParameters));
+    }
+
+    @Test
+    void shouldNotContainDataForOtherInstitutions()
+        throws IOException {
+        var topLevelCristinOrg = randomCristinOrgUri();
+        mockCandidatesInOpenSearch(topLevelCristinOrg);
+
+        handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
+
+        var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
+        var actual = new HashSet<>(
+            extractLinesInInstitutionIdentifierColumn(new ByteArrayInputStream(decodedResponse)));
+        assertEquals(1, actual.size());
     }
 
     @Test
@@ -267,10 +283,8 @@ public class FetchInstitutionReportHandlerTest {
     private List<List<String>> getExpectedRowsForContributorAffiliations(NviCandidateIndexDocument document,
                                                                          URI topLevelCristinOrg,
                                                                          NviContributor nviContributor) {
-        return nviContributor.affiliations()
-                   .stream()
-                   .filter(NviOrganization.class::isInstance)
-                   .map(NviOrganization.class::cast)
+        return nviContributor.nviAffiliations().stream()
+                   .filter(affiliation -> affiliation.partOf().contains(topLevelCristinOrg))
                    .map(affiliation -> getExpectedRow(document, nviContributor, affiliation, topLevelCristinOrg))
                    .toList();
     }

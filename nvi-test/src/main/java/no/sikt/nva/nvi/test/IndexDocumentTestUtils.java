@@ -56,6 +56,7 @@ public final class IndexDocumentTestUtils {
     public static final URI NVI_CONTEXT = URI.create("https://bibsysdev.github.io/src/nvi-context.json");
     public static final String NVI_CANDIDATES_FOLDER = "nvi-candidates";
     public static final String GZIP_ENDING = ".gz";
+    public static final String DELIMITER = "\\.";
 
     private IndexDocumentTestUtils() {
     }
@@ -85,7 +86,11 @@ public final class IndexDocumentTestUtils {
     }
 
     public static URI randomCristinOrgUri() {
-        var cristinIdentifier = randomIntBetween(100000, 200000) + "."
+        return cristinOrgUriWithTopLevel(String.valueOf(randomIntBetween(100000, 200000)));
+    }
+
+    public static URI cristinOrgUriWithTopLevel(String topLevelIdentifier) {
+        var cristinIdentifier = topLevelIdentifier + "."
                                 + randomIntBetween(0, 99) + "."
                                 + randomIntBetween(0, 99) + "."
                                 + randomIntBetween(0, 99);
@@ -281,6 +286,7 @@ public final class IndexDocumentTestUtils {
                    .withRole(randomString())
                    .withAffiliations(List.of(randomNviAffiliation(institutionId),
                                              randomNviAffiliation(institutionId),
+                                             randomNviAffiliation(randomUri()),
                                              randomNonNviAffiliation()))
                    .build();
     }
@@ -293,8 +299,10 @@ public final class IndexDocumentTestUtils {
     }
 
     private static NviOrganization randomNviAffiliation(URI institutionId) {
+        var topLevelIdentifier = UriWrapper.fromUri(institutionId).getLastPathElement().split(DELIMITER)[0];
+        var id = cristinOrgUriWithTopLevel(topLevelIdentifier);
         return NviOrganization.builder()
-                   .withId(randomCristinOrgUri())
+                   .withId(id)
                    .withPartOf(List.of(institutionId))
                    .build();
     }
