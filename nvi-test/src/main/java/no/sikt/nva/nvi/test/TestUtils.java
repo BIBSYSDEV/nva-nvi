@@ -98,6 +98,7 @@ public final class TestUtils {
                                                            List.of(new DbCreatorAffiliationPoints(
                                                                creatorId, institutionId, institutionPoints)))))
                    .level(randomElement(DbLevel.values()))
+                   .channelType(randomElement(ChannelType.values()))
                    .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
                    .internationalCollaboration(randomBoolean())
                    .creatorCount(randomInteger())
