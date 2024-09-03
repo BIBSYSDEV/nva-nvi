@@ -26,16 +26,19 @@ public record PublicationChannel(@JsonProperty("id") URI id,
         }
 
         public static ScientificValue parse(String value) {
-            return switch (value) {
-                case "LevelOne" -> LEVEL_ONE;
-                case "LevelTwo" -> LEVEL_TWO;
-                default -> throw new IllegalArgumentException("Unknown value. Expected one of: " + Arrays.toString(
-                    values()));
-            };
+            return Arrays.stream(ScientificValue.values())
+                       .filter(type -> type.getValue().equalsIgnoreCase(value))
+                       .findFirst()
+                       .orElseThrow(ScientificValue::getIllegalArgumentException);
         }
 
         public String getValue() {
             return value;
+        }
+
+        private static IllegalArgumentException getIllegalArgumentException() {
+            return new IllegalArgumentException(String.format("Unknown value. Valid values are: %s",
+                                                              Arrays.toString(ScientificValue.values())));
         }
     }
 
