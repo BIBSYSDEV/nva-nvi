@@ -97,7 +97,7 @@ public final class TestUtils {
                    .points(List.of(new DbInstitutionPoints(institutionId, institutionPoints,
                                                            List.of(new DbCreatorAffiliationPoints(
                                                                creatorId, institutionId, institutionPoints)))))
-                   .level(randomElement(DbLevel.values()))
+                   .level(DbLevel.LEVEL_ONE)
                    .channelType(randomElement(ChannelType.values()))
                    .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
                    .internationalCollaboration(randomBoolean())
