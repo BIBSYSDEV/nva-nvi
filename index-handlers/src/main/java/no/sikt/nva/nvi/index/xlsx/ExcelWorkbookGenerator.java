@@ -6,12 +6,14 @@ import java.util.Base64;
 import java.util.Base64.Encoder;
 import java.util.List;
 import java.util.Objects;
+import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.core.JacocoGenerated;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.opensearch.client.json.JsonpSerializable;
 
-public final class ExcelWorkbookGenerator {
+public final class ExcelWorkbookGenerator implements JsonSerializable {
 
     private static final Encoder ENCODER = Base64.getEncoder();
     private static final int FIRST_SHEET_INDEX = 0;
@@ -45,15 +47,6 @@ public final class ExcelWorkbookGenerator {
         }
         ExcelWorkbookGenerator that = (ExcelWorkbookGenerator) o;
         return Objects.equals(headers, that.headers) && Objects.equals(data, that.data);
-    }
-
-    @Override
-    @JacocoGenerated
-    public String toString() {
-        return "ExcelWorkbookGenerator{"
-               + "headers=" + headers
-               + ", data=" + data
-               + '}';
     }
 
     private static void addCells(Row row, List<String> cells) {

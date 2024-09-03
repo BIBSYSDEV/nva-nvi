@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index.apigateway.utils;
 
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITUTION_ID;
-import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeaders.INSTITUTION_REPORT_HEADERS;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -41,7 +40,7 @@ public class ExcelWorkbookUtil {
         var institutionIdColumn = new ArrayList<String>();
         for (var rowCounter = FIRST_DATA_ROW_INDEX; rowCounter <= sheet.getLastRowNum(); rowCounter++) {
             var row = sheet.getRow(rowCounter);
-            var institutionId = row.getCell(INSTITUTION_REPORT_HEADERS.indexOf(INSTITUTION_ID.getValue())).getStringCellValue();
+            var institutionId = row.getCell(INSTITUTION_ID.getOrder()).getStringCellValue();
             institutionIdColumn.add(institutionId);
         }
         return institutionIdColumn;

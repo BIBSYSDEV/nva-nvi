@@ -90,10 +90,11 @@ public final class IndexDocumentTestUtils {
     }
 
     public static URI cristinOrgUriWithTopLevel(String topLevelIdentifier) {
-        var cristinIdentifier = topLevelIdentifier + "."
-                                + randomIntBetween(0, 99) + "."
-                                + randomIntBetween(0, 99) + "."
-                                + randomIntBetween(0, 99);
+        var cristinIdentifier = String.join(".",
+                                            topLevelIdentifier,
+                                            String.valueOf(randomIntBetween(0, 99)),
+                                            String.valueOf(randomIntBetween(0, 99)),
+                                            String.valueOf(randomIntBetween(0, 99)));
         return UriWrapper.fromUri(randomUri()).addChild(cristinIdentifier).getUri();
     }
 

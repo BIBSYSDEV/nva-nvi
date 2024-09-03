@@ -32,18 +32,18 @@ public record Approval(URI institutionId,
 
     public BigDecimal getPointsForAffiliation(NviContributor nviContributor, NviOrganization affiliation) {
         return points.creatorAffiliationPoints().stream()
-                   .filter(isEqual(affiliation))
-                   .filter(isNviContributor(nviContributor))
+                   .filter(hasAffiliationId(affiliation))
+                   .filter(hasContributor(nviContributor))
                    .map(CreatorAffiliationPoints::points)
                    .findFirst()
                    .orElseThrow();
     }
 
-    private static Predicate<CreatorAffiliationPoints> isNviContributor(NviContributor nviContributor) {
+    private static Predicate<CreatorAffiliationPoints> hasContributor(NviContributor nviContributor) {
         return creatorAffiliationPoints -> creatorAffiliationPoints.nviCreator().toString().equals(nviContributor.id());
     }
 
-    private static Predicate<CreatorAffiliationPoints> isEqual(NviOrganization affiliation) {
+    private static Predicate<CreatorAffiliationPoints> hasAffiliationId(NviOrganization affiliation) {
         return creatorAffiliationPoints -> creatorAffiliationPoints.affiliationId().equals(affiliation.id());
     }
 

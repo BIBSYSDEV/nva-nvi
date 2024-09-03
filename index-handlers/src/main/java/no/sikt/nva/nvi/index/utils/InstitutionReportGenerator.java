@@ -11,6 +11,7 @@ import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
+import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -38,7 +39,7 @@ public class InstitutionReportGenerator {
     public ExcelWorkbookGenerator generateReport() {
         var nviCandidates = fetchNviCandidates();
         var data = nviCandidates.stream().flatMap(this::generateDataRows).toList();
-        return new ExcelWorkbookGenerator(INSTITUTION_REPORT_HEADERS, data);
+        return new ExcelWorkbookGenerator(InstitutionReportHeader.getOrderedValues(), data);
     }
 
     private Stream<List<String>> generateDataRows(NviCandidateIndexDocument candidate) {
