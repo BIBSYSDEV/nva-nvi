@@ -6,13 +6,12 @@ import java.util.Base64;
 import java.util.Base64.Encoder;
 import java.util.List;
 import java.util.Objects;
-import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.core.JacocoGenerated;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-public final class ExcelWorkbookGenerator implements JsonSerializable {
+public final class ExcelWorkbookGenerator {
 
     public static final String LINE_BREAK = "\n";
     private static final Encoder ENCODER = Base64.getEncoder();
@@ -53,8 +52,7 @@ public final class ExcelWorkbookGenerator implements JsonSerializable {
     @JacocoGenerated
     public String toString() {
         var builder = new StringBuilder();
-        builder.append("Headers: ").append(headers).append(LINE_BREAK);
-        builder.append("Data:" + LINE_BREAK);
+        builder.append(headers).append(LINE_BREAK);
         for (List<String> row : data) {
             builder.append(row).append(LINE_BREAK);
         }
