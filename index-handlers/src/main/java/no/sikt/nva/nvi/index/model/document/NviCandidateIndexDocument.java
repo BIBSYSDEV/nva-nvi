@@ -1,17 +1,17 @@
 package no.sikt.nva.nvi.index.model.document;
 
 import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
-import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CREATOR_SHARE_COUNT;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_FIRST_NAME;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_IDENTIFIER;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_LAST_NAME;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CREATOR_SHARE_COUNT;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.DEPARTMENT_ID;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.FACULTY_ID;
-import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_FIRST_NAME;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.GLOBAL_STATUS;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.GROUP_ID;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITUTION_APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITUTION_ID;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INTERNATIONAL_COLLABORATION_FACTOR;
-import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_LAST_NAME;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.POINTS_FOR_AFFILIATION;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_LEVEL_POINTS;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_IDENTIFIER;
@@ -138,8 +138,8 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             keyValueMap.put(FACULTY_ID, affiliation.getFacultyIdentifier());
             keyValueMap.put(DEPARTMENT_ID, affiliation.getDepartmentIdentifier());
             keyValueMap.put(GROUP_ID, affiliation.getGroupIdentifier());
-            keyValueMap.put(CONTRIBUTOR_LAST_NAME, nviContributor.name());
-            keyValueMap.put(CONTRIBUTOR_FIRST_NAME, nviContributor.name());
+            keyValueMap.put(CONTRIBUTOR_LAST_NAME, nviContributor.name()); //We don't have a good way to split the name
+            keyValueMap.put(CONTRIBUTOR_FIRST_NAME, nviContributor.name()); //For now, use the full name
             keyValueMap.put(PUBLICATION_TITLE, publicationDetails.title());
             keyValueMap.put(GLOBAL_STATUS, getGlobalApprovalStatus());
             keyValueMap.put(PUBLICATION_CHANNEL_LEVEL_POINTS, publicationTypeChannelLevelPoints().toString());
