@@ -1,15 +1,14 @@
 package no.sikt.nva.nvi.index.model.document;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.Arrays;
 
 @JsonSerialize
-public record PublicationChannel(@JsonProperty("id") URI id,
-                                 @JsonProperty("type") String type,
-                                 @JsonProperty("scientificValue") ScientificValue scientificValue) {
+public record PublicationChannel(URI id,
+                                 String type,
+                                 ScientificValue scientificValue) {
 
     public static Builder builder() {
         return new Builder();
