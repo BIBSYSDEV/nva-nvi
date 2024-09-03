@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PAR
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SEARCH_TERM;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SORT_ORDER;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_TITLE;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomPublicationChannel;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
@@ -466,7 +467,8 @@ public class SearchNviCandidatesHandlerTest {
 
     private static PublicationDetails randomPublicationDetails() {
         return new PublicationDetails(randomString(), randomString(), randomString(),
-                                      PublicationDate.builder().withYear(randomString()).build(), List.of());
+                                      PublicationDate.builder().withYear(randomString()).build(), List.of(),
+                                      randomPublicationChannel());
     }
 
     private static InputStream createRequest(URI topLevelCristinOrgId, Map<String, String> queryParams, String userName)

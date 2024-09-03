@@ -38,6 +38,7 @@ import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.commons.json.JsonSerializable;
+import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +88,12 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                    .filter(approval -> approval.institutionId().equals(institutionId))
                    .findAny()
                    .orElseThrow();
+    }
+
+    @Override
+    @JacocoGenerated
+    public String toString() {
+        return toJsonString();
     }
 
     @JsonIgnore

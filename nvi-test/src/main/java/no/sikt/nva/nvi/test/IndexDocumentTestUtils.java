@@ -41,6 +41,8 @@ import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.document.Organization;
 import no.sikt.nva.nvi.index.model.document.OrganizationType;
+import no.sikt.nva.nvi.index.model.document.PublicationChannel;
+import no.sikt.nva.nvi.index.model.document.PublicationChannel.ScientificValue;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
@@ -82,6 +84,7 @@ public final class IndexDocumentTestUtils {
                    .withPublicationDate(mapToPublicationDate(candidate.getPublicationDetails().publicationDate()))
                    .withContributors(
                        mapToContributors(ExpandedResourceGenerator.extractContributors(expandedResource), candidate))
+                   .withPublicationChannel(getPublicationChannel(candidate))
                    .build();
     }
 
@@ -108,6 +111,22 @@ public final class IndexDocumentTestUtils {
         var publicationDetails = publicationDetailsWithNviContributorsAffiliatedWith(institutionId);
         var noApprovals = new ArrayList<no.sikt.nva.nvi.index.model.document.Approval>();
         return getBuilder(year, noApprovals, publicationDetails).build();
+    }
+
+    public static PublicationChannel randomPublicationChannel() {
+        return PublicationChannel.builder()
+                   .withId(randomUri())
+                   .withType(randomString())
+                   .withScientificValue(randomElement(ScientificValue.values()))
+                   .build();
+    }
+
+    private static PublicationChannel getPublicationChannel(Candidate candidate) {
+        return PublicationChannel.builder()
+                   .withId(candidate.getPublicationDetails().publicationChannelId())
+                   .withType(candidate.getPublicationDetails().channelType().getValue())
+                   .withScientificValue(ScientificValue.parse(candidate.getPublicationDetails().level()))
+                   .build();
     }
 
     private static Builder getBuilder(int year, List<no.sikt.nva.nvi.index.model.document.Approval> approvals,
