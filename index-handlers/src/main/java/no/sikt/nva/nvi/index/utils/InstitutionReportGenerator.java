@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index.utils;
 
 import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
-import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeaders.INSTITUTION_REPORT_HEADERS;
 import static nva.commons.core.attempt.Try.attempt;
 import java.net.URI;
 import java.util.ArrayList;
@@ -38,12 +37,8 @@ public class InstitutionReportGenerator {
 
     public ExcelWorkbookGenerator generateReport() {
         var nviCandidates = fetchNviCandidates();
-        var data = nviCandidates.stream().flatMap(this::generateDataRows).toList();
+        var data = nviCandidates.stream().flatMap(this::generateReportRowsForContributorAffiliations).toList();
         return new ExcelWorkbookGenerator(InstitutionReportHeader.getOrderedValues(), data);
-    }
-
-    private Stream<List<String>> generateDataRows(NviCandidateIndexDocument candidate) {
-        return generateReportRowsForCandidate(candidate).stream();
     }
 
     private List<NviCandidateIndexDocument> fetchNviCandidates() {
@@ -60,14 +55,6 @@ public class InstitutionReportGenerator {
                    .withYear(year)
                    .withTopLevelCristinOrg(topLevelOrganization)
                    .build();
-    }
-
-    private List<List<String>> generateReportRowsForCandidate(NviCandidateIndexDocument candidate) {
-        return attempt(() -> generateReportRowsForContributorAffiliations(candidate)).map(Stream::toList)
-                   .orElseThrow(failure -> {
-                       logFailure(failure.getException(), candidate);
-                       return (RuntimeException) failure.getException();
-                   });
     }
 
     private Stream<List<String>> generateReportRowsForContributorAffiliations(NviCandidateIndexDocument candidate) {
@@ -88,27 +75,33 @@ public class InstitutionReportGenerator {
 
     private List<String> generateRow(NviCandidateIndexDocument candidate, NviContributor nviContributor,
                                      NviOrganization affiliation) {
-        var row = new ArrayList<String>();
-        row.add(candidate.getReportingPeriodYear());
-        row.add(candidate.getPublicationIdentifier());
-        row.add(candidate.getPublicationDateYear());
-        row.add(getApprovalStatus(candidate));
-        row.add(candidate.getPublicationInstanceType());
-        row.add(nviContributor.id());
-        row.add(affiliation.getInstitutionIdentifier());
-        row.add(affiliation.getFacultyIdentifier());
-        row.add(affiliation.getDepartmentIdentifier());
-        row.add(affiliation.getGroupIdentifier());
-        row.add(nviContributor.name());
-        row.add(nviContributor.name());
-        row.add(candidate.getPublicationTitle());
-        row.add(getGlobalApprovalStatus(candidate));
-        row.add(candidate.publicationTypeChannelLevelPoints().toString());
-        row.add(candidate.internationalCollaborationFactor().toString());
-        row.add(String.valueOf(candidate.creatorShareCount()));
-        row.add(
-            candidate.getPointsForContributorAffiliation(topLevelOrganization, nviContributor, affiliation).toString());
-        return row;
+        try {
+            var row = new ArrayList<String>();
+            row.add(candidate.getReportingPeriodYear());
+            row.add(candidate.getPublicationIdentifier());
+            row.add(candidate.getPublicationDateYear());
+            row.add(getApprovalStatus(candidate));
+            row.add(candidate.getPublicationInstanceType());
+            row.add(nviContributor.id());
+            row.add(affiliation.getInstitutionIdentifier());
+            row.add(affiliation.getFacultyIdentifier());
+            row.add(affiliation.getDepartmentIdentifier());
+            row.add(affiliation.getGroupIdentifier());
+            row.add(nviContributor.name());
+            row.add(nviContributor.name());
+            row.add(candidate.getPublicationTitle());
+            row.add(getGlobalApprovalStatus(candidate));
+            row.add(candidate.publicationTypeChannelLevelPoints().toString());
+            row.add(candidate.internationalCollaborationFactor().toString());
+            row.add(String.valueOf(candidate.creatorShareCount()));
+            row.add(
+                candidate.getPointsForContributorAffiliation(topLevelOrganization, nviContributor, affiliation)
+                    .toString());
+            return row;
+        } catch (RuntimeException exception) {
+            logFailure(exception, candidate);
+            throw exception;
+        }
     }
 
     private String getGlobalApprovalStatus(NviCandidateIndexDocument candidate) {
