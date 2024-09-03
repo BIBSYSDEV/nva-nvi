@@ -8,17 +8,17 @@ import static com.google.common.net.MediaType.OOXML_SHEET;
 import static no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil.extractLinesInInstitutionIdentifierColumn;
 import static no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil.fromInputStream;
 import static no.sikt.nva.nvi.index.apigateway.utils.MockOpenSearchUtil.createSearchResponse;
-import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.AUTHOR_SHARE_COUNT;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CREATOR_SHARE_COUNT;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_IDENTIFIER;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.DEPARTMENT_ID;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.FACULTY_ID;
-import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.FIRST_NAME;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_FIRST_NAME;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.GLOBAL_STATUS;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.GROUP_ID;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITUTION_APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITUTION_ID;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INTERNATIONAL_COLLABORATION_FACTOR;
-import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.LAST_NAME;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_LAST_NAME;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.POINTS_FOR_AFFILIATION;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_LEVEL_POINTS;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_IDENTIFIER;
@@ -65,7 +65,6 @@ import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
-import no.sikt.nva.nvi.index.utils.InstitutionReportGenerator;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
 import no.sikt.nva.nvi.test.IndexDocumentTestUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -166,9 +165,8 @@ public class FetchInstitutionReportHandlerTest {
         var topLevelCristinOrg = randomCristinOrgUri();
         var indexDocument = indexDocumentMissingCreatorAffiliationPoints(CURRENT_YEAR, topLevelCristinOrg);
         when(openSearchClient.search(any())).thenReturn(createSearchResponse(indexDocument));
-        var appender = LogUtils.getTestingAppender(InstitutionReportGenerator.class);
-        handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output,
-                              CONTEXT);
+        var appender = LogUtils.getTestingAppender(NviCandidateIndexDocument.class);
+        handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
         assertTrue(appender.getMessages().contains(indexDocument.id().toString()));
     }
 
@@ -222,13 +220,13 @@ public class FetchInstitutionReportHandlerTest {
                        FACULTY_ID.getValue(),
                        DEPARTMENT_ID.getValue(),
                        GROUP_ID.getValue(),
-                       LAST_NAME.getValue(),
-                       FIRST_NAME.getValue(),
+                       CONTRIBUTOR_LAST_NAME.getValue(),
+                       CONTRIBUTOR_FIRST_NAME.getValue(),
                        PUBLICATION_TITLE.getValue(),
                        GLOBAL_STATUS.getValue(),
                        PUBLICATION_CHANNEL_LEVEL_POINTS.getValue(),
                        INTERNATIONAL_COLLABORATION_FACTOR.getValue(),
-                       AUTHOR_SHARE_COUNT.getValue(),
+                       CREATOR_SHARE_COUNT.getValue(),
                        POINTS_FOR_AFFILIATION.getValue());
     }
 
@@ -296,11 +294,11 @@ public class FetchInstitutionReportHandlerTest {
     private List<String> getExpectedRow(NviCandidateIndexDocument document, NviContributor nviContributor,
                                         NviOrganization affiliation, URI topLevelCristinOrg) {
         var expectedRow = new ArrayList<String>();
-        expectedRow.add(document.getReportingPeriodYear());
-        expectedRow.add(document.getPublicationIdentifier());
-        expectedRow.add(document.getPublicationDateYear());
+        expectedRow.add(document.reportingPeriod().year());
+        expectedRow.add(document.publicationIdentifier());
+        expectedRow.add(document.publicationDetails().publicationDate().year());
         expectedRow.add(getExpectedApprovalStatus(document.getApprovalStatusForInstitution(topLevelCristinOrg)));
-        expectedRow.add(document.getPublicationInstanceType());
+        expectedRow.add(document.publicationDetails().type());
         expectedRow.add(nviContributor.id());
         expectedRow.add(affiliation.getInstitutionIdentifier());
         expectedRow.add(affiliation.getFacultyIdentifier());
@@ -308,7 +306,7 @@ public class FetchInstitutionReportHandlerTest {
         expectedRow.add(affiliation.getGroupIdentifier());
         expectedRow.add(nviContributor.name());
         expectedRow.add(nviContributor.name());
-        expectedRow.add(document.getPublicationTitle());
+        expectedRow.add(document.publicationDetails().title());
         expectedRow.add(getExpectedGlobalApprovalStatus(document.globalApprovalStatus()));
         expectedRow.add(document.publicationTypeChannelLevelPoints().toString());
         expectedRow.add(document.internationalCollaborationFactor().toString());

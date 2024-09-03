@@ -1,5 +1,24 @@
 package no.sikt.nva.nvi.index.model.document;
 
+import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CREATOR_SHARE_COUNT;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_IDENTIFIER;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.DEPARTMENT_ID;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.FACULTY_ID;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_FIRST_NAME;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.GLOBAL_STATUS;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.GROUP_ID;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITUTION_APPROVAL_STATUS;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITUTION_ID;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INTERNATIONAL_COLLABORATION_FACTOR;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_LAST_NAME;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.POINTS_FOR_AFFILIATION;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_LEVEL_POINTS;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_IDENTIFIER;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_INSTANCE;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_TITLE;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLISHED_YEAR;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTING_YEAR;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -8,14 +27,20 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
+import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.core.paths.UriWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -37,9 +62,14 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         String createdDate,
                                         String modifiedDate) implements JsonSerializable {
 
+    private static final Logger logger = LoggerFactory.getLogger(NviCandidateIndexDocument.class);
     private static final String CONTEXT = "@context";
     private static final String NVI_CANDIDATE = "NviCandidate";
     private static final String TYPE = NVI_CANDIDATE;
+    private static final String REPORT_REJECTED_VALUE = "N";
+    private static final String REPORT_PENDING_VALUE = "?";
+    private static final String REPORT_APPROVED_VALUE = "J";
+    private static final String REPORT_DISPUTED_VALUE = "T";
 
     public static NviCandidateIndexDocument from(JsonNode expandedResource, Candidate candidate,
                                                  UriRetriever uriRetriever) {
@@ -67,28 +97,8 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
     }
 
     @JsonIgnore
-    public String getReportingPeriodYear() {
-        return reportingPeriod.year();
-    }
-
-    @JsonIgnore
-    public String getPublicationIdentifier() {
+    public String publicationIdentifier() {
         return UriWrapper.fromUri(publicationDetails.id()).getLastPathElement();
-    }
-
-    @JsonIgnore
-    public String getPublicationDateYear() {
-        return publicationDetails.publicationDate().year();
-    }
-
-    @JsonIgnore
-    public String getPublicationInstanceType() {
-        return publicationDetails.type();
-    }
-
-    @JsonIgnore
-    public String getPublicationTitle() {
-        return publicationDetails.title();
     }
 
     @JsonIgnore
@@ -99,6 +109,67 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
     @JsonIgnore
     public List<NviContributor> getNviContributors() {
         return publicationDetails.nviContributors();
+    }
+
+    public List<Map<InstitutionReportHeader, String>> toReportRowsForInstitution(URI topLevelOrganization) {
+        return getNviContributors().stream()
+                   .flatMap(
+                       nviContributor -> generateRowsForContributorAffiliations(nviContributor, topLevelOrganization))
+                   .toList();
+    }
+
+    private Stream<Map<InstitutionReportHeader, String>> generateRowsForContributorAffiliations(
+        NviContributor nviContributor, URI topLevelOrganization) {
+        return nviContributor.getAffiliationsPartOfOrEqualTo(topLevelOrganization)
+                   .map(affiliation -> generateRow(nviContributor, affiliation, topLevelOrganization));
+    }
+
+    private Map<InstitutionReportHeader, String> generateRow(NviContributor nviContributor, NviOrganization affiliation,
+                                                             URI topLevelOrganization) {
+        try {
+            var keyValueMap = new HashMap<InstitutionReportHeader, String>();
+            keyValueMap.put(REPORTING_YEAR, reportingPeriod.year());
+            keyValueMap.put(PUBLICATION_IDENTIFIER, publicationIdentifier());
+            keyValueMap.put(PUBLISHED_YEAR, publicationDetails.publicationDate().year());
+            keyValueMap.put(INSTITUTION_APPROVAL_STATUS, getApprovalStatus(topLevelOrganization));
+            keyValueMap.put(PUBLICATION_INSTANCE, publicationDetails.type());
+            keyValueMap.put(CONTRIBUTOR_IDENTIFIER, nviContributor.id());
+            keyValueMap.put(INSTITUTION_ID, affiliation.getInstitutionIdentifier());
+            keyValueMap.put(FACULTY_ID, affiliation.getFacultyIdentifier());
+            keyValueMap.put(DEPARTMENT_ID, affiliation.getDepartmentIdentifier());
+            keyValueMap.put(GROUP_ID, affiliation.getGroupIdentifier());
+            keyValueMap.put(CONTRIBUTOR_LAST_NAME, nviContributor.name());
+            keyValueMap.put(CONTRIBUTOR_FIRST_NAME, nviContributor.name());
+            keyValueMap.put(PUBLICATION_TITLE, publicationDetails.title());
+            keyValueMap.put(GLOBAL_STATUS, getGlobalApprovalStatus());
+            keyValueMap.put(PUBLICATION_CHANNEL_LEVEL_POINTS, publicationTypeChannelLevelPoints().toString());
+            keyValueMap.put(INTERNATIONAL_COLLABORATION_FACTOR, internationalCollaborationFactor().toString());
+            keyValueMap.put(CREATOR_SHARE_COUNT, String.valueOf(creatorShareCount()));
+            keyValueMap.put(POINTS_FOR_AFFILIATION,
+                            getPointsForContributorAffiliation(topLevelOrganization, nviContributor, affiliation)
+                                .toString());
+            return keyValueMap;
+        } catch (RuntimeException exception) {
+            logger.error("Failed to generate report lines for candidate: {}. Error {}", id, getStackTrace(exception));
+            throw exception;
+        }
+    }
+
+    private String getGlobalApprovalStatus() {
+        return switch (globalApprovalStatus) {
+            case PENDING -> REPORT_PENDING_VALUE;
+            case APPROVED -> REPORT_APPROVED_VALUE;
+            case REJECTED -> REPORT_REJECTED_VALUE;
+            case DISPUTE -> REPORT_DISPUTED_VALUE;
+        };
+    }
+
+    private String getApprovalStatus(URI topLevelOrganization) {
+        return switch (getApprovalStatusForInstitution(topLevelOrganization)) {
+            case APPROVED -> REPORT_APPROVED_VALUE;
+            case REJECTED -> REPORT_REJECTED_VALUE;
+            case NEW, PENDING -> REPORT_PENDING_VALUE;
+        };
     }
 
     public static final class Builder {
