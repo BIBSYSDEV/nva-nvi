@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.model.document;
 
 import static java.util.Objects.isNull;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -20,6 +21,12 @@ public record NviOrganization(@JsonProperty("id") URI id,
                               @JsonProperty("partOfIdentifiers") List<String> partOfIdentifiers)
     implements OrganizationType {
 
+    private static final int INDEX_INSTITUTION_IDENTIFIER = 0;
+    private static final int INDEX_FACULTY_IDENTIFIER = 1;
+    private static final int INDEX_DEPARTMENT_IDENTIFIER = 2;
+    private static final int INDEX_GROUP_IDENTIFIER = 3;
+    private static final String IDENTIFIER_DELIMITER = "\\.";
+
     public static Builder builder() {
         return new Builder();
     }
@@ -27,6 +34,26 @@ public record NviOrganization(@JsonProperty("id") URI id,
     @Override
     public List<URI> partOf() {
         return isNull(partOf) ? List.of() : partOf;
+    }
+
+    @JsonIgnore
+    public String getInstitutionIdentifier() {
+        return identifier.split(IDENTIFIER_DELIMITER)[INDEX_INSTITUTION_IDENTIFIER];
+    }
+
+    @JsonIgnore
+    public String getFacultyIdentifier() {
+        return identifier.split(IDENTIFIER_DELIMITER)[INDEX_FACULTY_IDENTIFIER];
+    }
+
+    @JsonIgnore
+    public String getDepartmentIdentifier() {
+        return identifier.split(IDENTIFIER_DELIMITER)[INDEX_DEPARTMENT_IDENTIFIER];
+    }
+
+    @JsonIgnore
+    public String getGroupIdentifier() {
+        return identifier.split(IDENTIFIER_DELIMITER)[INDEX_GROUP_IDENTIFIER];
     }
 
     public static final class Builder {

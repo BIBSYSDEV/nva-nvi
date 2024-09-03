@@ -13,6 +13,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public final class ExcelWorkbookGenerator {
 
+    public static final String LINE_BREAK = "\n";
     private static final Encoder ENCODER = Base64.getEncoder();
     private static final int FIRST_SHEET_INDEX = 0;
     private static final int FIRST_ROW_INDEX = 0;
@@ -45,6 +46,17 @@ public final class ExcelWorkbookGenerator {
         }
         ExcelWorkbookGenerator that = (ExcelWorkbookGenerator) o;
         return Objects.equals(headers, that.headers) && Objects.equals(data, that.data);
+    }
+
+    @Override
+    @JacocoGenerated
+    public String toString() {
+        var builder = new StringBuilder();
+        builder.append(headers).append(LINE_BREAK);
+        for (List<String> row : data) {
+            builder.append(row).append(LINE_BREAK);
+        }
+        return builder.toString();
     }
 
     private static void addCells(Row row, List<String> cells) {

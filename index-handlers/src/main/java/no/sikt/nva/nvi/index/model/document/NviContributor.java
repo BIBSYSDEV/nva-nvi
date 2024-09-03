@@ -29,23 +29,31 @@ public record NviContributor(@JsonProperty("id") String id,
         return organizationsPartOfTopLevelOrg.stream().toList();
     }
 
+    public List<NviOrganization> nviAffiliations() {
+        return affiliations.stream()
+                   .filter(NviOrganization.class::isInstance)
+                   .map(NviOrganization.class::cast)
+                   .toList();
+    }
+
+    public Stream<NviOrganization> getAffiliationsPartOfOrEqualTo(URI topLevelOrg) {
+        return nviAffiliations().stream().filter(organization -> isPartOfOrEqualTo(topLevelOrg, organization));
+    }
+
+    private static boolean isPartOfOrEqualTo(URI topLevelOrg, NviOrganization organization) {
+        return organization.partOf().contains(topLevelOrg) || organization.id().equals(topLevelOrg);
+    }
+
     private List<URI> getOrganizationsAboveAffiliationInOrgHierarchy(URI topLevelOrg) {
-        return getAffiliationsPartOf(topLevelOrg)
+        return getAffiliationsPartOfOrEqualTo(topLevelOrg)
                    .flatMap(nviOrganization -> nviOrganization.partOf().stream())
                    .toList();
     }
 
     private List<URI> getAffiliationsIdsPartOf(URI topLevelOrg) {
-        return getAffiliationsPartOf(topLevelOrg)
+        return getAffiliationsPartOfOrEqualTo(topLevelOrg)
                    .map(NviOrganization::id)
                    .toList();
-    }
-
-    private Stream<NviOrganization> getAffiliationsPartOf(URI topLevelOrg) {
-        return affiliations.stream()
-                   .filter(organization -> organization instanceof NviOrganization)
-                   .map(organizationType -> (NviOrganization) organizationType)
-                   .filter(organization -> organization.partOf().contains(topLevelOrg));
     }
 
     public static final class Builder {

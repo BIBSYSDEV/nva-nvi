@@ -37,6 +37,8 @@ dependencies {
     testImplementation "org.testcontainers:testcontainers:1.18.3"
     testImplementation 'org.testcontainers:junit-jupiter:1.18.3'
 
+    testImplementation 'com.opencsv:opencsv:5.9'
+
     testImplementation project(':nvi-test')
     testImplementation(group: 'com.amazonaws', name: 'DynamoDBLocal', version: '1.19.0') {
         exclude group: 'com.amazonaws', module: 'aws-java-sdk-dynamodb'

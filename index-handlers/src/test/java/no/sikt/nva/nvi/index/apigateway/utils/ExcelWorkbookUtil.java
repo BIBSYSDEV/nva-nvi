@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.apigateway.utils;
 
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITUTION_ID;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -24,6 +25,25 @@ public class ExcelWorkbookUtil {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static List<String> extractLinesInInstitutionIdentifierColumn(InputStream inputStream) {
+        try (var workbook = new XSSFWorkbook(inputStream)) {
+            var sheet = workbook.getSheetAt(FIRST_SHEET_INDEX);
+            return extractInstitutionIdColumn(sheet);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static List<String> extractInstitutionIdColumn(XSSFSheet sheet) {
+        var institutionIdColumn = new ArrayList<String>();
+        for (var rowCounter = FIRST_DATA_ROW_INDEX; rowCounter <= sheet.getLastRowNum(); rowCounter++) {
+            var row = sheet.getRow(rowCounter);
+            var institutionId = row.getCell(INSTITUTION_ID.getOrder()).getStringCellValue();
+            institutionIdColumn.add(institutionId);
+        }
+        return institutionIdColumn;
     }
 
     private static List<List<String>> extractData(XSSFSheet sheet) {

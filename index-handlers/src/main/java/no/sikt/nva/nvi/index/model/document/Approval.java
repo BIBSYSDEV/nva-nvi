@@ -4,10 +4,13 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
+import no.sikt.nva.nvi.index.model.document.InstitutionPoints.CreatorAffiliationPoints;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -25,6 +28,23 @@ public record Approval(URI institutionId,
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    public BigDecimal getPointsForAffiliation(NviContributor nviContributor, NviOrganization affiliation) {
+        return points.creatorAffiliationPoints().stream()
+                   .filter(hasAffiliationId(affiliation))
+                   .filter(hasContributor(nviContributor))
+                   .map(CreatorAffiliationPoints::points)
+                   .findFirst()
+                   .orElseThrow();
+    }
+
+    private static Predicate<CreatorAffiliationPoints> hasContributor(NviContributor nviContributor) {
+        return creatorAffiliationPoints -> creatorAffiliationPoints.nviCreator().toString().equals(nviContributor.id());
+    }
+
+    private static Predicate<CreatorAffiliationPoints> hasAffiliationId(NviOrganization affiliation) {
+        return creatorAffiliationPoints -> creatorAffiliationPoints.affiliationId().equals(affiliation.id());
     }
 
     public static final class Builder {
