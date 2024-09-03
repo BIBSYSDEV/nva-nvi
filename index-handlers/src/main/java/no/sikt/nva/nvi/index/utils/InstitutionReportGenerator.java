@@ -54,15 +54,15 @@ public class InstitutionReportGenerator {
     }
 
     private List<NviCandidateIndexDocument> fetchNviCandidates() {
-        var searchResult = attempt(() -> searchClient.search(buildSearchRequest())).orElseThrow()
+        var searchHits = attempt(() -> searchClient.search(buildSearchRequest())).orElseThrow()
                                .hits()
                                .hits()
                                .stream()
                                .map(Hit::source)
                                .toList();
-        logger.info("Found {} candidates for institution {} for year {}", searchResult.size(), topLevelOrganization,
+        logger.info("Found {} candidates for institution {} for year {}", searchHits.size(), topLevelOrganization,
                     year);
-        return searchResult;
+        return searchHits;
     }
 
     private CandidateSearchParameters buildSearchRequest() {
