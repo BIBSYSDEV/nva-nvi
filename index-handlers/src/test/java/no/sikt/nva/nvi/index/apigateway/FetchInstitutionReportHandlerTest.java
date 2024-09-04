@@ -28,6 +28,7 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLISH
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTING_YEAR;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentMissingCreatorAffiliationPoints;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomCristinOrgUri;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomIndexDocumentWith;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -40,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -65,11 +67,12 @@ import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
+import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
-import no.sikt.nva.nvi.test.IndexDocumentTestUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
+import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -84,6 +87,8 @@ public class FetchInstitutionReportHandlerTest {
     private static final String YEAR = "year";
     private static final int CURRENT_YEAR = Year.now().getValue();
     private static final Context CONTEXT = mock(Context.class);
+    private static final int PAGE_SIZE = Integer.parseInt(new Environment().readEnv(
+        "INSTITUTION_REPORT_SEARCH_PAGE_SIZE"));
     private static SearchClient<NviCandidateIndexDocument> openSearchClient;
     private ByteArrayOutputStream output;
     private FetchInstitutionReportHandler handler;
@@ -129,6 +134,26 @@ public class FetchInstitutionReportHandlerTest {
         var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
         var actual = fromInputStream(new ByteArrayInputStream(decodedResponse));
         assertEquals(expected, actual);
+    }
+
+    @Test
+    void shouldFetchCandidatesWithPagination()
+        throws IOException {
+        var topLevelCristinOrg = randomCristinOrgUri();
+        when(openSearchClient.search(any()))
+            .thenReturn(createSearchResponse(randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg)))
+            .thenReturn(createSearchResponse(randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg)));
+
+        handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
+
+        var firstExpectedResultParameters = SearchResultParameters.builder().withSize(PAGE_SIZE).build();
+        var secondExpectedResultParameters = SearchResultParameters.builder()
+                                                 .withSize(PAGE_SIZE)
+                                                 .withOffset(PAGE_SIZE)
+                                                 .build();
+
+        verify(openSearchClient, times(1)).search(eq(buildRequest(topLevelCristinOrg, firstExpectedResultParameters)));
+        verify(openSearchClient, times(1)).search(eq(buildRequest(topLevelCristinOrg, secondExpectedResultParameters)));
     }
 
     @Test
@@ -202,6 +227,15 @@ public class FetchInstitutionReportHandlerTest {
                               CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, String.class);
         assertThat(response.getHeaders().get(CONTENT_TYPE), is(OOXML_SHEET.toString()));
+    }
+
+    private static CandidateSearchParameters buildRequest(URI topLevelCristinOrg,
+                                                          SearchResultParameters firstExpectedResultParameters) {
+        return CandidateSearchParameters.builder()
+                   .withYear(String.valueOf(CURRENT_YEAR))
+                   .withTopLevelCristinOrg(topLevelCristinOrg)
+                   .withSearchResultParameters(firstExpectedResultParameters)
+                   .build();
     }
 
     private static Stream<Arguments> listSupportedMediaTypes() {
@@ -334,7 +368,7 @@ public class FetchInstitutionReportHandlerTest {
     }
 
     private List<NviCandidateIndexDocument> mockCandidatesInOpenSearch(URI topLevelCristinOrg) throws IOException {
-        var indexDocument = IndexDocumentTestUtils.randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
+        var indexDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
         when(openSearchClient.search(any())).thenReturn(createSearchResponse(indexDocument));
         return List.of(indexDocument);
     }
