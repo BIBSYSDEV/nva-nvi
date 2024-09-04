@@ -36,6 +36,10 @@ public final class JsonPointers {
     public static final String JSON_PTR_BODY = "/body";
     public static final String JSON_PTR_TOP_LEVEL_ORGANIZATIONS = "/topLevelOrganizations";
     public static final String JSON_PTR_LABELS = "/labels";
+    public static final String JSON_PTR_SERIES_NAME = "/entityDescription/reference/publicationContext/series/name";
+    public static final String JSON_PTR_PUBLISHER_NAME = "/entityDescription/reference/publicationContext/publisher"
+                                                         + "/name";
+    public static final String JSON_PTR_JOURNAL_NAME = "/entityDescription/reference/publicationContext/name";
 
     private JsonPointers() {
     }

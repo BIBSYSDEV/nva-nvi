@@ -9,13 +9,16 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_DAY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_IDENTITY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_INSTANCE_TYPE;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_JOURNAL_NAME;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_LABELS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MAIN_TITLE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MONTH;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_NAME;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ORCID;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_DATE;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLISHER_NAME;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ROLE_TYPE;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_NAME;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TOP_LEVEL_ORGANIZATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_YEAR;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
@@ -35,6 +38,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
@@ -182,7 +186,28 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withId(candidate.getPublicationDetails().publicationChannelId())
                    .withType(candidate.getPublicationDetails().channelType().getValue())
                    .withScientificValue(ScientificValue.parse(candidate.getPublicationDetails().level()))
+                   .withName(extractPublicationChannelName(candidate.getPublicationDetails().channelType()))
                    .build();
+    }
+
+    private String extractPublicationChannelName(ChannelType channelType) {
+        return switch (channelType) {
+            case JOURNAL -> extractJournalName();
+            case PUBLISHER -> extractPublisherName();
+            case SERIES -> extractSeriesName();
+        };
+    }
+
+    private String extractSeriesName() {
+        return extractJsonNodeTextValue(expandedResource, JSON_PTR_SERIES_NAME);
+    }
+
+    private String extractPublisherName() {
+        return extractJsonNodeTextValue(expandedResource, JSON_PTR_PUBLISHER_NAME);
+    }
+
+    private String extractJournalName() {
+        return extractJsonNodeTextValue(expandedResource, JSON_PTR_JOURNAL_NAME);
     }
 
     private Stream<Approval> streamValues(Map<URI, Approval> approvals) {
