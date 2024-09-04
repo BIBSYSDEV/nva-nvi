@@ -20,7 +20,10 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITU
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITUTION_ID;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INTERNATIONAL_COLLABORATION_FACTOR;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.POINTS_FOR_AFFILIATION;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_LEVEL;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_LEVEL_POINTS;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_TYPE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_IDENTIFIER;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_INSTANCE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_TITLE;
@@ -215,6 +218,9 @@ public class FetchInstitutionReportHandlerTest {
                        PUBLISHED_YEAR.getValue(),
                        INSTITUTION_APPROVAL_STATUS.getValue(),
                        PUBLICATION_INSTANCE.getValue(),
+                       PUBLICATION_CHANNEL.getValue(),
+                       PUBLICATION_CHANNEL_TYPE.getValue(),
+                       PUBLICATION_CHANNEL_LEVEL.getValue(),
                        CONTRIBUTOR_IDENTIFIER.getValue(),
                        INSTITUTION_ID.getValue(),
                        FACULTY_ID.getValue(),
@@ -299,6 +305,9 @@ public class FetchInstitutionReportHandlerTest {
         expectedRow.add(document.publicationDetails().publicationDate().year());
         expectedRow.add(getExpectedApprovalStatus(document.getApprovalStatusForInstitution(topLevelCristinOrg)));
         expectedRow.add(document.publicationDetails().type());
+        expectedRow.add(document.publicationDetails().publicationChannel().id().toString());
+        expectedRow.add(document.publicationDetails().publicationChannel().type());
+        expectedRow.add(document.publicationDetails().publicationChannel().scientificValue().getValue());
         expectedRow.add(nviContributor.id());
         expectedRow.add(affiliation.getInstitutionIdentifier());
         expectedRow.add(affiliation.getFacultyIdentifier());

@@ -295,6 +295,7 @@ public final class IndexDocumentTestUtils {
                    .withTitle(randomString())
                    .withPublicationDate(randomPublicationDate())
                    .withContributors(List.of(randomContributor(institutionId), randomContributor(institutionId)))
+                   .withPublicationChannel(randomPublicationChannel())
                    .build();
     }
 

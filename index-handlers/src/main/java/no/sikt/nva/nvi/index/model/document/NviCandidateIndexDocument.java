@@ -13,7 +13,10 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITU
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITUTION_ID;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INTERNATIONAL_COLLABORATION_FACTOR;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.POINTS_FOR_AFFILIATION;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_LEVEL;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_LEVEL_POINTS;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_TYPE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_IDENTIFIER;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_INSTANCE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_TITLE;
@@ -145,6 +148,10 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             keyValueMap.put(POINTS_FOR_AFFILIATION,
                             getPointsForContributorAffiliation(topLevelOrganization, nviContributor, affiliation)
                                 .toString());
+            keyValueMap.put(PUBLICATION_CHANNEL, publicationDetails.publicationChannel().id().toString());
+            keyValueMap.put(PUBLICATION_CHANNEL_LEVEL,
+                            publicationDetails.publicationChannel().scientificValue().getValue());
+            keyValueMap.put(PUBLICATION_CHANNEL_TYPE, publicationDetails.publicationChannel().type());
             return keyValueMap;
         } catch (RuntimeException exception) {
             logger.error("Failed to generate report lines for candidate: {}. Error {}", id, getStackTrace(exception));
