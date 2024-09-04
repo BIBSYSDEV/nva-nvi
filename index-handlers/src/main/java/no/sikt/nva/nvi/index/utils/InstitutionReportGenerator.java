@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 public class InstitutionReportGenerator {
 
     private static final Logger logger = LoggerFactory.getLogger(InstitutionReportGenerator.class);
-    private static final int MAX_HITS = 10_000;
+    private static final int MAX_HITS = 10000;
     private final SearchClient<NviCandidateIndexDocument> searchClient;
     private final String year;
     private final URI topLevelOrganization;

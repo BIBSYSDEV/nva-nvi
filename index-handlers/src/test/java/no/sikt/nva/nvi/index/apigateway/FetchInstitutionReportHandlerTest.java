@@ -87,7 +87,7 @@ public class FetchInstitutionReportHandlerTest {
     private static final int CURRENT_YEAR = Year.now().getValue();
     private static final Context CONTEXT = mock(Context.class);
     private static final SearchResultParameters EXPECTED_SEARCH_RESULT_PARAMETERS = SearchResultParameters.builder()
-                                                                                        .withSize(10_000)
+                                                                                        .withSize(10000)
                                                                                         .build();
     private static SearchClient<NviCandidateIndexDocument> openSearchClient;
     private ByteArrayOutputStream output;
