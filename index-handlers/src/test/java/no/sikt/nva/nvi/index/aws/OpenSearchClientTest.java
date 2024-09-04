@@ -15,6 +15,7 @@ import static no.sikt.nva.nvi.index.query.SearchAggregation.PENDING_COLLABORATIO
 import static no.sikt.nva.nvi.index.query.SearchAggregation.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.REJECTED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.TOTAL_COUNT_AGGREGATION_AGG;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomPublicationChannel;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
@@ -67,6 +68,7 @@ import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.OrderByFields;
 import no.sikt.nva.nvi.index.query.SearchAggregation;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
+import no.sikt.nva.nvi.test.IndexDocumentTestUtils;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
 import nva.commons.core.ioutils.IoUtils;
@@ -710,7 +712,8 @@ public class OpenSearchClientTest {
         }
         return new PublicationDetails(randomString(), randomString(), title,
                                       publicationDate,
-                                      List.of(contributorBuilder.build()));
+                                      List.of(contributorBuilder.build()),
+                                      randomPublicationChannel());
     }
 
     private static Approval randomApprovalWithCustomerAndAssignee(URI affiliation, String assignee) {
@@ -749,7 +752,7 @@ public class OpenSearchClientTest {
     private static PublicationDetails randomPublicationDetails() {
         return new PublicationDetails(randomString(), randomString(), randomString(),
                                       PublicationDate.builder().withYear(YEAR).build(),
-                                      List.of());
+                                      List.of(), randomPublicationChannel());
     }
 
     private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {

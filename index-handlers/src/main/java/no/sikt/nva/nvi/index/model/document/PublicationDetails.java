@@ -12,7 +12,8 @@ public record PublicationDetails(@JsonProperty("id") String id,
                                  @JsonProperty("type") String type,
                                  @JsonProperty("title") String title,
                                  @JsonProperty("publicationDate") PublicationDate publicationDate,
-                                 @JsonProperty("contributors") List<ContributorType> contributors) {
+                                 @JsonProperty("contributors") List<ContributorType> contributors,
+                                 @JsonProperty("publicationChannel") PublicationChannel publicationChannel) {
 
     public static Builder builder() {
         return new Builder();
@@ -33,6 +34,7 @@ public record PublicationDetails(@JsonProperty("id") String id,
         private String title;
         private PublicationDate publicationDate;
         private List<ContributorType> contributors;
+        private PublicationChannel publicationChannel;
 
         private Builder() {
         }
@@ -62,8 +64,13 @@ public record PublicationDetails(@JsonProperty("id") String id,
             return this;
         }
 
+        public Builder withPublicationChannel(PublicationChannel publicationChannel) {
+            this.publicationChannel = publicationChannel;
+            return this;
+        }
+
         public PublicationDetails build() {
-            return new PublicationDetails(id, type, title, publicationDate, contributors);
+            return new PublicationDetails(id, type, title, publicationDate, contributors, publicationChannel);
         }
     }
 }

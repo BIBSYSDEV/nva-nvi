@@ -19,7 +19,6 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICA
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_TITLE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLISHED_YEAR;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTING_YEAR;
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -42,7 +41,6 @@ import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         URI id,
@@ -73,8 +71,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
 
     public static NviCandidateIndexDocument from(JsonNode expandedResource, Candidate candidate,
                                                  UriRetriever uriRetriever) {
-        var documentGenerator = new NviCandidateIndexDocumentGenerator(uriRetriever);
-        return documentGenerator.generateDocument(expandedResource, candidate);
+        return new NviCandidateIndexDocumentGenerator(uriRetriever, expandedResource, candidate).generateDocument();
     }
 
     public static Builder builder() {
