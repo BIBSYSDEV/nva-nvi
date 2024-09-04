@@ -160,18 +160,6 @@ public class FetchInstitutionReportHandlerTest {
         assertEquals(expected, actual);
     }
 
-    @NotNull
-    private static List<NviCandidateIndexDocument> mockTwoCandidatesInIndex(URI topLevelCristinOrg)
-        throws IOException {
-        var firstDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
-        var secondDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
-        var candidatesInIndex = List.of(firstDocument, secondDocument);
-        when(openSearchClient.search(any()))
-            .thenReturn(createSearchResponseWithTotal(firstDocument, candidatesInIndex.size()))
-            .thenReturn(createSearchResponseWithTotal(secondDocument, candidatesInIndex.size()));
-        return candidatesInIndex;
-    }
-
     @Test
     void shouldPerformSearchForGivenInstitutionAndYear() throws IOException {
         var topLevelCristinOrg = randomCristinOrgUri();
@@ -183,6 +171,8 @@ public class FetchInstitutionReportHandlerTest {
         var expectedSearchParameters = CandidateSearchParameters.builder()
                                            .withYear(year)
                                            .withTopLevelCristinOrg(topLevelCristinOrg)
+                                           .withSearchResultParameters(
+                                               SearchResultParameters.builder().withSize(PAGE_SIZE).build())
                                            .build();
         verify(openSearchClient).search(eq(expectedSearchParameters));
     }
@@ -245,12 +235,24 @@ public class FetchInstitutionReportHandlerTest {
         assertThat(response.getHeaders().get(CONTENT_TYPE), is(OOXML_SHEET.toString()));
     }
 
+    @NotNull
+    private static List<NviCandidateIndexDocument> mockTwoCandidatesInIndex(URI topLevelCristinOrg)
+        throws IOException {
+        var firstDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
+        var secondDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
+        var candidatesInIndex = List.of(firstDocument, secondDocument);
+        when(openSearchClient.search(any()))
+            .thenReturn(createSearchResponseWithTotal(firstDocument, candidatesInIndex.size()))
+            .thenReturn(createSearchResponseWithTotal(secondDocument, candidatesInIndex.size()));
+        return candidatesInIndex;
+    }
+
     private static CandidateSearchParameters buildRequest(URI topLevelCristinOrg,
-                                                          SearchResultParameters firstExpectedResultParameters) {
+                                                          SearchResultParameters resultParameters) {
         return CandidateSearchParameters.builder()
                    .withYear(String.valueOf(CURRENT_YEAR))
                    .withTopLevelCristinOrg(topLevelCristinOrg)
-                   .withSearchResultParameters(firstExpectedResultParameters)
+                   .withSearchResultParameters(resultParameters)
                    .build();
     }
 

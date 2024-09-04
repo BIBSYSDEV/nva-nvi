@@ -70,7 +70,7 @@ public class InstitutionReportGenerator {
         var offset = INITIAL_OFFSET;
         var hits = search(offset);
         addHitsToListOfCandidates(hits, fetchedCandidates);
-        while (thereAreMoreHitsThanReturned(hits, fetchedCandidates.size())) {
+        while (thereAreMoreHitsToFetch(hits, fetchedCandidates.size())) {
             offset += searchPageSize;
             hits = search(offset);
             addHitsToListOfCandidates(hits, fetchedCandidates);
@@ -89,7 +89,7 @@ public class InstitutionReportGenerator {
         return attempt(() -> searchClient.search(buildSearchRequest(offset))).orElseThrow().hits();
     }
 
-    private boolean thereAreMoreHitsThanReturned(HitsMetadata<NviCandidateIndexDocument> hitsMetadata, int size) {
+    private boolean thereAreMoreHitsToFetch(HitsMetadata<NviCandidateIndexDocument> hitsMetadata, int size) {
         return hitsMetadata.total().value() > size;
     }
 
