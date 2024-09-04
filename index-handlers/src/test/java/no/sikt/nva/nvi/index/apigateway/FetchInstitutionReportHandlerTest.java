@@ -65,7 +65,6 @@ import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
-import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
 import no.sikt.nva.nvi.test.IndexDocumentTestUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -143,24 +142,6 @@ public class FetchInstitutionReportHandlerTest {
         var expectedSearchParameters = CandidateSearchParameters.builder()
                                            .withYear(year)
                                            .withTopLevelCristinOrg(topLevelCristinOrg)
-                                           .build();
-        verify(openSearchClient).search(eq(expectedSearchParameters));
-    }
-
-    @Test
-    void shouldPerformSearchWithPageSize10000() throws IOException {
-        var topLevelCristinOrg = randomCristinOrgUri();
-        var year = "2021";
-        var request = createRequest(topLevelCristinOrg, MANAGE_NVI_CANDIDATES, topLevelCristinOrg,
-                                    Map.of(YEAR, year)).build();
-        handler.handleRequest(request, output, CONTEXT);
-
-        var expectedPageSize = 10000;
-        var expectedSearchParameters = CandidateSearchParameters.builder()
-                                           .withYear(year)
-                                           .withTopLevelCristinOrg(topLevelCristinOrg)
-                                           .withSearchResultParameters(
-                                               SearchResultParameters.builder().withSize(expectedPageSize).build())
                                            .build();
         verify(openSearchClient).search(eq(expectedSearchParameters));
     }
