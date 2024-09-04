@@ -50,8 +50,10 @@ public final class ExpandedResourceGenerator {
 
         var publicationInstance = objectMapper.createObjectNode();
         publicationInstance.put("type", candidate.getPublicationDetails().type());
-
         reference.set("publicationInstance", publicationInstance);
+
+        var publicationContext = createAndPopulatePublicationContext(candidate);
+        reference.set("publicationContext", publicationContext);
 
         entityDescription.set("reference", reference);
 
@@ -101,6 +103,47 @@ public final class ExpandedResourceGenerator {
     public static String extractType(JsonNode expandedResource) {
         return JsonUtils.extractJsonNodeTextValue(expandedResource,
                                                   "/entityDescription/reference/publicationInstance/type");
+    }
+
+    private static ObjectNode createAndPopulatePublicationContext(Candidate candidate) {
+        return switch (candidate.getPublicationDetails().channelType()) {
+            case JOURNAL -> createJournalPublicationContext(candidate);
+            case SERIES -> createSeriesPublicationContext(candidate);
+            case PUBLISHER -> createPublisherPublicationContext(candidate);
+        };
+    }
+
+    private static ObjectNode createPublisherPublicationContext(Candidate candidate) {
+        var publisher = objectMapper.createObjectNode();
+        publisher.put("type", "Publisher");
+        publisher.put("id", candidate.getPublicationDetails().publicationChannelId().toString());
+        publisher.put("level", candidate.getPublicationDetails().level());
+        publisher.put("name", randomString());
+        var publicationContext = objectMapper.createObjectNode();
+        publicationContext.set("publisher", publisher);
+        return publicationContext;
+    }
+
+    private static ObjectNode createSeriesPublicationContext(Candidate candidate) {
+        var series = objectMapper.createObjectNode();
+        series.put("type", "Series");
+        series.put("id", candidate.getPublicationDetails().publicationChannelId().toString());
+        series.put("level", candidate.getPublicationDetails().level());
+        series.put("name", randomString());
+        series.put("issn", randomString());
+        var publicationContext = objectMapper.createObjectNode();
+        publicationContext.set("series", series);
+        return publicationContext;
+    }
+
+    private static ObjectNode createJournalPublicationContext(Candidate candidate) {
+        var journal = objectMapper.createObjectNode();
+        journal.put("type", "Journal");
+        journal.put("id", candidate.getPublicationDetails().publicationChannelId().toString());
+        journal.put("level", candidate.getPublicationDetails().level());
+        journal.put("name", randomString());
+        journal.put("issn", randomString());
+        return journal;
     }
 
     private static JsonNode createAndPopulateTopLevelOrganizations(Candidate candidate) {

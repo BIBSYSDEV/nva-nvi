@@ -8,7 +8,8 @@ import java.util.Arrays;
 @JsonSerialize
 public record PublicationChannel(URI id,
                                  String type,
-                                 ScientificValue scientificValue) {
+                                 ScientificValue scientificValue,
+                                 String name) {
 
     public static Builder builder() {
         return new Builder();
@@ -45,8 +46,8 @@ public record PublicationChannel(URI id,
 
         private URI id;
         private String type;
-
         private ScientificValue scientificValue;
+        private String name;
 
         private Builder() {
         }
@@ -66,8 +67,13 @@ public record PublicationChannel(URI id,
             return this;
         }
 
+        public Builder withName(String name) {
+            this.name = name;
+            return this;
+        }
+
         public PublicationChannel build() {
-            return new PublicationChannel(id, type, scientificValue);
+            return new PublicationChannel(id, type, scientificValue, name);
         }
     }
 }

@@ -99,6 +99,7 @@ public final class TestUtils {
                                                                creatorId, institutionId, institutionPoints)))))
                    .level(DbLevel.LEVEL_ONE)
                    .channelType(randomElement(ChannelType.values()))
+                   .channelId(randomUri())
                    .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
                    .internationalCollaboration(randomBoolean())
                    .creatorCount(randomInteger())
