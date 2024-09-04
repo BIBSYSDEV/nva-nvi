@@ -8,6 +8,7 @@ import static com.google.common.net.MediaType.OOXML_SHEET;
 import static no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil.extractLinesInInstitutionIdentifierColumn;
 import static no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil.fromInputStream;
 import static no.sikt.nva.nvi.index.apigateway.utils.MockOpenSearchUtil.createSearchResponse;
+import static no.sikt.nva.nvi.index.apigateway.utils.MockOpenSearchUtil.createSearchResponseWithTotal;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_FIRST_NAME;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_IDENTIFIER;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_LAST_NAME;
@@ -140,9 +141,12 @@ public class FetchInstitutionReportHandlerTest {
     void shouldFetchCandidatesWithPagination()
         throws IOException {
         var topLevelCristinOrg = randomCristinOrgUri();
+        var firstDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
+        var secondDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
+        var candidatesInIndex = List.of(firstDocument, secondDocument);
         when(openSearchClient.search(any()))
-            .thenReturn(createSearchResponse(randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg)))
-            .thenReturn(createSearchResponse(randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg)));
+            .thenReturn(createSearchResponseWithTotal(firstDocument, candidatesInIndex.size()))
+            .thenReturn(createSearchResponseWithTotal(secondDocument, candidatesInIndex.size()));
 
         handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
 
@@ -154,6 +158,10 @@ public class FetchInstitutionReportHandlerTest {
 
         verify(openSearchClient, times(1)).search(eq(buildRequest(topLevelCristinOrg, firstExpectedResultParameters)));
         verify(openSearchClient, times(1)).search(eq(buildRequest(topLevelCristinOrg, secondExpectedResultParameters)));
+        var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
+        var actual = fromInputStream(new ByteArrayInputStream(decodedResponse));
+        var expected = getExpectedReport(candidatesInIndex, topLevelCristinOrg);
+        assertEquals(expected, actual);
     }
 
     @Test

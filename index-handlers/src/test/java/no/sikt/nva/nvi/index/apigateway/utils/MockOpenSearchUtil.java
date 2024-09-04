@@ -21,6 +21,15 @@ public class MockOpenSearchUtil {
                    .hits(constructHitsMetadata(List.of(document)))
                    .build();
     }
+    public static SearchResponse<NviCandidateIndexDocument> createSearchResponseWithTotal(NviCandidateIndexDocument document, int total) {
+        List<NviCandidateIndexDocument> hits = List.of(document);
+        return defaultBuilder()
+                   .hits(new HitsMetadata.Builder<NviCandidateIndexDocument>()
+                             .hits(hits.stream().map(MockOpenSearchUtil::toHit).collect(Collectors.toList()))
+                             .total(new TotalHits.Builder().relation(TotalHitsRelation.Eq).value(total).build())
+                             .build())
+                   .build();
+    }
 
     public static SearchResponse<NviCandidateIndexDocument> createSearchResponse(
         List<NviCandidateIndexDocument> documents, String aggregateName, Aggregate aggregate) {
