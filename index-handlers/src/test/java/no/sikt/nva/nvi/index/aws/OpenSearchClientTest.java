@@ -15,6 +15,7 @@ import static no.sikt.nva.nvi.index.query.SearchAggregation.PENDING_COLLABORATIO
 import static no.sikt.nva.nvi.index.query.SearchAggregation.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.REJECTED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.TOTAL_COUNT_AGGREGATION_AGG;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomPages;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomPublicationChannel;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -713,7 +714,7 @@ public class OpenSearchClientTest {
         return new PublicationDetails(randomString(), randomString(), title,
                                       publicationDate,
                                       List.of(contributorBuilder.build()),
-                                      randomPublicationChannel());
+                                      randomPublicationChannel(), randomPages());
     }
 
     private static Approval randomApprovalWithCustomerAndAssignee(URI affiliation, String assignee) {
@@ -752,7 +753,7 @@ public class OpenSearchClientTest {
     private static PublicationDetails randomPublicationDetails() {
         return new PublicationDetails(randomString(), randomString(), randomString(),
                                       PublicationDate.builder().withYear(YEAR).build(),
-                                      List.of(), randomPublicationChannel());
+                                      List.of(), randomPublicationChannel(), randomPages());
     }
 
     private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {

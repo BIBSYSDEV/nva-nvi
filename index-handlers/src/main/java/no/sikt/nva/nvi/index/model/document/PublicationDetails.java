@@ -2,18 +2,18 @@ package no.sikt.nva.nvi.index.model.document;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record PublicationDetails(@JsonProperty("id") String id,
-                                 @JsonProperty("type") String type,
-                                 @JsonProperty("title") String title,
-                                 @JsonProperty("publicationDate") PublicationDate publicationDate,
-                                 @JsonProperty("contributors") List<ContributorType> contributors,
-                                 @JsonProperty("publicationChannel") PublicationChannel publicationChannel) {
+public record PublicationDetails(String id,
+                                 String type,
+                                 String title,
+                                 PublicationDate publicationDate,
+                                 List<ContributorType> contributors,
+                                 PublicationChannel publicationChannel,
+                                 Pages pages) {
 
     public static Builder builder() {
         return new Builder();
@@ -35,6 +35,7 @@ public record PublicationDetails(@JsonProperty("id") String id,
         private PublicationDate publicationDate;
         private List<ContributorType> contributors;
         private PublicationChannel publicationChannel;
+        private Pages pages;
 
         private Builder() {
         }
@@ -69,8 +70,13 @@ public record PublicationDetails(@JsonProperty("id") String id,
             return this;
         }
 
+        public Builder withPages(Pages pages) {
+            this.pages = pages;
+            return this;
+        }
+
         public PublicationDetails build() {
-            return new PublicationDetails(id, type, title, publicationDate, contributors, publicationChannel);
+            return new PublicationDetails(id, type, title, publicationDate, contributors, publicationChannel, pages);
         }
     }
 }
