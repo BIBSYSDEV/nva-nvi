@@ -8,6 +8,7 @@ import static com.google.common.net.MediaType.OOXML_SHEET;
 import static no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil.extractLinesInInstitutionIdentifierColumn;
 import static no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil.fromInputStream;
 import static no.sikt.nva.nvi.index.apigateway.utils.MockOpenSearchUtil.createSearchResponse;
+import static no.sikt.nva.nvi.index.apigateway.utils.MockOpenSearchUtil.searchResponseWithTotalHitsOver10000;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_FIRST_NAME;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_IDENTIFIER;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_LAST_NAME;
@@ -28,6 +29,7 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLISH
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTING_YEAR;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentMissingCreatorAffiliationPoints;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomCristinOrgUri;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomIndexDocumentWith;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -130,6 +132,20 @@ public class FetchInstitutionReportHandlerTest {
         var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
         var actual = fromInputStream(new ByteArrayInputStream(decodedResponse));
         assertEquals(expected, actual);
+    }
+
+    @Test
+    void shouldReturnInternalServerErrorAndLogErrorWhenMoreThan10000Hits() throws IOException {
+        var topLevelCristinOrg = randomCristinOrgUri();
+        var indexDocuments = List.of(randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg));
+        when(openSearchClient.search(any())).thenReturn(searchResponseWithTotalHitsOver10000(indexDocuments));
+
+        var appender = LogUtils.getTestingAppender(FetchInstitutionReportHandler.class);
+        handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
+
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_INTERNAL_ERROR)));
+        assertTrue(appender.getMessages().contains("More than 10000 candidates found"));
     }
 
     @Test
@@ -353,8 +369,10 @@ public class FetchInstitutionReportHandlerTest {
     }
 
     private List<NviCandidateIndexDocument> mockCandidatesInOpenSearch(URI topLevelCristinOrg) throws IOException {
-        var indexDocument = IndexDocumentTestUtils.randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
+        var indexDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
         when(openSearchClient.search(any())).thenReturn(createSearchResponse(indexDocument));
         return List.of(indexDocument);
     }
+
+
 }

@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.apigateway.utils;
 
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,6 +20,17 @@ public class MockOpenSearchUtil {
     public static SearchResponse<NviCandidateIndexDocument> createSearchResponse(NviCandidateIndexDocument document) {
         return defaultBuilder()
                    .hits(constructHitsMetadata(List.of(document)))
+                   .build();
+    }
+
+    public static SearchResponse<NviCandidateIndexDocument> searchResponseWithTotalHitsOver10000(
+        List<NviCandidateIndexDocument> documents) {
+        var total = 10000 + randomInteger();
+        return defaultBuilder()
+                   .hits(new HitsMetadata.Builder<NviCandidateIndexDocument>()
+                             .hits(documents.stream().map(MockOpenSearchUtil::toHit).collect(Collectors.toList()))
+                             .total(new TotalHits.Builder().value(total).relation(TotalHitsRelation.Eq).build())
+                             .build())
                    .build();
     }
 
