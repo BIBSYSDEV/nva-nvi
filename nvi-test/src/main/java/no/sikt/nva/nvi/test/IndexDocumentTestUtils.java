@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.test;
 
+import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.EN_FIELD;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_LABEL;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_NORWEGIAN_LABEL;
@@ -25,6 +26,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
@@ -84,7 +86,7 @@ public final class IndexDocumentTestUtils {
                    .withPublicationDate(mapToPublicationDate(candidate.getPublicationDetails().publicationDate()))
                    .withContributors(
                        mapToContributors(ExpandedResourceGenerator.extractContributors(expandedResource), candidate))
-                   .withPublicationChannel(getPublicationChannel(candidate))
+                   .withPublicationChannel(getPublicationChannel(candidate, expandedResource))
                    .build();
     }
 
@@ -121,12 +123,36 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static PublicationChannel getPublicationChannel(Candidate candidate) {
+    private static PublicationChannel getPublicationChannel(Candidate candidate, JsonNode expandedResource) {
         return PublicationChannel.builder()
                    .withId(candidate.getPublicationDetails().publicationChannelId())
                    .withType(candidate.getPublicationDetails().channelType().getValue())
                    .withScientificValue(ScientificValue.parse(candidate.getPublicationDetails().level()))
+                   .withName(extractChannelName(expandedResource, candidate.getPublicationDetails().channelType()))
                    .build();
+    }
+
+    private static String extractChannelName(JsonNode expandedResource, ChannelType channelType) {
+        return switch (channelType) {
+            case JOURNAL -> extractJournalName(expandedResource);
+            case PUBLISHER -> extractPublisherName(expandedResource);
+            case SERIES -> extractSeriesName(expandedResource);
+        };
+    }
+
+    private static String extractSeriesName(JsonNode expandedResource) {
+        return extractJsonNodeTextValue(expandedResource, "/entityDescription/reference/publicationContext"
+                                                                    + "/series/name");
+    }
+
+    private static String extractPublisherName(JsonNode expandedResource) {
+        return extractJsonNodeTextValue(expandedResource, "/entityDescription/reference/publicationContext"
+                                                                    + "/publisher/name");
+    }
+
+    private static String extractJournalName(JsonNode expandedResource) {
+        return extractJsonNodeTextValue(expandedResource, "/entityDescription/reference/publicationContext"
+                                                                    + "/name");
     }
 
     private static Builder getBuilder(int year, List<no.sikt.nva.nvi.index.model.document.Approval> approvals,
