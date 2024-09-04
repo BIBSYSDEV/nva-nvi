@@ -76,6 +76,7 @@ import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
 import org.hamcrest.Matchers;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -141,12 +142,7 @@ public class FetchInstitutionReportHandlerTest {
     void shouldFetchCandidatesWithPagination()
         throws IOException {
         var topLevelCristinOrg = randomCristinOrgUri();
-        var firstDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
-        var secondDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
-        var candidatesInIndex = List.of(firstDocument, secondDocument);
-        when(openSearchClient.search(any()))
-            .thenReturn(createSearchResponseWithTotal(firstDocument, candidatesInIndex.size()))
-            .thenReturn(createSearchResponseWithTotal(secondDocument, candidatesInIndex.size()));
+        var candidatesInIndex = mockTwoCandidatesInIndex(topLevelCristinOrg);
 
         handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
 
@@ -162,6 +158,18 @@ public class FetchInstitutionReportHandlerTest {
         var actual = fromInputStream(new ByteArrayInputStream(decodedResponse));
         var expected = getExpectedReport(candidatesInIndex, topLevelCristinOrg);
         assertEquals(expected, actual);
+    }
+
+    @NotNull
+    private static List<NviCandidateIndexDocument> mockTwoCandidatesInIndex(URI topLevelCristinOrg)
+        throws IOException {
+        var firstDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
+        var secondDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
+        var candidatesInIndex = List.of(firstDocument, secondDocument);
+        when(openSearchClient.search(any()))
+            .thenReturn(createSearchResponseWithTotal(firstDocument, candidatesInIndex.size()))
+            .thenReturn(createSearchResponseWithTotal(secondDocument, candidatesInIndex.size()));
+        return candidatesInIndex;
     }
 
     @Test

@@ -67,10 +67,12 @@ public class InstitutionReportGenerator {
 
     private List<NviCandidateIndexDocument> fetchNviCandidates() {
         var fetchedCandidates = new ArrayList<NviCandidateIndexDocument>();
-        var hits = search(INITIAL_OFFSET);
+        var offset = INITIAL_OFFSET;
+        var hits = search(offset);
         addHitsToListOfCandidates(hits, fetchedCandidates);
-        while (thereAreMoreHitsThanReturned(hits.total().value(), fetchedCandidates.size())) {
-            hits = search(searchPageSize);
+        while (thereAreMoreHitsThanReturned(hits, fetchedCandidates.size())) {
+            offset += searchPageSize;
+            hits = search(offset);
             addHitsToListOfCandidates(hits, fetchedCandidates);
         }
         logNumberOfCandidatesFound(fetchedCandidates);
@@ -84,11 +86,12 @@ public class InstitutionReportGenerator {
     }
 
     private HitsMetadata<NviCandidateIndexDocument> search(int offset) {
+        logger.info("Searching for candidates with page size {} and with offset {}", searchPageSize, offset);
         return attempt(() -> searchClient.search(buildSearchRequest(offset))).orElseThrow().hits();
     }
 
-    private boolean thereAreMoreHitsThanReturned(long total, int size) {
-        return total > size;
+    private boolean thereAreMoreHitsThanReturned(HitsMetadata<NviCandidateIndexDocument> hitsMetadata, int size) {
+        return hitsMetadata.total().value() > size;
     }
 
     private CandidateSearchParameters buildSearchRequest(int offset) {

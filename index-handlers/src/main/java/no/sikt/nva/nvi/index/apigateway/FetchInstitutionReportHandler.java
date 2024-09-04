@@ -11,6 +11,7 @@ import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.utils.InstitutionReportGenerator;
+import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -62,8 +63,9 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
         var institutionId = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         logger.info("Generating report for institution {} for year {}", institutionId, year);
         var pageSize = parseInt(new Environment().readEnv(ENV_VAR_INSTITUTION_REPORT_SEARCH_PAGE_SIZE));
-        return new InstitutionReportGenerator(searchClient, pageSize, year, institutionId).generateReport()
-                   .toBase64EncodedString();
+        var report = new InstitutionReportGenerator(searchClient, pageSize, year, institutionId).generateReport();
+        logger.info("Report generated successfully. Returning report as base64 encoded string");
+        return report.toBase64EncodedString();
     }
 
     @Override
