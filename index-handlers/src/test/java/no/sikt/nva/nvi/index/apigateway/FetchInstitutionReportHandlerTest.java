@@ -69,6 +69,7 @@ import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
+import no.sikt.nva.nvi.test.IndexDocumentTestUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
@@ -86,9 +87,6 @@ public class FetchInstitutionReportHandlerTest {
     private static final String YEAR = "year";
     private static final int CURRENT_YEAR = Year.now().getValue();
     private static final Context CONTEXT = mock(Context.class);
-    private static final SearchResultParameters EXPECTED_SEARCH_RESULT_PARAMETERS = SearchResultParameters.builder()
-                                                                                        .withSize(10000)
-                                                                                        .build();
     private static SearchClient<NviCandidateIndexDocument> openSearchClient;
     private ByteArrayOutputStream output;
     private FetchInstitutionReportHandler handler;
@@ -160,7 +158,6 @@ public class FetchInstitutionReportHandlerTest {
 
         var expectedSearchParameters = CandidateSearchParameters.builder()
                                            .withYear(year)
-                                           .withSearchResultParameters(EXPECTED_SEARCH_RESULT_PARAMETERS)
                                            .withTopLevelCristinOrg(topLevelCristinOrg)
                                            .build();
         verify(openSearchClient).search(eq(expectedSearchParameters));
@@ -174,10 +171,12 @@ public class FetchInstitutionReportHandlerTest {
                                     Map.of(YEAR, year)).build();
         handler.handleRequest(request, output, CONTEXT);
 
+        var expectedPageSize = 10000;
         var expectedSearchParameters = CandidateSearchParameters.builder()
                                            .withYear(year)
                                            .withTopLevelCristinOrg(topLevelCristinOrg)
-                                           .withSearchResultParameters(EXPECTED_SEARCH_RESULT_PARAMETERS)
+                                           .withSearchResultParameters(
+                                               SearchResultParameters.builder().withSize(expectedPageSize).build())
                                            .build();
         verify(openSearchClient).search(eq(expectedSearchParameters));
     }
@@ -374,4 +373,6 @@ public class FetchInstitutionReportHandlerTest {
         when(openSearchClient.search(any())).thenReturn(createSearchResponse(indexDocument));
         return List.of(indexDocument);
     }
+
+
 }

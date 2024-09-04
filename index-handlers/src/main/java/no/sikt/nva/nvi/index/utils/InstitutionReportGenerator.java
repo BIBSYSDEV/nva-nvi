@@ -11,7 +11,6 @@ import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
-import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
@@ -20,7 +19,6 @@ import org.slf4j.LoggerFactory;
 public class InstitutionReportGenerator {
 
     private static final Logger logger = LoggerFactory.getLogger(InstitutionReportGenerator.class);
-    private static final int MAX_HITS = 10000;
     private final SearchClient<NviCandidateIndexDocument> searchClient;
     private final String year;
     private final URI topLevelOrganization;
@@ -56,31 +54,21 @@ public class InstitutionReportGenerator {
     }
 
     private List<NviCandidateIndexDocument> fetchNviCandidates() {
-        var hits = attempt(() -> searchClient.search(buildSearchRequest())).orElseThrow().hits();
-        var searchHits = hits.hits()
-                             .stream()
-                             .map(Hit::source)
-                             .toList();
-        throwErrorIfTooManyHits(hits.total().value());
+        var searchHits = attempt(() -> searchClient.search(buildSearchRequest())).orElseThrow()
+                               .hits()
+                               .hits()
+                               .stream()
+                               .map(Hit::source)
+                               .toList();
         logger.info("Found {} candidates for institution {} for year {}", searchHits.size(), topLevelOrganization,
                     year);
         return searchHits;
-    }
-
-    private void throwErrorIfTooManyHits(long totalHits) {
-        if (totalHits > MAX_HITS) {
-            var message = String.format(
-                "More than %s candidates found for institution %s for year %s. Number of hits: %s",
-                MAX_HITS, topLevelOrganization, year, totalHits);
-            throw new TooManyHitsException(message);
-        }
     }
 
     private CandidateSearchParameters buildSearchRequest() {
         return CandidateSearchParameters.builder()
                    .withYear(year)
                    .withTopLevelCristinOrg(topLevelOrganization)
-                   .withSearchResultParameters(SearchResultParameters.builder().withSize(MAX_HITS).build())
                    .build();
     }
 }

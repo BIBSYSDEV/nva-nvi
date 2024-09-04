@@ -10,7 +10,6 @@ import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.utils.InstitutionReportGenerator;
-import no.sikt.nva.nvi.index.utils.TooManyHitsException;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -59,14 +58,8 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
         var year = requestInfo.getPathParameter(PATH_PARAMETER_YEAR);
         var institutionId = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         logger.info("Generating report for institution {} for year {}", institutionId, year);
-        try {
-            return new InstitutionReportGenerator(searchClient, year, institutionId).generateReport()
-                       .toBase64EncodedString();
-        } catch (TooManyHitsException exception) {
-            logger.error("Failed to generate report for institution {} for year {}. Error: {}", institutionId, year,
-                         exception.getMessage());
-            throw exception;
-        }
+        return new InstitutionReportGenerator(searchClient, year, institutionId).generateReport()
+                   .toBase64EncodedString();
     }
 
     @Override
