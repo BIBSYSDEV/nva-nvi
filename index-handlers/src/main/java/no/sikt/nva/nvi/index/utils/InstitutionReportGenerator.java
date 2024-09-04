@@ -56,7 +56,7 @@ public class InstitutionReportGenerator {
     }
 
     private static void addHitsToListOfCandidates(HitsMetadata<NviCandidateIndexDocument> hits,
-                                                  ArrayList<NviCandidateIndexDocument> fetchedCandidates) {
+                                                  List<NviCandidateIndexDocument> fetchedCandidates) {
         hits.hits().stream().map(Hit::source).forEach(fetchedCandidates::add);
     }
 
@@ -79,9 +79,8 @@ public class InstitutionReportGenerator {
         return fetchedCandidates;
     }
 
-    private void logNumberOfCandidatesFound(ArrayList<NviCandidateIndexDocument> fetchedCandidates) {
-        logger.info("Found {} candidates for institution {} for year {}", fetchedCandidates.size(),
-                    topLevelOrganization,
+    private void logNumberOfCandidatesFound(List<NviCandidateIndexDocument> candidates) {
+        logger.info("Found {} candidates for institution {} for year {}", candidates.size(), topLevelOrganization,
                     year);
     }
 
