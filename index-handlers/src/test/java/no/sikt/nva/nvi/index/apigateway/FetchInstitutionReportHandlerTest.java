@@ -330,27 +330,15 @@ public class FetchInstitutionReportHandlerTest {
     }
 
     private static String getNumberOfPages(Pages pages) {
-        if (nonNull(pages) && nonNull(pages.numberOfPages())) {
-            return pages.numberOfPages();
-        } else {
-            return EMPTY_STRING;
-        }
+        return nonNull(pages) && nonNull(pages.numberOfPages()) ? pages.numberOfPages() : EMPTY_STRING;
     }
 
     private static String getPagesEnd(Pages pages) {
-        if (nonNull(pages) && nonNull(pages.end())) {
-            return pages.end();
-        } else {
-            return EMPTY_STRING;
-        }
+        return nonNull(pages) && nonNull(pages.end()) ? pages.end() : EMPTY_STRING;
     }
 
     private static String getPagesBegin(Pages pages) {
-        if (nonNull(pages) && nonNull(pages.begin())) {
-            return pages.begin();
-        } else {
-            return EMPTY_STRING;
-        }
+        return nonNull(pages) && nonNull(pages.begin()) ? pages.begin() : EMPTY_STRING;
     }
 
     private ExcelWorkbookGenerator getExpectedReport(List<NviCandidateIndexDocument> candidatesInIndex,
