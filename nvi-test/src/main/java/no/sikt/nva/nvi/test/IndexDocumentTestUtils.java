@@ -128,6 +128,7 @@ public final class IndexDocumentTestUtils {
                    .withId(randomUri())
                    .withType(randomString())
                    .withScientificValue(randomElement(ScientificValue.values()))
+                   .withName(randomString())
                    .build();
     }
 
@@ -356,8 +357,6 @@ public final class IndexDocumentTestUtils {
     }
 
     private static NviContributor randomContributor(URI institutionId) {
-        var topLevelIdentifier = UriWrapper.fromUri(institutionId).getLastPathElement().split(DELIMITER)[0];
-        var id = cristinOrgUriWithTopLevel(topLevelIdentifier);
         return NviContributor.builder()
                    .withId(randomUri().toString())
                    .withName(randomString())
