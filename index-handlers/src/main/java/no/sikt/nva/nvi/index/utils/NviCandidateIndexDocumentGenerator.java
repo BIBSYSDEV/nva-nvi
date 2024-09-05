@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.utils;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.PART_OF_PROPERTY;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PRT_PAGES_END;
@@ -212,15 +213,21 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private PublicationChannel buildPublicationChannel() {
-        return PublicationChannel.builder()
-                   .withId(candidate.getPublicationDetails().publicationChannelId())
-                   .withType(candidate.getPublicationDetails().channelType().getValue())
-                   .withScientificValue(ScientificValue.parse(candidate.getPublicationDetails().level()))
-                   .withName(extractPublicationChannelName(candidate.getPublicationDetails().channelType()))
-                   .build();
+        var publication = candidate.getPublicationDetails();
+        var publicationChannelBuilder = PublicationChannel.builder()
+                                            .withScientificValue(ScientificValue.parse(publication.level()));
+
+        if (nonNull(publication.publicationChannelId())) { // Might be null for candidates imported via Cristin
+            publicationChannelBuilder.withId(publication.publicationChannelId());
+        }
+        if (nonNull(publication.channelType())) { // Might be null for candidates imported via Cristin
+            publicationChannelBuilder.withType(publication.channelType().getValue());
+            publicationChannelBuilder.withName(extractName(publication.channelType()));
+        }
+        return publicationChannelBuilder.build();
     }
 
-    private String extractPublicationChannelName(ChannelType channelType) {
+    private String extractName(ChannelType channelType) {
         return switch (channelType) {
             case JOURNAL -> extractJournalName();
             case PUBLISHER -> extractPublisherName();

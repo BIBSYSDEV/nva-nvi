@@ -15,6 +15,8 @@ import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandPublicationDetai
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -114,6 +116,25 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var event = createEvent(candidate.getIdentifier());
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @Test
+    void shouldNotFailWhenCandidateIsMissingChannelTypeOrChannelId() {
+        // This is not a valid state for candidates created in nva-nvi, but it might occur for candidates imported via
+        // Cristin
+        var institutionId = randomUri();
+        var dao = candidateRepository.create(randomCandidateBuilder(true, institutionId)
+                                                 .channelType(null)
+                                                 .channelId(null)
+                                                 .build(),
+                                             List.of(randomApproval(institutionId)));
+        var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
+            candidate).indexDocument();
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(createEvent(candidate.getIdentifier()), CONTEXT);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
         assertEquals(expectedIndexDocument, actualIndexDocument);
     }

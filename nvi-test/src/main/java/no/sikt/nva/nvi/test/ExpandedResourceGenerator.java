@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.test;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -124,6 +125,9 @@ public final class ExpandedResourceGenerator {
     }
 
     private static ObjectNode createAndPopulatePublicationContext(Candidate candidate) {
+        if (isNull(candidate.getPublicationDetails().channelType())) {
+            return objectMapper.createObjectNode();
+        }
         return switch (candidate.getPublicationDetails().channelType()) {
             case JOURNAL -> createJournalPublicationContext(candidate);
             case SERIES -> createSeriesPublicationContext(candidate);
