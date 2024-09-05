@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.apigateway;
 
+import static java.lang.Integer.parseInt;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.google.common.net.MediaType;
@@ -16,6 +17,7 @@ import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 
@@ -23,6 +25,7 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
 
     private static final Logger logger = org.slf4j.LoggerFactory.getLogger(FetchInstitutionReportHandler.class);
     private static final String PATH_PARAMETER_YEAR = "year";
+    private static final String ENV_VAR_INSTITUTION_REPORT_SEARCH_PAGE_SIZE = "INSTITUTION_REPORT_SEARCH_PAGE_SIZE";
     private final SearchClient<NviCandidateIndexDocument> searchClient;
 
     @JacocoGenerated
@@ -58,8 +61,10 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
         var year = requestInfo.getPathParameter(PATH_PARAMETER_YEAR);
         var institutionId = requestInfo.getTopLevelOrgCristinId().orElseThrow();
         logger.info("Generating report for institution {} for year {}", institutionId, year);
-        return new InstitutionReportGenerator(searchClient, year, institutionId).generateReport()
-                   .toBase64EncodedString();
+        var pageSize = parseInt(new Environment().readEnv(ENV_VAR_INSTITUTION_REPORT_SEARCH_PAGE_SIZE));
+        var report = new InstitutionReportGenerator(searchClient, pageSize, year, institutionId).generateReport();
+        logger.info("Report generated successfully. Returning report as base64 encoded string");
+        return report.toBase64EncodedString();
     }
 
     @Override
@@ -68,6 +73,6 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
     }
 
     private static boolean isInvalidPathParameterYear(RequestInfo requestInfo) {
-        return attempt(() -> Year.of(Integer.parseInt(requestInfo.getPathParameter(PATH_PARAMETER_YEAR)))).isFailure();
+        return attempt(() -> Year.of(parseInt(requestInfo.getPathParameter(PATH_PARAMETER_YEAR)))).isFailure();
     }
 }
