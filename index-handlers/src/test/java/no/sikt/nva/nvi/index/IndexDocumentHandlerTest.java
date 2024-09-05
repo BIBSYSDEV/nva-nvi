@@ -134,6 +134,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
             candidate).indexDocument();
         mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(createEvent(candidate.getIdentifier()), CONTEXT);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
         assertEquals(expectedIndexDocument, actualIndexDocument);
     }
