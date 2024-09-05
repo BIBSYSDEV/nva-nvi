@@ -33,6 +33,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +68,6 @@ import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.NodeIterator;
-import org.apache.jena.rdf.model.RDFNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,20 +102,11 @@ public final class NviCandidateIndexDocumentGenerator {
                                             no.sikt.nva.nvi.common.client.model.Organization.class)).orElseThrow();
     }
 
-    private static NviOrganization buildNviOrganization(URI id, Stream<String> rdfNodes) {
-        var partOf = rdfNodes.map(URI::create).toList();
+    private static NviOrganization buildNviOrganization(URI id, List<URI> partOf) {
         return NviOrganization.builder()
                    .withId(id)
                    .withPartOf(partOf)
                    .build();
-    }
-
-    private static NodeIterator listPropertyPartOfObjects(Model model) {
-        return model.listObjectsOfProperty(model.createProperty(PART_OF_PROPERTY));
-    }
-
-    private static Stream<String> toStreamOfRdfNodes(NodeIterator nodeIterator) {
-        return nodeIterator.toList().stream().map(RDFNode::toString);
     }
 
     private static ApprovalStatus getApprovalStatus(Approval approval) {
@@ -148,6 +139,10 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private static Optional<Map<String, String>> readAsStringMap(JsonNode node) {
         return attempt(() -> dtoObjectMapper.readValue(node.toString(), TYPE_REF)).toOptional();
+    }
+
+    private static NodeIterator listNextPartOf(Model model, String resourceId) {
+        return model.listObjectsOfProperty(model.createResource(resourceId), model.createProperty(PART_OF_PROPERTY));
     }
 
     private NviCandidateIndexDocument buildDocument(List<no.sikt.nva.nvi.index.model.document.Approval> approvals,
@@ -371,10 +366,20 @@ public final class NviCandidateIndexDocumentGenerator {
     private NviOrganization generateAffiliationWithPartOf(URI id) {
         return attempt(() -> getRawContentFromUriCached(id)).map(Optional::get)
                    .map(str -> createModel(dtoObjectMapper.readTree(str)))
-                   .map(NviCandidateIndexDocumentGenerator::listPropertyPartOfObjects)
-                   .map(NviCandidateIndexDocumentGenerator::toStreamOfRdfNodes)
+                   .map(model -> listPropertyPartOfObjects(model, id))
                    .map(result -> buildNviOrganization(id, result))
                    .orElseThrow();
+    }
+
+    private List<URI> listPropertyPartOfObjects(Model model, URI id) {
+        var partOfList = new ArrayList<URI>();
+        var nextPartOf = listNextPartOf(model, id.toString());
+        while (nextPartOf.hasNext()) {
+            var partOf = nextPartOf.next();
+            partOfList.add(URI.create(partOf.toString()));
+            nextPartOf = listNextPartOf(model, partOf.toString());
+        }
+        return partOfList;
     }
 
     private Optional<String> getRawContentFromUriCached(URI id) {
