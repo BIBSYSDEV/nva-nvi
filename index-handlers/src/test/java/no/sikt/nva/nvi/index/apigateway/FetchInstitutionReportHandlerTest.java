@@ -36,8 +36,8 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICA
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLISHED_YEAR;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTING_YEAR;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentMissingCreatorAffiliationPoints;
-import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutPages;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutOptionalPublicationChannelData;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutPages;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomCristinOrgUri;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomIndexDocumentWith;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -393,9 +393,10 @@ public class FetchInstitutionReportHandlerTest {
         expectedRow.add(document.publicationDetails().publicationDate().year());
         expectedRow.add(getExpectedApprovalStatus(document.getApprovalStatusForInstitution(topLevelCristinOrg)));
         expectedRow.add(document.publicationDetails().type());
-        expectedRow.add(document.publicationDetails().publicationChannel().id().toString());
-        expectedRow.add(document.publicationDetails().publicationChannel().type());
-        expectedRow.add(document.publicationDetails().publicationChannel().scientificValue().getValue());
+        var publicationChannel = document.publicationDetails().publicationChannel();
+        expectedRow.add(nonNull(publicationChannel.id()) ? publicationChannel.id().toString() : EMPTY_STRING);
+        expectedRow.add(nonNull(publicationChannel.type()) ? publicationChannel.type() : EMPTY_STRING);
+        expectedRow.add(publicationChannel.scientificValue().getValue());
         expectedRow.add(nviContributor.id());
         expectedRow.add(affiliation.getInstitutionIdentifier());
         expectedRow.add(affiliation.getFacultyIdentifier());
@@ -403,7 +404,7 @@ public class FetchInstitutionReportHandlerTest {
         expectedRow.add(affiliation.getGroupIdentifier());
         expectedRow.add(nviContributor.name());
         expectedRow.add(nviContributor.name());
-        expectedRow.add(document.publicationDetails().publicationChannel().name());
+        expectedRow.add(nonNull(publicationChannel.name()) ? publicationChannel.name() : EMPTY_STRING);
         expectedRow.add(getPagesBegin(document.publicationDetails().pages()));
         expectedRow.add(getPagesEnd(document.publicationDetails().pages()));
         expectedRow.add(getNumberOfPages(document.publicationDetails().pages()));
@@ -443,7 +444,8 @@ public class FetchInstitutionReportHandlerTest {
     private List<NviCandidateIndexDocument> mockCandidatesWithoutOptionalDataInOpenSearch(URI topLevelCristinOrg)
         throws IOException {
         var indexDocuments = List.of(indexDocumentWithoutPages(CURRENT_YEAR, topLevelCristinOrg),
-                                     indexDocumentWithoutOptionalPublicationChannelData(CURRENT_YEAR, topLevelCristinOrg));
+                                     indexDocumentWithoutOptionalPublicationChannelData(CURRENT_YEAR,
+                                                                                        topLevelCristinOrg));
         when(openSearchClient.search(any())).thenReturn(createSearchResponse(indexDocuments));
         return indexDocuments;
     }
