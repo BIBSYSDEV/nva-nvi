@@ -161,7 +161,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         }
     }
 
-    private void addOptionalPublicationChannelValues(HashMap<InstitutionReportHeader, String> keyValueMap) {
+    private void addOptionalPublicationChannelValues(Map<InstitutionReportHeader, String> keyValueMap) {
         var publicationChannel = publicationDetails.publicationChannel();
         keyValueMap.put(PUBLICATION_CHANNEL, nonNull(publicationChannel.id()) ? publicationChannel.id().toString()
                                                  : EMPTY_STRING);
