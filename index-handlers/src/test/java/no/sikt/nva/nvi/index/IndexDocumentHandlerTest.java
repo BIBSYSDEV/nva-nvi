@@ -24,6 +24,8 @@ import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -44,7 +46,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -56,7 +57,6 @@ import no.sikt.nva.nvi.index.model.document.ConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
-import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.document.OrganizationType;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.sikt.nva.nvi.test.FakeSqsClient;
@@ -163,7 +163,22 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         mockUriResponseForTopLevelAffiliation(candidate);
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-        assertEquals(Collections.emptyList(), extractPartOfForTopLevelAffiliation(actualIndexDocument));
+        assertEquals(Collections.emptyList(), extractPartOfAffiliation(actualIndexDocument,
+                                                                       HARD_CODED_TOP_LEVEL_ORG));
+    }
+
+    @Test
+    void subUnitAffiliationShouldHavePartOf() {
+        var subUnitAffiliation = randomUri();
+        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, subUnitAffiliation);
+        setUpExistingResourceInS3AndGenerateExpectedDocument(candidate);
+        var event = createEvent(candidate.getIdentifier());
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        var expectedPartOf = List.of(HARD_CODED_TOP_LEVEL_ORG, HARD_CODED_INTERMEDIATE_ORGANIZATION);
+        assertThat(extractPartOfAffiliation(actualIndexDocument, subUnitAffiliation),
+                   containsInAnyOrder(expectedPartOf.toArray()));
     }
 
     @Test
@@ -377,26 +392,19 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         assertEquals(expectedIndexDocument, actualIndexDocument);
     }
 
-    private static List<URI> extractPartOfForTopLevelAffiliation(NviCandidateIndexDocument actualIndexDocument) {
+    private static List<URI> extractPartOfAffiliation(NviCandidateIndexDocument actualIndexDocument,
+                                                      URI affiliationId) {
         return actualIndexDocument.getNviContributors()
                    .stream()
-                   .map(IndexDocumentHandlerTest::getTopLevelAffiliation)
+                   .map(contributor -> getTopLevelAffiliation(contributor, affiliationId))
                    .findFirst()
                    .map(OrganizationType::partOf)
                    .orElseThrow();
     }
 
-    private static OrganizationType getTopLevelAffiliation(NviContributor contributor) {
+    private static OrganizationType getTopLevelAffiliation(NviContributor contributor, URI affilaitionId) {
         return contributor.affiliations().stream()
-                   .filter(affiliation -> affiliation.id().equals(HARD_CODED_TOP_LEVEL_ORG)).findFirst().get();
-    }
-
-    private static NviOrganization buildNviOrganization(URI id, Stream<String> rdfNodes) {
-        var partOf = rdfNodes.map(URI::create).toList();
-        return NviOrganization.builder()
-                   .withId(id)
-                   .withPartOf(partOf)
-                   .build();
+                   .filter(affiliation -> affiliation.id().equals(affilaitionId)).findFirst().get();
     }
 
     @SuppressWarnings("unchecked")
