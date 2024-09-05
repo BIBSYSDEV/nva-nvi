@@ -227,10 +227,11 @@ public final class CandidateDao extends Dao {
         @JacocoGenerated//This is tested in CristinMapperTest
         //TODO: Remove after cristin migration
         public static DbLevel fromDeprecatedValue(String value) {
+            Objects.requireNonNull(value);
             return switch (value) {
                 case "1" -> LEVEL_ONE;
                 case "2" -> LEVEL_TWO;
-                default -> NON_CANDIDATE;
+                default -> throw new IllegalArgumentException("Invalid value. Valid values are 1 and 2");
             };
         }
 
