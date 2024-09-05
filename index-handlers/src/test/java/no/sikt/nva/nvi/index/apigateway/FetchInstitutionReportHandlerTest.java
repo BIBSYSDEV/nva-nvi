@@ -5,6 +5,7 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.ANY_APPLICATION_TYPE;
 import static com.google.common.net.MediaType.MICROSOFT_EXCEL;
 import static com.google.common.net.MediaType.OOXML_SHEET;
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil.extractLinesInInstitutionIdentifierColumn;
 import static no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil.fromInputStream;
 import static no.sikt.nva.nvi.index.apigateway.utils.MockOpenSearchUtil.createSearchResponse;
@@ -20,10 +21,14 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.GROUP_I
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITUTION_APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITUTION_ID;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INTERNATIONAL_COLLABORATION_FACTOR;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PAGE_BEGIN;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PAGE_COUNT;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PAGE_END;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.POINTS_FOR_AFFILIATION;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_LEVEL;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_LEVEL_POINTS;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_NAME;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_TYPE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_IDENTIFIER;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_INSTANCE;
@@ -31,6 +36,7 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICA
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLISHED_YEAR;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTING_YEAR;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentMissingCreatorAffiliationPoints;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutPages;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomCristinOrgUri;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomIndexDocumentWith;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -38,6 +44,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
+import static nva.commons.core.StringUtils.EMPTY_STRING;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -70,6 +77,7 @@ import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
+import no.sikt.nva.nvi.index.model.document.Pages;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
@@ -79,7 +87,6 @@ import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
 import org.hamcrest.Matchers;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -238,7 +245,6 @@ public class FetchInstitutionReportHandlerTest {
         assertThat(response.getHeaders().get(CONTENT_TYPE), is(OOXML_SHEET.toString()));
     }
 
-    @NotNull
     private static List<NviCandidateIndexDocument> mockTwoCandidatesInIndex(URI topLevelCristinOrg)
         throws IOException {
         var firstDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
@@ -280,6 +286,10 @@ public class FetchInstitutionReportHandlerTest {
                        GROUP_ID.getValue(),
                        CONTRIBUTOR_LAST_NAME.getValue(),
                        CONTRIBUTOR_FIRST_NAME.getValue(),
+                       PUBLICATION_CHANNEL_NAME.getValue(),
+                       PAGE_BEGIN.getValue(),
+                       PAGE_END.getValue(),
+                       PAGE_COUNT.getValue(),
                        PUBLICATION_TITLE.getValue(),
                        GLOBAL_STATUS.getValue(),
                        PUBLICATION_CHANNEL_LEVEL_POINTS.getValue(),
@@ -317,6 +327,18 @@ public class FetchInstitutionReportHandlerTest {
 
     private static boolean isPartOfOrEqualToTopLevelOrganization(URI topLevelCristinOrg, NviOrganization affiliation) {
         return affiliation.partOf().contains(topLevelCristinOrg) || affiliation.id().equals(topLevelCristinOrg);
+    }
+
+    private static String getNumberOfPages(Pages pages) {
+        return nonNull(pages) && nonNull(pages.numberOfPages()) ? pages.numberOfPages() : EMPTY_STRING;
+    }
+
+    private static String getPagesEnd(Pages pages) {
+        return nonNull(pages) && nonNull(pages.end()) ? pages.end() : EMPTY_STRING;
+    }
+
+    private static String getPagesBegin(Pages pages) {
+        return nonNull(pages) && nonNull(pages.begin()) ? pages.begin() : EMPTY_STRING;
     }
 
     private ExcelWorkbookGenerator getExpectedReport(List<NviCandidateIndexDocument> candidatesInIndex,
@@ -367,6 +389,10 @@ public class FetchInstitutionReportHandlerTest {
         expectedRow.add(affiliation.getGroupIdentifier());
         expectedRow.add(nviContributor.name());
         expectedRow.add(nviContributor.name());
+        expectedRow.add(document.publicationDetails().publicationChannel().name());
+        expectedRow.add(getPagesBegin(document.publicationDetails().pages()));
+        expectedRow.add(getPagesEnd(document.publicationDetails().pages()));
+        expectedRow.add(getNumberOfPages(document.publicationDetails().pages()));
         expectedRow.add(document.publicationDetails().title());
         expectedRow.add(getExpectedGlobalApprovalStatus(document.globalApprovalStatus()));
         expectedRow.add(document.publicationTypeChannelLevelPoints().toString());
@@ -395,8 +421,9 @@ public class FetchInstitutionReportHandlerTest {
     }
 
     private List<NviCandidateIndexDocument> mockCandidatesInOpenSearch(URI topLevelCristinOrg) throws IOException {
-        var indexDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
-        when(openSearchClient.search(any())).thenReturn(createSearchResponse(indexDocument));
-        return List.of(indexDocument);
+        var indexDocuments = List.of(randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg),
+                                     indexDocumentWithoutPages(CURRENT_YEAR, topLevelCristinOrg));
+        when(openSearchClient.search(any())).thenReturn(createSearchResponse(indexDocuments));
+        return indexDocuments;
     }
 }

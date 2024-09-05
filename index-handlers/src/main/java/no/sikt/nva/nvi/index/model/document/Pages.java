@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.index.model.document;
 
 public record Pages(String begin,
                     String end,
-                    String total) {
+                    String numberOfPages) {
 
     public static Builder builder() {
         return new Builder();
