@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.model.document;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_FIRST_NAME;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_IDENTIFIER;
@@ -12,16 +13,21 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.GROUP_I
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITUTION_APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITUTION_ID;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INTERNATIONAL_COLLABORATION_FACTOR;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PAGE_BEGIN;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PAGE_COUNT;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PAGE_END;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.POINTS_FOR_AFFILIATION;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_LEVEL;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_LEVEL_POINTS;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_NAME;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_TYPE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_IDENTIFIER;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_INSTANCE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_TITLE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLISHED_YEAR;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTING_YEAR;
+import static nva.commons.core.StringUtils.EMPTY_STRING;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -81,7 +87,6 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         return new Builder();
     }
 
-    @JsonIgnore
     public Approval getApprovalForInstitution(URI institutionId) {
         return approvals.stream()
                    .filter(approval -> approval.institutionId().equals(institutionId))
@@ -89,7 +94,6 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                    .orElseThrow();
     }
 
-    @JsonIgnore
     public BigDecimal getPointsForContributorAffiliation(URI topLevelCristinOrg,
                                                          NviContributor nviContributor,
                                                          NviOrganization affiliation) {
@@ -101,7 +105,6 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         return UriWrapper.fromUri(publicationDetails.id()).getLastPathElement();
     }
 
-    @JsonIgnore
     public ApprovalStatus getApprovalStatusForInstitution(URI topLevelCristinOrg) {
         return getApprovalForInstitution(topLevelCristinOrg).approvalStatus();
     }
@@ -152,11 +155,22 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             keyValueMap.put(PUBLICATION_CHANNEL_LEVEL,
                             publicationDetails.publicationChannel().scientificValue().getValue());
             keyValueMap.put(PUBLICATION_CHANNEL_TYPE, publicationDetails.publicationChannel().type());
+            keyValueMap.put(PUBLICATION_CHANNEL_NAME, publicationDetails.publicationChannel().name());
+            addOptionalPages(keyValueMap);
+
             return keyValueMap;
         } catch (RuntimeException exception) {
             logger.error("Failed to generate report lines for candidate: {}. Error {}", id, getStackTrace(exception));
             throw exception;
         }
+    }
+
+    private void addOptionalPages(Map<InstitutionReportHeader, String> keyValueMap) {
+        var pages = publicationDetails.pages();
+        keyValueMap.put(PAGE_BEGIN, nonNull(pages) && nonNull(pages.begin()) ? pages.begin() : EMPTY_STRING);
+        keyValueMap.put(PAGE_END, nonNull(pages) && nonNull(pages.end()) ? pages.end() : EMPTY_STRING);
+        keyValueMap.put(PAGE_COUNT,
+                        nonNull(pages) && nonNull(pages.numberOfPages()) ? pages.numberOfPages() : EMPTY_STRING);
     }
 
     private String getGlobalApprovalStatus() {

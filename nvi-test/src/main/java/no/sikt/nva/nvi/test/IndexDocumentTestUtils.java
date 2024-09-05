@@ -92,15 +92,6 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static Pages getPages(JsonNode expandedResource) {
-        var pagesNode = expandedResource.at("/entityDescription/reference/publicationInstance/pages");
-        return Pages.builder()
-                   .withBegin(extractJsonNodeTextValue(pagesNode, "/begin"))
-                   .withEnd(extractJsonNodeTextValue(pagesNode, "/end"))
-                   .withNumberOfPages(extractJsonNodeTextValue(pagesNode, "/pages"))
-                   .build();
-    }
-
     public static URI randomCristinOrgUri() {
         return cristinOrgUriWithTopLevel(String.valueOf(randomIntBetween(100000, 200000)));
     }
@@ -115,13 +106,19 @@ public final class IndexDocumentTestUtils {
     }
 
     public static NviCandidateIndexDocument randomIndexDocumentWith(int year, URI institutionId) {
-        var publicationDetails = publicationDetailsWithNviContributorsAffiliatedWith(institutionId);
+        var publicationDetails = publicationDetailsWithNviContributorsAffiliatedWith(institutionId, true);
+        var approvals = createApprovals(institutionId, publicationDetails.nviContributors());
+        return getBuilder(year, approvals, publicationDetails).build();
+    }
+
+    public static NviCandidateIndexDocument indexDocumentWithoutPages(int year, URI institutionId) {
+        var publicationDetails = publicationDetailsWithNviContributorsAffiliatedWith(institutionId, false);
         var approvals = createApprovals(institutionId, publicationDetails.nviContributors());
         return getBuilder(year, approvals, publicationDetails).build();
     }
 
     public static NviCandidateIndexDocument indexDocumentMissingCreatorAffiliationPoints(int year, URI institutionId) {
-        var publicationDetails = publicationDetailsWithNviContributorsAffiliatedWith(institutionId);
+        var publicationDetails = publicationDetailsWithNviContributorsAffiliatedWith(institutionId, true);
         var noApprovals = new ArrayList<no.sikt.nva.nvi.index.model.document.Approval>();
         return getBuilder(year, noApprovals, publicationDetails).build();
     }
@@ -131,6 +128,7 @@ public final class IndexDocumentTestUtils {
                    .withId(randomUri())
                    .withType(randomString())
                    .withScientificValue(randomElement(ScientificValue.values()))
+                   .withName(randomString())
                    .build();
     }
 
@@ -139,6 +137,15 @@ public final class IndexDocumentTestUtils {
                    .withBegin(randomString())
                    .withEnd(randomString())
                    .withNumberOfPages(randomString())
+                   .build();
+    }
+
+    private static Pages getPages(JsonNode expandedResource) {
+        var pagesNode = expandedResource.at("/entityDescription/reference/publicationInstance/pages");
+        return Pages.builder()
+                   .withBegin(extractJsonNodeTextValue(pagesNode, "/begin"))
+                   .withEnd(extractJsonNodeTextValue(pagesNode, "/end"))
+                   .withNumberOfPages(extractJsonNodeTextValue(pagesNode, "/pages"))
                    .build();
     }
 
@@ -161,17 +168,17 @@ public final class IndexDocumentTestUtils {
 
     private static String extractSeriesName(JsonNode expandedResource) {
         return extractJsonNodeTextValue(expandedResource, "/entityDescription/reference/publicationContext"
-                                                                    + "/series/name");
+                                                          + "/series/name");
     }
 
     private static String extractPublisherName(JsonNode expandedResource) {
         return extractJsonNodeTextValue(expandedResource, "/entityDescription/reference/publicationContext"
-                                                                    + "/publisher/name");
+                                                          + "/publisher/name");
     }
 
     private static String extractJournalName(JsonNode expandedResource) {
         return extractJsonNodeTextValue(expandedResource, "/entityDescription/reference/publicationContext"
-                                                                    + "/name");
+                                                          + "/name");
     }
 
     private static Builder getBuilder(int year, List<no.sikt.nva.nvi.index.model.document.Approval> approvals,
@@ -333,20 +340,23 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static PublicationDetails publicationDetailsWithNviContributorsAffiliatedWith(URI institutionId) {
-        return PublicationDetails.builder()
-                   .withType(randomString())
-                   .withId(randomUri().toString())
-                   .withTitle(randomString())
-                   .withPublicationDate(randomPublicationDate())
-                   .withContributors(List.of(randomContributor(institutionId), randomContributor(institutionId)))
-                   .withPublicationChannel(randomPublicationChannel())
-                   .build();
+    private static PublicationDetails publicationDetailsWithNviContributorsAffiliatedWith(URI institutionId,
+                                                                                          boolean pagesIncluded) {
+        var builder = PublicationDetails.builder()
+                          .withType(randomString())
+                          .withId(randomUri().toString())
+                          .withTitle(randomString())
+                          .withPublicationDate(randomPublicationDate())
+                          .withContributors(List.of(randomContributor(institutionId), randomContributor(institutionId)))
+                          .withPublicationChannel(randomPublicationChannel());
+
+        if (pagesIncluded) {
+            builder.withPages(randomPages());
+        }
+        return builder.build();
     }
 
     private static NviContributor randomContributor(URI institutionId) {
-        var topLevelIdentifier = UriWrapper.fromUri(institutionId).getLastPathElement().split(DELIMITER)[0];
-        var id = cristinOrgUriWithTopLevel(topLevelIdentifier);
         return NviContributor.builder()
                    .withId(randomUri().toString())
                    .withName(randomString())
