@@ -22,6 +22,7 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_NAME;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TOP_LEVEL_ORGANIZATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_YEAR;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
+import static no.sikt.nva.nvi.common.utils.JsonUtils.extractOptJsonNodeTextValue;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
@@ -52,6 +53,8 @@ import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.document.Organization;
 import no.sikt.nva.nvi.index.model.document.OrganizationType;
+import no.sikt.nva.nvi.index.model.document.Pages;
+import no.sikt.nva.nvi.index.model.document.Pages.Builder;
 import no.sikt.nva.nvi.index.model.document.PublicationChannel;
 import no.sikt.nva.nvi.index.model.document.PublicationChannel.ScientificValue;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
@@ -70,6 +73,10 @@ public final class NviCandidateIndexDocumentGenerator {
     private static final TypeReference<Map<String, String>> TYPE_REF =
         new TypeReference<>() {
         };
+    private static final String JSON_PTR_PAGES_BEGIN = "/entityDescription/reference/publicationInstance/pages/begin";
+    private static final String JSON_PRT_PAGES_END = "/entityDescription/reference/publicationInstance/pages/end";
+    private static final String JSON_PTR_PAGES_NUMBER = "/entityDescription/reference/publicationInstance"
+                                                        + "/pages/pages";
     private final OrganizationRetriever organizationRetriever;
     private final JsonNode expandedResource;
     private final Candidate candidate;
@@ -178,7 +185,31 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withPublicationDate(extractPublicationDate())
                    .withTitle(extractMainTitle())
                    .withPublicationChannel(buildPublicationChannel())
+                   .withPages(extractPages())
                    .build();
+    }
+
+    private Pages extractPages() {
+        var pagesBuilder = Pages.builder();
+        extractPagesBeginIfPresent(pagesBuilder);
+        extractPagesEndIfPresent(pagesBuilder);
+        extractNumberOfPagesIfPresent(pagesBuilder);
+        return pagesBuilder.build();
+    }
+
+    private void extractNumberOfPagesIfPresent(Builder pagesBuilder) {
+        var pages = extractOptJsonNodeTextValue(expandedResource, JSON_PTR_PAGES_NUMBER);
+        pages.ifPresent(pagesBuilder::withNumberOfPages);
+    }
+
+    private void extractPagesEndIfPresent(Builder pagesBuilder) {
+        var end = extractOptJsonNodeTextValue(expandedResource, JSON_PRT_PAGES_END);
+        end.ifPresent(pagesBuilder::withEnd);
+    }
+
+    private void extractPagesBeginIfPresent(Builder pagesBuilder) {
+        var begin = extractOptJsonNodeTextValue(expandedResource, JSON_PTR_PAGES_BEGIN);
+        begin.ifPresent(pagesBuilder::withBegin);
     }
 
     private PublicationChannel buildPublicationChannel() {

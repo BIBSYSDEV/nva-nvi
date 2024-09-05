@@ -97,7 +97,7 @@ public final class IndexDocumentTestUtils {
         return Pages.builder()
                    .withBegin(extractJsonNodeTextValue(pagesNode, "/begin"))
                    .withEnd(extractJsonNodeTextValue(pagesNode, "/end"))
-                   .withTotal(extractJsonNodeTextValue(pagesNode, "/pages"))
+                   .withNumberOfPages(extractJsonNodeTextValue(pagesNode, "/pages"))
                    .build();
     }
 
@@ -138,7 +138,7 @@ public final class IndexDocumentTestUtils {
         return Pages.builder()
                    .withBegin(randomString())
                    .withEnd(randomString())
-                   .withTotal(randomString())
+                   .withNumberOfPages(randomString())
                    .build();
     }
 

@@ -11,8 +11,7 @@ public record Pages(String begin,
     public static final class Builder {
         private String begin;
         private String end;
-
-        private String total;
+        private String numberOfPages;
 
         private Builder() {
         }
@@ -27,13 +26,13 @@ public record Pages(String begin,
             return this;
         }
 
-        public Builder withTotal(String total) {
-            this.total = total;
+        public Builder withNumberOfPages(String numberOfPages) {
+            this.numberOfPages = numberOfPages;
             return this;
         }
 
         public Pages build() {
-            return new Pages(begin, end, total);
+            return new Pages(begin, end, numberOfPages);
         }
     }
 }

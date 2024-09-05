@@ -19,6 +19,12 @@ public final class JsonUtils {
                    .orElse(null);
     }
 
+    public static Optional<String> extractOptJsonNodeTextValue(JsonNode node, String jsonPointer) {
+        return Optional.ofNullable(node.at(jsonPointer))
+                   .filter(JsonUtils::isNotMissingNode)
+                   .map(JsonNode::textValue);
+    }
+
     public static Stream<JsonNode> streamNode(JsonNode node) {
         return StreamSupport.stream(node.spliterator(), false);
     }
