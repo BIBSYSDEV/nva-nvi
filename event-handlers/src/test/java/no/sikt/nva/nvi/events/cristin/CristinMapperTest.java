@@ -45,12 +45,24 @@ class CristinMapperTest {
     private static final int SCALE = 4;
     private static final String CRISTIN_PERSON_IDENTIFIER = randomString();
     private static final CristinMapper cristinMapper = CristinMapper.withDepartmentTransfers(readCristinDepartments());
+    private static final String VALID_QUALITY_CODE = "1";
 
     @Test
     void shouldThrowNullPointerExceptionWhenQualityCodeIsMissing() {
         var empty = emptyScientificResource();
         var report = CristinNviReport.builder().withScientificResources(List.of(empty)).build();
         assertThrows(NullPointerException.class, () -> cristinMapper.toDbCandidate(report));
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentExceptionWhenQualityCodeIsInvalid() {
+        var scientificResource = ScientificResource.build()
+                                     .withScientificPeople(List.of())
+                                     .withQualityCode("invalid")
+                                     .build();
+        var cristinLocale = cristinLocaleWithInstitutionIdentifier(randomString());
+        var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource).build();
+        assertThrows(IllegalArgumentException.class, () -> cristinMapper.toDbCandidate(report));
     }
 
     @Test
@@ -358,7 +370,7 @@ class CristinMapperTest {
     void shouldNotExtractChannelIdAndChannelTypeWhenUnsupportedInstanceTypeInReference() {
         var academicArticleReference = """
                                       {
-            
+                        
               "type": "Reference",
               "publicationContext": {
                 "type": "Anthology",
@@ -427,9 +439,11 @@ class CristinMapperTest {
         var expectedSingleCreatorPoints = POINTS_PER_CONTRIBUTOR.setScale(SCALE, RoundingMode.HALF_UP);
 
         institutionPoints.creatorAffiliationPoints().forEach(creatorPoints -> {
-            assertEquals(creatorPoints.points(), expectedSingleCreatorPoints);
-            assertThat(creatorPoints.creatorId().toString(), containsString(CRISTIN_PERSON_IDENTIFIER));
-            }
+                                                                 assertEquals(creatorPoints.points(),
+                                                                              expectedSingleCreatorPoints);
+                                                                 assertThat(creatorPoints.creatorId().toString(),
+                                                                            containsString(CRISTIN_PERSON_IDENTIFIER));
+                                                             }
         );
     }
 
@@ -447,8 +461,6 @@ class CristinMapperTest {
 
         assertThat(institutionPointsId, containsString("2057"));
         assertThat(affiliationForInstitutionPoints, containsString("305"));
-
-
     }
 
     @Test
@@ -504,11 +516,13 @@ class CristinMapperTest {
         var scientificResource = scientificResourceWithCreators(creators);
         var cristinLocale = cristinLocaleWithInstitutionIdentifier(institutionIdentifier);
         return cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource).withInstanceType(
-            instanceType).withReference(attempt(() -> JsonUtils.dtoObjectMapper.readTree(reference)).orElseThrow()).build();
+                instanceType)
+                   .withReference(attempt(() -> JsonUtils.dtoObjectMapper.readTree(reference)).orElseThrow())
+                   .build();
     }
 
     private static ScientificResource scientificResourceWithCreators(List<ScientificPerson> creators) {
-        return ScientificResource.build().withScientificPeople(creators).withQualityCode(randomString()).build();
+        return ScientificResource.build().withScientificPeople(creators).withQualityCode(VALID_QUALITY_CODE).build();
     }
 
     private static Builder cristinReportFromCristinLocalesAndScientificResource(CristinLocale cristinLocales,
@@ -585,21 +599,6 @@ class CristinMapperTest {
                    .build();
     }
 
-    private URI constructExpectedInstitutionId(CristinLocale locale) {
-        var identifier = locale.getInstitutionIdentifier()
-                         + AFFILIATION_DELIMITER
-                         + locale.getDepartmentIdentifier()
-                         + AFFILIATION_DELIMITER
-                         + locale.getSubDepartmentIdentifier()
-                         + AFFILIATION_DELIMITER
-                         + locale.getGroupIdentifier();
-        return UriWrapper.fromHost(API_HOST).addChild("cristin").addChild("organization").addChild(identifier).getUri();
-    }
-
-    private ScientificResource emptyScientificResource() {
-        return ScientificResource.build().build();
-    }
-
     private static List<CristinDepartmentTransfer> readCristinDepartments() {
         try {
             MappingIterator<CristinDepartmentTransfer> iterator =
@@ -613,5 +612,20 @@ class CristinMapperTest {
         } catch (Exception e) {
             throw new RuntimeException();
         }
+    }
+
+    private URI constructExpectedInstitutionId(CristinLocale locale) {
+        var identifier = locale.getInstitutionIdentifier()
+                         + AFFILIATION_DELIMITER
+                         + locale.getDepartmentIdentifier()
+                         + AFFILIATION_DELIMITER
+                         + locale.getSubDepartmentIdentifier()
+                         + AFFILIATION_DELIMITER
+                         + locale.getGroupIdentifier();
+        return UriWrapper.fromHost(API_HOST).addChild("cristin").addChild("organization").addChild(identifier).getUri();
+    }
+
+    private ScientificResource emptyScientificResource() {
+        return ScientificResource.build().build();
     }
 }
