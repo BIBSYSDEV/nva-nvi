@@ -90,8 +90,9 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     public NviCandidateIndexDocument generateDocument() {
-        var approvals = createApprovals(expandContributors());
-        var expandedPublicationDetails = expandPublicationDetails(expandContributors());
+        var expandedContributors = expandContributors();
+        var approvals = createApprovals(expandedContributors);
+        var expandedPublicationDetails = expandPublicationDetails(expandedContributors);
         return buildDocument(approvals, expandedPublicationDetails);
     }
 

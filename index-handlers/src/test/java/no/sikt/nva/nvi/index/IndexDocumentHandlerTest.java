@@ -40,9 +40,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpResponse;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -53,6 +55,9 @@ import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.document.NviContributor;
+import no.sikt.nva.nvi.index.model.document.NviOrganization;
+import no.sikt.nva.nvi.index.model.document.OrganizationType;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -148,6 +153,17 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
         assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @Test
+    void topLevelAffiliationShouldNotHavePartOf() {
+        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, HARD_CODED_TOP_LEVEL_ORG);
+        setUpExistingResourceInS3AndGenerateExpectedDocument(candidate);
+        var event = createEvent(candidate.getIdentifier());
+        mockUriResponseForTopLevelAffiliation(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        assertEquals(Collections.emptyList(), extractPartOfForTopLevelAffiliation(actualIndexDocument));
     }
 
     @Test
@@ -361,6 +377,28 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         assertEquals(expectedIndexDocument, actualIndexDocument);
     }
 
+    private static List<URI> extractPartOfForTopLevelAffiliation(NviCandidateIndexDocument actualIndexDocument) {
+        return actualIndexDocument.getNviContributors()
+                   .stream()
+                   .map(IndexDocumentHandlerTest::getTopLevelAffiliation)
+                   .findFirst()
+                   .map(OrganizationType::partOf)
+                   .orElseThrow();
+    }
+
+    private static OrganizationType getTopLevelAffiliation(NviContributor contributor) {
+        return contributor.affiliations().stream()
+                   .filter(affiliation -> affiliation.id().equals(HARD_CODED_TOP_LEVEL_ORG)).findFirst().get();
+    }
+
+    private static NviOrganization buildNviOrganization(URI id, Stream<String> rdfNodes) {
+        var partOf = rdfNodes.map(URI::create).toList();
+        return NviOrganization.builder()
+                   .withId(id)
+                   .withPartOf(partOf)
+                   .build();
+    }
+
     @SuppressWarnings("unchecked")
     private static HttpResponse<String> createResponse(String body) {
         var response = (HttpResponse<String>) mock(HttpResponse.class);
@@ -416,6 +454,22 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return organizationNode;
     }
 
+    private static ObjectNode generateOrganizationNodeWithHasPart(String organizationId) {
+        var organizationNode = generateOrganizationNode(organizationId);
+        var hasPartNode = dtoObjectMapper.createArrayNode();
+        hasPartNode.add(generateOrganizationNodeWithPartOf(randomUri().toString(), organizationId));
+        organizationNode.set("hasPart", hasPartNode);
+        return organizationNode;
+    }
+
+    private static ObjectNode generateOrganizationNodeWithPartOf(String organizationId, String partOfId) {
+        var organizationNode = generateOrganizationNode(organizationId);
+        var partOfNode = dtoObjectMapper.createArrayNode();
+        partOfNode.add(generateOrganizationNode(partOfId));
+        organizationNode.set("partOf", partOfNode);
+        return organizationNode;
+    }
+
     private static void addLabels(ObjectNode organizationNode) {
         var labels = dtoObjectMapper.createObjectNode();
         labels.put("nb", HARDCODED_NORWEGIAN_LABEL);
@@ -434,7 +488,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var partOfArrayNode = dtoObjectMapper.createArrayNode();
         var intermediateLevel = generateOrganizationNode(HARD_CODED_INTERMEDIATE_ORGANIZATION.toString());
         var intermediateLevelPartOfArrayNode = dtoObjectMapper.createArrayNode();
-        var topLevel = generateOrganizationNode(HARD_CODED_TOP_LEVEL_ORG.toString());
+        var topLevel = generateOrganizationNodeWithHasPart(HARD_CODED_TOP_LEVEL_ORG.toString());
         intermediateLevelPartOfArrayNode.add(topLevel);
         intermediateLevel.set("partOf", intermediateLevelPartOfArrayNode);
         partOfArrayNode.add(intermediateLevel);
@@ -455,7 +509,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     private void mockTopLevelResponse(URI affiliationId) {
         var httpResponse = Optional.of(createResponse(
             attempt(() -> dtoObjectMapper.writeValueAsString(
-                generateOrganizationNode(affiliationId.toString()))).orElseThrow()));
+                generateOrganizationNodeWithHasPart(affiliationId.toString()))).orElseThrow()));
         when(uriRetriever.fetchResponse(eq(affiliationId), eq(MEDIA_TYPE_JSON_V2))).thenReturn(httpResponse);
     }
 
