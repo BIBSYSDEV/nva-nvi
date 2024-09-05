@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index.utils;
 import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.PART_OF_PROPERTY;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PRT_PAGES_END;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_DAY;
@@ -15,6 +16,8 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MAIN_TITLE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MONTH;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_NAME;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ORCID;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PAGES_BEGIN;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PAGES_NUMBER;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_DATE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLISHER_NAME;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ROLE_TYPE;
@@ -22,6 +25,7 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_NAME;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TOP_LEVEL_ORGANIZATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_YEAR;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
+import static no.sikt.nva.nvi.common.utils.JsonUtils.extractOptJsonNodeTextValue;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
@@ -52,6 +56,8 @@ import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.document.Organization;
 import no.sikt.nva.nvi.index.model.document.OrganizationType;
+import no.sikt.nva.nvi.index.model.document.Pages;
+import no.sikt.nva.nvi.index.model.document.Pages.Builder;
 import no.sikt.nva.nvi.index.model.document.PublicationChannel;
 import no.sikt.nva.nvi.index.model.document.PublicationChannel.ScientificValue;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
@@ -178,7 +184,31 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withPublicationDate(extractPublicationDate())
                    .withTitle(extractMainTitle())
                    .withPublicationChannel(buildPublicationChannel())
+                   .withPages(extractPages())
                    .build();
+    }
+
+    private Pages extractPages() {
+        var pagesBuilder = Pages.builder();
+        extractPagesBeginIfPresent(pagesBuilder);
+        extractPagesEndIfPresent(pagesBuilder);
+        extractNumberOfPagesIfPresent(pagesBuilder);
+        return pagesBuilder.build();
+    }
+
+    private void extractNumberOfPagesIfPresent(Builder pagesBuilder) {
+        var pages = extractOptJsonNodeTextValue(expandedResource, JSON_PTR_PAGES_NUMBER);
+        pages.ifPresent(pagesBuilder::withNumberOfPages);
+    }
+
+    private void extractPagesEndIfPresent(Builder pagesBuilder) {
+        var end = extractOptJsonNodeTextValue(expandedResource, JSON_PRT_PAGES_END);
+        end.ifPresent(pagesBuilder::withEnd);
+    }
+
+    private void extractPagesBeginIfPresent(Builder pagesBuilder) {
+        var begin = extractOptJsonNodeTextValue(expandedResource, JSON_PTR_PAGES_BEGIN);
+        begin.ifPresent(pagesBuilder::withBegin);
     }
 
     private PublicationChannel buildPublicationChannel() {

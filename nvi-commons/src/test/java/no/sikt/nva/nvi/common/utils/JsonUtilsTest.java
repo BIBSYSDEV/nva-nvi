@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.utils;
 
+import static no.sikt.nva.nvi.common.utils.JsonUtils.extractOptJsonNodeTextValue;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -20,6 +21,14 @@ class JsonUtilsTest {
         var fieldValue = randomString();
         var randomJsonNode = objectMapper.createObjectNode().put(fieldName, fieldValue);
         assertThat(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + fieldName), is(equalTo(fieldValue)));
+    }
+
+    @Test
+    void shouldExtractOptionalJsonNodeTextValueIfPresent() {
+        var fieldName = "fieldName";
+        var fieldValue = randomString();
+        var randomJsonNode = objectMapper.createObjectNode().put(fieldName, fieldValue);
+        assertThat(extractOptJsonNodeTextValue(randomJsonNode, "/" + fieldName).get(), is(equalTo(fieldValue)));
     }
 
     @Test

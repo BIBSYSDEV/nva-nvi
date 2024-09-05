@@ -43,6 +43,7 @@ import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.document.Organization;
 import no.sikt.nva.nvi.index.model.document.OrganizationType;
+import no.sikt.nva.nvi.index.model.document.Pages;
 import no.sikt.nva.nvi.index.model.document.PublicationChannel;
 import no.sikt.nva.nvi.index.model.document.PublicationChannel.ScientificValue;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
@@ -87,6 +88,16 @@ public final class IndexDocumentTestUtils {
                    .withContributors(
                        mapToContributors(ExpandedResourceGenerator.extractContributors(expandedResource), candidate))
                    .withPublicationChannel(getPublicationChannel(candidate, expandedResource))
+                   .withPages(getPages(expandedResource))
+                   .build();
+    }
+
+    private static Pages getPages(JsonNode expandedResource) {
+        var pagesNode = expandedResource.at("/entityDescription/reference/publicationInstance/pages");
+        return Pages.builder()
+                   .withBegin(extractJsonNodeTextValue(pagesNode, "/begin"))
+                   .withEnd(extractJsonNodeTextValue(pagesNode, "/end"))
+                   .withNumberOfPages(extractJsonNodeTextValue(pagesNode, "/pages"))
                    .build();
     }
 
@@ -120,6 +131,14 @@ public final class IndexDocumentTestUtils {
                    .withId(randomUri())
                    .withType(randomString())
                    .withScientificValue(randomElement(ScientificValue.values()))
+                   .build();
+    }
+
+    public static Pages randomPages() {
+        return Pages.builder()
+                   .withBegin(randomString())
+                   .withEnd(randomString())
+                   .withNumberOfPages(randomString())
                    .build();
     }
 

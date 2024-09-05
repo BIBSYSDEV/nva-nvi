@@ -26,6 +26,9 @@ public final class JsonPointers {
         + "/scientificValue";
     public static final String JSON_PTR_CHAPTER_SERIES =
         "/entityDescription/reference/publicationContext/entityDescription/reference/publicationContext/series";
+    public static final String JSON_PTR_PAGES_BEGIN = "/entityDescription/reference/publicationInstance/pages/begin";
+    public static final String JSON_PRT_PAGES_END = "/entityDescription/reference/publicationInstance/pages/end";
+    public static final String JSON_PTR_PAGES_NUMBER = "/entityDescription/reference/publicationInstance/pages/pages";
     public static final String JSON_PTR_YEAR = "/year";
     public static final String JSON_PTR_MONTH = "/month";
     public static final String JSON_PTR_DAY = "/day";

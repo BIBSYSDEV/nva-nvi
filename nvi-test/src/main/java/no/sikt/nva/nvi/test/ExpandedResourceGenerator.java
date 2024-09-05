@@ -48,8 +48,7 @@ public final class ExpandedResourceGenerator {
 
         var reference = objectMapper.createObjectNode();
 
-        var publicationInstance = objectMapper.createObjectNode();
-        publicationInstance.put("type", candidate.getPublicationDetails().type());
+        var publicationInstance = createAndPopulatePublicationInstance(candidate);
         reference.set("publicationInstance", publicationInstance);
 
         var publicationContext = createAndPopulatePublicationContext(candidate);
@@ -103,6 +102,25 @@ public final class ExpandedResourceGenerator {
     public static String extractType(JsonNode expandedResource) {
         return JsonUtils.extractJsonNodeTextValue(expandedResource,
                                                   "/entityDescription/reference/publicationInstance/type");
+    }
+
+    private static ObjectNode createAndPopulatePublicationInstance(Candidate candidate) {
+        var publicationInstance = objectMapper.createObjectNode();
+        publicationInstance.put("type", candidate.getPublicationDetails().type());
+        switch (candidate.getPublicationDetails().type()) {
+            case "AcademicArticle", "AcademicLiteratureReview", "AcademicChapter" -> {
+                var pages = objectMapper.createObjectNode();
+                pages.put("begin", "pageBegin");
+                pages.put("end", "pageEnd");
+                publicationInstance.set("pages", pages);
+            }
+            case "AcademicMonograph" -> {
+                var pages = objectMapper.createObjectNode();
+                pages.put("pages", "numberOfPages");
+                publicationInstance.set("pages", pages);
+            }
+        }
+        return publicationInstance;
     }
 
     private static ObjectNode createAndPopulatePublicationContext(Candidate candidate) {
