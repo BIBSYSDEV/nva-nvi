@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index.utils;
 import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.PART_OF_PROPERTY;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PRT_PAGES_END;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_DAY;
@@ -15,6 +16,8 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MAIN_TITLE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MONTH;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_NAME;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ORCID;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PAGES_BEGIN;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PAGES_NUMBER;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_DATE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLISHER_NAME;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ROLE_TYPE;
@@ -73,10 +76,6 @@ public final class NviCandidateIndexDocumentGenerator {
     private static final TypeReference<Map<String, String>> TYPE_REF =
         new TypeReference<>() {
         };
-    private static final String JSON_PTR_PAGES_BEGIN = "/entityDescription/reference/publicationInstance/pages/begin";
-    private static final String JSON_PRT_PAGES_END = "/entityDescription/reference/publicationInstance/pages/end";
-    private static final String JSON_PTR_PAGES_NUMBER = "/entityDescription/reference/publicationInstance"
-                                                        + "/pages/pages";
     private final OrganizationRetriever organizationRetriever;
     private final JsonNode expandedResource;
     private final Candidate candidate;
