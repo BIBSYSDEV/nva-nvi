@@ -151,11 +151,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             keyValueMap.put(POINTS_FOR_AFFILIATION,
                             getPointsForContributorAffiliation(topLevelOrganization, nviContributor, affiliation)
                                 .toString());
-            keyValueMap.put(PUBLICATION_CHANNEL, publicationDetails.publicationChannel().id().toString());
-            keyValueMap.put(PUBLICATION_CHANNEL_LEVEL,
-                            publicationDetails.publicationChannel().scientificValue().getValue());
-            keyValueMap.put(PUBLICATION_CHANNEL_TYPE, publicationDetails.publicationChannel().type());
-            keyValueMap.put(PUBLICATION_CHANNEL_NAME, publicationDetails.publicationChannel().name());
+            addOptionalPublicationChannelValues(keyValueMap);
             addOptionalPages(keyValueMap);
 
             return keyValueMap;
@@ -163,6 +159,17 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             logger.error("Failed to generate report lines for candidate: {}. Error {}", id, getStackTrace(exception));
             throw exception;
         }
+    }
+
+    private void addOptionalPublicationChannelValues(HashMap<InstitutionReportHeader, String> keyValueMap) {
+        var publicationChannel = publicationDetails.publicationChannel();
+        keyValueMap.put(PUBLICATION_CHANNEL, nonNull(publicationChannel.id()) ? publicationChannel.id().toString()
+                                                 : EMPTY_STRING);
+        keyValueMap.put(PUBLICATION_CHANNEL_LEVEL, publicationChannel.scientificValue().getValue());
+        keyValueMap.put(PUBLICATION_CHANNEL_TYPE,
+                        nonNull(publicationChannel.type()) ? publicationChannel.type() : EMPTY_STRING);
+        keyValueMap.put(PUBLICATION_CHANNEL_NAME,
+                        nonNull(publicationChannel.name()) ? publicationChannel.name() : EMPTY_STRING);
     }
 
     private void addOptionalPages(Map<InstitutionReportHeader, String> keyValueMap) {
