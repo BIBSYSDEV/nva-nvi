@@ -108,19 +108,34 @@ public final class IndexDocumentTestUtils {
     }
 
     public static NviCandidateIndexDocument randomIndexDocumentWith(int year, URI institutionId) {
-        var publicationDetails = publicationDetailsWithNviContributorsAffiliatedWith(institutionId, true);
+        var publicationDetails = publicationDetailsWithNviContributorsAffiliatedWith(institutionId).build();
         var approvals = createApprovals(institutionId, publicationDetails.nviContributors());
         return getBuilder(year, approvals, publicationDetails).build();
     }
 
     public static NviCandidateIndexDocument indexDocumentWithoutPages(int year, URI institutionId) {
-        var publicationDetails = publicationDetailsWithNviContributorsAffiliatedWith(institutionId, false);
+        var publicationDetails =
+            publicationDetailsWithNviContributorsAffiliatedWith(institutionId).withPages(null).build();
+        var approvals = createApprovals(institutionId, publicationDetails.nviContributors());
+        return getBuilder(year, approvals, publicationDetails).build();
+    }
+
+    public static NviCandidateIndexDocument indexDocumentWithoutOptionalPublicationChannelData(int year,
+                                                                                               URI institutionId) {
+        // This is not a valid state for candidates created in nva-nvi, but it may occur for candidates imported via
+        // Cristin.
+        var publicationChannel = PublicationChannel.builder()
+                                     .withScientificValue(randomElement(ScientificValue.values()))
+                                     .build();
+        var publicationDetails =
+            publicationDetailsWithNviContributorsAffiliatedWith(institutionId)
+                .withPublicationChannel(publicationChannel).build();
         var approvals = createApprovals(institutionId, publicationDetails.nviContributors());
         return getBuilder(year, approvals, publicationDetails).build();
     }
 
     public static NviCandidateIndexDocument indexDocumentMissingCreatorAffiliationPoints(int year, URI institutionId) {
-        var publicationDetails = publicationDetailsWithNviContributorsAffiliatedWith(institutionId, true);
+        var publicationDetails = publicationDetailsWithNviContributorsAffiliatedWith(institutionId).build();
         var noApprovals = new ArrayList<no.sikt.nva.nvi.index.model.document.Approval>();
         return getBuilder(year, noApprovals, publicationDetails).build();
     }
@@ -352,20 +367,15 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static PublicationDetails publicationDetailsWithNviContributorsAffiliatedWith(URI institutionId,
-                                                                                          boolean pagesIncluded) {
-        var builder = PublicationDetails.builder()
-                          .withType(randomString())
-                          .withId(randomUri().toString())
-                          .withTitle(randomString())
-                          .withPublicationDate(randomPublicationDate())
-                          .withContributors(List.of(randomContributor(institutionId), randomContributor(institutionId)))
-                          .withPublicationChannel(randomPublicationChannel());
-
-        if (pagesIncluded) {
-            builder.withPages(randomPages());
-        }
-        return builder.build();
+    private static PublicationDetails.Builder publicationDetailsWithNviContributorsAffiliatedWith(URI institutionId) {
+        return PublicationDetails.builder()
+                   .withType(randomString())
+                   .withId(randomUri().toString())
+                   .withTitle(randomString())
+                   .withPublicationDate(randomPublicationDate())
+                   .withContributors(List.of(randomContributor(institutionId), randomContributor(institutionId)))
+                   .withPublicationChannel(randomPublicationChannel())
+                   .withPages(randomPages());
     }
 
     private static NviContributor randomContributor(URI institutionId) {

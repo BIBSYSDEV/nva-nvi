@@ -37,6 +37,7 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLISH
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTING_YEAR;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentMissingCreatorAffiliationPoints;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutPages;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutOptionalPublicationChannelData;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomCristinOrgUri;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomIndexDocumentWith;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -167,6 +168,19 @@ public class FetchInstitutionReportHandlerTest {
         var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
         var actual = fromInputStream(new ByteArrayInputStream(decodedResponse));
         var expected = getExpectedReport(candidatesInIndex, topLevelCristinOrg);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void shouldNotFailWhenCandidatesAreMissingOptionalData() throws IOException {
+        var topLevelCristinOrg = randomCristinOrgUri();
+        var candidatesInIndex = mockCandidatesWithoutOptionalDataInOpenSearch(topLevelCristinOrg);
+        var expected = getExpectedReport(candidatesInIndex, topLevelCristinOrg);
+
+        handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
+
+        var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
+        var actual = fromInputStream(new ByteArrayInputStream(decodedResponse));
         assertEquals(expected, actual);
     }
 
@@ -421,8 +435,15 @@ public class FetchInstitutionReportHandlerTest {
     }
 
     private List<NviCandidateIndexDocument> mockCandidatesInOpenSearch(URI topLevelCristinOrg) throws IOException {
-        var indexDocuments = List.of(randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg),
-                                     indexDocumentWithoutPages(CURRENT_YEAR, topLevelCristinOrg));
+        var indexDocuments = List.of(randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg));
+        when(openSearchClient.search(any())).thenReturn(createSearchResponse(indexDocuments));
+        return indexDocuments;
+    }
+
+    private List<NviCandidateIndexDocument> mockCandidatesWithoutOptionalDataInOpenSearch(URI topLevelCristinOrg)
+        throws IOException {
+        var indexDocuments = List.of(indexDocumentWithoutPages(CURRENT_YEAR, topLevelCristinOrg),
+                                     indexDocumentWithoutOptionalPublicationChannelData(CURRENT_YEAR, topLevelCristinOrg));
         when(openSearchClient.search(any())).thenReturn(createSearchResponse(indexDocuments));
         return indexDocuments;
     }
