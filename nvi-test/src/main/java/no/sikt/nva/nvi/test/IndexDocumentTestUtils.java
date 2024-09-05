@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.test;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.EN_FIELD;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_LABEL;
@@ -92,15 +94,6 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static Pages getPages(JsonNode expandedResource) {
-        var pagesNode = expandedResource.at("/entityDescription/reference/publicationInstance/pages");
-        return Pages.builder()
-                   .withBegin(extractJsonNodeTextValue(pagesNode, "/begin"))
-                   .withEnd(extractJsonNodeTextValue(pagesNode, "/end"))
-                   .withNumberOfPages(extractJsonNodeTextValue(pagesNode, "/pages"))
-                   .build();
-    }
-
     public static URI randomCristinOrgUri() {
         return cristinOrgUriWithTopLevel(String.valueOf(randomIntBetween(100000, 200000)));
     }
@@ -142,16 +135,35 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static PublicationChannel getPublicationChannel(Candidate candidate, JsonNode expandedResource) {
-        return PublicationChannel.builder()
-                   .withId(candidate.getPublicationDetails().publicationChannelId())
-                   .withType(candidate.getPublicationDetails().channelType().getValue())
-                   .withScientificValue(ScientificValue.parse(candidate.getPublicationDetails().level()))
-                   .withName(extractChannelName(expandedResource, candidate.getPublicationDetails().channelType()))
+    private static Pages getPages(JsonNode expandedResource) {
+        var pagesNode = expandedResource.at("/entityDescription/reference/publicationInstance/pages");
+        return Pages.builder()
+                   .withBegin(extractJsonNodeTextValue(pagesNode, "/begin"))
+                   .withEnd(extractJsonNodeTextValue(pagesNode, "/end"))
+                   .withNumberOfPages(extractJsonNodeTextValue(pagesNode, "/pages"))
                    .build();
     }
 
+    private static PublicationChannel getPublicationChannel(Candidate candidate, JsonNode expandedResource) {
+        var publicationChannelBuilder = PublicationChannel.builder()
+                                            .withScientificValue(
+                                                ScientificValue.parse(candidate.getPublicationDetails().level()))
+                                            .withName(extractChannelName(expandedResource,
+                                                                         candidate.getPublicationDetails()
+                                                                             .channelType()));
+        if (nonNull(candidate.getPublicationDetails().publicationChannelId())) {
+            publicationChannelBuilder.withId(candidate.getPublicationDetails().publicationChannelId());
+        }
+        if (nonNull(candidate.getPublicationDetails().channelType())) {
+            publicationChannelBuilder.withType(candidate.getPublicationDetails().channelType().getValue());
+        }
+        return publicationChannelBuilder.build();
+    }
+
     private static String extractChannelName(JsonNode expandedResource, ChannelType channelType) {
+        if (isNull(channelType)) {
+            return null;
+        }
         return switch (channelType) {
             case JOURNAL -> extractJournalName(expandedResource);
             case PUBLISHER -> extractPublisherName(expandedResource);
@@ -161,17 +173,17 @@ public final class IndexDocumentTestUtils {
 
     private static String extractSeriesName(JsonNode expandedResource) {
         return extractJsonNodeTextValue(expandedResource, "/entityDescription/reference/publicationContext"
-                                                                    + "/series/name");
+                                                          + "/series/name");
     }
 
     private static String extractPublisherName(JsonNode expandedResource) {
         return extractJsonNodeTextValue(expandedResource, "/entityDescription/reference/publicationContext"
-                                                                    + "/publisher/name");
+                                                          + "/publisher/name");
     }
 
     private static String extractJournalName(JsonNode expandedResource) {
         return extractJsonNodeTextValue(expandedResource, "/entityDescription/reference/publicationContext"
-                                                                    + "/name");
+                                                          + "/name");
     }
 
     private static Builder getBuilder(int year, List<no.sikt.nva.nvi.index.model.document.Approval> approvals,
@@ -201,7 +213,7 @@ public final class IndexDocumentTestUtils {
         return no.sikt.nva.nvi.index.model.document.Approval.builder()
                    .withInstitutionId(approval.getInstitutionId())
                    .withApprovalStatus(getApprovalStatus(approval))
-                   .withAssignee(Objects.nonNull(assignee) ? assignee.value() : null)
+                   .withAssignee(nonNull(assignee) ? assignee.value() : null)
                    .withPoints(getInstitutionPoints(approval, candidate))
                    .withInvolvedOrganizations(extractInvolvedOrganizations(approval, contributors))
                    .withLabels(Map.of(EN_FIELD, HARDCODED_ENGLISH_LABEL, NB_FIELD,

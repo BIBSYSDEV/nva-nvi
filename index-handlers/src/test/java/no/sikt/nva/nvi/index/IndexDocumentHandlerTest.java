@@ -15,6 +15,8 @@ import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandPublicationDetai
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -42,10 +44,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.S3StorageReader;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
@@ -121,13 +121,15 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    //This is not a vid state for candidates created in nva-nvi, but it might occur for candidates imported via Cristin
-    void shouldNotFailIfCandidateIsMissingChannelType(){
+    void shouldNotFailWhenCandidateIsMissingChannelTypeOrChannelId() {
+        // This is not a valid state for candidates created in nva-nvi, but it might occur for candidates imported via
+        // Cristin
         var institutionId = randomUri();
-        var dao = candidateRepository.create(TestUtils.randomCandidateBuilder(true, institutionId)
+        var dao = candidateRepository.create(randomCandidateBuilder(true, institutionId)
                                                  .channelType(null)
+                                                 .channelId(null)
                                                  .build(),
-                                             List.of(TestUtils.randomApproval(institutionId)));
+                                             List.of(randomApproval(institutionId)));
         var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
             candidate).indexDocument();
