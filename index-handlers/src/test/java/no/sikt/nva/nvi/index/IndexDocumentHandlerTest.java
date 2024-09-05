@@ -42,8 +42,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.S3StorageReader;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
@@ -114,6 +116,22 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var event = createEvent(candidate.getIdentifier());
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @Test
+    //This is not a vid state for candidates created in nva-nvi, but it might occur for candidates imported via Cristin
+    void shouldNotFailIfCandidateIsMissingChannelType(){
+        var institutionId = randomUri();
+        var dao = candidateRepository.create(TestUtils.randomCandidateBuilder(true, institutionId)
+                                                 .channelType(null)
+                                                 .build(),
+                                             List.of(TestUtils.randomApproval(institutionId)));
+        var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
+            candidate).indexDocument();
+        mockUriRetrieverOrgResponse(candidate);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
         assertEquals(expectedIndexDocument, actualIndexDocument);
     }
