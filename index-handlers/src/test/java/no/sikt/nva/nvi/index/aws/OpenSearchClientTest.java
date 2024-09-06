@@ -714,7 +714,7 @@ public class OpenSearchClientTest {
         return new PublicationDetails(randomString(), randomString(), title,
                                       publicationDate,
                                       List.of(contributorBuilder.build()),
-                                      randomPublicationChannel(), randomPages());
+                                      randomPublicationChannel(), randomPages(), randomString());
     }
 
     private static Approval randomApprovalWithCustomerAndAssignee(URI affiliation, String assignee) {
@@ -753,7 +753,7 @@ public class OpenSearchClientTest {
     private static PublicationDetails randomPublicationDetails() {
         return new PublicationDetails(randomString(), randomString(), randomString(),
                                       PublicationDate.builder().withYear(YEAR).build(),
-                                      List.of(), randomPublicationChannel(), randomPages());
+                                      List.of(), randomPublicationChannel(), randomPages(), randomString());
     }
 
     private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {

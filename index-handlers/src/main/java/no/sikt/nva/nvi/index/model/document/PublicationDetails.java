@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index.model.document;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.net.URI;
 import java.util.List;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
@@ -13,7 +14,8 @@ public record PublicationDetails(String id,
                                  PublicationDate publicationDate,
                                  List<ContributorType> contributors,
                                  PublicationChannel publicationChannel,
-                                 Pages pages) {
+                                 Pages pages,
+                                 String language) {
 
     public static Builder builder() {
         return new Builder();
@@ -36,6 +38,7 @@ public record PublicationDetails(String id,
         private List<ContributorType> contributors;
         private PublicationChannel publicationChannel;
         private Pages pages;
+        private String language;
 
         private Builder() {
         }
@@ -75,8 +78,14 @@ public record PublicationDetails(String id,
             return this;
         }
 
+        public Builder withLanguage(String language) {
+            this.language = language;
+            return this;
+        }
+
         public PublicationDetails build() {
-            return new PublicationDetails(id, type, title, publicationDate, contributors, publicationChannel, pages);
+            return new PublicationDetails(id, type, title, publicationDate, contributors, publicationChannel, pages,
+                                          language);
         }
     }
 }

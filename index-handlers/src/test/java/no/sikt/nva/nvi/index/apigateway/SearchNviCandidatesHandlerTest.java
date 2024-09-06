@@ -469,7 +469,7 @@ public class SearchNviCandidatesHandlerTest {
     private static PublicationDetails randomPublicationDetails() {
         return new PublicationDetails(randomString(), randomString(), randomString(),
                                       PublicationDate.builder().withYear(randomString()).build(), List.of(),
-                                      randomPublicationChannel(), randomPages());
+                                      randomPublicationChannel(), randomPages(), randomString());
     }
 
     private static InputStream createRequest(URI topLevelCristinOrgId, Map<String, String> queryParams, String userName)

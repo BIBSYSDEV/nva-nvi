@@ -70,6 +70,8 @@ import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.sqs.model.SqsException;
 
@@ -257,6 +259,19 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate)));
         assertEquals(expectedConsumptionAttributes, actualIndexDocument.consumptionAttributes());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldExtractOptionalLanguageFromExpandedResource(boolean languageExists) {
+        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
+            candidate, languageExists).indexDocument();
+        var event = createEvent(candidate.getIdentifier());
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        assertEquals(expectedIndexDocument, actualIndexDocument);
     }
 
     @Test
@@ -595,19 +610,26 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     private IndexDocumentWithConsumptionAttributes setUpExistingResourceInS3AndGenerateExpectedDocument(
         Candidate persistedCandidate) {
-        var expandedResource = createExpandedResource(persistedCandidate);
-        var resourceIndexDocument = createResourceIndexDocument(expandedResource);
-        var resourcePath = extractResourceIdentifier(persistedCandidate);
-        insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
+        return setUpExistingResourceInS3AndGenerateExpectedDocument(persistedCandidate, true);
+    }
+
+    private IndexDocumentWithConsumptionAttributes setUpExistingResourceInS3AndGenerateExpectedDocument(
+        Candidate persistedCandidate, boolean withLanguage) {
+        var expandedResource = setUpExistingResourceInS3(persistedCandidate, withLanguage);
         var indexDocument = createExpectedNviIndexDocument(expandedResource, persistedCandidate);
         return IndexDocumentWithConsumptionAttributes.from(indexDocument);
     }
 
     private void setUpExistingResourceInS3(Candidate persistedCandidate) {
-        var expandedResource = createExpandedResource(persistedCandidate);
+        setUpExistingResourceInS3(persistedCandidate, true);
+    }
+
+    private JsonNode setUpExistingResourceInS3(Candidate persistedCandidate, boolean withLanguage) {
+        var expandedResource = createExpandedResource(persistedCandidate, withLanguage);
         var resourceIndexDocument = createResourceIndexDocument(expandedResource);
         var resourcePath = extractResourceIdentifier(persistedCandidate);
         insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
+        return expandedResource;
     }
 
     private JsonNode createResourceIndexDocument(JsonNode expandedResource) {
