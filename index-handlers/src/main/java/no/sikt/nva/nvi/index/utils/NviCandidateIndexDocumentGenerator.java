@@ -4,6 +4,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.PART_OF_PROPERTY;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_JOURNAL_PISSN;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PRT_PAGES_END;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
@@ -24,6 +25,7 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_DAT
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLISHER_NAME;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ROLE_TYPE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_NAME;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_SERIES_PISSN;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TOP_LEVEL_ORGANIZATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_YEAR;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
@@ -225,8 +227,25 @@ public final class NviCandidateIndexDocumentGenerator {
         if (nonNull(publication.channelType())) { // Might be null for candidates imported via Cristin
             publicationChannelBuilder.withType(publication.channelType().getValue());
             publicationChannelBuilder.withName(extractName(publication.channelType()));
+            publicationChannelBuilder.withPrintIssn(extractPrintIssn(publication.channelType()));
         }
         return publicationChannelBuilder.build();
+    }
+
+    private String extractPrintIssn(ChannelType channelType) {
+        return switch (channelType) {
+            case JOURNAL -> extractJournalPrintIssn();
+            case SERIES -> extractSeriesPrintIssn();
+            case PUBLISHER -> null;
+        };
+    }
+
+    private String extractSeriesPrintIssn() {
+        return extractJsonNodeTextValue(expandedResource, JSON_PTR_SERIES_PISSN);
+    }
+
+    private String extractJournalPrintIssn() {
+        return extractJsonNodeTextValue(expandedResource, JSON_POINTER_JOURNAL_PISSN);
     }
 
     private String extractName(ChannelType channelType) {
