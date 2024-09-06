@@ -9,6 +9,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyIterable;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,6 +27,7 @@ import java.math.RoundingMode;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.events.cristin.CristinNviReport.Builder;
@@ -509,6 +511,17 @@ class CristinMapperTest {
         assertThat(approvals, is(emptyIterable()));
     }
 
+    @Test
+    void shouldCreateNviCandidateWithScientificLevelTwoWhenLevel2AInCristinNviReport() {
+        var report = CristinNviReport.builder()
+                         .withScientificResources(List.of(scientificResourceWithQualityCode("2A")))
+                         .withPublicationDate(new PublicationDate("2020", null, null))
+                         .build();
+        var nviCandidate = cristinMapper.toDbCandidate(report);
+
+        assertThat(nviCandidate.level(), is(equalTo(DbLevel.LEVEL_TWO)));;
+    }
+
     private static CristinNviReport nviReportWithInstanceTypeAndReference(String instanceType, String reference) {
         var institutionIdentifier = randomString();
         var creators = List.of(scientificPersonAtInstitutionWithPoints(institutionIdentifier, POINTS_PER_CONTRIBUTOR),
@@ -523,6 +536,14 @@ class CristinMapperTest {
 
     private static ScientificResource scientificResourceWithCreators(List<ScientificPerson> creators) {
         return ScientificResource.build().withScientificPeople(creators).withQualityCode(VALID_QUALITY_CODE).build();
+    }
+
+    private static ScientificResource scientificResourceWithQualityCode(String value) {
+        return ScientificResource.build()
+                   .withScientificPeople(List.of(scientificPersonAtInstitutionWithPoints("5737",
+                                                                                         POINTS_PER_CONTRIBUTOR)))
+                   .withQualityCode(value)
+                   .build();
     }
 
     private static Builder cristinReportFromCristinLocalesAndScientificResource(CristinLocale cristinLocales,
