@@ -9,7 +9,8 @@ import java.util.Arrays;
 public record PublicationChannel(URI id,
                                  String type,
                                  ScientificValue scientificValue,
-                                 String name) {
+                                 String name,
+                                 String printIssn) {
 
     public static Builder builder() {
         return new Builder();
@@ -48,6 +49,7 @@ public record PublicationChannel(URI id,
         private String type;
         private ScientificValue scientificValue;
         private String name;
+        private String printIssn;
 
         private Builder() {
         }
@@ -72,8 +74,13 @@ public record PublicationChannel(URI id,
             return this;
         }
 
+        public Builder withPrintIssn(String printIssn) {
+            this.printIssn = printIssn;
+            return this;
+        }
+
         public PublicationChannel build() {
-            return new PublicationChannel(id, type, scientificValue, name);
+            return new PublicationChannel(id, type, scientificValue, name, printIssn);
         }
     }
 }

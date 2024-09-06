@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -89,7 +88,7 @@ public final class IndexDocumentTestUtils {
                    .withPublicationDate(mapToPublicationDate(candidate.getPublicationDetails().publicationDate()))
                    .withContributors(
                        mapToContributors(ExpandedResourceGenerator.extractContributors(expandedResource), candidate))
-                   .withPublicationChannel(getPublicationChannel(candidate, expandedResource))
+                   .withPublicationChannel(getPublicationChannel(expandedResource, candidate.getPublicationDetails()))
                    .withPages(getPages(expandedResource))
                    .withLanguage(extractOptionalLanguage(expandedResource))
                    .build();
@@ -171,20 +170,38 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static PublicationChannel getPublicationChannel(Candidate candidate, JsonNode expandedResource) {
+    private static PublicationChannel getPublicationChannel(JsonNode expandedResource,
+                                                            no.sikt.nva.nvi.common.service.model.PublicationDetails publicationDetails) {
+        var channelType = publicationDetails.channelType();
         var publicationChannelBuilder = PublicationChannel.builder()
-                                            .withScientificValue(
-                                                ScientificValue.parse(candidate.getPublicationDetails().level()))
-                                            .withName(extractChannelName(expandedResource,
-                                                                         candidate.getPublicationDetails()
-                                                                             .channelType()));
-        if (nonNull(candidate.getPublicationDetails().publicationChannelId())) {
-            publicationChannelBuilder.withId(candidate.getPublicationDetails().publicationChannelId());
+                                            .withScientificValue(ScientificValue.parse(publicationDetails.level()))
+                                            .withName(extractChannelName(expandedResource, channelType));
+        if (nonNull(publicationDetails.publicationChannelId())) {
+            publicationChannelBuilder.withId(publicationDetails.publicationChannelId());
         }
-        if (nonNull(candidate.getPublicationDetails().channelType())) {
-            publicationChannelBuilder.withType(candidate.getPublicationDetails().channelType().getValue());
+        if (nonNull(channelType)) {
+            publicationChannelBuilder.withType(channelType.getValue());
+            publicationChannelBuilder.withPrintIssn(extractPrintIssn(expandedResource, channelType));
         }
         return publicationChannelBuilder.build();
+    }
+
+    private static String extractPrintIssn(JsonNode expandedResource, ChannelType channelType) {
+        return switch (channelType) {
+            case JOURNAL -> extractJournalIssn(expandedResource);
+            case SERIES -> extractSeriesIssn(expandedResource);
+            case PUBLISHER -> null;
+        };
+    }
+
+    private static String extractSeriesIssn(JsonNode expandedResource) {
+        return extractJsonNodeTextValue(expandedResource, "/entityDescription/reference/publicationContext"
+                                                          + "/series/printIssn");
+    }
+
+    private static String extractJournalIssn(JsonNode expandedResource) {
+        return extractJsonNodeTextValue(expandedResource, "/entityDescription/reference/publicationContext"
+                                                          + "/printIssn");
     }
 
     private static String extractChannelName(JsonNode expandedResource, ChannelType channelType) {
@@ -272,7 +289,7 @@ public final class IndexDocumentTestUtils {
 
     private static boolean isApprovalPendingAndUnassigned(Approval approval) {
         return no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING.equals(approval.getStatus())
-               && Objects.isNull(approval.getAssignee());
+               && isNull(approval.getAssignee());
     }
 
     private static PublicationDate mapToPublicationDate(

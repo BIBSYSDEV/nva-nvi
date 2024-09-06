@@ -45,6 +45,11 @@ public final class JsonPointers {
     public static final String JSON_PTR_JOURNAL_NAME = "/entityDescription/reference/publicationContext/name";
     public static final String JSON_PTR_LANGUAGE = "/entityDescription/language";
 
+    public static final String JSON_PTR_SERIES_PISSN = "/entityDescription/reference/publicationContext/series"
+                                                        + "/printIssn";
+    public static final String JSON_POINTER_JOURNAL_PISSN = "/entityDescription/reference/publicationContext"
+                                                             + "/printIssn";
+
     private JsonPointers() {
     }
 }
