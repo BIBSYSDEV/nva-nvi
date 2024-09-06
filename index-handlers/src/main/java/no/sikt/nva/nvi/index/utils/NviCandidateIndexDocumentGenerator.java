@@ -13,6 +13,7 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_IDENTITY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_INSTANCE_TYPE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_JOURNAL_NAME;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_LABELS;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_LANGUAGE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MAIN_TITLE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MONTH;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_NAME;
@@ -182,7 +183,12 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withTitle(extractMainTitle())
                    .withPublicationChannel(buildPublicationChannel())
                    .withPages(extractPages())
+                   .withLanguage(extractOptionalLanguage())
                    .build();
+    }
+
+    private String extractOptionalLanguage() {
+        return extractOptJsonNodeTextValue(expandedResource, JSON_PTR_LANGUAGE).orElse(null);
     }
 
     private Pages extractPages() {
