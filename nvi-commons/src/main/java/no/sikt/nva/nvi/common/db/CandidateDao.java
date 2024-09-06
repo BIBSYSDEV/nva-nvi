@@ -230,7 +230,7 @@ public final class CandidateDao extends Dao {
             Objects.requireNonNull(value);
             return switch (value) {
                 case "1" -> LEVEL_ONE;
-                case "2" -> LEVEL_TWO;
+                case "2", "2A" -> LEVEL_TWO;
                 default -> throw new IllegalArgumentException("Invalid value. Valid values are 1 and 2");
             };
         }
