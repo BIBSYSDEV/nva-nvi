@@ -292,6 +292,10 @@ public final class TestUtils {
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI topLevelOrg, URI affiliation) {
+        return createUpsertCandidateRequest(topLevelOrg, affiliation, randomElement(ChannelType.values()));
+    }
+
+    public static UpsertCandidateRequest createUpsertCandidateRequest(URI topLevelOrg, URI affiliation, ChannelType channelType) {
         var creatorId = randomUri();
         var creators = Map.of(creatorId, List.of(affiliation));
         var points = randomBigDecimal();
@@ -303,7 +307,7 @@ public final class TestUtils {
                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null), creators,
                                             randomInstanceTypeExcluding(
                                                 NON_CANDIDATE.getValue()),
-                                            randomElement(ChannelType.values()).getValue(), randomUri(),
+                                            channelType.getValue(), randomUri(),
                                             randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(), institutionPoints,
                                             randomInteger(), randomBoolean(),
                                             randomBigDecimal(), randomBigDecimal(), randomBigDecimal());

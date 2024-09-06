@@ -46,9 +46,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
@@ -71,6 +73,8 @@ import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.sqs.model.SqsException;
@@ -98,6 +102,13 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     private S3Driver s3Writer;
     private UriRetriever uriRetriever;
     private FakeSqsClient sqsClient;
+
+    public static Stream<Arguments> channelTypeIssnProvider() {
+        return Stream.of(Arguments.of(ChannelType.JOURNAL, true),
+                         Arguments.of(ChannelType.JOURNAL, false),
+                         Arguments.of(ChannelType.SERIES, true),
+                         Arguments.of(ChannelType.SERIES, false));
+    }
 
     @BeforeEach
     void setup() {
@@ -266,7 +277,20 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     void shouldExtractOptionalLanguageFromExpandedResource(boolean languageExists) {
         var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
-            candidate, languageExists).indexDocument();
+            candidate, languageExists, true).indexDocument();
+        var event = createEvent(candidate.getIdentifier());
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @ParameterizedTest
+    @MethodSource("channelTypeIssnProvider")
+    void shouldExtractOptionalPrintIssnFromExpandedResource(ChannelType channelType, boolean printIssnExists) {
+        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri(), channelType);
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
+            candidate, true, printIssnExists).indexDocument();
         var event = createEvent(candidate.getIdentifier());
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(event, CONTEXT);
@@ -610,22 +634,22 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     private IndexDocumentWithConsumptionAttributes setUpExistingResourceInS3AndGenerateExpectedDocument(
         Candidate persistedCandidate) {
-        return setUpExistingResourceInS3AndGenerateExpectedDocument(persistedCandidate, true);
+        return setUpExistingResourceInS3AndGenerateExpectedDocument(persistedCandidate, true, true);
     }
 
     private IndexDocumentWithConsumptionAttributes setUpExistingResourceInS3AndGenerateExpectedDocument(
-        Candidate persistedCandidate, boolean withLanguage) {
-        var expandedResource = setUpExistingResourceInS3(persistedCandidate, withLanguage);
+        Candidate persistedCandidate, boolean withLanguage, boolean withIssn) {
+        var expandedResource = setUpExistingResourceInS3(persistedCandidate, withLanguage, withIssn);
         var indexDocument = createExpectedNviIndexDocument(expandedResource, persistedCandidate);
         return IndexDocumentWithConsumptionAttributes.from(indexDocument);
     }
 
     private void setUpExistingResourceInS3(Candidate persistedCandidate) {
-        setUpExistingResourceInS3(persistedCandidate, true);
+        setUpExistingResourceInS3(persistedCandidate, true, true);
     }
 
-    private JsonNode setUpExistingResourceInS3(Candidate persistedCandidate, boolean withLanguage) {
-        var expandedResource = createExpandedResource(persistedCandidate, withLanguage);
+    private JsonNode setUpExistingResourceInS3(Candidate persistedCandidate, boolean withLanguage, boolean withIssn) {
+        var expandedResource = createExpandedResource(persistedCandidate, withLanguage, withIssn);
         var resourceIndexDocument = createResourceIndexDocument(expandedResource);
         var resourcePath = extractResourceIdentifier(persistedCandidate);
         insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
@@ -672,6 +696,13 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation) {
         return Candidate.upsert(createUpsertCandidateRequest(topLevelOrg, affiliation), candidateRepository,
+                                periodRepository)
+                   .orElseThrow();
+    }
+
+    private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation, ChannelType channelType) {
+        return Candidate.upsert(createUpsertCandidateRequest(topLevelOrg, affiliation, channelType),
+                                candidateRepository,
                                 periodRepository)
                    .orElseThrow();
     }
