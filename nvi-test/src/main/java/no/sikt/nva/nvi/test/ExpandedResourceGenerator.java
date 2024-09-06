@@ -27,10 +27,19 @@ public final class ExpandedResourceGenerator {
     }
 
     public static JsonNode createExpandedResource(Candidate candidate) {
-        return createExpandedResource(candidate, Collections.emptyList());
+        return createExpandedResource(candidate, Collections.emptyList(), true);
+    }
+
+    public static JsonNode createExpandedResource(Candidate candidate, boolean populateLanguage) {
+        return createExpandedResource(candidate, Collections.emptyList(), populateLanguage);
     }
 
     public static JsonNode createExpandedResource(Candidate candidate, List<URI> nonNviContributorAffiliationIds) {
+        return createExpandedResource(candidate, nonNviContributorAffiliationIds, true);
+    }
+
+    public static JsonNode createExpandedResource(Candidate candidate, List<URI> nonNviContributorAffiliationIds,
+                                                  boolean populateLanguage) {
         var root = objectMapper.createObjectNode();
 
         root.put("id", candidate.getPublicationId().toString());
@@ -56,6 +65,9 @@ public final class ExpandedResourceGenerator {
         reference.set("publicationContext", publicationContext);
 
         entityDescription.set("reference", reference);
+        if (populateLanguage) {
+            entityDescription.put("language", "http://lexvo.org/id/iso639-3/nob");
+        }
 
         root.set("entityDescription", entityDescription);
 

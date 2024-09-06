@@ -91,6 +91,7 @@ public final class IndexDocumentTestUtils {
                        mapToContributors(ExpandedResourceGenerator.extractContributors(expandedResource), candidate))
                    .withPublicationChannel(getPublicationChannel(candidate, expandedResource))
                    .withPages(getPages(expandedResource))
+                   .withLanguage(extractOptionalLanguage(expandedResource))
                    .build();
     }
 
@@ -155,6 +156,10 @@ public final class IndexDocumentTestUtils {
                    .withEnd(randomString())
                    .withNumberOfPages(randomString())
                    .build();
+    }
+
+    private static String extractOptionalLanguage(JsonNode expandedResource) {
+        return extractJsonNodeTextValue(expandedResource, "/entityDescription/language");
     }
 
     private static Pages getPages(JsonNode expandedResource) {
