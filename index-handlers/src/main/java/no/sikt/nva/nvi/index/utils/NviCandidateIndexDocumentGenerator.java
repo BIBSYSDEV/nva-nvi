@@ -183,12 +183,12 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withTitle(extractMainTitle())
                    .withPublicationChannel(buildPublicationChannel())
                    .withPages(extractPages())
-                   .withLanguage(extractOptionalLanguage())
+                   .withLanguage(extractLanguage())
                    .build();
     }
 
-    private String extractOptionalLanguage() {
-        return extractOptJsonNodeTextValue(expandedResource, JSON_PTR_LANGUAGE).orElse(null);
+    private String extractLanguage() {
+        return extractJsonNodeTextValue(expandedResource, JSON_PTR_LANGUAGE);
     }
 
     private Pages extractPages() {
