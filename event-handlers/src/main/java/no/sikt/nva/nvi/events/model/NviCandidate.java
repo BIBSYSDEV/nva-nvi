@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.model;
 
+import static java.util.Objects.nonNull;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -47,7 +48,7 @@ public record NviCandidate(URI publicationId,
                    .withVerifiedCreators(details.creators().stream()
                                              .map(NviCandidate::mapToNviCreator)
                                              .toList())
-                   .withChannelType(details.channelType().getValue())
+                   .withChannelType(nonNull(details.channelType()) ? details.channelType().getValue() : null)
                    .withPublicationChannelId(details.publicationChannelId())
                    .withLevel(details.level())
                    .withBasePoints(candidate.getBasePoints())
