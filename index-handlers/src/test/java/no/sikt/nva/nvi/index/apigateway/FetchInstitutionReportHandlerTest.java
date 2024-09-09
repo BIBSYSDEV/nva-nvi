@@ -86,6 +86,7 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
+import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -190,11 +191,13 @@ public class FetchInstitutionReportHandlerTest {
         var year = "2021";
         var request = createRequest(topLevelCristinOrg, MANAGE_NVI_CANDIDATES, topLevelCristinOrg,
                                     Map.of(YEAR, year)).build();
+        var topLevelCristinOrgIdentifier = UriWrapper.fromUri(topLevelCristinOrg).getLastPathElement();
         handler.handleRequest(request, output, CONTEXT);
 
         var expectedSearchParameters = CandidateSearchParameters.builder()
                                            .withYear(year)
                                            .withTopLevelCristinOrg(topLevelCristinOrg)
+                                           .withAffiliations(List.of(topLevelCristinOrgIdentifier))
                                            .withSearchResultParameters(
                                                SearchResultParameters.builder().withSize(PAGE_SIZE).build())
                                            .build();
