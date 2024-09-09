@@ -86,6 +86,7 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
+import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -195,6 +196,7 @@ public class FetchInstitutionReportHandlerTest {
         var expectedSearchParameters = CandidateSearchParameters.builder()
                                            .withYear(year)
                                            .withTopLevelCristinOrg(topLevelCristinOrg)
+                                           .withAffiliations(List.of(extractIdentifier(topLevelCristinOrg)))
                                            .withSearchResultParameters(
                                                SearchResultParameters.builder().withSize(PAGE_SIZE).build())
                                            .build();
@@ -275,8 +277,13 @@ public class FetchInstitutionReportHandlerTest {
         return CandidateSearchParameters.builder()
                    .withYear(String.valueOf(CURRENT_YEAR))
                    .withTopLevelCristinOrg(topLevelCristinOrg)
+                   .withAffiliations(List.of(extractIdentifier(topLevelCristinOrg)))
                    .withSearchResultParameters(resultParameters)
                    .build();
+    }
+
+    private static String extractIdentifier(URI topLevelCristinOrg) {
+        return UriWrapper.fromUri(topLevelCristinOrg).getLastPathElement();
     }
 
     private static Stream<Arguments> listSupportedMediaTypes() {
