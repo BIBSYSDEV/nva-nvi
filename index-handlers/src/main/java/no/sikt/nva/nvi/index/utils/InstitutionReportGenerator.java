@@ -71,6 +71,8 @@ public class InstitutionReportGenerator {
         var hits = search(offset);
         addHitsToListOfCandidates(hits, fetchedCandidates);
         while (thereAreMoreHitsToFetch(hits, fetchedCandidates.size())) {
+            logger.info("There are more candidates to fetch. Total hits: {}, fetched candidates: {}",
+                        hits.total().value(), fetchedCandidates.size());
             offset += searchPageSize;
             hits = search(offset);
             addHitsToListOfCandidates(hits, fetchedCandidates);
