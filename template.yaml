@@ -1209,11 +1209,12 @@ Resources:
       AutoPublishAlias: live
       SnapStart:
         ApplyOn: PublishedVersions
+      Timeout: 30
       Environment:
         Variables:
           ALLOWED_ORIGIN: !Ref AllowedOrigins
           COGNITO_HOST: !Ref CognitoAuthorizationUri
-          INSTITUTION_REPORT_SEARCH_PAGE_SIZE: 250
+          INSTITUTION_REPORT_SEARCH_PAGE_SIZE: 350
       Policies:
         - !GetAtt ReadSearchInfrastructureSecretsPolicy.PolicyArn
       Events:
