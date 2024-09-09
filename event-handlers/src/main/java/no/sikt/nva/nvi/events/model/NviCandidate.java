@@ -39,25 +39,26 @@ public record NviCandidate(URI publicationId,
 
     public static NviCandidate fromCandidate(Candidate candidate) {
         var details = candidate.getPublicationDetails();
-
-        return NviCandidate.builder()
-                   .withPublicationId(candidate.getPublicationId())
-                   .withPublicationBucketUri(details.publicationBucketUri())
-                   .withInstanceType(details.type())
-                   .withDate(toPublicationDate(details.publicationDate()))
-                   .withVerifiedCreators(details.creators().stream()
-                                             .map(NviCandidate::mapToNviCreator)
-                                             .toList())
-                   .withChannelType(nonNull(details.channelType()) ? details.channelType().getValue() : null)
-                   .withPublicationChannelId(details.publicationChannelId())
-                   .withLevel(details.level())
-                   .withBasePoints(candidate.getBasePoints())
-                   .withIsInternationalCollaboration(candidate.isInternationalCollaboration())
-                   .withCollaborationFactor(candidate.getCollaborationFactor())
-                   .withCreatorShareCount(candidate.getCreatorShareCount())
-                   .withInstitutionPoints(candidate.getInstitutionPoints())
-                   .withTotalPoints(candidate.getTotalPoints())
-                   .build();
+        var candidateBuilder = NviCandidate.builder()
+                                   .withPublicationId(candidate.getPublicationId())
+                                   .withPublicationBucketUri(details.publicationBucketUri())
+                                   .withInstanceType(details.type())
+                                   .withDate(toPublicationDate(details.publicationDate()))
+                                   .withVerifiedCreators(details.creators().stream()
+                                                             .map(NviCandidate::mapToNviCreator)
+                                                             .toList())
+                                   .withPublicationChannelId(details.publicationChannelId())
+                                   .withLevel(details.level())
+                                   .withBasePoints(candidate.getBasePoints())
+                                   .withIsInternationalCollaboration(candidate.isInternationalCollaboration())
+                                   .withCollaborationFactor(candidate.getCollaborationFactor())
+                                   .withCreatorShareCount(candidate.getCreatorShareCount())
+                                   .withInstitutionPoints(candidate.getInstitutionPoints())
+                                   .withTotalPoints(candidate.getTotalPoints());
+        if (nonNull(details.channelType())) {
+            candidateBuilder.withChannelType(details.channelType().getValue());
+        }
+        return candidateBuilder.build();
     }
 
     @Override
