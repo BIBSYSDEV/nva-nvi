@@ -166,7 +166,7 @@ public class RequeueDlqHandlerTest {
         assertEquals(1, getFailureCount(response));
 
         var error = response.messages().stream().filter(a -> !a.success()).findFirst().get().error().get();
-        assertTrue(error.contains("Exception"));
+        assertTrue(error.contains("Could not process message"));
     }
 
     @Test
@@ -201,14 +201,8 @@ public class RequeueDlqHandlerTest {
 
     @Test
     void shouldHandleFailureToWriteUpdatedCandidate() {
-        var candidate = createCandidateDao();
-
-        when(candidateRepository.findByPublicationId(any()))
-            .thenReturn(Optional.of(candidate))
-            .thenReturn(Optional.empty());
-
         when(candidateRepository.findCandidateById(any()))
-            .thenReturn(Optional.of(candidate));
+            .thenReturn(Optional.empty());
 
         when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
             .thenReturn(ReceiveMessageResponse.builder()

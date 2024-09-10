@@ -116,11 +116,6 @@ class CandidateTest extends LocalDynamoTest {
                                                                                randomUri()))));
     }
 
-    @Deprecated
-    public static Stream<Arguments> levelValues() {
-        return Stream.of(Arguments.of(DbLevel.LEVEL_ONE, "LevelOne"), Arguments.of(DbLevel.LEVEL_TWO, "LevelTwo"));
-    }
-
     @BeforeEach
     void setup() {
         localDynamo = initializeTestDatabase();
@@ -216,6 +211,11 @@ class CandidateTest extends LocalDynamoTest {
                                            .orElseThrow()
                                            .candidate();
         assertEquals(expectedCreatedDate, actualPersistedCandidate.createdDate());
+    }
+
+    @Test
+    void shouldNotUpdateReportedCandidate() {
+        var request = getUpdateRequestForExistingCandidate();
     }
 
     @Test
@@ -550,6 +550,11 @@ class CandidateTest extends LocalDynamoTest {
                                              List.of(randomApproval()));
         var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
         assertEquals(List.of(creator1affiliation, creator2affiliation), candidate.getNviCreatorAffiliations());
+    }
+
+    @Deprecated
+    private static Stream<Arguments> levelValues() {
+        return Stream.of(Arguments.of(DbLevel.LEVEL_ONE, "LevelOne"), Arguments.of(DbLevel.LEVEL_TWO, "LevelTwo"));
     }
 
     private static InstitutionPoints createInstitutionPoints(URI institutionId, BigDecimal institutionPoints,
