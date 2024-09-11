@@ -39,7 +39,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -48,7 +47,6 @@ import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.commons.json.JsonSerializable;
-import no.unit.nva.language.LanguageDescription;
 import no.unit.nva.language.LanguageMapper;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
@@ -81,7 +79,6 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
     private static final String REPORT_PENDING_VALUE = "?";
     private static final String REPORT_APPROVED_VALUE = "J";
     private static final String REPORT_DISPUTED_VALUE = "T";
-    private static final String UNSUPPORTED_LANGUAGE = "Annet språk";
 
     public static NviCandidateIndexDocument from(JsonNode expandedResource, Candidate candidate,
                                                  UriRetriever uriRetriever) {
@@ -174,9 +171,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
     }
 
     private String mapLanguageFromUri(URI languageUri) {
-        return Optional.ofNullable(LanguageMapper.getLanguageByUri(languageUri))
-                   .map(LanguageDescription::getNob)
-                   .orElse(UNSUPPORTED_LANGUAGE);
+        return LanguageMapper.getLanguageByUri(languageUri).getNob();
     }
 
     private void addOptionalPublicationChannelValues(Map<InstitutionReportHeader, String> keyValueMap) {
