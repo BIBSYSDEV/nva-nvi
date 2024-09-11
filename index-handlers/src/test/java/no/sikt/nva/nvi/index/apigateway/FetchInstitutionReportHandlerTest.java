@@ -160,8 +160,24 @@ public class FetchInstitutionReportHandlerTest {
     void shouldReturnReportWithLanguageLabel(String languageUri, String expectedLabel) throws IOException {
         var topLevelCristinOrg = randomCristinOrgUri();
         mockCandidatesWithLanguage(languageUri, topLevelCristinOrg);
+
         handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
+
         var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
+        var actualLanguages = ExcelWorkbookUtil.extractLinesInLanguageColumn(new ByteArrayInputStream(decodedResponse));
+        assertTrue(actualLanguages.stream().allMatch(actualLabel -> actualLabel.equals(expectedLabel)));
+    }
+
+    @Test
+    void shouldReturnReportWithLanguageLabelOtherForUnsupportedLanguageLabel() throws IOException {
+        var topLevelCristinOrg = randomCristinOrgUri();
+        var unsupportedLanguageUri = "http://www.lexvo.org/page/iso639-3/ben";
+        mockCandidatesWithLanguage(unsupportedLanguageUri, topLevelCristinOrg);
+
+        handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
+
+        var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
+        var expectedLabel = "Annet språk";
         var actualLanguages = ExcelWorkbookUtil.extractLinesInLanguageColumn(new ByteArrayInputStream(decodedResponse));
         assertTrue(actualLanguages.stream().allMatch(actualLabel -> actualLabel.equals(expectedLabel)));
     }
@@ -404,7 +420,7 @@ public class FetchInstitutionReportHandlerTest {
 
     private static String getExpectedLanguageLabel(NviCandidateIndexDocument document) {
         var languageUri = document.publicationDetails().language();
-        return LanguageLabelUtil.getLabel(languageUri).orElse("Andre språk");
+        return nonNull(languageUri) ? LanguageLabelUtil.getLabel(languageUri).orElse("Annet språk") : EMPTY_STRING;
     }
 
     private ExcelWorkbookGenerator getExpectedReport(List<NviCandidateIndexDocument> candidatesInIndex,
