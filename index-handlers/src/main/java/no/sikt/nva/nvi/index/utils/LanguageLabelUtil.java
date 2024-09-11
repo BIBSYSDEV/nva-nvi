@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.model.document;
+package no.sikt.nva.nvi.index.utils;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -20,8 +20,7 @@ public final class LanguageLabelUtil {
     }
 
     private static Map<String, String> readStaticLanguageLabels() {
-        return IoUtils.linesfromResource(LANGUAGE_LABELS_PATH)
-                   .stream()
+        return IoUtils.linesfromResource(LANGUAGE_LABELS_PATH).stream()
                    .map(LanguageLabelUtil::splitByLineSeperator)
                    .collect(Collectors.toMap(parts -> parts[0], parts -> parts[1]));
     }

@@ -79,7 +79,7 @@ import no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
-import no.sikt.nva.nvi.index.model.document.LanguageLabelUtil;
+import no.sikt.nva.nvi.index.utils.LanguageLabelUtil;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;

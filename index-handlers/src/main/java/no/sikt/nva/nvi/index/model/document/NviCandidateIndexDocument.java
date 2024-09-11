@@ -44,6 +44,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
+import no.sikt.nva.nvi.index.utils.LanguageLabelUtil;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.commons.json.JsonSerializable;
