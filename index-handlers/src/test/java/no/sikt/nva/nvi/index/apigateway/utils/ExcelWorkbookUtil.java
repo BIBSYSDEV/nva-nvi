@@ -1,10 +1,12 @@
 package no.sikt.nva.nvi.index.apigateway.utils;
 
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITUTION_ID;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_LANGUAGE;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -30,17 +32,26 @@ public class ExcelWorkbookUtil {
     public static List<String> extractLinesInInstitutionIdentifierColumn(InputStream inputStream) {
         try (var workbook = new XSSFWorkbook(inputStream)) {
             var sheet = workbook.getSheetAt(FIRST_SHEET_INDEX);
-            return extractInstitutionIdColumn(sheet);
+            return extractHeaderColumn(sheet, INSTITUTION_ID);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static List<String> extractInstitutionIdColumn(XSSFSheet sheet) {
+    public static List<String> extractLinesInLanguageColumn(InputStream inputStream) {
+        try (var workbook = new XSSFWorkbook(inputStream)) {
+            var sheet = workbook.getSheetAt(FIRST_SHEET_INDEX);
+            return extractHeaderColumn(sheet, PUBLICATION_LANGUAGE);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static List<String> extractHeaderColumn(XSSFSheet sheet, InstitutionReportHeader header) {
         var institutionIdColumn = new ArrayList<String>();
         for (var rowCounter = FIRST_DATA_ROW_INDEX; rowCounter <= sheet.getLastRowNum(); rowCounter++) {
             var row = sheet.getRow(rowCounter);
-            var institutionId = row.getCell(INSTITUTION_ID.getOrder()).getStringCellValue();
+            var institutionId = row.getCell(header.getOrder()).getStringCellValue();
             institutionIdColumn.add(institutionId);
         }
         return institutionIdColumn;

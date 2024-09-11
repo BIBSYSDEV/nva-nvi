@@ -127,6 +127,14 @@ public final class IndexDocumentTestUtils {
         return getBuilder(year, approvals, publicationDetails).build();
     }
 
+    public static NviCandidateIndexDocument indexDocumentWithLanguage(int currentYear, URI topLevelCristinOrg, String languageUri) {
+        var publicationDetails = publicationDetailsWithNviContributorsAffiliatedWith(topLevelCristinOrg)
+                                     .withLanguage(languageUri)
+                                     .build();
+        var approvals = createApprovals(topLevelCristinOrg, publicationDetails.nviContributors());
+        return getBuilder(currentYear, approvals, publicationDetails).build();
+    }
+
     public static NviCandidateIndexDocument indexDocumentWithoutOptionalPublicationChannelData(int year,
                                                                                                URI institutionId) {
         // This is not a valid state for candidates created in nva-nvi, but it may occur for candidates imported via
