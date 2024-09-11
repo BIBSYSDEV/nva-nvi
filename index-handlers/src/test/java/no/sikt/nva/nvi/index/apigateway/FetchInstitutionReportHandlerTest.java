@@ -79,7 +79,6 @@ import no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
-import no.sikt.nva.nvi.index.utils.LanguageLabelUtil;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
@@ -87,6 +86,7 @@ import no.sikt.nva.nvi.index.model.document.Pages;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
+import no.unit.nva.language.LanguageMapper;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
@@ -177,7 +177,7 @@ public class FetchInstitutionReportHandlerTest {
         handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
 
         var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
-        var expectedLabel = "Annet språk";
+        var expectedLabel = "Ukjent språk";
         var actualLanguages = ExcelWorkbookUtil.extractLinesInLanguageColumn(new ByteArrayInputStream(decodedResponse));
         assertTrue(actualLanguages.stream().allMatch(actualLabel -> actualLabel.equals(expectedLabel)));
     }
@@ -308,7 +308,7 @@ public class FetchInstitutionReportHandlerTest {
                          Arguments.of("http://lexvo.org/id/iso639-3/sme", "Nordsamisk"),
                          Arguments.of("http://lexvo.org/id/iso639-3/spa", "Spansk"),
                          Arguments.of("http://lexvo.org/id/iso639-3/swe", "Svensk"),
-                         Arguments.of("http://lexvo.org/page/iso639-3/deu", "Tysk"));
+                         Arguments.of("http://lexvo.org/id/iso639-3/deu", "Tysk"));
     }
 
     private static void mockCandidatesWithLanguage(String languageUri, URI topLevelCristinOrg) throws IOException {
@@ -420,7 +420,7 @@ public class FetchInstitutionReportHandlerTest {
 
     private static String getExpectedLanguageLabel(NviCandidateIndexDocument document) {
         var languageUri = document.publicationDetails().language();
-        return nonNull(languageUri) ? LanguageLabelUtil.getLabel(languageUri).orElse("Annet språk") : EMPTY_STRING;
+        return nonNull(languageUri) ? LanguageMapper.getLanguageByUri(URI.create(languageUri)).getNob() : EMPTY_STRING;
     }
 
     private ExcelWorkbookGenerator getExpectedReport(List<NviCandidateIndexDocument> candidatesInIndex,
