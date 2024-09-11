@@ -24,6 +24,7 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICA
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_TYPE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_IDENTIFIER;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_INSTANCE;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_LANGUAGE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_TITLE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLISHED_YEAR;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTING_YEAR;
@@ -77,6 +78,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
     private static final String REPORT_PENDING_VALUE = "?";
     private static final String REPORT_APPROVED_VALUE = "J";
     private static final String REPORT_DISPUTED_VALUE = "T";
+    private static final String UNSUPPORTED_LANGUAGE = "Annet språk";
 
     public static NviCandidateIndexDocument from(JsonNode expandedResource, Candidate candidate,
                                                  UriRetriever uriRetriever) {
@@ -151,6 +153,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             keyValueMap.put(POINTS_FOR_AFFILIATION,
                             getPointsForContributorAffiliation(topLevelOrganization, nviContributor, affiliation)
                                 .toString());
+            keyValueMap.put(PUBLICATION_LANGUAGE, getLanguageLabel());
             addOptionalPublicationChannelValues(keyValueMap);
             addOptionalPages(keyValueMap);
 
@@ -159,6 +162,12 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             logger.error("Failed to generate report lines for candidate: {}. Error {}", id, getStackTrace(exception));
             throw exception;
         }
+    }
+
+    private String getLanguageLabel() {
+        return nonNull(publicationDetails.language())
+                   ? LanguageLabelUtil.getLabel(publicationDetails.language()).orElse(UNSUPPORTED_LANGUAGE)
+                   : EMPTY_STRING;
     }
 
     private void addOptionalPublicationChannelValues(Map<InstitutionReportHeader, String> keyValueMap) {

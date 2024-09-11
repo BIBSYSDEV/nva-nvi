@@ -37,6 +37,7 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICA
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLISHED_YEAR;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTING_YEAR;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentMissingCreatorAffiliationPoints;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithLanguage;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutLanguage;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutOptionalPublicationChannelData;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutPages;
@@ -66,21 +67,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.nio.file.Path;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
+import no.sikt.nva.nvi.index.model.document.LanguageLabelUtil;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
@@ -88,12 +87,10 @@ import no.sikt.nva.nvi.index.model.document.Pages;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
-import no.sikt.nva.nvi.test.IndexDocumentTestUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
-import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.hamcrest.Matchers;
@@ -111,30 +108,9 @@ public class FetchInstitutionReportHandlerTest {
     private static final Context CONTEXT = mock(Context.class);
     private static final int PAGE_SIZE = Integer.parseInt(new Environment().readEnv(
         "INSTITUTION_REPORT_SEARCH_PAGE_SIZE"));
-    private static final Path LANGUAGE_LABELS_PATH = Path.of("supportedLanguageLabels.csv");
-    private static final String LINE_SEPERATOR = ",";
-    private static final Map<String, String> supportedLanguageLabels = readStaticLanguageLabels();
     private static SearchClient<NviCandidateIndexDocument> openSearchClient;
     private ByteArrayOutputStream output;
     private FetchInstitutionReportHandler handler;
-
-    public static Stream<Arguments> listSupportedLanguages() {
-        return Stream.of(Arguments.of("http://lexvo.org/id/iso639-3/eng"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/nob"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/nno"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/dan"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/fin"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/fra"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/isl"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/ita"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/nld"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/por"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/rus"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/sme"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/spa"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/swe"),
-                         Arguments.of("http://lexvo.org/page/iso639-3/deu"));
-    }
 
     @BeforeEach
     public void setUp() {
@@ -181,17 +157,13 @@ public class FetchInstitutionReportHandlerTest {
 
     @ParameterizedTest
     @MethodSource("listSupportedLanguages")
-    void shouldReturnReportWithLanguageLabel(String languageUri) throws IOException {
+    void shouldReturnReportWithLanguageLabel(String languageUri, String expectedLabel) throws IOException {
         var topLevelCristinOrg = randomCristinOrgUri();
-        var candidatesInIndex = List.of(IndexDocumentTestUtils.indexDocumentWithLanguage(CURRENT_YEAR,
-                                                                                         topLevelCristinOrg,
-                                                                                         languageUri));
-        when(openSearchClient.search(any())).thenReturn(createSearchResponse(candidatesInIndex));
-        var expectedLanguageLabel = supportedLanguageLabels.get(languageUri);
+        mockCandidatesWithLanguage(languageUri, topLevelCristinOrg);
         handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
         var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
         var actualLanguages = ExcelWorkbookUtil.extractLinesInLanguageColumn(new ByteArrayInputStream(decodedResponse));
-        assertThat(actualLanguages, Matchers.contains(expectedLanguageLabel));
+        assertTrue(actualLanguages.stream().allMatch(actualLabel -> actualLabel.equals(expectedLabel)));
     }
 
     @Test
@@ -305,15 +277,27 @@ public class FetchInstitutionReportHandlerTest {
         assertThat(response.getHeaders().get(CONTENT_TYPE), is(OOXML_SHEET.toString()));
     }
 
-    private static Map<String, String> readStaticLanguageLabels() {
-        return IoUtils.linesfromResource(LANGUAGE_LABELS_PATH)
-                   .stream()
-                   .map(FetchInstitutionReportHandlerTest::splitByLineSeperator)
-                   .collect(Collectors.toMap(parts -> parts[0], parts -> parts[1]));
+    private static Stream<Arguments> listSupportedLanguages() {
+        return Stream.of(Arguments.of("http://lexvo.org/id/iso639-3/eng", "Engelsk"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/nob", "Bokmål"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/nno", "Nynorsk"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/dan", "Dansk"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/fin", "Finsk"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/fra", "Fransk"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/isl", "Islandsk"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/ita", "Italiensk"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/nld", "Nederlandsk"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/por", "Portugisisk"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/rus", "Russisk"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/sme", "Nordsamisk"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/spa", "Spansk"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/swe", "Svensk"),
+                         Arguments.of("http://lexvo.org/page/iso639-3/deu", "Tysk"));
     }
 
-    private static String[] splitByLineSeperator(String line) {
-        return line.split(LINE_SEPERATOR);
+    private static void mockCandidatesWithLanguage(String languageUri, URI topLevelCristinOrg) throws IOException {
+        var candidatesInIndex = List.of(indexDocumentWithLanguage(CURRENT_YEAR, topLevelCristinOrg, languageUri));
+        when(openSearchClient.search(any())).thenReturn(createSearchResponse(candidatesInIndex));
     }
 
     private static List<NviCandidateIndexDocument> mockTwoCandidatesInIndex(URI topLevelCristinOrg)
@@ -420,7 +404,7 @@ public class FetchInstitutionReportHandlerTest {
 
     private static String getExpectedLanguageLabel(NviCandidateIndexDocument document) {
         var languageUri = document.publicationDetails().language();
-        return Optional.ofNullable(supportedLanguageLabels.get(languageUri)).orElse("Andre språk");
+        return LanguageLabelUtil.getLabel(languageUri).orElse("Andre språk");
     }
 
     private ExcelWorkbookGenerator getExpectedReport(List<NviCandidateIndexDocument> candidatesInIndex,
