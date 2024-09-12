@@ -25,6 +25,7 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICA
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_TYPE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_IDENTIFIER;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_INSTANCE;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_LANGUAGE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_TITLE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLISHED_YEAR;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTING_YEAR;
@@ -47,6 +48,7 @@ import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.commons.json.JsonSerializable;
+import no.unit.nva.language.LanguageMapper;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,6 +154,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             keyValueMap.put(POINTS_FOR_AFFILIATION,
                             getPointsForContributorAffiliation(topLevelOrganization, nviContributor, affiliation)
                                 .toString());
+            keyValueMap.put(PUBLICATION_LANGUAGE, getLanguageLabel());
             addOptionalPublicationChannelValues(keyValueMap);
             addOptionalPages(keyValueMap);
 
@@ -160,6 +163,16 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
             logger.error("Failed to generate report lines for candidate: {}. Error {}", id, getStackTrace(exception));
             throw exception;
         }
+    }
+
+    private String getLanguageLabel() {
+        return nonNull(publicationDetails.language())
+                   ? mapLanguageFromUri(URI.create(publicationDetails.language()))
+                   : EMPTY_STRING;
+    }
+
+    private String mapLanguageFromUri(URI languageUri) {
+        return LanguageMapper.getLanguageByUri(languageUri).getNob();
     }
 
     private void addOptionalPublicationChannelValues(Map<InstitutionReportHeader, String> keyValueMap) {

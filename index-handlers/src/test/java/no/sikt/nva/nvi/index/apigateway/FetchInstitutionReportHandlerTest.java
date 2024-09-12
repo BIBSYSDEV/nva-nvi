@@ -33,11 +33,14 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICA
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_TYPE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_IDENTIFIER;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_INSTANCE;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_LANGUAGE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_TITLE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLISHED_YEAR;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTING_YEAR;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentMissingCreatorAffiliationPoints;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithLanguage;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutIssn;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutLanguage;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutOptionalPublicationChannelData;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutPages;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomCristinOrgUri;
@@ -74,6 +77,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
+import no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil;
+import no.sikt.nva.nvi.index.apigateway.utils.LanguageLabelUtil;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
@@ -84,6 +89,7 @@ import no.sikt.nva.nvi.index.model.document.Pages;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
+import no.unit.nva.language.LanguageMapper;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
@@ -150,6 +156,34 @@ public class FetchInstitutionReportHandlerTest {
         var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
         var actual = fromInputStream(new ByteArrayInputStream(decodedResponse));
         assertEquals(expected, actual);
+    }
+
+    @ParameterizedTest
+    @MethodSource("listSupportedLanguages")
+    void shouldReturnReportWithLanguageLabel(String languageUri) throws IOException {
+        var topLevelCristinOrg = randomCristinOrgUri();
+        mockCandidatesWithLanguage(languageUri, topLevelCristinOrg);
+
+        handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
+
+        var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
+        var actualLanguages = ExcelWorkbookUtil.extractLinesInLanguageColumn(new ByteArrayInputStream(decodedResponse));
+        var expectedLabel = LanguageLabelUtil.getLabel(languageUri).orElse("Ukjent språk");
+        assertTrue(actualLanguages.stream().allMatch(actualLabel -> actualLabel.equals(expectedLabel)));
+    }
+
+    @Test
+    void shouldReturnReportWithLanguageLabelOtherForUnsupportedLanguageLabel() throws IOException {
+        var topLevelCristinOrg = randomCristinOrgUri();
+        var unsupportedLanguageUri = "http://www.lexvo.org/page/iso639-3/ben";
+        mockCandidatesWithLanguage(unsupportedLanguageUri, topLevelCristinOrg);
+
+        handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
+
+        var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
+        var expectedLabel = "Ukjent språk";
+        var actualLanguages = ExcelWorkbookUtil.extractLinesInLanguageColumn(new ByteArrayInputStream(decodedResponse));
+        assertTrue(actualLanguages.stream().allMatch(actualLabel -> actualLabel.equals(expectedLabel)));
     }
 
     @Test
@@ -263,6 +297,29 @@ public class FetchInstitutionReportHandlerTest {
         assertThat(response.getHeaders().get(CONTENT_TYPE), is(OOXML_SHEET.toString()));
     }
 
+    private static Stream<Arguments> listSupportedLanguages() {
+        return Stream.of(Arguments.of("http://lexvo.org/id/iso639-3/eng"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/nob"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/nno"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/dan"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/fin"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/fra"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/isl"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/ita"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/nld"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/por"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/rus"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/sme"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/spa"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/swe"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/deu"));
+    }
+
+    private static void mockCandidatesWithLanguage(String languageUri, URI topLevelCristinOrg) throws IOException {
+        var candidatesInIndex = List.of(indexDocumentWithLanguage(CURRENT_YEAR, topLevelCristinOrg, languageUri));
+        when(openSearchClient.search(any())).thenReturn(createSearchResponse(candidatesInIndex));
+    }
+
     private static List<NviCandidateIndexDocument> mockTwoCandidatesInIndex(URI topLevelCristinOrg)
         throws IOException {
         var firstDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
@@ -315,6 +372,7 @@ public class FetchInstitutionReportHandlerTest {
                        PAGE_END.getValue(),
                        PAGE_COUNT.getValue(),
                        PUBLICATION_TITLE.getValue(),
+                       PUBLICATION_LANGUAGE.getValue(),
                        GLOBAL_STATUS.getValue(),
                        PUBLICATION_CHANNEL_LEVEL_POINTS.getValue(),
                        INTERNATIONAL_COLLABORATION_FACTOR.getValue(),
@@ -363,6 +421,11 @@ public class FetchInstitutionReportHandlerTest {
 
     private static String getPagesBegin(Pages pages) {
         return nonNull(pages) && nonNull(pages.begin()) ? pages.begin() : EMPTY_STRING;
+    }
+
+    private static String getExpectedLanguageLabel(NviCandidateIndexDocument document) {
+        var languageUri = document.publicationDetails().language();
+        return nonNull(languageUri) ? LanguageMapper.getLanguageByUri(URI.create(languageUri)).getNob() : EMPTY_STRING;
     }
 
     private ExcelWorkbookGenerator getExpectedReport(List<NviCandidateIndexDocument> candidatesInIndex,
@@ -420,6 +483,7 @@ public class FetchInstitutionReportHandlerTest {
         expectedRow.add(getPagesEnd(document.publicationDetails().pages()));
         expectedRow.add(getNumberOfPages(document.publicationDetails().pages()));
         expectedRow.add(document.publicationDetails().title());
+        expectedRow.add(getExpectedLanguageLabel(document));
         expectedRow.add(getExpectedGlobalApprovalStatus(document.globalApprovalStatus()));
         expectedRow.add(document.publicationTypeChannelLevelPoints().toString());
         expectedRow.add(document.internationalCollaborationFactor().toString());
@@ -457,7 +521,8 @@ public class FetchInstitutionReportHandlerTest {
         var indexDocuments = List.of(indexDocumentWithoutPages(CURRENT_YEAR, topLevelCristinOrg),
                                      indexDocumentWithoutOptionalPublicationChannelData(CURRENT_YEAR,
                                                                                         topLevelCristinOrg),
-                                     indexDocumentWithoutIssn(CURRENT_YEAR, topLevelCristinOrg));
+                                     indexDocumentWithoutIssn(CURRENT_YEAR, topLevelCristinOrg),
+                                     indexDocumentWithoutLanguage(CURRENT_YEAR, topLevelCristinOrg));
         when(openSearchClient.search(any())).thenReturn(createSearchResponse(indexDocuments));
         return indexDocuments;
     }

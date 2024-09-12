@@ -120,6 +120,21 @@ public final class IndexDocumentTestUtils {
         return getBuilder(year, approvals, publicationDetails).build();
     }
 
+    public static NviCandidateIndexDocument indexDocumentWithoutLanguage(int year, URI institutionId) {
+        var publicationDetails =
+            publicationDetailsWithNviContributorsAffiliatedWith(institutionId).withLanguage(null).build();
+        var approvals = createApprovals(institutionId, publicationDetails.nviContributors());
+        return getBuilder(year, approvals, publicationDetails).build();
+    }
+
+    public static NviCandidateIndexDocument indexDocumentWithLanguage(int currentYear, URI topLevelCristinOrg, String languageUri) {
+        var publicationDetails = publicationDetailsWithNviContributorsAffiliatedWith(topLevelCristinOrg)
+                                     .withLanguage(languageUri)
+                                     .build();
+        var approvals = createApprovals(topLevelCristinOrg, publicationDetails.nviContributors());
+        return getBuilder(currentYear, approvals, publicationDetails).build();
+    }
+
     public static NviCandidateIndexDocument indexDocumentWithoutIssn(int year, URI institutionId) {
         var publicationDetails =
             publicationDetailsWithNviContributorsAffiliatedWith(institutionId).withPublicationChannel(

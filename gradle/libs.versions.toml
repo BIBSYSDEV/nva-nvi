@@ -1,6 +1,7 @@
 [versions]
 junit = { strictly = '5.10.2' }
 nva = { strictly = '1.40.12' }
+nvaLanguage = { strictly = '1.2.0' }
 jackson = { strictly = '2.16.1' }
 mockito = { strictly = '5.10.0' }
 hamcrest = { strictly = '2.2' }
@@ -42,6 +43,7 @@ nva-commons-pagination = { group = 'com.github.bibsysdev', name = 'pagination', 
 nva-commons-secrets = { group = 'com.github.bibsysdev', name = 'secrets', version.ref = 'nva' }
 nva-commons-clients = { group = 'com.github.bibsysdev', name = 'clients', version.ref = 'nva' }
 nva-eventhandlers = { group = 'com.github.bibsysdev', name = 'eventhandlers', version.ref = 'nva' }
+nva-language = { group = 'com.github.bibsysdev', name = 'nva-language', version.ref = 'nvaLanguage' }
 
 aws-sdk2-eventbridge = { group = 'software.amazon.awssdk', name = 'eventbridge', version.ref = 'awsSdk2' }
 aws-sdk2-urlconnectionclient = { group = 'software.amazon.awssdk', name = 'url-connection-client', version.ref = 'awsSdk2' }
