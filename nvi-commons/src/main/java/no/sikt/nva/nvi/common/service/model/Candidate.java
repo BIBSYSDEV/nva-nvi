@@ -333,6 +333,18 @@ public final class Candidate {
         return publicationDetails.getNviCreatorAffiliations();
     }
 
+    public void updateVersion(CandidateRepository candidateRepository) {
+        candidateRepository.findCandidateById(identifier)
+            .map(candidateDao -> updateVersion(candidateRepository, candidateDao))
+            .orElseThrow(CandidateNotFoundException::new);
+    }
+
+    private static CandidateDao updateVersion(CandidateRepository candidateRepository, CandidateDao candidateDao) {
+        var candidateWithNewVersion = candidateDao.copy().version(randomUUID().toString()).build();
+        candidateRepository.updateCandidate(candidateWithNewVersion);
+        return candidateWithNewVersion;
+    }
+
     private static boolean isNotExistingCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
         return !isExistingCandidate(request.publicationId(), repository);
     }
