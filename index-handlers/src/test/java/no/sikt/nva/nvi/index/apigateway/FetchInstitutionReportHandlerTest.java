@@ -39,8 +39,8 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLISH
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTING_YEAR;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentMissingCreatorAffiliationPoints;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithLanguage;
-import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutLanguage;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutIssn;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutLanguage;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutOptionalPublicationChannelData;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutPages;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomCristinOrgUri;
@@ -521,8 +521,7 @@ public class FetchInstitutionReportHandlerTest {
         var indexDocuments = List.of(indexDocumentWithoutPages(CURRENT_YEAR, topLevelCristinOrg),
                                      indexDocumentWithoutOptionalPublicationChannelData(CURRENT_YEAR,
                                                                                         topLevelCristinOrg),
-                                     indexDocumentWithoutIssn(CURRENT_YEAR, topLevelCristinOrg));
-                                                                                        topLevelCristinOrg),
+                                     indexDocumentWithoutIssn(CURRENT_YEAR, topLevelCristinOrg),
                                      indexDocumentWithoutLanguage(CURRENT_YEAR, topLevelCristinOrg));
         when(openSearchClient.search(any())).thenReturn(createSearchResponse(indexDocuments));
         return indexDocuments;
