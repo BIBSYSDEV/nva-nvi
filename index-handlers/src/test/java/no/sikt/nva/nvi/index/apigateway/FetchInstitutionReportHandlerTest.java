@@ -76,6 +76,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil;
+import no.sikt.nva.nvi.index.apigateway.utils.LanguageLabelUtil;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
@@ -157,7 +158,7 @@ public class FetchInstitutionReportHandlerTest {
 
     @ParameterizedTest
     @MethodSource("listSupportedLanguages")
-    void shouldReturnReportWithLanguageLabel(String languageUri, String expectedLabel) throws IOException {
+    void shouldReturnReportWithLanguageLabel(String languageUri) throws IOException {
         var topLevelCristinOrg = randomCristinOrgUri();
         mockCandidatesWithLanguage(languageUri, topLevelCristinOrg);
 
@@ -165,6 +166,7 @@ public class FetchInstitutionReportHandlerTest {
 
         var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
         var actualLanguages = ExcelWorkbookUtil.extractLinesInLanguageColumn(new ByteArrayInputStream(decodedResponse));
+        var expectedLabel = LanguageLabelUtil.getLabel(languageUri).orElse("Ukjent språk");
         assertTrue(actualLanguages.stream().allMatch(actualLabel -> actualLabel.equals(expectedLabel)));
     }
 
@@ -294,21 +296,21 @@ public class FetchInstitutionReportHandlerTest {
     }
 
     private static Stream<Arguments> listSupportedLanguages() {
-        return Stream.of(Arguments.of("http://lexvo.org/id/iso639-3/eng", "Engelsk"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/nob", "Bokmål"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/nno", "Nynorsk"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/dan", "Dansk"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/fin", "Finsk"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/fra", "Fransk"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/isl", "Islandsk"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/ita", "Italiensk"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/nld", "Nederlandsk"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/por", "Portugisisk"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/rus", "Russisk"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/sme", "Nordsamisk"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/spa", "Spansk"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/swe", "Svensk"),
-                         Arguments.of("http://lexvo.org/id/iso639-3/deu", "Tysk"));
+        return Stream.of(Arguments.of("http://lexvo.org/id/iso639-3/eng"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/nob"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/nno"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/dan"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/fin"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/fra"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/isl"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/ita"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/nld"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/por"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/rus"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/sme"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/spa"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/swe"),
+                         Arguments.of("http://lexvo.org/id/iso639-3/deu"));
     }
 
     private static void mockCandidatesWithLanguage(String languageUri, URI topLevelCristinOrg) throws IOException {
