@@ -42,6 +42,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -56,6 +57,7 @@ import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ConsumptionAttributes;
+import no.sikt.nva.nvi.index.model.document.ContributorType;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
@@ -70,6 +72,7 @@ import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -136,6 +139,20 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
         assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @Test
+    void shouldExtractNviContributorsToOwnArray() throws JsonProcessingException {
+        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
+        var event = createEvent(candidate.getIdentifier());
+        mockUriRetrieverOrgResponse(candidate);
+
+        handler.handleRequest(event, CONTEXT);
+
+        var actualContributors = extractActualNviContributors(candidate);
+        var expectedNviContributors = expectedIndexDocument.getNviContributors();
+        assertEquals(expectedNviContributors, actualContributors);
     }
 
     @Test
@@ -541,6 +558,20 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         partOfArrayNode.add(intermediateLevel);
         lowLevel.set("partOf", partOfArrayNode);
         return lowLevel;
+    }
+
+    private ArrayList<NviContributor> extractActualNviContributors(Candidate candidate) throws JsonProcessingException {
+        var actualContributors = new ArrayList<NviContributor>();
+        dtoObjectMapper.readTree(s3Writer.getFile(createPath(candidate)))
+            .at("/body/publicationDetails/nviContributors")
+            .iterator()
+            .forEachRemaining(jsonNode -> addToContributors(jsonNode, actualContributors));
+        return actualContributors;
+    }
+
+    private void addToContributors(JsonNode node, ArrayList<NviContributor> actualContributors) {
+        var contributor = attempt(() -> dtoObjectMapper.treeToValue(node, NviContributor.class)).orElseThrow();
+        actualContributors.add(contributor);
     }
 
     private void mockUriResponseForTopLevelAffiliation(Candidate candidate) {
