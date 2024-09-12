@@ -55,7 +55,6 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
-import no.sikt.nva.nvi.index.query.CandidateQuery.QueryFilterType;
 import no.sikt.nva.nvi.index.model.document.Approval;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.InstitutionPoints;
@@ -67,9 +66,9 @@ import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.OrderByFields;
-import no.sikt.nva.nvi.index.query.SearchAggregation;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
-import no.sikt.nva.nvi.test.IndexDocumentTestUtils;
+import no.sikt.nva.nvi.index.query.CandidateQuery.QueryFilterType;
+import no.sikt.nva.nvi.index.query.SearchAggregation;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
 import nva.commons.core.ioutils.IoUtils;
@@ -711,10 +710,13 @@ public class OpenSearchClientTest {
         if (contributor != null) {
             contributorBuilder.withName(contributor);
         }
-        return new PublicationDetails(randomString(), randomString(), title,
-                                      publicationDate,
-                                      List.of(contributorBuilder.build()),
-                                      randomPublicationChannel(), randomPages(), randomString());
+        return PublicationDetails.builder()
+                   .withTitle(title)
+                   .withPublicationDate(publicationDate)
+                   .withContributors(List.of(contributorBuilder.build()))
+                   .withPublicationChannel(randomPublicationChannel())
+                   .withPages(randomPages())
+                   .build();
     }
 
     private static Approval randomApprovalWithCustomerAndAssignee(URI affiliation, String assignee) {
@@ -751,9 +753,12 @@ public class OpenSearchClientTest {
     }
 
     private static PublicationDetails randomPublicationDetails() {
-        return new PublicationDetails(randomString(), randomString(), randomString(),
-                                      PublicationDate.builder().withYear(YEAR).build(),
-                                      List.of(), randomPublicationChannel(), randomPages(), randomString());
+        return PublicationDetails.builder()
+                   .withTitle(randomString())
+                   .withPublicationDate(PublicationDate.builder().withYear(YEAR).build())
+                   .withPublicationChannel(randomPublicationChannel())
+                   .withPages(randomPages())
+                   .build();
     }
 
     private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {

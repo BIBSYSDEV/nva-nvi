@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index.model.document;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
 
@@ -11,6 +10,7 @@ public record PublicationDetails(String id,
                                  String type,
                                  String title,
                                  PublicationDate publicationDate,
+                                 List<NviContributor> nviContributors,
                                  List<ContributorType> contributors,
                                  PublicationChannel publicationChannel,
                                  Pages pages,
@@ -20,20 +20,13 @@ public record PublicationDetails(String id,
         return new Builder();
     }
 
-    @JsonIgnore
-    public List<NviContributor> nviContributors() {
-        return contributors.stream()
-                   .filter(NviContributor.class::isInstance)
-                   .map(NviContributor.class::cast)
-                   .toList();
-    }
-
     public static final class Builder {
 
         private String id;
         private String type;
         private String title;
         private PublicationDate publicationDate;
+        private List<NviContributor> nviContributors;
         private List<ContributorType> contributors;
         private PublicationChannel publicationChannel;
         private Pages pages;
@@ -64,6 +57,10 @@ public record PublicationDetails(String id,
 
         public Builder withContributors(List<ContributorType> contributors) {
             this.contributors = contributors;
+            this.nviContributors = contributors.stream()
+                                       .filter(NviContributor.class::isInstance)
+                                       .map(NviContributor.class::cast)
+                                       .toList();
             return this;
         }
 
@@ -83,8 +80,8 @@ public record PublicationDetails(String id,
         }
 
         public PublicationDetails build() {
-            return new PublicationDetails(id, type, title, publicationDate, contributors, publicationChannel, pages,
-                                          language);
+            return new PublicationDetails(id, type, title, publicationDate, nviContributors, contributors,
+                                          publicationChannel, pages, language);
         }
     }
 }
