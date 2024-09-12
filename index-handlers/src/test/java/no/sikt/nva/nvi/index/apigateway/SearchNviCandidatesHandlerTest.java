@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.time.Year;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,7 +64,6 @@ import nva.commons.apigateway.GatewayResponse;
 import nva.commons.apigateway.exceptions.NotFoundException;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
-import nva.commons.logutils.LogUtils;
 import org.hamcrest.Matchers;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -467,9 +467,12 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     private static PublicationDetails randomPublicationDetails() {
-        return new PublicationDetails(randomString(), randomString(), randomString(),
-                                      PublicationDate.builder().withYear(randomString()).build(), List.of(),
-                                      randomPublicationChannel(), randomPages(), randomString());
+        return PublicationDetails.builder()
+                   .withTitle(randomString())
+                   .withPublicationDate(PublicationDate.builder().withYear(Year.now().toString()).build())
+                   .withPublicationChannel(randomPublicationChannel())
+                   .withPages(randomPages())
+                   .build();
     }
 
     private static InputStream createRequest(URI topLevelCristinOrgId, Map<String, String> queryParams, String userName)

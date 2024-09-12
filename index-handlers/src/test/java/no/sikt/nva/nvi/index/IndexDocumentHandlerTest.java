@@ -28,6 +28,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -136,6 +138,21 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
         assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @Test
+    void shouldExtractNviContributorsInSeparateList() {
+        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
+        mockUriRetrieverOrgResponse(candidate);
+
+        handler.handleRequest(createEvent(candidate.getIdentifier()), CONTEXT);
+
+        var actualNviContributors =
+            parseJson(s3Writer.getFile(createPath(candidate))).indexDocument().publicationDetails().nviContributors();
+        var expectedNviContributors = expectedIndexDocument.getNviContributors();
+        assertEquals(expectedNviContributors, actualNviContributors);
+        assertNotEquals(expectedIndexDocument.publicationDetails().contributors(), actualNviContributors);
     }
 
     @Test
