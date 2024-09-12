@@ -29,6 +29,7 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICA
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_LEVEL;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_LEVEL_POINTS;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_NAME;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_PISSN;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_TYPE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_IDENTIFIER;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_INSTANCE;
@@ -39,6 +40,7 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTI
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentMissingCreatorAffiliationPoints;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithLanguage;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutLanguage;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutIssn;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutOptionalPublicationChannelData;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutPages;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomCristinOrgUri;
@@ -356,6 +358,7 @@ public class FetchInstitutionReportHandlerTest {
                        PUBLICATION_INSTANCE.getValue(),
                        PUBLICATION_CHANNEL.getValue(),
                        PUBLICATION_CHANNEL_TYPE.getValue(),
+                       PUBLICATION_CHANNEL_PISSN.getValue(),
                        PUBLICATION_CHANNEL_LEVEL.getValue(),
                        CONTRIBUTOR_IDENTIFIER.getValue(),
                        INSTITUTION_ID.getValue(),
@@ -466,6 +469,7 @@ public class FetchInstitutionReportHandlerTest {
         var publicationChannel = document.publicationDetails().publicationChannel();
         expectedRow.add(nonNull(publicationChannel.id()) ? publicationChannel.id().toString() : EMPTY_STRING);
         expectedRow.add(nonNull(publicationChannel.type()) ? publicationChannel.type() : EMPTY_STRING);
+        expectedRow.add(nonNull(publicationChannel.printIssn()) ? publicationChannel.printIssn() : EMPTY_STRING);
         expectedRow.add(publicationChannel.scientificValue().getValue());
         expectedRow.add(nviContributor.id());
         expectedRow.add(affiliation.getInstitutionIdentifier());
@@ -516,6 +520,8 @@ public class FetchInstitutionReportHandlerTest {
         throws IOException {
         var indexDocuments = List.of(indexDocumentWithoutPages(CURRENT_YEAR, topLevelCristinOrg),
                                      indexDocumentWithoutOptionalPublicationChannelData(CURRENT_YEAR,
+                                                                                        topLevelCristinOrg),
+                                     indexDocumentWithoutIssn(CURRENT_YEAR, topLevelCristinOrg));
                                                                                         topLevelCristinOrg),
                                      indexDocumentWithoutLanguage(CURRENT_YEAR, topLevelCristinOrg));
         when(openSearchClient.search(any())).thenReturn(createSearchResponse(indexDocuments));

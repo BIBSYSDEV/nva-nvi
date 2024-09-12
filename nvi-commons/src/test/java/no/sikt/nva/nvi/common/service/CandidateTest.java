@@ -116,11 +116,6 @@ class CandidateTest extends LocalDynamoTest {
                                                                                randomUri()))));
     }
 
-    @Deprecated
-    public static Stream<Arguments> levelValues() {
-        return Stream.of(Arguments.of(DbLevel.LEVEL_ONE, "LevelOne"), Arguments.of(DbLevel.LEVEL_TWO, "LevelTwo"));
-    }
-
     @BeforeEach
     void setup() {
         localDynamo = initializeTestDatabase();
@@ -216,6 +211,11 @@ class CandidateTest extends LocalDynamoTest {
                                            .orElseThrow()
                                            .candidate();
         assertEquals(expectedCreatedDate, actualPersistedCandidate.createdDate());
+    }
+
+    @Test
+    void shouldNotUpdateReportedCandidate() {
+        var request = getUpdateRequestForExistingCandidate();
     }
 
     @Test
@@ -552,6 +552,26 @@ class CandidateTest extends LocalDynamoTest {
         assertEquals(List.of(creator1affiliation, creator2affiliation), candidate.getNviCreatorAffiliations());
     }
 
+    @Test
+    void shouldUpdateVersion() {
+        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()), candidateRepository,
+                                         periodRepository).orElseThrow();
+        var dao = candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow();
+
+        candidate.updateVersion(candidateRepository);
+
+        var updatedCandidate = Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
+        var updatedDao = candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow();
+
+        assertEquals(candidate, updatedCandidate);
+        assertNotEquals(dao.version(), updatedDao.version());
+    }
+
+    @Deprecated
+    private static Stream<Arguments> levelValues() {
+        return Stream.of(Arguments.of(DbLevel.LEVEL_ONE, "LevelOne"), Arguments.of(DbLevel.LEVEL_TWO, "LevelTwo"));
+    }
+
     private static InstitutionPoints createInstitutionPoints(URI institutionId, BigDecimal institutionPoints,
                                                              URI creatorId) {
         return new InstitutionPoints(institutionId, institutionPoints,
@@ -637,6 +657,11 @@ class CandidateTest extends LocalDynamoTest {
                                             createPoints(creators),
                                             randomInteger(), false,
                                             TestUtils.randomBigDecimal(), null, randomBigDecimal());
+    }
+
+    private UpsertCandidateRequest getRandomUpsertCandidateRequest() {
+        return getUpsertCandidateRequest(randomUri(), randomUri(), randomString(),
+                                         randomLevelExcluding(DbLevel.NON_CANDIDATE));
     }
 
     private UpsertCandidateRequest getUpsertCandidateRequest(URI creatorId, URI institutionId,

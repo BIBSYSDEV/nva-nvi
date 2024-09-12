@@ -1,10 +1,9 @@
 package no.sikt.nva.nvi.events.batch;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -16,7 +15,6 @@ import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.NviReceiveMessage;
 import no.sikt.nva.nvi.common.queue.NviReceiveMessageResponse;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.events.model.NviCandidate;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
@@ -25,20 +23,20 @@ import org.slf4j.LoggerFactory;
 public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, RequeueDlqOutput> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequeueDlqHandler.class);
-    private static final int MAX_FAILURES = 5;
-    private static final int MAX_SQS_MESSAGE_COUNT_LIMIT = 10;
-    public static final String DUPLICATE_MESSAGE_FOUND_IN_DLQ = "Duplicate message found in DLQ: %s";
-    public static final String DLQ_QUEUE_URL_ENV_NAME = "DLQ_QUEUE_URL";
-    public static final String HANDLER_FINISH_REPORT_LOG =
+    private static final String DUPLICATE_MESSAGE_FOUND_IN_DLQ = "Duplicate message found in DLQ: %s";
+    private static final String DLQ_QUEUE_URL_ENV_NAME = "DLQ_QUEUE_URL";
+    private static final String HANDLER_FINISH_REPORT_LOG =
         "Requeue DLQ finished. In total {} messages processed. Success count: {}. "
         + "Failure count: {}. {} batches with errors.";
-    public static final String REQUEUE_DLQ_STARTED_LOG = "Requeue DLQ started. {} messages to process.";
-    public static final String DELETING_MESSAGE_FROM_DLQ_LOG = "Deleting message from DLQ: {}";
-    public static final String PROCESSING_MESSAGE_LOG = "Processing message: {}";
-    public static final String CANDIDATE_IDENTIFIER_ATTRIBUTE_NAME = "candidateIdentifier";
-    public static final String COULD_NOT_UPDATE_CANDIDATE = "Could not update candidate: %s";
-    public static final String COULD_NOT_PROCESS_MESSAGE_LOG = "Could not process message: {}";
-
+    private static final String REQUEUE_DLQ_STARTED_LOG = "Requeue DLQ started. {} messages to process.";
+    private static final String DELETING_MESSAGE_FROM_DLQ_LOG = "Deleting message from DLQ: {}";
+    private static final String PROCESSING_MESSAGE_LOG = "Processing message: {}";
+    private static final String CANDIDATE_IDENTIFIER_ATTRIBUTE_NAME = "candidateIdentifier";
+    private static final String COULD_NOT_UPDATE_CANDIDATE = "Could not update candidate: %s";
+    private static final String COULD_NOT_PROCESS_MESSAGE_LOG = "Could not process message: %s. Missing message "
+                                                                + "attribute 'candidateIdentifier'";
+    private static final int MAX_FAILURES = 5;
+    private static final int MAX_SQS_MESSAGE_COUNT_LIMIT = 10;
     private final NviQueueClient queueClient;
     private final String queueUrl;
     private final CandidateRepository candidateRepository;
@@ -65,7 +63,7 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
     public RequeueDlqOutput handleRequest(RequeueDlqInput input, Context context) {
         LOGGER.info(REQUEUE_DLQ_STARTED_LOG, input.count());
 
-        Set<String> messageIds = new HashSet<>();
+        var messageIds = new HashSet<String>();
 
         var remainingMessages = input.count();
         var failedBatchesCount = 0;
@@ -96,19 +94,6 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
         return new RequeueDlqOutput(result, failedBatchesCount);
     }
 
-    private boolean shouldBreakLoop(NviReceiveMessageResponse response, int failedBatchesCount) {
-        return response.messages().isEmpty() || failedBatchesCount >= MAX_FAILURES;
-    }
-
-    private Set<NviProcessMessageResult> processMessages(NviReceiveMessageResponse response,
-                                                         Set<String> messageIds) {
-        return response.messages().stream()
-                   .map(message -> checkForDuplicates(messageIds, message))
-                   .map(this::processMessage)
-                   .map(this::deleteMessageFromDlq)
-                   .collect(Collectors.toSet());
-    }
-
     private static NviProcessMessageResult checkForDuplicates(Set<String> messageIds,
                                                               NviReceiveMessage message) {
         var isUnique = messageIds.add(message.messageId());
@@ -121,6 +106,19 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
                 Optional.of(warning));
         }
         return new NviProcessMessageResult(message, true, Optional.empty());
+    }
+
+    private boolean shouldBreakLoop(NviReceiveMessageResponse response, int failedBatchesCount) {
+        return response.messages().isEmpty() || failedBatchesCount >= MAX_FAILURES;
+    }
+
+    private Set<NviProcessMessageResult> processMessages(NviReceiveMessageResponse response,
+                                                         Set<String> messageIds) {
+        return response.messages().stream()
+                   .map(message -> checkForDuplicates(messageIds, message))
+                   .map(this::processMessage)
+                   .map(this::deleteMessageFromDlq)
+                   .collect(Collectors.toSet());
     }
 
     private int checkForFailedBatch(Set<NviProcessMessageResult> processedMessages) {
@@ -142,38 +140,21 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
             return input;
         }
 
-        try {
-            var identifier = input.message().messageAttributes().get(CANDIDATE_IDENTIFIER_ATTRIBUTE_NAME);
-
-            var nviCandidate = getNviCandidate(identifier);
-
-            var updatedCandidate = upsertNviCandidate(nviCandidate);
-
-            if (updatedCandidate.isEmpty()) {
+        var identifier = input.message().messageAttributes().get(CANDIDATE_IDENTIFIER_ATTRIBUTE_NAME);
+        if (nonNull(identifier)) {
+            try {
+                Candidate.fetch(() -> UUID.fromString(identifier), candidateRepository, periodRepository)
+                    .updateVersion(candidateRepository);
+            } catch (Exception exception) {
                 return new NviProcessMessageResult(input.message(), false,
-                                                   Optional.of(String.format(COULD_NOT_UPDATE_CANDIDATE, identifier)));
+                                                   Optional.of(
+                                                       String.format(COULD_NOT_UPDATE_CANDIDATE, identifier)));
             }
-        } catch (Exception e) {
-            LOGGER.error(COULD_NOT_PROCESS_MESSAGE_LOG, input.message().body(), e);
-            return new NviProcessMessageResult(input.message(), false, Optional.of(getStackTrace(e)));
+        } else {
+            var message = String.format(COULD_NOT_PROCESS_MESSAGE_LOG, input.message().body());
+            LOGGER.error(message);
+            return new NviProcessMessageResult(input.message(), false, Optional.of(message));
         }
-
         return new NviProcessMessageResult(input.message(), true, Optional.empty());
-    }
-
-    private Optional<Candidate> upsertNviCandidate(NviCandidate nviCandidate) {
-        return Candidate.upsert(nviCandidate, candidateRepository, periodRepository);
-    }
-
-    private NviCandidate getNviCandidate(String identifier) {
-        var candidate = Candidate.fetch(() -> UUID.fromString(identifier), candidateRepository,
-                                        periodRepository);
-        return NviCandidate.fromCandidate(candidate);
-    }
-
-    private static String getStackTrace(Exception exception) {
-        var stringWriter = new StringWriter();
-        exception.printStackTrace(new PrintWriter(stringWriter));
-        return stringWriter.toString();
     }
 }

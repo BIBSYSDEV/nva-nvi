@@ -21,6 +21,7 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICA
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_LEVEL;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_LEVEL_POINTS;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_NAME;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_PISSN;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_CHANNEL_TYPE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_IDENTIFIER;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_INSTANCE;
@@ -183,6 +184,8 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                         nonNull(publicationChannel.type()) ? publicationChannel.type() : EMPTY_STRING);
         keyValueMap.put(PUBLICATION_CHANNEL_NAME,
                         nonNull(publicationChannel.name()) ? publicationChannel.name() : EMPTY_STRING);
+        keyValueMap.put(PUBLICATION_CHANNEL_PISSN,
+                        nonNull(publicationChannel.printIssn()) ? publicationChannel.printIssn() : EMPTY_STRING);
     }
 
     private void addOptionalPages(Map<InstitutionReportHeader, String> keyValueMap) {

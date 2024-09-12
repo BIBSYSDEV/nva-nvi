@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate.Builder;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
@@ -47,6 +48,7 @@ public class RequeueDlqHandlerTest {
     private static final String DLQ_URL = "https://some-sqs-url";
     private RequeueDlqHandler handler;
     private SqsClient sqsClient;
+    private NviQueueClient client;
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
 
@@ -54,7 +56,7 @@ public class RequeueDlqHandlerTest {
     void setUp() {
         sqsClient = setUpSqsClient();
 
-        var client = new NviQueueClient(sqsClient);
+        client = new NviQueueClient(sqsClient);
 
         candidateRepository = setupCandidateRepository();
 
@@ -164,7 +166,7 @@ public class RequeueDlqHandlerTest {
         assertEquals(1, getFailureCount(response));
 
         var error = response.messages().stream().filter(a -> !a.success()).findFirst().get().error().get();
-        assertTrue(error.contains("Exception"));
+        assertTrue(error.contains("Could not process message"));
     }
 
     @Test
@@ -199,14 +201,8 @@ public class RequeueDlqHandlerTest {
 
     @Test
     void shouldHandleFailureToWriteUpdatedCandidate() {
-        var candidate = createCandidateDao();
-
-        when(candidateRepository.findByPublicationId(any()))
-            .thenReturn(Optional.of(candidate))
-            .thenReturn(Optional.empty());
-
         when(candidateRepository.findCandidateById(any()))
-            .thenReturn(Optional.of(candidate));
+            .thenReturn(Optional.empty());
 
         when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
             .thenReturn(ReceiveMessageResponse.builder()
@@ -221,6 +217,17 @@ public class RequeueDlqHandlerTest {
     void testMissingInputCount() throws JsonProcessingException {
         var input = JsonUtils.dtoObjectMapper.readValue("{}", RequeueDlqInput.class);
         assertEquals(10, input.count());
+    }
+
+    @Test
+    void shouldHandleCandidateWithoutChannelType() {
+        // This is not a valid state for candidates created in nva-nvi, but it may occur for candidates imported via
+        // Cristin.
+        var handler = setupHandlerReceivingCandidateWithoutChannelType();
+
+        var response = handler.handleRequest(new RequeueDlqInput(1), CONTEXT);
+
+        assertEquals(0, response.failedBatchesCount());
     }
 
     private static CandidateRepository setupCandidateRepository() {
@@ -245,31 +252,41 @@ public class RequeueDlqHandlerTest {
         return response.messages().stream().filter(a -> !a.success()).count();
     }
 
-    private static CandidateDao createCandidateDao() {
-        var institutionId = randomUri();
-        var institutionPoints = BigDecimal.valueOf(1);
-        var creatorId = randomUri();
+    private static CandidateDao createCandidateDao(DbCandidate candidate) {
         return CandidateDao.builder()
                    .identifier(UUID.randomUUID())
-                   .candidate(DbCandidate.builder()
-                                  .publicationDate(
-                                      DbPublicationDate.builder()
-                                          .day("1")
-                                          .month("1")
-                                          .year("2000").build())
-                                  .points(
-                                      List.of(generateInstitutionPoints(institutionId, institutionPoints, creatorId)))
-                                  .instanceType(InstanceType.ACADEMIC_ARTICLE.getValue())
-                                  .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))))
-                                  .creators(List.of(new DbCreator(creatorId, List.of(institutionId))))
-                                  .level(DbLevel.LEVEL_ONE)
-                                  .channelType(ChannelType.JOURNAL)
-                                  .totalPoints(BigDecimal.valueOf(1))
-                                  .publicationId(randomUri())
-                                  .applicable(true)
-                                  .publicationBucketUri(randomUri())
-                                  .build())
+                   .candidate(candidate)
                    .build();
+    }
+
+    private static CandidateDao candidateMissingChannelType() {
+        var candidate = randomCandidateBuilder().channelType(null).build();
+        return createCandidateDao(candidate);
+    }
+
+    private static CandidateDao createCandidateDao() {
+        var candidate = randomCandidateBuilder().build();
+        return createCandidateDao(candidate);
+    }
+
+    private static Builder randomCandidateBuilder() {
+        return DbCandidate.builder()
+                   .publicationDate(
+                       DbPublicationDate.builder()
+                           .day("1")
+                           .month("1")
+                           .year("2000").build())
+                   .points(
+                       List.of(generateInstitutionPoints(randomUri(), BigDecimal.ONE, randomUri())))
+                   .instanceType(InstanceType.ACADEMIC_ARTICLE.getValue())
+                   .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))))
+                   .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))))
+                   .level(DbLevel.LEVEL_ONE)
+                   .channelType(ChannelType.JOURNAL)
+                   .totalPoints(BigDecimal.valueOf(1))
+                   .publicationId(randomUri())
+                   .applicable(true)
+                   .publicationBucketUri(randomUri());
     }
 
     private static DbInstitutionPoints generateInstitutionPoints(URI institutionId, BigDecimal institutionPoints,
@@ -288,5 +305,17 @@ public class RequeueDlqHandlerTest {
                                                                                BigDecimal institutionPoints,
                                                                                URI creatorId) {
         return new DbCreatorAffiliationPoints(creatorId, institutionId, institutionPoints);
+    }
+
+    private RequeueDlqHandler setupHandlerReceivingCandidateWithoutChannelType() {
+        var repo = mock(CandidateRepository.class);
+        var candidate = candidateMissingChannelType();
+        when(repo.findByPublicationId(any())).thenReturn(Optional.of(candidate));
+        when(repo.findCandidateById(any())).thenReturn(Optional.of(candidate));
+        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
+            .thenReturn(ReceiveMessageResponse.builder().messages(generateMessages(1, "firstBatch")).build())
+            .thenReturn(ReceiveMessageResponse.builder().messages(List.of()).build());
+        var handler = new RequeueDlqHandler(client, DLQ_URL, repo, periodRepository);
+        return handler;
     }
 }

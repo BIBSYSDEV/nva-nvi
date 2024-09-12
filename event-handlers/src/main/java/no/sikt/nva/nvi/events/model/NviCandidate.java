@@ -8,10 +8,8 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 
@@ -36,29 +34,6 @@ public record NviCandidate(URI publicationId,
         return new Builder();
     }
 
-    public static NviCandidate fromCandidate(Candidate candidate) {
-        var details = candidate.getPublicationDetails();
-
-        return NviCandidate.builder()
-                   .withPublicationId(candidate.getPublicationId())
-                   .withPublicationBucketUri(details.publicationBucketUri())
-                   .withInstanceType(details.type())
-                   .withDate(toPublicationDate(details.publicationDate()))
-                   .withVerifiedCreators(details.creators().stream()
-                                             .map(NviCandidate::mapToNviCreator)
-                                             .toList())
-                   .withChannelType(details.channelType().getValue())
-                   .withPublicationChannelId(details.publicationChannelId())
-                   .withLevel(details.level())
-                   .withBasePoints(candidate.getBasePoints())
-                   .withIsInternationalCollaboration(candidate.isInternationalCollaboration())
-                   .withCollaborationFactor(candidate.getCollaborationFactor())
-                   .withCreatorShareCount(candidate.getCreatorShareCount())
-                   .withInstitutionPoints(candidate.getInstitutionPoints())
-                   .withTotalPoints(candidate.getTotalPoints())
-                   .build();
-    }
-
     @Override
     public boolean isApplicable() {
         return true;
@@ -73,18 +48,6 @@ public record NviCandidate(URI publicationId,
     @Override
     public PublicationDetails.PublicationDate publicationDate() {
         return mapToPublicationDate(date);
-    }
-
-    private static NviCreator mapToNviCreator(Creator creator) {
-        return new NviCreator(creator.id(), creator.affiliations());
-    }
-
-    private static PublicationDate toPublicationDate(
-        no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate publicationDate) {
-        return new PublicationDate(
-            publicationDate.day(),
-            publicationDate.month(),
-            publicationDate.year());
     }
 
     private static PublicationDetails.PublicationDate mapToPublicationDate(

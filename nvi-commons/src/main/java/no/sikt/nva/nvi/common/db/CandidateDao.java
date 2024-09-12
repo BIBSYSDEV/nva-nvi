@@ -197,7 +197,6 @@ public final class CandidateDao extends Dao {
     public boolean isNotReported() {
         return !isReported();
     }
-
     @Deprecated
     private String migratePeriodYear() {
         return isApplicableAndMissingPeriodYear() ? candidate.publicationDate().year() : periodYear;
