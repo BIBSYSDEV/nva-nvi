@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.index.model.search;
 
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_AGGREGATION_TYPE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_OFFSET_PARAM;
-import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_AFFILIATIONS;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ASSIGNEE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_CATEGORY;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_CONTRIBUTOR;
@@ -15,19 +14,15 @@ import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PAR
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_YEAR;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_SIZE_PARAM;
 import static no.sikt.nva.nvi.index.model.search.SearchResultParameters.DEFAULT_SORT_ORDER;
-import static nva.commons.apigateway.RestRequestHandler.COMMA;
 import java.net.URI;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.StringUtils;
-import nva.commons.core.paths.UriWrapper;
 
 public record CandidateSearchParameters(String searchTerm,
                                         List<String> affiliationIdentifiers,
@@ -41,6 +36,7 @@ public record CandidateSearchParameters(String searchTerm,
                                         String assignee,
                                         URI topLevelCristinOrg,
                                         String aggregationType,
+                                        String[] excludeFields,
                                         SearchResultParameters searchResultParameters) implements JsonSerializable {
 
     public static final String DEFAULT_AGGREGATION_TYPE = "all";
@@ -151,7 +147,7 @@ public record CandidateSearchParameters(String searchTerm,
     public static final class Builder {
 
         private String searchTerm;
-        private List<String> affiliations;
+        private List<String> affiliationIdentifiers;
         private boolean excludeSubUnits;
         private String filter;
         private String username;
@@ -162,18 +158,18 @@ public record CandidateSearchParameters(String searchTerm,
         private String assignee;
         private URI topLevelCristinOrg;
         private String aggregationType;
+        private String[] excludeFields;
         private SearchResultParameters searchResultParameters = SearchResultParameters.builder().build();
 
         private Builder() {
         }
-
         public Builder withSearchTerm(String searchTerm) {
             this.searchTerm = searchTerm;
             return this;
         }
 
-        public Builder withAffiliations(List<String> affiliations) {
-            this.affiliations = affiliations;
+        public Builder withAffiliations(List<String> affiliationIdentifiers) {
+            this.affiliationIdentifiers = affiliationIdentifiers;
             return this;
         }
 
@@ -227,15 +223,20 @@ public record CandidateSearchParameters(String searchTerm,
             return this;
         }
 
+        public Builder withExcludeFields(String[] excludeFields) {
+            this.excludeFields = excludeFields;
+            return this;
+        }
+
         public Builder withSearchResultParameters(SearchResultParameters searchResultParameters) {
             this.searchResultParameters = searchResultParameters;
             return this;
         }
 
         public CandidateSearchParameters build() {
-            return new CandidateSearchParameters(searchTerm, affiliations, excludeSubUnits, filter, username, year,
-                                                 category, title, contributor, assignee, topLevelCristinOrg,
-                                                 aggregationType, searchResultParameters);
+            return new CandidateSearchParameters(searchTerm, affiliationIdentifiers, excludeSubUnits, filter, username,
+                                                 year, category, title, contributor, assignee, topLevelCristinOrg,
+                                                 aggregationType, excludeFields, searchResultParameters);
         }
     }
 }

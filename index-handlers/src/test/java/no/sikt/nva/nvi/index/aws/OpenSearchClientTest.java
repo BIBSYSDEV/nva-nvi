@@ -28,6 +28,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNot.not;
+import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,6 +44,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -575,7 +577,18 @@ public class OpenSearchClientTest {
         assertThat(orgIds, not(containsInAnyOrder(NTNU_INSTITUTION_ID.toString())));
     }
 
-    @NotNull
+    @Test
+    void shouldExcludeFields() throws IOException, InterruptedException {
+        var document = singleNviCandidateIndexDocument().build();
+        addDocumentsToIndex(document);
+        var searchParameters = defaultSearchParameters()
+                                   .withExcludeFields(new String[]{"points"})
+                                   .build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        var hits = searchResponse.hits().hits();
+        assertNull(hits.get(0).source().points());
+    }
+
     private static String getLastPathElement(URI customer) {
         return UriWrapper.fromUri(customer).getLastPathElement();
     }
