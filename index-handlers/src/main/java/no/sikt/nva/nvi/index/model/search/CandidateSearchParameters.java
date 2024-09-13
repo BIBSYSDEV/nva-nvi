@@ -16,6 +16,7 @@ import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_SIZ
 import static no.sikt.nva.nvi.index.model.search.SearchResultParameters.DEFAULT_SORT_ORDER;
 import java.net.URI;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import no.unit.nva.commons.json.JsonSerializable;
@@ -158,7 +159,7 @@ public record CandidateSearchParameters(String searchTerm,
         private String assignee;
         private URI topLevelCristinOrg;
         private String aggregationType;
-        private List<String> excludeFields;
+        private List<String> excludeFields = new ArrayList<>();
         private SearchResultParameters searchResultParameters = SearchResultParameters.builder().build();
 
         private Builder() {
