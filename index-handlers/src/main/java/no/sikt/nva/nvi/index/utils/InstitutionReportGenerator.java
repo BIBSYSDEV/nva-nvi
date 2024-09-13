@@ -24,6 +24,7 @@ public class InstitutionReportGenerator {
 
     private static final Logger logger = LoggerFactory.getLogger(InstitutionReportGenerator.class);
     private static final int INITIAL_OFFSET = 0;
+    private static final String EXCLUDE_CONTRIBUTORS_FIELD = "publicationDetails.contributors";
     private final SearchClient<NviCandidateIndexDocument> searchClient;
     private final int searchPageSize;
     private final String year;
@@ -103,6 +104,7 @@ public class InstitutionReportGenerator {
                    .withTopLevelCristinOrg(topLevelOrganization)
                    .withAffiliations(List.of(topLevelOrganizationIdentifier))
                    .withSearchResultParameters(getSearchRequestParameters(offset))
+                   .withExcludeFields(List.of(EXCLUDE_CONTRIBUTORS_FIELD))
                    .build();
     }
 
