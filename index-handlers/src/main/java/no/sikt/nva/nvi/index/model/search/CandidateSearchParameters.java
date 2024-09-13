@@ -36,7 +36,7 @@ public record CandidateSearchParameters(String searchTerm,
                                         String assignee,
                                         URI topLevelCristinOrg,
                                         String aggregationType,
-                                        String[] excludeFields,
+                                        List<String> excludeFields,
                                         SearchResultParameters searchResultParameters) implements JsonSerializable {
 
     public static final String DEFAULT_AGGREGATION_TYPE = "all";
@@ -158,7 +158,7 @@ public record CandidateSearchParameters(String searchTerm,
         private String assignee;
         private URI topLevelCristinOrg;
         private String aggregationType;
-        private String[] excludeFields;
+        private List<String> excludeFields;
         private SearchResultParameters searchResultParameters = SearchResultParameters.builder().build();
 
         private Builder() {
@@ -223,7 +223,7 @@ public record CandidateSearchParameters(String searchTerm,
             return this;
         }
 
-        public Builder withExcludeFields(String[] excludeFields) {
+        public Builder withExcludeFields(List<String> excludeFields) {
             this.excludeFields = excludeFields;
             return this;
         }

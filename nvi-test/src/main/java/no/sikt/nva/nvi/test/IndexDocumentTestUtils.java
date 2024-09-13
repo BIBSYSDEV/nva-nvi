@@ -127,7 +127,8 @@ public final class IndexDocumentTestUtils {
         return getBuilder(year, approvals, publicationDetails).build();
     }
 
-    public static NviCandidateIndexDocument indexDocumentWithLanguage(int currentYear, URI topLevelCristinOrg, String languageUri) {
+    public static NviCandidateIndexDocument indexDocumentWithLanguage(int currentYear, URI topLevelCristinOrg,
+                                                                      String languageUri) {
         var publicationDetails = publicationDetailsWithNviContributorsAffiliatedWith(topLevelCristinOrg)
                                      .withLanguage(languageUri)
                                      .build();
@@ -180,6 +181,20 @@ public final class IndexDocumentTestUtils {
                    .withBegin(randomString())
                    .withEnd(randomString())
                    .withNumberOfPages(randomString())
+                   .build();
+    }
+
+    public static NviContributor randomNviContributor(URI institutionId) {
+        return NviContributor.builder()
+                   .withId(randomUri().toString())
+                   .withName(randomString())
+                   .withOrcid(randomString())
+                   .withRole(randomString())
+                   .withAffiliations(List.of(
+                       randomSubUnitNviAffiliation(institutionId),
+                       nviOrganization(institutionId),
+                       nviOrganization(randomUri()),
+                       randomNonNviAffiliation()))
                    .build();
     }
 
@@ -421,23 +436,9 @@ public final class IndexDocumentTestUtils {
                    .withId(randomUri().toString())
                    .withTitle(randomString())
                    .withPublicationDate(randomPublicationDate())
-                   .withContributors(List.of(randomContributor(institutionId), randomContributor(institutionId)))
+                   .withContributors(List.of(randomNviContributor(institutionId), randomNviContributor(institutionId)))
                    .withPublicationChannel(randomPublicationChannel())
                    .withPages(randomPages());
-    }
-
-    private static NviContributor randomContributor(URI institutionId) {
-        return NviContributor.builder()
-                   .withId(randomUri().toString())
-                   .withName(randomString())
-                   .withOrcid(randomString())
-                   .withRole(randomString())
-                   .withAffiliations(List.of(
-                       randomSubUnitNviAffiliation(institutionId),
-                       nviOrganization(institutionId),
-                       nviOrganization(randomUri()),
-                       randomNonNviAffiliation()))
-                   .build();
     }
 
     private static NviOrganization nviOrganization(URI id) {

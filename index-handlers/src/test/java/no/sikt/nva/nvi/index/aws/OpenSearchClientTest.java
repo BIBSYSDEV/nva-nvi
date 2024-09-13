@@ -15,6 +15,7 @@ import static no.sikt.nva.nvi.index.query.SearchAggregation.PENDING_COLLABORATIO
 import static no.sikt.nva.nvi.index.query.SearchAggregation.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.REJECTED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.TOTAL_COUNT_AGGREGATION_AGG;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomNviContributor;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomPages;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomPublicationChannel;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
@@ -28,9 +29,9 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNot.not;
-import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -44,7 +45,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -579,14 +579,21 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldExcludeFields() throws IOException, InterruptedException {
-        var document = singleNviCandidateIndexDocument().build();
+        var document = documentWithContributors();
         addDocumentsToIndex(document);
         var searchParameters = defaultSearchParameters()
-                                   .withExcludeFields(new String[]{"points"})
+                                   .withExcludeFields(List.of("publicationDetails.contributors"))
                                    .build();
         var searchResponse = openSearchClient.search(searchParameters);
-        var hits = searchResponse.hits().hits();
-        assertNull(hits.get(0).source().points());
+        var firstHit = searchResponse.hits().hits().get(0).source();
+        assertNull(firstHit.publicationDetails().contributors());
+    }
+
+    private static NviCandidateIndexDocument documentWithContributors() {
+        return singleNviCandidateIndexDocument()
+                   .withPublicationDetails(publicationDetailsBuilder()
+                                               .withContributors(List.of(randomNviContributor(randomUri()))).build())
+                   .build();
     }
 
     private static String getLastPathElement(URI customer) {
@@ -766,12 +773,15 @@ public class OpenSearchClientTest {
     }
 
     private static PublicationDetails randomPublicationDetails() {
+        return publicationDetailsBuilder().build();
+    }
+
+    private static PublicationDetails.Builder publicationDetailsBuilder() {
         return PublicationDetails.builder()
                    .withTitle(randomString())
                    .withPublicationDate(PublicationDate.builder().withYear(YEAR).build())
                    .withPublicationChannel(randomPublicationChannel())
-                   .withPages(randomPages())
-                   .build();
+                   .withPages(randomPages());
     }
 
     private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {
