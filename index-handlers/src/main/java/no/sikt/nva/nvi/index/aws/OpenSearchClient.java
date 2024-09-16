@@ -193,7 +193,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         return builder -> builder.field(resultParameters.orderBy()).order(getSortOrder(resultParameters.sortOrder()));
     }
 
-    private static SourceConfig getSourceConfig(CandidateSearchParameters parameters) {
+    private static SourceConfig getSourceConfigWithExcludedFields(CandidateSearchParameters parameters) {
         var filterBuilderFunction = getFilterBuilderFunction(parameters.excludeFields());
         return SourceConfig.of(sourceConfigBuilder -> sourceConfigBuilder.filter(filterBuilderFunction));
     }
@@ -220,7 +220,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         var query = SearchConstants.constructQuery(parameters);
         var resultParameters = parameters.searchResultParameters();
         var sortOptions = getSortOptions(parameters);
-        var sourceConfig = getSourceConfig(parameters);
+        var sourceConfig = getSourceConfigWithExcludedFields(parameters);
         return new SearchRequest.Builder()
                    .index(NVI_CANDIDATES_INDEX)
                    .query(query)
