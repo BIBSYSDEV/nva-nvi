@@ -1,0 +1,46 @@
+{
+  "@context": "https://bibsysdev.github.io/src/nvi-context.json",
+  "type": "NviCandidate",
+  "identifier": "37e1863b-f72a-4b2b-bbe4-fc7de3e579e6",
+  "numberOfApprovals": 2,
+  "publicationDetails": {
+    "id": "https://api.dev.nva.aws.unit.no/publication/01892ad6fc07-4ddfbfc5-3145-4b06-9f77-d4202d074380",
+    "type": "AcademicArticle",
+    "title": "Testing nvi flow 36",
+    "publicationDate": {
+      "year": "2023",
+      "month": "1"
+    },
+    "contributors": [
+      {
+        "type": "NviContributor",
+        "id": "https://api.dev.nva.aws.unit.no/cristin/person/1136323555",
+        "name": "Kir Truhacev",
+        "affiliations" : [ {
+          "type": "NviOrganization",
+          "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0",
+          "identifier": "194.0.0.0",
+          "partOf": []
+        } ],
+        "role" : "Creator"
+      }
+    ]
+  },
+  "approvals": [
+    {
+      "type": "Approval",
+      "assignee": "user1",
+      "institutionId": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
+      "labels": {
+        "nb": "Sikt – Kunnskapssektorens tjenesteleverandør",
+        "en": "Sikt - Norwegian Agency for Shared Services in Education and Research"
+      },
+      "approvalStatus": "Rejected"
+    },
+    {
+      "type": "Approval",
+      "institutionId": "https://api.dev.nva.aws.unit.no/cristin/organization/2333.0.0.0",
+      "approvalStatus": "Pending"
+    }
+  ]
+}
