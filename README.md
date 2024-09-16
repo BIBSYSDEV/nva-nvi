@@ -23,6 +23,10 @@ If the index already exists, and it is not necessary to update mappings, skip to
 
 ## How to requeue candidates in IndexDLQ
 
+The `IndexDLQ` is a shared DLQ for all handlers related to indexing.
+`NviRequeueDlqHandler` consumes messages from the `IndexDLQ`, and updates the candidate in the DB with a
+new version. This will trigger the indexing flow for the candidates.
+
 Trigger `NviRequeueDlqHandler` with (optional) input:
 
 ```
