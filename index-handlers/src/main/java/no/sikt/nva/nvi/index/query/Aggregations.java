@@ -9,7 +9,7 @@ import static no.sikt.nva.nvi.index.utils.AggregationFunctions.nestedAggregation
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.sumAggregation;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.termsAggregation;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.assignmentsQuery;
-import static no.sikt.nva.nvi.index.utils.QueryFunctions.containsPendingStatusQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.containsNonFinalizedStatusQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.fieldValueQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.isNotDisputeQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.multipleApprovalsQuery;
@@ -97,7 +97,7 @@ public final class Aggregations {
     }
 
     public static Aggregation finalizedCollaborationAggregation(String topLevelCristinOrg, ApprovalStatus status) {
-        return filterAggregation(mustMatch(statusQuery(topLevelCristinOrg, status), containsPendingStatusQuery(),
+        return filterAggregation(mustMatch(statusQuery(topLevelCristinOrg, status), containsNonFinalizedStatusQuery(),
                                            multipleApprovalsQuery()));
     }
 
