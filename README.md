@@ -24,18 +24,17 @@ If the index already exists, and it is not necessary to update mappings, skip to
 ## How to requeue candidates in IndexDLQ
 
 The `IndexDLQ` is a shared DLQ for all handlers related to indexing.
-`NviRequeueDlqHandler` consumes messages from the `IndexDLQ`, and updates the candidate in the DB with a
-new version. This will trigger the indexing flow for the candidates.
+`NviRequeueDlqHandler` consumes messages from the `IndexDLQ`, and updates the candidate in the DB
+with a new version. This will trigger the indexing flow for the candidates.
 
-Trigger `NviRequeueDlqHandler` with (optional) input:
+Default count (Number of messages consumed from DLQ) is 10. To specify another count, provide the
+count as input:
 
-```
+```json
 {
-  "count":  {integer}
+  "count": 100
 }
 ```
-
-Default count is 10.
 
 ## DLQ Redrives
 
