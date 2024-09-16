@@ -808,8 +808,8 @@ public class OpenSearchClientTest {
         map.put(REJECTED_COLLABORATION_AGG.getAggregationName(), 2);
         map.put(DISPUTED_AGG.getAggregationName(), 1);
         map.put(ASSIGNMENTS_AGG.getAggregationName(), 5);
-        map.put(COMPLETED_AGGREGATION_AGG.getAggregationName(), 5);
-        map.put(TOTAL_COUNT_AGGREGATION_AGG.getAggregationName(), 9);
+        map.put(COMPLETED_AGGREGATION_AGG.getAggregationName(), 7);
+        map.put(TOTAL_COUNT_AGGREGATION_AGG.getAggregationName(), 11);
         return map.entrySet().stream();
     }
 
