@@ -111,6 +111,7 @@ public class FetchInstitutionReportHandlerTest {
     private static final Context CONTEXT = mock(Context.class);
     private static final int PAGE_SIZE = Integer.parseInt(new Environment().readEnv(
         "INSTITUTION_REPORT_SEARCH_PAGE_SIZE"));
+    private static final String NESTED_FIELD_CONTRIBUTORS = "publicationDetails.contributors";
     private static SearchClient<NviCandidateIndexDocument> openSearchClient;
     private ByteArrayOutputStream output;
     private FetchInstitutionReportHandler handler;
@@ -235,6 +236,26 @@ public class FetchInstitutionReportHandlerTest {
                                            .withAffiliations(List.of(extractIdentifier(topLevelCristinOrg)))
                                            .withSearchResultParameters(
                                                SearchResultParameters.builder().withSize(PAGE_SIZE).build())
+                                           .withExcludeFields(List.of(NESTED_FIELD_CONTRIBUTORS))
+                                           .build();
+        verify(openSearchClient).search(eq(expectedSearchParameters));
+    }
+
+    @Test
+    void shouldExcludeNonNviContributorsFromSearch() throws IOException {
+        var topLevelCristinOrg = randomCristinOrgUri();
+        var year = "2021";
+        var request = createRequest(topLevelCristinOrg, MANAGE_NVI_CANDIDATES, topLevelCristinOrg,
+                                    Map.of(YEAR, year)).build();
+        handler.handleRequest(request, output, CONTEXT);
+
+        var expectedSearchParameters = CandidateSearchParameters.builder()
+                                           .withYear(year)
+                                           .withTopLevelCristinOrg(topLevelCristinOrg)
+                                           .withAffiliations(List.of(extractIdentifier(topLevelCristinOrg)))
+                                           .withSearchResultParameters(
+                                               SearchResultParameters.builder().withSize(PAGE_SIZE).build())
+                                           .withExcludeFields(List.of("publicationDetails.contributors"))
                                            .build();
         verify(openSearchClient).search(eq(expectedSearchParameters));
     }
@@ -338,6 +359,7 @@ public class FetchInstitutionReportHandlerTest {
                    .withTopLevelCristinOrg(topLevelCristinOrg)
                    .withAffiliations(List.of(extractIdentifier(topLevelCristinOrg)))
                    .withSearchResultParameters(resultParameters)
+                   .withExcludeFields(List.of(NESTED_FIELD_CONTRIBUTORS))
                    .build();
     }
 

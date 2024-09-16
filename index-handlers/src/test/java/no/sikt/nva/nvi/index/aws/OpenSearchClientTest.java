@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.aws;
 
+import static java.util.Objects.requireNonNull;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
@@ -15,6 +16,7 @@ import static no.sikt.nva.nvi.index.query.SearchAggregation.PENDING_COLLABORATIO
 import static no.sikt.nva.nvi.index.query.SearchAggregation.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.REJECTED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.TOTAL_COUNT_AGGREGATION_AGG;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomNviContributor;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomPages;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomPublicationChannel;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
@@ -30,6 +32,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -186,8 +189,8 @@ public class OpenSearchClientTest {
         var hits = searchResponse.hits().hits();
         var expectedFirst = sortOrder.equals("asc") ? createdFirst.createdDate() : createdSecond.createdDate();
         var expectedSecond = sortOrder.equals("asc") ? createdSecond.createdDate() : createdFirst.createdDate();
-        assertThat(hits.get(0).source().createdDate(), is(equalTo(expectedFirst)));
-        assertThat(hits.get(1).source().createdDate(), is(equalTo(expectedSecond)));
+        assertThat(requireNonNull(hits.get(0).source()).createdDate(), is(equalTo(expectedFirst)));
+        assertThat(requireNonNull(hits.get(1).source()).createdDate(), is(equalTo(expectedSecond)));
     }
 
     @Test
@@ -358,10 +361,10 @@ public class OpenSearchClientTest {
 
         var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(1));
-        assertTrue(searchResponse.hits()
-                       .hits()
-                       .get(0)
-                       .source()
+        assertTrue(requireNonNull(searchResponse.hits()
+                                      .hits()
+                                      .get(0)
+                                      .source())
                        .approvals()
                        .stream()
                        .anyMatch(approval -> approval.institutionId().equals(searchParameters.topLevelCristinOrg())));
@@ -575,7 +578,25 @@ public class OpenSearchClientTest {
         assertThat(orgIds, not(containsInAnyOrder(NTNU_INSTITUTION_ID.toString())));
     }
 
-    @NotNull
+    @Test
+    void shouldExcludeFields() throws IOException, InterruptedException {
+        var document = documentWithContributors();
+        addDocumentsToIndex(document);
+        var searchParameters = defaultSearchParameters()
+                                   .withExcludeFields(List.of("publicationDetails.contributors"))
+                                   .build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        var firstHit = searchResponse.hits().hits().get(0).source();
+        assertNull(requireNonNull(firstHit).publicationDetails().contributors());
+    }
+
+    private static NviCandidateIndexDocument documentWithContributors() {
+        return singleNviCandidateIndexDocument()
+                   .withPublicationDetails(publicationDetailsBuilder()
+                                               .withContributors(List.of(randomNviContributor(randomUri()))).build())
+                   .build();
+    }
+
     private static String getLastPathElement(URI customer) {
         return UriWrapper.fromUri(customer).getLastPathElement();
     }
@@ -753,12 +774,15 @@ public class OpenSearchClientTest {
     }
 
     private static PublicationDetails randomPublicationDetails() {
+        return publicationDetailsBuilder().build();
+    }
+
+    private static PublicationDetails.Builder publicationDetailsBuilder() {
         return PublicationDetails.builder()
                    .withTitle(randomString())
                    .withPublicationDate(PublicationDate.builder().withYear(YEAR).build())
                    .withPublicationChannel(randomPublicationChannel())
-                   .withPages(randomPages())
-                   .build();
+                   .withPages(randomPages());
     }
 
     private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {

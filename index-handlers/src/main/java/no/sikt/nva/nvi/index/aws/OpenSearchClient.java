@@ -12,13 +12,14 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Clock;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
-import no.sikt.nva.nvi.index.query.Aggregations;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
+import no.sikt.nva.nvi.index.query.Aggregations;
 import no.sikt.nva.nvi.index.utils.SearchConstants;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CachedValueProvider;
@@ -40,6 +41,8 @@ import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.SourceConfig;
+import org.opensearch.client.opensearch.core.search.SourceFilter;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.GetIndexRequest;
@@ -190,6 +193,16 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         return builder -> builder.field(resultParameters.orderBy()).order(getSortOrder(resultParameters.sortOrder()));
     }
 
+    private static SourceConfig getSourceConfigWithExcludedFields(CandidateSearchParameters parameters) {
+        var filterBuilderFunction = getFilterBuilderFunction(parameters.excludeFields());
+        return SourceConfig.of(sourceConfigBuilder -> sourceConfigBuilder.filter(filterBuilderFunction));
+    }
+
+    private static Function<SourceFilter.Builder, ObjectBuilder<SourceFilter>> getFilterBuilderFunction(
+        List<String> excludeFields) {
+        return filterBuilder -> filterBuilder.excludes(excludeFields);
+    }
+
     private static SortOrder getSortOrder(String sortOrder) {
         return SortOrder.Asc.jsonValue().equalsIgnoreCase(sortOrder) ? SortOrder.Asc : SortOrder.Desc;
     }
@@ -207,6 +220,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         var query = SearchConstants.constructQuery(parameters);
         var resultParameters = parameters.searchResultParameters();
         var sortOptions = getSortOptions(parameters);
+        var sourceConfig = getSourceConfigWithExcludedFields(parameters);
         return new SearchRequest.Builder()
                    .index(NVI_CANDIDATES_INDEX)
                    .query(query)
@@ -216,6 +230,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
                                                                    parameters.topLevelOrgUriAsString()))
                    .from(resultParameters.offset())
                    .size(resultParameters.size())
+                   .source(sourceConfig)
                    .build();
     }
 }
