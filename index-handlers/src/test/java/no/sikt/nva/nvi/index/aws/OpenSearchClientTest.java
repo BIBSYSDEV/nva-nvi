@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.aws;
 
+import static java.util.Objects.requireNonNull;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
@@ -188,8 +189,8 @@ public class OpenSearchClientTest {
         var hits = searchResponse.hits().hits();
         var expectedFirst = sortOrder.equals("asc") ? createdFirst.createdDate() : createdSecond.createdDate();
         var expectedSecond = sortOrder.equals("asc") ? createdSecond.createdDate() : createdFirst.createdDate();
-        assertThat(hits.get(0).source().createdDate(), is(equalTo(expectedFirst)));
-        assertThat(hits.get(1).source().createdDate(), is(equalTo(expectedSecond)));
+        assertThat(requireNonNull(hits.get(0).source()).createdDate(), is(equalTo(expectedFirst)));
+        assertThat(requireNonNull(hits.get(1).source()).createdDate(), is(equalTo(expectedSecond)));
     }
 
     @Test
@@ -360,10 +361,10 @@ public class OpenSearchClientTest {
 
         var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(1));
-        assertTrue(searchResponse.hits()
-                       .hits()
-                       .get(0)
-                       .source()
+        assertTrue(requireNonNull(searchResponse.hits()
+                                      .hits()
+                                      .get(0)
+                                      .source())
                        .approvals()
                        .stream()
                        .anyMatch(approval -> approval.institutionId().equals(searchParameters.topLevelCristinOrg())));
@@ -586,7 +587,7 @@ public class OpenSearchClientTest {
                                    .build();
         var searchResponse = openSearchClient.search(searchParameters);
         var firstHit = searchResponse.hits().hits().get(0).source();
-        assertNull(firstHit.publicationDetails().contributors());
+        assertNull(requireNonNull(firstHit).publicationDetails().contributors());
     }
 
     private static NviCandidateIndexDocument documentWithContributors() {
