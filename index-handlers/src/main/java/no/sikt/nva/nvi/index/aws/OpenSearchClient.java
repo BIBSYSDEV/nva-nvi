@@ -194,11 +194,11 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     }
 
     private static SourceConfig getSourceConfig(CandidateSearchParameters parameters) {
-        var filterBuilderFunction = getBuilderObjectBuilderFunction(parameters.excludeFields());
+        var filterBuilderFunction = getFilterBuilderFunction(parameters.excludeFields());
         return SourceConfig.of(sourceConfigBuilder -> sourceConfigBuilder.filter(filterBuilderFunction));
     }
 
-    private static Function<SourceFilter.Builder, ObjectBuilder<SourceFilter>> getBuilderObjectBuilderFunction(
+    private static Function<SourceFilter.Builder, ObjectBuilder<SourceFilter>> getFilterBuilderFunction(
         List<String> excludeFields) {
         return filterBuilder -> filterBuilder.excludes(excludeFields);
     }
