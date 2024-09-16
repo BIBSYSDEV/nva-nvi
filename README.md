@@ -25,11 +25,11 @@ to step 3.
 ## How to requeue candidates in IndexDLQ
 
 The `IndexDLQ` is a shared DLQ for all handlers related to indexing.
-`NviRequeueDlqHandler` consumes messages from the `IndexDLQ`, and updates the 
+`NviRequeueDlqHandler` consumes messages from the `IndexDLQ`, and updates the
 candidate in the DB with a new version. This will trigger the indexing flow
 for the candidates.
 
-Default `count` (number of messages consumed from DLQ) is 10. To specify 
+Default `count` (number of messages consumed from DLQ) is 10. To specify
 another `count`, provide it as input:
 
 ```json
@@ -40,6 +40,6 @@ another `count`, provide it as input:
 
 ## DLQ Redrives
 
-See template for which DLQs are available for redrive (configured with 
+See template for which DLQs are available for redrive (configured with
 `RedrivePolicy`). To start a DLQ redrive, locate the DLQ in the AWS console
 (SQS) and press _Start DLQ Redrive_.
