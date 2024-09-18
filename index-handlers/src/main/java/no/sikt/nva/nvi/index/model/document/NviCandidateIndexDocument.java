@@ -94,7 +94,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         return approvals.stream()
                    .filter(approval -> approval.institutionId().equals(institutionId))
                    .findAny()
-                   .orElseThrow();
+                   .orElse(null);
     }
 
     public BigDecimal getPointsForContributorAffiliation(URI topLevelCristinOrg,
