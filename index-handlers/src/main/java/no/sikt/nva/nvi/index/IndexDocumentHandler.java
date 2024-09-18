@@ -24,8 +24,8 @@ import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
-import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.PersistedResource;
+import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -179,7 +179,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
         DynamodbStreamRecord record) {
         var candidate = fetchCandidate(record);
-        return generateIndexDocumentWithConsumptionAttributes(candidate);
+        return candidate.isApplicable() ? generateIndexDocumentWithConsumptionAttributes(candidate) : null;
     }
 
     private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
