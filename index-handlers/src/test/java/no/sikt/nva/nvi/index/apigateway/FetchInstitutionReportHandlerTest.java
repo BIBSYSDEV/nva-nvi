@@ -98,7 +98,6 @@ import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.hamcrest.Matchers;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -334,7 +333,6 @@ public class FetchInstitutionReportHandlerTest {
         assertThat(response.getHeaders().get(CONTENT_TYPE), is(OOXML_SHEET.toString()));
     }
 
-    @NotNull
     private static List<NviCandidateIndexDocument> mockCandidateWithoutApprovals(URI topLevelCristinOrg)
         throws IOException {
         var indexDocumentMissingApprovals = indexDocumentMissingApprovals(CURRENT_YEAR, topLevelCristinOrg);
