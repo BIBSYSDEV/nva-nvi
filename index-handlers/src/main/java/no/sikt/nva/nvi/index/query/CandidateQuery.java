@@ -7,7 +7,7 @@ import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.assignmentsQuery;
-import static no.sikt.nva.nvi.index.utils.QueryFunctions.containsPendingStatusQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.containsNonFinalizedStatusQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.disputeQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.fieldValueQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.matchAtLeastOne;
@@ -151,13 +151,13 @@ public class CandidateQuery {
             case APPROVED_AGG -> mustMatch(statusQuery(topLevelCristinOrg, APPROVED));
 
             case APPROVED_COLLABORATION_AGG -> mustMatch(statusQuery(topLevelCristinOrg, APPROVED),
-                                                         containsPendingStatusQuery(),
+                                                         containsNonFinalizedStatusQuery(),
                                                          multipleApprovalsQuery());
 
             case REJECTED_AGG -> mustMatch(statusQuery(topLevelCristinOrg, REJECTED));
 
             case REJECTED_COLLABORATION_AGG -> mustMatch(statusQuery(topLevelCristinOrg, REJECTED),
-                                                         containsPendingStatusQuery(),
+                                                         containsNonFinalizedStatusQuery(),
                                                          multipleApprovalsQuery());
 
             case DISPUTED_AGG -> mustMatch(disputeQuery(), institutionQuery(topLevelCristinOrg));

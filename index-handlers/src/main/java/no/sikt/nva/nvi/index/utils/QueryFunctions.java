@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.utils;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
@@ -95,8 +96,8 @@ public final class QueryFunctions {
                    .build()._toQuery();
     }
 
-    public static Query containsPendingStatusQuery() {
-        return nestedQuery(APPROVALS, fieldValueQuery(jsonPathOf(APPROVALS, APPROVAL_STATUS), PENDING.getValue()));
+    public static Query containsNonFinalizedStatusQuery() {
+        return matchAtLeastOne(containsStatusPendingQuery(), containsStatusNewQuery());
     }
 
     public static Query statusQuery(String customer, ApprovalStatus status) {
@@ -122,6 +123,14 @@ public final class QueryFunctions {
         return nestedQuery(APPROVALS,
                            fieldValueQuery(jsonPathOf(APPROVALS, INSTITUTION_ID), customer),
                            fieldValueQuery(jsonPathOf(APPROVALS, ASSIGNEE), username));
+    }
+
+    private static Query containsStatusPendingQuery() {
+        return nestedQuery(APPROVALS, fieldValueQuery(jsonPathOf(APPROVALS, APPROVAL_STATUS), PENDING.getValue()));
+    }
+
+    private static Query containsStatusNewQuery() {
+        return nestedQuery(APPROVALS, fieldValueQuery(jsonPathOf(APPROVALS, APPROVAL_STATUS), NEW.getValue()));
     }
 
     private static Query matchAllQuery() {
