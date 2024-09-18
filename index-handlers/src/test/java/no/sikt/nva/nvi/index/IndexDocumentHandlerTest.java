@@ -30,7 +30,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -80,6 +80,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.sqs.model.SqsException;
 
 public class IndexDocumentHandlerTest extends LocalDynamoTest {
@@ -286,7 +287,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var event = createEvent(nonApplicableCandidate.getIdentifier());
         mockUriRetrieverOrgResponse(nonApplicableCandidate);
         handler.handleRequest(event, CONTEXT);
-        assertNull(s3Writer.getFile(createPath(nonApplicableCandidate)));
+        assertThrows(NoSuchKeyException.class, () -> s3Writer.getFile(createPath(nonApplicableCandidate)));
     }
 
     @Test
