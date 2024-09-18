@@ -15,6 +15,7 @@ import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandPublicationDetai
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
@@ -28,8 +29,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -276,6 +277,16 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
         assertEquals(ApprovalStatus.NEW, actualIndexDocument.getApprovalForInstitution(institutionId).approvalStatus());
+    }
+
+    @Test
+    void shouldNotBuildIndexDocumentForNonApplicableCandidate() {
+        var institutionId = randomUri();
+        var nonApplicableCandidate = setUpNonApplicableCandidate(institutionId);
+        var event = createEvent(nonApplicableCandidate.getIdentifier());
+        mockUriRetrieverOrgResponse(nonApplicableCandidate);
+        handler.handleRequest(event, CONTEXT);
+        assertNull(s3Writer.getFile(createPath(nonApplicableCandidate)));
     }
 
     @Test
@@ -558,6 +569,15 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         partOfArrayNode.add(intermediateLevel);
         lowLevel.set("partOf", partOfArrayNode);
         return lowLevel;
+    }
+
+    private Candidate setUpNonApplicableCandidate(URI institutionId) {
+        var candidate =
+            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
+                .orElseThrow();
+        return Candidate.updateNonCandidate(
+            createUpsertNonCandidateRequest(candidate.getPublicationId()),
+            candidateRepository).orElseThrow();
     }
 
     private void mockUriResponseForTopLevelAffiliation(Candidate candidate) {
