@@ -64,5 +64,5 @@ test {
     environment("BACKEND_CLIENT_SECRET_NAME", "My secret name")
     environment("PERSISTED_INDEX_DOCUMENT_QUEUE_URL", "PersistedIndexDocumentQueue")
     environment("INDEX_DLQ", "IndexDlq")
-    environment("INSTITUTION_REPORT_SEARCH_PAGE_SIZE", "1")
+    environment("INSTITUTION_REPORT_SEARCH_PAGE_SIZE", "4")
 }
