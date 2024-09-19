@@ -96,12 +96,17 @@ import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
+import org.apache.http.HttpVersion;
+import org.apache.http.message.BasicStatusLine;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
+import org.opensearch.client.Response;
+import org.opensearch.client.ResponseException;
 import org.zalando.problem.Problem;
 
 public class FetchInstitutionReportHandlerTest {
@@ -112,6 +117,7 @@ public class FetchInstitutionReportHandlerTest {
     private static final int PAGE_SIZE = Integer.parseInt(new Environment().readEnv(
         "INSTITUTION_REPORT_SEARCH_PAGE_SIZE"));
     private static final String NESTED_FIELD_CONTRIBUTORS = "publicationDetails.contributors";
+    private static final int HTTP_REQUEST_ENTITY_TOO_LARGE = 413;
     private static SearchClient<NviCandidateIndexDocument> openSearchClient;
     private ByteArrayOutputStream output;
     private FetchInstitutionReportHandler handler;
@@ -316,6 +322,32 @@ public class FetchInstitutionReportHandlerTest {
                               CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, String.class);
         assertThat(response.getHeaders().get(CONTENT_TYPE), is(OOXML_SHEET.toString()));
+    }
+
+    @Test
+    void shouldNotFailOn413ResponseOnSearchRequest() throws IOException {
+        var topLevelCristinOrg = randomCristinOrgUri();
+        var indexDocuments = List.of(randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg));
+        var responseException = mockResponseException();
+        when(openSearchClient.search(any()))
+            .thenThrow(responseException)
+            .thenReturn(createSearchResponse(indexDocuments));
+        var expected = getExpectedReport(indexDocuments, topLevelCristinOrg);
+
+        handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
+
+        var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
+        var actual = fromInputStream(new ByteArrayInputStream(decodedResponse));
+        assertEquals(expected, actual);
+    }
+
+    private static ResponseException mockResponseException() {
+        var statusLine = new BasicStatusLine(HttpVersion.HTTP_1_1, HTTP_REQUEST_ENTITY_TOO_LARGE, "null");
+        var response = Mockito.mock(Response.class);
+        when(response.getStatusLine()).thenReturn(statusLine);
+        var responseException = Mockito.mock(ResponseException.class);
+        when(responseException.getResponse()).thenReturn(response);
+        return responseException;
     }
 
     private static Stream<Arguments> listSupportedLanguages() {
