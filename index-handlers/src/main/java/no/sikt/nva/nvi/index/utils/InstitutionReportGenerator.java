@@ -93,7 +93,7 @@ public class InstitutionReportGenerator {
                 if (isRequestEntityTooLarge(responseException)) {
                     if (currentPageSize > MIN_PAGE_SIZE) {
                         currentPageSize /= EXPONENTITAL_PAGE_SIZE_DIVISOR;
-                        offset = Math.max(0, fetchedCandidates.size() - currentPageSize);
+                        offset = fetchedCandidates.size();
                     } else {
                         throw new RuntimeException(responseException);
                     }

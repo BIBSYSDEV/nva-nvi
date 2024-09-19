@@ -76,6 +76,7 @@ import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil;
@@ -342,11 +343,15 @@ public class FetchInstitutionReportHandlerTest {
     @Test
     void shouldNotFailOn413ResponseOnSearchRequest() throws IOException {
         var topLevelCristinOrg = randomCristinOrgUri();
-        var indexDocuments = List.of(randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg));
-        var responseException = mockResponseException();
+        var indexDocuments = IntStream.range(0, 7)
+                                 .mapToObj(i -> randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg))
+                                 .toList();
+        var firstResponse = indexDocuments.stream().limit(PAGE_SIZE).toList();
+        var secondResponse = indexDocuments.stream().skip(PAGE_SIZE).toList();
         when(openSearchClient.search(any()))
-            .thenThrow(responseException)
-            .thenReturn(createSearchResponse(indexDocuments));
+            .thenReturn(createSearchResponseWithTotal(firstResponse, 7))
+            .thenThrow(mockResponseException())
+            .thenReturn(createSearchResponseWithTotal(secondResponse, 7));
         var expected = getExpectedReport(indexDocuments, topLevelCristinOrg);
 
         handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
@@ -403,8 +408,8 @@ public class FetchInstitutionReportHandlerTest {
         var secondDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
         var candidatesInIndex = List.of(firstDocument, secondDocument);
         when(openSearchClient.search(any()))
-            .thenReturn(createSearchResponseWithTotal(firstDocument, candidatesInIndex.size()))
-            .thenReturn(createSearchResponseWithTotal(secondDocument, candidatesInIndex.size()));
+            .thenReturn(createSearchResponseWithTotal(List.of(firstDocument), candidatesInIndex.size()))
+            .thenReturn(createSearchResponseWithTotal(List.of(secondDocument), candidatesInIndex.size()));
         return candidatesInIndex;
     }
 

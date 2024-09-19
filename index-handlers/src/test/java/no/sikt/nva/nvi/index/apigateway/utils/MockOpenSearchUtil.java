@@ -30,11 +30,10 @@ public class MockOpenSearchUtil {
     }
 
     public static SearchResponse<NviCandidateIndexDocument> createSearchResponseWithTotal(
-        NviCandidateIndexDocument document, int total) {
-        List<NviCandidateIndexDocument> hits = List.of(document);
+        List<NviCandidateIndexDocument> documents, int total) {
         return defaultBuilder()
                    .hits(new HitsMetadata.Builder<NviCandidateIndexDocument>()
-                             .hits(hits.stream().map(MockOpenSearchUtil::toHit).collect(Collectors.toList()))
+                             .hits(documents.stream().map(MockOpenSearchUtil::toHit).collect(Collectors.toList()))
                              .total(new TotalHits.Builder().relation(TotalHitsRelation.Eq).value(total).build())
                              .build())
                    .build();
