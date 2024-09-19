@@ -160,6 +160,12 @@ public final class IndexDocumentTestUtils {
 
     public static NviCandidateIndexDocument indexDocumentMissingCreatorAffiliationPoints(int year, URI institutionId) {
         var publicationDetails = publicationDetailsWithNviContributorsAffiliatedWith(institutionId).build();
+        var approvalsWithoutCreatorAffiliationPoints = createApprovals(institutionId, Collections.emptyList());
+        return getBuilder(year, approvalsWithoutCreatorAffiliationPoints, publicationDetails).build();
+    }
+
+    public static NviCandidateIndexDocument indexDocumentMissingApprovals(int year, URI institutionId) {
+        var publicationDetails = publicationDetailsWithNviContributorsAffiliatedWith(institutionId).build();
         var noApprovals = new ArrayList<no.sikt.nva.nvi.index.model.document.Approval>();
         return getBuilder(year, noApprovals, publicationDetails).build();
     }

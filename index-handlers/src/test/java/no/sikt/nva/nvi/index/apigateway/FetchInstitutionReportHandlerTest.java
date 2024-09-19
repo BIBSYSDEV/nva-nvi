@@ -37,6 +37,7 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICA
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_TITLE;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLISHED_YEAR;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTING_YEAR;
+import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentMissingApprovals;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentMissingCreatorAffiliationPoints;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithLanguage;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.indexDocumentWithoutIssn;
@@ -290,6 +291,20 @@ public class FetchInstitutionReportHandlerTest {
         assertTrue(appender.getMessages().contains(indexDocument.id().toString()));
     }
 
+    @Test
+    void shouldNotFailWhenCandidateIsMissingApprovals() throws IOException {
+        // This is not a valid state for an applicable candidate, but might occur due to index delays or other issues
+        var topLevelCristinOrg = randomCristinOrgUri();
+        var candidatesInIndex = mockCandidateWithoutApprovals(topLevelCristinOrg);
+        var expected = getExpectedReport(candidatesInIndex, topLevelCristinOrg);
+
+        handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
+
+        var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
+        var actual = fromInputStream(new ByteArrayInputStream(decodedResponse));
+        assertEquals(expected, actual);
+    }
+
     @ParameterizedTest
     @MethodSource("listSupportedMediaTypes")
     void shouldReturnRequestedContentType(String mediaType) throws IOException {
@@ -348,6 +363,15 @@ public class FetchInstitutionReportHandlerTest {
         var responseException = Mockito.mock(ResponseException.class);
         when(responseException.getResponse()).thenReturn(response);
         return responseException;
+    }
+
+    private static List<NviCandidateIndexDocument> mockCandidateWithoutApprovals(URI topLevelCristinOrg)
+        throws IOException {
+        var indexDocumentMissingApprovals = indexDocumentMissingApprovals(CURRENT_YEAR, topLevelCristinOrg);
+        var candidatesInIndex = List.of(indexDocumentMissingApprovals,
+                                        randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg));
+        when(openSearchClient.search(any())).thenReturn(createSearchResponse(candidatesInIndex));
+        return candidatesInIndex;
     }
 
     private static Stream<Arguments> listSupportedLanguages() {
@@ -492,6 +516,7 @@ public class FetchInstitutionReportHandlerTest {
     private List<List<String>> getExpectedRows(List<NviCandidateIndexDocument> candidatesInIndex,
                                                URI topLevelCristinOrg) {
         return candidatesInIndex.stream()
+                   .filter(document -> nonNull(document.getApprovalForInstitution(topLevelCristinOrg)))
                    .flatMap(document -> getExpectedRows(document, topLevelCristinOrg))
                    .toList();
     }
