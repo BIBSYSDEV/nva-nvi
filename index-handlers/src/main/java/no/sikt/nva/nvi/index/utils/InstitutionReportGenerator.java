@@ -70,6 +70,19 @@ public class InstitutionReportGenerator {
         return responseException.getResponse().getStatusLine().getStatusCode() == HTTP_REQUEST_ENTITY_TOO_LARGE;
     }
 
+    private static boolean hasNotReachedMinimumPageSize(int currentPageSize) {
+        return currentPageSize > MIN_PAGE_SIZE;
+    }
+
+    private static boolean areAllHitsFetched(HitsMetadata<NviCandidateIndexDocument> hits,
+                                             ArrayList<NviCandidateIndexDocument> fetchedCandidates) {
+        return !thereAreMoreHitsToFetch(hits, fetchedCandidates.size());
+    }
+
+    private static boolean thereAreMoreHitsToFetch(HitsMetadata<NviCandidateIndexDocument> hitsMetadata, int size) {
+        return hitsMetadata.total().value() > size;
+    }
+
     private Stream<List<String>> orderByHeaderOrder(
         List<Map<InstitutionReportHeader, String>> reportRows) {
         return reportRows.stream().map(InstitutionReportGenerator::sortValuesByHeaderOrder);
@@ -84,19 +97,15 @@ public class InstitutionReportGenerator {
             try {
                 var hits = search(offset, currentPageSize);
                 addHitsToListOfCandidates(hits, fetchedCandidates);
-                if (!thereAreMoreHitsToFetch(hits, fetchedCandidates.size())) {
+                if (areAllHitsFetched(hits, fetchedCandidates)) {
                     break;
                 }
                 offset += currentPageSize;
                 currentPageSize = searchPageSize;
             } catch (ResponseException responseException) {
-                if (isRequestEntityTooLarge(responseException)) {
-                    if (currentPageSize > MIN_PAGE_SIZE) {
-                        currentPageSize /= EXPONENTITAL_PAGE_SIZE_DIVISOR;
-                        offset = fetchedCandidates.size();
-                    } else {
-                        throw new RuntimeException(responseException);
-                    }
+                if (isRequestEntityTooLarge(responseException) && hasNotReachedMinimumPageSize(currentPageSize)) {
+                    currentPageSize /= EXPONENTITAL_PAGE_SIZE_DIVISOR;
+                    offset = fetchedCandidates.size();
                 } else {
                     throw new RuntimeException(responseException);
                 }
@@ -116,10 +125,6 @@ public class InstitutionReportGenerator {
     private HitsMetadata<NviCandidateIndexDocument> search(int offset, int pageSize) throws IOException {
         logger.info("Searching for candidates with page size {} and with offset {}", pageSize, offset);
         return searchClient.search(buildSearchRequest(offset, pageSize)).hits();
-    }
-
-    private boolean thereAreMoreHitsToFetch(HitsMetadata<NviCandidateIndexDocument> hitsMetadata, int size) {
-        return hitsMetadata.total().value() > size;
     }
 
     private CandidateSearchParameters buildSearchRequest(int offset, int pageSize) {
