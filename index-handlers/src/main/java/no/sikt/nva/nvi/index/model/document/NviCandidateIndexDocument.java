@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.model.document;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_FIRST_NAME;
@@ -94,7 +95,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         return approvals.stream()
                    .filter(approval -> approval.institutionId().equals(institutionId))
                    .findAny()
-                   .orElseThrow();
+                   .orElse(null);
     }
 
     public BigDecimal getPointsForContributorAffiliation(URI topLevelCristinOrg,
@@ -118,6 +119,11 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
     }
 
     public List<Map<InstitutionReportHeader, String>> toReportRowsForInstitution(URI topLevelOrganization) {
+        if (isNull(getApprovalForInstitution(topLevelOrganization))) {
+            logger.warn("No approval found for institution: {}. Cannot convert candidate with id {} to report rows",
+                        topLevelOrganization, identifier);
+            return List.of();
+        }
         return getNviContributors().stream()
                    .flatMap(
                        nviContributor -> generateRowsForContributorAffiliations(nviContributor, topLevelOrganization))
