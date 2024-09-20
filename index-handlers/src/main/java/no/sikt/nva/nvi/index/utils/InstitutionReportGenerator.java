@@ -76,7 +76,7 @@ public class InstitutionReportGenerator {
     }
 
     private static boolean thereAreMoreHitsToFetch(Long totalHits, int numberOfFetchedCandidates) {
-        return nonNull(totalHits) && totalHits > numberOfFetchedCandidates;
+        return totalHits > numberOfFetchedCandidates;
     }
 
     private Stream<List<String>> orderByHeaderOrder(
