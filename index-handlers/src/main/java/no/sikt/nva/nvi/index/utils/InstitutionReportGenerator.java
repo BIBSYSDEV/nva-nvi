@@ -28,7 +28,7 @@ public class InstitutionReportGenerator {
     private static final String EXCLUDE_CONTRIBUTORS_FIELD = "publicationDetails.contributors";
     private static final int HTTP_REQUEST_ENTITY_TOO_LARGE = 413;
     private static final int MIN_PAGE_SIZE = 1;
-    private static final int EXPONENTITAL_PAGE_SIZE_DIVISOR = 2;
+    private static final int EXPONENTIAL_PAGE_SIZE_DIVISOR = 2;
     private final SearchClient<NviCandidateIndexDocument> searchClient;
     private final int searchPageSize;
     private final String year;
@@ -74,13 +74,8 @@ public class InstitutionReportGenerator {
         return currentPageSize > MIN_PAGE_SIZE;
     }
 
-    private static boolean areAllHitsFetched(HitsMetadata<NviCandidateIndexDocument> hits,
-                                             ArrayList<NviCandidateIndexDocument> fetchedCandidates) {
-        return !thereAreMoreHitsToFetch(hits, fetchedCandidates.size());
-    }
-
-    private static boolean thereAreMoreHitsToFetch(HitsMetadata<NviCandidateIndexDocument> hitsMetadata, int size) {
-        return hitsMetadata.total().value() > size;
+    private static boolean thereAreMoreHitsToFetch(long totalHits, int numberOfFetchedCandidates) {
+        return totalHits > numberOfFetchedCandidates;
     }
 
     private Stream<List<String>> orderByHeaderOrder(
@@ -92,19 +87,18 @@ public class InstitutionReportGenerator {
         var fetchedCandidates = new ArrayList<NviCandidateIndexDocument>();
         var offset = INITIAL_OFFSET;
         var currentPageSize = searchPageSize;
+        var totalHits = -1;
 
-        while (true) {
+        do {
             try {
                 var hits = search(offset, currentPageSize);
                 addHitsToListOfCandidates(hits, fetchedCandidates);
-                if (areAllHitsFetched(hits, fetchedCandidates)) {
-                    break;
-                }
+                totalHits = (int) hits.total().value();
                 offset += currentPageSize;
                 currentPageSize = searchPageSize;
             } catch (ResponseException responseException) {
                 if (isRequestEntityTooLarge(responseException) && hasNotReachedMinimumPageSize(currentPageSize)) {
-                    currentPageSize /= EXPONENTITAL_PAGE_SIZE_DIVISOR;
+                    currentPageSize /= EXPONENTIAL_PAGE_SIZE_DIVISOR;
                     offset = fetchedCandidates.size();
                 } else {
                     throw new RuntimeException(responseException);
@@ -112,7 +106,7 @@ public class InstitutionReportGenerator {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        }
+        } while (thereAreMoreHitsToFetch(totalHits, fetchedCandidates.size()));
         logNumberOfCandidatesFound(fetchedCandidates);
         return fetchedCandidates;
     }
