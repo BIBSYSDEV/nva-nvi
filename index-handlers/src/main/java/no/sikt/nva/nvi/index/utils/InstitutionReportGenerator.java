@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static java.util.Objects.nonNull;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -76,7 +77,7 @@ public class InstitutionReportGenerator {
 
     private static boolean thereAreMoreHitsToFetch(HitsMetadata<NviCandidateIndexDocument> hitsMetadata,
                                                    int numberOfFetchedCandidates) {
-        return hitsMetadata.total().value() > numberOfFetchedCandidates;
+        return nonNull(hitsMetadata) && hitsMetadata.total().value() > numberOfFetchedCandidates;
     }
 
     private Stream<List<String>> orderByHeaderOrder(
