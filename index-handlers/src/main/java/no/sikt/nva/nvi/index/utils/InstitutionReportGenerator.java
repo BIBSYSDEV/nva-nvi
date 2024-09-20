@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.index.utils;
 
-import static java.util.Objects.nonNull;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -75,8 +74,9 @@ public class InstitutionReportGenerator {
         return currentPageSize > MIN_PAGE_SIZE;
     }
 
-    private static boolean thereAreMoreHitsToFetch(Long totalHits, int numberOfFetchedCandidates) {
-        return totalHits > numberOfFetchedCandidates;
+    private static boolean thereAreMoreHitsToFetch(HitsMetadata<NviCandidateIndexDocument> hitsMetadata,
+                                                   int numberOfFetchedCandidates) {
+        return hitsMetadata.total().value() > numberOfFetchedCandidates;
     }
 
     private Stream<List<String>> orderByHeaderOrder(
@@ -88,13 +88,12 @@ public class InstitutionReportGenerator {
         var fetchedCandidates = new ArrayList<NviCandidateIndexDocument>();
         var offset = INITIAL_OFFSET;
         var currentPageSize = searchPageSize;
-        Long totalHits = null;
+        HitsMetadata<NviCandidateIndexDocument> newHits = null;
 
         do {
             try {
-                var hits = search(offset, currentPageSize);
-                addHitsToListOfCandidates(hits, fetchedCandidates);
-                totalHits = hits.total().value();
+                newHits = search(offset, currentPageSize);
+                addHitsToListOfCandidates(newHits, fetchedCandidates);
                 offset += currentPageSize;
                 currentPageSize = searchPageSize;
             } catch (ResponseException responseException) {
@@ -107,7 +106,7 @@ public class InstitutionReportGenerator {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        } while (thereAreMoreHitsToFetch(totalHits, fetchedCandidates.size()));
+        } while (thereAreMoreHitsToFetch(newHits, fetchedCandidates.size()));
         logNumberOfCandidatesFound(fetchedCandidates);
         return fetchedCandidates;
     }
