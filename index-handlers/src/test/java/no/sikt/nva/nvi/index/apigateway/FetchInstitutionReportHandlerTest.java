@@ -76,6 +76,7 @@ import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil;
@@ -97,12 +98,17 @@ import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
+import org.apache.http.HttpVersion;
+import org.apache.http.message.BasicStatusLine;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
+import org.opensearch.client.Response;
+import org.opensearch.client.ResponseException;
 import org.zalando.problem.Problem;
 
 public class FetchInstitutionReportHandlerTest {
@@ -113,6 +119,7 @@ public class FetchInstitutionReportHandlerTest {
     private static final int PAGE_SIZE = Integer.parseInt(new Environment().readEnv(
         "INSTITUTION_REPORT_SEARCH_PAGE_SIZE"));
     private static final String NESTED_FIELD_CONTRIBUTORS = "publicationDetails.contributors";
+    private static final int HTTP_REQUEST_ENTITY_TOO_LARGE = 413;
     private static SearchClient<NviCandidateIndexDocument> openSearchClient;
     private ByteArrayOutputStream output;
     private FetchInstitutionReportHandler handler;
@@ -333,6 +340,36 @@ public class FetchInstitutionReportHandlerTest {
         assertThat(response.getHeaders().get(CONTENT_TYPE), is(OOXML_SHEET.toString()));
     }
 
+    @Test
+    void shouldNotFailOn413ResponseOnSearchRequest() throws IOException {
+        var topLevelCristinOrg = randomCristinOrgUri();
+        var indexDocuments = IntStream.range(0, 7)
+                                 .mapToObj(i -> randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg))
+                                 .toList();
+        var firstResponse = indexDocuments.stream().limit(PAGE_SIZE).toList();
+        var secondResponse = indexDocuments.stream().skip(PAGE_SIZE).toList();
+        when(openSearchClient.search(any()))
+            .thenReturn(createSearchResponseWithTotal(firstResponse, 7))
+            .thenThrow(mockResponseException())
+            .thenReturn(createSearchResponseWithTotal(secondResponse, 7));
+        var expected = getExpectedReport(indexDocuments, topLevelCristinOrg);
+
+        handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
+
+        var decodedResponse = Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
+        var actual = fromInputStream(new ByteArrayInputStream(decodedResponse));
+        assertEquals(expected, actual);
+    }
+
+    private static ResponseException mockResponseException() {
+        var statusLine = new BasicStatusLine(HttpVersion.HTTP_1_1, HTTP_REQUEST_ENTITY_TOO_LARGE, "null");
+        var response = Mockito.mock(Response.class);
+        when(response.getStatusLine()).thenReturn(statusLine);
+        var responseException = Mockito.mock(ResponseException.class);
+        when(responseException.getResponse()).thenReturn(response);
+        return responseException;
+    }
+
     private static List<NviCandidateIndexDocument> mockCandidateWithoutApprovals(URI topLevelCristinOrg)
         throws IOException {
         var indexDocumentMissingApprovals = indexDocumentMissingApprovals(CURRENT_YEAR, topLevelCristinOrg);
@@ -371,8 +408,8 @@ public class FetchInstitutionReportHandlerTest {
         var secondDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
         var candidatesInIndex = List.of(firstDocument, secondDocument);
         when(openSearchClient.search(any()))
-            .thenReturn(createSearchResponseWithTotal(firstDocument, candidatesInIndex.size()))
-            .thenReturn(createSearchResponseWithTotal(secondDocument, candidatesInIndex.size()));
+            .thenReturn(createSearchResponseWithTotal(List.of(firstDocument), candidatesInIndex.size()))
+            .thenReturn(createSearchResponseWithTotal(List.of(secondDocument), candidatesInIndex.size()));
         return candidatesInIndex;
     }
 

@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.utils;
 
-import static nva.commons.core.attempt.Try.attempt;
+import static java.util.Objects.nonNull;
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -15,6 +16,7 @@ import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
 import nva.commons.core.paths.UriWrapper;
+import org.opensearch.client.ResponseException;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.slf4j.Logger;
@@ -25,6 +27,9 @@ public class InstitutionReportGenerator {
     private static final Logger logger = LoggerFactory.getLogger(InstitutionReportGenerator.class);
     private static final int INITIAL_OFFSET = 0;
     private static final String EXCLUDE_CONTRIBUTORS_FIELD = "publicationDetails.contributors";
+    private static final int HTTP_REQUEST_ENTITY_TOO_LARGE = 413;
+    private static final int MIN_PAGE_SIZE = 1;
+    private static final int EXPONENTIAL_PAGE_SIZE_DIVISOR = 2;
     private final SearchClient<NviCandidateIndexDocument> searchClient;
     private final int searchPageSize;
     private final String year;
@@ -62,6 +67,19 @@ public class InstitutionReportGenerator {
         hits.hits().stream().map(Hit::source).forEach(fetchedCandidates::add);
     }
 
+    private static boolean isRequestEntityTooLarge(ResponseException responseException) {
+        return responseException.getResponse().getStatusLine().getStatusCode() == HTTP_REQUEST_ENTITY_TOO_LARGE;
+    }
+
+    private static boolean hasNotReachedMinimumPageSize(int currentPageSize) {
+        return currentPageSize > MIN_PAGE_SIZE;
+    }
+
+    private static boolean thereAreMoreHitsToFetch(HitsMetadata<NviCandidateIndexDocument> hitsMetadata,
+                                                   int numberOfFetchedCandidates) {
+        return nonNull(hitsMetadata) && hitsMetadata.total().value() > numberOfFetchedCandidates;
+    }
+
     private Stream<List<String>> orderByHeaderOrder(
         List<Map<InstitutionReportHeader, String>> reportRows) {
         return reportRows.stream().map(InstitutionReportGenerator::sortValuesByHeaderOrder);
@@ -70,15 +88,26 @@ public class InstitutionReportGenerator {
     private List<NviCandidateIndexDocument> fetchNviCandidates() {
         var fetchedCandidates = new ArrayList<NviCandidateIndexDocument>();
         var offset = INITIAL_OFFSET;
-        var hits = search(offset);
-        addHitsToListOfCandidates(hits, fetchedCandidates);
-        while (thereAreMoreHitsToFetch(hits, fetchedCandidates.size())) {
-            logger.info("There are more candidates to fetch. Total hits: {}, fetched candidates: {}",
-                        hits.total().value(), fetchedCandidates.size());
-            offset += searchPageSize;
-            hits = search(offset);
-            addHitsToListOfCandidates(hits, fetchedCandidates);
-        }
+        var currentPageSize = searchPageSize;
+        HitsMetadata<NviCandidateIndexDocument> newHits = null;
+
+        do {
+            try {
+                newHits = search(offset, currentPageSize);
+                addHitsToListOfCandidates(newHits, fetchedCandidates);
+                offset += currentPageSize;
+                currentPageSize = searchPageSize;
+            } catch (ResponseException responseException) {
+                if (isRequestEntityTooLarge(responseException) && hasNotReachedMinimumPageSize(currentPageSize)) {
+                    currentPageSize /= EXPONENTIAL_PAGE_SIZE_DIVISOR;
+                    offset = fetchedCandidates.size();
+                } else {
+                    throw new RuntimeException(responseException);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } while (thereAreMoreHitsToFetch(newHits, fetchedCandidates.size()));
         logNumberOfCandidatesFound(fetchedCandidates);
         return fetchedCandidates;
     }
@@ -88,29 +117,25 @@ public class InstitutionReportGenerator {
                     year);
     }
 
-    private HitsMetadata<NviCandidateIndexDocument> search(int offset) {
-        logger.info("Searching for candidates with page size {} and with offset {}", searchPageSize, offset);
-        return attempt(() -> searchClient.search(buildSearchRequest(offset))).orElseThrow().hits();
+    private HitsMetadata<NviCandidateIndexDocument> search(int offset, int pageSize) throws IOException {
+        logger.info("Searching for candidates with page size {} and with offset {}", pageSize, offset);
+        return searchClient.search(buildSearchRequest(offset, pageSize)).hits();
     }
 
-    private boolean thereAreMoreHitsToFetch(HitsMetadata<NviCandidateIndexDocument> hitsMetadata, int size) {
-        return hitsMetadata.total().value() > size;
-    }
-
-    private CandidateSearchParameters buildSearchRequest(int offset) {
+    private CandidateSearchParameters buildSearchRequest(int offset, int pageSize) {
         var topLevelOrganizationIdentifier = UriWrapper.fromUri(topLevelOrganization).getLastPathElement();
         return CandidateSearchParameters.builder()
                    .withYear(year)
                    .withTopLevelCristinOrg(topLevelOrganization)
                    .withAffiliations(List.of(topLevelOrganizationIdentifier))
-                   .withSearchResultParameters(getSearchRequestParameters(offset))
+                   .withSearchResultParameters(getSearchRequestParameters(offset, pageSize))
                    .withExcludeFields(List.of(EXCLUDE_CONTRIBUTORS_FIELD))
                    .build();
     }
 
-    private SearchResultParameters getSearchRequestParameters(int offset) {
+    private SearchResultParameters getSearchRequestParameters(int offset, int pageSize) {
         return SearchResultParameters.builder()
-                   .withSize(searchPageSize)
+                   .withSize(pageSize)
                    .withOffset(offset)
                    .build();
     }

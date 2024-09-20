@@ -22,16 +22,18 @@ public class MockOpenSearchUtil {
                    .build();
     }
 
-    public static SearchResponse<NviCandidateIndexDocument> createSearchResponse(List<NviCandidateIndexDocument> documents) {
+    public static SearchResponse<NviCandidateIndexDocument> createSearchResponse(
+        List<NviCandidateIndexDocument> documents) {
         return defaultBuilder()
                    .hits(constructHitsMetadata(documents))
                    .build();
     }
-    public static SearchResponse<NviCandidateIndexDocument> createSearchResponseWithTotal(NviCandidateIndexDocument document, int total) {
-        List<NviCandidateIndexDocument> hits = List.of(document);
+
+    public static SearchResponse<NviCandidateIndexDocument> createSearchResponseWithTotal(
+        List<NviCandidateIndexDocument> documents, int total) {
         return defaultBuilder()
                    .hits(new HitsMetadata.Builder<NviCandidateIndexDocument>()
-                             .hits(hits.stream().map(MockOpenSearchUtil::toHit).collect(Collectors.toList()))
+                             .hits(documents.stream().map(MockOpenSearchUtil::toHit).collect(Collectors.toList()))
                              .total(new TotalHits.Builder().relation(TotalHitsRelation.Eq).value(total).build())
                              .build())
                    .build();
