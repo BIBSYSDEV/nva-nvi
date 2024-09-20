@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static java.util.Objects.nonNull;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -74,8 +75,8 @@ public class InstitutionReportGenerator {
         return currentPageSize > MIN_PAGE_SIZE;
     }
 
-    private static boolean thereAreMoreHitsToFetch(long totalHits, int numberOfFetchedCandidates) {
-        return totalHits > numberOfFetchedCandidates;
+    private static boolean thereAreMoreHitsToFetch(Long totalHits, int numberOfFetchedCandidates) {
+        return nonNull(totalHits) && totalHits > numberOfFetchedCandidates;
     }
 
     private Stream<List<String>> orderByHeaderOrder(
@@ -87,13 +88,13 @@ public class InstitutionReportGenerator {
         var fetchedCandidates = new ArrayList<NviCandidateIndexDocument>();
         var offset = INITIAL_OFFSET;
         var currentPageSize = searchPageSize;
-        var totalHits = -1;
+        Long totalHits = null;
 
         do {
             try {
                 var hits = search(offset, currentPageSize);
                 addHitsToListOfCandidates(hits, fetchedCandidates);
-                totalHits = (int) hits.total().value();
+                totalHits = hits.total().value();
                 offset += currentPageSize;
                 currentPageSize = searchPageSize;
             } catch (ResponseException responseException) {
