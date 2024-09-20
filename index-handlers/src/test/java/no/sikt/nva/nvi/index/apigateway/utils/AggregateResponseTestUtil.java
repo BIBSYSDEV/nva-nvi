@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index.apigateway.utils;
 
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
@@ -32,7 +31,7 @@ public class AggregateResponseTestUtil {
         return new GlobalAggregate.Builder().docCount(1).build()._toAggregate();
     }
 
-    public static Aggregate randomFilterAggregate(Integer docCount) {
+    public static Aggregate filterAggregate(Integer docCount) {
         return getFilterAggregate(docCount, Map.of());
     }
 
