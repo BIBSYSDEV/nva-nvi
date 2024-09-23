@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate.Builder;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
@@ -86,11 +87,10 @@ public final class CristinMapper {
         return new CristinMapper(transfers);
     }
 
-    //TODO: Extract creators from dbh_forskres_kontroll, remove Jacoco annotation when implemented
     public DbCandidate toDbCandidate(CristinNviReport cristinNviReport) {
         var now = Instant.now();
         var points = calculatePoints(cristinNviReport);
-        return DbCandidate.builder()
+        var builder = DbCandidate.builder()
                    .publicationId(constructPublicationId(cristinNviReport.publicationIdentifier()))
                    .publicationBucketUri(constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
                    .publicationDate(constructPublicationDate(cristinNviReport.publicationDate()))
@@ -100,7 +100,6 @@ public final class CristinMapper {
                    .applicable(true)
                    .createdDate(now)
                    .modifiedDate(now)
-                   .points(points)
                    .totalPoints(sumPoints(points))
                    .basePoints(extractBasePoints(cristinNviReport))
                    .collaborationFactor(extractCollaborationFactor(cristinNviReport))
@@ -109,8 +108,17 @@ public final class CristinMapper {
                    //                   .creatorCount()
                    //                   .creatorShareCount()
                    .channelId(extractChannelId(cristinNviReport))
-                   .channelType(extractChannelType(cristinNviReport))
-                   .build();
+                   .channelType(extractChannelType(cristinNviReport));
+
+        addPointsWhenNonEmpty(points, builder);
+
+        return builder.build();
+    }
+
+    private static void addPointsWhenNonEmpty(List<DbInstitutionPoints> points, Builder builder) {
+        if (!points.isEmpty()) {
+            builder.points(points);
+        }
     }
 
     public static List<DbCreator> extractCreators(CristinNviReport cristinNviReport) {

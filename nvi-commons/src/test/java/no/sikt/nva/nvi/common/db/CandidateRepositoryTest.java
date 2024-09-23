@@ -1,22 +1,29 @@
 package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -54,6 +61,19 @@ class CandidateRepositoryTest extends LocalDynamoTest {
 
         assertThat(scanDB().count(), is(equalTo(3)));
         assertThat(updatedDbCandidate, is(not(equalTo(originalDbCandidate))));
+    }
+
+    @Test
+    void shouldSerializeCandidateWithEmpty() throws JsonProcessingException {
+        DbCandidate candidate = randomCandidate().copy().points(List.of()).build();
+
+        candidateRepository.create(candidate, List.of());
+
+        var can = candidateRepository.scanEntries(10, null, List.of())
+                      .getDatabaseEntries()
+                      .stream()
+                      .toList();
+        var s = "";
     }
 
     private UpsertCandidateRequest copyRequestWithNewInstanceType(UpsertCandidateRequest request,
