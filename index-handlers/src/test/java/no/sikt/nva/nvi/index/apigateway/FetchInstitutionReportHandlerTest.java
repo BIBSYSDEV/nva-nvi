@@ -238,7 +238,9 @@ public class FetchInstitutionReportHandlerTest {
         var year = "2021";
         var request = createRequest(topLevelCristinOrg, MANAGE_NVI_CANDIDATES, topLevelCristinOrg,
                                     Map.of(YEAR, year)).build();
-        when(openSearchClient.search(any())).thenReturn(aggregationResponse(1));
+        when(openSearchClient.search(any()))
+            .thenReturn(aggregationResponse(1))
+            .thenReturn(createSearchResponse(List.of(randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg))));
         handler.handleRequest(request, output, CONTEXT);
 
         var expectedSearchParameters = CandidateSearchParameters.builder()
@@ -258,7 +260,9 @@ public class FetchInstitutionReportHandlerTest {
         var year = "2021";
         var request = createRequest(topLevelCristinOrg, MANAGE_NVI_CANDIDATES, topLevelCristinOrg,
                                     Map.of(YEAR, year)).build();
-        when(openSearchClient.search(any())).thenReturn(aggregationResponse(1));
+        when(openSearchClient.search(any()))
+            .thenReturn(aggregationResponse(1))
+            .thenReturn(createSearchResponse(List.of(randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg))));
         handler.handleRequest(request, output, CONTEXT);
 
         var expectedSearchParameters = CandidateSearchParameters.builder()
