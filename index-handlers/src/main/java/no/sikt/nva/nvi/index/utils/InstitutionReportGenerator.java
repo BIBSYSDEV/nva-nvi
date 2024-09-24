@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.index.utils;
 
-import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.TOTAL_COUNT_AGGREGATION_AGG;
 import static nva.commons.core.attempt.Try.attempt;
 import java.io.IOException;
@@ -82,11 +81,6 @@ public class InstitutionReportGenerator {
         return currentPageSize > MIN_PAGE_SIZE;
     }
 
-    private static boolean thereAreMoreHitsToFetch(HitsMetadata<NviCandidateIndexDocument> hitsMetadata,
-                                                   int numberOfFetchedCandidates) {
-        return nonNull(hitsMetadata) && hitsMetadata.total().value() > numberOfFetchedCandidates;
-    }
-
     private static List<NviCandidateIndexDocument> getFuture(
         CompletableFuture<List<NviCandidateIndexDocument>> future) {
         try {
@@ -94,6 +88,10 @@ public class InstitutionReportGenerator {
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static boolean isLastBatch(int numberOfBatches, int batch) {
+        return batch == numberOfBatches - 1;
     }
 
     private Stream<List<String>> orderByHeaderOrder(
@@ -104,26 +102,37 @@ public class InstitutionReportGenerator {
     private List<NviCandidateIndexDocument> fetchNviCandidates() {
         var total = getTotalNumberOfCandidatesForInstitutionAndYear();
         var numberOfBatches = (int) Math.ceil((double) total / searchPageSize);
-        var candidates = fetchBatchesOfNviCandidatesAsync(numberOfBatches);
+        var candidates = fetchCandidatesAsync(numberOfBatches, total);
         logNumberOfCandidatesFound(candidates);
         return candidates;
     }
 
-    private List<NviCandidateIndexDocument> fetchBatchesOfNviCandidatesAsync(int numberOfBatches) {
+    private List<NviCandidateIndexDocument> fetchCandidatesAsync(int numberOfBatches, long total) {
         return IntStream.range(0, numberOfBatches)
-                   .mapToObj(this::fetchBatchAsync)
+                   .mapToObj(batch -> fetchBatchAsync(numberOfBatches, total, batch))
                    .map(InstitutionReportGenerator::getFuture)
                    .flatMap(List::stream)
                    .toList();
     }
 
-    private CompletableFuture<List<NviCandidateIndexDocument>> fetchBatchAsync(int batch) {
-        return CompletableFuture.supplyAsync(() -> fetchBatch(batch * searchPageSize));
+    private CompletableFuture<List<NviCandidateIndexDocument>> fetchBatchAsync(int numberOfBatches, long total,
+                                                                               int batch) {
+        var batchSize = calculateBatchSize(numberOfBatches, total, batch);
+        var batchOffset = batch * searchPageSize;
+        return CompletableFuture.supplyAsync(() -> fetchBatch(batchOffset, batchSize));
     }
 
-    private List<NviCandidateIndexDocument> fetchBatch(int offset) {
+    private long calculateBatchSize(int numberOfBatches, long total, int batch) {
+        return isLastBatch(numberOfBatches, batch) ? getLastBatchSize(total) : searchPageSize;
+    }
+
+    private long getLastBatchSize(long total) {
+        return total % searchPageSize;
+    }
+
+    private List<NviCandidateIndexDocument> fetchBatch(int batchOffset, long batchSize) {
         var fetchedCandidates = new ArrayList<NviCandidateIndexDocument>();
-        var currentOffset = offset;
+        var currentOffset = batchOffset;
         var currentPageSize = searchPageSize;
         HitsMetadata<NviCandidateIndexDocument> newHits = null;
 
@@ -136,14 +145,14 @@ public class InstitutionReportGenerator {
             } catch (ResponseException responseException) {
                 if (isRequestEntityTooLarge(responseException) && hasNotReachedMinimumPageSize(currentPageSize)) {
                     currentPageSize /= EXPONENTIAL_PAGE_SIZE_DIVISOR;
-                    currentOffset = fetchedCandidates.size();
+                    currentOffset = batchOffset + fetchedCandidates.size();
                 } else {
                     throw new RuntimeException(responseException);
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        } while (thereAreMoreHitsToFetch(newHits, fetchedCandidates.size()));
+        } while (fetchedCandidates.size() < batchSize);
         return fetchedCandidates;
     }
 
