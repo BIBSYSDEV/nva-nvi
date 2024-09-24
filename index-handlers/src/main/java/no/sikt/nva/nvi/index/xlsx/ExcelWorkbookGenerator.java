@@ -10,10 +10,12 @@ import nva.commons.core.JacocoGenerated;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
 
 public final class ExcelWorkbookGenerator {
 
-    public static final String LINE_BREAK = "\n";
+    private static final Logger logger = org.slf4j.LoggerFactory.getLogger(ExcelWorkbookGenerator.class);
+    private static final String LINE_BREAK = "\n";
     private static final Encoder ENCODER = Base64.getEncoder();
     private static final int FIRST_SHEET_INDEX = 0;
     private static final int FIRST_ROW_INDEX = 0;
@@ -73,11 +75,13 @@ public final class ExcelWorkbookGenerator {
     }
 
     private byte[] toXSSFWorkbookByteArray() {
+        logger.info("Creating Excel workbook");
         var byteArrayOutputStream = new ByteArrayOutputStream();
         try (var workbook = createWorkbookWithOneSheet()) {
             createSheetWithHeadersAndData(workbook);
             workbook.write(byteArrayOutputStream);
             workbook.close();
+            logger.info("Excel workbook created successfully. Returning workbook as byte array");
             return byteArrayOutputStream.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException(e);

@@ -112,7 +112,6 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     @Override
     public SearchResponse<NviCandidateIndexDocument> search(CandidateSearchParameters candidateSearchParameters)
         throws IOException {
-        logSearchRequest(candidateSearchParameters);
         return client.withTransportOptions(getOptions()).search(constructSearchRequest(candidateSearchParameters),
                                                                 NviCandidateIndexDocument.class);
     }
@@ -146,14 +145,6 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
                           .indices()
                           .create(getCreateIndexRequest()))
             .orElseThrow(failure -> handleFailure(ERROR_MSG_CREATE_INDEX, failure.getException()));
-    }
-
-    private static void logSearchRequest(CandidateSearchParameters params) {
-        LOGGER.info("Generating search request with affiliations: {}, excludeSubUnits: {}, filter: {}, username: {}, "
-                    + "topLevelCristinOrg: {}, offset: "
-                    + "{}, size: {}", params.affiliationIdentifiers(), params.excludeSubUnits(), params.filter(),
-                    params.username(), params.topLevelCristinOrg(), params.searchResultParameters().offset(),
-                    params.searchResultParameters().size());
     }
 
     private static DeleteRequest contructDeleteRequest(UUID identifier) {
