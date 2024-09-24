@@ -109,6 +109,7 @@ public class InstitutionReportGenerator {
 
     private List<NviCandidateIndexDocument> fetchCandidatesAsync(int numberOfBatches, long total) {
         return IntStream.range(0, numberOfBatches)
+                   .parallel()
                    .mapToObj(batch -> fetchBatchAsync(numberOfBatches, total, batch))
                    .map(InstitutionReportGenerator::getFuture)
                    .flatMap(List::stream)
