@@ -1,21 +1,21 @@
 [versions]
-junit = { strictly = '5.10.2' }
-nva = { strictly = '1.40.12' }
+junit = { strictly = '5.11.0' }
+nva = { strictly = '1.40.20' }
 nvaLanguage = { strictly = '1.2.0' }
-jackson = { strictly = '2.16.1' }
-mockito = { strictly = '5.10.0' }
-hamcrest = { strictly = '2.2' }
+jackson = { strictly = '2.17.2' }
+mockito = { strictly = '5.13.0' }
+hamcrest = { strictly = '3.0' }
 zalando = { strictly = '0.27.1' }
 awsLambdaJavaCore = { strictly = '1.2.3' }
-awsLambdaEvents = { strictly = '3.11.4' }
-log4j = { strictly = '2.23.0' }
-slf4j = { require = '2.0.12' }
+awsLambdaEvents = { strictly = '3.13.0' }
+log4j = { strictly = '2.24.0' }
+slf4j = { require = '2.0.16' }
 awslog4j2 = { strictly = '1.5.1' }
-wiremock = { strictly = "3.4.1" }
+wiremock = { strictly = "3.9.1" }
 commons-validator-version = { strictly = '1.7' }
-awsSdk = { strictly = '1.12.668' }
-awsSdk2 = { strictly = '2.24.12' }
-jena = { strictly = '4.9.0'}
+awsSdk = { strictly = '1.12.772' }
+awsSdk2 = { strictly = '2.27.24' }
+jena = { strictly = '4.10.0'}
 openSearchRestClient = { strictly = '2.9.0' }
 openSearchJava = { strictly = '2.6.0' }
 com-auth0-jwt = { strictly = '4.4.0' }
@@ -86,7 +86,7 @@ log4j-api = { group = 'org.apache.logging.log4j', name = 'log4j-api', version.re
 log4j-slf4j18-impl = { group = 'org.apache.logging.log4j', name = 'log4j-slf4j2-impl', version.ref = 'log4j' }
 slf4j-api = { group = 'org.slf4j', name = 'slf4j-api', version.ref = 'slf4j' }
 
-wiremock = { group = "org.wiremock", name = "wiremock", version.ref = "wiremock" }
+wiremock = { group = "org.wiremock", name = "wiremock-jetty12", version.ref = "wiremock" }
 
 guava = { group = 'com.google.guava', name = 'guava', version.ref = 'guava' }
 
