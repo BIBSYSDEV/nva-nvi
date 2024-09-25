@@ -111,6 +111,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.opensearch.client.Response;
 import org.opensearch.client.ResponseException;
+import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.zalando.problem.Problem;
 
@@ -123,6 +124,7 @@ public class FetchInstitutionReportHandlerTest {
         "INSTITUTION_REPORT_SEARCH_PAGE_SIZE"));
     private static final String NESTED_FIELD_CONTRIBUTORS = "publicationDetails.contributors";
     private static final int HTTP_REQUEST_ENTITY_TOO_LARGE = 413;
+    private static final String EXPECTED_SORT_ORDER = SortOrder.Asc.jsonValue();
     private static SearchClient<NviCandidateIndexDocument> openSearchClient;
     private ByteArrayOutputStream output;
     private FetchInstitutionReportHandler handler;
@@ -206,7 +208,7 @@ public class FetchInstitutionReportHandlerTest {
 
         handler.handleRequest(requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
 
-        var firstExpectedResultParameters = SearchResultParameters.builder().withSize(PAGE_SIZE).build();
+        var firstExpectedResultParameters = defaultResultParameters();
         var secondExpectedResultParameters = searchResultParams(PAGE_SIZE, PAGE_SIZE);
 
         verify(openSearchClient, times(1)).search(
@@ -247,8 +249,7 @@ public class FetchInstitutionReportHandlerTest {
                                            .withYear(year)
                                            .withTopLevelCristinOrg(topLevelCristinOrg)
                                            .withAffiliations(List.of(extractIdentifier(topLevelCristinOrg)))
-                                           .withSearchResultParameters(
-                                               SearchResultParameters.builder().withSize(PAGE_SIZE).build())
+                                           .withSearchResultParameters(defaultResultParameters())
                                            .withExcludeFields(List.of(NESTED_FIELD_CONTRIBUTORS))
                                            .build();
         verify(openSearchClient, times(1)).search(eq(expectedSearchParameters));
@@ -270,7 +271,7 @@ public class FetchInstitutionReportHandlerTest {
                                            .withTopLevelCristinOrg(topLevelCristinOrg)
                                            .withAffiliations(List.of(extractIdentifier(topLevelCristinOrg)))
                                            .withSearchResultParameters(
-                                               SearchResultParameters.builder().withSize(PAGE_SIZE).build())
+                                               defaultResultParameters())
                                            .withExcludeFields(List.of("publicationDetails.contributors"))
                                            .build();
         verify(openSearchClient, times(1)).search(eq(expectedSearchParameters));
@@ -367,6 +368,10 @@ public class FetchInstitutionReportHandlerTest {
         assertEquals(expected, actual);
     }
 
+    private static SearchResultParameters defaultResultParameters() {
+        return SearchResultParameters.builder().withSize(PAGE_SIZE).withSortOrder(EXPECTED_SORT_ORDER).build();
+    }
+
     private static void mockOpenSearchResponseThrowingOnSecondRequest(List<NviCandidateIndexDocument> indexDocuments,
                                                                       URI topLevelCristinOrg) throws IOException {
         var aggregationRequest = buildRequest(topLevelCristinOrg, searchResultParams(0, 0))
@@ -390,7 +395,11 @@ public class FetchInstitutionReportHandlerTest {
     }
 
     private static SearchResultParameters searchResultParams(int size, int offset) {
-        return SearchResultParameters.builder().withSize(size).withOffset(offset).build();
+        return SearchResultParameters.builder()
+                   .withSize(size)
+                   .withOffset(offset)
+                   .withSortOrder(EXPECTED_SORT_ORDER)
+                   .build();
     }
 
     private static ResponseException mockResponseException() {

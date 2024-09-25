@@ -21,6 +21,7 @@ import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
 import nva.commons.core.paths.UriWrapper;
 import org.opensearch.client.ResponseException;
+import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
@@ -36,6 +37,7 @@ public class InstitutionReportGenerator {
     private static final int EXPONENTIAL_PAGE_SIZE_DIVISOR = 2;
     private static final int PAGE_SIZE_NO_HITS = 0;
     private static final int NO_OFFSET = 0;
+    private static final String SORT_ORDER = SortOrder.Asc.jsonValue();
     private final SearchClient<NviCandidateIndexDocument> searchClient;
     private final int searchPageSize;
     private final String year;
@@ -192,6 +194,7 @@ public class InstitutionReportGenerator {
         return SearchResultParameters.builder()
                    .withSize(pageSize)
                    .withOffset(offset)
+                   .withSortOrder(SORT_ORDER)
                    .build();
     }
 }
