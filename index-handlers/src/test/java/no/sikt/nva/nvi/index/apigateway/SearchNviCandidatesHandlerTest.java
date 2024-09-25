@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.index.apigateway;
 
+import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.filterAggregate;
 import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.getGlobalAggregate;
 import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.organizationApprovalStatusAggregate;
-import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.randomFilterAggregate;
 import static no.sikt.nva.nvi.index.apigateway.utils.MockOpenSearchUtil.createSearchResponse;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_AGGREGATION_TYPE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_EXCLUDE_SUB_UNITS;
@@ -276,7 +276,7 @@ public class SearchNviCandidatesHandlerTest {
         var userName = randomString();
         mockIdentityService(userName);
         when(openSearchClient.search(any()))
-            .thenReturn(createSearchResponse(documents, aggregationName, randomFilterAggregate(docCount)));
+            .thenReturn(createSearchResponse(documents, aggregationName, filterAggregate(docCount)));
         handler.handleRequest(requestWithoutQueryParameters(userName), output, context);
         var response =
             GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
@@ -292,7 +292,7 @@ public class SearchNviCandidatesHandlerTest {
         var userName = randomString();
         mockIdentityService(userName);
         when(openSearchClient.search(any()))
-            .thenReturn(createSearchResponse(documents, aggregationName, randomFilterAggregate(1)));
+            .thenReturn(createSearchResponse(documents, aggregationName, filterAggregate(1)));
         handler.handleRequest(requestWithoutQueryParameters(userName), output, context);
         var response =
             GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
