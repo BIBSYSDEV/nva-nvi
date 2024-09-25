@@ -1214,7 +1214,7 @@ Resources:
         Variables:
           ALLOWED_ORIGIN: !Ref AllowedOrigins
           COGNITO_HOST: !Ref CognitoAuthorizationUri
-          INSTITUTION_REPORT_SEARCH_PAGE_SIZE: 1000
+          INSTITUTION_REPORT_SEARCH_PAGE_SIZE: 400
       Policies:
         - !GetAtt ReadSearchInfrastructureSecretsPolicy.PolicyArn
       Events:
