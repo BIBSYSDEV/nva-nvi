@@ -173,7 +173,9 @@ public class InstitutionReportGenerator {
 
     private HitsMetadata<NviCandidateIndexDocument> search(int offset, int pageSize) throws IOException {
         logger.info("Searching for candidates with page size {} and with offset {}", pageSize, offset);
-        return searchClient.search(buildSearchRequest(offset, pageSize).build()).hits();
+        var searchResponse = searchClient.search(buildSearchRequest(offset, pageSize).build()).hits();
+        logger.info("Response received with page size {} and with offset {}", pageSize, offset);
+        return searchResponse;
     }
 
     private CandidateSearchParameters.Builder buildSearchRequest(int offset, int pageSize) {
