@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Objects;
 import nva.commons.core.JacocoGenerated;
 import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.slf4j.Logger;
 
 public final class ExcelWorkbookGenerator {
@@ -19,6 +19,7 @@ public final class ExcelWorkbookGenerator {
     private static final Encoder ENCODER = Base64.getEncoder();
     private static final int FIRST_SHEET_INDEX = 0;
     private static final int FIRST_ROW_INDEX = 0;
+    private static final int RANDOM_ACCESS_WINDOW_SIZE = 100;
     private final List<String> headers;
     private final List<List<String>> data;
 
@@ -68,9 +69,10 @@ public final class ExcelWorkbookGenerator {
         }
     }
 
-    private static XSSFWorkbook createWorkbookWithOneSheet() {
-        var workbook = new XSSFWorkbook();
-        workbook.createSheet();
+    private static SXSSFWorkbook createWorkbookWithOneSheet() {
+        var workbook = new SXSSFWorkbook();
+        var sheet = workbook.createSheet();
+        sheet.setRandomAccessWindowSize(RANDOM_ACCESS_WINDOW_SIZE);
         return workbook;
     }
 
@@ -88,20 +90,20 @@ public final class ExcelWorkbookGenerator {
         }
     }
 
-    private void createSheetWithHeadersAndData(XSSFWorkbook workbook) {
+    private void createSheetWithHeadersAndData(SXSSFWorkbook workbook) {
         var sheet = workbook.getSheetAt(FIRST_SHEET_INDEX);
         addHeaders(sheet);
         addData(sheet);
     }
 
-    private void addData(XSSFSheet sheet) {
+    private void addData(SXSSFSheet sheet) {
         for (List<String> cells : data) {
             var nextRow = sheet.getLastRowNum() + 1;
             addCells(sheet.createRow(nextRow), cells);
         }
     }
 
-    private void addHeaders(XSSFSheet sheet) {
+    private void addHeaders(SXSSFSheet sheet) {
         var headerRow = sheet.createRow(FIRST_ROW_INDEX);
         addCells(headerRow, headers);
     }
