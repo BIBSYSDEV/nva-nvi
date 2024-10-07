@@ -1407,6 +1407,9 @@ Resources:
             ProjectionType: ALL
       StreamSpecification:
         StreamViewType: NEW_AND_OLD_IMAGES
+      Tags:
+        - Key: IncludedInBackup
+          Value: 'true'
 
   #============================= Alarms =========================================================
 
