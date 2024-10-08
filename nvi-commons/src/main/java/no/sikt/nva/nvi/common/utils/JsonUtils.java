@@ -34,7 +34,7 @@ public final class JsonUtils {
     }
 
     public static boolean isNodePresent(JsonNode node, String jsonPointer) {
-        return !node.at(jsonPointer).isMissingNode();
+        return isNotMissingNode(node.at(jsonPointer));
     }
 
     private static boolean isNotMissingNode(JsonNode node) {

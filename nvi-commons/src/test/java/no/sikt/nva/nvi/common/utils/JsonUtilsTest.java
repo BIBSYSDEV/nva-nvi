@@ -80,4 +80,11 @@ class JsonUtilsTest {
         var randomJsonNode = objectMapper.createObjectNode();
         assertThat(JsonUtils.isNodePresent(randomJsonNode, "/" + fieldName), is(false));
     }
+
+    @Test
+    void shouldReturnFalseIfNodeIsNull() {
+        var fieldName = "fieldName";
+        var randomJsonNode = objectMapper.createObjectNode().set(fieldName, null);
+        assertThat(JsonUtils.isNodePresent(randomJsonNode, "/" + fieldName), is(false));
+    }
 }

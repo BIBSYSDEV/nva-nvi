@@ -219,7 +219,7 @@ public final class IndexDocumentTestUtils {
 
     private static boolean containsContributorsPreview(JsonNode expandedResource) {
         var entityDescription = expandedResource.at("/entityDescription");
-        return entityDescription.has("contributorsPreview");
+        return JsonUtils.isNodePresent(entityDescription, "/contributorsPreview");
     }
 
     private static String extractOptionalLanguage(JsonNode expandedResource) {
