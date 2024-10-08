@@ -330,7 +330,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     @Test
     void shouldExtractContributorsPreviewAndContributorsCountFromExpandedResource(){
         var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
-        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(candidate);
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
         var event = createEvent(candidate.getIdentifier());
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(event, CONTEXT);

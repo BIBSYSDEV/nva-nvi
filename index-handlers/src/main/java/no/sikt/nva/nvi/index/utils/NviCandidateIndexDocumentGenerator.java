@@ -8,6 +8,7 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_JOURNAL_PIS
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PRT_PAGES_END;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR_PREVIEW;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_DAY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_IDENTITY;
@@ -180,6 +181,7 @@ public final class NviCandidateIndexDocumentGenerator {
         return PublicationDetails.builder()
                    .withId(extractId(expandedResource))
                    .withContributors(contributors)
+                   .withContributorsPreview(extractContributorsPreview())
                    .withType(extractInstanceType())
                    .withPublicationDate(extractPublicationDate())
                    .withTitle(extractMainTitle())
@@ -187,6 +189,10 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withPages(extractPages())
                    .withLanguage(extractLanguage())
                    .build();
+    }
+
+    private List<ContributorType> extractContributorsPreview() {
+        return getJsonNodeStream(expandedResource, JSON_PTR_CONTRIBUTOR_PREVIEW).map(this::createContributor).toList();
     }
 
     private String extractLanguage() {
