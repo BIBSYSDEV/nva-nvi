@@ -329,6 +329,17 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldExtractContributorsPreviewFromExpandedResource(){
+        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(candidate);
+        var event = createEvent(candidate.getIdentifier());
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @Test
     void shouldProduceIndexDocumentWithTypeInfo() throws JsonProcessingException {
         var candidate = randomApplicableCandidate();
         setUpExistingResourceInS3AndGenerateExpectedDocument(candidate);
