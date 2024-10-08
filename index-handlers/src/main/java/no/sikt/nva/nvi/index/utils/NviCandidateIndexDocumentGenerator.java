@@ -82,7 +82,7 @@ public final class NviCandidateIndexDocumentGenerator {
     private static final TypeReference<Map<String, String>> TYPE_REF =
         new TypeReference<>() {
         };
-    private static final int FALLBACK_CONTRIBUTORS_PREVIEW_LIMIT = 5;
+    private static final int FALLBACK_CONTRIBUTORS_PREVIEW_LIMIT = 10;
     private final OrganizationRetriever organizationRetriever;
     private final JsonNode expandedResource;
     private final Candidate candidate;

@@ -71,7 +71,7 @@ public final class IndexDocumentTestUtils {
     public static final String NVI_CANDIDATES_FOLDER = "nvi-candidates";
     public static final String GZIP_ENDING = ".gz";
     public static final String DELIMITER = "\\.";
-    private static final int CONTRIBUTORS_PREVIEW_LIMIT = 5;
+    private static final int CONTRIBUTORS_PREVIEW_LIMIT = 10;
 
     private IndexDocumentTestUtils() {
     }
