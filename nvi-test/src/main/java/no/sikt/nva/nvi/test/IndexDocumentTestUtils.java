@@ -71,6 +71,7 @@ public final class IndexDocumentTestUtils {
     public static final String NVI_CANDIDATES_FOLDER = "nvi-candidates";
     public static final String GZIP_ENDING = ".gz";
     public static final String DELIMITER = "\\.";
+    private static final int CONTRIBUTORS_PREVIEW_LIMIT = 5;
 
     private IndexDocumentTestUtils() {
     }
@@ -89,13 +90,17 @@ public final class IndexDocumentTestUtils {
     }
 
     public static PublicationDetails expandPublicationDetails(Candidate candidate, JsonNode expandedResource) {
+        List<ContributorType> contributors = mapToContributors(extractContributors(expandedResource), candidate);
         return PublicationDetails.builder()
                    .withType(extractType(expandedResource))
                    .withId(candidate.getPublicationDetails().publicationId().toString())
                    .withTitle(extractTitle(expandedResource))
                    .withPublicationDate(mapToPublicationDate(candidate.getPublicationDetails().publicationDate()))
-                   .withContributors(mapToContributors(extractContributors(expandedResource), candidate))
-                   .withContributorsPreview(mapToContributors(extractContributorsPreview(expandedResource), candidate))
+                   .withContributors(contributors)
+                   .withContributorsPreview(containsContributorsPreview(expandedResource)
+                                                ? mapToContributors(extractContributorsPreview(expandedResource),
+                                                                    candidate)
+                                                : contributors.stream().limit(CONTRIBUTORS_PREVIEW_LIMIT).toList())
                    .withPublicationChannel(getPublicationChannel(expandedResource, candidate.getPublicationDetails()))
                    .withPages(getPages(expandedResource))
                    .withLanguage(extractOptionalLanguage(expandedResource))
@@ -210,6 +215,10 @@ public final class IndexDocumentTestUtils {
                        nviOrganization(randomUri()),
                        randomNonNviAffiliation()))
                    .build();
+    }
+
+    private static boolean containsContributorsPreview(JsonNode expandedResource) {
+        return expandedResource.has("entityDescription/contributorsPreview");
     }
 
     private static String extractOptionalLanguage(JsonNode expandedResource) {

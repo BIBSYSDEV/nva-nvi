@@ -328,9 +328,21 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldExtractContributorsPreviewAndContributorsCountFromExpandedResource(){
+    void shouldExtractContributorsPreviewAndContributorsCountFromExpandedResource() {
         var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
         var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
+        var event = createEvent(candidate.getIdentifier());
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @Test
+    void shouldSetContributorsPreviewToFiveFirstContributorsIfExpandedResourceIsMissingContributorsPreview() {
+        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
+        var expectedIndexDocument =
+            setUpExistingResourceMissingContributorsPreviewInS3AndGenerateExpectedDocument(candidate);
         var event = createEvent(candidate.getIdentifier());
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(event, CONTEXT);
@@ -681,6 +693,19 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         when(uriRetriever.fetchResponse(eq(affiliationId), eq(MEDIA_TYPE_JSON_V2))).thenReturn(httpResponse);
     }
 
+    private NviCandidateIndexDocument setUpExistingResourceMissingContributorsPreviewInS3AndGenerateExpectedDocument(
+        Candidate candidate) {
+        var expandedResource = createExpandedResource(candidate, true, true);
+        var entityDescriptionCopy = (ObjectNode) expandedResource.get("entityDescription");
+        entityDescriptionCopy.remove("contributorsPreview");
+        var expandedResourceCopy = (ObjectNode) expandedResource;
+        expandedResourceCopy.replace("entityDescription", entityDescriptionCopy);
+        var resourceIndexDocument = createResourceIndexDocument(expandedResourceCopy);
+        var resourcePath = extractResourceIdentifier(candidate);
+        insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
+        return createExpectedNviIndexDocument(expandedResource, candidate);
+    }
+
     private IndexDocumentWithConsumptionAttributes setUpExistingResourceInS3AndGenerateExpectedDocument(
         Candidate persistedCandidate) {
         return setUpExistingResourceInS3AndGenerateExpectedDocument(persistedCandidate, true, true);
@@ -693,8 +718,8 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return IndexDocumentWithConsumptionAttributes.from(indexDocument);
     }
 
-    private void setUpExistingResourceInS3(Candidate persistedCandidate) {
-        setUpExistingResourceInS3(persistedCandidate, true, true);
+    private JsonNode setUpExistingResourceInS3(Candidate persistedCandidate) {
+        return setUpExistingResourceInS3(persistedCandidate, true, true);
     }
 
     private JsonNode setUpExistingResourceInS3(Candidate persistedCandidate, boolean withLanguage, boolean withIssn) {
