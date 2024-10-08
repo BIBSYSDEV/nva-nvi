@@ -703,7 +703,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var resourceIndexDocument = createResourceIndexDocument(expandedResourceCopy);
         var resourcePath = extractResourceIdentifier(candidate);
         insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
-        return createExpectedNviIndexDocument(expandedResource, candidate);
+        return createExpectedNviIndexDocument(expandedResourceCopy, candidate);
     }
 
     private IndexDocumentWithConsumptionAttributes setUpExistingResourceInS3AndGenerateExpectedDocument(
