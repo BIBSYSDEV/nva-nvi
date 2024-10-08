@@ -595,6 +595,15 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return lowLevel;
     }
 
+    private static ObjectNode expandedResourceWithoutContributorsPreview(Candidate candidate) {
+        var expandedResource = createExpandedResource(candidate, true, true);
+        var entityDescriptionCopy = (ObjectNode) expandedResource.get("entityDescription");
+        entityDescriptionCopy.remove("contributorsPreview");
+        var expandedResourceCopy = (ObjectNode) expandedResource;
+        expandedResourceCopy.replace("entityDescription", entityDescriptionCopy);
+        return expandedResourceCopy;
+    }
+
     private Candidate setUpNonApplicableCandidate(URI institutionId) {
         var candidate =
             Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
@@ -695,11 +704,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     private NviCandidateIndexDocument setUpExistingResourceMissingContributorsPreviewInS3AndGenerateExpectedDocument(
         Candidate candidate) {
-        var expandedResource = createExpandedResource(candidate, true, true);
-        var entityDescriptionCopy = (ObjectNode) expandedResource.get("entityDescription");
-        entityDescriptionCopy.remove("contributorsPreview");
-        var expandedResourceCopy = (ObjectNode) expandedResource;
-        expandedResourceCopy.replace("entityDescription", entityDescriptionCopy);
+        var expandedResourceCopy = expandedResourceWithoutContributorsPreview(candidate);
         var resourceIndexDocument = createResourceIndexDocument(expandedResourceCopy);
         var resourcePath = extractResourceIdentifier(candidate);
         insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
