@@ -41,6 +41,7 @@ import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.net.URI;
@@ -339,10 +340,35 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldSetContributorsPreviewToFiveFirstContributorsIfExpandedResourceIsMissingContributorsPreview() {
+    void shouldSetContributorsPreviewToTenFirstContributorsIfExpandedResourceIsMissingContributorsPreview() {
         var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
+        var expandedResource = expandedResourceWithoutContributorsPreview(candidate);
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(candidate, expandedResource);
+        var event = createEvent(candidate.getIdentifier());
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @Test
+    void shouldSetContributorsPreviewToTenFirstContributorsIfExpandedResourceContributorsPreviewIsEmptyArray() {
+        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
+        var expandedResource = expandedResourceWithContributorsPreview(candidate, objectMapper.createArrayNode());
         var expectedIndexDocument =
-            setUpExistingResourceMissingContributorsPreviewInS3AndGenerateExpectedDocument(candidate);
+            setUpExistingResourceInS3AndGenerateExpectedDocument(candidate, expandedResource);
+        var event = createEvent(candidate.getIdentifier());
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @Test
+    void shouldSetContributorsPreviewToTenFirstContributorsIfExpandedResourceContributorsPreviewIsNull() {
+        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
+        var expandedResource = expandedResourceWithContributorsPreview(candidate, null);
+        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(candidate, expandedResource);
         var event = createEvent(candidate.getIdentifier());
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(event, CONTEXT);
@@ -481,6 +507,16 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidateToSucceed)));
         assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    private static ObjectNode expandedResourceWithContributorsPreview(Candidate candidate,
+                                                                      ArrayNode contributorsPreviewNode) {
+        var expandedResource = createExpandedResource(candidate, true, true);
+        var entityDescriptionCopy = (ObjectNode) expandedResource.get("entityDescription");
+        entityDescriptionCopy.replace("contributorsPreview", contributorsPreviewNode);
+        var expandedResourceCopy = (ObjectNode) expandedResource;
+        expandedResourceCopy.replace("entityDescription", entityDescriptionCopy);
+        return expandedResourceCopy;
     }
 
     private static List<URI> extractPartOfAffiliation(NviCandidateIndexDocument actualIndexDocument,
@@ -702,13 +738,12 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         when(uriRetriever.fetchResponse(eq(affiliationId), eq(MEDIA_TYPE_JSON_V2))).thenReturn(httpResponse);
     }
 
-    private NviCandidateIndexDocument setUpExistingResourceMissingContributorsPreviewInS3AndGenerateExpectedDocument(
-        Candidate candidate) {
-        var expandedResourceCopy = expandedResourceWithoutContributorsPreview(candidate);
-        var resourceIndexDocument = createResourceIndexDocument(expandedResourceCopy);
+    private NviCandidateIndexDocument setUpExistingResourceInS3AndGenerateExpectedDocument(
+        Candidate candidate, ObjectNode expandedResource) {
+        var resourceIndexDocument = createResourceIndexDocument(expandedResource);
         var resourcePath = extractResourceIdentifier(candidate);
         insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
-        return createExpectedNviIndexDocument(expandedResourceCopy, candidate);
+        return createExpectedNviIndexDocument(expandedResource, candidate);
     }
 
     private IndexDocumentWithConsumptionAttributes setUpExistingResourceInS3AndGenerateExpectedDocument(
