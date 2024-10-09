@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -50,6 +51,12 @@ public final class ExpandedResourceGenerator {
 
         entityDescription.set("contributors", contributors);
 
+        entityDescription.put("contributorsCount", contributors.size());
+
+        var contributorsPreview = createContributorsPreview(contributors);
+
+        entityDescription.set("contributorsPreview", contributorsPreview);
+
         entityDescription.put("mainTitle", randomString());
 
         var publicationDate = createAndPopulatePublicationDate(candidate.getPublicationDetails().publicationDate());
@@ -88,8 +95,12 @@ public final class ExpandedResourceGenerator {
         return (ArrayNode) expandedResource.at("/entityDescription/contributors");
     }
 
+    public static ArrayNode extractContributorsPreview(JsonNode expandedResource) {
+        return (ArrayNode) expandedResource.at("/entityDescription/contributorsPreview");
+    }
+
     public static List<URI> extractAffiliations(JsonNode contributorNode) {
-        return JsonUtils.streamNode(contributorNode.at("/affiliations"))
+        return streamNode(contributorNode.at("/affiliations"))
                    .map(affiliationNode -> affiliationNode.at("/id"))
                    .map(JsonNode::asText)
                    .map(URI::create)
@@ -115,6 +126,12 @@ public final class ExpandedResourceGenerator {
     public static String extractType(JsonNode expandedResource) {
         return JsonUtils.extractJsonNodeTextValue(expandedResource,
                                                   "/entityDescription/reference/publicationInstance/type");
+    }
+
+    private static ArrayNode createContributorsPreview(ArrayNode contributors) {
+        return streamNode(contributors)
+                   .limit(10)
+                   .collect(objectMapper::createArrayNode, ArrayNode::add, ArrayNode::addAll);
     }
 
     private static ObjectNode createAndPopulatePublicationInstance(Candidate candidate) {
@@ -226,18 +243,18 @@ public final class ExpandedResourceGenerator {
         var contributors = objectMapper.createArrayNode();
         var creators = candidate.getPublicationDetails().creators();
         creators.stream()
-            .map(creator -> createContributorNode(creator.affiliations(), creator.id()))
+            .map(creator -> createContributorNode(creator.affiliations(), creator.id(), true))
             .forEach(contributors::add);
         addOtherRandomContributors(contributors, nonNviContributorAffiliationIds);
         return contributors;
     }
 
     private static void addOtherRandomContributors(ArrayNode contributors, List<URI> affiliationsIds) {
-        IntStream.range(0, 10).mapToObj(i -> createContributorNode(affiliationsIds, URI.create(randomString())))
+        IntStream.range(0, 10).mapToObj(i -> createContributorNode(affiliationsIds, URI.create(randomString()), true))
             .forEach(contributors::add);
     }
 
-    private static ObjectNode createContributorNode(List<URI> affiliationsUris, URI contributorId) {
+    private static ObjectNode createContributorNode(List<URI> affiliationsUris, URI contributorId, boolean verified) {
         var contributorNode = objectMapper.createObjectNode();
 
         contributorNode.put("type", "Contributor");
@@ -254,6 +271,7 @@ public final class ExpandedResourceGenerator {
         identity.put("id", contributorId.toString());
         identity.put("name", randomString());
         identity.put("orcid", randomString());
+        identity.put("verificationStatus", verified ? "Verified" : "NonVerified");
 
         contributorNode.set("identity", identity);
         return contributorNode;
