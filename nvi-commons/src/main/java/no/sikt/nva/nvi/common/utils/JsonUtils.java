@@ -33,10 +33,6 @@ public final class JsonUtils {
         return URI.create(extractJsonNodeTextValue(jsonNode, JSON_PTR_ID));
     }
 
-    public static boolean isNodePresent(JsonNode node, String jsonPointer) {
-        return isNotMissingNode(node.at(jsonPointer));
-    }
-
     private static boolean isNotMissingNode(JsonNode node) {
         return !node.isMissingNode() && !node.isNull() && node.isValueNode();
     }

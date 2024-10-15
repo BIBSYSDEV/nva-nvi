@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.common.utils;
 public final class JsonPointers {
 
     public static final String JSON_PTR_CONTRIBUTOR = "/entityDescription/contributors";
-    public static final String JSON_PTR_CONTRIBUTOR_PREVIEW = "/entityDescription/contributorsPreview";
     public static final String JSON_PTR_AFFILIATIONS = "/affiliations";
     public static final String JSON_PTR_ID = "/id";
     public static final String JSON_PTR_TYPE = "/type";

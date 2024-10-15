@@ -8,14 +8,6 @@ import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_L
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_NORWEGIAN_LABEL;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.NB_FIELD;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractAffiliations;
-import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractContributors;
-import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractContributorsPreview;
-import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractId;
-import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractName;
-import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractOrcid;
-import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractRole;
-import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractTitle;
-import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractType;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
@@ -71,7 +63,6 @@ public final class IndexDocumentTestUtils {
     public static final String NVI_CANDIDATES_FOLDER = "nvi-candidates";
     public static final String GZIP_ENDING = ".gz";
     public static final String DELIMITER = "\\.";
-    private static final int CONTRIBUTORS_PREVIEW_LIMIT = 10;
 
     private IndexDocumentTestUtils() {
     }
@@ -90,17 +81,13 @@ public final class IndexDocumentTestUtils {
     }
 
     public static PublicationDetails expandPublicationDetails(Candidate candidate, JsonNode expandedResource) {
-        List<ContributorType> contributors = mapToContributors(extractContributors(expandedResource), candidate);
         return PublicationDetails.builder()
-                   .withType(extractType(expandedResource))
+                   .withType(ExpandedResourceGenerator.extractType(expandedResource))
                    .withId(candidate.getPublicationDetails().publicationId().toString())
-                   .withTitle(extractTitle(expandedResource))
+                   .withTitle(ExpandedResourceGenerator.extractTitle(expandedResource))
                    .withPublicationDate(mapToPublicationDate(candidate.getPublicationDetails().publicationDate()))
-                   .withContributors(contributors)
-                   .withContributorsPreview(containsContributorsPreview(expandedResource)
-                                                ? mapToContributors(extractContributorsPreview(expandedResource),
-                                                                    candidate)
-                                                : contributors.stream().limit(CONTRIBUTORS_PREVIEW_LIMIT).toList())
+                   .withContributors(
+                       mapToContributors(ExpandedResourceGenerator.extractContributors(expandedResource), candidate))
                    .withPublicationChannel(getPublicationChannel(expandedResource, candidate.getPublicationDetails()))
                    .withPages(getPages(expandedResource))
                    .withLanguage(extractOptionalLanguage(expandedResource))
@@ -215,11 +202,6 @@ public final class IndexDocumentTestUtils {
                        nviOrganization(randomUri()),
                        randomNonNviAffiliation()))
                    .build();
-    }
-
-    private static boolean containsContributorsPreview(JsonNode expandedResource) {
-        var entityDescription = expandedResource.at("/entityDescription");
-        return JsonUtils.isNodePresent(entityDescription, "/contributorsPreview");
     }
 
     private static String extractOptionalLanguage(JsonNode expandedResource) {
@@ -377,10 +359,10 @@ public final class IndexDocumentTestUtils {
 
     private static Contributor generateContributor(JsonNode contributorNode, List<URI> affiliations) {
         return Contributor.builder()
-                   .withId(extractId(contributorNode))
-                   .withName(extractName(contributorNode))
-                   .withOrcid(extractOrcid(contributorNode))
-                   .withRole(extractRole(contributorNode))
+                   .withId(ExpandedResourceGenerator.extractId(contributorNode))
+                   .withName(ExpandedResourceGenerator.extractName(contributorNode))
+                   .withOrcid(ExpandedResourceGenerator.extractOrcid(contributorNode))
+                   .withRole(ExpandedResourceGenerator.extractRole(contributorNode))
                    .withAffiliations(expandAffiliations(affiliations))
                    .build();
     }
@@ -388,10 +370,10 @@ public final class IndexDocumentTestUtils {
     private static ContributorType generateNviContributor(JsonNode contributorNode, Creator value,
                                                           List<URI> affiliations) {
         return NviContributor.builder()
-                   .withId(extractId(contributorNode))
-                   .withName(extractName(contributorNode))
-                   .withOrcid(extractOrcid(contributorNode))
-                   .withRole(extractRole(contributorNode))
+                   .withId(ExpandedResourceGenerator.extractId(contributorNode))
+                   .withName(ExpandedResourceGenerator.extractName(contributorNode))
+                   .withOrcid(ExpandedResourceGenerator.extractOrcid(contributorNode))
+                   .withRole(ExpandedResourceGenerator.extractRole(contributorNode))
                    .withAffiliations(expandAffiliationsWithPartOf(value, affiliations))
                    .build();
     }
@@ -401,7 +383,7 @@ public final class IndexDocumentTestUtils {
                    .creators()
                    .stream()
                    .filter(
-                       creator -> creator.id().toString().equals(extractId(contributorNode)))
+                       creator -> creator.id().toString().equals(ExpandedResourceGenerator.extractId(contributorNode)))
                    .findFirst();
     }
 

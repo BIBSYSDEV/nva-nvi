@@ -41,7 +41,6 @@ import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.net.URI;
@@ -58,6 +57,7 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
+import no.sikt.nva.nvi.index.model.document.Approval;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
@@ -329,54 +329,6 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldExtractContributorsPreviewAndContributorsCountFromExpandedResource() {
-        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
-        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
-        var event = createEvent(candidate.getIdentifier());
-        mockUriRetrieverOrgResponse(candidate);
-        handler.handleRequest(event, CONTEXT);
-        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-        assertEquals(expectedIndexDocument, actualIndexDocument);
-    }
-
-    @Test
-    void shouldSetContributorsPreviewToTenFirstContributorsIfExpandedResourceIsMissingContributorsPreview() {
-        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
-        var expandedResource = expandedResourceWithoutContributorsPreview(candidate);
-        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(candidate, expandedResource);
-        var event = createEvent(candidate.getIdentifier());
-        mockUriRetrieverOrgResponse(candidate);
-        handler.handleRequest(event, CONTEXT);
-        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-        assertEquals(expectedIndexDocument, actualIndexDocument);
-    }
-
-    @Test
-    void shouldSetContributorsPreviewToTenFirstContributorsIfExpandedResourceContributorsPreviewIsEmptyArray() {
-        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
-        var expandedResource = expandedResourceWithContributorsPreview(candidate, objectMapper.createArrayNode());
-        var expectedIndexDocument =
-            setUpExistingResourceInS3AndGenerateExpectedDocument(candidate, expandedResource);
-        var event = createEvent(candidate.getIdentifier());
-        mockUriRetrieverOrgResponse(candidate);
-        handler.handleRequest(event, CONTEXT);
-        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-        assertEquals(expectedIndexDocument, actualIndexDocument);
-    }
-
-    @Test
-    void shouldSetContributorsPreviewToTenFirstContributorsIfExpandedResourceContributorsPreviewIsNull() {
-        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
-        var expandedResource = expandedResourceWithContributorsPreview(candidate, null);
-        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(candidate, expandedResource);
-        var event = createEvent(candidate.getIdentifier());
-        mockUriRetrieverOrgResponse(candidate);
-        handler.handleRequest(event, CONTEXT);
-        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-        assertEquals(expectedIndexDocument, actualIndexDocument);
-    }
-
-    @Test
     void shouldProduceIndexDocumentWithTypeInfo() throws JsonProcessingException {
         var candidate = randomApplicableCandidate();
         setUpExistingResourceInS3AndGenerateExpectedDocument(candidate);
@@ -509,16 +461,6 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         assertEquals(expectedIndexDocument, actualIndexDocument);
     }
 
-    private static ObjectNode expandedResourceWithContributorsPreview(Candidate candidate,
-                                                                      ArrayNode contributorsPreviewNode) {
-        var expandedResource = createExpandedResource(candidate, true, true);
-        var entityDescriptionCopy = (ObjectNode) expandedResource.get("entityDescription");
-        entityDescriptionCopy.replace("contributorsPreview", contributorsPreviewNode);
-        var expandedResourceCopy = (ObjectNode) expandedResource;
-        expandedResourceCopy.replace("entityDescription", entityDescriptionCopy);
-        return expandedResourceCopy;
-    }
-
     private static List<URI> extractPartOfAffiliation(NviCandidateIndexDocument actualIndexDocument,
                                                       URI affiliationId) {
         return actualIndexDocument.getNviContributors()
@@ -631,15 +573,6 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return lowLevel;
     }
 
-    private static ObjectNode expandedResourceWithoutContributorsPreview(Candidate candidate) {
-        var expandedResource = createExpandedResource(candidate, true, true);
-        var entityDescriptionCopy = (ObjectNode) expandedResource.get("entityDescription");
-        entityDescriptionCopy.remove("contributorsPreview");
-        var expandedResourceCopy = (ObjectNode) expandedResource;
-        expandedResourceCopy.replace("entityDescription", entityDescriptionCopy);
-        return expandedResourceCopy;
-    }
-
     private Candidate setUpNonApplicableCandidate(URI institutionId) {
         var candidate =
             Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
@@ -738,14 +671,6 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         when(uriRetriever.fetchResponse(eq(affiliationId), eq(MEDIA_TYPE_JSON_V2))).thenReturn(httpResponse);
     }
 
-    private NviCandidateIndexDocument setUpExistingResourceInS3AndGenerateExpectedDocument(
-        Candidate candidate, ObjectNode expandedResource) {
-        var resourceIndexDocument = createResourceIndexDocument(expandedResource);
-        var resourcePath = extractResourceIdentifier(candidate);
-        insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
-        return createExpectedNviIndexDocument(expandedResource, candidate);
-    }
-
     private IndexDocumentWithConsumptionAttributes setUpExistingResourceInS3AndGenerateExpectedDocument(
         Candidate persistedCandidate) {
         return setUpExistingResourceInS3AndGenerateExpectedDocument(persistedCandidate, true, true);
@@ -758,8 +683,8 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return IndexDocumentWithConsumptionAttributes.from(indexDocument);
     }
 
-    private JsonNode setUpExistingResourceInS3(Candidate persistedCandidate) {
-        return setUpExistingResourceInS3(persistedCandidate, true, true);
+    private void setUpExistingResourceInS3(Candidate persistedCandidate) {
+        setUpExistingResourceInS3(persistedCandidate, true, true);
     }
 
     private JsonNode setUpExistingResourceInS3(Candidate persistedCandidate, boolean withLanguage, boolean withIssn) {

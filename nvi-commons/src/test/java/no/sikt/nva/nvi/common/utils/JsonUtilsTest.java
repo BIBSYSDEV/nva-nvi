@@ -65,26 +65,4 @@ class JsonUtilsTest {
         var jsonNode = objectMapper.createObjectNode().put(ID_FIELD, id.toString());
         assertThat(JsonUtils.extractId(jsonNode), is(equalTo(id)));
     }
-
-    @Test
-    void shouldReturnTrueIfNodeIsPresent() {
-        var fieldName = "fieldName";
-        var fieldValue = randomString();
-        var randomJsonNode = objectMapper.createObjectNode().put(fieldName, fieldValue);
-        assertThat(JsonUtils.isNodePresent(randomJsonNode, "/" + fieldName), is(true));
-    }
-
-    @Test
-    void shouldReturnFalseIfNodeIsMissing() {
-        var fieldName = "fieldName";
-        var randomJsonNode = objectMapper.createObjectNode();
-        assertThat(JsonUtils.isNodePresent(randomJsonNode, "/" + fieldName), is(false));
-    }
-
-    @Test
-    void shouldReturnFalseIfNodeIsNull() {
-        var fieldName = "fieldName";
-        var randomJsonNode = objectMapper.createObjectNode().set(fieldName, null);
-        assertThat(JsonUtils.isNodePresent(randomJsonNode, "/" + fieldName), is(false));
-    }
 }
