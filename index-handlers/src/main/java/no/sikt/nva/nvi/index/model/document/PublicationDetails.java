@@ -12,6 +12,7 @@ public record PublicationDetails(String id,
                                  PublicationDate publicationDate,
                                  List<NviContributor> nviContributors,
                                  List<ContributorType> contributors,
+                                 int contributorsCount,
                                  PublicationChannel publicationChannel,
                                  Pages pages,
                                  String language) {
@@ -28,6 +29,7 @@ public record PublicationDetails(String id,
         private PublicationDate publicationDate;
         private List<NviContributor> nviContributors;
         private List<ContributorType> contributors;
+        private int contributorsCount;
         private PublicationChannel publicationChannel;
         private Pages pages;
         private String language;
@@ -57,6 +59,7 @@ public record PublicationDetails(String id,
 
         public Builder withContributors(List<ContributorType> contributors) {
             this.contributors = contributors;
+            this.contributorsCount = contributors.size();
             this.nviContributors = contributors.stream()
                                        .filter(NviContributor.class::isInstance)
                                        .map(NviContributor.class::cast)
@@ -81,7 +84,7 @@ public record PublicationDetails(String id,
 
         public PublicationDetails build() {
             return new PublicationDetails(id, type, title, publicationDate, nviContributors, contributors,
-                                          publicationChannel, pages, language);
+                                          contributorsCount, publicationChannel, pages, language);
         }
     }
 }
