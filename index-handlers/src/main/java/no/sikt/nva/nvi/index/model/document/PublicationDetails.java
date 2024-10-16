@@ -12,7 +12,6 @@ public record PublicationDetails(String id,
                                  PublicationDate publicationDate,
                                  List<NviContributor> nviContributors,
                                  List<ContributorType> contributors,
-                                 List<ContributorType> contributorsPreview,
                                  int contributorsCount,
                                  PublicationChannel publicationChannel,
                                  Pages pages,
@@ -30,7 +29,6 @@ public record PublicationDetails(String id,
         private PublicationDate publicationDate;
         private List<NviContributor> nviContributors;
         private List<ContributorType> contributors;
-        private List<ContributorType> contributorsPreview;
         private int contributorsCount;
         private PublicationChannel publicationChannel;
         private Pages pages;
@@ -69,11 +67,6 @@ public record PublicationDetails(String id,
             return this;
         }
 
-        public Builder withContributorsPreview(List<ContributorType> contributorsPreview) {
-            this.contributorsPreview = contributorsPreview;
-            return this;
-        }
-
         public Builder withPublicationChannel(PublicationChannel publicationChannel) {
             this.publicationChannel = publicationChannel;
             return this;
@@ -91,7 +84,7 @@ public record PublicationDetails(String id,
 
         public PublicationDetails build() {
             return new PublicationDetails(id, type, title, publicationDate, nviContributors, contributors,
-                                          contributorsPreview, contributorsCount, publicationChannel, pages, language);
+                                          contributorsCount, publicationChannel, pages, language);
         }
     }
 }

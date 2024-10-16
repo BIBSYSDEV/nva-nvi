@@ -8,7 +8,6 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_JOURNAL_PIS
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PRT_PAGES_END;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR_PREVIEW;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_DAY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_IDENTITY;
@@ -53,7 +52,6 @@ import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.service.model.Username;
-import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.Contributor;
 import no.sikt.nva.nvi.index.model.document.ContributorType;
@@ -82,7 +80,6 @@ public final class NviCandidateIndexDocumentGenerator {
     private static final TypeReference<Map<String, String>> TYPE_REF =
         new TypeReference<>() {
         };
-    private static final int FALLBACK_CONTRIBUTORS_PREVIEW_LIMIT = 10;
     private final OrganizationRetriever organizationRetriever;
     private final JsonNode expandedResource;
     private final Candidate candidate;
@@ -183,7 +180,6 @@ public final class NviCandidateIndexDocumentGenerator {
         return PublicationDetails.builder()
                    .withId(extractId(expandedResource))
                    .withContributors(contributors)
-                   .withContributorsPreview(extractContributorsPreviewOrFallback(contributors))
                    .withType(extractInstanceType())
                    .withPublicationDate(extractPublicationDate())
                    .withTitle(extractMainTitle())
@@ -191,13 +187,6 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withPages(extractPages())
                    .withLanguage(extractLanguage())
                    .build();
-    }
-
-    private List<ContributorType> extractContributorsPreviewOrFallback(List<ContributorType> contributors) {
-        return JsonUtils.isNodePresent(expandedResource, JSON_PTR_CONTRIBUTOR_PREVIEW)
-                   ? getJsonNodeStream(expandedResource, JSON_PTR_CONTRIBUTOR_PREVIEW).map(this::createContributor)
-                         .toList()
-                   : contributors.stream().limit(FALLBACK_CONTRIBUTORS_PREVIEW_LIMIT).toList();
     }
 
     private String extractLanguage() {
