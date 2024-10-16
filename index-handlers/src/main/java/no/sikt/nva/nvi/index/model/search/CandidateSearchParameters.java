@@ -44,12 +44,14 @@ public record CandidateSearchParameters(String searchTerm,
     private static final String DEFAULT_STRING = StringUtils.EMPTY_STRING;
     private static final int DEFAULT_QUERY_SIZE = 10;
     private static final int DEFAULT_OFFSET_SIZE = 0;
+    private static final String CONTRIBUTORS_EXCLUDED_TO_REDUCE_RESPONSE_SIZE = "publicationDetails.contributors";
 
     public static Builder builder() {
         return new Builder();
     }
 
-    public static CandidateSearchParameters fromRequestInfo(RequestInfo requestInfo, List<String> affiliationIdentifiers)
+    public static CandidateSearchParameters fromRequestInfo(RequestInfo requestInfo,
+                                                            List<String> affiliationIdentifiers)
         throws UnauthorizedException, BadRequestException {
         var aggregationType = extractQueryParamAggregationType(requestInfo);
         return CandidateSearchParameters.builder()
@@ -66,6 +68,7 @@ public record CandidateSearchParameters(String searchTerm,
                    .withAggregationType(aggregationType)
                    .withSearchResultParameters(getResultParameters(requestInfo))
                    .withTopLevelCristinOrg(requestInfo.getTopLevelOrgCristinId().orElse(null))
+                   .withExcludeFields(List.of(CONTRIBUTORS_EXCLUDED_TO_REDUCE_RESPONSE_SIZE))
                    .build();
     }
 
@@ -164,6 +167,7 @@ public record CandidateSearchParameters(String searchTerm,
 
         private Builder() {
         }
+
         public Builder withSearchTerm(String searchTerm) {
             this.searchTerm = searchTerm;
             return this;
