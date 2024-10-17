@@ -410,12 +410,12 @@ public class OpenSearchClientTest {
     @Test
     void shouldReturnHitsOnSearchTermsPartOfPublicationTitle() throws IOException, InterruptedException {
         var firstTitle = "Start of sentence. Lorem ipsum dolor sit amet, consectetur adipiscing elit";
-        var secondTitle = "Another hit. Lorem ipsum dolor sit amet, something else";
+        var secondTitle = "Another hit. First word lorem ipsum dolor sit amet, something else";
         var thirdTitleShouldNotGetHit = "Some other title";
         var indexDocuments = List.of(indexDocumentWithTitle(firstTitle), indexDocumentWithTitle(secondTitle),
                                      indexDocumentWithTitle(thirdTitleShouldNotGetHit));
         addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
-        var searchTerm = "Lorem ipsum";
+        var searchTerm = "lorem ipsum";
         var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
         var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(2));
