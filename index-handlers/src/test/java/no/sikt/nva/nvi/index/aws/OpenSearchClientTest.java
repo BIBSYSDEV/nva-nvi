@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.index.query.SearchAggregation.COMPLETED_AGGREGATIO
 import static no.sikt.nva.nvi.index.query.SearchAggregation.DISPUTED_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.NEW_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.NEW_COLLABORATION_AGG;
+import static no.sikt.nva.nvi.index.query.SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.PENDING_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.PENDING_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.REJECTED_AGG;
@@ -247,13 +248,17 @@ public class OpenSearchClientTest {
     }
 
     @Test
-    void shouldReturnAllAggregationsWhenAggregationTypeAll() throws IOException {
+    void shouldReturnDefaultAggregationsWhenAggregationTypeAll() throws IOException {
         var searchParameters = CandidateSearchParameters.builder()
                                    .withAggregationType("all")
                                    .build();
         var searchResponse = openSearchClient.search(searchParameters);
         var aggregations = searchResponse.aggregations();
-        assertEquals(SearchAggregation.values().length, aggregations.keySet().size());
+        var expectedAggregations = Arrays.stream(SearchAggregation.values())
+                                       .filter(
+                                           aggregation -> !aggregation.equals(ORGANIZATION_APPROVAL_STATUS_AGGREGATION))
+                                       .toList();
+        assertEquals(expectedAggregations.size(), aggregations.keySet().size());
     }
 
     @Test

@@ -1,5 +1,9 @@
 package no.sikt.nva.nvi.index.query;
 
+import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.APPROVED;
+import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
+import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
+import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.index.query.Aggregations.collaborationAggregation;
 import static no.sikt.nva.nvi.index.query.Aggregations.completedAggregation;
 import static no.sikt.nva.nvi.index.query.Aggregations.disputeAggregation;
@@ -7,12 +11,10 @@ import static no.sikt.nva.nvi.index.query.Aggregations.finalizedCollaborationAgg
 import static no.sikt.nva.nvi.index.query.Aggregations.organizationApprovalStatusAggregations;
 import static no.sikt.nva.nvi.index.query.Aggregations.statusAggregation;
 import static no.sikt.nva.nvi.index.query.Aggregations.totalCountAggregation;
-import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.APPROVED;
-import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
-import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
-import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.BiFunction;
+import java.util.stream.Stream;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 
 public enum SearchAggregation {
@@ -54,6 +56,16 @@ public enum SearchAggregation {
                    .filter(type -> type.getAggregationName().equalsIgnoreCase(candidate))
                    .findFirst()
                    .orElse(null);
+    }
+
+    public static List<SearchAggregation> defaultAggregations() {
+        return Stream.of(values())
+                   .filter(SearchAggregation::isNotOrganizationApprovalStatusAggregation)
+                   .toList();
+    }
+
+    private static boolean isNotOrganizationApprovalStatusAggregation(SearchAggregation searchAggregation) {
+        return !ORGANIZATION_APPROVAL_STATUS_AGGREGATION.equals(searchAggregation);
     }
 
     public Aggregation generateAggregation(String username, String topLevelCristinOrg) {
