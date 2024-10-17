@@ -119,7 +119,8 @@ public class CandidateQuery {
 
     private static Query buildSearchTermQuery(String searchTerm) {
         return new MultiMatchQuery.Builder().query(searchTerm)
-                   .fields(jsonPathOf(PUBLICATION_DETAILS, IDENTIFIER))
+                   .fields(jsonPathOf(PUBLICATION_DETAILS, IDENTIFIER),
+                           jsonPathOf(PUBLICATION_DETAILS, TITLE))
                    .build()
                    ._toQuery();
     }

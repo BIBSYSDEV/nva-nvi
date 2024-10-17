@@ -408,6 +408,17 @@ public class OpenSearchClientTest {
     }
 
     @Test
+    void shouldReturnHitOnSearchTermPublicationTitle() throws IOException, InterruptedException {
+        var candidatesInIndex = generateNumberOfCandidates(5);
+        addDocumentsToIndex(candidatesInIndex.toArray(new NviCandidateIndexDocument[0]));
+        var searchTerm = candidatesInIndex.get(2).publicationDetails().title();
+        var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+        assertEquals(searchTerm, searchResponse.hits().hits().get(0).source().publicationDetails().title());
+    }
+
+    @Test
     void shouldReturnSingleDocumentWhenFilteringByYear() throws InterruptedException, IOException {
         var customer = randomUri();
         var year = randomString();
