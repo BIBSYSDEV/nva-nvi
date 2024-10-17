@@ -375,25 +375,73 @@ public class OpenSearchClientTest {
     }
 
     @Test
-    void shouldReturnSingleDocumentWhenFilteringBySearchTerm() throws InterruptedException, IOException {
-        var customer = randomUri();
-        var searchTerm = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
-        var document = singleNviCandidateIndexDocumentWithCustomer(customer,
-                                                                   searchTerm, randomString(),
-                                                                   YEAR, randomString());
-        addDocumentsToIndex(document, singleNviCandidateIndexDocumentWithCustomer(
-            customer, randomString(), randomString(), randomString(), randomString()));
-
-        var searchParameters =
-            defaultSearchParameters().withAffiliations(List.of(getLastPathElement(customer)))
-                .withSearchTerm(getRandomWord(searchTerm))
-                .withYear(YEAR)
-                .build();
-
-        var searchResponse =
-            openSearchClient.search(searchParameters);
-
+    void shouldReturnHitOnSearchTermPublicationIdentifier() throws IOException, InterruptedException {
+        var indexDocuments = generateNumberOfCandidates(5);
+        addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
+        var searchTerm = indexDocuments.get(2).publicationDetails().identifier();
+        var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
+        var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(1));
+        assertEquals(searchTerm, getFirstHit(searchResponse).publicationDetails().identifier());
+    }
+
+    @Test
+    void shouldReturnHitOnSearchTermCandidateIdentifier() throws IOException, InterruptedException {
+        var indexDocuments = generateNumberOfCandidates(5);
+        addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
+        var searchTerm = indexDocuments.get(2).identifier().toString();
+        var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+        assertEquals(searchTerm, getFirstHit(searchResponse).identifier().toString());
+    }
+
+    @Test
+    void shouldReturnHitOnSearchTermPublicationTitle() throws IOException, InterruptedException {
+        var indexDocuments = generateNumberOfCandidates(5);
+        addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
+        var searchTerm = indexDocuments.get(2).publicationDetails().title();
+        var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+        assertEquals(searchTerm, getFirstHit(searchResponse).publicationDetails().title());
+    }
+
+    @Test
+    void shouldReturnHitsOnSearchTermsPartOfPublicationTitle() throws IOException, InterruptedException {
+        var firstTitle = "Start of sentence. Lorem ipsum dolor sit amet, consectetur adipiscing elit";
+        var secondTitle = "Another hit. First word lorem ipsum dolor sit amet, something else";
+        var thirdTitleShouldNotGetHit = "Some other title";
+        var indexDocuments = List.of(indexDocumentWithTitle(firstTitle), indexDocumentWithTitle(secondTitle),
+                                     indexDocumentWithTitle(thirdTitleShouldNotGetHit));
+        addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
+        var searchTerm = "lorem ipsum";
+        var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        assertThat(searchResponse.hits().hits(), hasSize(2));
+        assertThat(searchResponse.hits().hits().stream().map(hit -> hit.source().publicationDetails().title()).toList(),
+                   containsInAnyOrder(firstTitle, secondTitle));
+    }
+
+    @Test
+    void shouldReturnHitOnSearchTermContributorName() throws IOException, InterruptedException {
+        var indexDocuments = generateNumberOfCandidates(5);
+        addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
+        var expectedHit = indexDocuments.get(2);
+        var searchTerm = expectedHit.publicationDetails().contributors().get(0).name();
+        var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+        assertEquals(expectedHit.identifier(), getFirstHit(searchResponse).identifier());
+    }
+
+    @Test
+    void shouldReturnAllWhenSearchTermNotProvided() throws InterruptedException, IOException {
+        var indexDocuments = generateNumberOfCandidates(5);
+        addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
+        var searchParameters = defaultSearchParameters().build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        assertThat(searchResponse.hits().hits(), hasSize(5));
     }
 
     @Test
@@ -592,8 +640,18 @@ public class OpenSearchClientTest {
                                    .withExcludeFields(List.of("publicationDetails.contributors"))
                                    .build();
         var searchResponse = openSearchClient.search(searchParameters);
-        var firstHit = searchResponse.hits().hits().get(0).source();
+        var firstHit = getFirstHit(searchResponse);
         assertNull(requireNonNull(firstHit).publicationDetails().contributors());
+    }
+
+    private static NviCandidateIndexDocument getFirstHit(SearchResponse<NviCandidateIndexDocument> searchResponse) {
+        return searchResponse.hits().hits().get(0).source();
+    }
+
+    private static List<NviCandidateIndexDocument> generateNumberOfCandidates(int number) {
+        return IntStream.range(0, number)
+                   .mapToObj(i -> singleNviCandidateIndexDocument().build())
+                   .toList();
     }
 
     private static NviCandidateIndexDocument documentWithContributors() {
@@ -709,6 +767,18 @@ public class OpenSearchClientTest {
                    .withCreatedDate(Instant.now());
     }
 
+    private static NviCandidateIndexDocument indexDocumentWithTitle(String title) {
+        var approvals = randomApprovalList();
+        return NviCandidateIndexDocument.builder()
+                   .withIdentifier(UUID.randomUUID())
+                   .withPublicationDetails(publicationDetailsWithTitle(title))
+                   .withApprovals(approvals)
+                   .withNumberOfApprovals(approvals.size())
+                   .withPoints(randomBigDecimal())
+                   .withCreatedDate(Instant.now())
+                   .build();
+    }
+
     private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomer(URI customer,
                                                                                          String contributor,
                                                                                          String assignee,
@@ -783,12 +853,18 @@ public class OpenSearchClientTest {
         return publicationDetailsBuilder().build();
     }
 
+    private static PublicationDetails publicationDetailsWithTitle(String title) {
+        return publicationDetailsBuilder().withTitle(title).build();
+    }
+
     private static PublicationDetails.Builder publicationDetailsBuilder() {
         return PublicationDetails.builder()
+                   .withId(randomUri().toString())
                    .withTitle(randomString())
                    .withPublicationDate(PublicationDate.builder().withYear(YEAR).build())
                    .withPublicationChannel(randomPublicationChannel())
-                   .withPages(randomPages());
+                   .withPages(randomPages())
+                   .withContributors(List.of(randomNviContributor(randomUri())));
     }
 
     private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {

@@ -178,7 +178,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private PublicationDetails expandPublicationDetails(List<ContributorType> contributors) {
         return PublicationDetails.builder()
-                   .withId(extractId(expandedResource))
+                   .withId(candidate.getPublicationDetails().publicationId().toString())
                    .withContributors(contributors)
                    .withType(extractInstanceType())
                    .withPublicationDate(extractPublicationDate())

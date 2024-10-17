@@ -3,10 +3,12 @@ package no.sikt.nva.nvi.index.model.document;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
+import nva.commons.core.paths.UriWrapper;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 public record PublicationDetails(String id,
+                                 String identifier,
                                  String type,
                                  String title,
                                  PublicationDate publicationDate,
@@ -24,6 +26,7 @@ public record PublicationDetails(String id,
     public static final class Builder {
 
         private String id;
+        private String identifier;
         private String type;
         private String title;
         private PublicationDate publicationDate;
@@ -39,6 +42,7 @@ public record PublicationDetails(String id,
 
         public Builder withId(String id) {
             this.id = id;
+            this.identifier = UriWrapper.fromUri(id).getLastPathElement();
             return this;
         }
 
@@ -83,8 +87,8 @@ public record PublicationDetails(String id,
         }
 
         public PublicationDetails build() {
-            return new PublicationDetails(id, type, title, publicationDate, nviContributors, contributors,
-                                          contributorsCount, publicationChannel, pages, language);
+            return new PublicationDetails(id, identifier, type, title, publicationDate, nviContributors,
+                                          contributors, contributorsCount, publicationChannel, pages, language);
         }
     }
 }
