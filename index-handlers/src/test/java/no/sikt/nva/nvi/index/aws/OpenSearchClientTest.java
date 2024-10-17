@@ -397,6 +397,17 @@ public class OpenSearchClientTest {
     }
 
     @Test
+    void shouldReturnHitOnSearchTermPublicationIdentifier() throws IOException, InterruptedException {
+        var candidatesInIndex = generateNumberOfCandidates(5);
+        addDocumentsToIndex(candidatesInIndex.toArray(new NviCandidateIndexDocument[0]));
+        var searchTerm = candidatesInIndex.get(2).publicationDetails().identifier();
+        var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+        assertEquals(searchTerm, searchResponse.hits().hits().get(0).source().publicationDetails().identifier());
+    }
+
+    @Test
     void shouldReturnSingleDocumentWhenFilteringByYear() throws InterruptedException, IOException {
         var customer = randomUri();
         var year = randomString();
@@ -596,6 +607,12 @@ public class OpenSearchClientTest {
         assertNull(requireNonNull(firstHit).publicationDetails().contributors());
     }
 
+    private static List<NviCandidateIndexDocument> generateNumberOfCandidates(int number) {
+        return IntStream.range(0, number)
+                   .mapToObj(i -> singleNviCandidateIndexDocument().build())
+                   .toList();
+    }
+
     private static NviCandidateIndexDocument documentWithContributors() {
         return singleNviCandidateIndexDocument()
                    .withPublicationDetails(publicationDetailsBuilder()
@@ -785,6 +802,7 @@ public class OpenSearchClientTest {
 
     private static PublicationDetails.Builder publicationDetailsBuilder() {
         return PublicationDetails.builder()
+                   .withId(randomUri().toString())
                    .withTitle(randomString())
                    .withPublicationDate(PublicationDate.builder().withYear(YEAR).build())
                    .withPublicationChannel(randomPublicationChannel())

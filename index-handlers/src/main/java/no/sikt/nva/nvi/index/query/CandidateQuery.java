@@ -117,6 +117,13 @@ public class CandidateQuery {
                    .orElse(null);
     }
 
+    private static Query buildSearchTermQuery(String searchTerm) {
+        return new MultiMatchQuery.Builder().query(searchTerm)
+                   .fields(jsonPathOf(PUBLICATION_DETAILS, IDENTIFIER))
+                   .build()
+                   ._toQuery();
+    }
+
     private List<Query> specificMatch() {
         var institutionQuery = affiliations.isEmpty() ? Optional.<Query>empty() : createInstitutionQuery();
         var filterQuery = constructQueryWithFilter();
@@ -178,7 +185,7 @@ public class CandidateQuery {
     }
 
     private Optional<Query> createSearchTermQuery(String searchTerm) {
-        return nonNull(searchTerm) ? Optional.of(new MultiMatchQuery.Builder().query(searchTerm).build()._toQuery())
+        return nonNull(searchTerm) ? Optional.of(buildSearchTermQuery(searchTerm))
                    : Optional.empty();
     }
 

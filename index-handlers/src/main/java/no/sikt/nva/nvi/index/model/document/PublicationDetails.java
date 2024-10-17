@@ -8,7 +8,7 @@ import nva.commons.core.paths.UriWrapper;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 public record PublicationDetails(String id,
-                                 String publicationIdentifier,
+                                 String identifier,
                                  String type,
                                  String title,
                                  PublicationDate publicationDate,
@@ -26,7 +26,7 @@ public record PublicationDetails(String id,
     public static final class Builder {
 
         private String id;
-        private String publicationIdentifier;
+        private String identifier;
         private String type;
         private String title;
         private PublicationDate publicationDate;
@@ -42,7 +42,7 @@ public record PublicationDetails(String id,
 
         public Builder withId(String id) {
             this.id = id;
-            this.publicationIdentifier = UriWrapper.fromUri(id).getLastPathElement();
+            this.identifier = UriWrapper.fromUri(id).getLastPathElement();
             return this;
         }
 
@@ -87,7 +87,7 @@ public record PublicationDetails(String id,
         }
 
         public PublicationDetails build() {
-            return new PublicationDetails(id, publicationIdentifier, type, title, publicationDate, nviContributors,
+            return new PublicationDetails(id, identifier, type, title, publicationDate, nviContributors,
                                           contributors, contributorsCount, publicationChannel, pages, language);
         }
     }
