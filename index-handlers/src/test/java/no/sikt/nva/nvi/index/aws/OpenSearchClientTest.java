@@ -375,28 +375,6 @@ public class OpenSearchClientTest {
     }
 
     @Test
-    void shouldReturnSingleDocumentWhenFilteringBySearchTerm() throws InterruptedException, IOException {
-        var customer = randomUri();
-        var searchTerm = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
-        var document = singleNviCandidateIndexDocumentWithCustomer(customer,
-                                                                   searchTerm, randomString(),
-                                                                   YEAR, randomString());
-        addDocumentsToIndex(document, singleNviCandidateIndexDocumentWithCustomer(
-            customer, randomString(), randomString(), randomString(), randomString()));
-
-        var searchParameters =
-            defaultSearchParameters().withAffiliations(List.of(getLastPathElement(customer)))
-                .withSearchTerm(getRandomWord(searchTerm))
-                .withYear(YEAR)
-                .build();
-
-        var searchResponse =
-            openSearchClient.search(searchParameters);
-
-        assertThat(searchResponse.hits().hits(), hasSize(1));
-    }
-
-    @Test
     void shouldReturnHitOnSearchTermPublicationIdentifier() throws IOException, InterruptedException {
         var indexDocuments = generateNumberOfCandidates(5);
         addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
@@ -428,6 +406,15 @@ public class OpenSearchClientTest {
         var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(1));
         assertEquals(expectedHit.identifier(), searchResponse.hits().hits().get(0).source().identifier());
+    }
+
+    @Test
+    void shouldReturnAllWhenSearchTermNotProvided() throws InterruptedException, IOException {
+        var indexDocuments = generateNumberOfCandidates(5);
+        addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
+        var searchParameters = defaultSearchParameters().build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        assertThat(searchResponse.hits().hits(), hasSize(5));
     }
 
     @Test
