@@ -382,7 +382,7 @@ public class OpenSearchClientTest {
         var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
         var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(1));
-        assertEquals(searchTerm, searchResponse.hits().hits().get(0).source().publicationDetails().identifier());
+        assertEquals(searchTerm, getFirstHit(searchResponse).publicationDetails().identifier());
     }
 
     @Test
@@ -393,7 +393,7 @@ public class OpenSearchClientTest {
         var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
         var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(1));
-        assertEquals(searchTerm, searchResponse.hits().hits().get(0).source().identifier().toString());
+        assertEquals(searchTerm, getFirstHit(searchResponse).identifier().toString());
     }
 
     @Test
@@ -404,7 +404,7 @@ public class OpenSearchClientTest {
         var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
         var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(1));
-        assertEquals(searchTerm, searchResponse.hits().hits().get(0).source().publicationDetails().title());
+        assertEquals(searchTerm, getFirstHit(searchResponse).publicationDetails().title());
     }
 
     @Test
@@ -416,7 +416,7 @@ public class OpenSearchClientTest {
         var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
         var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(1));
-        assertEquals(expectedHit.identifier(), searchResponse.hits().hits().get(0).source().identifier());
+        assertEquals(expectedHit.identifier(), getFirstHit(searchResponse).identifier());
     }
 
     @Test
@@ -624,8 +624,12 @@ public class OpenSearchClientTest {
                                    .withExcludeFields(List.of("publicationDetails.contributors"))
                                    .build();
         var searchResponse = openSearchClient.search(searchParameters);
-        var firstHit = searchResponse.hits().hits().get(0).source();
+        var firstHit = getFirstHit(searchResponse);
         assertNull(requireNonNull(firstHit).publicationDetails().contributors());
+    }
+
+    private static NviCandidateIndexDocument getFirstHit(SearchResponse<NviCandidateIndexDocument> searchResponse) {
+        return searchResponse.hits().hits().get(0).source();
     }
 
     private static List<NviCandidateIndexDocument> generateNumberOfCandidates(int number) {
