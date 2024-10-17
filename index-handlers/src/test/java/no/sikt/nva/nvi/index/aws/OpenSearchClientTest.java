@@ -386,6 +386,17 @@ public class OpenSearchClientTest {
     }
 
     @Test
+    void shouldReturnHitOnSearchTermCandidateIdentifier() throws IOException, InterruptedException {
+        var indexDocuments = generateNumberOfCandidates(5);
+        addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
+        var searchTerm = indexDocuments.get(2).identifier().toString();
+        var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+        assertEquals(searchTerm, searchResponse.hits().hits().get(0).source().identifier().toString());
+    }
+
+    @Test
     void shouldReturnHitOnSearchTermPublicationTitle() throws IOException, InterruptedException {
         var indexDocuments = generateNumberOfCandidates(5);
         addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
