@@ -398,9 +398,9 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldReturnHitOnSearchTermPublicationIdentifier() throws IOException, InterruptedException {
-        var candidatesInIndex = generateNumberOfCandidates(5);
-        addDocumentsToIndex(candidatesInIndex.toArray(new NviCandidateIndexDocument[0]));
-        var searchTerm = candidatesInIndex.get(2).publicationDetails().identifier();
+        var indexDocuments = generateNumberOfCandidates(5);
+        addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
+        var searchTerm = indexDocuments.get(2).publicationDetails().identifier();
         var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
         var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(1));
@@ -409,13 +409,25 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldReturnHitOnSearchTermPublicationTitle() throws IOException, InterruptedException {
-        var candidatesInIndex = generateNumberOfCandidates(5);
-        addDocumentsToIndex(candidatesInIndex.toArray(new NviCandidateIndexDocument[0]));
-        var searchTerm = candidatesInIndex.get(2).publicationDetails().title();
+        var indexDocuments = generateNumberOfCandidates(5);
+        addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
+        var searchTerm = indexDocuments.get(2).publicationDetails().title();
         var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
         var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(1));
         assertEquals(searchTerm, searchResponse.hits().hits().get(0).source().publicationDetails().title());
+    }
+
+    @Test
+    void shouldReturnHitOnSearchTermContributorName() throws IOException, InterruptedException {
+        var indexDocuments = generateNumberOfCandidates(5);
+        addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
+        var expectedHit = indexDocuments.get(2);
+        var searchTerm = expectedHit.publicationDetails().contributors().get(0).name();
+        var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+        assertEquals(expectedHit.identifier(), searchResponse.hits().hits().get(0).source().identifier());
     }
 
     @Test
@@ -817,7 +829,8 @@ public class OpenSearchClientTest {
                    .withTitle(randomString())
                    .withPublicationDate(PublicationDate.builder().withYear(YEAR).build())
                    .withPublicationChannel(randomPublicationChannel())
-                   .withPages(randomPages());
+                   .withPages(randomPages())
+                   .withContributors(List.of(randomNviContributor(randomUri())));
     }
 
     private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {
