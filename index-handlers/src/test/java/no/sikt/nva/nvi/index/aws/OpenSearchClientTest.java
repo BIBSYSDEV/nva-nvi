@@ -408,6 +408,22 @@ public class OpenSearchClientTest {
     }
 
     @Test
+    void shouldReturnHitsOnSearchTermsPartOfPublicationTitle() throws IOException, InterruptedException {
+        var firstTitle = "Start of sentence. Lorem ipsum dolor sit amet, consectetur adipiscing elit";
+        var secondTitle = "Another hit. Lorem ipsum dolor sit amet, something else";
+        var thirdTitleShouldNotGetHit = "Some other title";
+        var indexDocuments = List.of(indexDocumentWithTitle(firstTitle), indexDocumentWithTitle(secondTitle),
+                                     indexDocumentWithTitle(thirdTitleShouldNotGetHit));
+        addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
+        var searchTerm = "Lorem ipsum";
+        var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        assertThat(searchResponse.hits().hits(), hasSize(2));
+        assertThat(searchResponse.hits().hits().stream().map(hit -> hit.source().publicationDetails().title()).toList(),
+                   containsInAnyOrder(firstTitle, secondTitle));
+    }
+
+    @Test
     void shouldReturnHitOnSearchTermContributorName() throws IOException, InterruptedException {
         var indexDocuments = generateNumberOfCandidates(5);
         addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
@@ -751,6 +767,18 @@ public class OpenSearchClientTest {
                    .withCreatedDate(Instant.now());
     }
 
+    private static NviCandidateIndexDocument indexDocumentWithTitle(String title) {
+        var approvals = randomApprovalList();
+        return NviCandidateIndexDocument.builder()
+                   .withIdentifier(UUID.randomUUID())
+                   .withPublicationDetails(publicationDetailsWithTitle(title))
+                   .withApprovals(approvals)
+                   .withNumberOfApprovals(approvals.size())
+                   .withPoints(randomBigDecimal())
+                   .withCreatedDate(Instant.now())
+                   .build();
+    }
+
     private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomer(URI customer,
                                                                                          String contributor,
                                                                                          String assignee,
@@ -823,6 +851,10 @@ public class OpenSearchClientTest {
 
     private static PublicationDetails randomPublicationDetails() {
         return publicationDetailsBuilder().build();
+    }
+
+    private static PublicationDetails publicationDetailsWithTitle(String title) {
+        return publicationDetailsBuilder().withTitle(title).build();
     }
 
     private static PublicationDetails.Builder publicationDetailsBuilder() {
