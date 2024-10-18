@@ -48,7 +48,7 @@ public final class Aggregations {
     public static Map<String, Aggregation> generateAggregations(String aggregationType, String username,
                                                                 String topLevelCristinOrg) {
         return aggregationTypeIsNotSpecified(aggregationType)
-                   ? generateAllAggregationTypes(username, topLevelCristinOrg)
+                   ? generateAllDefaultAggregationTypes(username, topLevelCristinOrg)
                    : generateSingleAggregation(aggregationType, username, topLevelCristinOrg);
     }
 
@@ -139,9 +139,9 @@ public final class Aggregations {
         return aggregations;
     }
 
-    private static Map<String, Aggregation> generateAllAggregationTypes(String username, String topLevelCristinOrg) {
+    private static Map<String, Aggregation> generateAllDefaultAggregationTypes(String username, String topLevelCristinOrg) {
         var aggregations = new HashMap<String, Aggregation>();
-        for (var aggregation : SearchAggregation.values()) {
+        for (var aggregation : SearchAggregation.defaultAggregations()) {
             addAggregation(username, topLevelCristinOrg, aggregations, aggregation);
         }
         return aggregations;
