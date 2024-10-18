@@ -5,7 +5,6 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TYPE;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_LABEL;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_NORWEGIAN_LABEL;
-import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.createExpandedResource;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.GZIP_ENDING;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.HARD_CODED_INTERMEDIATE_ORGANIZATION;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.HARD_CODED_TOP_LEVEL_ORG;
@@ -57,7 +56,6 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
-import no.sikt.nva.nvi.index.model.document.Approval;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
@@ -65,6 +63,7 @@ import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.OrganizationType;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
+import no.sikt.nva.nvi.test.ExpandedResourceGenerator;
 import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
@@ -232,7 +231,8 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     @Test
     void shouldFetchOrganizationLabelsFromCristinApiWhenExpandedResourceIsMissingTopLevelOrganization() {
         var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
-        var expandedResource = createExpandedResource(candidate);
+        var expandedResource = ExpandedResourceGenerator.builder().withCandidate(candidate).build()
+                                   .createExpandedResource();
         setupResourceMissingTopLevelOrganizationsInS3(expandedResource, candidate);
         var expectedIndexDocument = IndexDocumentWithConsumptionAttributes.from(
             createExpectedNviIndexDocument(expandedResource, candidate)).indexDocument();
@@ -246,7 +246,8 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     @Test
     void shouldFetchOrganizationLabelsFromCristinApiWhenTopLevelOrgNodeIsInvalid() {
         var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
-        var expandedResource = createExpandedResource(candidate);
+        var expandedResource = ExpandedResourceGenerator.builder().withCandidate(candidate).build()
+                                   .createExpandedResource();
         setupResourceWithInvalidObjectInS3(expandedResource, candidate);
         var expectedIndexDocument = IndexDocumentWithConsumptionAttributes.from(
             createExpectedNviIndexDocument(expandedResource, candidate)).indexDocument();
@@ -306,8 +307,11 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     @ValueSource(booleans = {true, false})
     void shouldExtractOptionalLanguageFromExpandedResource(boolean languageExists) {
         var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
-        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
-            candidate, languageExists, true).indexDocument();
+        var expandedResource =
+            ExpandedResourceGenerator.builder().withCandidate(candidate).withPopulateLanguage(languageExists).build()
+                .createExpandedResource();
+        insertInS3(expandedResource, extractResourceIdentifier(candidate));
+        var expectedIndexDocument = createExpectedNviIndexDocument(expandedResource, candidate);
         var event = createEvent(candidate.getIdentifier());
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(event, CONTEXT);
@@ -319,8 +323,27 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     @MethodSource("channelTypeIssnProvider")
     void shouldExtractOptionalPrintIssnFromExpandedResource(ChannelType channelType, boolean printIssnExists) {
         var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri(), channelType);
-        var expectedIndexDocument = setUpExistingResourceInS3AndGenerateExpectedDocument(
-            candidate, true, printIssnExists).indexDocument();
+        var expandedResource =
+            ExpandedResourceGenerator.builder().withCandidate(candidate).withPopulateIssn(printIssnExists).build()
+                .createExpandedResource();
+        insertInS3(expandedResource, extractResourceIdentifier(candidate));
+        var expectedIndexDocument = createExpectedNviIndexDocument(expandedResource, candidate);
+        var event = createEvent(candidate.getIdentifier());
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldExtractOptionalAbstractFromExpandedResource(boolean abstractExists) {
+        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
+        var expandedResource =
+            ExpandedResourceGenerator.builder().withCandidate(candidate).withPopulateAbstract(abstractExists).build()
+                .createExpandedResource();
+        insertInS3(expandedResource, extractResourceIdentifier(candidate));
+        var expectedIndexDocument = createExpectedNviIndexDocument(expandedResource, candidate);
         var event = createEvent(candidate.getIdentifier());
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(event, CONTEXT);
@@ -600,10 +623,11 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     private ConsumptionAttributes setUpExistingResourceWithNonNviCreatorAffiliations(Candidate candidate) {
-        var expandedResource = createExpandedResource(candidate, List.of(randomUri()));
-        var resourceIndexDocument = createResourceIndexDocument(expandedResource);
-        var resourcePath = extractResourceIdentifier(candidate);
-        insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
+        var expandedResource = ExpandedResourceGenerator.builder()
+                                   .withCandidate(candidate)
+                                   .build()
+                                   .createExpandedResource(List.of(randomUri()));
+        insertInS3(expandedResource, extractResourceIdentifier(candidate));
         var indexDocument = createExpectedNviIndexDocument(expandedResource, candidate);
         return IndexDocumentWithConsumptionAttributes.from(indexDocument)
                    .consumptionAttributes();
@@ -673,26 +697,21 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     private IndexDocumentWithConsumptionAttributes setUpExistingResourceInS3AndGenerateExpectedDocument(
         Candidate persistedCandidate) {
-        return setUpExistingResourceInS3AndGenerateExpectedDocument(persistedCandidate, true, true);
-    }
-
-    private IndexDocumentWithConsumptionAttributes setUpExistingResourceInS3AndGenerateExpectedDocument(
-        Candidate persistedCandidate, boolean withLanguage, boolean withIssn) {
-        var expandedResource = setUpExistingResourceInS3(persistedCandidate, withLanguage, withIssn);
+        var expandedResource = setUpExistingResourceInS3(persistedCandidate);
         var indexDocument = createExpectedNviIndexDocument(expandedResource, persistedCandidate);
         return IndexDocumentWithConsumptionAttributes.from(indexDocument);
     }
 
-    private void setUpExistingResourceInS3(Candidate persistedCandidate) {
-        setUpExistingResourceInS3(persistedCandidate, true, true);
+    private JsonNode setUpExistingResourceInS3(Candidate persistedCandidate) {
+        var expandedResource = ExpandedResourceGenerator.builder().withCandidate(persistedCandidate).build()
+                                   .createExpandedResource();
+        insertInS3(expandedResource, extractResourceIdentifier(persistedCandidate));
+        return expandedResource;
     }
 
-    private JsonNode setUpExistingResourceInS3(Candidate persistedCandidate, boolean withLanguage, boolean withIssn) {
-        var expandedResource = createExpandedResource(persistedCandidate, withLanguage, withIssn);
+    private void insertInS3(JsonNode expandedResource, String resourceIdentifier) {
         var resourceIndexDocument = createResourceIndexDocument(expandedResource);
-        var resourcePath = extractResourceIdentifier(persistedCandidate);
-        insertResourceInS3(resourceIndexDocument, UnixPath.of(resourcePath));
-        return expandedResource;
+        insertResourceInS3(resourceIndexDocument, UnixPath.of(resourceIdentifier));
     }
 
     private JsonNode createResourceIndexDocument(JsonNode expandedResource) {

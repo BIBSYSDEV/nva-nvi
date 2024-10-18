@@ -26,6 +26,7 @@ public final class SearchConstants {
     public static final String YEAR = "year";
     public static final String TYPE = "type";
     public static final String TITLE = "title";
+    public static final String ABSTRACT = "abstract";
     public static final String KEYWORD = "keyword";
     public static final String APPROVAL_STATUS = "approvalStatus";
     public static final String PUBLICATION_DETAILS = "publicationDetails";

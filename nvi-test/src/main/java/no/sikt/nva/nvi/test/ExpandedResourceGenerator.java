@@ -22,62 +22,21 @@ public final class ExpandedResourceGenerator {
     public static final String HARDCODED_ENGLISH_LABEL = "Hardcoded English label";
     public static final String NB_FIELD = "nb";
     public static final String EN_FIELD = "en";
+    private final boolean populateLanguage;
+    private final boolean populateIssn;
+    private final boolean populateAbstract;
+    private final Candidate candidate;
 
-    private ExpandedResourceGenerator() {
+    private ExpandedResourceGenerator(boolean populateLanguage, boolean populateIssn, boolean populateAbstract,
+                                      Candidate candidate) {
+        this.populateLanguage = populateLanguage;
+        this.populateIssn = populateIssn;
+        this.populateAbstract = populateAbstract;
+        this.candidate = candidate;
     }
 
-    public static JsonNode createExpandedResource(Candidate candidate) {
-        return createExpandedResource(candidate, Collections.emptyList(), true, true);
-    }
-
-    public static JsonNode createExpandedResource(Candidate candidate, boolean populateLanguage, boolean populateIssn) {
-        return createExpandedResource(candidate, Collections.emptyList(), populateLanguage, populateIssn);
-    }
-
-    public static JsonNode createExpandedResource(Candidate candidate, List<URI> nonNviContributorAffiliationIds) {
-        return createExpandedResource(candidate, nonNviContributorAffiliationIds, true, true);
-    }
-
-    public static JsonNode createExpandedResource(Candidate candidate, List<URI> nonNviContributorAffiliationIds,
-                                                  boolean populateLanguage, boolean populateIssn) {
-        var root = objectMapper.createObjectNode();
-
-        root.put("id", candidate.getPublicationId().toString());
-
-        var entityDescription = objectMapper.createObjectNode();
-
-        var contributors = populateAndCreateContributors(candidate, nonNviContributorAffiliationIds);
-
-        entityDescription.set("contributors", contributors);
-
-        entityDescription.put("mainTitle", randomString());
-
-        var publicationDate = createAndPopulatePublicationDate(candidate.getPublicationDetails().publicationDate());
-
-        entityDescription.set("publicationDate", publicationDate);
-
-        var reference = objectMapper.createObjectNode();
-
-        var publicationInstance = createAndPopulatePublicationInstance(candidate);
-        reference.set("publicationInstance", publicationInstance);
-
-        var publicationContext = createAndPopulatePublicationContext(candidate, populateIssn);
-        reference.set("publicationContext", publicationContext);
-
-        entityDescription.set("reference", reference);
-        if (populateLanguage) {
-            entityDescription.put("language", "http://lexvo.org/id/iso639-3/nob");
-        }
-
-        root.set("entityDescription", entityDescription);
-
-        root.put("identifier", candidate.getIdentifier().toString());
-
-        var topLevelOrganizations = createAndPopulateTopLevelOrganizations(candidate);
-
-        root.set("topLevelOrganizations", topLevelOrganizations);
-
-        return root;
+    public static String extractOptionalAbstract(JsonNode expandedResource) {
+        return JsonUtils.extractOptJsonNodeTextValue(expandedResource, "/entityDescription/abstract").orElse(null);
     }
 
     public static String extractTitle(JsonNode expandedResource) {
@@ -115,6 +74,59 @@ public final class ExpandedResourceGenerator {
     public static String extractType(JsonNode expandedResource) {
         return JsonUtils.extractJsonNodeTextValue(expandedResource,
                                                   "/entityDescription/reference/publicationInstance/type");
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public JsonNode createExpandedResource() {
+        return createExpandedResource(Collections.emptyList());
+    }
+
+    public JsonNode createExpandedResource(List<URI> nonNviContributorAffiliationIds) {
+        var root = objectMapper.createObjectNode();
+
+        root.put("id", candidate.getPublicationId().toString());
+
+        var entityDescription = objectMapper.createObjectNode();
+
+        var contributors = populateAndCreateContributors(candidate, nonNviContributorAffiliationIds);
+
+        entityDescription.set("contributors", contributors);
+
+        entityDescription.put("mainTitle", randomString());
+
+        var publicationDate = createAndPopulatePublicationDate(candidate.getPublicationDetails().publicationDate());
+
+        entityDescription.set("publicationDate", publicationDate);
+
+        var reference = objectMapper.createObjectNode();
+
+        var publicationInstance = createAndPopulatePublicationInstance(candidate);
+        reference.set("publicationInstance", publicationInstance);
+
+        var publicationContext = createAndPopulatePublicationContext(candidate, populateIssn);
+        reference.set("publicationContext", publicationContext);
+
+        entityDescription.set("reference", reference);
+        if (populateLanguage) {
+            entityDescription.put("language", "http://lexvo.org/id/iso639-3/nob");
+        }
+
+        if (populateAbstract) {
+            entityDescription.put("abstract", randomString());
+        }
+
+        root.set("entityDescription", entityDescription);
+
+        root.put("identifier", candidate.getIdentifier().toString());
+
+        var topLevelOrganizations = createAndPopulateTopLevelOrganizations(candidate);
+
+        root.set("topLevelOrganizations", topLevelOrganizations);
+
+        return root;
     }
 
     private static ObjectNode createAndPopulatePublicationInstance(Candidate candidate) {
@@ -276,5 +288,41 @@ public final class ExpandedResourceGenerator {
             affiliations.add(affiliationNode);
         });
         return affiliations;
+    }
+
+    public static final class Builder {
+
+        private boolean populateLanguage = false;
+        private boolean populateIssn = false;
+        private boolean populateAbstract = false;
+
+        private Candidate candidate;
+
+        private Builder() {
+        }
+
+        public Builder withPopulateLanguage(boolean populateLanguage) {
+            this.populateLanguage = populateLanguage;
+            return this;
+        }
+
+        public Builder withPopulateIssn(boolean populateIssn) {
+            this.populateIssn = populateIssn;
+            return this;
+        }
+
+        public Builder withPopulateAbstract(boolean populateAbstract) {
+            this.populateAbstract = populateAbstract;
+            return this;
+        }
+
+        public Builder withCandidate(Candidate candidate) {
+            this.candidate = candidate;
+            return this;
+        }
+
+        public ExpandedResourceGenerator build() {
+            return new ExpandedResourceGenerator(populateLanguage, populateIssn, populateAbstract, candidate);
+        }
     }
 }

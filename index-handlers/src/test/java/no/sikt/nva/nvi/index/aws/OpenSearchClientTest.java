@@ -441,6 +441,17 @@ public class OpenSearchClientTest {
     }
 
     @Test
+    void shouldReturnHitOnSearchTermPublicationAbstract() throws IOException, InterruptedException {
+        var indexDocuments = generateNumberOfCandidates(5);
+        addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
+        var searchTerm = indexDocuments.get(2).publicationDetails().abstractText();
+        var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+        assertEquals(searchTerm, getFirstHit(searchResponse).publicationDetails().abstractText());
+    }
+
+    @Test
     void shouldReturnAllWhenSearchTermNotProvided() throws InterruptedException, IOException {
         var indexDocuments = generateNumberOfCandidates(5);
         addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
@@ -866,6 +877,7 @@ public class OpenSearchClientTest {
         return PublicationDetails.builder()
                    .withId(randomUri().toString())
                    .withTitle(randomString())
+                   .withAbstract(randomString())
                    .withPublicationDate(PublicationDate.builder().withYear(YEAR).build())
                    .withPublicationChannel(randomPublicationChannel())
                    .withPages(randomPages())
