@@ -17,6 +17,7 @@ import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustMatch;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.nestedQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.statusQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.termsQuery;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.ABSTRACT;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.AFFILIATIONS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
@@ -122,7 +123,8 @@ public class CandidateQuery {
                    .fields(IDENTIFIER,
                            jsonPathOf(PUBLICATION_DETAILS, IDENTIFIER),
                            jsonPathOf(PUBLICATION_DETAILS, TITLE),
-                           jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, NAME))
+                           jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, NAME),
+                           jsonPathOf(PUBLICATION_DETAILS, ABSTRACT))
                    .build()
                    ._toQuery();
     }
