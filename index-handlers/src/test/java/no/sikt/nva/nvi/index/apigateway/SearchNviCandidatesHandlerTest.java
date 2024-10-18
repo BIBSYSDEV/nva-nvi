@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -69,6 +70,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
+import org.mockito.Mockito;
 import org.mockito.stubbing.OngoingStubbing;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.zalando.problem.Problem;
@@ -421,6 +423,16 @@ public class SearchNviCandidatesHandlerTest {
               "docCount" : 1
             }""";
         assertEquals(expectedFilterAggregation, objectMapper.writeValueAsString(actualAggregate));
+    }
+
+    @Test
+    void shouldExcludeContributorsInSearchResponse() throws IOException {
+        var userName = randomString();
+        var expectedExcludeFields = List.of("publicationDetails.contributors");
+        mockIdentityService(userName);
+        handler.handleRequest(requestWithoutQueryParameters(userName), output, context);
+        Mockito.verify(openSearchClient, times(1))
+            .search(argThat(argument -> argument.excludeFields().equals(expectedExcludeFields)));
     }
 
     private static void mockOpenSearchClientWithParameterMatchingViewingScope(List<String> usersViewingScope)
