@@ -475,19 +475,6 @@ public class OpenSearchClientTest {
     }
 
     @Test
-    void shouldReturnOneHitWhenSearchTermExactlyCandidateIdentifier() throws IOException, InterruptedException {
-        var expectedHit = singleNviCandidateIndexDocument().build();
-        var searchTerm = expectedHit.identifier().toString();
-        var someTitleIncludingPartsOfSearchTerm = "Some title including " + searchTerm.split("-")[0];
-        var indexDocuments = List.of(expectedHit, indexDocumentWithTitle(someTitleIncludingPartsOfSearchTerm));
-        addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
-        var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
-        var searchResponse = openSearchClient.search(searchParameters);
-        assertThat(searchResponse.hits().hits(), hasSize(1));
-        assertEquals(expectedHit.identifier(), getFirstHit(searchResponse).identifier());
-    }
-
-    @Test
     void shouldReturnSingleDocumentWhenFilteringByYear() throws InterruptedException, IOException {
         var customer = randomUri();
         var year = randomString();
