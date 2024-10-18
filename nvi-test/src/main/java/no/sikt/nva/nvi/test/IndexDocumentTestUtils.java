@@ -85,6 +85,7 @@ public final class IndexDocumentTestUtils {
                    .withType(ExpandedResourceGenerator.extractType(expandedResource))
                    .withId(candidate.getPublicationDetails().publicationId().toString())
                    .withTitle(ExpandedResourceGenerator.extractTitle(expandedResource))
+                   .withAbstract(ExpandedResourceGenerator.extractOptionalAbstract(expandedResource))
                    .withPublicationDate(mapToPublicationDate(candidate.getPublicationDetails().publicationDate()))
                    .withContributors(
                        mapToContributors(ExpandedResourceGenerator.extractContributors(expandedResource), candidate))

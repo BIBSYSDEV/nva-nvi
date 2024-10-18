@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.model.document;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
 import nva.commons.core.paths.UriWrapper;
@@ -11,6 +12,7 @@ public record PublicationDetails(String id,
                                  String identifier,
                                  String type,
                                  String title,
+                                 @JsonProperty("abstract") String abstractText,
                                  PublicationDate publicationDate,
                                  List<NviContributor> nviContributors,
                                  List<ContributorType> contributors,
@@ -29,6 +31,7 @@ public record PublicationDetails(String id,
         private String identifier;
         private String type;
         private String title;
+        private String abstractText;
         private PublicationDate publicationDate;
         private List<NviContributor> nviContributors;
         private List<ContributorType> contributors;
@@ -53,6 +56,11 @@ public record PublicationDetails(String id,
 
         public Builder withTitle(String title) {
             this.title = title;
+            return this;
+        }
+
+        public Builder withAbstract(String abstractText) {
+            this.abstractText = abstractText;
             return this;
         }
 
@@ -87,7 +95,7 @@ public record PublicationDetails(String id,
         }
 
         public PublicationDetails build() {
-            return new PublicationDetails(id, identifier, type, title, publicationDate, nviContributors,
+            return new PublicationDetails(id, identifier, type, title, abstractText, publicationDate, nviContributors,
                                           contributors, contributorsCount, publicationChannel, pages, language);
         }
     }
