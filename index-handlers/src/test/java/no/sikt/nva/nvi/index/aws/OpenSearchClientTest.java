@@ -256,7 +256,7 @@ public class OpenSearchClientTest {
         var aggregations = searchResponse.aggregations();
         var expectedAggregations = Arrays.stream(SearchAggregation.values())
                                        .filter(
-                                           aggregation -> !aggregation.equals(ORGANIZATION_APPROVAL_STATUS_AGGREGATION))
+                                           aggregation -> !ORGANIZATION_APPROVAL_STATUS_AGGREGATION.equals(aggregation))
                                        .toList();
         assertEquals(expectedAggregations.size(), aggregations.keySet().size());
     }
