@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.common.utils.GraphUtils.PART_OF_PROPERTY;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_JOURNAL_PISSN;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PRT_PAGES_END;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ABSTRACT;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_DAY;
@@ -183,10 +184,15 @@ public final class NviCandidateIndexDocumentGenerator {
                    .withType(extractInstanceType())
                    .withPublicationDate(extractPublicationDate())
                    .withTitle(extractMainTitle())
+                   .withAbstract(extractAbstract())
                    .withPublicationChannel(buildPublicationChannel())
                    .withPages(extractPages())
                    .withLanguage(extractLanguage())
                    .build();
+    }
+
+    private String extractAbstract() {
+        return extractJsonNodeTextValue(expandedResource, JSON_PTR_ABSTRACT);
     }
 
     private String extractLanguage() {
