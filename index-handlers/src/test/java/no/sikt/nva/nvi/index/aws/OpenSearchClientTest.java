@@ -462,6 +462,19 @@ public class OpenSearchClientTest {
     }
 
     @Test
+    void shouldReturnOneHitWhenSearchTermExactlyPublicationIdentifier() throws IOException, InterruptedException {
+        var expectedHit = singleNviCandidateIndexDocument().build();
+        var searchTerm = expectedHit.publicationDetails().identifier();
+        var someTitleIncludingPartsOfSearchTerm = "Some title including " + searchTerm.split("-")[0];
+        var indexDocuments = List.of(expectedHit, indexDocumentWithTitle(someTitleIncludingPartsOfSearchTerm));
+        addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
+        var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+        assertEquals(expectedHit.identifier(), getFirstHit(searchResponse).identifier());
+    }
+
+    @Test
     void shouldReturnSingleDocumentWhenFilteringByYear() throws InterruptedException, IOException {
         var customer = randomUri();
         var year = randomString();
@@ -803,26 +816,24 @@ public class OpenSearchClientTest {
     }
 
     private static NviCandidateIndexDocument.Builder singleNviCandidateIndexDocument() {
+        return singleNviCandidateIndexDocument(randomPublicationDetails());
+    }
+
+    private static NviCandidateIndexDocument indexDocumentWithTitle(String title) {
+        var publicationDetails = publicationDetailsWithTitle(title);
+        return singleNviCandidateIndexDocument(publicationDetails).build();
+    }
+
+    private static NviCandidateIndexDocument.Builder singleNviCandidateIndexDocument(
+        PublicationDetails publicationDetails) {
         var approvals = randomApprovalList();
         return NviCandidateIndexDocument.builder()
                    .withIdentifier(UUID.randomUUID())
-                   .withPublicationDetails(randomPublicationDetails())
+                   .withPublicationDetails(publicationDetails)
                    .withApprovals(approvals)
                    .withNumberOfApprovals(approvals.size())
                    .withPoints(randomBigDecimal())
                    .withCreatedDate(Instant.now());
-    }
-
-    private static NviCandidateIndexDocument indexDocumentWithTitle(String title) {
-        var approvals = randomApprovalList();
-        return NviCandidateIndexDocument.builder()
-                   .withIdentifier(UUID.randomUUID())
-                   .withPublicationDetails(publicationDetailsWithTitle(title))
-                   .withApprovals(approvals)
-                   .withNumberOfApprovals(approvals.size())
-                   .withPoints(randomBigDecimal())
-                   .withCreatedDate(Instant.now())
-                   .build();
     }
 
     private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomer(URI customer,
@@ -905,7 +916,7 @@ public class OpenSearchClientTest {
 
     private static PublicationDetails.Builder publicationDetailsBuilder() {
         return PublicationDetails.builder()
-                   .withId(randomUri().toString())
+                   .withId(UriWrapper.fromUri(randomUri()).addChild(UUID.randomUUID().toString()).toString())
                    .withTitle(randomString())
                    .withAbstract(randomString())
                    .withPublicationDate(PublicationDate.builder().withYear(YEAR).build())

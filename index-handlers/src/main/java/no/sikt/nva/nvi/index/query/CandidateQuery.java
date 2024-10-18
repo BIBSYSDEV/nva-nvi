@@ -41,8 +41,10 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import org.opensearch.client.opensearch._types.query_dsl.MatchPhraseQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MultiMatchQuery;
+import org.opensearch.client.opensearch._types.query_dsl.Operator;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
+import org.opensearch.client.opensearch._types.query_dsl.TextQueryType;
 
 public class CandidateQuery {
 
@@ -119,12 +121,15 @@ public class CandidateQuery {
     }
 
     private static Query buildSearchTermQuery(String searchTerm) {
-        return new MultiMatchQuery.Builder().query(searchTerm)
+        return new MultiMatchQuery.Builder()
+                   .query(searchTerm)
                    .fields(IDENTIFIER,
                            jsonPathOf(PUBLICATION_DETAILS, IDENTIFIER),
                            jsonPathOf(PUBLICATION_DETAILS, TITLE),
                            jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, NAME),
                            jsonPathOf(PUBLICATION_DETAILS, ABSTRACT))
+                   .operator(Operator.And)
+                   .type(TextQueryType.CrossFields)
                    .build()
                    ._toQuery();
     }
