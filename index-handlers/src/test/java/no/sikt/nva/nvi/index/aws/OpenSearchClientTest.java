@@ -56,6 +56,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
@@ -628,6 +629,22 @@ public class OpenSearchClientTest {
     }
 
     @Test
+    void shouldReturnOrganizationAggregationWithSubAggregationsForUpToOneThousandInvolvedOrgs()
+        throws IOException, InterruptedException {
+        addDocumentsToIndex(nviCandidateWithOneThousandInvolvedOrgs());
+        var aggregation = SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
+        var searchParameters = defaultSearchParameters().withAggregationType(aggregation).build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        var actualAggregate = searchResponse.aggregations().get(aggregation);
+        var actualOrganizationAggregation = ((NestedAggregate) actualAggregate._get()).aggregations()
+                                                .get(SIKT_INSTITUTION_ID.toString());
+        var filterAggregate = ((FilterAggregate) actualOrganizationAggregation._get()).aggregations()
+                                  .get("organizations");
+        var actualOrgBuckets = ((StringTermsAggregate) filterAggregate._get()).buckets();
+        assertEquals(1000, actualOrgBuckets.array().size());
+    }
+
+    @Test
     void organizationAggregationShouldNotContainAggregationsForOtherTopLevelOrgs()
         throws IOException, InterruptedException {
         addDocumentsToIndex(documentFromString("document_organization_aggregation_collaboration.json"));
@@ -658,6 +675,19 @@ public class OpenSearchClientTest {
         var searchResponse = openSearchClient.search(searchParameters);
         var firstHit = getFirstHit(searchResponse);
         assertNull(requireNonNull(firstHit).publicationDetails().contributors());
+    }
+
+    private static NviCandidateIndexDocument nviCandidateWithOneThousandInvolvedOrgs() {
+        return singleNviCandidateIndexDocument().withApprovals(List.of(
+            Approval.builder()
+                .withInstitutionId(URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"))
+                .withApprovalStatus(ApprovalStatus.NEW)
+                .withInvolvedOrganizations(IntStream.range(0, 1000)
+                                               .mapToObj(i -> URI.create(
+                                                   "https://api.dev.nva.aws.unit.no/cristin/organization/"
+                                                   + i + ".0.0.0"))
+                                               .collect(Collectors.toSet()))
+                .build())).build();
     }
 
     private static NviCandidateIndexDocument getFirstHit(SearchResponse<NviCandidateIndexDocument> searchResponse) {

@@ -29,6 +29,7 @@ import java.util.Map;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 public final class Aggregations {
@@ -41,6 +42,7 @@ public final class Aggregations {
     public static final String APPROVAL_ORGANIZATIONS_AGGREGATION = "organizations";
     private static final String ALL_AGGREGATIONS = "all";
     private static final String STATUS_AGGREGATION = "status";
+    private static final int ORGANIZATION_SUB_UNITS_TERMS_AGGREGATION_SIZE = 1000;
 
     private Aggregations() {
     }
@@ -57,7 +59,10 @@ public final class Aggregations {
         var pointAggregation = sumAggregation(APPROVALS, POINTS, INSTITUTION_POINTS);
         var disputeAggregation = filterStatusDisputeAggregation();
         var organizationAggregation = new Aggregation.Builder()
-                                          .terms(termsAggregation(APPROVALS, INVOLVED_ORGS))
+                                          .terms(new TermsAggregation.Builder()
+                                                     .field(joinWithDelimiter(APPROVALS, INVOLVED_ORGS))
+                                                     .size(ORGANIZATION_SUB_UNITS_TERMS_AGGREGATION_SIZE)
+                                                     .build())
                                           .aggregations(Map.of(STATUS_AGGREGATION, statusAggregation,
                                                                POINTS_AGGREGATION, pointAggregation,
                                                                DISPUTE_AGGREGATION, disputeAggregation))
