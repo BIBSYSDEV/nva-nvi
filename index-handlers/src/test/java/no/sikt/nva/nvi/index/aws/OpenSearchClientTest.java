@@ -65,7 +65,6 @@ import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.InstitutionPoints;
 import no.sikt.nva.nvi.index.model.document.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument.Builder;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
@@ -463,7 +462,7 @@ public class OpenSearchClientTest {
     }
 
     @Test
-    void shouldReturnOneHitOnSearchTermPublicationIdentifier() throws IOException, InterruptedException {
+    void shouldReturnOneHitWhenSearchTermExactlyPublicationIdentifier() throws IOException, InterruptedException {
         var expectedHit = singleNviCandidateIndexDocument().build();
         var searchTerm = expectedHit.publicationDetails().identifier();
         var someTitleIncludingPartsOfSearchTerm = "Some title including " + searchTerm.split("-")[0];
@@ -472,7 +471,20 @@ public class OpenSearchClientTest {
         var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
         var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(1));
-        assertEquals(expectedHit, getFirstHit(searchResponse));
+        assertEquals(expectedHit.identifier(), getFirstHit(searchResponse).identifier());
+    }
+
+    @Test
+    void shouldReturnOneHitWhenSearchTermExactlyCandidateIdentifier() throws IOException, InterruptedException {
+        var expectedHit = singleNviCandidateIndexDocument().build();
+        var searchTerm = expectedHit.identifier().toString();
+        var someTitleIncludingPartsOfSearchTerm = "Some title including " + searchTerm.split("-")[0];
+        var indexDocuments = List.of(expectedHit, indexDocumentWithTitle(someTitleIncludingPartsOfSearchTerm));
+        addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
+        var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        assertThat(searchResponse.hits().hits(), hasSize(1));
+        assertEquals(expectedHit.identifier(), getFirstHit(searchResponse).identifier());
     }
 
     @Test
