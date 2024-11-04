@@ -1,11 +1,10 @@
 package no.sikt.nva.nvi.events.persist;
 
-import static no.sikt.nva.nvi.common.db.model.InstanceType.NON_CANDIDATE;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
-import static no.sikt.nva.nvi.test.TestUtils.randomInstanceTypeExcluding;
+import static no.sikt.nva.nvi.test.TestUtils.randomInstanceType;
 import static no.sikt.nva.nvi.test.TestUtils.randomLevelExcluding;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
@@ -52,12 +51,12 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
@@ -129,7 +128,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldSaveNewNviCandidateWithPendingInstitutionApprovalsWhenCandidateDoesNotExist() {
-        var evaluatedNviCandidate = randomEvaluatedNviCandidate().build();
+        var evaluatedNviCandidate = randomEvaluatedNviCandidate().withInstanceType("foo").build();
         var sqsEvent = createEvent(createEvalMessage(evaluatedNviCandidate));
         handler.handleRequest(sqsEvent, CONTEXT);
         var actualPersistedCandidateDao = candidateRepository.findByPublicationId(evaluatedNviCandidate.publicationId())
@@ -203,8 +202,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     private static Builder getBuilder(URI publicationId, URI publicationBucketUri, NviCreator creator) {
         return NviCandidate.builder()
                    .withPublicationId(publicationId)
-                   .withPublicationBucketUri(publicationBucketUri)
-                   .withInstanceType(randomInstanceTypeExcluding(NON_CANDIDATE.getValue()))
+                   .withPublicationBucketUri(publicationBucketUri).withInstanceType(randomInstanceType().getValue())
                    .withLevel(randomElement(DbLevel.values()).getValue())
                    .withTotalPoints(randomBigDecimal(4))
                    .withBasePoints(randomBigDecimal(4))

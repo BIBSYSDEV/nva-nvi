@@ -336,18 +336,6 @@ public final class CandidateDao extends Dao {
             return new Builder();
         }
 
-        public String instanceType() {
-            return instanceType;
-        }
-
-        public Instant modifiedDate() {
-            return modifiedDate;
-        }
-
-        public Instant createdDate() {
-            return createdDate;
-        }
-
         @DynamoDbIgnore
         public Builder copy() {
             return builder()

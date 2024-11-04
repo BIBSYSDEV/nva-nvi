@@ -1,10 +1,12 @@
 package no.sikt.nva.nvi.events.evaluator;
 
 import static java.math.BigDecimal.ONE;
+import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_COMMENTARY;
+import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
+import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createResponse;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.mockOrganizationResponseForAffiliation;
-import static no.sikt.nva.nvi.events.evaluator.model.InstanceType.*;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.JOURNAL;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.SERIES;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -43,10 +45,10 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
-import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
 import no.sikt.nva.nvi.events.evaluator.model.Level;
 import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;

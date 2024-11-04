@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.common.db.model.InstanceType.NON_CANDIDATE;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
@@ -42,19 +41,19 @@ import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
-import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest;
+import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import nva.commons.core.paths.UriWrapper;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -65,7 +64,7 @@ public final class TestUtils {
     public static final BigDecimal MAX_BIG_DECIMAL = BigDecimal.TEN;
     public static final int CURRENT_YEAR = Year.now().getValue();
     public static final Random RANDOM = new Random();
-    public static final String UUID_SEPERATOR = "-";
+    public static final String UUID_SEPARATOR = "-";
     private static final String BUCKET_HOST = "example.org";
     private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
     private static final String PUBLICATION_API_PATH = "publication";
@@ -92,8 +91,7 @@ public final class TestUtils {
         return DbCandidate.builder()
                    .publicationId(randomUri())
                    .publicationBucketUri(randomUri())
-                   .applicable(applicable)
-                   .instanceType(randomInstanceTypeExcluding(NON_CANDIDATE.getValue()))
+                   .applicable(applicable).instanceType(randomInstanceType().getValue())
                    .points(List.of(new DbInstitutionPoints(institutionId, institutionPoints,
                                                            List.of(new DbCreatorAffiliationPoints(
                                                                creatorId, institutionId, institutionPoints)))))
@@ -119,12 +117,6 @@ public final class TestUtils {
 
     public static no.sikt.nva.nvi.common.service.model.Username randomUserName() {
         return no.sikt.nva.nvi.common.service.model.Username.fromString(randomString());
-    }
-
-    public static String randomInstanceTypeExcluding(String instanceType) {
-        var instanceTypes = Arrays.stream(InstanceType.values())
-                                .filter(type -> !type.getValue().equals(instanceType)).toList();
-        return instanceTypes.get(RANDOM.nextInt(instanceTypes.size())).getValue();
     }
 
     public static DbLevel randomLevelExcluding(DbLevel level) {
@@ -268,14 +260,12 @@ public final class TestUtils {
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequestWithLevel(String level, URI... institutions) {
-        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(
-                                                NON_CANDIDATE.getValue()),
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceType().getValue(),
                                             1, randomBigDecimal(), level, CURRENT_YEAR, institutions);
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(int year) {
-        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(
-                                                NON_CANDIDATE.getValue()),
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceType().getValue(),
                                             1, randomBigDecimal(),
                                             randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
                                             year,
@@ -283,8 +273,7 @@ public final class TestUtils {
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI... institutions) {
-        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceTypeExcluding(
-                                                NON_CANDIDATE.getValue()),
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceType().getValue(),
                                             1, randomBigDecimal(),
                                             randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
                                             CURRENT_YEAR,
@@ -305,8 +294,7 @@ public final class TestUtils {
 
         return createUpsertCandidateRequest(randomUri(), randomUri(), true,
                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null), creators,
-                                            randomInstanceTypeExcluding(
-                                                NON_CANDIDATE.getValue()),
+                                            randomInstanceType().getValue(),
                                             channelType.getValue(), randomUri(),
                                             randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(), institutionPoints,
                                             randomInteger(), randomBoolean(),
@@ -460,7 +448,7 @@ public final class TestUtils {
     }
 
     private static String getCharacterValues(UUID uuid) {
-        return uuid.toString().replaceAll(UUID_SEPERATOR, "");
+        return uuid.toString().replaceAll(UUID_SEPARATOR, "");
     }
 
     private static Instant getNowWithMillisecondAccuracy() {

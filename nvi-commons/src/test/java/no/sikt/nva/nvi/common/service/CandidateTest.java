@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.service;
 
-import static no.sikt.nva.nvi.common.db.model.InstanceType.NON_CANDIDATE;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createNoteRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
@@ -11,7 +10,7 @@ import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeri
 import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
-import static no.sikt.nva.nvi.test.TestUtils.randomInstanceTypeExcluding;
+import static no.sikt.nva.nvi.test.TestUtils.randomInstanceType;
 import static no.sikt.nva.nvi.test.TestUtils.randomLevelExcluding;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
@@ -61,7 +60,6 @@ import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
@@ -71,6 +69,7 @@ import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
+import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
@@ -215,6 +214,7 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldNotUpdateReportedCandidate() {
+        // FIXME: Fix or remove this test? It doesn't do anything now.
         var request = getUpdateRequestForExistingCandidate();
     }
 
@@ -340,7 +340,7 @@ class CandidateTest extends LocalDynamoTest {
         var points = List.of(createInstitutionPoints(institutionId, institutionPoints, creatorId));
         var totalPoints = randomBigDecimal();
         var publicationDate = new PublicationDate(String.valueOf(CURRENT_YEAR), null, null);
-        var instanceType = randomInstanceTypeExcluding(InstanceType.NON_CANDIDATE.getValue());
+        var instanceType = randomInstanceType().getValue();
         var createRequest = createUpsertCandidateRequest(publicationId, publicationBucketUri,
                                                          isApplicable,
                                                          publicationDate,
@@ -587,7 +587,7 @@ class CandidateTest extends LocalDynamoTest {
         return createUpsertCandidateRequest(randomUri(), randomUri(), true,
                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
                                             creators,
-                                            randomInstanceTypeExcluding(NON_CANDIDATE.getValue()),
+                                            randomInstanceType().getValue(),
                                             randomElement(ChannelType.values()).getValue(), randomUri(),
                                             randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(), points,
                                             randomInteger(), randomBoolean(),
@@ -657,11 +657,6 @@ class CandidateTest extends LocalDynamoTest {
                                             createPoints(creators),
                                             randomInteger(), false,
                                             TestUtils.randomBigDecimal(), null, randomBigDecimal());
-    }
-
-    private UpsertCandidateRequest getRandomUpsertCandidateRequest() {
-        return getUpsertCandidateRequest(randomUri(), randomUri(), randomString(),
-                                         randomLevelExcluding(DbLevel.NON_CANDIDATE));
     }
 
     private UpsertCandidateRequest getUpsertCandidateRequest(URI creatorId, URI institutionId,
