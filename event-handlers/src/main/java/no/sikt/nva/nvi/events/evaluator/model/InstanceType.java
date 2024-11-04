@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.events.evaluator.model;
 import java.util.Arrays;
 
 public enum InstanceType {
+    ACADEMIC_COMMENTARY("AcademicCommentary"),
     ACADEMIC_MONOGRAPH("AcademicMonograph"),
     ACADEMIC_CHAPTER("AcademicChapter"),
     ACADEMIC_ARTICLE("AcademicArticle"),

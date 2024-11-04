@@ -133,7 +133,7 @@ public final class PointService {
     private static Channel extractChannel(InstanceType instanceType, JsonNode jsonNode) {
         var channel = switch (instanceType) {
             case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW -> jsonNode.at(JSON_PTR_PUBLICATION_CONTEXT).toString();
-            case ACADEMIC_MONOGRAPH -> extractAcademicMonographChannel(jsonNode);
+            case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY -> extractAcademicMonographChannel(jsonNode);
             case ACADEMIC_CHAPTER -> extractAcademicChapterChannel(jsonNode);
         };
         return attempt(() -> dtoObjectMapper.readValue(channel, Channel.class)).orElseThrow();

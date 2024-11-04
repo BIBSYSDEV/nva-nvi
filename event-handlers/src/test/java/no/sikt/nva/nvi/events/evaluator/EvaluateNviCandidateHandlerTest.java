@@ -4,8 +4,7 @@ import static java.math.BigDecimal.ONE;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createResponse;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.mockOrganizationResponseForAffiliation;
-import static no.sikt.nva.nvi.events.evaluator.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
-import static no.sikt.nva.nvi.events.evaluator.model.InstanceType.ACADEMIC_MONOGRAPH;
+import static no.sikt.nva.nvi.events.evaluator.model.InstanceType.*;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.JOURNAL;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.SERIES;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -87,6 +86,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     private static final String ACADEMIC_LITERATURE_REVIEW_JSON_PATH = "evaluator/candidate_academicLiteratureReview"
                                                                        + ".json";
     private static final String ACADEMIC_MONOGRAPH_JSON_PATH = "evaluator/candidate_academicMonograph.json";
+    private static final String ACADEMIC_COMMENTARY_JSON_PATH = "evaluator/candidate_academicCommentary.json";
     private static final String BUCKET_NAME = "ignoredBucket";
     private static final String CUSTOMER_API_NVI_RESPONSE = "{" + "\"nviInstitution\" : \"true\"" + "}";
     private static final String ACADEMIC_ARTICLE_PATH = "evaluator/candidate_academicArticle.json";
@@ -269,6 +269,23 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                                                                    expectedPoints,
                                                                    fileUri, SERIES,
                                                                    BigDecimal.valueOf(5), expectedPoints
+        );
+        assertEquals(expectedEvaluatedMessage, messageBody);
+    }
+
+    @Test
+    void shouldCreateNewCandidateEventWithCorrectDataOnValidAcademicCommentary() throws IOException {
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+        var content = IoUtils.inputStreamFromResources(ACADEMIC_COMMENTARY_JSON_PATH);
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_COMMENTARY_JSON_PATH), content);
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        handler.handleRequest(event, context);
+        var messageBody = getMessageBody();
+        var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_COMMENTARY.getValue(),
+          expectedPoints,
+          fileUri, SERIES,
+          BigDecimal.valueOf(5), expectedPoints
         );
         assertEquals(expectedEvaluatedMessage, messageBody);
     }

@@ -141,13 +141,14 @@ public final class CristinMapper {
     }
 
     private static ChannelType extractChannelType(CristinNviReport cristinNviReport) {
+        // FIXME: Can this 'instanceType' be of type AcademicCommentary?
         var instance = toInstanceType(cristinNviReport.instanceType());
         var referenceNode = cristinNviReport.reference();
         if (nonNull(instance)) {
             var channelType = switch (instance) {
                 case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
                     extractJsonNodeTextValue(referenceNode, PUBLICATION_CONTEXT_TYPE_JSON_POINTER);
-                case ACADEMIC_MONOGRAPH -> extractChannelTypeForAcademicMonograph(referenceNode);
+                case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY -> extractChannelTypeForAcademicMonograph(referenceNode);
                 case ACADEMIC_CHAPTER -> extractChannelTypeForAcademicChapter(referenceNode);
             };
             return ChannelType.parse(channelType);
@@ -162,7 +163,7 @@ public final class CristinMapper {
             var channelId = switch (instance) {
                 case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
                     extractJsonNodeTextValue(referenceNode, PUBLICATION_CONTEXT_ID_JSON_POINTER);
-                case ACADEMIC_MONOGRAPH -> extractChannelIdForAcademicMonograph(referenceNode);
+                case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY -> extractChannelIdForAcademicMonograph(referenceNode);
                 case ACADEMIC_CHAPTER -> extractChannelIdForAcademicChapter(referenceNode);
             };
             return attempt(() -> UriWrapper.fromUri(channelId).getUri()).orElse(failure -> null);

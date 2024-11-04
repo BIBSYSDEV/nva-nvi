@@ -1,9 +1,6 @@
 package no.sikt.nva.nvi.events.evaluator.calculator;
 
-import static no.sikt.nva.nvi.events.evaluator.model.InstanceType.ACADEMIC_ARTICLE;
-import static no.sikt.nva.nvi.events.evaluator.model.InstanceType.ACADEMIC_CHAPTER;
-import static no.sikt.nva.nvi.events.evaluator.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
-import static no.sikt.nva.nvi.events.evaluator.model.InstanceType.ACADEMIC_MONOGRAPH;
+import static no.sikt.nva.nvi.events.evaluator.model.InstanceType.*;
 import static no.sikt.nva.nvi.events.evaluator.model.Level.LEVEL_ONE;
 import static no.sikt.nva.nvi.events.evaluator.model.Level.LEVEL_TWO;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.JOURNAL;
@@ -30,6 +27,13 @@ public final class PointCalculationConstants {
     public static final Map<InstanceType, Map<PublicationChannel, Map<Level, BigDecimal>>>
         INSTANCE_TYPE_AND_LEVEL_POINT_MAP = Map.of(
         ACADEMIC_MONOGRAPH, Map.of(
+            PUBLISHER, Map.of(
+                LEVEL_ONE, BigDecimal.valueOf(5),
+                LEVEL_TWO, BigDecimal.valueOf(8)),
+            SERIES, Map.of(
+                LEVEL_ONE, BigDecimal.valueOf(5),
+                LEVEL_TWO, BigDecimal.valueOf(8))),
+        ACADEMIC_COMMENTARY, Map.of(
             PUBLISHER, Map.of(
                 LEVEL_ONE, BigDecimal.valueOf(5),
                 LEVEL_TWO, BigDecimal.valueOf(8)),
