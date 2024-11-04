@@ -281,7 +281,7 @@ public final class CristinMapper {
 
     private Stream<InstitutionPoints> getInstitutionPointsStream(List<CristinLocale> institutions,
                                                                         Map<URI, ArrayList<ScientificPerson>> map) {
-        return map.entrySet().stream().map(entry -> toPoints(institutions, entry.getValue()));
+        return map.values().stream().map(scientificPeople -> toPoints(institutions, scientificPeople));
     }
 
     private InstitutionPoints toPoints(List<CristinLocale> institutions, List<ScientificPerson> list) {
