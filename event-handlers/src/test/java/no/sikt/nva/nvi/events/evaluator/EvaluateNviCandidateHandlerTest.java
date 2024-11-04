@@ -557,9 +557,10 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     private static void mockSecretManager() {
-        var secretsManagerClient = new FakeSecretsManagerClient();
-        var credentials = new BackendClientCredentials("id", "secret");
-        secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
+        try (var secretsManagerClient = new FakeSecretsManagerClient()) {
+            var credentials = new BackendClientCredentials("id", "secret");
+            secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
+        }
     }
 
     private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(String instanceType,
