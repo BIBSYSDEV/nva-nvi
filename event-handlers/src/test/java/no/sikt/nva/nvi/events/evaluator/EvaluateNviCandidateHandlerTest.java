@@ -344,6 +344,18 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldCreateNewCandidateEventOnValidAcademicCommentaryWithoutSeriesLevelWithPublisherLevel() throws IOException {
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+        var path = "evaluator/candidate_academicCommentary_withoutSeries.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        handler.handleRequest(event, context);
+        var candidate = (NviCandidate) getMessageBody().candidate();
+        assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
+    }
+
+    @Test
     void shouldCreateNewCandidateEventOnValidAcademicMonograph() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var content = IoUtils.inputStreamFromResources(ACADEMIC_MONOGRAPH_JSON_PATH);
@@ -368,6 +380,17 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldCreateNonCandidateEventOnAcademicChapterWithSeriesLevelZero() throws IOException {
         var path = "evaluator/nonCandidate_academicChapter_seriesLevelZero.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        handler.handleRequest(event, context);
+        var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
+        assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
+    }
+
+    @Test
+    void shouldCreateNonCandidateEventOnAcademicCommentaryWithSeriesLevelZero() throws IOException {
+        var path = "evaluator/nonCandidate_academicCommentary_seriesLevelZero.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
         var event = createEvent(new PersistedResourceMessage(fileUri));
