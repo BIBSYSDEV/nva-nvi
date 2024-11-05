@@ -13,7 +13,7 @@ class InstanceTypeTest {
     @ValueSource(strings = {"AcademicCommentary", "AcademicMonograph", "AcademicChapter", "AcademicArticle",
         "AcademicLiteratureReview"})
     void shouldParseValidStrings(String value) {
-        InstanceType instanceType = InstanceType.parse(value);
+        var instanceType = InstanceType.parse(value);
         assertEquals(value, instanceType.getValue());
     }
 

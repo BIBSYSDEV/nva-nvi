@@ -14,7 +14,6 @@ class CreatePeriodRequestTest {
 
     @BeforeEach
     void setUp() {
-        // Create valid request
         builder = CreatePeriodRequest.builder()
                                      .withPublishingYear(1999)
                                      .withStartDate(Instant.now().plus(1, DAYS))
