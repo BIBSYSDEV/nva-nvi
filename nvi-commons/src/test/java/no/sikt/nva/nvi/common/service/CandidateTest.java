@@ -214,7 +214,7 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldNotUpdateReportedCandidate() {
-        // FIXME: Fix or remove this test? It doesn't do anything now.
+        // FIXME: This should be implemented in a separate PR
         var request = getUpdateRequestForExistingCandidate();
     }
 
