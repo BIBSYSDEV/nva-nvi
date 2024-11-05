@@ -141,7 +141,6 @@ public final class CristinMapper {
     }
 
     private static ChannelType extractChannelType(CristinNviReport cristinNviReport) {
-        // FIXME: Can this 'instanceType' be of type AcademicCommentary?
         var instance = toInstanceType(cristinNviReport.instanceType());
         var referenceNode = cristinNviReport.reference();
         if (nonNull(instance)) {

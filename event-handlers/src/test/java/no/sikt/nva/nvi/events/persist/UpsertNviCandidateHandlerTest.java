@@ -128,7 +128,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldSaveNewNviCandidateWithPendingInstitutionApprovalsWhenCandidateDoesNotExist() {
-        var evaluatedNviCandidate = randomEvaluatedNviCandidate().withInstanceType("foo").build();
+        var evaluatedNviCandidate = randomEvaluatedNviCandidate().withInstanceType("InvalidInstanceType").build();
         var sqsEvent = createEvent(createEvalMessage(evaluatedNviCandidate));
         handler.handleRequest(sqsEvent, CONTEXT);
         var actualPersistedCandidateDao = candidateRepository.findByPublicationId(evaluatedNviCandidate.publicationId())
