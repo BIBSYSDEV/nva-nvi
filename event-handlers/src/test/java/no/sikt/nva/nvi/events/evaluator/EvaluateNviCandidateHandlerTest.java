@@ -545,17 +545,17 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldCreateDlqWhenUnableToConnectToResources() {
-
+        // FIXME: Fix or remove this test? It doesn't do anything now
     }
 
     @Test
     void shouldCreateDlqWhenUnableToCreateNewCandidateEvent() {
-
+        // FIXME: Fix or remove this test? It doesn't do anything now
     }
 
     @Test
     void shouldReadDlqAndRetryAfterGivenTime() {
-
+        // FIXME: Fix or remove this test? It doesn't do anything now
     }
 
     private static void mockSecretManager() {
