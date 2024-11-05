@@ -77,7 +77,7 @@ public class Approval {
             var newDao = repository.updateApprovalStatusDao(identifier, updateAssignee(request));
             return new Approval(repository, identifier, newDao);
         } else if (input instanceof UpdateStatusRequest request) {
-            validate((UpdateStatusRequest) input);
+            validate(request);
             var newDao = repository.updateApprovalStatusDao(identifier, updateStatus(request));
             return new Approval(repository, identifier, newDao);
         } else {
