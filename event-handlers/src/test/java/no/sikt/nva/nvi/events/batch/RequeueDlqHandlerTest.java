@@ -315,7 +315,6 @@ public class RequeueDlqHandlerTest {
         when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
             .thenReturn(ReceiveMessageResponse.builder().messages(generateMessages(1, "firstBatch")).build())
             .thenReturn(ReceiveMessageResponse.builder().messages(List.of()).build());
-        var handler = new RequeueDlqHandler(client, DLQ_URL, repo, periodRepository);
-        return handler;
+        return new RequeueDlqHandler(client, DLQ_URL, repo, periodRepository);
     }
 }
