@@ -1,6 +1,5 @@
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/6f12579c9d494090bdd117ab5b737b6d)](https://app.codacy.com/gh/BIBSYSDEV/nva-nvi/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/6f12579c9d494090bdd117ab5b737b6d)](https://app.codacy.com/gh/BIBSYSDEV/nva-nvi/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 # nva-nvi
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/6f12579c9d494090bdd117ab5b737b6d)](https://app.codacy.com/gh/BIBSYSDEV/nva-nvi/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
-[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/6f12579c9d494090bdd117ab5b737b6d)](https://app.codacy.com/gh/BIBSYSDEV/nva-nvi/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 
 ## OpenSearch Indexes
 
