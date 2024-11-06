@@ -21,7 +21,6 @@ import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

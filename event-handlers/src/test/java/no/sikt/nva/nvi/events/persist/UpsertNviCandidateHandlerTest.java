@@ -95,7 +95,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         queueClient = mock(QueueClient.class);
         environment = mock(Environment.class);
         when(environment.readEnv("UPSERT_CANDIDATE_DLQ_QUEUE_URL")).thenReturn(DLQ_QUEUE_URL);
-        handler = new UpsertNviCandidateHandler(candidateRepository, periodRepository, queueClient, environment);
+        handler = new UpsertNviCandidateHandler(candidateRepository, queueClient, environment);
     }
 
     @Test
@@ -117,7 +117,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldSendMessageToDlqWhenUnexpectedErrorOccurs() {
         candidateRepository = mock(CandidateRepository.class);
-        handler = new UpsertNviCandidateHandler(candidateRepository, periodRepository, queueClient, environment);
+        handler = new UpsertNviCandidateHandler(candidateRepository, queueClient, environment);
         when(candidateRepository.create(any(), any())).thenThrow(RuntimeException.class);
 
         handler.handleRequest(createEvent(randomCandidateEvaluatedMessage()), CONTEXT);

@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.batch;
 
-import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;

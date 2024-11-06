@@ -24,13 +24,11 @@ import org.junit.jupiter.api.Test;
 class CandidateRepositoryTest extends LocalDynamoTest {
 
     private CandidateRepository candidateRepository;
-    private PeriodRepository periodRepository;
 
     @BeforeEach
     public void setUp() {
         localDynamo = initializeTestDatabase();
         candidateRepository = new CandidateRepository(localDynamo);
-        periodRepository = new PeriodRepository(localDynamo);
     }
 
     @Test

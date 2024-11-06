@@ -5,7 +5,6 @@ import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.createPath;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandApprovals;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandPublicationDetails;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.invalidSqsMessage;
-import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static nva.commons.core.attempt.Try.attempt;

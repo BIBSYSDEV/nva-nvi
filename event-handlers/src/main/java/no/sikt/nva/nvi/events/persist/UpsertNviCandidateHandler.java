@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -36,22 +35,18 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
     private static final String UPSERT_CANDIDATE_DLQ_QUEUE_URL = "UPSERT_CANDIDATE_DLQ_QUEUE_URL";
     private static final String UPSERT_CANDIDATE_FAILED_MESSAGE = "Failed to upsert candidate for publication: {}";
     private final CandidateRepository repository;
-    private final PeriodRepository periodRepository;
-
     private final QueueClient queueClient;
     private final String dlqUrl;
 
     @JacocoGenerated
     public UpsertNviCandidateHandler() {
-        this(new CandidateRepository(defaultDynamoClient()), new PeriodRepository(defaultDynamoClient()),
-             new NviQueueClient(), new Environment());
+        this(new CandidateRepository(defaultDynamoClient()), new NviQueueClient(), new Environment());
     }
 
-    public UpsertNviCandidateHandler(CandidateRepository repository, PeriodRepository periodRepository,
+    public UpsertNviCandidateHandler(CandidateRepository repository,
                                      QueueClient queueClient,
                                      Environment environment) {
         this.repository = repository;
-        this.periodRepository = periodRepository;
         this.queueClient = queueClient;
         this.dlqUrl = environment.readEnv(UPSERT_CANDIDATE_DLQ_QUEUE_URL);
     }

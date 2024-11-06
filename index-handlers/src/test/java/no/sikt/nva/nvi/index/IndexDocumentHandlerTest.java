@@ -54,7 +54,6 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
@@ -600,7 +599,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     private Candidate setUpNonApplicableCandidate(URI institutionId) {
         var request = createUpsertCandidateRequest(institutionId);
         Candidate.upsert(request, candidateRepository);
-        var candidate =  Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
+        var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
         return Candidate.updateNonCandidate(
             createUpsertNonCandidateRequest(candidate.getPublicationId()),
             candidateRepository).orElseThrow();
@@ -755,7 +754,6 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var request = createUpsertCandidateRequest(topLevelOrg, affiliation);
         Candidate.upsert(request, candidateRepository);
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
-
     }
 
     private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation, ChannelType channelType) {
