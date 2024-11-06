@@ -89,8 +89,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.platform.commons.function.Try;
-import org.mockito.Mockito;
 
 class CandidateTest extends LocalDynamoTest {
 
