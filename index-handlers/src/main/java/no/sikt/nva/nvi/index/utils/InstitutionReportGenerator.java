@@ -137,7 +137,7 @@ public class InstitutionReportGenerator {
         var fetchedCandidates = new ArrayList<NviCandidateIndexDocument>();
         var currentOffset = batchOffset;
         var currentPageSize = searchPageSize;
-        HitsMetadata<NviCandidateIndexDocument> newHits = null;
+        HitsMetadata<NviCandidateIndexDocument> newHits;
 
         do {
             try {

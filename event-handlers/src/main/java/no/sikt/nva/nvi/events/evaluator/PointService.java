@@ -27,10 +27,10 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.Channel;
-import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 
@@ -133,7 +133,7 @@ public final class PointService {
     private static Channel extractChannel(InstanceType instanceType, JsonNode jsonNode) {
         var channel = switch (instanceType) {
             case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW -> jsonNode.at(JSON_PTR_PUBLICATION_CONTEXT).toString();
-            case ACADEMIC_MONOGRAPH -> extractAcademicMonographChannel(jsonNode);
+            case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY -> extractBookChannel(jsonNode);
             case ACADEMIC_CHAPTER -> extractAcademicChapterChannel(jsonNode);
         };
         return attempt(() -> dtoObjectMapper.readValue(channel, Channel.class)).orElseThrow();
@@ -147,7 +147,7 @@ public final class PointService {
         }
     }
 
-    private static String extractAcademicMonographChannel(JsonNode jsonNode) {
+    private static String extractBookChannel(JsonNode jsonNode) {
         if (nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_SCIENTIFIC_VALUE))) {
             return jsonNode.at(JSON_PTR_SERIES).toString();
         } else {

@@ -3,7 +3,7 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
 ASK WHERE {
-  VALUES ?approvedType { nva:AcademicMonograph nva:AcademicChapter nva:AcademicArticle nva:AcademicLiteratureReview }
+  VALUES ?approvedType { nva:AcademicMonograph nva:AcademicCommentary nva:AcademicChapter nva:AcademicArticle nva:AcademicLiteratureReview }
 
   ?publication a nva:Publication ;
                nva:status nva:PUBLISHED ;

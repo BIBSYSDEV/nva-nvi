@@ -1,11 +1,12 @@
 package no.sikt.nva.nvi.events.evaluator;
 
 import static java.math.BigDecimal.ONE;
+import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_COMMENTARY;
+import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
+import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createResponse;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.mockOrganizationResponseForAffiliation;
-import static no.sikt.nva.nvi.events.evaluator.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
-import static no.sikt.nva.nvi.events.evaluator.model.InstanceType.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.JOURNAL;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.SERIES;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -44,10 +45,10 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
-import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
 import no.sikt.nva.nvi.events.evaluator.model.Level;
 import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
@@ -87,6 +88,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     private static final String ACADEMIC_LITERATURE_REVIEW_JSON_PATH = "evaluator/candidate_academicLiteratureReview"
                                                                        + ".json";
     private static final String ACADEMIC_MONOGRAPH_JSON_PATH = "evaluator/candidate_academicMonograph.json";
+    private static final String ACADEMIC_COMMENTARY_JSON_PATH = "evaluator/candidate_academicCommentary.json";
     private static final String BUCKET_NAME = "ignoredBucket";
     private static final String CUSTOMER_API_NVI_RESPONSE = "{" + "\"nviInstitution\" : \"true\"" + "}";
     private static final String ACADEMIC_ARTICLE_PATH = "evaluator/candidate_academicArticle.json";
@@ -274,6 +276,23 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldCreateNewCandidateEventWithCorrectDataOnValidAcademicCommentary() throws IOException {
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+        var content = IoUtils.inputStreamFromResources(ACADEMIC_COMMENTARY_JSON_PATH);
+        var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_COMMENTARY_JSON_PATH), content);
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        handler.handleRequest(event, context);
+        var messageBody = getMessageBody();
+        var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_COMMENTARY.getValue(),
+          expectedPoints,
+          fileUri, SERIES,
+          BigDecimal.valueOf(5), expectedPoints
+        );
+        assertEquals(expectedEvaluatedMessage, messageBody);
+    }
+
+    @Test
     void shouldCreateNewCandidateEventWithCorrectDataOnValidAcademicLiteratureReview() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var content = IoUtils.inputStreamFromResources(ACADEMIC_LITERATURE_REVIEW_JSON_PATH);
@@ -327,6 +346,18 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldCreateNewCandidateEventOnValidAcademicCommentaryWithoutSeriesLevelWithPublisherLevel() throws IOException {
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+        var path = "evaluator/candidate_academicCommentary_withoutSeries.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        handler.handleRequest(event, context);
+        var candidate = (NviCandidate) getMessageBody().candidate();
+        assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
+    }
+
+    @Test
     void shouldCreateNewCandidateEventOnValidAcademicMonograph() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var content = IoUtils.inputStreamFromResources(ACADEMIC_MONOGRAPH_JSON_PATH);
@@ -351,6 +382,17 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldCreateNonCandidateEventOnAcademicChapterWithSeriesLevelZero() throws IOException {
         var path = "evaluator/nonCandidate_academicChapter_seriesLevelZero.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        handler.handleRequest(event, context);
+        var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
+        assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
+    }
+
+    @Test
+    void shouldCreateNonCandidateEventOnAcademicCommentaryWithSeriesLevelZero() throws IOException {
+        var path = "evaluator/nonCandidate_academicCommentary_seriesLevelZero.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
         var event = createEvent(new PersistedResourceMessage(fileUri));
@@ -501,25 +543,11 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
-    @Test
-    void shouldCreateDlqWhenUnableToConnectToResources() {
-
-    }
-
-    @Test
-    void shouldCreateDlqWhenUnableToCreateNewCandidateEvent() {
-
-    }
-
-    @Test
-    void shouldReadDlqAndRetryAfterGivenTime() {
-
-    }
-
     private static void mockSecretManager() {
-        var secretsManagerClient = new FakeSecretsManagerClient();
-        var credentials = new BackendClientCredentials("id", "secret");
-        secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
+        try (var secretsManagerClient = new FakeSecretsManagerClient()) {
+            var credentials = new BackendClientCredentials("id", "secret");
+            secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
+        }
     }
 
     private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(String instanceType,

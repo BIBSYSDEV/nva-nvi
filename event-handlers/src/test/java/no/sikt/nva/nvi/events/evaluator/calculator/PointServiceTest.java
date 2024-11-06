@@ -468,6 +468,12 @@ class PointServiceTest {
 
     private static Stream<PointParameters> twoCreatorsAffiliatedWithOneInstitutionPointProvider() {
         return Stream.of(
+            new PointParameters("AcademicCommentary", "Series", "LevelOne", false, 3, asBigDecimal("4.0825"),
+                                asBigDecimal("2.8868"), asBigDecimal("6.9693")),
+            new PointParameters("AcademicCommentary", "Series", "LevelTwo", true, 4, asBigDecimal("7.3539"),
+                                asBigDecimal("5.2000"), asBigDecimal("12.5539")),
+            new PointParameters("AcademicCommentary", "Series", "LevelTwo", false, 4, asBigDecimal("5.6569"),
+                                asBigDecimal("4.0000"), asBigDecimal("9.6569")),
             new PointParameters("AcademicMonograph", "Series", "LevelOne", false, 3, asBigDecimal("4.0825"),
                                 asBigDecimal("2.8868"), asBigDecimal("6.9693")),
             new PointParameters("AcademicMonograph", "Series", "LevelTwo", true, 4, asBigDecimal("7.3539"),
@@ -491,6 +497,14 @@ class PointServiceTest {
 
     private static Stream<PointParameters> singleCreatorSingleInstitutionPointProvider() {
         return Stream.of(
+            new PointParameters("AcademicCommentary", "Series", "LevelOne", false, 1, asBigDecimal("5"), null,
+                                asBigDecimal("5")),
+            new PointParameters("AcademicCommentary", "Series", "LevelTwo", false, 1, asBigDecimal("8"), null,
+                                asBigDecimal("8")),
+            new PointParameters("AcademicCommentary", "Publisher", "LevelOne", false, 1, asBigDecimal("5"), null,
+                                asBigDecimal("5")),
+            new PointParameters("AcademicCommentary", "Publisher", "LevelTwo", false, 1, asBigDecimal("8"), null,
+                                asBigDecimal("8")),
             new PointParameters("AcademicMonograph", "Series", "LevelOne", false, 1, asBigDecimal("5"), null,
                                 asBigDecimal("5")),
             new PointParameters("AcademicMonograph", "Series", "LevelTwo", false, 1, asBigDecimal("8"), null,
@@ -522,7 +536,7 @@ class PointServiceTest {
         return switch (parameters.instanceType()) {
             case "AcademicArticle", "AcademicLiteratureReview" ->
                 createJournalReference(parameters.instanceType(), parameters.level());
-            case "AcademicMonograph" ->
+            case "AcademicMonograph", "AcademicCommentary" ->
                 createReference(parameters.instanceType(), parameters.channelType(), parameters.level());
             case "AcademicChapter" -> createChapterReference(parameters.instanceType(),
                                                              parameters.channelType(), parameters.level());

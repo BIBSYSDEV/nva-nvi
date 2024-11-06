@@ -29,8 +29,8 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -315,7 +315,6 @@ public class RequeueDlqHandlerTest {
         when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
             .thenReturn(ReceiveMessageResponse.builder().messages(generateMessages(1, "firstBatch")).build())
             .thenReturn(ReceiveMessageResponse.builder().messages(List.of()).build());
-        var handler = new RequeueDlqHandler(client, DLQ_URL, repo, periodRepository);
-        return handler;
+        return new RequeueDlqHandler(client, DLQ_URL, repo, periodRepository);
     }
 }

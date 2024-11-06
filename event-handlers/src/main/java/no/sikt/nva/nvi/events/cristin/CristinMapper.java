@@ -29,9 +29,9 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.events.cristin.InstitutionPoints.CreatorPoints;
-import no.sikt.nva.nvi.events.evaluator.model.InstanceType;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.StringUtils;
@@ -147,7 +147,7 @@ public final class CristinMapper {
             var channelType = switch (instance) {
                 case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
                     extractJsonNodeTextValue(referenceNode, PUBLICATION_CONTEXT_TYPE_JSON_POINTER);
-                case ACADEMIC_MONOGRAPH -> extractChannelTypeForAcademicMonograph(referenceNode);
+                case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY -> extractChannelTypeForAcademicMonograph(referenceNode);
                 case ACADEMIC_CHAPTER -> extractChannelTypeForAcademicChapter(referenceNode);
             };
             return ChannelType.parse(channelType);
@@ -162,7 +162,7 @@ public final class CristinMapper {
             var channelId = switch (instance) {
                 case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
                     extractJsonNodeTextValue(referenceNode, PUBLICATION_CONTEXT_ID_JSON_POINTER);
-                case ACADEMIC_MONOGRAPH -> extractChannelIdForAcademicMonograph(referenceNode);
+                case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY -> extractChannelIdForAcademicMonograph(referenceNode);
                 case ACADEMIC_CHAPTER -> extractChannelIdForAcademicChapter(referenceNode);
             };
             return attempt(() -> UriWrapper.fromUri(channelId).getUri()).orElse(failure -> null);
@@ -280,7 +280,7 @@ public final class CristinMapper {
 
     private Stream<InstitutionPoints> getInstitutionPointsStream(List<CristinLocale> institutions,
                                                                         Map<URI, ArrayList<ScientificPerson>> map) {
-        return map.entrySet().stream().map(entry -> toPoints(institutions, entry.getValue()));
+        return map.values().stream().map(scientificPeople -> toPoints(institutions, scientificPeople));
     }
 
     private InstitutionPoints toPoints(List<CristinLocale> institutions, List<ScientificPerson> list) {

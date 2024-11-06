@@ -5,7 +5,6 @@ import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.setUpSqsClient;
 import static no.sikt.nva.nvi.test.TestUtils.createCandidateDao;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateWithYear;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

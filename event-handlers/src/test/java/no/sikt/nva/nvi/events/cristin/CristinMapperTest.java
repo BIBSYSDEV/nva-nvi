@@ -519,7 +519,7 @@ class CristinMapperTest {
                          .build();
         var nviCandidate = cristinMapper.toDbCandidate(report);
 
-        assertThat(nviCandidate.level(), is(equalTo(DbLevel.LEVEL_TWO)));;
+        assertThat(nviCandidate.level(), is(equalTo(DbLevel.LEVEL_TWO)));
     }
 
     private static CristinNviReport nviReportWithInstanceTypeAndReference(String instanceType, String reference) {
