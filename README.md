@@ -1,5 +1,7 @@
 # nva-nvi
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/fd234dc70d14491fb92b93ce4f52b313)](https://app.codacy.com/gh/BIBSYSDEV/nva-nvi?utm_source=github.com&utm_medium=referral&utm_content=BIBSYSDEV/nva-nvi&utm_campaign=Badge_Grade)
+
 ## OpenSearch Indexes
 
 When building a new environment or the search indexes are deleted and needs to
