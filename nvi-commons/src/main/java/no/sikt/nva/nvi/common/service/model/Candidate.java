@@ -48,6 +48,7 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
+import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
@@ -136,13 +137,10 @@ public final class Candidate {
 
     public static Optional<Candidate> upsert(UpsertCandidateRequest request, CandidateRepository repository,
                                              PeriodRepository periodRepository) {
-        if (isNotExistingCandidate(request, repository)) {
-            return Optional.of(createCandidate(request, repository, periodRepository));
-        }
-        if (isExistingCandidate(request.publicationId(), repository)) {
-            return Optional.of(updateCandidate(request, repository, periodRepository));
-        }
-        return Optional.empty();
+        var optionalCandidate = repository.findByPublicationId(request.publicationId());
+        return optionalCandidate.map(
+                candidateDao -> handleExistingCandidate(request, repository, periodRepository, candidateDao))
+                   .orElseGet(() -> Optional.of(createCandidate(request, repository, periodRepository)));
     }
 
     public static Optional<Candidate> updateNonCandidate(UpdateNonCandidateRequest request,
@@ -338,14 +336,22 @@ public final class Candidate {
             .orElseThrow(CandidateNotFoundException::new);
     }
 
+    private static Optional<Candidate> handleExistingCandidate(UpsertCandidateRequest request,
+                                                               CandidateRepository repository,
+                                                               PeriodRepository periodRepository,
+                                                               CandidateDao existingCandidate) {
+        if (existingCandidate.isReported()) {
+            throw new IllegalCandidateUpdateException("Can not update reported candidate");
+        } else {
+            return Optional.of(updateCandidate(request, repository, periodRepository,
+                                               existingCandidate));
+        }
+    }
+
     private static CandidateDao updateVersion(CandidateRepository candidateRepository, CandidateDao candidateDao) {
         var candidateWithNewVersion = candidateDao.copy().version(randomUUID().toString()).build();
         candidateRepository.updateCandidate(candidateWithNewVersion);
         return candidateWithNewVersion;
-    }
-
-    private static boolean isNotExistingCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
-        return !isExistingCandidate(request.publicationId(), repository);
     }
 
     private static Candidate updateToNotApplicable(UpdateNonCandidateRequest request, CandidateRepository repository) {
@@ -359,10 +365,8 @@ public final class Candidate {
     }
 
     private static Candidate updateCandidate(UpsertCandidateRequest request, CandidateRepository repository,
-                                             PeriodRepository periodRepository) {
+                                             PeriodRepository periodRepository, CandidateDao existingCandidateDao) {
         validateCandidate(request);
-        var existingCandidateDao = repository.findByPublicationId(request.publicationId())
-                                       .orElseThrow(CandidateNotFoundException::new);
         if (shouldResetCandidate(request, existingCandidateDao) || isNotApplicable(existingCandidateDao)) {
             return resetCandidate(request, repository, periodRepository, existingCandidateDao);
         } else {

@@ -66,6 +66,7 @@ import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
+import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
@@ -214,8 +215,19 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldNotUpdateReportedCandidate() {
-        // FIXME: This should be implemented in a separate PR
-        var request = getUpdateRequestForExistingCandidate();
+        var year = randomYear();
+        var candidate = setupReportedCandidate(candidateRepository, year).candidate();
+        var updateRequest = TestUtils.createUpsertCandidateRequest(candidate.publicationId(),
+                                                                   randomUri(),
+                                                                   true,
+                                                                   candidate.instanceType(),
+                                                                   candidate.creatorCount(),
+                                                                   candidate.totalPoints(),
+                                                                   candidate.level().getValue(),
+                                                                   Integer.parseInt(year),
+                                                                   randomUri());
+        assertThrows(IllegalCandidateUpdateException.class,
+                     () -> Candidate.upsert(updateRequest, candidateRepository, periodRepository));
     }
 
     @Test

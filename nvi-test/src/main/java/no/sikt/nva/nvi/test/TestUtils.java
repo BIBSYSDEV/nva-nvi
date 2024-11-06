@@ -103,6 +103,7 @@ public final class TestUtils {
                    .creatorCount(randomInteger())
                    .createdDate(Instant.now())
                    .modifiedDate(Instant.now())
+                   .totalPoints(randomBigDecimal())
                    .creators(List.of(new DbCreator(creatorId, List.of(institutionId))));
     }
 
@@ -241,7 +242,8 @@ public final class TestUtils {
                                     .withPublishingYear(Integer.parseInt(year))
                                     .withStartDate(ZonedDateTime.now().plusMonths(1).toInstant())
                                     .withReportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
-                                    .withCreatedBy(no.sikt.nva.nvi.common.service.model.Username.fromString(randomString()))
+                                    .withCreatedBy(
+                                        no.sikt.nva.nvi.common.service.model.Username.fromString(randomString()))
                                     .build(), periodRepository);
     }
 
@@ -284,7 +286,8 @@ public final class TestUtils {
         return createUpsertCandidateRequest(topLevelOrg, affiliation, randomElement(ChannelType.values()));
     }
 
-    public static UpsertCandidateRequest createUpsertCandidateRequest(URI topLevelOrg, URI affiliation, ChannelType channelType) {
+    public static UpsertCandidateRequest createUpsertCandidateRequest(URI topLevelOrg, URI affiliation,
+                                                                      ChannelType channelType) {
         var creatorId = randomUri();
         var creators = Map.of(creatorId, List.of(affiliation));
         var points = randomBigDecimal();
