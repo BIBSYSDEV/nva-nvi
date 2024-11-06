@@ -220,7 +220,7 @@ class CandidateTest extends LocalDynamoTest {
         var updateRequest = TestUtils.createUpsertCandidateRequest(candidate.publicationId(),
                                                                    randomUri(),
                                                                    true,
-                                                                   candidate.instanceType(),
+                                                                   InstanceType.parse(candidate.instanceType()),
                                                                    candidate.creatorCount(),
                                                                    candidate.totalPoints(),
                                                                    candidate.level().getValue(),
