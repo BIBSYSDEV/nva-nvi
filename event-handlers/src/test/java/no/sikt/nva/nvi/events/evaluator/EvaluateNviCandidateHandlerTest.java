@@ -235,7 +235,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();
         var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(InstanceType.ACADEMIC_ARTICLE.getValue(),
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(InstanceType.ACADEMIC_ARTICLE,
                                                                    expectedPoints,
                                                                    fileUri, JOURNAL,
                                                                    ONE, expectedPoints);
@@ -251,7 +251,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();
         var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(InstanceType.ACADEMIC_CHAPTER.getValue(),
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(InstanceType.ACADEMIC_CHAPTER,
                                                                    expectedPoints,
                                                                    fileUri, SERIES,
                                                                    ONE, expectedPoints);
@@ -267,7 +267,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();
         var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_MONOGRAPH.getValue(),
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_MONOGRAPH,
                                                                    expectedPoints,
                                                                    fileUri, SERIES,
                                                                    BigDecimal.valueOf(5), expectedPoints
@@ -284,7 +284,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();
         var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_COMMENTARY.getValue(),
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_COMMENTARY,
           expectedPoints,
           fileUri, SERIES,
           BigDecimal.valueOf(5), expectedPoints
@@ -301,7 +301,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();
         var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_LITERATURE_REVIEW.getValue(),
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_LITERATURE_REVIEW,
                                                                    expectedPoints,
                                                                    fileUri, JOURNAL,
                                                                    ONE, expectedPoints);
@@ -518,7 +518,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();
         var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_MONOGRAPH.getValue(),
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_MONOGRAPH,
                                                                    expectedPoints,
                                                                    fileUri, SERIES,
                                                                    BigDecimal.valueOf(5), expectedPoints);
@@ -536,7 +536,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         handler.handleRequest(event, context);
         var messageBody = getMessageBody();
         var expectedPoints = ONE.setScale(SCALE, ROUNDING_MODE);
-        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(InstanceType.ACADEMIC_ARTICLE.getValue(),
+        var expectedEvaluatedMessage = getExpectedEvaluatedMessage(InstanceType.ACADEMIC_ARTICLE,
                                                                    expectedPoints,
                                                                    fileUri, JOURNAL,
                                                                    BigDecimal.valueOf(1), expectedPoints);
@@ -550,7 +550,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         }
     }
 
-    private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(String instanceType,
+    private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(InstanceType instanceType,
                                                                          BigDecimal points, URI bucketUri,
                                                                          PublicationChannel publicationChannel,
                                                                          BigDecimal basePoints,
@@ -564,7 +564,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private static NviCandidate createExpectedCandidate(String instanceType, Map<URI, BigDecimal> institutionPoints,
+    private static NviCandidate createExpectedCandidate(InstanceType instanceType, Map<URI, BigDecimal> institutionPoints,
                                                         PublicationChannel channelType, String level,
                                                         BigDecimal basePoints, BigDecimal totalPoints,
                                                         URI publicationBucketUri) {

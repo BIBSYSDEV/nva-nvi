@@ -289,7 +289,7 @@ class CandidateTest extends LocalDynamoTest {
         var institutionToApprove = randomUri();
         var totalPoints = randomBigDecimal();
         var createRequest = createUpsertCandidateRequest(randomUri(), randomUri(), true,
-                                                         InstanceType.ACADEMIC_MONOGRAPH.getValue(), 4, totalPoints,
+                                                         InstanceType.ACADEMIC_MONOGRAPH, 4, totalPoints,
                                                          randomLevelExcluding(DbLevel.NON_CANDIDATE)
                                                              .getValue(), CURRENT_YEAR,
                                                          institutionToApprove, randomUri(), institutionToReject);
@@ -340,7 +340,7 @@ class CandidateTest extends LocalDynamoTest {
         var points = List.of(createInstitutionPoints(institutionId, institutionPoints, creatorId));
         var totalPoints = randomBigDecimal();
         var publicationDate = new PublicationDate(String.valueOf(CURRENT_YEAR), null, null);
-        var instanceType = randomInstanceType().getValue();
+        var instanceType = randomInstanceType();
         var createRequest = createUpsertCandidateRequest(publicationId, publicationBucketUri,
                                                          isApplicable,
                                                          publicationDate,
@@ -361,7 +361,7 @@ class CandidateTest extends LocalDynamoTest {
         assertEquals(candidate.getInstitutionPoints(), points);
         assertEquals(candidate.getPublicationDetails().publicationDate(), publicationDate);
         assertCorrectCreatorData(creators, candidate);
-        assertEquals(candidate.getPublicationDetails().type(), instanceType);
+        assertEquals(candidate.getPublicationDetails().type(), instanceType.getValue());
         assertEquals(candidate.getPublicationDetails().channelType().getValue(), createRequest.channelType());
         assertEquals(candidate.getPublicationDetails().publicationChannelId(), createRequest.publicationChannelId());
         assertEquals(candidate.getPublicationDetails().level(), createRequest.level());
@@ -472,7 +472,7 @@ class CandidateTest extends LocalDynamoTest {
     @DisplayName("Should reset approvals when updating fields effecting approvals")
     void shouldResetApprovalsWhenUpdatingFieldsEffectingApprovals(CandidateResetCauseArgument arguments) {
         var originalLevel = DbLevel.LEVEL_TWO;
-        var originalType = InstanceType.ACADEMIC_MONOGRAPH.getValue();
+        var originalType = InstanceType.ACADEMIC_MONOGRAPH;
         var institutionId = randomUri();
         var creatorId = randomUri();
         var upsertCandidateRequest = getUpsertCandidateRequest(creatorId, institutionId, originalType, originalLevel);
@@ -587,7 +587,7 @@ class CandidateTest extends LocalDynamoTest {
         return createUpsertCandidateRequest(randomUri(), randomUri(), true,
                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
                                             creators,
-                                            randomInstanceType().getValue(),
+                                            randomInstanceType(),
                                             randomElement(ChannelType.values()).getValue(), randomUri(),
                                             randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(), points,
                                             randomInteger(), randomBoolean(),
@@ -651,7 +651,7 @@ class CandidateTest extends LocalDynamoTest {
                                             randomUri(), true,
                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
                                             creators,
-                                            arguments.type().getValue(),
+                                            arguments.type(),
                                             randomString(), randomUri(),
                                             arguments.level().getValue(),
                                             createPoints(creators),
@@ -660,7 +660,7 @@ class CandidateTest extends LocalDynamoTest {
     }
 
     private UpsertCandidateRequest getUpsertCandidateRequest(URI creatorId, URI institutionId,
-                                                             String type,
+                                                             InstanceType type,
                                                              DbLevel level) {
         return createUpsertCandidateRequest(URI.create("publicationId"), randomUri(), true,
                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
@@ -705,7 +705,7 @@ class CandidateTest extends LocalDynamoTest {
                                     .publicationBucketUri(request.publicationBucketUri())
                                     .publicationDate(mapToDbPublicationDate(request.publicationDate()))
                                     .applicable(request.isApplicable())
-                                    .instanceType(request.instanceType())
+                                    .instanceType(request.instanceType().getValue())
                                     .channelType(ChannelType.parse(request.channelType()))
                                     .channelId(request.publicationChannelId())
                                     .level(DbLevel.parse(request.level()))
@@ -777,7 +777,7 @@ class CandidateTest extends LocalDynamoTest {
             }
 
             @Override
-            public String instanceType() {
+            public InstanceType instanceType() {
                 return request.instanceType();
             }
 
