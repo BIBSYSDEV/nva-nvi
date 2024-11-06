@@ -454,6 +454,7 @@ public final class Candidate {
 
     private static void validateCandidate(UpsertCandidateRequest candidate) {
         attempt(() -> {
+            InstanceType.parse(candidate.instanceType());
             Objects.requireNonNull(candidate.instanceType());
             Objects.requireNonNull(candidate.publicationBucketUri());
             Objects.requireNonNull(candidate.institutionPoints());
