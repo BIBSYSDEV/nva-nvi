@@ -20,6 +20,7 @@ import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -72,9 +73,7 @@ public class MigrationTests extends LocalDynamoTest {
     }
 
     private Candidate setupCandidateWithApprovalAndNotes() {
-        var candidate = Candidate.upsert(createUpsertCandidateRequest(CURRENT_YEAR), candidateRepository,
-                                         periodRepository)
-                            .orElseThrow()
+        var candidate = TestUtils.randomApplicableCandidate(candidateRepository, periodRepository)
                             .createNote(createNoteRequest(randomString(), randomString()));
 
         return candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.REJECTED,

@@ -45,6 +45,7 @@ import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
@@ -83,6 +84,13 @@ public final class TestUtils {
 
     public static URI generatePublicationId(UUID identifier) {
         return UriWrapper.fromHost(API_HOST).addChild(PUBLICATION_API_PATH).addChild(identifier.toString()).getUri();
+    }
+
+    public static Candidate randomApplicableCandidate(CandidateRepository candidateRepository,
+                                                      PeriodRepository periodRepository) {
+        var request = createUpsertCandidateRequest(randomUri());
+        Candidate.upsert(request, candidateRepository);
+        return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
 
     public static DbCandidate.Builder randomCandidateBuilder(boolean applicable, URI institutionId) {

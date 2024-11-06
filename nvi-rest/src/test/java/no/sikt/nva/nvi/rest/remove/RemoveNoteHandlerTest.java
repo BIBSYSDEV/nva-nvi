@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.rest.remove;
 
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.rest.remove.RemoveNoteHandler.PARAM_NOTE_IDENTIFIER;
-import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomUsername;
@@ -30,6 +29,7 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.rest.create.NviNoteRequest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -145,8 +145,7 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
     }
 
     private Candidate createCandidate() {
-        return Candidate.upsert(createUpsertCandidateRequest(randomUri()), candidateRepository,
-                                periodRepository).orElseThrow();
+        return TestUtils.randomApplicableCandidate(candidateRepository, periodRepository);
     }
 
     private HandlerRequestBuilder<NviNoteRequest> createRequest(UUID candidateIdentifier, UUID noteIdentifier,

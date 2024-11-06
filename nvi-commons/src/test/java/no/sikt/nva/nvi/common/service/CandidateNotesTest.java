@@ -21,6 +21,7 @@ import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
+import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -117,8 +118,9 @@ public class CandidateNotesTest extends LocalDynamoTest {
     }
 
     private Candidate createCandidate(URI institutionId) {
-        return Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository,
-                                periodRepository).orElseThrow();
+        var request = createUpsertCandidateRequest(institutionId);
+        Candidate.upsert(request, candidateRepository);
+        return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
 
     private Candidate createCandidate() {

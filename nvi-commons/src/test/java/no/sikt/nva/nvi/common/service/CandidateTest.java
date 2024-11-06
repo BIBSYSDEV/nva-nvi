@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequestWithLevel;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.randomApplicableCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
@@ -88,6 +89,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.platform.commons.function.Try;
+import org.mockito.Mockito;
 
 class CandidateTest extends LocalDynamoTest {
 
@@ -132,11 +135,8 @@ class CandidateTest extends LocalDynamoTest {
     @Test
     void shouldReturnCandidateWhenExists() {
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
-        var candidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
-                            .orElseThrow().toDto();
-        var fetchedCandidate = Candidate.fetch(candidate::identifier, candidateRepository, periodRepository)
-                                   .toDto();
-        assertThat(fetchedCandidate, is(equalTo(candidate)));
+        var fetchedCandidate = upsert(upsertCandidateRequest);
+        assertNotNull(fetchedCandidate);
     }
 
     @Deprecated
@@ -145,10 +145,8 @@ class CandidateTest extends LocalDynamoTest {
     void shouldPersistNewCandidateWithCorrectLevelBasedOnVersionTwoLevelValues(DbLevel expectedLevel,
                                                                                String versionTwoValue) {
         var request = createUpsertCandidateRequestWithLevel(versionTwoValue, randomUri());
-        var candidateIdentifier = Candidate.upsert(request, candidateRepository, periodRepository)
-                                      .orElseThrow()
-                                      .getIdentifier();
-        var persistedCandidate = candidateRepository.findCandidateById(candidateIdentifier)
+        Candidate.upsert(request, candidateRepository);
+        var persistedCandidate = candidateRepository.findByPublicationId(request.publicationId())
                                      .orElseThrow()
                                      .candidate();
         assertEquals(expectedLevel, persistedCandidate.level());
@@ -157,7 +155,7 @@ class CandidateTest extends LocalDynamoTest {
     @Test
     void shouldPersistNewCandidateWithCorrectDataFromUpsertRequest() {
         var request = createUpsertCandidateRequest(randomUri());
-        var candidate = Candidate.upsert(request, candidateRepository, periodRepository).orElseThrow();
+        var candidate = upsert(request);
         var expectedCandidate = generateExpectedCandidate(candidate, request);
         var actualPersistedCandidate = candidateRepository.findCandidateById(candidate.getIdentifier())
                                            .orElseThrow()
@@ -169,7 +167,7 @@ class CandidateTest extends LocalDynamoTest {
     @ValueSource(ints = {0, 1, 4})
     void shouldPersistNewCandidateWithCorrectScaleForAllDecimals(int scale) {
         var request = createUpsertRequestWithDecimalScale(scale, randomUri());
-        var candidate = Candidate.upsert(request, candidateRepository, periodRepository).orElseThrow();
+        var candidate = upsert(request);
         var expectedCandidate = generateExpectedCandidate(candidate, request);
         var actualPersistedCandidate = candidateRepository.findCandidateById(candidate.getIdentifier())
                                            .orElseThrow()
@@ -181,7 +179,7 @@ class CandidateTest extends LocalDynamoTest {
     @ValueSource(ints = {0, 1, 4})
     void shouldUpdateCandidateWithCorrectScaleForAllDecimals(int scale) {
         var request = getUpdateRequestForExistingCandidate(scale);
-        var candidate = Candidate.upsert(request, candidateRepository, periodRepository).orElseThrow();
+        var candidate = upsert(request);
         var expectedCandidate = generateExpectedCandidate(candidate, request);
         var actualPersistedCandidate = candidateRepository.findCandidateById(candidate.getIdentifier())
                                            .orElseThrow()
@@ -192,22 +190,21 @@ class CandidateTest extends LocalDynamoTest {
     @Test
     void shouldUpdateCandidateWithSystemGeneratedModifiedDate() {
         var request = getUpdateRequestForExistingCandidate();
-        var notExpectedModifiedDate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository,
-                                                                     periodRepository).getModifiedDate();
-        var updatedCandidate = Candidate.upsert(request, candidateRepository, periodRepository).orElseThrow();
-        var actualPersistedCandidate = candidateRepository.findCandidateById(updatedCandidate.getIdentifier())
-                                           .orElseThrow()
-                                           .candidate();
-        assertNotEquals(notExpectedModifiedDate, actualPersistedCandidate.modifiedDate());
+        var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
+        Candidate.upsert(request, candidateRepository);
+        var updatedCandidate = candidateRepository.findCandidateById(candidate.getIdentifier())
+                                   .orElseThrow()
+                                   .candidate();
+        assertNotEquals(candidate.getModifiedDate(), updatedCandidate.modifiedDate());
     }
 
     @Test
     void shouldNotUpdateCandidateCreatedDateOnUpdates() {
         var request = getUpdateRequestForExistingCandidate();
-        var expectedCreatedDate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository,
-                                                                 periodRepository).getCreatedDate();
-        var updatedCandidate = Candidate.upsert(request, candidateRepository, periodRepository).orElseThrow();
-        var actualPersistedCandidate = candidateRepository.findCandidateById(updatedCandidate.getIdentifier())
+        var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
+        var expectedCreatedDate = candidate.getCreatedDate();
+        Candidate.upsert(request, candidateRepository);
+        var actualPersistedCandidate = candidateRepository.findCandidateById(candidate.getIdentifier())
                                            .orElseThrow()
                                            .candidate();
         assertEquals(expectedCreatedDate, actualPersistedCandidate.createdDate());
@@ -227,13 +224,13 @@ class CandidateTest extends LocalDynamoTest {
                                                                    Integer.parseInt(year),
                                                                    randomUri());
         assertThrows(IllegalCandidateUpdateException.class,
-                     () -> Candidate.upsert(updateRequest, candidateRepository, periodRepository));
+                     () -> Candidate.upsert(updateRequest, candidateRepository));
     }
 
     @Test
     void shouldPersistUpdatedCandidateWithCorrectDataFromUpsertRequest() {
         var updateRequest = getUpdateRequestForExistingCandidate();
-        var candidate = Candidate.upsert(updateRequest, candidateRepository, periodRepository).orElseThrow();
+        var candidate = upsert(updateRequest);
         var expectedCandidate = generateExpectedCandidate(candidate, updateRequest);
         var actualPersistedCandidate = candidateRepository.findCandidateById(candidate.getIdentifier())
                                            .orElseThrow()
@@ -243,9 +240,7 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldFetchCandidateByPublicationId() {
-        var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
-        var candidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
-                            .orElseThrow();
+        var candidate = TestUtils.randomApplicableCandidate(candidateRepository, periodRepository);
         var fetchedCandidate = Candidate.fetchByPublicationId(candidate::getPublicationId,
                                                               candidateRepository,
                                                               periodRepository);
@@ -266,7 +261,7 @@ class CandidateTest extends LocalDynamoTest {
         var institution1 = randomUri();
         var institution2 = randomUri();
         var createRequest = createUpsertCandidateRequest(institution1, institution2);
-        var candidate = Candidate.upsert(createRequest, candidateRepository, periodRepository).orElseThrow();
+        var candidate = upsert(createRequest);
         candidate.updateApproval(createUpdateStatusRequest(approvalStatus, institution1, randomString()));
         candidate.updateApproval(createUpdateStatusRequest(approvalStatus, institution2, randomString()));
         assertEquals(approvalStatus.getValue(), candidate.getGlobalApprovalStatus().getValue());
@@ -276,7 +271,7 @@ class CandidateTest extends LocalDynamoTest {
     @DisplayName("Should return global approval status pending when any approval is pending")
     void shouldReturnGlobalApprovalStatusPendingWhenAnyApprovalIsPending() {
         var createRequest = createUpsertCandidateRequest(randomUri());
-        var candidate = Candidate.upsert(createRequest, candidateRepository, periodRepository).orElseThrow();
+        var candidate = upsert(createRequest);
         assertEquals(GlobalApprovalStatus.PENDING, candidate.getGlobalApprovalStatus());
     }
 
@@ -288,7 +283,7 @@ class CandidateTest extends LocalDynamoTest {
         var institution2 = randomUri();
         var institution3 = randomUri();
         var createRequest = createUpsertCandidateRequest(institution1, institution2, institution3);
-        var candidate = Candidate.upsert(createRequest, candidateRepository, periodRepository).orElseThrow();
+        var candidate = upsert(createRequest);
         candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.APPROVED, institution1, randomString()));
         candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.REJECTED, institution2, randomString()));
         assertEquals(ApprovalStatus.PENDING, candidate.getApprovals().get(institution3).getStatus());
@@ -305,7 +300,7 @@ class CandidateTest extends LocalDynamoTest {
                                                          randomLevelExcluding(DbLevel.NON_CANDIDATE)
                                                              .getValue(), CURRENT_YEAR,
                                                          institutionToApprove, randomUri(), institutionToReject);
-        var candidateBO = Candidate.upsert(createRequest, candidateRepository, periodRepository).orElseThrow();
+        var candidateBO = upsert(createRequest);
         candidateBO.createNote(createNoteRequest(randomString(), randomString()))
             .createNote(createNoteRequest(randomString(), randomString()))
             .updateApproval(createUpdateStatusRequest(ApprovalStatus.APPROVED, institutionToApprove, randomString()))
@@ -363,7 +358,7 @@ class CandidateTest extends LocalDynamoTest {
                                                          randomInteger(10),
                                                          randomBoolean(),
                                                          randomBigDecimal(), randomBigDecimal(), totalPoints);
-        var candidate = Candidate.upsert(createRequest, candidateRepository, periodRepository).orElseThrow();
+        var candidate = upsert(createRequest);
         assertEquals(candidate.getPublicationDetails().publicationBucketUri(), publicationBucketUri);
         assertEquals(candidate.isApplicable(), isApplicable);
         assertEquals(candidate.getPublicationId(), publicationId);
@@ -386,9 +381,7 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnCandidateWithNoPeriodWhenNotApplicable() {
-        var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
-        var tempCandidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
-                                .orElseThrow();
+        var tempCandidate = TestUtils.randomApplicableCandidate(candidateRepository, periodRepository);
         var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
         var candidateBO = Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
         var fetchedCandidate = Candidate.fetch(candidateBO::getIdentifier, candidateRepository,
@@ -399,12 +392,12 @@ class CandidateTest extends LocalDynamoTest {
     @Test
     void shouldSetPeriodYearWhenResettingCandidate() {
         var nonApplicableCandidate = nonApplicableCandidate();
-
-        var updatedApplicableCandidate = Candidate.upsert(
+        Candidate.upsert(
             createUpsertCandidateRequest(nonApplicableCandidate.getPublicationId()),
-            candidateRepository,
-            periodRepository).orElseThrow();
-
+            candidateRepository
+        );
+        var updatedApplicableCandidate = Candidate.fetch(nonApplicableCandidate::getIdentifier, candidateRepository,
+                                                         periodRepository);
         assertThat(updatedApplicableCandidate.getPeriod().year(),
                    is(equalTo(updatedApplicableCandidate.getPeriod().year())));
     }
@@ -413,9 +406,9 @@ class CandidateTest extends LocalDynamoTest {
     void shouldNotOverrideAssigneeWhenAssigneeAlreadyIsSet() {
         var institutionId = randomUri();
         var assignee = randomString();
-        var createCandidateRequest = createUpsertCandidateRequest(institutionId);
-        var candidate = Candidate.upsert(createCandidateRequest, candidateRepository, periodRepository)
-                            .orElseThrow()
+        var request = createUpsertCandidateRequest(institutionId);
+        Candidate.upsert(request, candidateRepository);
+        var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository)
                             .updateApproval(new UpdateAssigneeRequest(institutionId, assignee))
                             .updateApproval(
                                 createUpdateStatusRequest(ApprovalStatus.APPROVED, institutionId, randomString()))
@@ -430,14 +423,12 @@ class CandidateTest extends LocalDynamoTest {
     void shouldNotResetApprovalsWhenUpdatingCandidateFieldsNotEffectingApprovals() {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
-        var candidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
-                            .orElseThrow();
+        var candidate = upsert(upsertCandidateRequest);
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
         var approval = candidate.toDto().approvals().get(0);
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
-        var updatedCandidate = Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository)
-                                   .orElseThrow();
+        var updatedCandidate = upsert(newUpsertRequest);
         var updatedApproval = updatedCandidate.toDto().approvals().get(0);
 
         assertThat(updatedApproval, is(equalTo(approval)));
@@ -447,14 +438,12 @@ class CandidateTest extends LocalDynamoTest {
     void shouldNotResetApprovalsWhenUpsertRequestContainsSameDecimalsWithAnotherScale() {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertRequestWithDecimalScale(0, institutionId);
-        var candidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
-                            .orElseThrow();
+        var candidate = upsert(upsertCandidateRequest);
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
         var approval = candidate.toDto().approvals().get(0);
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
-        var updatedCandidate = Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository)
-                                   .orElseThrow();
+        var updatedCandidate = upsert(newUpsertRequest);
         var updatedApproval = updatedCandidate.toDto().approvals().get(0);
 
         assertThat(updatedApproval, is(equalTo(approval)));
@@ -464,16 +453,12 @@ class CandidateTest extends LocalDynamoTest {
     void shouldResetApprovalsWhenNonCandidateBecomesCandidate() {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
-        var candidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
-                            .orElseThrow();
+        var candidate = upsert(upsertCandidateRequest);
         var nonCandidate = Candidate.updateNonCandidate(
             createUpsertNonCandidateRequest(candidate.getPublicationId()),
             candidateRepository).orElseThrow();
         assertFalse(nonCandidate.isApplicable());
-
-        var updatedCandidate = Candidate.upsert(
-            createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest), candidateRepository,
-            periodRepository).orElseThrow();
+        var updatedCandidate = upsert(createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest));
 
         assertTrue(updatedCandidate.isApplicable());
         assertThat(updatedCandidate.getApprovals().size(), is(greaterThan(0)));
@@ -489,16 +474,14 @@ class CandidateTest extends LocalDynamoTest {
         var creatorId = randomUri();
         var upsertCandidateRequest = getUpsertCandidateRequest(creatorId, institutionId, originalType, originalLevel);
 
-        var candidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
-                            .orElseThrow();
+        var candidate = upsert(upsertCandidateRequest);
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
 
         var creators = Map.of(creatorId, List.of(arguments.institutionIds));
         var newUpsertRequest = getUpsertCandidateRequest(arguments, creators, candidate.getPublicationId());
 
-        var updatedCandidate = Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository)
-                                   .orElseThrow();
+        var updatedCandidate = upsert(newUpsertRequest);
         var updatedApproval = updatedCandidate.toDto().approvals().get(0);
         assertThat(updatedApproval.status(), is(equalTo(ApprovalStatusDto.NEW)));
     }
@@ -566,8 +549,7 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldUpdateVersion() {
-        var candidate = Candidate.upsert(createUpsertCandidateRequest(randomUri()), candidateRepository,
-                                         periodRepository).orElseThrow();
+        var candidate = TestUtils.randomApplicableCandidate(candidateRepository, periodRepository);
         var dao = candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow();
 
         candidate.updateVersion(candidateRepository);
@@ -633,6 +615,11 @@ class CandidateTest extends LocalDynamoTest {
         return bigDecimal.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
     }
 
+    private Candidate upsert(UpsertCandidateRequest request) {
+        Candidate.upsert(request, candidateRepository);
+        return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
+    }
+
     private List<InstitutionPoints> createPoints(Map<URI, List<URI>> creators) {
         return creators.entrySet()
                    .stream()
@@ -648,13 +635,10 @@ class CandidateTest extends LocalDynamoTest {
     }
 
     private Candidate nonApplicableCandidate() {
-        var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
-        var tempCandidate = Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository)
-                                .orElseThrow();
+        var tempCandidate = randomApplicableCandidate(candidateRepository, periodRepository);
         var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
         var candidateBO = Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
-        return Candidate.fetch(candidateBO::getIdentifier, candidateRepository,
-                               periodRepository);
+        return Candidate.fetch(candidateBO::getIdentifier, candidateRepository, periodRepository);
     }
 
     private UpsertCandidateRequest getUpsertCandidateRequest(CandidateResetCauseArgument arguments,
@@ -694,7 +678,7 @@ class CandidateTest extends LocalDynamoTest {
     private UpsertCandidateRequest getUpdateRequestForExistingCandidate(int scale) {
         var institutionId = randomUri();
         var insertRequest = createUpsertCandidateRequest(institutionId);
-        Candidate.upsert(insertRequest, candidateRepository, periodRepository);
+        Candidate.upsert(insertRequest, candidateRepository);
         var creators = IntStream.of(insertRequest.creators().size())
                            .mapToObj(i -> randomUri())
                            .collect(Collectors.toMap(Function.identity(), e -> List.of(new URI[]{institutionId})));

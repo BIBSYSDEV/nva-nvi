@@ -99,7 +99,7 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         try {
             validateMessage(evaluatedCandidate);
             if (evaluatedCandidate.candidate() instanceof NviCandidate candidate) {
-                Candidate.upsert(candidate, repository, periodRepository);
+                Candidate.upsert(candidate, repository);
             } else {
                 var nonNviCandidate = (NonNviCandidate) evaluatedCandidate.candidate();
                 Candidate.updateNonCandidate(nonNviCandidate, repository);
