@@ -430,7 +430,7 @@ public final class Candidate {
     }
 
     private static boolean instanceTypeIsUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(request.instanceType(), existingCandidateDao.candidate().instanceType());
+        return !Objects.equals(request.instanceType().getValue(), existingCandidateDao.candidate().instanceType());
     }
 
     private static boolean levelIsUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
@@ -458,7 +458,6 @@ public final class Candidate {
 
     private static void validateCandidate(UpsertCandidateRequest candidate) {
         attempt(() -> {
-            InstanceType.parse(candidate.instanceType());
             Objects.requireNonNull(candidate.instanceType());
             Objects.requireNonNull(candidate.publicationBucketUri());
             Objects.requireNonNull(candidate.institutionPoints());
@@ -516,7 +515,7 @@ public final class Candidate {
                    .channelType(ChannelType.parse(request.channelType()))
                    .channelId(request.publicationChannelId())
                    .level(DbLevel.parse(request.level()))
-                   .instanceType(request.instanceType())
+                   .instanceType(request.instanceType().getValue())
                    .publicationDate(mapToPublicationDate(request.publicationDate()))
                    .internationalCollaboration(request.isInternationalCollaboration())
                    .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
@@ -539,7 +538,7 @@ public final class Candidate {
                                   .channelType(ChannelType.parse(request.channelType()))
                                   .channelId(request.publicationChannelId())
                                   .level(DbLevel.parse(request.level()))
-                                  .instanceType(request.instanceType())
+                                  .instanceType(request.instanceType().getValue())
                                   .publicationDate(mapToPublicationDate(request.publicationDate()))
                                   .internationalCollaboration(request.isInternationalCollaboration())
                                   .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))

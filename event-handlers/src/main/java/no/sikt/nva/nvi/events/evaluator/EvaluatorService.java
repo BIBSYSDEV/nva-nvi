@@ -108,7 +108,7 @@ public class EvaluatorService {
                    .withPublicationId(publicationId)
                    .withPublicationBucketUri(publicationBucketUri)
                    .withDate(date)
-                   .withInstanceType(pointCalculation.instanceType().getValue())
+                   .withInstanceType(pointCalculation.instanceType())
                    .withBasePoints(pointCalculation.basePoints())
                    .withPublicationChannelId(pointCalculation.publicationChannelId())
                    .withChannelType(pointCalculation.channelType().getValue())

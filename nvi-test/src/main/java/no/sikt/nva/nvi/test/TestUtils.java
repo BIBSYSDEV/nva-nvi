@@ -262,12 +262,12 @@ public final class TestUtils {
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequestWithLevel(String level, URI... institutions) {
-        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceType().getValue(),
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceType(),
                                             1, randomBigDecimal(), level, CURRENT_YEAR, institutions);
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(int year) {
-        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceType().getValue(),
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceType(),
                                             1, randomBigDecimal(),
                                             randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
                                             year,
@@ -275,7 +275,7 @@ public final class TestUtils {
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI... institutions) {
-        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceType().getValue(),
+        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceType(),
                                             1, randomBigDecimal(),
                                             randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
                                             CURRENT_YEAR,
@@ -297,7 +297,7 @@ public final class TestUtils {
 
         return createUpsertCandidateRequest(randomUri(), randomUri(), true,
                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null), creators,
-                                            randomInstanceType().getValue(),
+                                            randomInstanceType(),
                                             channelType.getValue(), randomUri(),
                                             randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(), institutionPoints,
                                             randomInteger(), randomBoolean(),
@@ -307,7 +307,7 @@ public final class TestUtils {
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
                                                                       URI publicationBucketUri,
                                                                       boolean isApplicable,
-                                                                      String instanceType,
+                                                                      InstanceType instanceType,
                                                                       int creatorCount,
                                                                       BigDecimal totalPoints,
                                                                       String level, int year,
@@ -340,7 +340,7 @@ public final class TestUtils {
                                                                       boolean isApplicable,
                                                                       final PublicationDate publicationDate,
                                                                       Map<URI, List<URI>> creators,
-                                                                      String instanceType,
+                                                                      InstanceType instanceType,
                                                                       String channelType, URI channelId,
                                                                       String level,
                                                                       List<InstitutionPoints> points,
@@ -393,7 +393,7 @@ public final class TestUtils {
             }
 
             @Override
-            public String instanceType() {
+            public InstanceType instanceType() {
                 return instanceType;
             }
 
