@@ -40,7 +40,6 @@ import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.common.db.model.InstanceType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
@@ -455,7 +454,8 @@ public final class Candidate {
 
     private static void validateCandidate(UpsertCandidateRequest candidate) {
         attempt(() -> {
-            assertIsCandidate(candidate);
+            InstanceType.parse(candidate.instanceType());
+            Objects.requireNonNull(candidate.instanceType());
             Objects.requireNonNull(candidate.publicationBucketUri());
             Objects.requireNonNull(candidate.institutionPoints());
             Objects.requireNonNull(candidate.publicationId());
@@ -465,12 +465,6 @@ public final class Candidate {
             Objects.requireNonNull(candidate.totalPoints());
             return candidate;
         }).orElseThrow(failure -> new InvalidNviCandidateException(INVALID_CANDIDATE_MESSAGE));
-    }
-
-    private static void assertIsCandidate(UpsertCandidateRequest candidate) {
-        if (InstanceType.NON_CANDIDATE.getValue().equals(candidate.instanceType())) {
-            throw new InvalidNviCandidateException("Can not update invalid candidate");
-        }
     }
 
     private static List<InstitutionPoints> mapToInstitutionPoints(CandidateDao candidateDao) {
