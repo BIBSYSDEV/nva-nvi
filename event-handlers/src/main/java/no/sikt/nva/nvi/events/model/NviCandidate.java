@@ -8,6 +8,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
@@ -17,7 +18,7 @@ import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 @JsonSerialize
 public record NviCandidate(URI publicationId,
                            URI publicationBucketUri,
-                           String instanceType,
+                           InstanceType instanceType,
                            @JsonProperty("publicationDate") PublicationDate date,
                            List<NviCreator> nviCreators,
                            String channelType,
@@ -68,7 +69,7 @@ public record NviCandidate(URI publicationId,
 
         private URI publicationId;
         private URI publicationBucketUri;
-        private String instanceType;
+        private InstanceType instanceType;
         private PublicationDate date;
         private List<NviCreator> nviCreatorWithAffiliationPoints;
         private String channelType;
@@ -94,7 +95,7 @@ public record NviCandidate(URI publicationId,
             return this;
         }
 
-        public Builder withInstanceType(String instanceType) {
+        public Builder withInstanceType(InstanceType instanceType) {
             this.instanceType = instanceType;
             return this;
         }

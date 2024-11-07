@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service.model;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
 public enum InstanceType {
@@ -20,6 +21,11 @@ public enum InstanceType {
                    .filter(instanceType -> instanceType.getValue().equalsIgnoreCase(value))
                    .findFirst()
                    .orElseThrow();
+    }
+
+    @JsonValue
+    public String getInstanceType() {
+        return value;
     }
 
     public String getValue() {

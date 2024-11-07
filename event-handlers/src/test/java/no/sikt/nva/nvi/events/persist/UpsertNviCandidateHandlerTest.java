@@ -156,7 +156,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var publicationId = generatePublicationId(identifier);
         var dto = Candidate.upsert(
-            createUpsertCandidateRequest(publicationId, randomUri(), true, InstanceType.ACADEMIC_ARTICLE.getValue(), 1,
+            createUpsertCandidateRequest(publicationId, randomUri(), true, InstanceType.ACADEMIC_ARTICLE, 1,
                                          randomBigDecimal(),
                                          randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
                                          TestUtils.CURRENT_YEAR,
@@ -202,7 +202,8 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     private static Builder getBuilder(URI publicationId, URI publicationBucketUri, NviCreator creator) {
         return NviCandidate.builder()
                    .withPublicationId(publicationId)
-                   .withPublicationBucketUri(publicationBucketUri).withInstanceType(randomInstanceType().getValue())
+                   .withPublicationBucketUri(publicationBucketUri)
+                   .withInstanceType(randomInstanceType())
                    .withLevel(randomElement(DbLevel.values()).getValue())
                    .withTotalPoints(randomBigDecimal(4))
                    .withBasePoints(randomBigDecimal(4))
@@ -299,7 +300,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .applicable(true)
                    .publicationId(evaluatedNviCandidate.publicationId())
                    .publicationBucketUri(evaluatedNviCandidate.publicationBucketUri())
-                   .instanceType(evaluatedNviCandidate.instanceType())
+                   .instanceType(evaluatedNviCandidate.instanceType().getValue())
                    .level(DbLevel.parse(evaluatedNviCandidate.level()))
                    .publicationDate(new DbPublicationDate(date.year(), date.month(), date.day()))
                    .channelType(ChannelType.parse(evaluatedNviCandidate.channelType()))

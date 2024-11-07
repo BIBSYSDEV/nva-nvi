@@ -98,7 +98,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
     void shouldResetApprovalWhenChangingToPending(ApprovalStatus oldStatus) {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri(), randomUri(), true,
-                                                                  InstanceType.ACADEMIC_MONOGRAPH.getValue(), 1,
+                                                                  InstanceType.ACADEMIC_MONOGRAPH, 1,
                                                                   randomBigDecimal(),
                                                                   randomLevelExcluding(
                                                                       DbLevel.NON_CANDIDATE).getValue(),
@@ -142,7 +142,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
                             .orElseThrow();
         var updateRequest = createUpsertCandidateRequest(candidate.toDto().publicationId(),
                                                          randomUri(), true,
-                                                         InstanceType.ACADEMIC_MONOGRAPH.getValue(), 2,
+                                                         InstanceType.ACADEMIC_MONOGRAPH, 2,
                                                          randomBigDecimal(),
                                                          randomLevelExcluding(DbLevel.NON_CANDIDATE)
                                                              .getValue(), TestUtils.CURRENT_YEAR,
@@ -161,7 +161,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
         var createCandidateRequest = createUpsertCandidateRequest(keepInstitutionId, deleteInstitutionId, randomUri());
         Candidate.upsert(createCandidateRequest, candidateRepository, periodRepository);
         var updateRequest = createUpsertCandidateRequest(
-            createCandidateRequest.publicationId(), randomUri(), true, InstanceType.ACADEMIC_MONOGRAPH.getValue(), 2,
+            createCandidateRequest.publicationId(), randomUri(), true, InstanceType.ACADEMIC_MONOGRAPH, 2,
             randomBigDecimal(), randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
             TestUtils.CURRENT_YEAR,
             keepInstitutionId,
