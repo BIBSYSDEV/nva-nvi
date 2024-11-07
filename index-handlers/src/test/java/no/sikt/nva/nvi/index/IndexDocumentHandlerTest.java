@@ -598,7 +598,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     private Candidate setUpNonApplicableCandidate(URI institutionId) {
         var request = createUpsertCandidateRequest(institutionId);
-        Candidate.upsert(request, candidateRepository);
+        Candidate.upsert(request, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
         return Candidate.updateNonCandidate(
             createUpsertNonCandidateRequest(candidate.getPublicationId()),
@@ -752,13 +752,13 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation) {
         var request = createUpsertCandidateRequest(topLevelOrg, affiliation);
-        Candidate.upsert(request, candidateRepository);
+        Candidate.upsert(request, candidateRepository, periodRepository);
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
 
     private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation, ChannelType channelType) {
         var request = createUpsertCandidateRequest(topLevelOrg, affiliation, channelType);
-        Candidate.upsert(request, candidateRepository);
+        Candidate.upsert(request, candidateRepository, periodRepository);
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
 }

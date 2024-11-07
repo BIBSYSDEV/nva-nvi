@@ -118,7 +118,7 @@ public class CandidateNotesTest extends LocalDynamoTest {
 
     private Candidate createCandidate(URI institutionId) {
         var request = createUpsertCandidateRequest(institutionId);
-        Candidate.upsert(request, candidateRepository);
+        Candidate.upsert(request, candidateRepository, periodRepository);
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
 

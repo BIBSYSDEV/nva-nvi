@@ -98,14 +98,11 @@ class CandidateTest extends LocalDynamoTest {
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
     public static final URI CONTEXT_URI = UriWrapper.fromHost(API_DOMAIN).addChild(BASE_PATH, "context").getUri();
-    private static final URI HARDCODED_INSTITUTION_ID = URI.create(
-        "https://example"
-        + ".org/hardCodedInstitutionId");
+    private static final URI HARDCODED_INSTITUTION_ID = URI.create("https://example.org/hardCodedInstitutionId");
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
 
     public static Stream<Arguments> candidateResetCauseProvider() {
-        //TODO: Test institution changed
         return Stream.of(Arguments.of(Named.of("change level",
                                                new CandidateResetCauseArgument(DbLevel.LEVEL_ONE,
                                                                                InstanceType.ACADEMIC_MONOGRAPH,
@@ -125,6 +122,15 @@ class CandidateTest extends LocalDynamoTest {
                                                                                InstanceType.ACADEMIC_MONOGRAPH,
                                                                                List.of(new InstitutionPoints(
                                                                                    HARDCODED_INSTITUTION_ID,
+                                                                                   randomBigDecimal(),
+                                                                                   null))))),
+                         Arguments.of(Named.of("affiliated institution changed",
+                                               new CandidateResetCauseArgument(DbLevel.LEVEL_TWO,
+                                                                               InstanceType.ACADEMIC_MONOGRAPH,
+                                                                               List.of(new InstitutionPoints(
+                                                                                   URI.create("https://example"
+                                                                                              + ".org"
+                                                                                              + "/someNewAffiliation"),
                                                                                    randomBigDecimal(),
                                                                                    null))))));
     }
@@ -155,7 +161,7 @@ class CandidateTest extends LocalDynamoTest {
     void shouldPersistNewCandidateWithCorrectLevelBasedOnVersionTwoLevelValues(DbLevel expectedLevel,
                                                                                String versionTwoValue) {
         var request = createUpsertCandidateRequestWithLevel(versionTwoValue, randomUri());
-        Candidate.upsert(request, candidateRepository);
+        Candidate.upsert(request, candidateRepository, periodRepository);
         var persistedCandidate = candidateRepository.findByPublicationId(request.publicationId())
                                      .orElseThrow()
                                      .candidate();
@@ -201,7 +207,7 @@ class CandidateTest extends LocalDynamoTest {
     void shouldUpdateCandidateWithSystemGeneratedModifiedDate() {
         var request = getUpdateRequestForExistingCandidate();
         var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
-        Candidate.upsert(request, candidateRepository);
+        Candidate.upsert(request, candidateRepository, periodRepository);
         var updatedCandidate = candidateRepository.findCandidateById(candidate.getIdentifier())
                                    .orElseThrow()
                                    .candidate();
@@ -213,7 +219,7 @@ class CandidateTest extends LocalDynamoTest {
         var request = getUpdateRequestForExistingCandidate();
         var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
         var expectedCreatedDate = candidate.getCreatedDate();
-        Candidate.upsert(request, candidateRepository);
+        Candidate.upsert(request, candidateRepository, periodRepository);
         var actualPersistedCandidate = candidateRepository.findCandidateById(candidate.getIdentifier())
                                            .orElseThrow()
                                            .candidate();
@@ -234,7 +240,7 @@ class CandidateTest extends LocalDynamoTest {
                                                                    Integer.parseInt(year),
                                                                    randomUri());
         assertThrows(IllegalCandidateUpdateException.class,
-                     () -> Candidate.upsert(updateRequest, candidateRepository));
+                     () -> Candidate.upsert(updateRequest, candidateRepository, periodRepository));
     }
 
     @Test
@@ -404,7 +410,7 @@ class CandidateTest extends LocalDynamoTest {
         var nonApplicableCandidate = nonApplicableCandidate();
         Candidate.upsert(
             createUpsertCandidateRequest(nonApplicableCandidate.getPublicationId()),
-            candidateRepository
+            candidateRepository, periodRepository
         );
         var updatedApplicableCandidate = Candidate.fetch(nonApplicableCandidate::getIdentifier, candidateRepository,
                                                          periodRepository);
@@ -417,7 +423,7 @@ class CandidateTest extends LocalDynamoTest {
         var institutionId = randomUri();
         var assignee = randomString();
         var request = createUpsertCandidateRequest(institutionId);
-        Candidate.upsert(request, candidateRepository);
+        Candidate.upsert(request, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository)
                             .updateApproval(new UpdateAssigneeRequest(institutionId, assignee))
                             .updateApproval(
@@ -626,7 +632,7 @@ class CandidateTest extends LocalDynamoTest {
     }
 
     private Candidate upsert(UpsertCandidateRequest request) {
-        Candidate.upsert(request, candidateRepository);
+        Candidate.upsert(request, candidateRepository, periodRepository);
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
 
@@ -688,7 +694,7 @@ class CandidateTest extends LocalDynamoTest {
     private UpsertCandidateRequest getUpdateRequestForExistingCandidate(int scale) {
         var institutionId = randomUri();
         var insertRequest = createUpsertCandidateRequest(institutionId);
-        Candidate.upsert(insertRequest, candidateRepository);
+        Candidate.upsert(insertRequest, candidateRepository, periodRepository);
         var creators = IntStream.of(insertRequest.creators().size())
                            .mapToObj(i -> randomUri())
                            .collect(Collectors.toMap(Function.identity(), e -> List.of(new URI[]{institutionId})));
