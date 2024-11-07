@@ -98,23 +98,35 @@ class CandidateTest extends LocalDynamoTest {
     private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
     public static final URI CONTEXT_URI = UriWrapper.fromHost(API_DOMAIN).addChild(BASE_PATH, "context").getUri();
+    private static final URI HARDCODED_INSTITUTION_ID = URI.create(
+        "https://example"
+        + ".org/hardCodedInstitutionId");
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
 
     public static Stream<Arguments> candidateResetCauseProvider() {
+        //TODO: Test institution changed
         return Stream.of(Arguments.of(Named.of("change level",
                                                new CandidateResetCauseArgument(DbLevel.LEVEL_ONE,
                                                                                InstanceType.ACADEMIC_MONOGRAPH,
-                                                                               URI.create("uri")))),
+                                                                               List.of(new InstitutionPoints(
+                                                                                   HARDCODED_INSTITUTION_ID,
+                                                                                   BigDecimal.ONE,
+                                                                                   null))))),
                          Arguments.of(Named.of("change type",
                                                new CandidateResetCauseArgument(DbLevel.LEVEL_TWO,
                                                                                InstanceType.ACADEMIC_LITERATURE_REVIEW,
-                                                                               URI.create("uri")))),
+                                                                               List.of(new InstitutionPoints(
+                                                                                   HARDCODED_INSTITUTION_ID,
+                                                                                   BigDecimal.ONE,
+                                                                                   null))))),
                          Arguments.of(Named.of("points changed",
                                                new CandidateResetCauseArgument(DbLevel.LEVEL_TWO,
                                                                                InstanceType.ACADEMIC_MONOGRAPH,
-                                                                               randomUri(),
-                                                                               randomUri()))));
+                                                                               List.of(new InstitutionPoints(
+                                                                                   HARDCODED_INSTITUTION_ID,
+                                                                                   randomBigDecimal(),
+                                                                                   null))))));
     }
 
     @BeforeEach
@@ -468,7 +480,7 @@ class CandidateTest extends LocalDynamoTest {
     void shouldResetApprovalsWhenUpdatingFieldsEffectingApprovals(CandidateResetCauseArgument arguments) {
         var originalLevel = DbLevel.LEVEL_TWO;
         var originalType = InstanceType.ACADEMIC_MONOGRAPH;
-        var institutionId = randomUri();
+        var institutionId = HARDCODED_INSTITUTION_ID;
         var creatorId = randomUri();
         var upsertCandidateRequest = getUpsertCandidateRequest(creatorId, institutionId, originalType, originalLevel);
 
@@ -476,7 +488,7 @@ class CandidateTest extends LocalDynamoTest {
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
 
-        var creators = Map.of(creatorId, List.of(arguments.institutionIds));
+        var creators = Map.of(creatorId, List.of(HARDCODED_INSTITUTION_ID));
         var newUpsertRequest = getUpsertCandidateRequest(arguments, creators, candidate.getPublicationId());
 
         var updatedCandidate = upsert(newUpsertRequest);
@@ -648,7 +660,7 @@ class CandidateTest extends LocalDynamoTest {
                                             arguments.type(),
                                             randomString(), randomUri(),
                                             arguments.level().getValue(),
-                                            createPoints(creators),
+                                            arguments.institutionPoints(),
                                             randomInteger(), false,
                                             TestUtils.randomBigDecimal(), null, randomBigDecimal());
     }
@@ -663,7 +675,7 @@ class CandidateTest extends LocalDynamoTest {
                                             randomString(), randomUri(),
                                             level.getValue(),
                                             List.of(createInstitutionPoints(institutionId,
-                                                                            randomBigDecimal(),
+                                                                            BigDecimal.ONE,
                                                                             creatorId)),
                                             randomInteger(), false,
                                             randomBigDecimal(), null, randomBigDecimal());
@@ -807,7 +819,8 @@ class CandidateTest extends LocalDynamoTest {
         };
     }
 
-    private record CandidateResetCauseArgument(DbLevel level, InstanceType type, URI... institutionIds) {
+    private record CandidateResetCauseArgument(DbLevel level, InstanceType type,
+                                               List<InstitutionPoints> institutionPoints) {
 
     }
 }
