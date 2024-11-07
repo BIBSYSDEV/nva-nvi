@@ -135,12 +135,10 @@ public final class Candidate {
         return new Candidate(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
     }
 
-    public static Optional<Candidate> upsert(UpsertCandidateRequest request, CandidateRepository repository,
-                                             PeriodRepository periodRepository) {
+    public static void upsert(UpsertCandidateRequest request, CandidateRepository repository) {
         var optionalCandidate = repository.findByPublicationId(request.publicationId());
-        return optionalCandidate.map(
-                candidateDao -> handleExistingCandidate(request, repository, periodRepository, candidateDao))
-                   .orElseGet(() -> Optional.of(createCandidate(request, repository, periodRepository)));
+        optionalCandidate.ifPresentOrElse(candidateDao -> updateExistingCandidate(request, repository, candidateDao),
+                                          () -> createCandidate(request, repository));
     }
 
     public static Optional<Candidate> updateNonCandidate(UpdateNonCandidateRequest request,
@@ -336,15 +334,13 @@ public final class Candidate {
             .orElseThrow(CandidateNotFoundException::new);
     }
 
-    private static Optional<Candidate> handleExistingCandidate(UpsertCandidateRequest request,
-                                                               CandidateRepository repository,
-                                                               PeriodRepository periodRepository,
-                                                               CandidateDao existingCandidate) {
+    private static void updateExistingCandidate(UpsertCandidateRequest request,
+                                                CandidateRepository repository,
+                                                CandidateDao existingCandidate) {
         if (existingCandidate.isReported()) {
             throw new IllegalCandidateUpdateException("Can not update reported candidate");
         } else {
-            return Optional.of(updateCandidate(request, repository, periodRepository,
-                                               existingCandidate));
+            updateCandidate(request, repository, existingCandidate);
         }
     }
 
@@ -364,13 +360,13 @@ public final class Candidate {
                              PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
     }
 
-    private static Candidate updateCandidate(UpsertCandidateRequest request, CandidateRepository repository,
-                                             PeriodRepository periodRepository, CandidateDao existingCandidateDao) {
+    private static void updateCandidate(UpsertCandidateRequest request, CandidateRepository repository,
+                                        CandidateDao existingCandidateDao) {
         validateCandidate(request);
         if (shouldResetCandidate(request, existingCandidateDao) || isNotApplicable(existingCandidateDao)) {
-            return resetCandidate(request, repository, periodRepository, existingCandidateDao);
+            resetCandidate(request, repository, existingCandidateDao);
         } else {
-            return updateCandidateKeepingApprovalsAndNotes(request, repository, periodRepository, existingCandidateDao);
+            updateCandidateKeepingApprovalsAndNotes(request, repository, existingCandidateDao);
         }
     }
 
@@ -378,28 +374,18 @@ public final class Candidate {
         return !candidateDao.candidate().applicable();
     }
 
-    private static Candidate resetCandidate(UpsertCandidateRequest request, CandidateRepository repository,
-                                            PeriodRepository periodRepository, CandidateDao existingCandidateDao) {
+    private static void resetCandidate(UpsertCandidateRequest request, CandidateRepository repository,
+                                       CandidateDao existingCandidateDao) {
         var newApprovals = mapToApprovals(request.institutionPoints());
         var newCandidateDao = updateCandidateDaoFromRequest(existingCandidateDao, request);
         repository.updateCandidate(existingCandidateDao.identifier(), newCandidateDao, newApprovals);
-        var notes = repository.getNotes(existingCandidateDao.identifier());
-        var periodStatus = findPeriodStatus(periodRepository,
-                                            existingCandidateDao.candidate().publicationDate().year());
-        var approvals = mapToApprovalsDaos(newCandidateDao.identifier(), newApprovals);
-        return new Candidate(repository, newCandidateDao, approvals, notes, periodStatus);
     }
 
-    private static Candidate updateCandidateKeepingApprovalsAndNotes(UpsertCandidateRequest request,
-                                                                     CandidateRepository repository,
-                                                                     PeriodRepository periodRepository,
-                                                                     CandidateDao existingCandidateDao) {
+    private static void updateCandidateKeepingApprovalsAndNotes(UpsertCandidateRequest request,
+                                                                CandidateRepository repository,
+                                                                CandidateDao existingCandidateDao) {
         var updatedCandidate = updateCandidateDaoFromRequest(existingCandidateDao, request);
-        var approvalDaoList = repository.fetchApprovals(updatedCandidate.identifier());
         repository.updateCandidate(updatedCandidate);
-        var noteDaoList = repository.getNotes(updatedCandidate.identifier());
-        var periodStatus = findPeriodStatus(periodRepository, updatedCandidate.candidate().publicationDate().year());
-        return new Candidate(repository, updatedCandidate, approvalDaoList, noteDaoList, periodStatus);
     }
 
     private static boolean shouldResetCandidate(UpsertCandidateRequest request, CandidateDao candidate) {
@@ -437,23 +423,9 @@ public final class Candidate {
         return !Objects.equals(DbLevel.parse(request.level()), existingCandidateDao.candidate().level());
     }
 
-    private static Candidate createCandidate(UpsertCandidateRequest request, CandidateRepository repository,
-                                             PeriodRepository periodRepository) {
+    private static void createCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
         validateCandidate(request);
-        var candidateDao = repository.create(mapToCandidate(request), mapToApprovals(request.institutionPoints()));
-        var approvals1 = repository.fetchApprovals(candidateDao.identifier());
-        var notes1 = repository.getNotes(candidateDao.identifier());
-        var periodStatus1 = findPeriodStatus(periodRepository, candidateDao.candidate().publicationDate().year());
-
-        return new Candidate(repository, candidateDao, approvals1, notes1, periodStatus1);
-    }
-
-    private static List<ApprovalStatusDao> mapToApprovalsDaos(UUID identifier, List<DbApprovalStatus> newApprovals) {
-        return newApprovals.stream().map(app -> mapToApprovalDao(identifier, app)).toList();
-    }
-
-    private static ApprovalStatusDao mapToApprovalDao(UUID identifier, DbApprovalStatus app) {
-        return ApprovalStatusDao.builder().identifier(identifier).approvalStatus(app).build();
+        repository.create(mapToCandidate(request), mapToApprovals(request.institutionPoints()));
     }
 
     private static void validateCandidate(UpsertCandidateRequest candidate) {

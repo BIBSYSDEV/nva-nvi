@@ -597,9 +597,9 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     private Candidate setUpNonApplicableCandidate(URI institutionId) {
-        var candidate =
-            Candidate.upsert(createUpsertCandidateRequest(institutionId), candidateRepository, periodRepository)
-                .orElseThrow();
+        var request = createUpsertCandidateRequest(institutionId);
+        Candidate.upsert(request, candidateRepository);
+        var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
         return Candidate.updateNonCandidate(
             createUpsertNonCandidateRequest(candidate.getPublicationId()),
             candidateRepository).orElseThrow();
@@ -747,21 +747,18 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     private Candidate randomApplicableCandidate() {
-        return Candidate.upsert(createUpsertCandidateRequest(SOME_REPORTING_YEAR), candidateRepository,
-                                periodRepository)
-                   .orElseThrow();
+        return TestUtils.randomApplicableCandidate(candidateRepository, periodRepository);
     }
 
     private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation) {
-        return Candidate.upsert(createUpsertCandidateRequest(topLevelOrg, affiliation), candidateRepository,
-                                periodRepository)
-                   .orElseThrow();
+        var request = createUpsertCandidateRequest(topLevelOrg, affiliation);
+        Candidate.upsert(request, candidateRepository);
+        return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
 
     private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation, ChannelType channelType) {
-        return Candidate.upsert(createUpsertCandidateRequest(topLevelOrg, affiliation, channelType),
-                                candidateRepository,
-                                periodRepository)
-                   .orElseThrow();
+        var request = createUpsertCandidateRequest(topLevelOrg, affiliation, channelType);
+        Candidate.upsert(request, candidateRepository);
+        return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
 }

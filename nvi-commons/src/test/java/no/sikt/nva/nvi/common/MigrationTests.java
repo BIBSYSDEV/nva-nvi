@@ -4,7 +4,6 @@ import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createNoteRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
-import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
@@ -16,10 +15,11 @@ import java.net.URI;
 import java.util.Map.Entry;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -48,6 +48,7 @@ public class MigrationTests extends LocalDynamoTest {
                                                 periodRepository);
         assertEquals(candidate, migratedCandidate);
     }
+
     @Test
     void shouldSetPeriodYearIfMissingWhenMigrating() {
         var dbCandidate = randomCandidate();
@@ -72,9 +73,7 @@ public class MigrationTests extends LocalDynamoTest {
     }
 
     private Candidate setupCandidateWithApprovalAndNotes() {
-        var candidate = Candidate.upsert(createUpsertCandidateRequest(CURRENT_YEAR), candidateRepository,
-                                         periodRepository)
-                            .orElseThrow()
+        var candidate = TestUtils.randomApplicableCandidate(candidateRepository, periodRepository)
                             .createNote(createNoteRequest(randomString(), randomString()));
 
         return candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.REJECTED,

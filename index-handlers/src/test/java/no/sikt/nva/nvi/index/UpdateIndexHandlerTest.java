@@ -5,7 +5,6 @@ import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.createPath;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandApprovals;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandPublicationDetails;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.invalidSqsMessage;
-import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static nva.commons.core.attempt.Try.attempt;
@@ -35,6 +34,7 @@ import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.test.ExpandedResourceGenerator;
 import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
@@ -183,7 +183,6 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     private Candidate randomApplicableCandidate() {
-        return Candidate.upsert(createUpsertCandidateRequest(2023), candidateRepository, periodRepository)
-                   .orElseThrow();
+        return TestUtils.randomApplicableCandidate(candidateRepository, periodRepository);
     }
 }

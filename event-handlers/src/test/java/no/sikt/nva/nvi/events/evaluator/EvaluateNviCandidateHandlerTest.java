@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.events.evaluator.TestUtils.createResponse;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.JOURNAL;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.SERIES;
+import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -285,9 +286,9 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         var messageBody = getMessageBody();
         var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
         var expectedEvaluatedMessage = getExpectedEvaluatedMessage(ACADEMIC_COMMENTARY,
-          expectedPoints,
-          fileUri, SERIES,
-          BigDecimal.valueOf(5), expectedPoints
+                                                                   expectedPoints,
+                                                                   fileUri, SERIES,
+                                                                   BigDecimal.valueOf(5), expectedPoints
         );
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
@@ -346,7 +347,8 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldCreateNewCandidateEventOnValidAcademicCommentaryWithoutSeriesLevelWithPublisherLevel() throws IOException {
+    void shouldCreateNewCandidateEventOnValidAcademicCommentaryWithoutSeriesLevelWithPublisherLevel()
+        throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var path = "evaluator/candidate_academicCommentary_withoutSeries.json";
         var content = IoUtils.inputStreamFromResources(path);
@@ -564,7 +566,8 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private static NviCandidate createExpectedCandidate(InstanceType instanceType, Map<URI, BigDecimal> institutionPoints,
+    private static NviCandidate createExpectedCandidate(InstanceType instanceType,
+                                                        Map<URI, BigDecimal> institutionPoints,
                                                         PublicationChannel channelType, String level,
                                                         BigDecimal basePoints, BigDecimal totalPoints,
                                                         URI publicationBucketUri) {
@@ -624,9 +627,10 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     private URI setUpCandidate(int year) throws IOException {
-        var candidateInClosedPeriod = Candidate.upsert(
-            no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest(year), candidateRepository,
-            periodRepository).orElseThrow();
+        var upsertCandidateRequest = createUpsertCandidateRequest(year);
+        Candidate.upsert(upsertCandidateRequest, candidateRepository);
+        var candidateInClosedPeriod = Candidate.fetchByPublicationId(upsertCandidateRequest::publicationId,
+                                                                     candidateRepository, periodRepository);
         var content = IoUtils.stringFromResources(Path.of(ACADEMIC_ARTICLE_PATH))
                           .replace("__REPLACE_WITH_PUBLICATION_ID__",
                                    candidateInClosedPeriod.getPublicationId().toString());
