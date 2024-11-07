@@ -138,7 +138,7 @@ public final class Candidate {
     public static void upsert(UpsertCandidateRequest request, CandidateRepository repository) {
         var optionalCandidate = repository.findByPublicationId(request.publicationId());
         optionalCandidate.ifPresentOrElse(candidateDao -> updateExistingCandidate(request, repository, candidateDao),
-                                          (() -> createCandidate(request, repository)));
+                                          () -> createCandidate(request, repository));
     }
 
     public static Optional<Candidate> updateNonCandidate(UpdateNonCandidateRequest request,
