@@ -436,10 +436,6 @@ public final class Candidate {
         return !candidate.getInstitutionPoints().equals(request.institutionPoints());
     }
 
-    private static boolean isNotequalIgnoringScaleAndRoundingMode(BigDecimal existingPoints, BigDecimal requestPoints) {
-        return !Objects.equals(adjustScaleAndRoundingMode(requestPoints), adjustScaleAndRoundingMode(existingPoints));
-    }
-
     private static boolean creatorsAreUpdated(UpsertCandidateRequest request, Candidate candidate) {
         return !Objects.equals(mapToCreators(request.creators()), candidate.getPublicationDetails().creators());
     }
