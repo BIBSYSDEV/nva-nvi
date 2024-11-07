@@ -160,9 +160,7 @@ public final class Candidate {
 
     public static void upsert(UpsertCandidateRequest request, CandidateRepository candidateRepository,
                               PeriodRepository periodRepository) {
-        var optionalCandidate = attempt(() -> Candidate.fetchByPublicationId(request::publicationId,
-                                                                             candidateRepository,
-                                                                             periodRepository)).toOptional();
+        var optionalCandidate = fetchOptionalCandidate(request, candidateRepository, periodRepository);
         optionalCandidate.ifPresentOrElse(candidate -> updateExistingCandidate(request, candidateRepository, candidate),
                                           () -> createCandidate(request, candidateRepository));
     }
@@ -360,23 +358,12 @@ public final class Candidate {
             .orElseThrow(CandidateNotFoundException::new);
     }
 
-    private Builder copy() {
-        return new Builder()
-                   .withIdentifier(identifier)
-                   .withApplicable(applicable)
-                   .withApprovals(approvals)
-                   .withNotes(notes)
-                   .withInstitutionPoints(institutionPoints)
-                   .withTotalPoints(totalPoints)
-                   .withPeriod(period)
-                   .withBasePoints(basePoints)
-                   .withInternationalCollaboration(internationalCollaboration)
-                   .withCollaborationFactor(collaborationFactor)
-                   .withCreatorShareCount(creatorShareCount)
-                   .withReportStatus(reportStatus)
-                   .withModifiedDate(modifiedDate)
-                   .withCreatedDate(createdDate)
-                   .withPublicationDetails(publicationDetails);
+    private static Optional<Candidate> fetchOptionalCandidate(UpsertCandidateRequest request,
+                                                              CandidateRepository candidateRepository,
+                                                              PeriodRepository periodRepository) {
+        return attempt(() -> Candidate.fetchByPublicationId(request::publicationId,
+                                                            candidateRepository,
+                                                            periodRepository)).toOptional();
     }
 
     private static void updateExistingCandidate(UpsertCandidateRequest request,
@@ -445,14 +432,8 @@ public final class Candidate {
         return !request.publicationDate().year().equals(candidate.getPublicationDetails().publicationDate().year());
     }
 
-    private static boolean pointsAreUpdated(UpsertCandidateRequest request, Candidate existingCandidateDao) {
-        return existingCandidateDao
-                   .getInstitutionPoints()
-                   .stream()
-                   .anyMatch(institutionPoints -> isNotequalIgnoringScaleAndRoundingMode(
-                       institutionPoints.institutionPoints(),
-                       request.getPointsForInstitution(institutionPoints.institutionId())
-                   ));
+    private static boolean pointsAreUpdated(UpsertCandidateRequest request, Candidate candidate) {
+        return !candidate.getInstitutionPoints().equals(request.institutionPoints());
     }
 
     private static boolean isNotequalIgnoringScaleAndRoundingMode(BigDecimal existingPoints, BigDecimal requestPoints) {
@@ -463,12 +444,12 @@ public final class Candidate {
         return !Objects.equals(mapToCreators(request.creators()), candidate.getPublicationDetails().creators());
     }
 
-    private static boolean instanceTypeIsUpdated(UpsertCandidateRequest request, Candidate existingCandidateDao) {
-        return !Objects.equals(request.instanceType().getValue(), existingCandidateDao.getPublicationDetails().type());
+    private static boolean instanceTypeIsUpdated(UpsertCandidateRequest request, Candidate candidate) {
+        return !Objects.equals(request.instanceType().getValue(), candidate.getPublicationDetails().type());
     }
 
-    private static boolean levelIsUpdated(UpsertCandidateRequest request, Candidate existingCandidateDao) {
-        return !Objects.equals(request.level(), existingCandidateDao.getPublicationDetails().level());
+    private static boolean levelIsUpdated(UpsertCandidateRequest request, Candidate candidate) {
+        return !Objects.equals(request.level(), candidate.getPublicationDetails().level());
     }
 
     private static void createCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
@@ -569,12 +550,24 @@ public final class Candidate {
         return creators.entrySet().stream().map(e -> new Creator(e.getKey(), e.getValue())).toList();
     }
 
-    private static List<DbCreator> mapToDbCreators(Map<URI, List<URI>> creators) {
-        return creators.entrySet().stream().map(e -> new DbCreator(e.getKey(), e.getValue())).toList();
-    }
-
     private static List<Creator> mapToCreators(List<DbCreator> creators) {
         return nonNull(creators) ? creators.stream().map(Candidate::mapToCreator).toList() : List.of();
+    }
+
+    private static List<DbCreator> mapToDbCreators(Map<URI, List<URI>> creators) {
+        return creators.entrySet()
+                   .stream()
+                   .map(creator -> new DbCreator(creator.getKey(), creator.getValue()))
+                   .toList();
+    }
+
+    private static List<DbCreator> mapToDbCreators(List<Creator> creators) {
+        return creators.stream()
+                   .map(creator -> DbCreator.builder()
+                                       .creatorId(creator.id())
+                                       .affiliations(creator.affiliations())
+                                       .build())
+                   .toList();
     }
 
     private static Creator mapToCreator(DbCreator dbCreator) {
@@ -592,12 +585,31 @@ public final class Candidate {
                    .build();
     }
 
+    private Builder copy() {
+        return new Builder()
+                   .withIdentifier(identifier)
+                   .withApplicable(applicable)
+                   .withApprovals(approvals)
+                   .withNotes(notes)
+                   .withInstitutionPoints(institutionPoints)
+                   .withTotalPoints(totalPoints)
+                   .withPeriod(period)
+                   .withBasePoints(basePoints)
+                   .withInternationalCollaboration(internationalCollaboration)
+                   .withCollaborationFactor(collaborationFactor)
+                   .withCreatorShareCount(creatorShareCount)
+                   .withReportStatus(reportStatus)
+                   .withModifiedDate(modifiedDate)
+                   .withCreatedDate(createdDate)
+                   .withPublicationDetails(publicationDetails);
+    }
+
     private CandidateDao toDao() {
         return CandidateDao.builder()
                    .identifier(identifier)
                    .candidate(DbCandidate.builder()
                                   .applicable(applicable)
-                                  .creators(mapToCreatorsTest(publicationDetails.creators()))
+                                  .creators(mapToDbCreators(publicationDetails.creators()))
                                   .creatorShareCount(creatorShareCount)
                                   .channelType(publicationDetails.channelType())
                                   .channelId(publicationDetails.publicationChannelId())
@@ -618,15 +630,6 @@ public final class Candidate {
                    .version(randomUUID().toString())
                    .periodYear(publicationDetails.publicationDate().year())
                    .build();
-    }
-
-    private List<DbCreator> mapToCreatorsTest(List<Creator> creators) {
-        return creators.stream()
-                   .map(creator -> DbCreator.builder()
-                                       .creatorId(creator.id())
-                                       .affiliations(creator.affiliations())
-                                       .build())
-                   .toList();
     }
 
     private Candidate apply(UpsertCandidateRequest request) {
