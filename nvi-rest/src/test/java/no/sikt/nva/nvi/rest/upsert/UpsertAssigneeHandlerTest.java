@@ -190,7 +190,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     private Candidate candidateWithFinalizedApproval(String newAssignee) {
         var institutionId = randomUri();
         var request = createUpsertCandidateRequest(institutionId);
-        Candidate.upsert(request, candidateRepository, new PeriodRepository());
+        Candidate.upsert(request, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
         candidate.updateApproval(new UpdateAssigneeRequest(institutionId, newAssignee));
         candidate.updateApproval(

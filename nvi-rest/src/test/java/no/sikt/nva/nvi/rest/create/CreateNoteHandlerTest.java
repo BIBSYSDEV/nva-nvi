@@ -204,7 +204,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
     }
 
     private Candidate upsert(UpsertCandidateRequest request) {
-        Candidate.upsert(request, candidateRepository, new PeriodRepository());
+        Candidate.upsert(request, candidateRepository, periodRepository);
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
 
