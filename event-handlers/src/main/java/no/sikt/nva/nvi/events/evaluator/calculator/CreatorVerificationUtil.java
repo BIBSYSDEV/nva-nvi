@@ -18,8 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
@@ -48,8 +46,7 @@ public class CreatorVerificationUtil {
     private final AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
     private final OrganizationRetriever organizationRetriever;
 
-    public CreatorVerificationUtil(AuthorizedBackendUriRetriever authorizedBackendUriRetriever,
-                                   UriRetriever uriRetriever) {
+    public CreatorVerificationUtil(AuthorizedBackendUriRetriever authorizedBackendUriRetriever, UriRetriever uriRetriever) {
         this.authorizedBackendUriRetriever = authorizedBackendUriRetriever;
         this.organizationRetriever = new OrganizationRetriever(uriRetriever);
     }
@@ -117,14 +114,6 @@ public class CreatorVerificationUtil {
                    .build();
     }
 
-    private static Organization getFuture(CompletableFuture<Organization> future) {
-        try {
-            return future.get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private List<VerifiedNviCreator> getVerifiedCreatorsWithNviInstitutions(JsonNode body) {
         return getJsonNodeStream(body, JSON_PTR_CONTRIBUTOR)
                    .filter(CreatorVerificationUtil::isVerified)
@@ -145,33 +134,32 @@ public class CreatorVerificationUtil {
         return streamNode(contributorNode.at(JSON_PTR_AFFILIATIONS))
                    .map(JsonUtils::extractId)
                    .distinct()
-                   .parallel()
-                   .map(this::fetchOrgAsync)
-                   .map(CreatorVerificationUtil::getFuture)
-                   .filter(organization -> topLevelOrgIsNviInstitutionAsync(organization).join())
+                   .map(organizationRetriever::fetchOrganization)
+                   .filter(this::topLevelOrgIsNviInstitution)
                    .map(CreatorVerificationUtil::toNviOrganization)
                    .toList();
     }
 
-    private CompletableFuture<Boolean> topLevelOrgIsNviInstitutionAsync(Organization organization) {
-        var customerApiUri = createCustomerApiUri(organization.getTopLevelOrg().id().toString());
-        return CompletableFuture.supplyAsync(() -> getResponse(customerApiUri))
-                   .thenApply(response -> {
-                       if (isSuccessOrNotFound(response)) {
-                           return mapToNviInstitutionValue(response);
-                       } else {
-                           LOGGER.error(COULD_NOT_FETCH_CUSTOMER_MESSAGE + customerApiUri + ". Response code: {}",
-                                        response.statusCode());
-                           throw new RuntimeException(COULD_NOT_FETCH_CUSTOMER_MESSAGE + customerApiUri);
-                       }
-                   });
+    private boolean topLevelOrgIsNviInstitution(Organization organization) {
+        return isNviInstitution(organization.getTopLevelOrg().id());
     }
 
-    private CompletableFuture<Organization> fetchOrgAsync(URI uri) {
-        return CompletableFuture.supplyAsync(() -> organizationRetriever.fetchOrganization(uri));
+    private boolean isNviInstitution(URI institutionId) {
+        var customerApiUri = createCustomerApiUri(institutionId.toString());
+        var response = getResponse(customerApiUri);
+        if (isSuccessOrNotFound(response)) {
+            return mapToNviInstitutionValue(response);
+        }
+        LOGGER.error(COULD_NOT_FETCH_CUSTOMER_MESSAGE + customerApiUri + ". Response code: {}", response.statusCode());
+        throw new RuntimeException(COULD_NOT_FETCH_CUSTOMER_MESSAGE + institutionId);
     }
 
     private HttpResponse<String> getResponse(URI uri) {
-        return authorizedBackendUriRetriever.fetchResponse(uri, CONTENT_TYPE).orElseThrow();
+        return Optional.ofNullable(authorizedBackendUriRetriever.fetchResponse(uri, CONTENT_TYPE))
+                   .stream()
+                   .filter(Optional::isPresent)
+                   .map(Optional::get)
+                   .findAny()
+                   .orElseThrow();
     }
 }
