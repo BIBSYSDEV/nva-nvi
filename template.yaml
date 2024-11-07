@@ -703,7 +703,7 @@ Resources:
       Handler: no.sikt.nva.nvi.events.evaluator.EvaluateNviCandidateHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
-      Timeout: 30
+      Timeout: 300
       MemorySize: 1536
       AutoPublishAlias: live
       SnapStart:
