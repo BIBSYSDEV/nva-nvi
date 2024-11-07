@@ -494,9 +494,9 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
                    .orElseThrow();
     }
 
-    private static OrganizationType getTopLevelAffiliation(NviContributor contributor, URI affilaitionId) {
+    private static OrganizationType getTopLevelAffiliation(NviContributor contributor, URI affiliationId) {
         return contributor.affiliations().stream()
-                   .filter(affiliation -> affiliation.id().equals(affilaitionId)).findFirst().get();
+                   .filter(affiliation -> affiliation.id().equals(affiliationId)).findFirst().get();
     }
 
     @SuppressWarnings("unchecked")
