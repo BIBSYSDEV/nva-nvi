@@ -703,7 +703,9 @@ Resources:
       Handler: no.sikt.nva.nvi.events.evaluator.EvaluateNviCandidateHandler::handleRequest
       Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
-      Timeout: 30
+      #For publications with many contributors, evaluation can take more than 30 sec due to
+      #many external requests. Timeout is set to 5 minutes.
+      Timeout: 300
       MemorySize: 1536
       AutoPublishAlias: live
       SnapStart:
