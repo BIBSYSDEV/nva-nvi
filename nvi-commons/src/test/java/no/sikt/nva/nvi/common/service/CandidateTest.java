@@ -807,8 +807,6 @@ class CandidateTest extends LocalDynamoTest {
         };
     }
 
-    //TODO; add xDto to DTO classes
-
     private record CandidateResetCauseArgument(DbLevel level, InstanceType type, URI... institutionIds) {
 
     }
