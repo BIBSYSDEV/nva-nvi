@@ -242,7 +242,11 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       MessageRetentionPeriod: 1209600 #14 days
-  PersistedResourceDLQ:
+  EvaluationDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600 #14 days
+  QueuePersistedResourceDLQ:
     Type: AWS::SQS::Queue
     Properties:
       MessageRetentionPeriod: 1209600 #14 days
@@ -451,7 +455,7 @@ Resources:
                   - !GetAtt GenerateIndexDocumentQueue.Arn
                   - !GetAtt RemoveDocumentFromIndexQueue.Arn
                   - !GetAtt RemoveDocumentFromIndexDLQ.Arn
-                  - !GetAtt PersistedResourceDLQ.Arn
+                  - !GetAtt EvaluationDLQ.Arn
                   - !GetAtt BatchScanDLQ.Arn
                   - !GetAtt UpdateIndexDLQ.Arn
                   - !GetAtt UpsertCandidateDLQ.Arn
@@ -689,7 +693,7 @@ Resources:
         DestinationConfig:
           OnFailure:
             Type: SQS
-            Destination: !GetAtt PersistedResourceDLQ.Arn
+            Destination: !GetAtt QueuePersistedResourceDLQ.Arn
 
   EvaluateNVICandidateHandler:
     Type: AWS::Serverless::Function
@@ -723,7 +727,7 @@ Resources:
         DestinationConfig:
           OnFailure:
             Type: SQS
-            Destination: !GetAtt PersistedResourceDLQ.Arn
+            Destination: !GetAtt EvaluationDLQ.Arn
 
   UpsertNviCandidateHandler:
     Type: AWS::Serverless::Function
