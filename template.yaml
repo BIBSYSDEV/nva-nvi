@@ -221,23 +221,19 @@ Resources:
 
   #=============================== SQSs ============================================================
   #=============================== For event handling ==============================================
-  PersistedResourceQueue:
+  ResourceEvaluationQueue:
     Type: AWS::SQS::Queue
     Properties:
       RedrivePolicy:
-        deadLetterTargetArn: !GetAtt PersistedResourceDLQ.Arn
+        deadLetterTargetArn: !GetAtt EvaluationDLQ.Arn
         maxReceiveCount: 5
-  NewCandidateQueue:
+  EvaluatedCandidateQueue:
     Type: AWS::SQS::Queue
     Properties:
       RedrivePolicy:
-        deadLetterTargetArn: !GetAtt NewCandidateDLQ.Arn
+        deadLetterTargetArn: !GetAtt UpsertCandidateDLQ.Arn
         maxReceiveCount: 5
   #=============================== Event handling DLQs =============================================
-  NewCandidateDLQ:
-    Type: AWS::SQS::Queue
-    Properties:
-      MessageRetentionPeriod: 1209600 #14 days
   UpsertCandidateDLQ:
     Type: AWS::SQS::Queue
     Properties:
@@ -448,15 +444,14 @@ Resources:
                   - sqs:GetQueueAttributes
                   - sqs:ChangeMessageVisibility
                 Resource:
-                  - !GetAtt PersistedResourceQueue.Arn
-                  - !GetAtt NewCandidateQueue.Arn
+                  - !GetAtt ResourceEvaluationQueue.Arn
+                  - !GetAtt EvaluatedCandidateQueue.Arn
                   - !GetAtt DbEventQueue.Arn
                   - !GetAtt PersistedIndexDocumentQueue.Arn
                   - !GetAtt GenerateIndexDocumentQueue.Arn
                   - !GetAtt RemoveDocumentFromIndexQueue.Arn
                   - !GetAtt RemoveDocumentFromIndexDLQ.Arn
                   - !GetAtt PersistedResourceDLQ.Arn
-                  - !GetAtt NewCandidateDLQ.Arn
                   - !GetAtt BatchScanDLQ.Arn
                   - !GetAtt UpdateIndexDLQ.Arn
                   - !GetAtt UpsertCandidateDLQ.Arn
@@ -678,7 +673,7 @@ Resources:
         ApplyOn: PublishedVersions
       Environment:
         Variables:
-          PERSISTED_RESOURCE_QUEUE_URL: !Ref PersistedResourceQueue
+          PERSISTED_RESOURCE_QUEUE_URL: !Ref ResourceEvaluationQueue
       Events:
         EventBridgeEvent:
           Type: EventBridgeRule
@@ -715,12 +710,12 @@ Resources:
           BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
           BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-          CANDIDATE_QUEUE_URL: !Ref NewCandidateQueue
+          CANDIDATE_QUEUE_URL: !Ref EvaluatedCandidateQueue
       Events:
         SqsEvent:
           Type: SQS
           Properties:
-            Queue: !GetAtt PersistedResourceQueue.Arn
+            Queue: !GetAtt ResourceEvaluationQueue.Arn
             BatchSize: 1
             #Note: EvaluateNVICandidateHandler is implemented to handle only batch size 1.
             #Don't change the batch size value, unless you change the implementation.
@@ -728,7 +723,7 @@ Resources:
         DestinationConfig:
           OnFailure:
             Type: SQS
-            Destination: !GetAtt NewCandidateDLQ.Arn
+            Destination: !GetAtt PersistedResourceDLQ.Arn
 
   UpsertNviCandidateHandler:
     Type: AWS::Serverless::Function
@@ -748,7 +743,7 @@ Resources:
         SqsEvent:
           Type: SQS
           Properties:
-            Queue: !GetAtt NewCandidateQueue.Arn
+            Queue: !GetAtt EvaluatedCandidateQueue.Arn
 
   DynamoDbEventToQueueHandler:
     Type: AWS::Serverless::Function
@@ -1016,7 +1011,7 @@ Resources:
         Variables:
           EVENT_BUS_NAME: !GetAtt InternalBus.Name
           TOPIC_REEVALUATE_CANDIDATES: 'NviService.ReEvaluate'
-          PERSISTED_RESOURCE_QUEUE_URL: !Ref PersistedResourceQueue
+          PERSISTED_RESOURCE_QUEUE_URL: !Ref ResourceEvaluationQueue
       Events:
         EventBridgeEvent:
           Type: EventBridgeRule
@@ -1433,17 +1428,17 @@ Resources:
       AlarmActions:
         - !Ref SlackSnsArn
 
-  NewCandidateDLQAlarm:
+  EvaluationDLQAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: NVI evaluating candidate failed
-      AlarmDescription: If this alarm is triggered, then check sqs messages on NewCandidateDLQ. Evaluating NVI candidate has failed.
+      AlarmDescription: If this alarm is triggered, then check sqs messages on EvaluationDLQ. Evaluating NVI candidate has failed.
       MetricName: ApproximateNumberOfMessagesVisible
       Namespace: AWS/SQS
       Statistic: Sum
       Dimensions:
         - Name: QueueName
-          Value: !GetAtt NewCandidateDLQ.QueueName
+          Value: !GetAtt EvaluationDLQ.QueueName
       Period: 300
       EvaluationPeriods: 1
       Threshold: 1
